@@ -1,5 +1,5 @@
 /* Import global variables from dashboard.css */
-@import url('./dashboard.css');
+@import url('../../css/common/variables.css');
 
 /* ================================================
    Fix Lanka Provider Profile Page Styles
