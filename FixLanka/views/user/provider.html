@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarah Johnson - Professional House Cleaner | Fix Lanka</title>
+    <link rel="stylesheet" href="../../assets/css/user/dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/user/provider.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navbar (reuse from landing page) -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-left">
+                <div class="logo">
+                    <span class="logo-text">Fix Lanka</span>
+                </div>
+            </div>
+            
+            <div class="navbar-center">
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="index.html" class="nav-link">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#services" class="nav-link">Services</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#how-it-works" class="nav-link">How it works</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#support" class="nav-link">Support</a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="navbar-right">
+                <div class="notification-bell">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge">3</span>
+                </div>
+                
+                <div class="profile-dropdown-container">
+                    <div class="profile-avatar" id="profileAvatar">
+                        <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-image">
+                    </div>
+                    
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <ul class="dropdown-menu">
+                            <li class="dropdown-item">
+                                <a href="#profile" class="dropdown-link">
+                                    <i class="fas fa-user"></i>
+                                    My Profile
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
+                                <a href="#bookings" class="dropdown-link">
+                                    <i class="fas fa-calendar-check"></i>
+                                    My Bookings
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
+                                <a href="#messages" class="dropdown-link">
+                                    <i class="fas fa-envelope"></i>
+                                    Messages
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
+                                <a href="#settings" class="dropdown-link">
+                                    <i class="fas fa-cog"></i>
+                                    Settings
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
+                                <a href="#help" class="dropdown-link">
+                                    <i class="fas fa-question-circle"></i>
+                                    Help Center
+                                </a>
+                            </li>
+                            <li class="dropdown-divider"></li>
+                            <li class="dropdown-item">
+                                <a href="#logout" class="dropdown-link logout">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mobile menu toggle -->
+            <div class="mobile-menu-toggle">
+                <span class="hamburger"></span>
+                <span class="hamburger"></span>
+                <span class="hamburger"></span>
+            </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div class="mobile-menu">
+            <ul class="mobile-nav-menu">
+                <li><a href="index.html" class="mobile-nav-link">Home</a></li>
+                <li><a href="#services" class="mobile-nav-link">Services</a></li>
+                <li><a href="#how-it-works" class="mobile-nav-link">How it works</a></li>
+                <li><a href="#support" class="mobile-nav-link">Support</a></li>
+                <li><a href="#profile" class="mobile-nav-link">My Profile</a></li>
+                <li><a href="#bookings" class="mobile-nav-link">My Bookings</a></li>
+                <li><a href="#messages" class="mobile-nav-link">Messages</a></li>
+                <li><a href="#settings" class="mobile-nav-link">Settings</a></li>
+                <li><a href="#help" class="mobile-nav-link">Help Center</a></li>
+                <li><a href="#logout" class="mobile-nav-link">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Sticky Header Section -->
+    <header class="provider-header" id="providerHeader">
+        <div class="provider-header-container">
+            <div class="provider-header-info">
+                <h1 class="provider-name">Sarah Johnson</h1>
+                <div class="provider-rating">
+                    <div class="stars">
+                        <i class="fas fa-star star"></i>
+                        <i class="fas fa-star star"></i>
+                        <i class="fas fa-star star"></i>
+                        <i class="fas fa-star star"></i>
+                        <i class="fas fa-star star"></i>
+                    </div>
+                    <span class="rating-text">4.9 (247 reviews)</span>
+                </div>
+            </div>
+            <div class="provider-header-actions">
+                <button class="message-btn" id="messageBtn">
+                    <i class="fas fa-envelope"></i>
+                    Message
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="profile-container">
+            <!-- Left Sidebar - Profile Card -->
+            <aside class="profile-sidebar">
+                <div class="profile-card">
+                    <div class="profile-avatar-section">
+                        <img src="https://via.placeholder.com/120" alt="Sarah Johnson" class="profile-avatar-large">
+                        <h2 class="profile-title">Professional House Cleaner</h2>
+                    </div>
+                    
+                    <div class="contact-details">
+                        <div class="contact-item">
+                            <i class="fas fa-phone contact-icon"></i>
+                            <div class="contact-info">
+                                <span class="contact-label">Phone</span>
+                                <span class="contact-value">+94 77 123 4567</span>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <i class="fas fa-envelope contact-icon"></i>
+                            <div class="contact-info">
+                                <span class="contact-label">Email</span>
+                                <span class="contact-value">sarah.johnson@email.com</span>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <i class="fas fa-map-marker-alt contact-icon"></i>
+                            <div class="contact-info">
+                                <span class="contact-label">Location</span>
+                                <span class="contact-value">Colombo 03, Sri Lanka</span>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <i class="fas fa-clock contact-icon"></i>
+                            <div class="contact-info">
+                                <span class="contact-label">Availability</span>
+                                <span class="contact-value availability-status">Available Today</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Column - Main Content -->
+            <div class="profile-main">
+                <!-- About Me Section -->
+                <section class="about-section">
+                    <div class="section-card">
+                        <h3 class="section-title">About Me</h3>
+                        <p class="about-text">
+                            I'm Sarah, a dedicated professional house cleaner with over 8 years of experience in providing top-quality cleaning services across Colombo. I take pride in transforming homes into spotless, comfortable spaces for families to enjoy.
+                        </p>
+                        <p class="about-text">
+                            My approach combines attention to detail with eco-friendly cleaning products to ensure your home is not only clean but also safe for your family and pets. I'm fully insured, background-checked, and committed to exceeding your expectations with every visit.
+                        </p>
+                        <p class="about-text">
+                            Whether you need a one-time deep clean or regular maintenance, I work with you to create a customized cleaning plan that fits your schedule and budget. Customer satisfaction is my top priority, and I won't consider the job done until you're completely happy with the results.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Services Offered Section -->
+                <section class="services-section">
+                    <div class="section-card">
+                        <h3 class="section-title">Services Offered</h3>
+                        <div class="services-grid">
+                            <span class="service-tag">Regular Cleaning</span>
+                            <span class="service-tag">Deep Cleaning</span>
+                            <span class="service-tag">Move-in/Move-out</span>
+                            <span class="service-tag">Kitchen Deep Clean</span>
+                            <span class="service-tag">Bathroom Sanitization</span>
+                            <span class="service-tag">Window Cleaning</span>
+                            <span class="service-tag">Carpet Cleaning</span>
+                            <span class="service-tag">Post-renovation Cleanup</span>
+                            <span class="service-tag">Office Cleaning</span>
+                            <span class="service-tag">One-time Cleaning</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Recent Reviews Section -->
+                <section class="reviews-section">
+                    <div class="section-card">
+                        <h3 class="section-title">Recent Reviews</h3>
+                        <div class="reviews-container" id="reviewsContainer">
+                            <div class="review-item">
+                                <div class="review-header">
+                                    <img src="https://via.placeholder.com/50" alt="Reviewer" class="reviewer-avatar">
+                                    <div class="reviewer-info">
+                                        <h4 class="reviewer-name">Amara Perera</h4>
+                                        <div class="review-rating">
+                                            <div class="stars">
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                            </div>
+                                            <span class="review-date">2 days ago</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="review-text">
+                                    Sarah did an absolutely fantastic job cleaning our home! She was thorough, professional, and paid attention to every detail. Our house has never looked better. Highly recommend her services!
+                                </p>
+                            </div>
+
+                            <div class="review-item">
+                                <div class="review-header">
+                                    <img src="https://via.placeholder.com/50" alt="Reviewer" class="reviewer-avatar">
+                                    <div class="reviewer-info">
+                                        <h4 class="reviewer-name">Kamal Silva</h4>
+                                        <div class="review-rating">
+                                            <div class="stars">
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                            </div>
+                                            <span class="review-date">1 week ago</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="review-text">
+                                    Excellent service! Sarah arrived on time, was very respectful of our home, and left everything spotless. She even organized areas that we hadn't specifically asked for. Will definitely book again!
+                                </p>
+                            </div>
+
+                            <div class="review-item">
+                                <div class="review-header">
+                                    <img src="https://via.placeholder.com/50" alt="Reviewer" class="reviewer-avatar">
+                                    <div class="reviewer-info">
+                                        <h4 class="reviewer-name">Priya Jayasinghe</h4>
+                                        <div class="review-rating">
+                                            <div class="stars">
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="far fa-star star empty"></i>
+                                            </div>
+                                            <span class="review-date">2 weeks ago</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="review-text">
+                                    Very professional and reliable. Sarah's attention to detail is impressive, and she uses quality eco-friendly products. Our kitchen and bathrooms look amazing. Great value for money!
+                                </p>
+                            </div>
+
+                            <!-- Hidden reviews for expand/collapse functionality -->
+                            <div class="review-item hidden-review">
+                                <div class="review-header">
+                                    <img src="https://via.placeholder.com/50" alt="Reviewer" class="reviewer-avatar">
+                                    <div class="reviewer-info">
+                                        <h4 class="reviewer-name">Nimal Fernando</h4>
+                                        <div class="review-rating">
+                                            <div class="stars">
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                            </div>
+                                            <span class="review-date">3 weeks ago</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="review-text">
+                                    Sarah transformed our home after our renovation. She handled the post-construction mess with ease and professionalism. Couldn't be happier with the results!
+                                </p>
+                            </div>
+
+                            <div class="review-item hidden-review">
+                                <div class="review-header">
+                                    <img src="https://via.placeholder.com/50" alt="Reviewer" class="reviewer-avatar">
+                                    <div class="reviewer-info">
+                                        <h4 class="reviewer-name">Sanduni Wijeratne</h4>
+                                        <div class="review-rating">
+                                            <div class="stars">
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                                <i class="fas fa-star star"></i>
+                                            </div>
+                                            <span class="review-date">1 month ago</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="review-text">
+                                    Outstanding service! Sarah is punctual, thorough, and trustworthy. She's been cleaning our home monthly for 6 months now, and we're always impressed with her work.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="reviews-toggle">
+                            <button class="toggle-reviews-btn" id="toggleReviewsBtn">
+                                <span class="toggle-text">Show More Reviews</span>
+                                <i class="fas fa-chevron-down toggle-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer (same as landing page) -->
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-section footer-branding">
+                <div class="footer-logo">
+                    <span class="logo-text">Fix Lanka</span>
+                </div>
+                <p class="footer-tagline">Connecting you with trusted local service professionals.</p>
+                <div class="social-links">
+                    <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-section footer-services">
+                <h3 class="footer-title">Services</h3>
+                <ul class="footer-links">
+                    <li><a href="#plumbing">Plumbing</a></li>
+                    <li><a href="#electrical">Electrical</a></li>
+                    <li><a href="#hvac">HVAC</a></li>
+                    <li><a href="#cleaning">Cleaning</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section footer-support">
+                <h3 class="footer-title">Support</h3>
+                <ul class="footer-links">
+                    <li><a href="#help">Help Center</a></li>
+                    <li><a href="#contact">Contact Us</a></li>
+                    <li><a href="#safety">Safety</a></li>
+                    <li><a href="#terms">Terms</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <div class="footer-bottom-container">
+                <p>&copy; 2025 Fix Lanka. All rights reserved.</p>
+                <div class="footer-bottom-links">
+                    <a href="#privacy">Privacy Policy</a>
+                    <span class="separator">|</span>
+                    <a href="#terms">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../../assets/javascript/user/provider.js"></script>
+</body>
+</html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - Fix Lanka</title>
+    <link rel="stylesheet" href="../../assets/css/user/dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/user/chat.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navbar (reuse from landing page) -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-left">
+                <div class="logo">
+                    <span class="logo-text">Fix Lanka</span>
+                </div>
+            </div>
+            
+            <div class="navbar-center">
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="index.html" class="nav-link">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#services" class="nav-link">Services</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#how-it-works" class="nav-link">How it works</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#support" class="nav-link">Support</a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="navbar-right">
+                <div class="notification-bell">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge">3</span>
+                </div>
+                
+                <div class="profile-dropdown-container">
+                    <div class="profile-avatar" id="profileAvatar">
+                        <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-image">
+                    </div>
+                    
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <ul class="dropdown-menu">
+                            <li class="dropdown-item">
+                                <a href="#profile" class="dropdown-link">
+                                    <i class="fas fa-user"></i>
+                                    My Profile
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
+                                <a href="#bookings" class="dropdown-link">
+                                    <i class="fas fa-calendar-check"></i>
+                                    My Bookings
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
+                                <a href="chat.html" class="dropdown-link">
+                                    <i class="fas fa-envelope"></i>
+                                    Messages
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
+                                <a href="#settings" class="dropdown-link">
+                                    <i class="fas fa-cog"></i>
+                                    Settings
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
+                                <a href="#help" class="dropdown-link">
+                                    <i class="fas fa-question-circle"></i>
+                                    Help Center
+                                </a>
+                            </li>
+                            <li class="dropdown-divider"></li>
+                            <li class="dropdown-item">
+                                <a href="#logout" class="dropdown-link logout">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mobile menu toggle -->
+            <div class="mobile-menu-toggle">
+                <span class="hamburger"></span>
+                <span class="hamburger"></span>
+                <span class="hamburger"></span>
+            </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div class="mobile-menu">
+            <ul class="mobile-nav-menu">
+                <li><a href="index.html" class="mobile-nav-link">Home</a></li>
+                <li><a href="#services" class="mobile-nav-link">Services</a></li>
+                <li><a href="#how-it-works" class="mobile-nav-link">How it works</a></li>
+                <li><a href="#support" class="mobile-nav-link">Support</a></li>
+                <li><a href="#profile" class="mobile-nav-link">My Profile</a></li>
+                <li><a href="#bookings" class="mobile-nav-link">My Bookings</a></li>
+                <li><a href="chat.html" class="mobile-nav-link">Messages</a></li>
+                <li><a href="#settings" class="mobile-nav-link">Settings</a></li>
+                <li><a href="#help" class="mobile-nav-link">Help Center</a></li>
+                <li><a href="#logout" class="mobile-nav-link">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Chat Header -->
+    <header class="chat-header" id="chatHeader">
+        <div class="chat-header-container">
+            <div class="chat-header-left">
+                <button class="back-btn" id="backBtn">
+                    <i class="fas fa-arrow-left"></i>
+                    <span class="back-text">Back</span>
+                </button>
+                
+                <!-- Mobile sidebar toggle -->
+                <button class="sidebar-toggle-btn" id="sidebarToggleBtn">
+                    <i class="fas fa-comments"></i>
+                    <span class="sidebar-toggle-text">Chats</span>
+                </button>
+            </div>
+            
+            <div class="chat-header-right">
+                <div class="current-chat-info" id="currentChatInfo">
+                    <img src="https://via.placeholder.com/40" alt="Provider" class="current-chat-avatar" id="currentChatAvatar">
+                    <div class="current-chat-details">
+                        <h2 class="current-chat-name" id="currentChatName">Select a chat</h2>
+                        <span class="current-chat-status" id="currentChatStatus">Choose a conversation to start messaging</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="chat-container">
+            <!-- Left Sidebar - Chat List -->
+            <aside class="chat-sidebar" id="chatSidebar">
+                <div class="sidebar-header">
+                    <h3 class="sidebar-title">Messages</h3>
+                    <div class="sidebar-search">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" placeholder="Search conversations..." class="search-input" id="searchInput">
+                    </div>
+                </div>
+                
+                <div class="chat-list" id="chatList">
+                    <div class="chat-item active" data-chat-id="1">
+                        <img src="https://via.placeholder.com/50" alt="Sarah Johnson" class="chat-avatar">
+                        <div class="chat-info">
+                            <div class="chat-header-info">
+                                <h4 class="chat-name">Sarah Johnson</h4>
+                                <span class="chat-time">2:30 PM</span>
+                            </div>
+                            <div class="chat-preview">
+                                <p class="chat-message">Perfect! I'll be there at 3 PM tomorrow for the cleaning service.</p>
+                                <span class="unread-badge">2</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-item" data-chat-id="2">
+                        <img src="https://via.placeholder.com/50" alt="Kamal Silva" class="chat-avatar">
+                        <div class="chat-info">
+                            <div class="chat-header-info">
+                                <h4 class="chat-name">Kamal Silva</h4>
+                                <span class="chat-time">1:15 PM</span>
+                            </div>
+                            <div class="chat-preview">
+                                <p class="chat-message">The electrical work has been completed. Everything is working perfectly!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-item" data-chat-id="3">
+                        <img src="https://via.placeholder.com/50" alt="Nimal Perera" class="chat-avatar">
+                        <div class="chat-info">
+                            <div class="chat-header-info">
+                                <h4 class="chat-name">Nimal Perera</h4>
+                                <span class="chat-time">11:45 AM</span>
+                            </div>
+                            <div class="chat-preview">
+                                <p class="chat-message">I can fix the plumbing issue this afternoon. What time works for you?</p>
+                                <span class="unread-badge">1</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-item" data-chat-id="4">
+                        <img src="https://via.placeholder.com/50" alt="Priya Jayasinghe" class="chat-avatar">
+                        <div class="chat-info">
+                            <div class="chat-header-info">
+                                <h4 class="chat-name">Priya Jayasinghe</h4>
+                                <span class="chat-time">Yesterday</span>
+                            </div>
+                            <div class="chat-preview">
+                                <p class="chat-message">Thank you for choosing our HVAC service. We appreciate your feedback!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-item" data-chat-id="5">
+                        <img src="https://via.placeholder.com/50" alt="Chaminda Rathnayake" class="chat-avatar">
+                        <div class="chat-info">
+                            <div class="chat-header-info">
+                                <h4 class="chat-name">Chaminda Rathnayake</h4>
+                                <span class="chat-time">Yesterday</span>
+                            </div>
+                            <div class="chat-preview">
+                                <p class="chat-message">The carpentry work quote has been prepared. Please review and let me know.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Column - Chat Window -->
+            <div class="chat-window" id="chatWindow">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="welcome-message" id="welcomeMessage">
+                        <div class="welcome-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h3>Welcome to Fix Lanka Messages</h3>
+                        <p>Select a conversation from the sidebar to start messaging with service providers.</p>
+                    </div>
+                    
+                    <!-- Messages will be dynamically loaded here -->
+                </div>
+                
+                <div class="message-input-container" id="messageInputContainer" style="display: none;">
+                    <div class="message-input-area">
+                        <button class="attachment-btn" id="attachmentBtn">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <input type="text" placeholder="Type your message..." class="message-input" id="messageInput">
+                        <button class="send-btn" id="sendBtn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer (same as landing page) -->
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-section footer-branding">
+                <div class="footer-logo">
+                    <span class="logo-text">Fix Lanka</span>
+                </div>
+                <p class="footer-tagline">Connecting you with trusted local service professionals.</p>
+                <div class="social-links">
+                    <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-section footer-services">
+                <h3 class="footer-title">Services</h3>
+                <ul class="footer-links">
+                    <li><a href="#plumbing">Plumbing</a></li>
+                    <li><a href="#electrical">Electrical</a></li>
+                    <li><a href="#hvac">HVAC</a></li>
+                    <li><a href="#cleaning">Cleaning</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section footer-support">
+                <h3 class="footer-title">Support</h3>
+                <ul class="footer-links">
+                    <li><a href="#help">Help Center</a></li>
+                    <li><a href="#contact">Contact Us</a></li>
+                    <li><a href="#safety">Safety</a></li>
+                    <li><a href="#terms">Terms</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <div class="footer-bottom-container">
+                <p>&copy; 2025 Fix Lanka. All rights reserved.</p>
+                <div class="footer-bottom-links">
+                    <a href="#privacy">Privacy Policy</a>
+                    <span class="separator">|</span>
+                    <a href="#terms">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../../assets/javascript/user/chat.js"></script>
+</body>
+</html>
