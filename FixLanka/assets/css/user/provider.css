@@ -1,9 +1,25 @@
 /* Import global variables from dashboard.css */
 @import url('../../css/common/variables.css');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css');
 
 /* ================================================
    Fix Lanka Provider Profile Page Styles
    ================================================ */
+
+/* to remove dashboard.css linkage */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
+}
+
+a {
+  text-decoration: none;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--primary-color) !important;
+}
 
 /* Global Overrides */
 body {
