@@ -1,0 +1,2711 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workforce - FixLanka Dashboard</title>
+    <link rel="stylesheet" href="../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
+    <link rel="stylesheet" href="../../assets/css/company/topbar.css">
+    <link rel="stylesheet" href="../../assets/css/company/dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/company/workforce.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- Hidden checkbox for CSS toggle -->
+    <input type="checkbox" id="sidebar-toggle">
+
+    <div class="dashboard-container">
+        <!-- Sidebar Component -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container"></div>
+
+            <!-- Workforce Container -->
+            <div class="workforce-container">
+                <!-- Page Header -->
+                <header class="page-header">
+                    <div class="header-content">
+                        <div class="header-main">
+                            <div class="title-section">
+                                <h1><i class="fas fa-users-cog"></i> Workforce Management</h1>
+                                <p class="subtitle">Manage your company employees and freelance contractors</p>
+                                <nav class="breadcrumbs">
+                                    <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                                    <span class="separator">/</span>
+                                    <span class="current">Workforce</span>
+                                </nav>
+                            </div>
+                            <div class="header-actions">
+                                <div class="action-buttons">
+                                    <button class="action-btn secondary">
+                                        <i class="fas fa-file-export"></i> Export
+                                    </button>
+                                    <button class="action-btn primary" onclick="openJobPostingModal()">
+                                        <i class="fas fa-bullhorn"></i> Create Job Posting
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Dashboard Preview Cards -->
+                <div class="dashboard-grid">
+                    <!-- Company Staff Card -->
+                    <div class="preview-card staff-card" data-section="employees">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-building"></i>
+                                <h3>Company Employees</h3>
+                            </div>
+                            <div class="card-badge staff-badge">Staff</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="stats-overview">
+                                <div class="main-stat">
+                                    <span class="stat-number">23</span>
+                                    <span class="stat-label">Total Staff</span>
+                                </div>
+                                <div class="sub-stats">
+                                    <div class="sub-stat">
+                                        <span class="sub-number">18</span>
+                                        <span class="sub-label">Active</span>
+                                    </div>
+                                    <div class="sub-stat">
+                                        <span class="sub-number">4.8</span>
+                                        <span class="sub-label">⭐ Rating</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="specialties-preview">
+                                <h4>Specialties Overview</h4>
+                                <div class="specialty-items">
+                                    <div class="specialty-item">
+                                        <span class="specialty-name">Plumbing</span>
+                                        <span class="specialty-count">8 Total, 6 Active</span>
+                                    </div>
+                                    <div class="specialty-item">
+                                        <span class="specialty-name">Electrical</span>
+                                        <span class="specialty-count">5 Total, 4 Active</span>
+                                    </div>
+                                    <div class="specialty-item">
+                                        <span class="specialty-name">Carpentry</span>
+                                        <span class="specialty-count">6 Total, 5 Active</span>
+                                    </div>
+                                    <div class="specialty-item">
+                                        <span class="specialty-name">HVAC</span>
+                                        <span class="specialty-count">4 Total, 3 Active</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="action-button primary" onclick="expandSection('employees')">
+                                <i class="fas fa-users"></i> View All Staff
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Freelancers Card -->
+                    <div class="preview-card freelancers-card" data-section="freelancers">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-user-tie"></i>
+                                <h3>Available Freelancers</h3>
+                            </div>
+                            <div class="card-badge freelancers-badge">Freelance</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="stats-overview">
+                                <div class="main-stat">
+                                    <span class="stat-number">12</span>
+                                    <span class="stat-label">Available</span>
+                                </div>
+                                <div class="sub-stats">
+                                    <div class="sub-stat">
+                                        <span class="sub-number">8</span>
+                                        <span class="sub-label">Active</span>
+                                    </div>
+                                    <div class="sub-stat">
+                                        <span class="sub-number">4</span>
+                                        <span class="sub-label">Free</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="freelancers-preview">
+                                <h4>Top Freelancers</h4>
+                                <div class="freelancer-items">
+                                    <div class="freelancer-item">
+                                        <div class="freelancer-avatar">KP</div>
+                                        <div class="freelancer-info">
+                                            <span class="freelancer-name">Kasun Perera</span>
+                                            <span class="freelancer-details">Mobile Repair • ⭐ 4.9 • LKR 2,500/hr</span>
+                                        </div>
+                                    </div>
+                                    <div class="freelancer-item">
+                                        <div class="freelancer-avatar">NF</div>
+                                        <div class="freelancer-info">
+                                            <span class="freelancer-name">Nimal Fernando</span>
+                                            <span class="freelancer-details">Laptop Repair • ⭐ 4.7 • LKR 2,200/hr</span>
+                                        </div>
+                                    </div>
+                                    <div class="freelancer-item">
+                                        <div class="freelancer-avatar">AS</div>
+                                        <div class="freelancer-info">
+                                            <span class="freelancer-name">Anjali Silva</span>
+                                            <span class="freelancer-details">Device Setup • ⭐ 4.8 • LKR 2,000/hr</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="action-button primary" onclick="expandSection('freelancers')">
+                                <i class="fas fa-handshake"></i> View Freelancers
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Applications Card -->
+                    <div class="preview-card applications-card" data-section="applications">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-file-alt"></i>
+                                <h3>Pending Applications</h3>
+                            </div>
+                            <div class="card-badge applications-badge">Applications</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="stats-overview">
+                                <div class="main-stat">
+                                    <span class="stat-number">7</span>
+                                    <span class="stat-label">Pending</span>
+                                </div>
+                                <div class="sub-stats">
+                                    <div class="sub-stat">
+                                        <span class="sub-number">3</span>
+                                        <span class="sub-label">New Today</span>
+                                    </div>
+                                    <div class="sub-stat">
+                                        <span class="sub-number">2</span>
+                                        <span class="sub-label">Approved</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="applications-preview">
+                                <h4>Recent Applications</h4>
+                                <div class="application-items">
+                                    <div class="application-item">
+                                        <div class="application-avatar">RA</div>
+                                        <div class="application-info">
+                                            <span class="application-name">Ravindu Amarasinghe</span>
+                                            <span class="application-details">HVAC Specialist • 2 days ago</span>
+                                        </div>
+                                        <div class="application-status new">New</div>
+                                    </div>
+                                    <div class="application-item">
+                                        <div class="application-avatar">SP</div>
+                                        <div class="application-info">
+                                            <span class="application-name">Saman Pathirana</span>
+                                            <span class="application-details">Electrical Work • 1 day ago</span>
+                                        </div>
+                                        <div class="application-status new">New</div>
+                                    </div>
+                                    <div class="application-item">
+                                        <div class="application-avatar">MR</div>
+                                        <div class="application-info">
+                                            <span class="application-name">Malini Rajapakse</span>
+                                            <span class="application-details">Plumbing Expert • 3 days ago</span>
+                                        </div>
+                                        <div class="application-status pending">Pending</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="action-button primary" onclick="expandSection('applications')">
+                                <i class="fas fa-clipboard-check"></i> Review Applications
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Job Postings Card -->
+                    <div class="preview-card job-postings-card" data-section="job-postings">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-bullhorn"></i>
+                                <h3>Active Job Postings</h3>
+                            </div>
+                            <div class="card-badge job-postings-badge">Recruiting</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="stats-overview">
+                                <div class="main-stat">
+                                    <span class="stat-number">5</span>
+                                    <span class="stat-label">Active Posts</span>
+                                </div>
+                                <div class="sub-stats">
+                                    <div class="sub-stat">
+                                        <span class="sub-number">2</span>
+                                        <span class="sub-label">Drafts</span>
+                                    </div>
+                                    <div class="sub-stat">
+                                        <span class="sub-number">24</span>
+                                        <span class="sub-label">Applications</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="job-postings-preview">
+                                <h4>Recent Postings</h4>
+                                <div class="job-posting-items">
+                                    <div class="job-posting-item">
+                                        <div class="job-posting-info">
+                                            <span class="job-title">Senior HVAC Technician</span>
+                                            <span class="job-details">12 applications • 3 days ago</span>
+                                        </div>
+                                        <div class="job-status active">Active</div>
+                                    </div>
+                                    <div class="job-posting-item">
+                                        <div class="job-posting-info">
+                                            <span class="job-title">Electrical Repair Specialist</span>
+                                            <span class="job-details">8 applications • 1 week ago</span>
+                                        </div>
+                                        <div class="job-status active">Active</div>
+                                    </div>
+                                    <div class="job-posting-item">
+                                        <div class="job-posting-info">
+                                            <span class="job-title">Plumbing Contractor</span>
+                                            <span class="job-details">4 applications • 2 days ago</span>
+                                        </div>
+                                        <div class="job-status active">Active</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="action-button primary" onclick="expandSection('job-postings')">
+                                <i class="fas fa-eye"></i> Manage Postings
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Detailed Sections (Initially Hidden) -->
+                <div class="detailed-sections" style="display: none;">
+                    <!-- Back to Dashboard Button -->
+                    <div class="section-header">
+                        <div style="align-items: center;">
+                            <button class="back-button" onclick="backToDashboard()">
+                                <i class="fas fa-arrow-left"></i> Back
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Company Employees Summary (Category View) -->
+                    <div class="workforce-section" id="employeesSection">
+                        <div class="section-header">
+                            <div>
+                                <h2><i class="fas fa-id-badge"></i> Company Employees</h2>
+                                <p class="section-subtitle">Overview of your permanent staff by specialty</p>
+                            </div>
+                            <div style="display: flex; gap: 12px;">
+                                <button class="action-btn primary" onclick="openBulkStaffModal()" style="padding: var(--spacing-md);">
+                                    <i class="fas fa-user-plus"></i> Add Staff
+                                </button>
+                                <button class="action-btn secondary" onclick="openReduceStaffModal()" style="padding: var(--spacing-md);">
+                                    <i class="fas fa-user-minus"></i> Reduce Staff
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="employee-categories">
+                            <div class="category-card">
+                                <div class="category-icon plumbing">
+                                    <i class="fas fa-wrench"></i>
+                                </div>
+                                <div class="category-info">
+                                    <h3>Plumbing</h3>
+                                    <div class="category-stats">
+                                        <span class="total-count">8 Total</span>
+                                        <span class="active-count">6 Active</span>
+                                    </div>
+                                    <div class="category-meta">
+                                        <span class="avg-rating"><i class="fas fa-star"></i> 4.8</span>
+                                        <span class="hourly-range">LKR 2,200-2,800/hr</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="category-card">
+                                <div class="category-icon electrical">
+                                    <i class="fas fa-bolt"></i>
+                                </div>
+                                <div class="category-info">
+                                    <h3>Electrical</h3>
+                                    <div class="category-stats">
+                                        <span class="total-count">5 Total</span>
+                                        <span class="active-count">4 Active</span>
+                                    </div>
+                                    <div class="category-meta">
+                                        <span class="avg-rating"><i class="fas fa-star"></i> 4.7</span>
+                                        <span class="hourly-range">LKR 2,500-3,000/hr</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="category-card">
+                                <div class="category-icon carpentry">
+                                    <i class="fas fa-hammer"></i>
+                                </div>
+                                <div class="category-info">
+                                    <h3>Carpentry</h3>
+                                    <div class="category-stats">
+                                        <span class="total-count">6 Total</span>
+                                        <span class="active-count">5 Active</span>
+                                    </div>
+                                    <div class="category-meta">
+                                        <span class="avg-rating"><i class="fas fa-star"></i> 4.9</span>
+                                        <span class="hourly-range">LKR 2,000-2,600/hr</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="category-card">
+                                <div class="category-icon hvac">
+                                    <i class="fas fa-fan"></i>
+                                </div>
+                                <div class="category-info">
+                                    <h3>HVAC</h3>
+                                    <div class="category-stats">
+                                        <span class="total-count">4 Total</span>
+                                        <span class="active-count">3 Active</span>
+                                    </div>
+                                    <div class="category-meta">
+                                        <span class="avg-rating"><i class="fas fa-star"></i> 4.6</span>
+                                        <span class="hourly-range">LKR 2,800-3,200/hr</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Freelancers Section -->
+                    <div class="workforce-section" id="freelancersSection">
+                        <div class="section-header">
+                            <h2><i class="fas fa-handshake"></i> Available Freelancers</h2>
+                            <p class="section-subtitle">Independent contractors ready for assignments</p>
+                        </div>
+
+                        <div class="freelancer-list">
+                            <!-- Freelancer cards will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Applications Section -->
+                    <div class="workforce-section" id="applicationsSection">
+                        <div class="section-header">
+                            <h2><i class="fas fa-file-alt"></i> Pending Applications</h2>
+                            <p class="section-subtitle">New applications awaiting review</p>
+                        </div>
+
+                        <div class="applications-list">
+                            <!-- Application cards will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Job Postings Management Section -->
+                    <div class="workforce-section" id="job-postingsSection">
+                        <div class="section-header">
+                            <div>
+                                <h2><i class="fas fa-bullhorn"></i> Job Postings Management</h2>
+                                <p class="section-subtitle">Manage your recruitment postings and track applications</p>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="action-btn primary" onclick="openJobPostingModal()" style="padding: var(--spacing-md);">
+                                    <i class="fas fa-plus"></i> Create New Posting
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Job Postings Filter Tabs -->
+                        <div class="job-posting-tabs">
+                            <button class="tab-btn active" onclick="filterJobPostings('all')">
+                                <i class="fas fa-list"></i> All Posts
+                            </button>
+                            <button class="tab-btn" onclick="filterJobPostings('active')">
+                                <i class="fas fa-eye"></i> Active
+                            </button>
+                            <button class="tab-btn" onclick="filterJobPostings('draft')">
+                                <i class="fas fa-edit"></i> Drafts
+                            </button>
+                            <button class="tab-btn" onclick="filterJobPostings('expired')">
+                                <i class="fas fa-clock"></i> Expired
+                            </button>
+                        </div>
+
+                        <!-- Job Postings List -->
+                        <div class="job-postings-list">
+                            <!-- Job posting cards will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="emptyState" style="display: none;">
+                        <i class="fas fa-users-slash"></i>
+                        <h3>No Workforce Found</h3>
+                        <p>No workforce members match your current filters.</p>
+                    </div>
+                </div>
+        </main>
+    </div>
+
+
+
+    <!-- Scripts -->
+    <script>
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function () {
+            loadComponent('sidebar-container', 'sidebar.html');
+            loadComponent('header-container', 'topbar.html');
+
+            setTimeout(() => {
+                initializePage();
+            }, 500);
+        });
+
+        // Function to load HTML components
+        function loadComponent(containerId, componentFile) {
+            fetch(componentFile)
+                .then(response => response.text())
+                .then(html => {
+                    if (containerId === 'sidebar-container') {
+                        // Set active state immediately in the HTML before inserting
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+                        
+                        // Remove any existing active classes
+                        const allNavItems = tempDiv.querySelectorAll('.nav-item');
+                        allNavItems.forEach(item => item.classList.remove('active'));
+                        
+                        // Set workforce as active immediately
+                        const workforceLink = tempDiv.querySelector('a[href="workforce.html"]');
+                        if (workforceLink) {
+                            workforceLink.parentElement.classList.add('active');
+                        }
+                        
+                        // Insert the modified HTML
+                        document.getElementById(containerId).innerHTML = tempDiv.innerHTML;
+                    } else {
+                        document.getElementById(containerId).innerHTML = html;
+                    }
+                })
+                .catch(error => console.error('Error loading component:', error));
+        }
+
+        // Global variables
+        let currentTab = 'employees';
+        let selectedEmployee = null;
+        let isDashboardView = true;
+
+        // Dashboard Functions
+        function expandSection(section) {
+            // Hide dashboard grid
+            document.querySelector('.dashboard-grid').style.display = 'none';
+
+            // Show detailed sections container
+            document.querySelector('.detailed-sections').style.display = 'block';
+
+            // Hide all detailed sections first
+            document.querySelectorAll('.workforce-section').forEach(sec => {
+                sec.style.display = 'none';
+            });
+
+            // Show the selected section
+            const sectionId = section + 'Section';
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.style.display = 'block';
+                
+                // Load data for specific sections
+                if (section === 'job-postings') {
+                    loadJobPostings();
+                }
+            }
+
+            isDashboardView = false;
+            currentTab = section;
+
+            // Update search functionality for the current section
+            initializeSearch();
+        }
+
+        function backToDashboard() {
+            // Hide detailed sections
+            document.querySelector('.detailed-sections').style.display = 'none';
+            document.querySelectorAll('.workforce-section').forEach(sec => {
+                sec.style.display = 'none';
+            });
+
+            // Show dashboard grid
+            document.querySelector('.dashboard-grid').style.display = 'grid';
+
+            isDashboardView = true;
+
+            // Clear search when returning to dashboard
+            const searchInput = document.getElementById('workforceSearch');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+        }
+
+        // Sample data
+        const employeeCategoriesData = [
+            { category: 'Plumbing', count: 5, description: 'Water pipe and drainage specialists', avgRating: 4.7, hourlyRange: 'LKR 2,200-2,800/hr' },
+            { category: 'Electrical', count: 7, description: 'Electrical system repair experts', avgRating: 4.6, hourlyRange: 'LKR 2,000-2,600/hr' },
+            { category: 'Carpentry', count: 4, description: 'Wood working and furniture repair', avgRating: 4.8, hourlyRange: 'LKR 2,400-3,000/hr' },
+            { category: 'HVAC', count: 3, description: 'Air conditioning and heating specialists', avgRating: 4.6, hourlyRange: 'LKR 2,800-3,200/hr' }
+        ];
+
+        const freelancersData = [
+            {
+                id: 'f1',
+                firstName: 'Kasun',
+                lastName: 'Perera',
+                specialty: 'Mobile Phone Repair',
+                experience: 5,
+                hourlyRate: 2500,
+                rating: 4.8,
+                status: 'Available',
+                email: 'kasun.perera@email.com',
+                avatar: 'KP'
+            },
+            {
+                id: 'f2',
+                firstName: 'Nimali',
+                lastName: 'Fernando',
+                specialty: 'Laptop Repair',
+                experience: 3,
+                hourlyRate: 3000,
+                rating: 4.6,
+                status: 'Busy',
+                email: 'nimali.fernando@email.com',
+                avatar: 'NF'
+            },
+            {
+                id: 'f3',
+                firstName: 'Rohan',
+                lastName: 'Silva',
+                specialty: 'TV Repair',
+                experience: 7,
+                hourlyRate: 2800,
+                rating: 4.9,
+                status: 'Available',
+                email: 'rohan.silva@email.com',
+                avatar: 'RS'
+            }
+        ];
+
+        const applicationsData = [
+            {
+                id: 'a1',
+                firstName: 'Saman',
+                lastName: 'Jayasinghe',
+                specialty: 'Air Conditioner Repair',
+                experience: 4,
+                expectedRate: 3200,
+                applicationDate: '2024-01-15',
+                email: 'saman.jayasinghe@email.com',
+                phone: '+94 77 123 4567',
+                avatar: 'SJ',
+                coverLetter: 'Experienced HVAC technician with 4 years of hands-on experience in air conditioning repair and maintenance. Specialized in both residential and commercial systems with excellent problem-solving skills and customer service.',
+                skills: ['HVAC Systems', 'Refrigeration', 'Electrical Troubleshooting', 'Customer Service', 'Safety Protocols']
+            },
+            {
+                id: 'a2',
+                firstName: 'Priya',
+                lastName: 'Rathnayake',
+                specialty: 'Washing Machine Repair',
+                experience: 2,
+                expectedRate: 2200,
+                applicationDate: '2024-01-12',
+                email: 'priya.rathnayake@email.com',
+                phone: '+94 71 234 5678',
+                avatar: 'PR',
+                coverLetter: 'Dedicated appliance repair specialist with 2 years of experience in washing machine and dryer repairs. Known for quick diagnostics and efficient repairs with high customer satisfaction ratings.',
+                skills: ['Appliance Repair', 'Mechanical Systems', 'Diagnostic Tools', 'Time Management', 'Technical Documentation']
+            }
+        ];
+
+        // Utility functions
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) return '1 day ago';
+            if (diffDays < 7) return `${diffDays} days ago`;
+            if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Action functions
+        function assignJob(freelancerId) {
+            alert(`Assigning job to freelancer ${freelancerId}`);
+            // Implementation for job assignment
+        }
+
+        function viewFreelancerDetails(freelancerId) {
+            alert(`Viewing details for freelancer ${freelancerId}`);
+            // Implementation for viewing freelancer details
+        }
+
+        function approveApplication(applicationId) {
+            if (confirm('Are you sure you want to accept this application?')) {
+                alert(`Application ${applicationId} approved`);
+                // Implementation for approving application
+            }
+        }
+
+        function rejectApplication(applicationId) {
+            if (confirm('Are you sure you want to decline this application?')) {
+                alert(`Application ${applicationId} rejected`);
+                // Implementation for rejecting application
+            }
+        }
+
+        function updateStats() {
+            // Update total counts
+            const totalEmployees = employeeCategoriesData.reduce((sum, cat) => sum + cat.count, 0);
+            const totalFreelancers = freelancersData.length;
+            const totalApplications = applicationsData.length;
+
+            // You can update any stat displays here if needed
+            console.log(`Total: ${totalEmployees} employees, ${totalFreelancers} freelancers, ${totalApplications} applications`);
+        }
+
+        // Initialize search functionality
+        function initializeSearch() {
+            const searchInput = document.getElementById('workforceSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase();
+                    filterContent(query);
+                });
+            }
+        }
+
+        // Filter content based on search query
+        function filterContent(query) {
+            // Filter freelancers
+            const freelancerItems = document.querySelectorAll('.freelancer-item');
+            freelancerItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+
+            // Filter applications
+            const applicationItems = document.querySelectorAll('.application-item');
+            applicationItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+
+            // Filter employee categories
+            const categoryCards = document.querySelectorAll('.category-card');
+            categoryCards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(query) ? 'block' : 'none';
+            });
+        }
+
+        // Initialize page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initializePage);
+
+        // Application modal functions
+        let currentApplicationId = null;
+
+        function viewApplicationDetails(applicationId) {
+            const application = applicationsData.find(app => app.id === applicationId);
+            if (!application) return;
+
+            currentApplicationId = applicationId;
+
+            // Populate drawer with application data
+            document.getElementById('modalFullName').textContent = `${application.firstName} ${application.lastName}`;
+            document.getElementById('modalEmail').textContent = application.email;
+            document.getElementById('modalPhone').textContent = application.phone;
+            document.getElementById('modalApplicationDate').textContent = formatDate(application.applicationDate);
+            document.getElementById('modalSpecialty').textContent = application.specialty;
+            document.getElementById('modalExperience').textContent = `${application.experience} years`;
+            document.getElementById('modalExpectedRate').textContent = `LKR ${application.expectedRate.toLocaleString()}/hr`;
+
+            // Update cover letter
+            document.getElementById('modalCoverLetter').textContent = application.coverLetter || 'No cover letter provided.';
+
+            // Update skills
+            const skillsContainer = document.getElementById('modalSkills');
+            skillsContainer.innerHTML = '';
+            if (application.skills && application.skills.length > 0) {
+                application.skills.forEach(skill => {
+                    const skillTag = document.createElement('span');
+                    skillTag.className = 'skill-tag';
+                    skillTag.textContent = skill;
+                    skillsContainer.appendChild(skillTag);
+                });
+            } else {
+                skillsContainer.innerHTML = '<span class="skill-tag">No specific skills listed</span>';
+            }
+
+            // Show drawer
+            document.getElementById('applicationDetailsDrawer').classList.add('active');
+        }
+
+        function closeApplicationDetailsDrawer() {
+            document.getElementById('applicationDetailsDrawer').classList.remove('active');
+            currentApplicationId = null;
+        }
+
+        function approveApplicationFromDrawer() {
+            if (currentApplicationId) {
+                approveApplication(currentApplicationId);
+                closeApplicationDetailsDrawer();
+            }
+        }
+
+        function rejectApplicationFromDrawer() {
+            if (currentApplicationId) {
+                rejectApplication(currentApplicationId);
+                closeApplicationDetailsDrawer();
+            }
+        }
+
+        // Initialize drawer tab functionality
+        document.addEventListener('DOMContentLoaded', function () {
+            // Drawer tab switching
+            const drawerTabs = document.querySelectorAll('.drawer-tab');
+            const drawerTabContents = document.querySelectorAll('.drawer-tab-content');
+
+            drawerTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetTab = tab.getAttribute('data-tab');
+
+                    // Remove active class from all tabs and contents
+                    drawerTabs.forEach(t => t.classList.remove('active'));
+                    drawerTabContents.forEach(content => content.classList.remove('active'));
+
+                    // Add active class to clicked tab and corresponding content
+                    tab.classList.add('active');
+                    document.getElementById(targetTab).classList.add('active');
+                });
+            });
+
+            // Close drawer when clicking outside
+            const drawerOverlays = document.querySelectorAll('.drawer-overlay');
+            drawerOverlays.forEach(overlay => {
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        overlay.classList.remove('active');
+                    }
+                });
+            });
+        });
+
+        // Initialize page functionality
+        function initializePage() {
+            initializeFilters();
+            initializeSearch();
+            loadFreelancers();
+            loadApplications();
+            updateStats();
+        }
+
+        // Initialize filter functionality
+        function initializeFilters() {
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            const sections = document.querySelectorAll('.workforce-section');
+
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const filter = btn.getAttribute('data-filter');
+
+                    // Update active filter button
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    // Show/hide sections based on filter
+                    sections.forEach(section => {
+                        if (filter === 'employees' && section.id === 'employeesSection') {
+                            section.style.display = 'block';
+                        } else if (filter === 'freelancers' && section.id === 'freelancersSection') {
+                            section.style.display = 'block';
+                        } else if (filter === 'applications' && section.id === 'applicationsSection') {
+                            section.style.display = 'block';
+                        } else {
+                            section.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        }
+
+        // Load freelancers
+        function loadFreelancers() {
+            const container = document.querySelector('.freelancer-list');
+            container.innerHTML = '';
+
+            freelancersData.forEach(freelancer => {
+                const item = createFreelancerItem(freelancer);
+                container.appendChild(item);
+            });
+        }
+
+        // Create freelancer item
+        function createFreelancerItem(freelancer) {
+            const item = document.createElement('div');
+            item.className = 'freelancer-item';
+
+            item.innerHTML = `
+                <div class="freelancer-main">
+                    <div class="freelancer-avatar">${freelancer.avatar}</div>
+                    <div class="freelancer-info">
+                        <h4>${freelancer.firstName} ${freelancer.lastName}</h4>
+                        <span class="freelancer-specialty">${freelancer.specialty}</span>
+                        <div class="freelancer-details">
+                            <span><i class="fas fa-calendar"></i> ${freelancer.experience} years exp</span>
+                            <span><i class="fas fa-money-bill"></i> LKR ${freelancer.hourlyRate.toLocaleString()}/hr</span>
+                            <span><i class="fas fa-star"></i> ${freelancer.rating}</span>
+                        </div>
+                        <div class="freelancer-contact">
+                            <i class="fas fa-envelope"></i> ${freelancer.email}
+                        </div>
+                    </div>
+                </div>
+                <div class="freelancer-actions">
+                    <span class="freelancer-status">${freelancer.status}</span>
+                    <button class="action-btn-sm primary" onclick="assignJob('${freelancer.id}')">
+                        <i class="fas fa-plus"></i> Assign
+                    </button>
+                    <button class="action-btn-sm info" onclick="viewFreelancerDetails('${freelancer.id}')">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </div>
+            `;
+
+            return item;
+        }
+
+        // Load applications
+        function loadApplications() {
+            const container = document.querySelector('.applications-list');
+            container.innerHTML = '';
+
+            applicationsData.forEach(application => {
+                const item = createApplicationItem(application);
+                container.appendChild(item);
+            });
+        }
+
+        // Create application item
+        function createApplicationItem(application) {
+            const item = document.createElement('div');
+            item.className = 'application-item';
+
+            item.innerHTML = `
+                <div class="application-main">
+                    <div class="application-avatar">${application.avatar}</div>
+                    <div class="application-info">
+                        <h4>${application.firstName} ${application.lastName}</h4>
+                        <span class="application-specialty">${application.specialty}</span>
+                        <div class="application-details">
+                            <span><i class="fas fa-calendar"></i> ${application.experience} years exp</span>
+                            <span><i class="fas fa-money-bill"></i> Expected: LKR ${application.expectedRate.toLocaleString()}/hr</span>
+                            <span><i class="fas fa-clock"></i> Applied ${formatDate(application.applicationDate)}</span>
+                        </div>
+                        <div class="application-contact">
+                            <i class="fas fa-envelope"></i> ${application.email} • <i class="fas fa-phone"></i> ${application.phone}
+                        </div>
+                    </div>
+                </div>
+                <div class="application-actions">
+                    <span class="application-status">Pending</span>
+                    <button class="action-btn-sm info" onclick="viewApplicationDetails('${application.id}')">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                    <button class="action-btn-sm success" onclick="approveApplication('${application.id}')">
+                        <i class="fas fa-check"></i> Accept
+                    </button>
+                    <button class="action-btn-sm danger" onclick="rejectApplication('${application.id}')">
+                        <i class="fas fa-times"></i> Decline
+                    </button>
+                </div>
+            `;
+
+            return item;
+        }
+
+        // Create employee HTML
+        function createEmployeeHTML(employee) {
+            const statusClass = getStatusClass(employee.status);
+
+            return `
+                <div class="card-header">
+                    <div class="employee-info">
+                        <div class="employee-avatar">${employee.avatar}</div>
+                        <div class="employee-details">
+                            <h4>${employee.firstName} ${employee.lastName}</h4>
+                            <p class="employee-title">${employee.specialty} Specialist</p>
+                            <p class="employee-contact">
+                                <i class="fas fa-envelope"></i> ${employee.email}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="employee-badges">
+                        <span class="status-badge ${statusClass}">${employee.status}</span>
+                        <span class="employment-badge">${employee.employmentType}</span>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="employee-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-briefcase"></i>
+                            <div>
+                                <span class="stat-value">${employee.currentJobs}</span>
+                                <span class="stat-label">Active Jobs</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-check-circle"></i>
+                            <div>
+                                <span class="stat-value">${employee.completedJobs}</span>
+                                <span class="stat-label">Completed</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-star"></i>
+                            <div>
+                                <span class="stat-value">${employee.rating}</span>
+                                <span class="stat-label">Rating</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="employee-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>${employee.experience} years experience</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-money-bill"></i>
+                            <span>LKR ${employee.hourlyRate.toLocaleString()}/hour</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>${employee.address}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-actions">
+                    <button class="action-btn-sm info" onclick="viewEmployeeDetails('${employee.id}')">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
+                    <button class="action-btn-sm primary" onclick="assignJob('${employee.id}')">
+                        <i class="fas fa-plus"></i> Assign Job
+                    </button>
+                    <button class="action-btn-sm secondary" onclick="editEmployee('${employee.id}')">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                </div>
+            `;
+        }
+
+        // Create freelancer HTML
+        function createFreelancerHTML(freelancer) {
+            const statusClass = getStatusClass(freelancer.status);
+
+            return `
+                <div class="card-header">
+                    <div class="employee-info">
+                        <div class="employee-avatar freelancer">${freelancer.avatar}</div>
+                        <div class="employee-details">
+                            <h4>${freelancer.firstName} ${freelancer.lastName}</h4>
+                            <p class="employee-title">${freelancer.specialty} Contractor</p>
+                            <p class="employee-contact">
+                                <i class="fas fa-envelope"></i> ${freelancer.email}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="employee-badges">
+                        <span class="status-badge ${statusClass}">${freelancer.status}</span>
+                        <span class="freelancer-badge">Freelancer</span>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="employee-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-briefcase"></i>
+                            <div>
+                                <span class="stat-value">${freelancer.currentJobs}</span>
+                                <span class="stat-label">Active Jobs</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-check-circle"></i>
+                            <div>
+                                <span class="stat-value">${freelancer.completedJobs}</span>
+                                <span class="stat-label">Completed</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-star"></i>
+                            <div>
+                                <span class="stat-value">${freelancer.rating}</span>
+                                <span class="stat-label">Rating</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="employee-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>${freelancer.experience} years experience</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-money-bill"></i>
+                            <span>LKR ${freelancer.hourlyRate.toLocaleString()}/hour</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-handshake"></i>
+                            <span>Contract since ${formatDate(freelancer.contractDate)}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-actions">
+                    <button class="action-btn-sm info" onclick="viewEmployeeDetails('${freelancer.id}')">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
+                    <button class="action-btn-sm primary" onclick="assignJob('${freelancer.id}')">
+                        <i class="fas fa-plus"></i> Assign Job
+                    </button>
+                    <button class="action-btn-sm secondary" onclick="renewContract('${freelancer.id}')">
+                        <i class="fas fa-file-contract"></i> Renew
+                    </button>
+                </div>
+            `;
+        }
+
+        // Create application HTML
+        function createApplicationHTML(application) {
+            return `
+                <div class="card-header">
+                    <div class="employee-info">
+                        <div class="employee-avatar pending">${application.avatar}</div>
+                        <div class="employee-details">
+                            <h4>${application.firstName} ${application.lastName}</h4>
+                            <p class="employee-title">${application.specialty} Applicant</p>
+                            <p class="employee-contact">
+                                <i class="fas fa-envelope"></i> ${application.email}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="employee-badges">
+                        <span class="status-badge status-pending">Pending Review</span>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="employee-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>${application.experience} years experience</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-money-bill"></i>
+                            <span>Expected: LKR ${application.expectedRate.toLocaleString()}/hour</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-clock"></i>
+                            <span>Applied ${formatDate(application.applicationDate)}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-phone"></i>
+                            <span>${application.phone}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-actions">
+                    <button class="action-btn-sm success" onclick="approveApplication('${application.id}')">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                    <button class="action-btn-sm danger" onclick="rejectApplication('${application.id}')">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                    <button class="action-btn-sm info" onclick="viewApplication('${application.id}')">
+                        <i class="fas fa-eye"></i> Review
+                    </button>
+                </div>
+            `;
+        }
+
+        // Action handlers
+        function viewEmployeeDetails(employeeId) {
+            showNotification('Employee details would open here', 'info');
+        }
+
+        function assignJob(employeeId) {
+            showNotification('Job assignment modal would open here', 'info');
+        }
+
+        function editEmployee(employeeId) {
+            showNotification('Edit employee modal would open here', 'info');
+        }
+
+        function renewContract(freelancerId) {
+            showNotification('Contract renewal would start here', 'info');
+        }
+
+        function approveApplication(applicationId) {
+            if (confirm('Approve this application?')) {
+                showNotification('Application approved successfully!', 'success');
+                // Remove from applications array and add to employees
+                const appIndex = applicationsData.findIndex(app => app.id === applicationId);
+                if (appIndex > -1) {
+                    applicationsData.splice(appIndex, 1);
+                    loadWorkforce();
+                    updateStats();
+                }
+            }
+        }
+
+        function rejectApplication(applicationId) {
+            if (confirm('Reject this application? This action cannot be undone.')) {
+                showNotification('Application rejected', 'info');
+                const appIndex = applicationsData.findIndex(app => app.id === applicationId);
+                if (appIndex > -1) {
+                    applicationsData.splice(appIndex, 1);
+                    loadWorkforce();
+                    updateStats();
+                }
+            }
+        }
+
+        function viewApplication(applicationId) {
+            showNotification('Application details would open here', 'info');
+        }
+
+        function openJobPostingModal() {
+            document.getElementById('jobPostingDrawer').classList.add('active');
+            resetJobPostingForm();
+            showStep(1);
+        }
+
+        function closeJobPostingDrawer() {
+            document.getElementById('jobPostingDrawer').classList.remove('active');
+            resetJobPostingForm();
+        }
+
+        function resetJobPostingForm() {
+            document.getElementById('jobPostingForm').reset();
+            showStep(1);
+            updatePreview();
+        }
+
+        // Job Posting Step Navigation
+        let currentStep = 1;
+        const totalSteps = 3;
+
+        function showStep(step) {
+            currentStep = step;
+            
+            // Hide all steps
+            document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+            
+            // Show current step
+            document.getElementById(`step-${step}`).classList.add('active');
+            
+            // Update step indicators
+            document.querySelectorAll('.step-item').forEach((item, index) => {
+                const stepNum = index + 1;
+                item.classList.remove('active', 'completed');
+                
+                if (stepNum === step) {
+                    item.classList.add('active');
+                } else if (stepNum < step) {
+                    item.classList.add('completed');
+                }
+            });
+            
+            // Update navigation buttons
+            updateNavigationButtons();
+        }
+
+        function nextStep() {
+            if (validateCurrentStep() && currentStep < totalSteps) {
+                showStep(currentStep + 1);
+                if (currentStep === 3) {
+                    updatePreview();
+                }
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                showStep(currentStep - 1);
+            }
+        }
+
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const publishBtn = document.getElementById('publishBtn');
+            
+            prevBtn.style.display = currentStep === 1 ? 'none' : 'block';
+            nextBtn.style.display = currentStep === totalSteps ? 'none' : 'block';
+            publishBtn.style.display = currentStep === totalSteps ? 'block' : 'none';
+        }
+
+        function validateCurrentStep() {
+            const requiredFields = document.querySelectorAll(`#step-${currentStep} [required]`);
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.style.borderColor = '#e74c3c';
+                    isValid = false;
+                } else {
+                    field.style.borderColor = '';
+                }
+            });
+            
+            if (!isValid) {
+                showNotification('Please fill in all required fields', 'error');
+            }
+            
+            return isValid;
+        }
+
+        function updatePreview() {
+            const title = document.getElementById('jobTitle').value || 'Job Title';
+            const category = document.getElementById('jobCategory').value || 'Category';
+            const type = document.getElementById('employmentType').value || 'Type';
+            const minBudget = document.getElementById('minBudget').value || '0';
+            const maxBudget = document.getElementById('maxBudget').value || '0';
+            const description = document.getElementById('jobDescription').value || 'Job description will appear here...';
+            const skills = document.getElementById('requiredSkills').value;
+            const experience = document.getElementById('minExperience').value;
+            const location = document.getElementById('locationRequirements').value;
+            
+            document.getElementById('previewTitle').textContent = title;
+            document.getElementById('previewCategory').textContent = category;
+            document.getElementById('previewType').textContent = type;
+            document.getElementById('previewBudget').textContent = `LKR ${minBudget} - ${maxBudget}/hr`;
+            document.getElementById('previewDescription').textContent = description;
+            
+            // Update requirements list
+            const requirementsList = document.getElementById('previewRequirements');
+            requirementsList.innerHTML = '';
+            
+            if (experience) {
+                const li = document.createElement('li');
+                li.textContent = `Minimum ${experience} experience`;
+                requirementsList.appendChild(li);
+            }
+            
+            if (skills) {
+                skills.split('\n').forEach(skill => {
+                    if (skill.trim()) {
+                        const li = document.createElement('li');
+                        li.textContent = skill.trim();
+                        requirementsList.appendChild(li);
+                    }
+                });
+            }
+            
+            if (location) {
+                const li = document.createElement('li');
+                li.textContent = `Location: ${location}`;
+                requirementsList.appendChild(li);
+            }
+        }
+
+        function saveAsDraft() {
+            const formData = collectFormData();
+            formData.status = 'draft';
+            
+            // Here you would typically send to server
+            console.log('Saving as draft:', formData);
+            showNotification('Job posting saved as draft!', 'success');
+            closeJobPostingDrawer();
+        }
+
+        function publishJobPosting() {
+            if (!validateCurrentStep()) return;
+            
+            const formData = collectFormData();
+            formData.status = 'active';
+            formData.publishedAt = new Date().toISOString();
+            
+            // Here you would typically send to server
+            console.log('Publishing job posting:', formData);
+            showNotification('Job posting published successfully!', 'success');
+            closeJobPostingDrawer();
+            
+            // Refresh job postings list if we're on that section
+            if (document.getElementById('job-postingsSection').style.display !== 'none') {
+                loadJobPostings();
+            }
+        }
+
+        function collectFormData() {
+            return {
+                title: document.getElementById('jobTitle').value,
+                category: document.getElementById('jobCategory').value,
+                employmentType: document.getElementById('employmentType').value,
+                relatedProject: document.getElementById('relatedProject').value,
+                description: document.getElementById('jobDescription').value,
+                minExperience: document.getElementById('minExperience').value,
+                priorityLevel: document.getElementById('priorityLevel').value,
+                minBudget: parseInt(document.getElementById('minBudget').value) || 0,
+                maxBudget: parseInt(document.getElementById('maxBudget').value) || 0,
+                applicationDeadline: document.getElementById('applicationDeadline').value,
+                requiredSkills: document.getElementById('requiredSkills').value,
+                locationRequirements: document.getElementById('locationRequirements').value,
+                notifyRepairers: document.getElementById('notifyRelevantRepairers').checked,
+                allowDirectApplications: document.getElementById('allowDirectApplications').checked,
+                createdAt: new Date().toISOString()
+            };
+        }
+
+        // Job Postings Management Functions
+        function filterJobPostings(filter) {
+            // Update active tab
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Filter job postings
+            const postings = document.querySelectorAll('.job-posting-card');
+            postings.forEach(posting => {
+                const status = posting.dataset.status;
+                if (filter === 'all' || status === filter) {
+                    posting.style.display = 'block';
+                } else {
+                    posting.style.display = 'none';
+                }
+            });
+        }
+
+        function loadJobPostings() {
+            // Mock data - in real app this would come from server
+            const jobPostings = [
+                {
+                    id: 1,
+                    title: 'Senior HVAC Technician',
+                    category: 'hvac',
+                    status: 'active',
+                    applications: 12,
+                    createdAt: '2024-01-15',
+                    budget: 'LKR 2,500 - 3,200/hr'
+                },
+                {
+                    id: 2,
+                    title: 'Electrical Repair Specialist',
+                    category: 'electrical',
+                    status: 'active',
+                    applications: 8,
+                    createdAt: '2024-01-10',
+                    budget: 'LKR 2,000 - 2,800/hr'
+                },
+                {
+                    id: 3,
+                    title: 'Emergency Plumber',
+                    category: 'plumbing',
+                    status: 'draft',
+                    applications: 0,
+                    createdAt: '2024-01-20',
+                    budget: 'LKR 2,200 - 3,000/hr'
+                }
+            ];
+            
+            const container = document.querySelector('.job-postings-list');
+            container.innerHTML = '';
+            
+            jobPostings.forEach(posting => {
+                const postingCard = createJobPostingCard(posting);
+                container.appendChild(postingCard);
+            });
+        }
+
+        function createJobPostingCard(posting) {
+            const card = document.createElement('div');
+            card.className = 'job-posting-card';
+            card.dataset.status = posting.status;
+            
+            const statusClass = posting.status === 'active' ? 'success' : 
+                               posting.status === 'draft' ? 'warning' : 'secondary';
+            
+            card.innerHTML = `
+                <div class="posting-header">
+                    <div class="posting-title">
+                        <h5>${posting.title}</h5>
+                        <span class="posting-category">${posting.category}</span>
+                    </div>
+                    <div class="posting-status ${statusClass}">${posting.status}</div>
+                </div>
+                <div class="posting-meta">
+                    <span><i class="fas fa-users"></i> ${posting.applications} applications</span>
+                    <span><i class="fas fa-money-bill"></i> ${posting.budget}</span>
+                    <span><i class="fas fa-calendar"></i> ${formatDate(posting.createdAt)}</span>
+                </div>
+                <div class="posting-actions">
+                    <button class="action-btn-sm secondary" onclick="editJobPosting(${posting.id})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="action-btn-sm primary" onclick="viewApplications(${posting.id})">
+                        <i class="fas fa-eye"></i> View Applications
+                    </button>
+                    <button class="action-btn-sm danger" onclick="deleteJobPosting(${posting.id})">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function editJobPosting(id) {
+            showNotification('Edit job posting functionality will be implemented', 'info');
+        }
+
+        function viewApplications(id) {
+            showNotification('View applications functionality will be implemented', 'info');
+        }
+
+        function deleteJobPosting(id) {
+            if (confirm('Are you sure you want to delete this job posting?')) {
+                // Here you would delete from server
+                showNotification('Job posting deleted successfully', 'success');
+                loadJobPostings();
+            }
+        }
+
+        function addEmployee() {
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const specialty = document.getElementById('specialty').value;
+            const experience = document.getElementById('experience').value;
+            const hourlyRate = document.getElementById('hourlyRate').value;
+            const employmentType = document.getElementById('employmentType').value;
+
+            if (!firstName || !lastName || !email || !phone || !specialty || !experience || !hourlyRate || !employmentType) {
+                showNotification('Please fill all required fields', 'error');
+                return;
+            }
+
+            // Create new employee object
+            const newEmployee = {
+                id: 'EMP' + String(Date.now()).slice(-3),
+                firstName,
+                lastName,
+                email,
+                phone,
+                specialty,
+                experience: parseInt(experience),
+                hourlyRate: parseInt(hourlyRate),
+                employmentType,
+                status: 'active',
+                currentJobs: 0,
+                completedJobs: 0,
+                rating: 0,
+                address: document.getElementById('address').value || 'Not specified',
+                joinDate: new Date().toISOString().split('T')[0],
+                avatar: firstName.charAt(0) + lastName.charAt(0)
+            };
+
+            // Add to employees data (you would normally send this to server)
+            console.log('New employee added:', newEmployee);
+
+            closeAddEmployeeDrawer();
+            showNotification('Employee added successfully!', 'success');
+
+            // Refresh display if needed
+            updateStats();
+        }
+
+        // Utility functions
+        function updateStats() {
+            document.getElementById('totalEmployees').textContent = employeesData.length;
+            document.getElementById('activeEmployees').textContent = employeesData.filter(e => e.status === 'active').length;
+            document.getElementById('freelancers').textContent = freelancersData.length;
+
+            const allRatings = [...employeesData, ...freelancersData].filter(p => p.rating > 0);
+            const avgRating = allRatings.length > 0 ?
+                (allRatings.reduce((sum, p) => sum + p.rating, 0) / allRatings.length).toFixed(1) : '0';
+            document.getElementById('avgRating').textContent = avgRating;
+
+            document.getElementById('employeeCount').textContent = employeesData.length;
+            document.getElementById('freelancerCount').textContent = freelancersData.length;
+            document.getElementById('applicationCount').textContent = applicationsData.length;
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                'active': 'status-active',
+                'busy': 'status-busy',
+                'available': 'status-available',
+                'offline': 'status-offline',
+                'pending': 'status-pending'
+            };
+            return classes[status] || 'status-default';
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // Updated for drawer system - no longer needed
+        // function closeModal(modalId) {
+        //     document.getElementById(modalId).classList.remove('active');
+        // }
+
+        function showEmptyState() {
+            document.getElementById('emptyState').style.display = 'block';
+        }
+
+        function hideEmptyState() {
+            document.getElementById('emptyState').style.display = 'none';
+        }
+
+        function showNotification(message, type) {
+            // Remove existing notifications
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        function initializeSearch() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', function () {
+                const term = this.value.toLowerCase();
+                filterWorkforce(term);
+            });
+        }
+
+        function filterWorkforce(searchTerm) {
+            const cards = document.querySelectorAll('.workforce-card');
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // ====================================
+        // BULK STAFF MANAGEMENT FUNCTIONS
+        // ====================================
+
+        let staffRowCounter = 0;
+
+        function openBulkStaffModal() {
+            document.getElementById('bulkStaffDrawer').classList.add('active');
+            // Initialize with one row
+            if (document.querySelectorAll('.staff-row').length === 0) {
+                addStaffRow();
+            }
+        }
+
+        function closeBulkStaffDrawer() {
+            document.getElementById('bulkStaffDrawer').classList.remove('active');
+            // Reset form
+            document.getElementById('bulkStaffForm').reset();
+            document.getElementById('staffRowsContainer').innerHTML = '';
+            document.getElementById('uploadedFiles').innerHTML = '';
+            staffRowCounter = 0;
+            updateBulkStaffSummary();
+        }
+
+        function addStaffRow() {
+            staffRowCounter++;
+            const container = document.getElementById('staffRowsContainer');
+
+            const staffRow = document.createElement('div');
+            staffRow.className = 'staff-row';
+            staffRow.id = `staffRow${staffRowCounter}`;
+
+            staffRow.innerHTML = `
+                <div class="staff-row-content">
+                    <div class="skill-category-group">
+                        <label>Skill Category</label>
+                        <select class="skill-category-select" onchange="updateBulkStaffSummary()">
+                            <option value="">Select skill category</option>
+                            <option value="Carpenter">Carpenter</option>
+                            <option value="Electrician">Electrician</option>
+                            <option value="Plumber">Plumber</option>
+                            <option value="Painter">Painter</option>
+                            <option value="HVAC Technician">HVAC Technician</option>
+                            <option value="Mechanic">Mechanic</option>
+                            <option value="Welder">Welder</option>
+                            <option value="Mason">Mason</option>
+                            <option value="Roofer">Roofer</option>
+                            <option value="Landscaper">Landscaper</option>
+                            <option value="General Labor">General Labor</option>
+                        </select>
+                    </div>
+                    
+                    <div class="quantity-group">
+                        <label>Number of Staff</label>
+                        <div class="quantity-controls">
+                            <button type="button" class="quantity-btn minus" onclick="changeQuantity(${staffRowCounter}, -1)">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" class="quantity-input" value="1" min="1" max="99" 
+                                   id="quantity${staffRowCounter}" onchange="updateBulkStaffSummary()">
+                            <button type="button" class="quantity-btn plus" onclick="changeQuantity(${staffRowCounter}, 1)">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row-actions">
+                        <button type="button" class="remove-row-btn" onclick="removeStaffRow(${staffRowCounter})" 
+                                ${staffRowCounter === 1 ? 'style="display: none;"' : ''}>
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(staffRow);
+            updateBulkStaffSummary();
+
+            // Show remove button for all rows if there's more than one
+            updateRemoveButtons();
+        }
+
+        function removeStaffRow(rowId) {
+            const row = document.getElementById(`staffRow${rowId}`);
+            if (row) {
+                row.remove();
+                updateBulkStaffSummary();
+                updateRemoveButtons();
+            }
+        }
+
+        function changeQuantity(rowId, change) {
+            const quantityInput = document.getElementById(`quantity${rowId}`);
+            if (quantityInput) {
+                let currentValue = parseInt(quantityInput.value) || 1;
+                currentValue = Math.max(1, Math.min(99, currentValue + change));
+                quantityInput.value = currentValue;
+                updateBulkStaffSummary();
+            }
+        }
+
+        function updateRemoveButtons() {
+            const staffRows = document.querySelectorAll('.staff-row');
+            const removeButtons = document.querySelectorAll('.remove-row-btn');
+
+            removeButtons.forEach(btn => {
+                btn.style.display = staffRows.length > 1 ? 'flex' : 'none';
+            });
+        }
+
+        function updateBulkStaffSummary() {
+            const staffRows = document.querySelectorAll('.staff-row');
+            let totalCategories = 0;
+            let totalStaff = 0;
+
+            staffRows.forEach(row => {
+                const skillSelect = row.querySelector('.skill-category-select');
+                const quantityInput = row.querySelector('.quantity-input');
+
+                if (skillSelect && skillSelect.value) {
+                    totalCategories++;
+                }
+
+                if (quantityInput && quantityInput.value) {
+                    totalStaff += parseInt(quantityInput.value) || 0;
+                }
+            });
+
+            document.getElementById('totalCategories').textContent = totalCategories;
+            document.getElementById('totalStaff').textContent = totalStaff;
+        }
+
+        function saveBulkStaff() {
+            const staffRows = document.querySelectorAll('.staff-row');
+            const staffData = [];
+            let isValid = true;
+
+            staffRows.forEach(row => {
+                const skillSelect = row.querySelector('.skill-category-select');
+                const quantityInput = row.querySelector('.quantity-input');
+
+                if (!skillSelect.value) {
+                    showNotification('Please select a skill category for all rows', 'error');
+                    isValid = false;
+                    return;
+                }
+
+                if (!quantityInput.value || parseInt(quantityInput.value) < 1) {
+                    showNotification('Please enter a valid quantity for all rows', 'error');
+                    isValid = false;
+                    return;
+                }
+
+                staffData.push({
+                    skillCategory: skillSelect.value,
+                    quantity: parseInt(quantityInput.value)
+                });
+            });
+
+            if (!isValid) return;
+
+            if (staffData.length === 0) {
+                showNotification('Please add at least one staff category', 'error');
+                return;
+            }
+
+            // Get uploaded files
+            const fileInput = document.getElementById('verificationDocs');
+            const files = fileInput.files;
+
+            // Here you would normally send the data to the server
+            console.log('Bulk Staff Data:', staffData);
+            console.log('Verification Documents:', files);
+
+            // Simulate saving
+            showNotification('Staff summary saved successfully!', 'success');
+            closeBulkStaffDrawer();
+
+            // Update the workforce display if needed
+            updateStats();
+        }
+
+        // File upload handling
+        document.addEventListener('DOMContentLoaded', function () {
+            const fileInput = document.getElementById('verificationDocs');
+            const uploadArea = document.querySelector('.file-upload-area');
+            const uploadedFilesContainer = document.getElementById('uploadedFiles');
+
+            if (fileInput && uploadArea) {
+                // Click to upload
+                uploadArea.addEventListener('click', () => {
+                    fileInput.click();
+                });
+
+                // Drag and drop
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('drag-over');
+                });
+
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('drag-over');
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('drag-over');
+                    const files = e.dataTransfer.files;
+                    handleFileUpload(files);
+                });
+
+                // File input change
+                fileInput.addEventListener('change', (e) => {
+                    handleFileUpload(e.target.files);
+                });
+            }
+        });
+
+        function handleFileUpload(files) {
+            const uploadedFilesContainer = document.getElementById('uploadedFiles');
+            uploadedFilesContainer.innerHTML = '';
+
+            Array.from(files).forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'uploaded-file-item';
+
+                const fileIcon = getFileIcon(file.name);
+                const fileSize = formatFileSize(file.size);
+
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <i class="fas ${fileIcon}"></i>
+                        <div class="file-details">
+                            <span class="file-name">${file.name}</span>
+                            <span class="file-size">${fileSize}</span>
+                        </div>
+                    </div>
+                    <button type="button" class="remove-file-btn" onclick="removeFile(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+
+                uploadedFilesContainer.appendChild(fileItem);
+            });
+        }
+
+        function getFileIcon(fileName) {
+            const extension = fileName.split('.').pop().toLowerCase();
+            switch (extension) {
+                case 'pdf': return 'fa-file-pdf';
+                case 'doc':
+                case 'docx': return 'fa-file-word';
+                case 'jpg':
+                case 'jpeg':
+                case 'png': return 'fa-file-image';
+                default: return 'fa-file';
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function removeFile(button) {
+            button.parentElement.remove();
+        }
+
+        // ====================================
+        // STAFF REDUCTION MANAGEMENT FUNCTIONS
+        // ====================================
+
+        // Mock current staff data - in real app this would come from server
+        const currentStaffData = {
+            'Carpenter': { current: 8, active: 6 },
+            'Electrician': { current: 5, active: 5 },
+            'Plumber': { current: 4, active: 3 },
+            'Painter': { current: 3, active: 2 },
+            'HVAC Technician': { current: 2, active: 2 },
+            'Mechanic': { current: 1, active: 1 },
+            'Welder': { current: 2, active: 1 },
+            'Mason': { current: 1, active: 1 },
+            'General Labor': { current: 3, active: 2 }
+        };
+
+        let reductionRowCounter = 0;
+
+        function openReduceStaffModal() {
+            document.getElementById('reduceStaffDrawer').classList.add('active');
+            loadCurrentStaffOverview();
+            // Initialize with one row
+            if (document.querySelectorAll('.reduction-row').length === 0) {
+                addReductionRow();
+            }
+        }
+
+        function closeReduceStaffDrawer() {
+            document.getElementById('reduceStaffDrawer').classList.remove('active');
+            // Reset form
+            document.getElementById('reduceStaffForm').reset();
+            document.getElementById('reductionRowsContainer').innerHTML = '';
+            document.getElementById('reductionUploadedFiles').innerHTML = '';
+            reductionRowCounter = 0;
+            updateReductionSummary();
+        }
+
+        function loadCurrentStaffOverview() {
+            const container = document.getElementById('currentStaffOverview');
+            let html = '<div class="current-staff-grid">';
+            
+            Object.entries(currentStaffData).forEach(([category, data]) => {
+                html += `
+                    <div class="current-staff-item">
+                        <div class="staff-category-name">${category}</div>
+                        <div class="staff-counts">
+                            <span class="current-count">${data.current} Total</span>
+                            <span class="active-count">${data.active} Active</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function addReductionRow() {
+            reductionRowCounter++;
+            const container = document.getElementById('reductionRowsContainer');
+            
+            const reductionRow = document.createElement('div');
+            reductionRow.className = 'reduction-row';
+            reductionRow.id = `reductionRow${reductionRowCounter}`;
+            
+            reductionRow.innerHTML = `
+                <div class="reduction-row-content">
+                    <div class="skill-category-group">
+                        <label>Skill Category</label>
+                        <select class="reduction-category-select" onchange="updateReductionSummary()" data-row-id="${reductionRowCounter}">
+                            <option value="">Select skill category</option>
+                            ${Object.entries(currentStaffData).map(([category, data]) => 
+                                `<option value="${category}" data-current="${data.current}" data-active="${data.active}">${category} (${data.current} current)</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="reduction-quantity-group">
+                        <label>Number to Reduce</label>
+                        <div class="quantity-controls">
+                            <button type="button" class="quantity-btn minus" onclick="changeReductionQuantity(${reductionRowCounter}, -1)">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" class="reduction-quantity-input" value="1" min="1" max="1" 
+                                   id="reductionQuantity${reductionRowCounter}" onchange="updateReductionSummary()">
+                            <button type="button" class="quantity-btn plus" onclick="changeReductionQuantity(${reductionRowCounter}, 1)">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="reduction-info">
+                            <span class="max-reduction" id="maxReduction${reductionRowCounter}">Max: 0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row-actions">
+                        <button type="button" class="remove-row-btn" onclick="removeReductionRow(${reductionRowCounter})" 
+                                ${reductionRowCounter === 1 ? 'style="display: none;"' : ''}>
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(reductionRow);
+            updateReductionSummary();
+            updateReductionRemoveButtons();
+        }
+
+        function removeReductionRow(rowId) {
+            const row = document.getElementById(`reductionRow${rowId}`);
+            if (row) {
+                row.remove();
+                updateReductionSummary();
+                updateReductionRemoveButtons();
+            }
+        }
+
+        function changeReductionQuantity(rowId, change) {
+            const quantityInput = document.getElementById(`reductionQuantity${rowId}`);
+            const categorySelect = document.querySelector(`#reductionRow${rowId} .reduction-category-select`);
+            
+            if (quantityInput && categorySelect.value) {
+                const selectedOption = categorySelect.selectedOptions[0];
+                const maxReduction = parseInt(selectedOption.dataset.current) || 0;
+                
+                let currentValue = parseInt(quantityInput.value) || 1;
+                currentValue = Math.max(1, Math.min(maxReduction, currentValue + change));
+                quantityInput.value = currentValue;
+                updateReductionSummary();
+            }
+        }
+
+        function updateReductionRemoveButtons() {
+            const reductionRows = document.querySelectorAll('.reduction-row');
+            const removeButtons = document.querySelectorAll('.reduction-row .remove-row-btn');
+            
+            removeButtons.forEach(btn => {
+                btn.style.display = reductionRows.length > 1 ? 'flex' : 'none';
+            });
+        }
+
+        function updateReductionSummary() {
+            const reductionRows = document.querySelectorAll('.reduction-row');
+            let totalCategories = 0;
+            let totalReduction = 0;
+            let totalRemaining = 0;
+            
+            reductionRows.forEach(row => {
+                const categorySelect = row.querySelector('.reduction-category-select');
+                const quantityInput = row.querySelector('.reduction-quantity-input');
+                const maxReductionSpan = row.querySelector('.max-reduction');
+                
+                if (categorySelect && categorySelect.value) {
+                    totalCategories++;
+                    
+                    const selectedOption = categorySelect.selectedOptions[0];
+                    const currentStaff = parseInt(selectedOption.dataset.current) || 0;
+                    const reduction = parseInt(quantityInput.value) || 0;
+                    
+                    totalReduction += reduction;
+                    
+                    // Update max reduction display
+                    maxReductionSpan.textContent = `Max: ${currentStaff}`;
+                    
+                    // Update quantity input max attribute
+                    quantityInput.max = currentStaff;
+                    
+                    // Validate current value doesn't exceed max
+                    if (quantityInput.value > currentStaff) {
+                        quantityInput.value = currentStaff;
+                    }
+                }
+            });
+            
+            // Calculate total remaining staff across all categories
+            Object.values(currentStaffData).forEach(data => {
+                totalRemaining += data.current;
+            });
+            totalRemaining -= totalReduction;
+            
+            document.getElementById('totalReductionCategories').textContent = totalCategories;
+            document.getElementById('totalStaffReduction').textContent = totalReduction;
+            document.getElementById('totalRemainingStaff').textContent = totalRemaining;
+        }
+
+        function confirmStaffReduction() {
+            const reductionRows = document.querySelectorAll('.reduction-row');
+            const reductionData = [];
+            let isValid = true;
+            
+            reductionRows.forEach(row => {
+                const categorySelect = row.querySelector('.reduction-category-select');
+                const quantityInput = row.querySelector('.reduction-quantity-input');
+                
+                if (!categorySelect.value) {
+                    showNotification('Please select a skill category for all rows', 'error');
+                    isValid = false;
+                    return;
+                }
+                
+                const reduction = parseInt(quantityInput.value);
+                const selectedOption = categorySelect.selectedOptions[0];
+                const currentStaff = parseInt(selectedOption.dataset.current);
+                
+                if (!reduction || reduction < 1) {
+                    showNotification('Please enter a valid reduction quantity for all rows', 'error');
+                    isValid = false;
+                    return;
+                }
+                
+                if (reduction > currentStaff) {
+                    showNotification(`Cannot reduce more staff than currently employed in ${categorySelect.value}`, 'error');
+                    isValid = false;
+                    return;
+                }
+                
+                reductionData.push({
+                    skillCategory: categorySelect.value,
+                    reductionQuantity: reduction,
+                    currentStaff: currentStaff,
+                    remainingStaff: currentStaff - reduction
+                });
+            });
+            
+            if (!isValid) return;
+            
+            if (reductionData.length === 0) {
+                showNotification('Please add at least one reduction category', 'error');
+                return;
+            }
+            
+            // Show confirmation dialog
+            const totalReduction = reductionData.reduce((sum, item) => sum + item.reductionQuantity, 0);
+            if (confirm(`Are you sure you want to reduce ${totalReduction} staff members across ${reductionData.length} categories? This action cannot be undone.`)) {
+                // Get uploaded files
+                const fileInput = document.getElementById('reductionDocs');
+                const files = fileInput.files;
+                
+                // Here you would normally send the data to the server
+                console.log('Staff Reduction Data:', reductionData);
+                console.log('Reduction Documentation:', files);
+                
+                // Simulate saving
+                showNotification('Staff reduction processed successfully!', 'success');
+                closeReduceStaffDrawer();
+                
+                // Update the workforce display
+                updateStatsAfterReduction(reductionData);
+                updateStats();
+            }
+        }
+
+        function updateStatsAfterReduction(reductionData) {
+            // Update the mock data to reflect reductions
+            reductionData.forEach(reduction => {
+                if (currentStaffData[reduction.skillCategory]) {
+                    currentStaffData[reduction.skillCategory].current -= reduction.reductionQuantity;
+                    // Also reduce active count proportionally, but not below 0
+                    const activeReduction = Math.min(
+                        currentStaffData[reduction.skillCategory].active,
+                        Math.ceil(reduction.reductionQuantity * 0.8) // Assume 80% of reduced staff were active
+                    );
+                    currentStaffData[reduction.skillCategory].active -= activeReduction;
+                }
+            });
+        }
+
+        // File upload handling for reduction docs (similar to bulk staff)
+        document.addEventListener('DOMContentLoaded', function() {
+            const reductionFileInput = document.getElementById('reductionDocs');
+            const reductionUploadArea = document.querySelector('#reduceStaffDrawer .file-upload-area');
+            const reductionUploadedFilesContainer = document.getElementById('reductionUploadedFiles');
+            
+            if (reductionFileInput && reductionUploadArea) {
+                // Click to upload
+                reductionUploadArea.addEventListener('click', () => {
+                    reductionFileInput.click();
+                });
+                
+                // Drag and drop
+                reductionUploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    reductionUploadArea.classList.add('drag-over');
+                });
+                
+                reductionUploadArea.addEventListener('dragleave', () => {
+                    reductionUploadArea.classList.remove('drag-over');
+                });
+                
+                reductionUploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    reductionUploadArea.classList.remove('drag-over');
+                    const files = e.dataTransfer.files;
+                    handleReductionFileUpload(files);
+                });
+                
+                // File input change
+                reductionFileInput.addEventListener('change', (e) => {
+                    handleReductionFileUpload(e.target.files);
+                });
+            }
+        });
+
+        function handleReductionFileUpload(files) {
+            const uploadedFilesContainer = document.getElementById('reductionUploadedFiles');
+            uploadedFilesContainer.innerHTML = '';
+            
+            Array.from(files).forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'uploaded-file-item';
+                
+                const fileIcon = getFileIcon(file.name);
+                const fileSize = formatFileSize(file.size);
+                
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <i class="fas ${fileIcon}"></i>
+                        <div class="file-details">
+                            <span class="file-name">${file.name}</span>
+                            <span class="file-size">${fileSize}</span>
+                        </div>
+                    </div>
+                    <button type="button" class="remove-file-btn" onclick="removeReductionFile(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                uploadedFilesContainer.appendChild(fileItem);
+            });
+        }
+
+        function removeReductionFile(button) {
+            button.parentElement.remove();
+        }
+    </script>
+
+    <!-- Add Employee Drawer -->
+    <!-- Job Posting Drawer -->
+    <div class="drawer-overlay" id="jobPostingDrawer">
+        <div class="drawer-panel large-drawer">
+            <div class="job-posting-header">
+                <h3><i class="fas fa-bullhorn"></i> Create New Job Posting</h3>
+                <button class="close-drawer" onclick="closeJobPostingDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="step-progress">
+                    <div class="step-item active" data-step="1">
+                        <div class="step-circle">1</div>
+                        <span class="step-label">Basic Info</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step-item" data-step="2">
+                        <div class="step-circle">2</div>
+                        <span class="step-label">Details</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step-item" data-step="3">
+                        <div class="step-circle">3</div>
+                        <span class="step-label">Review</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="job-posting-content">
+                <form id="jobPostingForm" class="job-posting-form">
+                    <!-- Step 1: Basic Information -->
+                    <div class="form-step active" id="step-1">
+                        <div class="step-content">
+                            <h4>Basic Information</h4>
+                            <p class="step-description">Let's start with the basics about your job posting</p>
+                            
+                            <div class="form-group">
+                                <label>Job Title *</label>
+                                <input type="text" id="jobTitle" placeholder="e.g., Senior HVAC Technician" required>
+                                <small>Make it clear and specific to attract the right candidates</small>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Category *</label>
+                                    <select id="jobCategory" required>
+                                        <option value="">Select a category</option>
+                                        <option value="plumbing">Plumbing</option>
+                                        <option value="electrical">Electrical</option>
+                                        <option value="hvac">HVAC</option>
+                                        <option value="carpentry">Carpentry</option>
+                                        <option value="roofing">Roofing</option>
+                                        <option value="painting">Painting</option>
+                                        <option value="general">General Repairs</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Employment Type *</label>
+                                    <select id="employmentType" required>
+                                        <option value="">Select type</option>
+                                        <option value="freelance">Freelance</option>
+                                        <option value="contract">Contract</option>
+                                        <option value="part-time">Part Time</option>
+                                        <option value="project-based">Project Based</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Related Project (Optional)</label>
+                                <select id="relatedProject">
+                                    <option value="">Select a project if applicable</option>
+                                    <option value="project1">Commercial Building Renovation</option>
+                                    <option value="project2">Residential Complex Maintenance</option>
+                                    <option value="project3">Hospital HVAC System Upgrade</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Details -->
+                    <div class="form-step" id="step-2">
+                        <div class="step-content">
+                            <h4>Job Details</h4>
+                            <p class="step-description">Provide detailed information about the position</p>
+                            
+                            <div class="form-group">
+                                <label>Job Description *</label>
+                                <textarea id="jobDescription" rows="6" placeholder="Describe the role, responsibilities, and what the freelancer will be doing..." required></textarea>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Minimum Experience *</label>
+                                    <select id="minExperience" required>
+                                        <option value="">Select experience level</option>
+                                        <option value="entry">Entry Level (0-1 years)</option>
+                                        <option value="junior">Junior (1-3 years)</option>
+                                        <option value="mid">Mid Level (3-5 years)</option>
+                                        <option value="senior">Senior (5-10 years)</option>
+                                        <option value="expert">Expert (10+ years)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Priority Level *</label>
+                                    <select id="priorityLevel" required>
+                                        <option value="">Select priority</option>
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="urgent">Urgent</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Budget Range (LKR/hour) *</label>
+                                    <div class="budget-range">
+                                        <input type="number" id="minBudget" placeholder="Min" min="0" step="100" required>
+                                        <span>to</span>
+                                        <input type="number" id="maxBudget" placeholder="Max" min="0" step="100" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Application Deadline</label>
+                                    <input type="date" id="applicationDeadline">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Required Skills & Qualifications</label>
+                                <textarea id="requiredSkills" rows="4" placeholder="List specific skills, certifications, tools familiarity, etc."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Location Requirements</label>
+                                <input type="text" id="locationRequirements" placeholder="e.g., Colombo, Must have own transportation">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Review -->
+                    <div class="form-step" id="step-3">
+                        <div class="step-content">
+                            <h4>Review & Publish</h4>
+                            <p class="step-description">Review your job posting before publishing</p>
+                            
+                            <div class="job-preview">
+                                <div class="preview-header">
+                                    <h5 id="previewTitle">Job Title</h5>
+                                    <div class="preview-meta">
+                                        <span id="previewCategory">Category</span> • 
+                                        <span id="previewType">Type</span> • 
+                                        <span id="previewBudget">Budget</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="preview-description">
+                                    <p id="previewDescription">Job description will appear here...</p>
+                                </div>
+                                
+                                <div class="preview-requirements">
+                                    <strong>Requirements:</strong>
+                                    <ul id="previewRequirements"></ul>
+                                </div>
+                            </div>
+
+                            <div class="posting-options">
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="notifyRelevantRepairers" checked>
+                                        Notify relevant repairers in the system
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="allowDirectApplications" checked>
+                                        Allow direct applications through the platform
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="form-navigation">
+                        <button type="button" class="nav-btn secondary" id="prevBtn" onclick="previousStep()" style="display: none;">
+                            <i class="fas fa-arrow-left"></i> Previous
+                        </button>
+                        <div class="nav-actions">
+                            <button type="button" class="nav-btn secondary" onclick="saveAsDraft()">
+                                <i class="fas fa-save"></i> Save as Draft
+                            </button>
+                            <button type="button" class="nav-btn primary" id="nextBtn" onclick="nextStep()">
+                                Next <i class="fas fa-arrow-right"></i>
+                            </button>
+                            <button type="button" class="nav-btn success" id="publishBtn" onclick="publishJobPosting()" style="display: none;">
+                                <i class="fas fa-bullhorn"></i> Publish Job Posting
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Details Drawer -->
+    <div class="drawer-overlay" id="applicationDetailsDrawer">
+        <div class="drawer-panel">
+            <div class="drawer-header">
+                <h3><i class="fas fa-file-alt"></i> Application Details</h3>
+                <button class="close-drawer" onclick="closeApplicationDetailsDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="drawer-content">
+                <div class="drawer-tabs">
+                    <button class="drawer-tab active" data-tab="personal">Personal Info</button>
+                    <button class="drawer-tab" data-tab="professional">Professional</button>
+                    <button class="drawer-tab" data-tab="additional">Additional</button>
+                </div>
+
+                <!-- Personal Information Tab -->
+                <div class="drawer-tab-content active" id="personal">
+                    <div class="details-section">
+                        <h4><i class="fas fa-user"></i> Personal Information</h4>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <label>Full Name:</label>
+                                <span id="modalFullName">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Email:</label>
+                                <span id="modalEmail">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Phone:</label>
+                                <span id="modalPhone">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Application Date:</label>
+                                <span id="modalApplicationDate">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Professional Information Tab -->
+                <div class="drawer-tab-content" id="professional">
+                    <div class="details-section">
+                        <h4><i class="fas fa-briefcase"></i> Professional Details</h4>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <label>Specialty:</label>
+                                <span id="modalSpecialty">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Experience:</label>
+                                <span id="modalExperience">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Expected Rate:</label>
+                                <span id="modalExpectedRate">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Availability:</label>
+                                <span id="modalAvailability">Immediate</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information Tab -->
+                <div class="drawer-tab-content" id="additional">
+                    <div class="details-section">
+                        <h4><i class="fas fa-info-circle"></i> Additional Information</h4>
+                        <div class="detail-item full-width">
+                            <label>Cover Letter:</label>
+                            <div class="cover-letter" id="modalCoverLetter">
+                                Professional with strong background in repair services. Committed to quality work and
+                                customer satisfaction.
+                            </div>
+                        </div>
+                        <div class="detail-item full-width">
+                            <label>Skills:</label>
+                            <div class="skills-list" id="modalSkills">
+                                <span class="skill-tag">Problem Solving</span>
+                                <span class="skill-tag">Customer Service</span>
+                                <span class="skill-tag">Technical Repair</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="drawer-actions">
+                    <button class="drawer-btn secondary" onclick="closeApplicationDetailsDrawer()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    <button class="drawer-btn danger" onclick="rejectApplicationFromDrawer()">
+                        <i class="fas fa-times-circle"></i> Decline
+                    </button>
+                    <button class="drawer-btn success" onclick="approveApplicationFromDrawer()">
+                        <i class="fas fa-check-circle"></i> Accept Application
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Bulk Staff Drawer -->
+    <div class="drawer-overlay" id="bulkStaffDrawer">
+        <div class="drawer-panel">
+            <div class="drawer-header">
+                <h3><i class="fas fa-users"></i> Add Permanent Staff Summary</h3>
+                <button class="close-drawer" onclick="closeBulkStaffDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="drawer-content">
+                <form id="bulkStaffForm" class="bulk-staff-form">
+                    <div class="form-section">
+                        <h4><i class="fas fa-layer-group"></i> Staff Categories</h4>
+                        <p class="section-description">Add multiple skill categories with the number of staff needed for
+                            each.</p>
+
+                        <div class="staff-rows-container" id="staffRowsContainer">
+                            <!-- Initial row will be added by JavaScript -->
+                        </div>
+
+                        <button type="button" class="add-row-btn" onclick="addStaffRow()">
+                            <i class="fas fa-plus"></i> Add Another Category
+                        </button>
+                    </div>
+
+                    <div class="form-section">
+                        <h4><i class="fas fa-file-upload"></i> Verification Documents</h4>
+                        <p class="section-description">Upload any relevant verification documents for the staff
+                            (optional).</p>
+
+                        <div class="file-upload-area">
+                            <input type="file" id="verificationDocs" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                            <div class="file-upload-content">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Click to upload or drag files here</p>
+                                <span class="file-types">Supported: PDF, DOC, DOCX, JPG, PNG</span>
+                            </div>
+                        </div>
+
+                        <div class="uploaded-files" id="uploadedFiles"></div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4><i class="fas fa-chart-bar"></i> Summary</h4>
+                        <div class="staff-summary">
+                            <div class="summary-item">
+                                <span class="summary-label">Total Categories:</span>
+                                <span class="summary-value" id="totalCategories">0</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Total Staff:</span>
+                                <span class="summary-value" id="totalStaff">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="drawer-btn secondary" onclick="closeBulkStaffDrawer()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="drawer-btn primary" onclick="saveBulkStaff()">
+                            <i class="fas fa-save"></i> Save Staff Summary
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reduce Staff Drawer -->
+    <div class="drawer-overlay" id="reduceStaffDrawer">
+        <div class="drawer-panel">
+            <div class="drawer-header">
+                <h3><i class="fas fa-user-minus"></i> Reduce Staff Count</h3>
+                <button class="close-drawer" onclick="closeReduceStaffDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="drawer-content">
+                <form id="reduceStaffForm" class="reduce-staff-form">
+                    <div class="form-section">
+                        <h4><i class="fas fa-info-circle"></i> Current Staff Overview</h4>
+                        <p class="section-description">Select categories to reduce staff count. Current staffing levels are shown for reference.</p>
+                        
+                        <div class="current-staff-overview" id="currentStaffOverview">
+                            <!-- Current staff data will be loaded here -->
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4><i class="fas fa-layer-group"></i> Reduction Categories</h4>
+                        <p class="section-description">Select skill categories and specify how many staff to reduce from each.</p>
+
+                        <div class="reduction-rows-container" id="reductionRowsContainer">
+                            <!-- Reduction rows will be added by JavaScript -->
+                        </div>
+
+                        <button type="button" class="add-row-btn" onclick="addReductionRow()">
+                            <i class="fas fa-plus"></i> Add Another Category
+                        </button>
+                    </div>
+
+                    <div class="form-section">
+                        <h4><i class="fas fa-file-upload"></i> Documentation</h4>
+                        <p class="section-description">Upload any relevant documentation for the staff reduction (optional).</p>
+
+                        <div class="file-upload-area">
+                            <input type="file" id="reductionDocs" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                            <div class="file-upload-content">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Click to upload or drag files here</p>
+                                <span class="file-types">Supported: PDF, DOC, DOCX, JPG, PNG</span>
+                            </div>
+                        </div>
+
+                        <div class="uploaded-files" id="reductionUploadedFiles"></div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Reduction Impact</h4>
+                        <div class="reduction-summary">
+                            <div class="impact-warning">
+                                <i class="fas fa-warning"></i>
+                                <span>Please review the impact before confirming staff reduction.</span>
+                            </div>
+                            <div class="summary-grid">
+                                <div class="summary-item">
+                                    <span class="summary-value reduction-total" id="totalReductionCategories">0</span>
+                                    <span class="summary-label">Categories Affected</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-value reduction-total" id="totalStaffReduction">0</span>
+                                    <span class="summary-label">Total Staff Reduction</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-value remaining-total" id="totalRemainingStaff">0</span>
+                                    <span class="summary-label">Remaining Staff</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="drawer-btn secondary" onclick="closeReduceStaffDrawer()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="drawer-btn danger" onclick="confirmStaffReduction()">
+                            <i class="fas fa-user-minus"></i> Confirm Reduction
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+</body>
+
+</html>

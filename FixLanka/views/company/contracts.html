@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FixLanka - Contracts Management</title>
+    <link rel="stylesheet" href="../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
+    <link rel="stylesheet" href="../../assets/css/company/topbar.css">
+    <link rel="stylesheet" href="../../assets/css/company/contracts.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- Hidden checkbox for CSS toggle -->
+    <input type="checkbox" id="sidebar-toggle">
+
+    <div class="dashboard-container">
+        <!-- Sidebar Component -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container"></div>
+
+            <!-- Contracts Page Content -->
+            <section class="contracts-page">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1><i class="fas fa-handshake"></i> Contracts Management</h1>
+                        <p>Manage all your service contracts and agreements</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" id="exportBtn">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters and Search -->
+                <div class="contracts-controls">
+                    <div class="filter-section">
+                        <div class="filter-select-wrapper">
+                            <select class="filter-select" id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="pending">Pending</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                                <option value="expired">Expired</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down filter-select-icon"></i>
+                        </div>
+                        <div class="filter-select-wrapper">
+                            <select class="filter-select" id="typeFilter">
+                                <option value="">All Types</option>
+                                <option value="maintenance">Maintenance</option>
+                                <option value="repair">Repair</option>
+                                <option value="installation">Installation</option>
+                                <option value="renovation">Renovation</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down filter-select-icon"></i>
+                        </div>
+                        <div class="filter-select-wrapper">
+                            <select class="filter-select" id="dateFilter">
+                                <option value="">All Dates</option>
+                                <option value="this-week">This Week</option>
+                                <option value="this-month">This Month</option>
+                                <option value="last-month">Last Month</option>
+                                <option value="this-year">This Year</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down filter-select-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="view-options">
+                        <button class="view-btn active" data-view="grid">
+                            <i class="fas fa-th-large"></i>
+                        </button>
+                        <button class="view-btn" data-view="list">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Contracts List/Grid -->
+                <div class="contracts-container" id="contractsContainer">
+                    <!-- Contract Card 1 -->
+                    <div class="contract-card" data-status="active" data-type="renovation">
+                        <div class="contract-header">
+                            <div class="contract-info">
+                                <h3>Office Renovation Project</h3>
+                                <p class="client-name">
+                                    <i class="fas fa-building"></i>
+                                    ABC Corporation
+                                </p>
+                            </div>
+                            <div class="contract-status active">
+                                <i class="fas fa-play-circle"></i>
+                                Active
+                            </div>
+                        </div>
+
+                        <div class="contract-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Contract Value:</span>
+                                <span class="detail-value">LKR 250,000</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Start Date:</span>
+                                <span class="detail-value">Aug 15, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">End Date:</span>
+                                <span class="detail-value">Oct 15, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Progress:</span>
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 65%"></div>
+                                    </div>
+                                    <span class="progress-text">65%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="contract-actions">
+                            <button class="action-btn view" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn edit" title="Edit Contract">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn download" title="Download Contract">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contract Card 2 -->
+                    <div class="contract-card" data-status="pending" data-type="maintenance">
+                        <div class="contract-header">
+                            <div class="contract-info">
+                                <h3>HVAC Maintenance Agreement</h3>
+                                <p class="client-name">
+                                    <i class="fas fa-user"></i>
+                                    Johnson Residence
+                                </p>
+                            </div>
+                            <div class="contract-status pending">
+                                <i class="fas fa-clock"></i>
+                                Pending
+                            </div>
+                        </div>
+
+                        <div class="contract-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Contract Value:</span>
+                                <span class="detail-value">LKR 75,000</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Proposed Start:</span>
+                                <span class="detail-value">Sep 1, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Duration:</span>
+                                <span class="detail-value">6 months</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Status:</span>
+                                <span class="detail-value">Awaiting client signature</span>
+                            </div>
+                        </div>
+
+                        <div class="contract-actions">
+                            <button class="action-btn view" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn edit" title="Edit Contract">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn send" title="Send for Signature">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contract Card 3 -->
+                    <div class="contract-card" data-status="active" data-type="repair">
+                        <div class="contract-header">
+                            <div class="contract-info">
+                                <h3>Plumbing System Overhaul</h3>
+                                <p class="client-name">
+                                    <i class="fas fa-hotel"></i>
+                                    Green Valley Resort
+                                </p>
+                            </div>
+                            <div class="contract-status active">
+                                <i class="fas fa-play-circle"></i>
+                                Active
+                            </div>
+                        </div>
+
+                        <div class="contract-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Contract Value:</span>
+                                <span class="detail-value">LKR 180,000</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Start Date:</span>
+                                <span class="detail-value">Aug 18, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">End Date:</span>
+                                <span class="detail-value">Sep 30, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Progress:</span>
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 42%"></div>
+                                    </div>
+                                    <span class="progress-text">42%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="contract-actions">
+                            <button class="action-btn view" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn edit" title="Edit Contract">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn download" title="Download Contract">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contract Card 4 -->
+                    <div class="contract-card" data-status="completed" data-type="installation">
+                        <div class="contract-header">
+                            <div class="contract-info">
+                                <h3>Electrical System Installation</h3>
+                                <p class="client-name">
+                                    <i class="fas fa-building"></i>
+                                    Modern Apartments
+                                </p>
+                            </div>
+                            <div class="contract-status completed">
+                                <i class="fas fa-check-circle"></i>
+                                Completed
+                            </div>
+                        </div>
+
+                        <div class="contract-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Contract Value:</span>
+                                <span class="detail-value">LKR 320,000</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Completed:</span>
+                                <span class="detail-value">Aug 20, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Duration:</span>
+                                <span class="detail-value">3 weeks</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Rating:</span>
+                                <div class="rating-container">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <span class="rating-text">5.0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="contract-actions">
+                            <button class="action-btn view" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn download" title="Download Contract">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="action-btn invoice" title="Generate Invoice">
+                                <i class="fas fa-file-invoice"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contract Card 5 -->
+                    <div class="contract-card" data-status="pending" data-type="maintenance">
+                        <div class="contract-header">
+                            <div class="contract-info">
+                                <h3>Annual Maintenance Contract</h3>
+                                <p class="client-name">
+                                    <i class="fas fa-industry"></i>
+                                    Tech Solutions Ltd
+                                </p>
+                            </div>
+                            <div class="contract-status pending">
+                                <i class="fas fa-clock"></i>
+                                Pending
+                            </div>
+                        </div>
+
+                        <div class="contract-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Contract Value:</span>
+                                <span class="detail-value">LKR 450,000</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Proposed Start:</span>
+                                <span class="detail-value">Sep 15, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Duration:</span>
+                                <span class="detail-value">12 months</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Status:</span>
+                                <span class="detail-value">Under review</span>
+                            </div>
+                        </div>
+
+                        <div class="contract-actions">
+                            <button class="action-btn view" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn edit" title="Edit Contract">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn send" title="Send for Review">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contract Card 6 -->
+                    <div class="contract-card" data-status="active" data-type="renovation">
+                        <div class="contract-header">
+                            <div class="contract-info">
+                                <h3>Kitchen Renovation</h3>
+                                <p class="client-name">
+                                    <i class="fas fa-home"></i>
+                                    Silva Family
+                                </p>
+                            </div>
+                            <div class="contract-status active">
+                                <i class="fas fa-play-circle"></i>
+                                Active
+                            </div>
+                        </div>
+
+                        <div class="contract-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Contract Value:</span>
+                                <span class="detail-value">LKR 95,000</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Start Date:</span>
+                                <span class="detail-value">Aug 22, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">End Date:</span>
+                                <span class="detail-value">Sep 15, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Progress:</span>
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 30%"></div>
+                                    </div>
+                                    <span class="progress-text">30%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="contract-actions">
+                            <button class="action-btn view" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn edit" title="Edit Contract">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn download" title="Download Contract">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Load More / Infinite Scroll -->
+                <div class="load-more-container">
+                    <button class="load-more-btn" id="loadMoreBtn">
+                        <i class="fas fa-plus"></i>
+                        Load More Contracts
+                    </button>
+                </div>
+
+                <!-- Scroll Loading Indicator -->
+                <div class="scroll-loading" id="scrollLoading">
+                    <div class="loading-spinner"></div>
+                </div>
+
+                <!-- End of Contracts Indicator -->
+                <div class="contracts-end" id="contractsEnd" style="display: none;">
+                    <i class="fas fa-check-circle"></i>
+                    You've reached the end of all contracts
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-to-top" id="scrollToTop">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <!-- Contract Details Modal -->
+    <div class="modal-overlay" id="contractModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Contract Details</h2>
+                <button class="modal-close" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content" id="modalContent">
+                <!-- This will be populated dynamically with comprehensive contract details -->
+
+                <!-- Default content structure -->
+                <div class="contract-modal-header">
+                    <div class="contract-modal-title">
+                        <h1 id="modalContractTitle">Contract Title</h1>
+                        <p class="contract-id" id="modalContractId">CNT-2025-001</p>
+                    </div>
+                    <div class="contract-status-badge" id="modalContractStatus">
+                        Active
+                    </div>
+                </div>
+
+                <div class="contract-modal-body">
+                    <div class="contract-main-info">
+                        <!-- Client Information -->
+                        <div class="modal-section">
+                            <h3><i class="fas fa-user-tie"></i> Client Information</h3>
+                            <div class="modal-info-grid">
+                                <div class="modal-info-item">
+                                    <label>Client Name</label>
+                                    <div class="value" id="modalClientName">ABC Corporation</div>
+                                </div>
+                                <div class="modal-info-item">
+                                    <label>Contact Person</label>
+                                    <div class="value" id="modalContactPerson">John Doe</div>
+                                </div>
+                                <div class="modal-info-item">
+                                    <label>Email</label>
+                                    <div class="value" id="modalClientEmail">john@abc.com</div>
+                                </div>
+                                <div class="modal-info-item">
+                                    <label>Phone</label>
+                                    <div class="value" id="modalClientPhone">+94 77 123 4567</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Project Details -->
+                        <div class="modal-section">
+                            <h3><i class="fas fa-project-diagram"></i> Project Details</h3>
+                            <div class="contract-description" id="modalDescription">
+                                This is a comprehensive project description that will provide detailed information about
+                                the scope of work, deliverables, and requirements.
+                            </div>
+                            <div class="modal-info-grid">
+                                <div class="modal-info-item">
+                                    <label>Project Type</label>
+                                    <div class="value" id="modalProjectType">Renovation</div>
+                                </div>
+                                <div class="modal-info-item">
+                                    <label>Location</label>
+                                    <div class="value" id="modalLocation">Colombo, Sri Lanka</div>
+                                </div>
+                                <div class="modal-info-item">
+                                    <label>Start Date</label>
+                                    <div class="value" id="modalStartDate">2025-01-15</div>
+                                </div>
+                                <div class="modal-info-item">
+                                    <label>End Date</label>
+                                    <div class="value" id="modalEndDate">2025-03-15</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Progress Tracking -->
+                        <div class="modal-section">
+                            <h3><i class="fas fa-chart-line"></i> Progress Tracking</h3>
+                            <div class="progress-section">
+                                <div class="modal-progress-bar">
+                                    <div class="modal-progress-fill" id="modalProgressFill" style="width: 65%"></div>
+                                </div>
+                                <div class="progress-details">
+                                    <span class="progress-text" id="modalProgressText">65% Complete</span>
+                                    <span id="modalProgressStage">Design Phase</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timeline -->
+                        <div class="modal-section">
+                            <h3><i class="fas fa-history"></i> Project Timeline</h3>
+                            <div class="contract-timeline" id="modalTimeline">
+                                <div class="timeline-item">
+                                    <div class="timeline-icon">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <h4>Project Started</h4>
+                                        <p>Contract signed and project officially commenced</p>
+                                        <div class="timeline-date">January 15, 2025</div>
+                                    </div>
+                                </div>
+                                <div class="timeline-item">
+                                    <div class="timeline-icon">
+                                        <i class="fas fa-cog"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <h4>Planning Phase</h4>
+                                        <p>Detailed planning and resource allocation completed</p>
+                                        <div class="timeline-date">January 20, 2025</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Attachments -->
+                        <div class="modal-section">
+                            <h3><i class="fas fa-paperclip"></i> Contract Documents</h3>
+                            <div class="contract-attachments">
+                                <div class="attachment-list" id="modalAttachments">
+                                    <div class="attachment-item">
+                                        <div class="attachment-icon">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </div>
+                                        <div class="attachment-info">
+                                            <h5>Main Contract Agreement</h5>
+                                            <p>PDF • 2.4 MB • Last modified: Jan 15, 2025</p>
+                                        </div>
+                                    </div>
+                                    <div class="attachment-item">
+                                        <div class="attachment-icon">
+                                            <i class="fas fa-file-image"></i>
+                                        </div>
+                                        <div class="attachment-info">
+                                            <h5>Project Blueprints</h5>
+                                            <p>Images • 15.2 MB • Last modified: Jan 10, 2025</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="contract-sidebar-info">
+                        <!-- Financial Information -->
+                        <div class="modal-section">
+                            <h3><i class="fas fa-dollar-sign"></i> Financial Details</h3>
+                            <div class="modal-info-grid">
+                                <div class="modal-info-item">
+                                    <label>Contract Value</label>
+                                    <div class="value highlight" id="modalContractValue">LKR 250,000</div>
+                                </div>
+                                <div class="modal-info-item">
+                                    <label>Paid Amount</label>
+                                    <div class="value" id="modalPaidAmount">LKR 100,000</div>
+                                </div>
+                                <div class="modal-info-item">
+                                    <label>Remaining</label>
+                                    <div class="value" id="modalRemainingAmount">LKR 150,000</div>
+                                </div>
+                                <div class="modal-info-item">
+                                    <label>Payment Terms</label>
+                                    <div class="value" id="modalPaymentTerms">30 Days</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Key Information -->
+                        <div class="modal-section">
+                            <h3><i class="fas fa-info-circle"></i> Contract Info</h3>
+                            <div class="modal-info-grid">
+                                <div class="modal-info-item">
+                                    <label>Contract Type</label>
+                                    <div class="value" id="modalContractType">Fixed Price</div>
+                                </div>
+                                <div class="modal-info-item">
+                                    <label>Duration</label>
+                                    <div class="value" id="modalDuration">60 Days</div>
+                                </div>
+                                <div class="modal-info-item">
+                                    <label>Priority</label>
+                                    <div class="value" id="modalPriority">High</div>
+                                </div>
+                                <div class="modal-info-item">
+                                    <label>Assigned Team</label>
+                                    <div class="value" id="modalTeam">Team Alpha</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer-actions">
+                    <div class="modal-footer-left">
+                        <button class="btn btn-outline" id="modalDownload">
+                            <i class="fas fa-download"></i> Download Contract
+                        </button>
+                        <button class="btn btn-outline" id="modalPrint">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                    </div>
+                    <div class="modal-footer-right">
+                        <button class="btn btn-secondary" id="modalEdit">
+                            <i class="fas fa-edit"></i> Edit Contract
+                        </button>
+                        <button class="btn btn-primary" id="modalClose">
+                            <i class="fas fa-check"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal-container export-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-download"></i> Export Contracts</h2>
+                <button class="modal-close" id="exportModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <div class="export-options">
+                    <!-- Filter By Status Section -->
+                    <div class="export-section">
+                        <h3><i class="fas fa-filter"></i> Filter by Status</h3>
+                        <div class="filter-grid">
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportAll" checked>
+                                <span class="checkbox-custom"></span>
+                                <div class="option-content">
+                                    <i class="fas fa-list export-icon all"></i>
+                                    <div class="option-text">
+                                        <span class="option-title">All Contracts</span>
+                                        <span class="option-desc">Export every contract</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportActive">
+                                <span class="checkbox-custom"></span>
+                                <div class="option-content">
+                                    <i class="fas fa-play-circle export-icon active"></i>
+                                    <div class="option-text">
+                                        <span class="option-title">Active Contracts</span>
+                                        <span class="option-desc">Currently running projects</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportPending">
+                                <span class="checkbox-custom"></span>
+                                <div class="option-content">
+                                    <i class="fas fa-clock export-icon pending"></i>
+                                    <div class="option-text">
+                                        <span class="option-title">Pending Contracts</span>
+                                        <span class="option-desc">Awaiting approval or start</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportCompleted">
+                                <span class="checkbox-custom"></span>
+                                <div class="option-content">
+                                    <i class="fas fa-check-circle export-icon completed"></i>
+                                    <div class="option-text">
+                                        <span class="option-title">Completed Contracts</span>
+                                        <span class="option-desc">Successfully finished projects</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportCancelled">
+                                <span class="checkbox-custom"></span>
+                                <div class="option-content">
+                                    <i class="fas fa-times-circle export-icon cancelled"></i>
+                                    <div class="option-text">
+                                        <span class="option-title">Cancelled Contracts</span>
+                                        <span class="option-desc">Terminated or void contracts</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportExpired">
+                                <span class="checkbox-custom"></span>
+                                <div class="option-content">
+                                    <i class="fas fa-hourglass-end export-icon expired"></i>
+                                    <div class="option-text">
+                                        <span class="option-title">Expired Contracts</span>
+                                        <span class="option-desc">Past deadline contracts</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Special Categories Section -->
+                    <div class="export-section">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Special Categories</h3>
+                        <div class="special-filter-grid">
+                            <label class="export-checkbox-option highlighted">
+                                <input type="checkbox" id="exportWithIssues">
+                                <span class="checkbox-custom"></span>
+                                <div class="option-content">
+                                    <i class="fas fa-exclamation-circle export-icon issues"></i>
+                                    <div class="option-text">
+                                        <span class="option-title">Contracts with Issues</span>
+                                        <span class="option-desc">Requiring documents, signatures, or actions</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportHighValue">
+                                <span class="checkbox-custom"></span>
+                                <div class="option-content">
+                                    <i class="fas fa-dollar-sign export-icon high-value"></i>
+                                    <div class="option-text">
+                                        <span class="option-title">High-Value Contracts</span>
+                                        <span class="option-desc">Above average contract values</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportRecentUpdates">
+                                <span class="checkbox-custom"></span>
+                                <div class="option-content">
+                                    <i class="fas fa-sync-alt export-icon recent"></i>
+                                    <div class="option-text">
+                                        <span class="option-title">Recently Updated</span>
+                                        <span class="option-desc">Modified in the last 30 days</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Date Range Section -->
+                    <div class="export-section">
+                        <h3><i class="fas fa-calendar-alt"></i> Date Range</h3>
+                        <div class="date-range-options">
+                            <div class="date-input-group">
+                                <label for="exportStartDate">From:</label>
+                                <input type="date" id="exportStartDate" class="date-input">
+                            </div>
+                            <div class="date-input-group">
+                                <label for="exportEndDate">To:</label>
+                                <input type="date" id="exportEndDate" class="date-input">
+                            </div>
+                        </div>
+                        <div class="date-presets">
+                            <button class="preset-btn" data-preset="7">Last 7 days</button>
+                            <button class="preset-btn" data-preset="30">Last 30 days</button>
+                            <button class="preset-btn" data-preset="90">Last 3 months</button>
+                            <button class="preset-btn" data-preset="365">Last year</button>
+                        </div>
+                    </div>
+                                        <!-- Export Format Section -->
+                    <div class="export-section">
+                        <h3><i class="fas fa-file-alt"></i> Export Format</h3>
+                        <div class="format-options">
+                            <label class="export-radio-option">
+                                <input type="radio" name="exportFormat" value="excel" checked>
+                                <span class="radio-custom"></span>
+                                <div class="option-content">
+                                    <i class="fas fa-file-excel export-icon excel"></i>
+                                    <div class="option-text">
+                                        <span class="option-title">Excel (.xlsx)</span>
+                                        <span class="option-desc">Best for data analysis and spreadsheets</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="export-radio-option">
+                                <input type="radio" name="exportFormat" value="pdf">
+                                <span class="radio-custom"></span>
+                                <div class="option-content">
+                                    <i class="fas fa-file-pdf export-icon pdf"></i>
+                                    <div class="option-text">
+                                        <span class="option-title">PDF Document</span>
+                                        <span class="option-desc">Professional reports and printing</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="export-radio-option">
+                                <input type="radio" name="exportFormat" value="csv">
+                                <span class="radio-custom"></span>
+                                <div class="option-content">
+                                    <i class="fas fa-file-csv export-icon csv"></i>
+                                    <div class="option-text">
+                                        <span class="option-title">CSV File</span>
+                                        <span class="option-desc">Universal compatibility</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Export Summary -->
+                    <div class="export-summary">
+                        <div class="summary-content">
+                            <i class="fas fa-info-circle"></i>
+                            <span id="exportSummaryText">Ready to export all contracts</span>
+                        </div>
+                        <div class="estimated-count">
+                            <span id="estimatedCount">Estimated: 0 contracts</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" id="exportCancel">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn btn-secondary" id="exportPreview">
+                    <i class="fas fa-eye"></i> Preview
+                </button>
+                <button class="btn btn-primary" id="exportDownload">
+                    <i class="fas fa-download"></i> Export Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../../assets/javascript/company/contracts.js"></script>
+    <script>
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function () {
+            loadComponent('sidebar-container', 'sidebar.html');
+            loadComponent('header-container', 'topbar.html');
+        });
+
+        // Function to load HTML components
+        function loadComponent(containerId, componentFile) {
+            fetch(componentFile)
+                .then(response => response.text())
+                .then(html => {
+                    if (containerId === 'sidebar-container') {
+                        // Set active state immediately in the HTML before inserting
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+                        
+                        // Remove any existing active classes
+                        const allNavItems = tempDiv.querySelectorAll('.nav-item');
+                        allNavItems.forEach(item => item.classList.remove('active'));
+                        
+                        // Set contracts as active immediately
+                        const contractsLink = tempDiv.querySelector('a[href="contracts.html"]');
+                        if (contractsLink) {
+                            contractsLink.parentElement.classList.add('active');
+                        }
+                        
+                        // Insert the modified HTML
+                        document.getElementById(containerId).innerHTML = tempDiv.innerHTML;
+                    } else {
+                        document.getElementById(containerId).innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading component:', error);
+                });
+        }
+    </script>
+</body>
+
+</html>
