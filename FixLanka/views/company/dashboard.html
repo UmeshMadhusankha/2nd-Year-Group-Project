@@ -90,11 +90,14 @@
                     <div class="requests-panel">
                         <div class="panel-header">
                             <h2><i class="fas fa-tools"></i> Repair Requests</h2>
-                            <div class="request-tabs">
-                                <button class="tab-button active" data-tab="direct"><i class="fas fa-user-tie"></i>
-                                    Direct Requests</button>
-                                <button class="tab-button" data-tab="public"><i class="fas fa-globe"></i> Public
-                                    Requests</button>
+                            <div class="panel-header-actions">
+                                <div class="request-tabs">
+                                    <button class="tab-button active" data-tab="direct"><i class="fas fa-user-tie"></i>
+                                        Direct Requests</button>
+                                    <button class="tab-button" data-tab="public"><i class="fas fa-globe"></i> Public
+                                        Requests</button>
+                                </div>
+                                <a href="repair-requests.html" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
                             </div>
                         </div>
 
@@ -363,7 +366,7 @@
                             </div>
 
                             <div class="workforce-filters">
-                                <select class="filter-select">
+                                <select class="filter-select" aria-label="Filter by worker category">
                                     <option value="">All Categories</option>
                                     <option value="carpenter">Carpenters</option>
                                     <option value="electrician">Electricians</option>
@@ -371,17 +374,18 @@
                                     <option value="painter">Painters</option>
                                 </select>
 
-                                <select class="filter-select">
+                                <select class="filter-select" aria-label="Filter by availability status">
                                     <option value="">All Status</option>
                                     <option value="available">Available</option>
                                     <option value="busy">Busy</option>
                                     <option value="offline">Offline</option>
                                 </select>
 
-                                <button class="create-post-btn">
-                                    <i class="fas fa-plus"></i>
-                                    Create Post
+                                <button class="action-btn primary" type="button" aria-describedby="create-post-help">
+                                    <i class="fas fa-plus icon-left" aria-hidden="true"></i>
+                                    <span class="btn-text">Create Post</span>
                                 </button>
+                                <div id="create-post-help" class="sr-only">Create a new job posting for workers</div>
                             </div>
                         </div>
 
@@ -394,7 +398,7 @@
                                     </div>
                                     <div class="workforce-title">
                                         <h4>Carpenters</h4>
-                                        <div class="workforce-availability">
+                                        <div class="workforce-availability" id="carpenters-count">
                                             <span class="available-count">8</span>
                                             <span class="total-count">/ 12 Total</span>
                                         </div>
@@ -406,32 +410,30 @@
                                         <span>Availability Ratio</span>
                                         <span class="progress-percentage">67%</span>
                                     </div>
-                                    <div class="progress-bar">
+                                    <div class="progress-bar" role="progressbar" aria-valuenow="67" aria-valuemin="0" aria-valuemax="100" aria-label="Carpenter availability ratio">
                                         <div class="progress-fill" style="width: 67%"></div>
                                     </div>
                                 </div>
 
                                 <div class="workforce-details">
                                     <div class="detail-item">
-                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star" aria-hidden="true"></i>
                                         <span>4.8 Rating</span>
                                     </div>
                                     <div class="detail-item">
-                                        <i class="fas fa-shield-alt"></i>
+                                        <i class="fas fa-shield-alt" aria-hidden="true"></i>
                                         <span>Verified</span>
                                     </div>
                                 </div>
 
                                 <div class="availability-badge available">Available</div>
 
-                                <div class="workforce-actions">
-                                    <button class="action-btn primary">
-                                        <i class="fas fa-eye"></i>
-                                        View All
-                                    </button>
-                                    <button class="action-btn secondary">
-                                        <i class="fas fa-plus"></i>
-                                        Assign
+                                <div class="workforce-actions" role="group" aria-label="Carpenter workforce actions">
+                                    <button class="action-btn primary" type="button" 
+                                            aria-describedby="carpenters-count"
+                                            onclick="window.location.href='workforce.html#carpenters'">
+                                        <i class="fas fa-eye icon-left" aria-hidden="true"></i>
+                                        <span class="btn-text">View All</span>
                                     </button>
                                 </div>
                             </div>
@@ -443,7 +445,7 @@
                                     </div>
                                     <div class="workforce-title">
                                         <h4>Electricians</h4>
-                                        <div class="workforce-availability">
+                                        <div class="workforce-availability" id="electricians-count">
                                             <span class="available-count">5</span>
                                             <span class="total-count">/ 8 Total</span>
                                         </div>
@@ -455,32 +457,30 @@
                                         <span>Availability Ratio</span>
                                         <span class="progress-percentage">63%</span>
                                     </div>
-                                    <div class="progress-bar">
+                                    <div class="progress-bar" role="progressbar" aria-valuenow="63" aria-valuemin="0" aria-valuemax="100" aria-label="Electrician availability ratio">
                                         <div class="progress-fill" style="width: 63%"></div>
                                     </div>
                                 </div>
 
                                 <div class="workforce-details">
                                     <div class="detail-item">
-                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star" aria-hidden="true"></i>
                                         <span>4.9 Rating</span>
                                     </div>
                                     <div class="detail-item">
-                                        <i class="fas fa-shield-alt"></i>
+                                        <i class="fas fa-shield-alt" aria-hidden="true"></i>
                                         <span>Verified</span>
                                     </div>
                                 </div>
 
                                 <div class="availability-badge available">Available</div>
 
-                                <div class="workforce-actions">
-                                    <button class="action-btn primary">
-                                        <i class="fas fa-eye"></i>
-                                        View All
-                                    </button>
-                                    <button class="action-btn secondary">
-                                        <i class="fas fa-plus"></i>
-                                        Assign
+                                <div class="workforce-actions" role="group" aria-label="Electrician workforce actions">
+                                    <button class="action-btn primary" type="button" 
+                                            aria-describedby="electricians-count"
+                                            onclick="window.location.href='workforce.html#electricians'">
+                                        <i class="fas fa-eye icon-left" aria-hidden="true"></i>
+                                        <span class="btn-text">View All</span>
                                     </button>
                                 </div>
                             </div>
@@ -492,7 +492,7 @@
                                     </div>
                                     <div class="workforce-title">
                                         <h4>Plumbers</h4>
-                                        <div class="workforce-availability">
+                                        <div class="workforce-availability" id="plumbers-count">
                                             <span class="available-count">3</span>
                                             <span class="total-count">/ 6 Total</span>
                                         </div>
@@ -504,32 +504,30 @@
                                         <span>Availability Ratio</span>
                                         <span class="progress-percentage">50%</span>
                                     </div>
-                                    <div class="progress-bar">
+                                    <div class="progress-bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" aria-label="Plumber availability ratio">
                                         <div class="progress-fill" style="width: 50%"></div>
                                     </div>
                                 </div>
 
                                 <div class="workforce-details">
                                     <div class="detail-item">
-                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star" aria-hidden="true"></i>
                                         <span>4.7 Rating</span>
                                     </div>
                                     <div class="detail-item">
-                                        <i class="fas fa-shield-alt"></i>
+                                        <i class="fas fa-shield-alt" aria-hidden="true"></i>
                                         <span>Verified</span>
                                     </div>
                                 </div>
 
                                 <div class="availability-badge limited">Limited</div>
 
-                                <div class="workforce-actions">
-                                    <button class="action-btn primary">
-                                        <i class="fas fa-eye"></i>
-                                        View All
-                                    </button>
-                                    <button class="action-btn secondary">
-                                        <i class="fas fa-plus"></i>
-                                        Assign
+                                <div class="workforce-actions" role="group" aria-label="Plumber workforce actions">
+                                    <button class="action-btn primary" type="button" 
+                                            aria-describedby="plumbers-count"
+                                            onclick="window.location.href='workforce.html#plumbers'">
+                                        <i class="fas fa-eye icon-left" aria-hidden="true"></i>
+                                        <span class="btn-text">View All</span>
                                     </button>
                                 </div>
                             </div>
@@ -541,7 +539,7 @@
                                     </div>
                                     <div class="workforce-title">
                                         <h4>Painters</h4>
-                                        <div class="workforce-availability">
+                                        <div class="workforce-availability" id="painters-count">
                                             <span class="available-count">4</span>
                                             <span class="total-count">/ 7 Total</span>
                                         </div>
@@ -553,32 +551,30 @@
                                         <span>Availability Ratio</span>
                                         <span class="progress-percentage">57%</span>
                                     </div>
-                                    <div class="progress-bar">
+                                    <div class="progress-bar" role="progressbar" aria-valuenow="57" aria-valuemin="0" aria-valuemax="100" aria-label="Painter availability ratio">
                                         <div class="progress-fill" style="width: 57%"></div>
                                     </div>
                                 </div>
 
                                 <div class="workforce-details">
                                     <div class="detail-item">
-                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star" aria-hidden="true"></i>
                                         <span>4.6 Rating</span>
                                     </div>
                                     <div class="detail-item">
-                                        <i class="fas fa-shield-alt"></i>
+                                        <i class="fas fa-shield-alt" aria-hidden="true"></i>
                                         <span>Verified</span>
                                     </div>
                                 </div>
 
                                 <div class="availability-badge available">Available</div>
 
-                                <div class="workforce-actions">
-                                    <button class="action-btn primary">
-                                        <i class="fas fa-eye"></i>
-                                        View All
-                                    </button>
-                                    <button class="action-btn secondary">
-                                        <i class="fas fa-plus"></i>
-                                        Assign
+                                <div class="workforce-actions" role="group" aria-label="Painter workforce actions">
+                                    <button class="action-btn primary" type="button" 
+                                            aria-describedby="painters-count"
+                                            onclick="window.location.href='workforce.html#painters'">
+                                        <i class="fas fa-eye icon-left" aria-hidden="true"></i>
+                                        <span class="btn-text">View All</span>
                                     </button>
                                 </div>
                             </div>

@@ -1,5 +1,6 @@
 /* FixLanka Projects Page CSS */
 @import "../common/variables.css";
+@import "../common/buttons.css";
 
 /* Base Styles */
 * {
@@ -865,12 +866,10 @@ body {
 }
 
 .table-container {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--bg-primary);
   backdrop-filter: blur(20px);
   border-radius: var(--border-radius-lg);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: var(--shadow-md);
   border: 1px solid rgba(255, 255, 255, 0.2);
   overflow: hidden;
 }
@@ -881,13 +880,12 @@ body {
 }
 
 .projects-table th {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(15px);
+  background: var(--bg-tertiary);
+  /* backdrop-filter: blur(15px); */
   padding: var(--spacing-lg);
   text-align: left;
   font-weight: 600;
   color: var(--text-primary);
-  border-bottom: 1px solid rgba(10, 186, 181, 0.2);
   font-size: var(--font-size-sm);
   text-transform: uppercase;
   letter-spacing: 0.5px;

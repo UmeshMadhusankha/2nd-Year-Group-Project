@@ -9,9 +9,9 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#requests" class="nav-link" data-tooltip="Requests">
+                <a href="repair-requests.html" class="nav-link" data-tooltip="Repair Requests">
                     <i class="fas fa-tools"></i>
-                    <span>Requests</span>
+                    <span>Repair Requests</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -86,9 +86,9 @@
     function handleNavClick(e) {
         console.log('Nav link clicked:', this.textContent.trim()); // Debug log
 
-        // Check if it's a link to another page (dashboard.html, projects.html, workforce.html, or support.html)
+        // Check if it's a link to another page (repair-requests.html, dashboard.html, projects.html, workforce.html, payments.html, contracts.html, or support.html)
         const href = this.getAttribute('href');
-        if (href === 'support.html' || href === 'dashboard.html' || href === 'projects.html' || href === 'workforce.html') {
+        if (href === 'repair-requests.html' || href === 'support.html' || href === 'dashboard.html' || href === 'projects.html' || href === 'workforce.html' || href === 'payments.html' || href === 'contracts.html') {
             // Allow normal navigation to the page
             return;
         }

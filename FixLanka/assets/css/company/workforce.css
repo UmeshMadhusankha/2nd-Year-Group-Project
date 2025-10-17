@@ -2,90 +2,128 @@
    Workforce Management Styles
    ==================================== */
 
+/* Import CSS Variables */
+@import "../common/variables.css";
+@import "../common/buttons.css";
+
+/* Workforce Container */
 .workforce-container {
     flex: 1;
     padding: var(--spacing-lg);
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
     border-radius: var(--border-radius-xl) 0 0 0;
-    height: calc(100vh - var(--header-height));
-    overflow-y: scroll;
+    /* height: calc(100vh - var(--header-height)); */
+    height: 100vh;
+    /* overflow-y: scroll; */
 }
 
 /* Page Header - Consistent with other pages */
 .page-header {
-    margin-bottom: 40px;
+  padding: var(--spacing-xl) var(--spacing-lg);
+  background: transparent;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: var(--spacing-xl);
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(100px, -100px);
 }
 
 .header-content {
-    background: var(--bg-secondary);
-    /* border: 1px solid var(--border-color); */
-    border-radius: 16px;
-    padding: 32px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 .header-main {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-xl);
+  flex-wrap: wrap;
 }
 
 .title-section h1 {
-    color: var(--text-primary);
-    font-size: 32px;
+    font-size: var(--font-size-3xl);
     font-weight: 700;
-    margin: 0 0 12px 0;
+    margin-bottom: var(--spacing-sm);
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: var(--spacing-md);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .title-section h1 i {
-    color: var(--primary-color);
-    font-size: 28px;
+    font-size: var(--font-size-2xl);
+    opacity: 0.9;
 }
 
 .title-section .subtitle {
-    color: var(--text-secondary);
-    font-size: 18px;
-    margin: 0 0 16px 0;
+    font-size: var(--font-size-lg);
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+    margin-bottom: var(--spacing-lg);
     line-height: 1.5;
 }
 
 .breadcrumbs {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+
 .breadcrumbs a {
-    color: var(--primary-color);
+    color: rgba(255, 255, 255, 0.8);
     text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 0;
+    transition: var(--transition-normal);
 }
 
 .breadcrumbs a:hover {
-    text-decoration: underline;
+    color: white;
 }
 
 .breadcrumbs .separator {
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.5);
 }
 
 .breadcrumbs .current {
-    color: var(--text-secondary);
+    color: white;
+    font-weight: 500;
 }
 
 .header-actions {
     display: flex;
-    flex-direction: column;
-    gap: 20px;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
 }
 
 .action-buttons {
@@ -94,42 +132,57 @@
 }
 
 .action-btn {
-    padding: var(--spacing-sm) var(--spacing-md);
-    /* border: none; */
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    width: fit-content;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-speed);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  white-space: nowrap;
+}
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.action-btn:hover::before {
+  left: 100%;
 }
 
 .action-btn.primary {
-    background: var(--primary-color);
-    color: white;
-    width: fit-content;
-    padding: var(--spacing-sm) var(--spacing-md) !important;
+  background: white;
+  color: var(--primary-color);
+  /* simple border*/
+  border: 1px solid var(--border-color);
+
+
 }
 
 .action-btn.primary:hover {
-    background: #2980b9;
-    transform: translateY(-1px);
+  background: var(--background-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .action-btn.secondary {
-    background: var(--text-secondary);
-    color: white;
-    padding: var(--spacing-sm) var(--spacing-md) !important;
-
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .action-btn.secondary:hover {
-    background: #5a6c7d;
-    transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
 }
 
 /* Controls Section */
@@ -302,6 +355,9 @@
     cursor: pointer;
     border: 1px solid transparent;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .preview-card:hover {
@@ -371,6 +427,9 @@
 /* Card Content */
 .card-content {
     padding: var(--spacing-lg);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .stats-overview {
@@ -433,6 +492,14 @@
 .freelancers-preview,
 .applications-preview {
     margin-bottom: var(--spacing-md);
+    flex: 1; /* Take available space in flex container */
+}
+
+/* Remove bottom margin from last preview section */
+.specialties-preview:last-of-type,
+.freelancers-preview:last-of-type,
+.applications-preview:last-of-type {
+    margin-bottom: 0;
 }
 
 .specialties-preview h4,
@@ -587,15 +654,16 @@
 
 /* Card Actions */
 .card-actions {
-    padding: var(--spacing-lg);
+    padding: 0; /* Remove padding to ensure full width */
     background: var(--bg-primary);
+    margin-top: auto; /* Push to bottom of flex container */
 }
 
 .action-button {
     width: 100%;
-    padding: var(--spacing-md) var(--spacing-lg);
+    padding: var(--spacing-lg); /* Equal padding on all sides */
     border: none;
-    border-radius: var(--border-radius);
+    border-radius: 0; /* Remove border radius for full width appearance */
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
@@ -604,18 +672,37 @@
     align-items: center;
     justify-content: center;
     gap: var(--spacing-sm);
-    margin-top: 0 !important;
+    margin: 0; /* Remove any margins */
+    border-top: 1px solid var(--border-color); /* Add subtle top border */
+    position: relative;
+    overflow: hidden;
+}
+
+.action-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.action-button:hover::before {
+    left: 100%;
 }
 
 .action-button.primary {
     background: var(--primary-color);
     color: white;
+    border-top: 1px solid rgba(255, 255, 255, 0.1); /* Subtle light border for primary buttons */
 }
 
 .action-button.primary:hover {
     background: var(--primary-hover);
     transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 12px rgba(10, 186, 181, 0.3);
 }
 
 /* Card Type Specific Styling */
@@ -676,6 +763,23 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.back-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.back-button:hover::before {
+    left: 100%;
 }
 
 .back-button:hover {
@@ -1278,6 +1382,23 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.card-actions button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.card-actions button:hover::before {
+    left: 100%;
 }
 
 .action-btn-sm {
@@ -1293,6 +1414,24 @@
     justify-content: center;
     gap: 8px;
     min-width: 90px;
+    padding: var(--spacing-md) var(--spacing-md);
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn-sm::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.action-btn-sm:hover::before {
+    left: 100%;
 }
 
 .action-btn-sm.primary {
@@ -1308,6 +1447,7 @@
 .action-btn-sm.secondary {
     background: var(--text-secondary);
     color: white;
+    padding: var(--spacing-md),var(--spacing-md);
 }
 
 .action-btn-sm.secondary:hover {
@@ -1326,7 +1466,7 @@
 }
 
 .action-btn-sm.danger {
-    background: var(--error-color);
+    background: var(--danger-color);
     color: white;
 }
 
@@ -1527,7 +1667,7 @@
 }
 
 .notification-error i {
-    color: var(--error-color);
+    color: var(--danger-color);
 }
 
 .notification-info i {
@@ -2000,7 +2140,7 @@
 }
 
 .drawer-btn.danger {
-    background: var(--error-color);
+    background: var(--danger-color);
     color: white;
 }
 
@@ -2356,16 +2496,33 @@
     justify-content: center;
     width: 44px;
     height: 44px;
-    border: 1px solid var(--error-color);
+    border: 1px solid var(--danger-color);
     background: transparent;
-    color: var(--error-color);
+    color: var(--danger-color);
     border-radius: var(--border-radius-md);
     cursor: pointer;
     transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.remove-row-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.remove-row-btn:hover::before {
+    left: 100%;
 }
 
 .remove-row-btn:hover {
-    background: var(--error-color);
+    background: var(--danger-color);
     color: white;
 }
 
@@ -2477,15 +2634,32 @@
     width: 32px;
     height: 32px;
     border: none;
-    background: var(--error-light);
-    color: var(--error-color);
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
     border-radius: 50%;
     cursor: pointer;
     transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.remove-file-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.remove-file-btn:hover::before {
+    left: 100%;
 }
 
 .remove-file-btn:hover {
-    background: var(--error-color);
+    background: var(--danger-color);
     color: white;
 }
 
@@ -2721,7 +2895,7 @@
 }
 
 .reduction-total {
-    color: var(--error-color) !important;
+    color: var(--danger-color) !important;
 }
 
 .remaining-total {
@@ -2730,7 +2904,7 @@
 
 /* Danger Button Style */
 .drawer-btn.danger {
-    background: var(--error-color);
+    background: var(--danger-color);
     color: white;
 }
 

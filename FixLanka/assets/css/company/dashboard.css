@@ -1,5 +1,19 @@
 /* FixLanka Dashboard CSS */
 @import "../common/variables.css";
+@import "../common/buttons.css";
+
+/* Accessibility Utility Classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* Global Reset & Base Styles */
 *,
@@ -446,6 +460,12 @@ button:hover i {
   margin-bottom: var(--spacing-md);
   padding-bottom: var(--spacing-sm);
   border-bottom: 1px solid var(--border-color);
+}
+
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
 }
 
 /* Ensure all panels have consistent height and styling */
@@ -2019,29 +2039,33 @@ button:hover i {
   background: rgba(255, 255, 255, 1);
 }
 
-.create-post-btn {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+/* Enhanced Create Post Button - Now using standardized action-btn */
+.workforce-filters .action-btn.primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
   border: none;
-  color: var(--text-white);
-  padding: 8px var(--spacing-md);
-  border-radius: var(--border-radius);
-  font-size: var(--font-size-sm);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   white-space: nowrap;
   box-shadow:
     0 2px 8px rgba(10, 186, 181, 0.3),
-    inset 0 1px 0 var(--rgba-white-20);
-  border: 1px solid var(--rgba-white-10);
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 28px;
+  max-width: 140px;
+  margin-left: auto;
 }
 
-.create-post-btn::before {
+.workforce-filters .action-btn.primary::before {
   content: '';
   position: absolute;
   top: 0;
@@ -2055,20 +2079,42 @@ button:hover i {
   transition: left 0.5s ease;
 }
 
-.create-post-btn:hover {
-  background: linear-gradient(135deg, var(--primary-hover), var(--primary-color));
+.workforce-filters .action-btn.primary:hover {
+  background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
   transform: translateY(-1px) scale(1.02);
   box-shadow:
     0 4px 12px rgba(10, 186, 181, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-.create-post-btn:hover::before {
+.workforce-filters .action-btn.primary:hover::before {
   left: 100%;
 }
 
-.create-post-btn:active {
+.workforce-filters .action-btn.primary:active {
   transform: translateY(0) scale(1);
+  box-shadow:
+    0 2px 6px rgba(10, 186, 181, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.workforce-filters .action-btn.primary:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.workforce-filters .action-btn.primary:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.workforce-filters .action-btn.primary .icon-left {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.workforce-filters .action-btn.primary .btn-text {
+  font-weight: 600;
+  letter-spacing: 0.025em;
 }
 
 .create-post-btn i {
@@ -2330,53 +2376,184 @@ button:hover i {
   transform: none;
 }
 
-/* Workforce Actions Section */
+/* Enhanced Workforce Actions Section */
 .workforce-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   margin-top: var(--spacing-md);
   padding-top: var(--spacing-sm);
   border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.action-btn {
-  flex: 1;
-  padding: 6px var(--spacing-sm);
-  border: none;
-  border-radius: var(--border-radius-sm);
-  font-size: 11px;
+.workforce-actions .action-btn {
+  width: 100%;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid transparent;
+  min-height: 28px;
 }
 
-.action-btn.primary {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  color: var(--text-white);
-  box-shadow: 0 1px 4px rgba(10, 186, 181, 0.3);
+/* Focus management for accessibility */
+.workforce-actions .action-btn:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+  z-index: 10;
 }
 
-.action-btn.primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(10, 186, 181, 0.4);
+.workforce-actions .action-btn:focus:not(:focus-visible) {
+  outline: none;
 }
 
-.action-btn.secondary {
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--text-primary);
-  border: 1px solid rgba(10, 186, 181, 0.2);
-  backdrop-filter: blur(10px);
+.workforce-actions .action-btn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
 }
 
-.action-btn.secondary:hover {
-  background: rgba(10, 186, 181, 0.1);
+/* Enhanced primary button style */
+.workforce-actions .action-btn.primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+  color: white;
   border-color: var(--primary-color);
-  color: var(--primary-color);
+  box-shadow: 
+    0 2px 8px rgba(10, 186, 181, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.workforce-actions .action-btn.primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.workforce-actions .action-btn.primary:hover {
+  background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%);
   transform: translateY(-1px);
+  box-shadow: 
+    0 4px 12px rgba(10, 186, 181, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.workforce-actions .action-btn.primary:hover::before {
+  left: 100%;
+}
+
+.workforce-actions .action-btn.primary:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 6px rgba(10, 186, 181, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced secondary button style */
+.workforce-actions .action-btn.secondary {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.workforce-actions .action-btn.secondary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(10, 186, 181, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.workforce-actions .action-btn.secondary:hover {
+  background: rgba(255, 255, 255, 1);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.workforce-actions .action-btn.secondary:hover::before {
+  left: 100%;
+}
+
+.workforce-actions .action-btn.secondary:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 6px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Icon styling within workforce buttons */
+.workforce-actions .action-btn .icon-left {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.workforce-actions .action-btn .btn-text {
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+
+/* Disabled state for workforce buttons */
+.workforce-actions .action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.workforce-actions .action-btn:disabled::before {
+  display: none;
+}
+
+/* Loading state for workforce buttons */
+.workforce-actions .action-btn.loading {
+  pointer-events: none;
+  position: relative;
+}
+
+.workforce-actions .action-btn.loading .btn-text {
+  opacity: 0.7;
+}
+
+.workforce-actions .action-btn.loading::after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: button-spinner 1s linear infinite;
+}
+
+@keyframes button-spinner {
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
 }
 
 .workforce-trend {

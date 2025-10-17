@@ -28,18 +28,51 @@
             <!-- Contracts Page Content -->
             <section class="contracts-page">
                 <!-- Page Header -->
-                <div class="page-header">
-                    <div class="page-title">
-                        <h1><i class="fas fa-handshake"></i> Contracts Management</h1>
-                        <p>Manage all your service contracts and agreements</p>
+                <header class="page-header">
+                    <div class="header-content">
+                        <div class="breadcrumbs">
+                            <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                            <span class="separator">/</span>
+                            <span class="current">Contracts</span>
+                        </div>
+                        <div class="header-main">
+                            <div class="title-section">
+                                <h1><i class="fas fa-handshake"></i> Contracts Management</h1>
+                                <p class="subtitle">Manage all your service contracts and agreements</p>
+                            </div>
+                            <div class="header-actions">
+                                <div class="action-buttons">
+                                    <button class="action-btn secondary" id="exportBtn">
+                                        <i class="fas fa-download"></i>
+                                        Export
+                                    </button>
+                                    <button class="action-btn primary">
+                                        <i class="fas fa-plus"></i>
+                                        New Contract
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="quick-stats">
+                            <div class="stat-item">
+                                <span class="stat-value">22</span>
+                                <span class="stat-label">Active Contracts</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">8</span>
+                                <span class="stat-label">Pending</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">48</span>
+                                <span class="stat-label">Completed</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">LKR 3.2M</span>
+                                <span class="stat-label">Total Value</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="page-actions">
-                        <button class="btn btn-secondary" id="exportBtn">
-                            <i class="fas fa-download"></i>
-                            Export
-                        </button>
-                    </div>
-                </div>
+                </header>
 
                 <!-- Filters and Search -->
                 <div class="contracts-controls">
@@ -94,10 +127,7 @@
                         <div class="contract-header">
                             <div class="contract-info">
                                 <h3>Office Renovation Project</h3>
-                                <p class="client-name">
-                                    <i class="fas fa-building"></i>
-                                    ABC Corporation
-                                </p>
+                                <p class="contract-id">Contract #CNT-2025-001</p>
                             </div>
                             <div class="contract-status active">
                                 <i class="fas fa-play-circle"></i>
@@ -105,20 +135,28 @@
                             </div>
                         </div>
 
+                        <div class="client-info">
+                            <div class="client-avatar">AB</div>
+                            <div class="client-details">
+                                <h4>ABC Corporation</h4>
+                                <p>Commercial Client</p>
+                                <span class="contract-value">LKR 250,000</span>
+                            </div>
+                        </div>
+
                         <div class="contract-details">
                             <div class="detail-row">
-                                <span class="detail-label">Contract Value:</span>
-                                <span class="detail-value">LKR 250,000</span>
-                            </div>
-                            <div class="detail-row">
+                                <i class="fas fa-calendar-alt detail-icon"></i>
                                 <span class="detail-label">Start Date:</span>
                                 <span class="detail-value">Aug 15, 2025</span>
                             </div>
                             <div class="detail-row">
+                                <i class="fas fa-calendar-check detail-icon"></i>
                                 <span class="detail-label">End Date:</span>
                                 <span class="detail-value">Oct 15, 2025</span>
                             </div>
                             <div class="detail-row">
+                                <i class="fas fa-chart-line detail-icon"></i>
                                 <span class="detail-label">Progress:</span>
                                 <div class="progress-container">
                                     <div class="progress-bar">
@@ -129,15 +167,23 @@
                             </div>
                         </div>
 
-                        <div class="contract-actions">
-                            <button class="action-btn view" title="View Details">
+                        <div class="contract-description">
+                            <p>Complete office renovation including modern furniture, electrical upgrades, and interior
+                                design improvements.</p>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn primary" title="View Details">
                                 <i class="fas fa-eye"></i>
+                                View Details
                             </button>
-                            <button class="action-btn edit" title="Edit Contract">
+                            <button class="action-btn secondary" title="Edit Contract">
                                 <i class="fas fa-edit"></i>
+                                Edit
                             </button>
-                            <button class="action-btn download" title="Download Contract">
+                            <button class="action-btn secondary" title="Download Contract">
                                 <i class="fas fa-download"></i>
+                                Download
                             </button>
                         </div>
                     </div>
@@ -147,10 +193,7 @@
                         <div class="contract-header">
                             <div class="contract-info">
                                 <h3>HVAC Maintenance Agreement</h3>
-                                <p class="client-name">
-                                    <i class="fas fa-user"></i>
-                                    Johnson Residence
-                                </p>
+                                <p class="contract-id">Contract #CNT-2025-002</p>
                             </div>
                             <div class="contract-status pending">
                                 <i class="fas fa-clock"></i>
@@ -158,34 +201,50 @@
                             </div>
                         </div>
 
+                        <div class="client-info">
+                            <div class="client-avatar">JR</div>
+                            <div class="client-details">
+                                <h4>Johnson Residence</h4>
+                                <p>Residential Client</p>
+                                <span class="contract-value">LKR 75,000</span>
+                            </div>
+                        </div>
+
                         <div class="contract-details">
                             <div class="detail-row">
-                                <span class="detail-label">Contract Value:</span>
-                                <span class="detail-value">LKR 75,000</span>
-                            </div>
-                            <div class="detail-row">
+                                <i class="fas fa-calendar-alt detail-icon"></i>
                                 <span class="detail-label">Proposed Start:</span>
                                 <span class="detail-value">Sep 1, 2025</span>
                             </div>
                             <div class="detail-row">
+                                <i class="fas fa-clock detail-icon"></i>
                                 <span class="detail-label">Duration:</span>
                                 <span class="detail-value">6 months</span>
                             </div>
                             <div class="detail-row">
+                                <i class="fas fa-info-circle detail-icon"></i>
                                 <span class="detail-label">Status:</span>
                                 <span class="detail-value">Awaiting client signature</span>
                             </div>
                         </div>
 
-                        <div class="contract-actions">
-                            <button class="action-btn view" title="View Details">
+                        <div class="contract-description">
+                            <p>Annual HVAC maintenance service including quarterly inspections and emergency repairs.
+                            </p>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn primary" title="View Details">
                                 <i class="fas fa-eye"></i>
+                                View Details
                             </button>
-                            <button class="action-btn edit" title="Edit Contract">
+                            <button class="action-btn secondary" title="Edit Contract">
                                 <i class="fas fa-edit"></i>
+                                Edit
                             </button>
-                            <button class="action-btn send" title="Send for Signature">
+                            <button class="action-btn secondary" title="Send for Signature">
                                 <i class="fas fa-paper-plane"></i>
+                                Send
                             </button>
                         </div>
                     </div>
@@ -195,10 +254,7 @@
                         <div class="contract-header">
                             <div class="contract-info">
                                 <h3>Plumbing System Overhaul</h3>
-                                <p class="client-name">
-                                    <i class="fas fa-hotel"></i>
-                                    Green Valley Resort
-                                </p>
+                                <p class="contract-id">Contract #CNT-2025-003</p>
                             </div>
                             <div class="contract-status active">
                                 <i class="fas fa-play-circle"></i>
@@ -206,20 +262,28 @@
                             </div>
                         </div>
 
+                        <div class="client-info">
+                            <div class="client-avatar">GV</div>
+                            <div class="client-details">
+                                <h4>Green Valley Resort</h4>
+                                <p>Commercial Client</p>
+                                <span class="contract-value">LKR 180,000</span>
+                            </div>
+                        </div>
+
                         <div class="contract-details">
                             <div class="detail-row">
-                                <span class="detail-label">Contract Value:</span>
-                                <span class="detail-value">LKR 180,000</span>
-                            </div>
-                            <div class="detail-row">
+                                <i class="fas fa-calendar-alt detail-icon"></i>
                                 <span class="detail-label">Start Date:</span>
                                 <span class="detail-value">Aug 18, 2025</span>
                             </div>
                             <div class="detail-row">
+                                <i class="fas fa-calendar-check detail-icon"></i>
                                 <span class="detail-label">End Date:</span>
                                 <span class="detail-value">Sep 30, 2025</span>
                             </div>
                             <div class="detail-row">
+                                <i class="fas fa-chart-line detail-icon"></i>
                                 <span class="detail-label">Progress:</span>
                                 <div class="progress-container">
                                     <div class="progress-bar">
@@ -230,15 +294,23 @@
                             </div>
                         </div>
 
-                        <div class="contract-actions">
-                            <button class="action-btn view" title="View Details">
+                        <div class="contract-description">
+                            <p>Complete plumbing renovation including guest room upgrades and pool facilities
+                                improvements.</p>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn primary" title="View Details">
                                 <i class="fas fa-eye"></i>
+                                View Details
                             </button>
-                            <button class="action-btn edit" title="Edit Contract">
+                            <button class="action-btn secondary" title="Edit Contract">
                                 <i class="fas fa-edit"></i>
+                                Edit
                             </button>
-                            <button class="action-btn download" title="Download Contract">
+                            <button class="action-btn secondary" title="Download Contract">
                                 <i class="fas fa-download"></i>
+                                Download
                             </button>
                         </div>
                     </div>
@@ -248,10 +320,7 @@
                         <div class="contract-header">
                             <div class="contract-info">
                                 <h3>Electrical System Installation</h3>
-                                <p class="client-name">
-                                    <i class="fas fa-building"></i>
-                                    Modern Apartments
-                                </p>
+                                <p class="contract-id">Contract #CNT-2025-004</p>
                             </div>
                             <div class="contract-status completed">
                                 <i class="fas fa-check-circle"></i>
@@ -259,22 +328,30 @@
                             </div>
                         </div>
 
+                        <div class="client-info">
+                            <div class="client-avatar">MA</div>
+                            <div class="client-details">
+                                <h4>Modern Apartments</h4>
+                                <p>Commercial Client</p>
+                                <span class="contract-value">LKR 320,000</span>
+                            </div>
+                        </div>
+
                         <div class="contract-details">
                             <div class="detail-row">
-                                <span class="detail-label">Contract Value:</span>
-                                <span class="detail-value">LKR 320,000</span>
-                            </div>
-                            <div class="detail-row">
+                                <i class="fas fa-calendar-check detail-icon"></i>
                                 <span class="detail-label">Completed:</span>
                                 <span class="detail-value">Aug 20, 2025</span>
                             </div>
                             <div class="detail-row">
+                                <i class="fas fa-clock detail-icon"></i>
                                 <span class="detail-label">Duration:</span>
                                 <span class="detail-value">3 weeks</span>
                             </div>
                             <div class="detail-row">
+                                <i class="fas fa-star detail-icon"></i>
                                 <span class="detail-label">Rating:</span>
-                                <div class="rating-container">
+                                <div class="rating-stars">
                                     <i class="fas fa-star"></i>
                                     <i class="fas fa-star"></i>
                                     <i class="fas fa-star"></i>
@@ -285,15 +362,23 @@
                             </div>
                         </div>
 
-                        <div class="contract-actions">
-                            <button class="action-btn view" title="View Details">
+                        <div class="contract-description">
+                            <p>Complete electrical system upgrade with modern wiring and smart home integration
+                                features.</p>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn primary" title="View Details">
                                 <i class="fas fa-eye"></i>
+                                View Details
                             </button>
-                            <button class="action-btn download" title="Download Contract">
+                            <button class="action-btn secondary" title="Download Contract">
                                 <i class="fas fa-download"></i>
+                                Download
                             </button>
-                            <button class="action-btn invoice" title="Generate Invoice">
+                            <button class="action-btn secondary" title="Generate Invoice">
                                 <i class="fas fa-file-invoice"></i>
+                                Invoice
                             </button>
                         </div>
                     </div>
@@ -303,10 +388,7 @@
                         <div class="contract-header">
                             <div class="contract-info">
                                 <h3>Annual Maintenance Contract</h3>
-                                <p class="client-name">
-                                    <i class="fas fa-industry"></i>
-                                    Tech Solutions Ltd
-                                </p>
+                                <p class="contract-id">Contract #CNT-2025-005</p>
                             </div>
                             <div class="contract-status pending">
                                 <i class="fas fa-clock"></i>
@@ -314,34 +396,50 @@
                             </div>
                         </div>
 
+                        <div class="client-info">
+                            <div class="client-avatar">TS</div>
+                            <div class="client-details">
+                                <h4>Tech Solutions Ltd</h4>
+                                <p>Commercial Client</p>
+                                <span class="contract-value">LKR 450,000</span>
+                            </div>
+                        </div>
+
                         <div class="contract-details">
                             <div class="detail-row">
-                                <span class="detail-label">Contract Value:</span>
-                                <span class="detail-value">LKR 450,000</span>
-                            </div>
-                            <div class="detail-row">
+                                <i class="fas fa-calendar-alt detail-icon"></i>
                                 <span class="detail-label">Proposed Start:</span>
                                 <span class="detail-value">Sep 15, 2025</span>
                             </div>
                             <div class="detail-row">
+                                <i class="fas fa-clock detail-icon"></i>
                                 <span class="detail-label">Duration:</span>
                                 <span class="detail-value">12 months</span>
                             </div>
                             <div class="detail-row">
+                                <i class="fas fa-info-circle detail-icon"></i>
                                 <span class="detail-label">Status:</span>
                                 <span class="detail-value">Under review</span>
                             </div>
                         </div>
 
-                        <div class="contract-actions">
-                            <button class="action-btn view" title="View Details">
+                        <div class="contract-description">
+                            <p>Comprehensive annual maintenance contract covering all technical systems and
+                                infrastructure.</p>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn primary" title="View Details">
                                 <i class="fas fa-eye"></i>
+                                View Details
                             </button>
-                            <button class="action-btn edit" title="Edit Contract">
+                            <button class="action-btn secondary" title="Edit Contract">
                                 <i class="fas fa-edit"></i>
+                                Edit
                             </button>
-                            <button class="action-btn send" title="Send for Review">
+                            <button class="action-btn secondary" title="Send for Review">
                                 <i class="fas fa-paper-plane"></i>
+                                Send
                             </button>
                         </div>
                     </div>
@@ -351,10 +449,7 @@
                         <div class="contract-header">
                             <div class="contract-info">
                                 <h3>Kitchen Renovation</h3>
-                                <p class="client-name">
-                                    <i class="fas fa-home"></i>
-                                    Silva Family
-                                </p>
+                                <p class="contract-id">Contract #CNT-2025-006</p>
                             </div>
                             <div class="contract-status active">
                                 <i class="fas fa-play-circle"></i>
@@ -362,20 +457,28 @@
                             </div>
                         </div>
 
+                        <div class="client-info">
+                            <div class="client-avatar">SF</div>
+                            <div class="client-details">
+                                <h4>Silva Family</h4>
+                                <p>Residential Client</p>
+                                <span class="contract-value">LKR 95,000</span>
+                            </div>
+                        </div>
+
                         <div class="contract-details">
                             <div class="detail-row">
-                                <span class="detail-label">Contract Value:</span>
-                                <span class="detail-value">LKR 95,000</span>
-                            </div>
-                            <div class="detail-row">
+                                <i class="fas fa-calendar-alt detail-icon"></i>
                                 <span class="detail-label">Start Date:</span>
                                 <span class="detail-value">Aug 22, 2025</span>
                             </div>
                             <div class="detail-row">
+                                <i class="fas fa-calendar-check detail-icon"></i>
                                 <span class="detail-label">End Date:</span>
                                 <span class="detail-value">Sep 15, 2025</span>
                             </div>
                             <div class="detail-row">
+                                <i class="fas fa-chart-line detail-icon"></i>
                                 <span class="detail-label">Progress:</span>
                                 <div class="progress-container">
                                     <div class="progress-bar">
@@ -386,15 +489,267 @@
                             </div>
                         </div>
 
-                        <div class="contract-actions">
-                            <button class="action-btn view" title="View Details">
+                        <div class="contract-description">
+                            <p>Modern kitchen renovation with contemporary design and high-quality appliances
+                                installation.</p>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn primary" title="View Details">
                                 <i class="fas fa-eye"></i>
+                                View Details
                             </button>
-                            <button class="action-btn edit" title="Edit Contract">
+                            <button class="action-btn secondary" title="Edit Contract">
                                 <i class="fas fa-edit"></i>
+                                Edit
                             </button>
-                            <button class="action-btn download" title="Download Contract">
+                            <button class="action-btn secondary" title="Download Contract">
                                 <i class="fas fa-download"></i>
+                                Download
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Additional Contract Cards to Match Image -->
+                    <!-- Contract Card 7 -->
+                    <div class="contract-card" data-status="pending" data-type="repair">
+                        <div class="contract-header">
+                            <div class="contract-info">
+                                <h3>Contract 13 - Mepair</h3>
+                                <p class="contract-id">Contract #CNT-2025-013</p>
+                            </div>
+                            <div class="contract-status pending">
+                                <i class="fas fa-clock"></i>
+                                Pending
+                            </div>
+                        </div>
+
+                        <div class="client-info">
+                            <div class="client-avatar">JR</div>
+                            <div class="client-details">
+                                <h4>Johnson Residence</h4>
+                                <p>Residential Client</p>
+                                <span class="contract-value">LKR 157,356</span>
+                            </div>
+                        </div>
+
+                        <div class="contract-details">
+                            <div class="detail-row">
+                                <i class="fas fa-calendar-alt detail-icon"></i>
+                                <span class="detail-label">Start Date:</span>
+                                <span class="detail-value">Oct 20, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-chart-line detail-icon"></i>
+                                <span class="detail-label">Progress:</span>
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 20%"></div>
+                                    </div>
+                                    <span class="progress-text">20%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="contract-description">
+                            <p>Electrical system repair and maintenance for residential building with safety upgrades.
+                            </p>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn primary" title="View Details">
+                                <i class="fas fa-eye"></i>
+                                View Details
+                            </button>
+                            <button class="action-btn secondary" title="Edit Contract">
+                                <i class="fas fa-edit"></i>
+                                Edit
+                            </button>
+                            <button class="action-btn secondary" title="Send for Review">
+                                <i class="fas fa-paper-plane"></i>
+                                Send
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contract Card 8 -->
+                    <div class="contract-card" data-status="completed" data-type="repair">
+                        <div class="contract-header">
+                            <div class="contract-info">
+                                <h3>Contract 14 - Repair</h3>
+                                <p class="contract-id">Contract #CNT-2025-014</p>
+                            </div>
+                            <div class="contract-status completed">
+                                <i class="fas fa-check-circle"></i>
+                                Completed
+                            </div>
+                        </div>
+
+                        <div class="client-info">
+                            <div class="client-avatar">JR</div>
+                            <div class="client-details">
+                                <h4>Johnson Residence</h4>
+                                <p>Residential Client</p>
+                                <span class="contract-value">LKR 228,593</span>
+                            </div>
+                        </div>
+
+                        <div class="contract-details">
+                            <div class="detail-row">
+                                <i class="fas fa-calendar-check detail-icon"></i>
+                                <span class="detail-label">Completed:</span>
+                                <span class="detail-value">Oct 10, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-chart-line detail-icon"></i>
+                                <span class="detail-label">Progress:</span>
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 17%"></div>
+                                    </div>
+                                    <span class="progress-text">17%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="contract-description">
+                            <p>Comprehensive repair service for plumbing and electrical systems with quality assurance.
+                            </p>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn primary" title="View Details">
+                                <i class="fas fa-eye"></i>
+                                View Details
+                            </button>
+                            <button class="action-btn secondary" title="Download Contract">
+                                <i class="fas fa-download"></i>
+                                Download
+                            </button>
+                            <button class="action-btn secondary" title="Generate Invoice">
+                                <i class="fas fa-file-invoice"></i>
+                                Invoice
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contract Card 9 -->
+                    <div class="contract-card" data-status="completed" data-type="installation">
+                        <div class="contract-header">
+                            <div class="contract-info">
+                                <h3>Contract 15 - Installation</h3>
+                                <p class="contract-id">Contract #CNT-2025-015</p>
+                            </div>
+                            <div class="contract-status completed">
+                                <i class="fas fa-check-circle"></i>
+                                Completed
+                            </div>
+                        </div>
+
+                        <div class="client-info">
+                            <div class="client-avatar">TS</div>
+                            <div class="client-details">
+                                <h4>Tech Solutions Ltd</h4>
+                                <p>Commercial Client</p>
+                                <span class="contract-value">LKR 63,987</span>
+                            </div>
+                        </div>
+
+                        <div class="contract-details">
+                            <div class="detail-row">
+                                <i class="fas fa-calendar-check detail-icon"></i>
+                                <span class="detail-label">Completed:</span>
+                                <span class="detail-value">Oct 5, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-chart-line detail-icon"></i>
+                                <span class="detail-label">Progress:</span>
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 71%"></div>
+                                    </div>
+                                    <span class="progress-text">71%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="contract-description">
+                            <p>Network infrastructure installation with fiber optic cables and security system setup.
+                            </p>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn primary" title="View Details">
+                                <i class="fas fa-eye"></i>
+                                View Details
+                            </button>
+                            <button class="action-btn secondary" title="Download Contract">
+                                <i class="fas fa-download"></i>
+                                Download
+                            </button>
+                            <button class="action-btn secondary" title="Generate Invoice">
+                                <i class="fas fa-file-invoice"></i>
+                                Invoice
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contract Card 10 -->
+                    <div class="contract-card" data-status="completed" data-type="repair">
+                        <div class="contract-header">
+                            <div class="contract-info">
+                                <h3>Contract 16 - Repair</h3>
+                                <p class="contract-id">Contract #CNT-2025-016</p>
+                            </div>
+                            <div class="contract-status completed">
+                                <i class="fas fa-check-circle"></i>
+                                Completed
+                            </div>
+                        </div>
+
+                        <div class="client-info">
+                            <div class="client-avatar">JR</div>
+                            <div class="client-details">
+                                <h4>Johnson Residence</h4>
+                                <p>Residential Client</p>
+                                <span class="contract-value">LKR 235,120</span>
+                            </div>
+                        </div>
+
+                        <div class="contract-details">
+                            <div class="detail-row">
+                                <i class="fas fa-calendar-check detail-icon"></i>
+                                <span class="detail-label">Completed:</span>
+                                <span class="detail-value">Sep 30, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-chart-line detail-icon"></i>
+                                <span class="detail-label">Progress:</span>
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 52%"></div>
+                                    </div>
+                                    <span class="progress-text">52%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="contract-description">
+                            <p>HVAC system repair and optimization with energy efficiency improvements and warranty.</p>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn primary" title="View Details">
+                                <i class="fas fa-eye"></i>
+                                View Details
+                            </button>
+                            <button class="action-btn secondary" title="Download Contract">
+                                <i class="fas fa-download"></i>
+                                Download
+                            </button>
+                            <button class="action-btn secondary" title="Generate Invoice">
+                                <i class="fas fa-file-invoice"></i>
+                                Invoice
                             </button>
                         </div>
                     </div>
@@ -786,7 +1141,7 @@
                             <button class="preset-btn" data-preset="365">Last year</button>
                         </div>
                     </div>
-                                        <!-- Export Format Section -->
+                    <!-- Export Format Section -->
                     <div class="export-section">
                         <h3><i class="fas fa-file-alt"></i> Export Format</h3>
                         <div class="format-options">
@@ -870,17 +1225,17 @@
                         // Set active state immediately in the HTML before inserting
                         const tempDiv = document.createElement('div');
                         tempDiv.innerHTML = html;
-                        
+
                         // Remove any existing active classes
                         const allNavItems = tempDiv.querySelectorAll('.nav-item');
                         allNavItems.forEach(item => item.classList.remove('active'));
-                        
+
                         // Set contracts as active immediately
                         const contractsLink = tempDiv.querySelector('a[href="contracts.html"]');
                         if (contractsLink) {
                             contractsLink.parentElement.classList.add('active');
                         }
-                        
+
                         // Insert the modified HTML
                         document.getElementById(containerId).innerHTML = tempDiv.innerHTML;
                     } else {

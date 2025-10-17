@@ -41,6 +41,29 @@ function initializeSidebar() {
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            
+            // Check if it's a link to another page
+            const isPageLink = href.endsWith('.html') || href === 'repair-requests.html' || href === 'dashboard.html' || href === 'projects.html' || href === 'workforce.html' || href === 'payments.html' || href === 'contracts.html' || href === 'support.html';
+            
+            if (isPageLink) {
+                // Allow normal navigation for page links
+                // Remove active class from all nav items
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                // Add active class to clicked item's parent
+                this.closest('.nav-item').classList.add('active');
+                
+                // Store active page for later restoration
+                const linkText = this.querySelector('span').textContent;
+                localStorage.setItem('activePage', linkText);
+                
+                return; // Allow default navigation
+            }
+            
+            // For hash links, prevent default
             e.preventDefault();
             
             // Remove active class from all nav items
@@ -86,6 +109,7 @@ function getPageSubtitle(page) {
     const subtitles = {
         'Dashboard': 'Welcome back, let\'s see what\'s happening today',
         'Projects': 'Manage and track your ongoing projects',
+        'Repair Requests': 'Manage customer repair requests - public opportunities and direct requests',
         'Requests': 'Handle customer repair requests efficiently',
         'Workforce': 'Manage your team and assignments',
         'Payments': 'Track payments and financial transactions',

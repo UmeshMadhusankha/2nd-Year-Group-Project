@@ -947,7 +947,6 @@
 }
 
 .breadcrumbs {
-  color: var(--text-white);
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
@@ -958,6 +957,7 @@
   border-radius: var(--border-radius-lg);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
+
 
 .breadcrumbs a {
   color: var(--text-white);
@@ -999,38 +999,53 @@
 .action-btn {
   padding: var(--spacing-md) var(--spacing-lg);
   border: none;
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--border-radius);
   font-size: var(--font-size-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: var(--transition-normal);
+  transition: all var(--transition-speed);
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  text-decoration: none;
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.action-btn:hover::before {
+  left: 100%;
 }
 
 .action-btn.primary {
-  background: rgba(255, 255, 255, 0.95);
+  background: white;
   color: var(--primary-color);
-  box-shadow: var(--shadow-sm);
 }
 
 .action-btn.primary:hover {
-  background: white;
+  background: var(--background-color);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
 .action-btn.secondary {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .action-btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
   transform: translateY(-2px);
 }
 
