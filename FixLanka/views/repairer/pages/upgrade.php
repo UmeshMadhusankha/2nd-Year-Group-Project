@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upgrade to Pro - FixLanka</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../common/global.css">
+    <link rel="stylesheet" href="../common/variables.css">
+    <link rel="stylesheet" href="../common/topbar.css">
+    <link rel="stylesheet" href="../common/sidebar.css">
+    <link rel="stylesheet" href="upgrade.css">
+</head>
+<body>
+    <!-- Sidebar Toggle Checkbox -->
+    <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle-input">
+    
+    <!-- Dashboard Container -->
+    <div class="dashboard-container">
+        <!-- Include Topbar -->
+        <header class="header">
+            <div class="header-left">
+                <label for="sidebar-toggle" class="sidebar-toggle">
+                    <i class="fas fa-bars"></i>
+                </label>
+                <div class="logo">
+                    <img src="../common/fixlanka.png" alt="FixLanka" class="logo-image">
+                </div>
+                <div class="page-info">
+                    <h1 class="page-title">Upgrade to Pro</h1>
+                    <p class="page-subtitle">Unlock premium features and grow your repair business</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search requests, repairers, projects...">
+                </div>
+                <div class="notification-bell">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="profile-menu">
+                    <img src="../common/user.png" alt="Admin" class="profile-avatar">
+                    <div class="profile-dropdown">
+                        <div class="profile-dropdown-header">
+                            <h4 class="profile-dropdown-name">John Doe</h4>
+                            <p class="profile-dropdown-email">john.doe@fixlanka.com</p>
+                        </div>
+                        <ul class="profile-dropdown-menu">
+                            <li class="profile-dropdown-item">
+                                <a href="profile.php" class="profile-dropdown-link" data-action="profile">
+                                    <i class="fas fa-user"></i>
+                                    <span>My Profile</span>
+                                </a>
+                            </li>
+                            <li class="profile-dropdown-item">
+                                <a href="settings.php" class="profile-dropdown-link" data-action="settings">
+                                    <i class="fas fa-cog"></i>
+                                    <span>Settings</span>
+                                </a>
+                            </li>
+                            <li class="profile-dropdown-item">
+                                <a href="upgrade.php" class="profile-dropdown-link" data-action="upgrade">
+                                    <i class="fas fa-crown"></i>
+                                    <span>Upgrade</span>
+                                </a>
+                            </li>
+                            <div class="profile-dropdown-divider"></div>
+                            <li class="profile-dropdown-item">
+                                <a href="support.php" class="profile-dropdown-link" data-action="support">
+                                    <i class="fas fa-life-ring"></i>
+                                    <span>Support</span>
+                                </a>
+                            </li>
+                            <li class="profile-dropdown-item">
+                                <a href="#" class="profile-dropdown-link logout" data-action="logout">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="welcome.php" class="nav-link">
+                            <i class="fas fa-home"></i>
+                            <span>Welcome</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="available-jobs.php" class="nav-link">
+                            <i class="fas fa-briefcase"></i>
+                            <span>Available Jobs</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="my-jobs.php" class="nav-link">
+                            <i class="fas fa-tasks"></i>
+                            <span>My Jobs</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="earnings.php" class="nav-link">
+                            <i class="fas fa-wallet"></i>
+                            <span>Earnings</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="reviews.php" class="nav-link">
+                            <i class="fas fa-star"></i>
+                            <span>Reviews</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="profile.php" class="nav-link">
+                            <i class="fas fa-user"></i>
+                            <span>My Profile</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="support.php" class="nav-link">
+                            <i class="fas fa-life-ring"></i>
+                            <span>Support</span>
+                        </a>
+                    </li>
+                    <li class="nav-item active">
+                        <a href="upgrade.php" class="nav-link">
+                            <i class="fas fa-crown"></i>
+                            <span>Upgrade</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#settings" class="nav-link">
+                            <i class="fas fa-cog"></i>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <!-- Footer in Sidebar -->
+            <footer class="sidebar-footer">
+                <p>© 2025 FixLanka<br>
+                   <a href="#terms">Terms</a> | 
+                   <a href="#privacy">Privacy</a> | 
+                   <a href="#help">Help</a>
+                </p>
+            </footer>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content-wrapper">
+            <div class="main-content">
+                <div class="content-wrapper">
+                    <!-- Current Plan Section -->
+                    <section class="current-plan-section">
+                        <div class="current-plan-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-user"></i>
+                                Current Plan
+                            </h3>
+                        </div>
+                        
+                        <div class="current-plan-card">
+                            <div class="plan-info">
+                                <div class="plan-name">Basic Plan</div>
+                                <div class="plan-price">Free</div>
+                                <div class="plan-description">Perfect for getting started</div>
+                            </div>
+                            <div class="plan-usage">
+                                <div class="usage-item">
+                                    <span class="usage-label">Jobs Applied:</span>
+                                    <span class="usage-value">8 / 10</span>
+                                </div>
+                                <div class="usage-item">
+                                    <span class="usage-label">Profile Views:</span>
+                                    <span class="usage-value">45 this month</span>
+                                </div>
+                                <div class="usage-item">
+                                    <span class="usage-label">Premium Features:</span>
+                                    <span class="usage-value">Not Available</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Upgrade Plans Section -->
+                    <section class="upgrade-plans-section">
+                        <div class="upgrade-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-crown"></i>
+                                Upgrade Your Account
+                            </h3>
+                            <p class="section-description">Choose the perfect plan to accelerate your repair business growth</p>
+                        </div>
+                        
+                        <div class="pricing-toggle">
+                            <span class="toggle-label">Monthly</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="billing-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label">Annual <span class="discount-badge">Save 20%</span></span>
+                        </div>
+
+                        <div class="plans-grid">
+                            <!-- Pro Plan -->
+                            <div class="plan-card pro-plan">
+                                <div class="plan-badge">Most Popular</div>
+                                <div class="plan-header">
+                                    <div class="plan-icon">
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                    <h4 class="plan-title">Pro Plan</h4>
+                                    <div class="plan-pricing">
+                                        <span class="plan-price monthly-price">LKR 2,500</span>
+                                        <span class="plan-price annual-price">LKR 2,000</span>
+                                        <span class="plan-period">/month</span>
+                                    </div>
+                                    <p class="plan-subtitle">Perfect for active repairers</p>
+                                </div>
+                                
+                                <div class="plan-features">
+                                    <ul class="features-list">
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>Unlimited job applications</span>
+                                        </li>
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>Priority in search results</span>
+                                        </li>
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>Advanced analytics dashboard</span>
+                                        </li>
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>Customer contact information</span>
+                                        </li>
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>Pro badge on profile</span>
+                                        </li>
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>24/7 priority support</span>
+                                        </li>
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>Reduced platform fees (12%)</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                <button class="btn btn-primary plan-btn" onclick="selectPlan('pro')">
+                                    <i class="fas fa-crown"></i>
+                                    Upgrade to Pro
+                                </button>
+                            </div>
+
+                            <!-- Business Plan -->
+                            <div class="plan-card business-plan">
+                                <div class="plan-header">
+                                    <div class="plan-icon">
+                                        <i class="fas fa-building"></i>
+                                    </div>
+                                    <h4 class="plan-title">Business Plan</h4>
+                                    <div class="plan-pricing">
+                                        <span class="plan-price monthly-price">LKR 4,500</span>
+                                        <span class="plan-price annual-price">LKR 3,600</span>
+                                        <span class="plan-period">/month</span>
+                                    </div>
+                                    <p class="plan-subtitle">For established repair businesses</p>
+                                </div>
+                                
+                                <div class="plan-features">
+                                    <ul class="features-list">
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>Everything in Pro Plan</span>
+                                        </li>
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>Team member accounts (up to 5)</span>
+                                        </li>
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>Advanced scheduling tools</span>
+                                        </li>
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>Custom business profile</span>
+                                        </li>
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>Invoice generation & tracking</span>
+                                        </li>
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>Dedicated account manager</span>
+                                        </li>
+                                        <li class="feature-item">
+                                            <i class="fas fa-check"></i>
+                                            <span>Lowest platform fees (8%)</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                <button class="btn btn-outline plan-btn" onclick="selectPlan('business')">
+                                    <i class="fas fa-building"></i>
+                                    Upgrade to Business
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Features Comparison Section -->
+                    <section class="features-comparison-section">
+                        <div class="comparison-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-balance-scale"></i>
+                                Feature Comparison
+                            </h3>
+                            <p class="section-description">Compare all plans to find what works best for you</p>
+                        </div>
+                        
+                        <div class="comparison-table-wrapper">
+                            <table class="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th class="feature-col">Features</th>
+                                        <th class="plan-col">Basic</th>
+                                        <th class="plan-col pro-col">Pro</th>
+                                        <th class="plan-col">Business</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="feature-name">Job Applications per Month</td>
+                                        <td class="plan-value">10</td>
+                                        <td class="plan-value">Unlimited</td>
+                                        <td class="plan-value">Unlimited</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="feature-name">Platform Fees</td>
+                                        <td class="plan-value">15%</td>
+                                        <td class="plan-value">12%</td>
+                                        <td class="plan-value">8%</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="feature-name">Priority in Search</td>
+                                        <td class="plan-value"><i class="fas fa-times text-error"></i></td>
+                                        <td class="plan-value"><i class="fas fa-check text-success"></i></td>
+                                        <td class="plan-value"><i class="fas fa-check text-success"></i></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="feature-name">Customer Contact Info</td>
+                                        <td class="plan-value"><i class="fas fa-times text-error"></i></td>
+                                        <td class="plan-value"><i class="fas fa-check text-success"></i></td>
+                                        <td class="plan-value"><i class="fas fa-check text-success"></i></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="feature-name">Analytics Dashboard</td>
+                                        <td class="plan-value">Basic</td>
+                                        <td class="plan-value">Advanced</td>
+                                        <td class="plan-value">Premium</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="feature-name">Team Members</td>
+                                        <td class="plan-value">1</td>
+                                        <td class="plan-value">1</td>
+                                        <td class="plan-value">5</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="feature-name">Support Level</td>
+                                        <td class="plan-value">Standard</td>
+                                        <td class="plan-value">Priority</td>
+                                        <td class="plan-value">Dedicated</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="feature-name">Invoice Tools</td>
+                                        <td class="plan-value"><i class="fas fa-times text-error"></i></td>
+                                        <td class="plan-value"><i class="fas fa-times text-error"></i></td>
+                                        <td class="plan-value"><i class="fas fa-check text-success"></i></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- FAQ Section -->
+                    <section class="faq-section">
+                        <div class="faq-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-question-circle"></i>
+                                Frequently Asked Questions
+                            </h3>
+                        </div>
+                        
+                        <div class="faq-list">
+                            <div class="faq-item">
+                                <div class="faq-question" onclick="toggleFaq(this)">
+                                    <span>Can I cancel my subscription anytime?</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>Yes, you can cancel your subscription at any time. Your Pro features will remain active until the end of your current billing period, and then your account will automatically downgrade to the Basic plan.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="faq-item">
+                                <div class="faq-question" onclick="toggleFaq(this)">
+                                    <span>What payment methods do you accept?</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>We accept all major credit cards (Visa, MasterCard, American Express), debit cards, and bank transfers. All payments are processed securely through our encrypted payment gateway.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="faq-item">
+                                <div class="faq-question" onclick="toggleFaq(this)">
+                                    <span>Do you offer refunds?</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>We offer a 30-day money-back guarantee for all new subscriptions. If you're not satisfied with your Pro plan within the first 30 days, contact our support team for a full refund.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="faq-item">
+                                <div class="faq-question" onclick="toggleFaq(this)">
+                                    <span>Can I upgrade or downgrade my plan?</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>Yes, you can change your plan at any time. Upgrades take effect immediately, while downgrades will take effect at the end of your current billing cycle. The price difference will be prorated accordingly.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="faq-item">
+                                <div class="faq-question" onclick="toggleFaq(this)">
+                                    <span>How does the annual billing work?</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>Annual billing gives you a 20% discount compared to monthly billing. You'll be charged upfront for the entire year, and your Pro features will be active for 12 months. You can still cancel anytime, but refunds are prorated based on unused months.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Upgrade Confirmation Modal -->
+    <div class="modal-overlay" id="upgrade-modal-overlay">
+        <div class="upgrade-modal" id="upgrade-modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm Your Upgrade</h3>
+                <button class="modal-close" id="close-upgrade-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="upgrade-summary">
+                    <div class="selected-plan">
+                        <div class="plan-info">
+                            <div class="plan-icon">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="plan-details">
+                                <h4 class="plan-name" id="modal-plan-name">Pro Plan</h4>
+                                <div class="plan-price" id="modal-plan-price">LKR 2,500/month</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="billing-summary">
+                        <div class="summary-row">
+                            <span class="summary-label">Plan:</span>
+                            <span class="summary-value" id="summary-plan">Pro Plan</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Billing:</span>
+                            <span class="summary-value" id="summary-billing">Monthly</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Total:</span>
+                            <span class="summary-value total" id="summary-total">LKR 2,500</span>
+                        </div>
+                    </div>
+                    
+                    <div class="upgrade-benefits">
+                        <h5>You'll get instant access to:</h5>
+                        <ul class="benefits-list" id="modal-benefits">
+                            <li><i class="fas fa-check"></i> Unlimited job applications</li>
+                            <li><i class="fas fa-check"></i> Priority in search results</li>
+                            <li><i class="fas fa-check"></i> Customer contact information</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-upgrade">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button class="btn btn-primary" id="confirm-upgrade">
+                    <i class="fas fa-credit-card"></i>
+                    Proceed to Payment
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include JavaScript -->
+    <script src="../common/common.js"></script>
+    <script src="upgrade.js"></script>
+</body>
+</html>

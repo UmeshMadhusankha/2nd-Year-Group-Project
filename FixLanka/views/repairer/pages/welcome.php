@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to FixLanka</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../common/global.css">
+    <link rel="stylesheet" href="../common/variables.css">
+    <link rel="stylesheet" href="../common/topbar.css">
+    <link rel="stylesheet" href="../common/sidebar.css">
+    <link rel="stylesheet" href="welcome.css">
+</head>
+<body>
+    <!-- Sidebar Toggle Checkbox -->
+    <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle-input">
+    
+    <!-- Dashboard Container -->
+    <div class="dashboard-container">
+        <!-- Include Topbar -->
+        <header class="header">
+            <div class="header-left">
+                <label for="sidebar-toggle" class="sidebar-toggle">
+                    <i class="fas fa-bars"></i>
+                </label>
+                <div class="logo">
+                    <img src="../common/fixlanka.png" alt="FixLanka" class="logo-image">
+                </div>
+                <div class="page-info">
+                    <h1 class="page-title">Welcome to FixLanka</h1>
+                    <p class="page-subtitle">Your trusted repair network dashboard</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search requests, repairers, projects...">
+                </div>
+                <div class="notification-bell">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="profile-menu">
+                    <img src="../common/user.png" alt="Admin" class="profile-avatar">
+                    <div class="profile-dropdown">
+                        <div class="profile-dropdown-header">
+                            <h4 class="profile-dropdown-name">John Doe</h4>
+                            <p class="profile-dropdown-email">john.doe@fixlanka.com</p>
+                        </div>
+                        <ul class="profile-dropdown-menu">
+                            <li class="profile-dropdown-item">
+                                <a href="profile.php" class="profile-dropdown-link" data-action="profile">
+                                    <i class="fas fa-user"></i>
+                                    <span>My Profile</span>
+                                </a>
+                            </li>
+                            <li class="profile-dropdown-item">
+                                <a href="settings.php" class="profile-dropdown-link" data-action="settings">
+                                    <i class="fas fa-cog"></i>
+                                    <span>Settings</span>
+                                </a>
+                            </li>
+                            <li class="profile-dropdown-item">
+                                <a href="upgrade.php" class="profile-dropdown-link" data-action="upgrade">
+                                    <i class="fas fa-crown"></i>
+                                    <span>Upgrade</span>
+                                </a>
+                            </li>
+                            <div class="profile-dropdown-divider"></div>
+                            <li class="profile-dropdown-item">
+                                <a href="support.php" class="profile-dropdown-link" data-action="support">
+                                    <i class="fas fa-life-ring"></i>
+                                    <span>Support</span>
+                                </a>
+                            </li>
+                            <li class="profile-dropdown-item">
+                                <a href="#" class="profile-dropdown-link logout" data-action="logout">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Include Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li class="nav-item active">
+                        <a href="welcome.php" class="nav-link" data-tooltip="Welcome">
+                            <i class="fas fa-home"></i>
+                            <span>Welcome</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="available-jobs.php" class="nav-link" data-tooltip="Available Jobs">
+                            <i class="fas fa-briefcase"></i>
+                            <span>Available Jobs</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="my-jobs.php" class="nav-link" data-tooltip="My Jobs">
+                            <i class="fas fa-tasks"></i>
+                            <span>My Jobs</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="earnings.php" class="nav-link" data-tooltip="Earnings">
+                            <i class="fas fa-wallet"></i>
+                            <span>Earnings</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="reviews.php" class="nav-link" data-tooltip="Reviews">
+                            <i class="fas fa-star"></i>
+                            <span>Reviews</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="profile.php" class="nav-link" data-tooltip="My Profile">
+                            <i class="fas fa-user"></i>
+                            <span>My Profile</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="support.php" class="nav-link" data-tooltip="Support">
+                            <i class="fas fa-life-ring"></i>
+                            <span>Support</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="upgrade.php" class="nav-link" data-tooltip="Upgrade">
+                            <i class="fas fa-crown"></i>
+                            <span>Upgrade</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#settings" class="nav-link" data-tooltip="Settings">
+                            <i class="fas fa-cog"></i>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <!-- Footer in Sidebar -->
+            <footer class="sidebar-footer">
+                <p>© 2025 FixLanka<br>
+                   <a href="#terms">Terms</a> | 
+                   <a href="#privacy">Privacy</a> | 
+                   <a href="#help">Help</a>
+                </p>
+            </footer>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content-wrapper">
+            <main class="main-content">
+                <div class="content-wrapper">
+                <!-- Welcome Section -->
+                <section class="welcome-section">
+                    <div class="welcome-header">
+                        <div class="welcome-text">
+                            <h1 class="welcome-title">Welcome back, <span class="repairer-name">John Doe</span>!</h1>
+                            <p class="welcome-subtitle">Ready to help more customers today? Here's your current overview.</p>
+                        </div>
+                        <div class="welcome-actions">
+                            <button class="btn btn-primary">
+                                <i class="fas fa-plus"></i>
+                                Update Availability
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Quick Stats Cards -->
+                <section class="stats-section">
+                    <div class="stats-grid">
+                        <div class="stat-card active-jobs">
+                            <div class="stat-icon">
+                                <i class="fas fa-hammer"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 class="stat-number">5</h3>
+                                <p class="stat-label">Active Jobs</p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card pending-quotes">
+                            <div class="stat-icon">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 class="stat-number">8</h3>
+                                <p class="stat-label">Pending Quotes</p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card total-earnings">
+                            <div class="stat-icon">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 class="stat-number">LKR 45,200</h3>
+                                <p class="stat-label">Total Earnings</p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card availability-status">
+                            <div class="stat-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 class="stat-status available">Available</h3>
+                                <p class="stat-label">Current Status</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Quick Actions Section -->
+                <section class="quick-actions-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Quick Actions</h2>
+                        <span class="section-subtitle">Common tasks at your fingertips</span>
+                    </div>
+
+                    <div class="quick-actions-grid">
+                        <a href="available-jobs.php" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="action-content">
+                                <h3 class="action-title">Browse Jobs</h3>
+                                <p class="action-description">Find new repair requests in your area</p>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </a>
+
+                        <a href="my-jobs.php" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <div class="action-content">
+                                <h3 class="action-title">My Active Jobs</h3>
+                                <p class="action-description">Manage your current repair tasks</p>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </a>
+
+                        <a href="upgrade.php" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-crown"></i>
+                            </div>
+                            <div class="action-content">
+                                <h3 class="action-title">Upgrade to Pro</h3>
+                                <p class="action-description">Unlock premium features for your business</p>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </a>
+
+                        <a href="earnings.php" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="action-content">
+                                <h3 class="action-title">View Earnings</h3>
+                                <p class="action-description">Track your income and payments</p>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </a>
+
+                        <a href="profile.php" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-user-edit"></i>
+                            </div>
+                            <div class="action-content">
+                                <h3 class="action-title">Update Profile</h3>
+                                <p class="action-description">Edit your skills and availability</p>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </a>
+
+                        <a href="support.php" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-headset"></i>
+                            </div>
+                            <div class="action-content">
+                                <h3 class="action-title">Get Support</h3>
+                                <p class="action-description">Contact our support team</p>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </a>
+                    </div>
+                </section>
+
+                <!-- Recent Activity -->
+                <section class="activity-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Recent Activity</h2>
+                        <a href="my-jobs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+                    </div>
+
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="activity-content">
+                                <h4 class="activity-title">Job Completed</h4>
+                                <p class="activity-description">Plumbing repair at Colombo 07 - Customer paid LKR 2,500</p>
+                                <span class="activity-time">2 hours ago</span>
+                            </div>
+                            <div class="activity-status completed">
+                                <span>Completed</span>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                            <div class="activity-content">
+                                <h4 class="activity-title">Quote Submitted</h4>
+                                <p class="activity-description">Electrical repair quote for Kandy - LKR 1,800</p>
+                                <span class="activity-time">5 hours ago</span>
+                            </div>
+                            <div class="activity-status pending">
+                                <span>Pending</span>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="activity-content">
+                                <h4 class="activity-title">New Review Received</h4>
+                                <p class="activity-description">5-star review from Nimal Perera - "Excellent service!"</p>
+                                <span class="activity-time">1 day ago</span>
+                            </div>
+                            <div class="activity-status review">
+                                <span>5 ★</span>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-handshake"></i>
+                            </div>
+                            <div class="activity-content">
+                                <h4 class="activity-title">Job Accepted</h4>
+                                <p class="activity-description">AC repair at Nugegoda - Starting tomorrow 9:00 AM</p>
+                                <span class="activity-time">1 day ago</span>
+                            </div>
+                            <div class="activity-status accepted">
+                                <span>Accepted</span>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                            <div class="activity-content">
+                                <h4 class="activity-title">Payment Received</h4>
+                                <p class="activity-description">Appliance repair payment - LKR 3,200 credited to account</p>
+                                <span class="activity-time">2 days ago</span>
+                            </div>
+                            <div class="activity-status payment">
+                                <span>Paid</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="../common/common.js"></script>
+    <script src="welcome.js"></script>
+</body>
+</html>
