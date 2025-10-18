@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chats - Fix Lanka</title>
+    <link rel="stylesheet" href="../../assets/css/user/chat.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-left">
+                <div class="logo">
+                    <a href="landing.php">
+                        <span class="logo-text">Fix<span class="logo-highlight">Lanka</span></span>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="navbar-center">
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="landing.php" class="nav-link">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="dashboard.php" class="nav-link">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="job-history.html" class="nav-link">My Jobs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="chat.html" class="nav-link active">Chats</a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="navbar-right">
+                <div class="notification-bell">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge">3</span>
+                </div>
+                
+                <div class="profile-dropdown-container">
+                    <div class="profile-avatar" id="profileAvatar">
+                        <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-image">
+                    </div>
+                    
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <ul class="dropdown-menu">
+                            <li class="dropdown-item">
+                                <a href="#profile" class="dropdown-link">
+                                    <i class="fas fa-user"></i>
+                                    My Profile
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
+                                <a href="job-history.html" class="dropdown-link">
+                                    <i class="fas fa-briefcase"></i>
+                                    Job History
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
+                                <a href="chat.html" class="dropdown-link">
+                                    <i class="fas fa-comments"></i>
+                                    Messages
+                                </a>
+                            </li>
+                            <li class="dropdown-divider"></li>
+                            <li class="dropdown-item">
+                                <a href="#logout" class="dropdown-link logout">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mobile menu toggle -->
+            <div class="mobile-menu-toggle" id="mobileMenuToggle">
+                <span class="hamburger"></span>
+                <span class="hamburger"></span>
+                <span class="hamburger"></span>
+            </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div class="mobile-menu" id="mobileMenu">
+            <ul class="mobile-nav-menu">
+                <li><a href="landing.php" class="mobile-nav-link">Home</a></li>
+                <li><a href="dashboard.php" class="mobile-nav-link">Dashboard</a></li>
+                <li><a href="job-history.html" class="mobile-nav-link">My Jobs</a></li>
+                <li><a href="chat.html" class="mobile-nav-link active">Chats</a></li>
+                <li><a href="#profile" class="mobile-nav-link">My Profile</a></li>
+                <li><a href="#logout" class="mobile-nav-link">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Chat Container -->
+    <main class="main-content">
+        <div class="chat-container">
+            <!-- Left Sidebar - Chat List -->
+            <div class="chat-sidebar" id="chatSidebar">
+                <div class="sidebar-header">
+                    <h2 class="sidebar-title">Messages</h2>
+                    <button class="back-btn" id="backToList" style="display: none;">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="chat-search">
+                    <i class="fas fa-search search-icon"></i>
+                    <input 
+                        type="text" 
+                        id="chatSearchInput" 
+                        class="search-input" 
+                        placeholder="Search conversations..."
+                        aria-label="Search conversations"
+                    >
+                </div>
+
+                <!-- Filter Tabs -->
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="all">All</button>
+                    <button class="filter-tab" data-filter="companies">Companies</button>
+                    <button class="filter-tab" data-filter="individuals">Individuals</button>
+                </div>
+
+                <!-- Chat List -->
+                <div class="chat-list" id="chatList">
+                    <!-- Chat items will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Right Panel - Active Chat -->
+            <div class="chat-panel" id="chatPanel">
+                <!-- Empty State -->
+                <div class="empty-chat-state" id="emptyChatState">
+                    <div class="empty-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3>Select a conversation</h3>
+                    <p>Choose a conversation from the list to start messaging</p>
+                </div>
+
+                <!-- Active Chat -->
+                <div class="active-chat" id="activeChat" style="display: none;">
+                    <!-- Chat Header -->
+                    <div class="chat-header">
+                        <div class="chat-user-info">
+                            <img id="chatAvatar" src="" alt="User" class="chat-avatar">
+                            <div class="chat-user-details">
+                                <h3 id="chatUserName" class="chat-user-name"></h3>
+                                <p id="chatUserStatus" class="chat-user-status">Online</p>
+                            </div>
+                        </div>
+                        <div class="chat-actions">
+                            <button class="chat-action-btn" id="sendAgreementBtn" title="Send Agreement">
+                                <i class="fas fa-file-contract"></i>
+                            </button>
+                            <button class="chat-action-btn" id="makePaymentBtn" title="Make Payment" style="display: none;">
+                                <i class="fas fa-credit-card"></i>
+                            </button>
+                            <button class="chat-action-btn" title="More options">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Agreement Badge (if exists) -->
+                    <div class="agreement-badge" id="agreementBadge" style="display: none;">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="agreementStatus"></span>
+                    </div>
+
+                    <!-- Chat Messages -->
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Messages will be populated by JavaScript -->
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="chat-input-container">
+                        <button class="attach-btn" id="attachBtn" title="Attach file">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <input type="file" id="fileInput" style="display: none;" accept="image/*,video/*,.pdf,.doc,.docx">
+                        <textarea 
+                            id="messageInput" 
+                            class="message-input" 
+                            placeholder="Type a message..."
+                            rows="1"
+                        ></textarea>
+                        <button class="send-btn" id="sendBtn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Agreement Modal -->
+    <div class="modal-overlay" id="agreementModal">
+        <div class="modal-container agreement-modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Create Job Agreement</h3>
+                <button class="modal-close" id="agreementModalClose" aria-label="Close modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-content">
+                <form id="agreementForm">
+                    <!-- Job Title -->
+                    <div class="form-group">
+                        <label for="agreementJobTitle">Job Title <span class="required">*</span></label>
+                        <input 
+                            type="text" 
+                            id="agreementJobTitle" 
+                            class="form-input"
+                            placeholder="e.g., Kitchen Sink Repair"
+                            required
+                        >
+                    </div>
+
+                    <!-- Job Description -->
+                    <div class="form-group">
+                        <label for="agreementDescription">Job Description <span class="required">*</span></label>
+                        <textarea 
+                            id="agreementDescription" 
+                            class="form-textarea"
+                            rows="4"
+                            placeholder="Describe the job details..."
+                            required
+                        ></textarea>
+                    </div>
+
+                    <!-- Deadline -->
+                    <div class="form-group">
+                        <label for="agreementDeadline">Deadline <span class="required">*</span></label>
+                        <input 
+                            type="date" 
+                            id="agreementDeadline" 
+                            class="form-input"
+                            required
+                        >
+                    </div>
+
+                    <!-- Milestone-based Payment Toggle -->
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input 
+                                type="checkbox" 
+                                id="milestonePayment"
+                            >
+                            <span>Enable milestone-based payments</span>
+                        </label>
+                    </div>
+
+                    <!-- Milestone Details (hidden by default) -->
+                    <div id="milestoneDetails" style="display: none;">
+                        <div class="form-group">
+                            <label for="milestoneCount">Number of Milestones <span class="required">*</span></label>
+                            <select id="milestoneCount" class="form-select">
+                                <option value="2">2 Milestones</option>
+                                <option value="3">3 Milestones</option>
+                                <option value="4">4 Milestones</option>
+                                <option value="5">5 Milestones</option>
+                            </select>
+                        </div>
+
+                        <div id="milestonesList">
+                            <!-- Milestone inputs will be generated here -->
+                        </div>
+                    </div>
+
+                    <!-- Total Budget -->
+                    <div class="form-group">
+                        <label for="agreementBudget">Total Budget (LKR) <span class="required">*</span></label>
+                        <input 
+                            type="number" 
+                            id="agreementBudget" 
+                            class="form-input"
+                            placeholder="e.g., 5000"
+                            min="0"
+                            step="100"
+                            required
+                        >
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="form-group">
+                        <label for="paymentMethod">Payment Method <span class="required">*</span></label>
+                        <select id="paymentMethod" class="form-select" required>
+                            <option value="">Select payment method</option>
+                            <option value="card">Credit/Debit Card</option>
+                            <option value="bank">Bank Transfer</option>
+                            <option value="mobile">Mobile Payment</option>
+                        </select>
+                    </div>
+
+                    <!-- Modal Actions -->
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" id="cancelAgreement">Cancel</button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                            Send Agreement
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Confirmation Modal -->
+    <div class="modal-overlay" id="paymentModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Make Payment</h3>
+                <button class="modal-close" id="paymentModalClose" aria-label="Close modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-content">
+                <div class="payment-info">
+                    <p>You will be redirected to the payment page to complete the transaction.</p>
+                    <div class="payment-details" id="paymentDetails">
+                        <!-- Payment details will be populated -->
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelPayment">Cancel</button>
+                    <button type="button" class="btn-primary" id="proceedPayment">
+                        <i class="fas fa-credit-card"></i>
+                        Proceed to Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <i class="fas fa-check-circle toast-icon"></i>
+            <span class="toast-message" id="toastMessage">Success message</span>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>FixLanka</h3>
+                <p>Your trusted repair service platform in Sri Lanka</p>
+                <div class="social-icons">
+                    <a href="#facebook" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                    <a href="#twitter" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#instagram" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="#linkedin" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-section">
+                <h4>Services</h4>
+                <ul>
+                    <li><a href="#plumbing">Plumbing</a></li>
+                    <li><a href="#electrical">Electrical</a></li>
+                    <li><a href="#cleaning">Cleaning</a></li>
+                    <li><a href="#hvac">HVAC</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h4>Support</h4>
+                <ul>
+                    <li><a href="#help">Help Center</a></li>
+                    <li><a href="#contact">Contact Us</a></li>
+                    <li><a href="#faq">FAQ</a></li>
+                    <li><a href="#terms">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2025 FixLanka. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="../../assets/javascript/user/chat.js"></script>
+</body>
+</html>

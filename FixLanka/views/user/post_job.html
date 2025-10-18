@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post a Job - Fix Lanka</title>
+    <link rel="stylesheet" href="../../assets/css/user/post_job.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-logo">
+                <a href="landing.php">
+                    <span class="logo-text">Fix<span class="logo-highlight">Lanka</span></span>
+                </a>
+            </div>
+            <nav class="navbar-menu">
+                <a href="landing.php">Home</a>
+                <a href="dashboard.php">Dashboard</a>
+                <a href="post_job.html" class="active">Post Job</a>
+                <a href="#support">Support</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="form-container">
+            <div class="form-card">
+                <div class="form-header">
+                    <h1>Post a New Job</h1>
+                    <p>Fill in the details below to post your repair job</p>
+                </div>
+
+                <form id="postJobForm" novalidate>
+                    <!-- Job Title -->
+                    <div class="form-group">
+                        <label for="jobTitle">Job Title <span class="required">*</span></label>
+                        <input 
+                            type="text" 
+                            id="jobTitle" 
+                            name="jobTitle" 
+                            placeholder="e.g., Fix leaking kitchen sink"
+                            required
+                            aria-required="true"
+                        >
+                        <span class="error-message" id="jobTitleError"></span>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="form-group">
+                        <label for="category">Category <span class="required">*</span></label>
+                        <select 
+                            id="category" 
+                            name="category" 
+                            required
+                            aria-required="true"
+                        >
+                            <option value="">Select a category</option>
+                            <option value="plumbing">Plumbing</option>
+                            <option value="electrical">Electrical</option>
+                            <option value="cleaning">Cleaning</option>
+                            <option value="hvac">HVAC</option>
+                            <option value="carpentry">Carpentry</option>
+                            <option value="painting">Painting</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <span class="error-message" id="categoryError"></span>
+                    </div>
+
+                    <!-- Job Description -->
+                    <div class="form-group">
+                        <label for="description">Job Description <span class="required">*</span></label>
+                        <textarea 
+                            id="description" 
+                            name="description" 
+                            rows="5" 
+                            placeholder="Describe the job in detail..."
+                            required
+                            aria-required="true"
+                        ></textarea>
+                        <span class="error-message" id="descriptionError"></span>
+                    </div>
+
+                    <!-- Budget -->
+                    <div class="form-group">
+                        <label for="budget">Budget (LKR)</label>
+                        <input 
+                            type="number" 
+                            id="budget" 
+                            name="budget" 
+                            placeholder="e.g., 5000"
+                            min="0"
+                            step="100"
+                        >
+                        <span class="hint-text">Optional - Enter your budget in Sri Lankan Rupees</span>
+                    </div>
+
+                    <!-- Preferred Date -->
+                    <div class="form-group">
+                        <label for="preferredDate">Preferred Date</label>
+                        <input 
+                            type="date" 
+                            id="preferredDate" 
+                            name="preferredDate"
+                        >
+                    </div>
+
+                    <!-- Location -->
+                    <div class="form-group">
+                        <label for="location">Location <span class="required">*</span></label>
+                        <input 
+                            type="text" 
+                            id="location" 
+                            name="location" 
+                            placeholder="e.g., Colombo 07"
+                            required
+                            aria-required="true"
+                        >
+                        <span class="error-message" id="locationError"></span>
+                    </div>
+
+                    <!-- Visibility Options -->
+                    <div class="form-group">
+                        <label class="section-label">Visibility Options</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input 
+                                    type="checkbox" 
+                                    id="showToCompanies" 
+                                    name="showToCompanies"
+                                    value="companies"
+                                >
+                                <span>Show to Companies</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input 
+                                    type="checkbox" 
+                                    id="showToRepairers" 
+                                    name="showToRepairers"
+                                    value="repairers"
+                                >
+                                <span>Show to Individual Repairers</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Urgency -->
+                    <div class="form-group">
+                        <label class="checkbox-label urgent-checkbox">
+                            <input 
+                                type="checkbox" 
+                                id="urgent" 
+                                name="urgent"
+                                value="urgent"
+                            >
+                            <span>⚡ This job is urgent</span>
+                        </label>
+                    </div>
+
+                    <!-- File Upload -->
+                    <div class="form-group">
+                        <label for="fileUpload">Attach Photos/Videos</label>
+                        <div class="file-upload-wrapper">
+                            <input 
+                                type="file" 
+                                id="fileUpload" 
+                                name="fileUpload"
+                                accept="image/*,video/*"
+                                multiple
+                            >
+                            <label for="fileUpload" class="file-upload-label">
+                                <span class="upload-icon">📎</span>
+                                <span class="upload-text">Choose files</span>
+                            </label>
+                        </div>
+                        <div id="filePreview" class="file-preview"></div>
+                    </div>
+
+                    <!-- Job Type -->
+                    <div class="form-group">
+                        <label class="section-label">Job Type</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input 
+                                    type="radio" 
+                                    id="oneTime" 
+                                    name="jobType" 
+                                    value="one-time"
+                                    checked
+                                >
+                                <span>One-time</span>
+                            </label>
+                            <label class="radio-label">
+                                <input 
+                                    type="radio" 
+                                    id="recurring" 
+                                    name="jobType" 
+                                    value="recurring"
+                                >
+                                <span>Recurring</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="submitBtn" class="submit-btn" disabled>
+                        Post Job
+                    </button>
+                </form>
+
+                <!-- Support Link -->
+                <div class="support-link">
+                    <p>Need help? <a href="#support">Contact Support</a></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>FixLanka</h3>
+                <p>Your trusted repair service platform in Sri Lanka</p>
+            </div>
+            <div class="footer-section">
+                <h4>Services</h4>
+                <ul>
+                    <li><a href="#plumbing">Plumbing</a></li>
+                    <li><a href="#electrical">Electrical</a></li>
+                    <li><a href="#cleaning">Cleaning</a></li>
+                    <li><a href="#hvac">HVAC</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Support</h4>
+                <ul>
+                    <li><a href="#help">Help Center</a></li>
+                    <li><a href="#contact">Contact Us</a></li>
+                    <li><a href="#faq">FAQ</a></li>
+                    <li><a href="#terms">Terms of Service</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Follow Us</h4>
+                <div class="social-icons">
+                    <a href="#facebook" aria-label="Facebook">📘</a>
+                    <a href="#twitter" aria-label="Twitter">🐦</a>
+                    <a href="#instagram" aria-label="Instagram">📷</a>
+                    <a href="#linkedin" aria-label="LinkedIn">💼</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 FixLanka. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="../../assets/javascript/user/post_job.js"></script>
+</body>
+</html>

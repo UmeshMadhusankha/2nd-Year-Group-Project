@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job History - Fix Lanka</title>
+    <link rel="stylesheet" href="../../assets/css/user/job-history.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-left">
+                <div class="logo">
+                    <a href="landing.php">
+                        <span class="logo-text">Fix<span class="logo-highlight">Lanka</span></span>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="navbar-center">
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="landing.php" class="nav-link">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="dashboard.php" class="nav-link">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="job-history.html" class="nav-link active">My Jobs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#support" class="nav-link">Support</a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="navbar-right">
+                <div class="notification-bell">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge">3</span>
+                </div>
+                
+                <div class="profile-dropdown-container">
+                    <div class="profile-avatar" id="profileAvatar">
+                        <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-image">
+                    </div>
+                    
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <ul class="dropdown-menu">
+                            <li class="dropdown-item">
+                                <a href="#profile" class="dropdown-link">
+                                    <i class="fas fa-user"></i>
+                                    My Profile
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
+                                <a href="job-history.html" class="dropdown-link">
+                                    <i class="fas fa-briefcase"></i>
+                                    Job History
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
+                                <a href="#messages" class="dropdown-link">
+                                    <i class="fas fa-envelope"></i>
+                                    Messages
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
+                                <a href="#settings" class="dropdown-link">
+                                    <i class="fas fa-cog"></i>
+                                    Settings
+                                </a>
+                            </li>
+                            <li class="dropdown-divider"></li>
+                            <li class="dropdown-item">
+                                <a href="#logout" class="dropdown-link logout">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mobile menu toggle -->
+            <div class="mobile-menu-toggle" id="mobileMenuToggle">
+                <span class="hamburger"></span>
+                <span class="hamburger"></span>
+                <span class="hamburger"></span>
+            </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div class="mobile-menu" id="mobileMenu">
+            <ul class="mobile-nav-menu">
+                <li><a href="landing.php" class="mobile-nav-link">Home</a></li>
+                <li><a href="dashboard.php" class="mobile-nav-link">Dashboard</a></li>
+                <li><a href="job-history.html" class="mobile-nav-link active">My Jobs</a></li>
+                <li><a href="#support" class="mobile-nav-link">Support</a></li>
+                <li><a href="#profile" class="mobile-nav-link">My Profile</a></li>
+                <li><a href="#messages" class="mobile-nav-link">Messages</a></li>
+                <li><a href="#settings" class="mobile-nav-link">Settings</a></li>
+                <li><a href="#logout" class="mobile-nav-link">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1 class="page-title">My Posted Jobs</h1>
+                <p class="page-subtitle">Track and manage all your posted jobs</p>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="filter-controls">
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="all">
+                        All <span class="tab-count" id="allCount">0</span>
+                    </button>
+                    <button class="filter-tab" data-filter="open">
+                        Open <span class="tab-count" id="openCount">0</span>
+                    </button>
+                    <button class="filter-tab" data-filter="assigned">
+                        Assigned <span class="tab-count" id="assignedCount">0</span>
+                    </button>
+                    <button class="filter-tab" data-filter="completed">
+                        Completed <span class="tab-count" id="completedCount">0</span>
+                    </button>
+                </div>
+                
+                <div class="search-controls">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            class="search-input" 
+                            placeholder="Search jobs..."
+                            aria-label="Search jobs"
+                        >
+                        <button class="search-clear" id="searchClear" style="display: none;" aria-label="Clear search">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Cards Container -->
+            <div class="jobs-container" id="jobsContainer">
+                <!-- Job cards will be populated by JavaScript -->
+            </div>
+
+            <!-- Load More Button -->
+            <div class="load-more-container" id="loadMoreContainer">
+                <button class="load-more-btn" id="loadMoreBtn">
+                    <i class="fas fa-plus"></i>
+                    Load More Jobs
+                </button>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-icon">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+                <h3 class="empty-title">No jobs found</h3>
+                <p class="empty-description">Try adjusting your filters or search terms</p>
+                <a href="post_job.html" class="post-job-btn">
+                    <i class="fas fa-plus"></i>
+                    Post Your First Job
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Review Modal -->
+    <div class="modal-overlay" id="reviewModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Leave a Review</h3>
+                <button class="modal-close" id="modalClose" aria-label="Close modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-content">
+                <div class="provider-info" id="providerInfo">
+                    <!-- Provider info will be populated by JavaScript -->
+                </div>
+                
+                <form class="review-form" id="reviewForm">
+                    <div class="rating-section">
+                        <label class="rating-label">Rating <span class="required">*</span></label>
+                        <div class="star-rating" id="starRating" role="radiogroup" aria-label="Rating">
+                            <span class="star" data-rating="1" role="radio" aria-checked="false" tabindex="0">
+                                <i class="far fa-star"></i>
+                            </span>
+                            <span class="star" data-rating="2" role="radio" aria-checked="false" tabindex="0">
+                                <i class="far fa-star"></i>
+                            </span>
+                            <span class="star" data-rating="3" role="radio" aria-checked="false" tabindex="0">
+                                <i class="far fa-star"></i>
+                            </span>
+                            <span class="star" data-rating="4" role="radio" aria-checked="false" tabindex="0">
+                                <i class="far fa-star"></i>
+                            </span>
+                            <span class="star" data-rating="5" role="radio" aria-checked="false" tabindex="0">
+                                <i class="far fa-star"></i>
+                            </span>
+                        </div>
+                        <span class="rating-text" id="ratingText">Click to rate</span>
+                    </div>
+                    
+                    <div class="review-text-section">
+                        <label for="reviewText" class="review-label">Your Review <span class="required">*</span></label>
+                        <textarea 
+                            id="reviewText" 
+                            class="review-textarea" 
+                            placeholder="Share your experience with this service provider..."
+                            rows="4"
+                            maxlength="500"
+                            required
+                        ></textarea>
+                        <small class="char-counter" id="reviewCharCounter">0/500 characters</small>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" id="cancelReview">Cancel</button>
+                        <button type="submit" class="btn-primary" id="submitReview" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                            Submit Review
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>FixLanka</h3>
+                <p>Your trusted repair service platform in Sri Lanka</p>
+                <div class="social-icons">
+                    <a href="#facebook" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                    <a href="#twitter" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#instagram" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="#linkedin" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-section">
+                <h4>Services</h4>
+                <ul>
+                    <li><a href="#plumbing">Plumbing</a></li>
+                    <li><a href="#electrical">Electrical</a></li>
+                    <li><a href="#cleaning">Cleaning</a></li>
+                    <li><a href="#hvac">HVAC</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h4>Support</h4>
+                <ul>
+                    <li><a href="#help">Help Center</a></li>
+                    <li><a href="#contact">Contact Us</a></li>
+                    <li><a href="#faq">FAQ</a></li>
+                    <li><a href="#terms">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2025 FixLanka. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <i class="fas fa-check-circle toast-icon"></i>
+            <span class="toast-message" id="toastMessage">Success message</span>
+        </div>
+    </div>
+
+    <script src="../../assets/javascript/user/job-history.js"></script>
+</body>
+</html>
