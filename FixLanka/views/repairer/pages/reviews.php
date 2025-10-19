@@ -1,3 +1,10 @@
+<?php
+// Page configuration
+$currentPage = 'reviews';
+$pageTitle = 'Customer Reviews';
+$pageSubtitle = 'Manage your customer feedback and ratings';
+$searchPlaceholder = 'Search reviews, customers, ratings...';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,143 +25,10 @@
     <!-- Dashboard Container -->
     <div class="dashboard-container">
         <!-- Include Topbar -->
-        <header class="header">
-            <div class="header-left">
-                <label for="sidebar-toggle" class="sidebar-toggle">
-                    <i class="fas fa-bars"></i>
-                </label>
-                <div class="logo">
-                    <img src="../common/fixlanka.png" alt="FixLanka" class="logo-image">
-                </div>
-                <div class="page-info">
-                    <h1 class="page-title">Customer Reviews</h1>
-                    <p class="page-subtitle">Manage your customer feedback and ratings</p>
-                </div>
-            </div>
-            <div class="header-right">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Search reviews, customers, ratings...">
-                </div>
-                <div class="notification-bell">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge">3</span>
-                </div>
-                <div class="profile-menu">
-                    <img src="../common/user.png" alt="Admin" class="profile-avatar">
-                    <div class="profile-dropdown">
-                        <div class="profile-dropdown-header">
-                            <h4 class="profile-dropdown-name">John Doe</h4>
-                            <p class="profile-dropdown-email">john.doe@fixlanka.com</p>
-                        </div>
-                        <ul class="profile-dropdown-menu">
-                            <li class="profile-dropdown-item">
-                                <a href="profile.php" class="profile-dropdown-link" data-action="profile">
-                                    <i class="fas fa-user"></i>
-                                    <span>My Profile</span>
-                                </a>
-                            </li>
-                            <li class="profile-dropdown-item">
-                                <a href="settings.php" class="profile-dropdown-link" data-action="settings">
-                                    <i class="fas fa-cog"></i>
-                                    <span>Settings</span>
-                                </a>
-                            </li>
-                            <li class="profile-dropdown-item">
-                                <a href="upgrade.php" class="profile-dropdown-link" data-action="upgrade">
-                                    <i class="fas fa-crown"></i>
-                                    <span>Upgrade</span>
-                                </a>
-                            </li>
-                            <div class="profile-dropdown-divider"></div>
-                            <li class="profile-dropdown-item">
-                                <a href="support.php" class="profile-dropdown-link" data-action="support">
-                                    <i class="fas fa-life-ring"></i>
-                                    <span>Support</span>
-                                </a>
-                            </li>
-                            <li class="profile-dropdown-item">
-                                <a href="#" class="profile-dropdown-link logout" data-action="logout">
-                                    <i class="fas fa-sign-out-alt"></i>
-                                    <span>Logout</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </header>
+        <?php include '../common/topbar.php'; ?>
 
         <!-- Include Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <nav class="sidebar-nav">
-                <ul class="nav-list">
-                    <li class="nav-item">
-                        <a href="welcome.php" class="nav-link" data-tooltip="Welcome">
-                            <i class="fas fa-home"></i>
-                            <span>Welcome</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="available-jobs.php" class="nav-link" data-tooltip="Available Jobs">
-                            <i class="fas fa-briefcase"></i>
-                            <span>Available Jobs</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="my-jobs.php" class="nav-link" data-tooltip="My Jobs">
-                            <i class="fas fa-tasks"></i>
-                            <span>My Jobs</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="earnings.php" class="nav-link" data-tooltip="Earnings">
-                            <i class="fas fa-wallet"></i>
-                            <span>Earnings</span>
-                        </a>
-                    </li>
-                    <li class="nav-item active">
-                        <a href="reviews.php" class="nav-link" data-tooltip="Reviews">
-                            <i class="fas fa-star"></i>
-                            <span>Reviews</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="profile.php" class="nav-link" data-tooltip="My Profile">
-                            <i class="fas fa-user"></i>
-                            <span>My Profile</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="support.php" class="nav-link" data-tooltip="Support">
-                            <i class="fas fa-life-ring"></i>
-                            <span>Support</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="upgrade.php" class="nav-link" data-tooltip="Upgrade">
-                            <i class="fas fa-crown"></i>
-                            <span>Upgrade</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#settings" class="nav-link" data-tooltip="Settings">
-                            <i class="fas fa-cog"></i>
-                            <span>Settings</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-            
-            <!-- Footer in Sidebar -->
-            <footer class="sidebar-footer">
-                <p>© 2025 FixLanka<br>
-                   <a href="#terms">Terms</a> | 
-                   <a href="#privacy">Privacy</a> | 
-                   <a href="#help">Help</a>
-                </p>
-            </footer>
-        </aside>
+        <?php include '../common/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content-wrapper">

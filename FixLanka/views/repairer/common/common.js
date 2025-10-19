@@ -98,9 +98,136 @@ function initializeNotifications() {
     if (notificationBell) {
         notificationBell.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('Notifications clicked');
-            // Add your notification functionality here
+            e.stopPropagation();
+            toggleNotificationDropdown();
         });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!notificationBell.contains(e.target)) {
+                closeNotificationDropdown();
+            }
+        });
+        
+        // Close dropdown when pressing Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeNotificationDropdown();
+            }
+        });
+        
+        // Handle notification item clicks
+        const notificationItems = notificationBell.querySelectorAll('.notification-item');
+        notificationItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                handleNotificationClick(this);
+            });
+        });
+        
+        // Handle mark all as read
+        const markAllRead = notificationBell.querySelector('.mark-all-read');
+        if (markAllRead) {
+            markAllRead.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                markAllNotificationsAsRead();
+            });
+        }
+    }
+}
+
+/**
+ * Toggle notification dropdown
+ */
+function toggleNotificationDropdown() {
+    const notificationBell = document.querySelector('.notification-bell');
+    const profileMenu = document.querySelector('.profile-menu');
+    
+    if (notificationBell) {
+        const isActive = notificationBell.classList.contains('active');
+        
+        // Close profile menu if open
+        if (profileMenu) {
+            profileMenu.classList.remove('active');
+        }
+        
+        if (isActive) {
+            closeNotificationDropdown();
+        } else {
+            openNotificationDropdown();
+        }
+    }
+}
+
+/**
+ * Open notification dropdown
+ */
+function openNotificationDropdown() {
+    const notificationBell = document.querySelector('.notification-bell');
+    if (notificationBell) {
+        notificationBell.classList.add('active');
+    }
+}
+
+/**
+ * Close notification dropdown
+ */
+function closeNotificationDropdown() {
+    const notificationBell = document.querySelector('.notification-bell');
+    if (notificationBell) {
+        notificationBell.classList.remove('active');
+    }
+}
+
+/**
+ * Handle notification item click
+ */
+function handleNotificationClick(notificationItem) {
+    // Mark notification as read
+    notificationItem.classList.remove('unread');
+    
+    // Update badge count
+    updateNotificationBadge();
+    
+    // Get notification details and perform action
+    const title = notificationItem.querySelector('.notification-title')?.textContent;
+    console.log('Notification clicked:', title);
+    
+    // You can add navigation or modal display here
+    // For example:
+    // window.location.href = '/notifications/detail?id=' + notificationId;
+}
+
+/**
+ * Mark all notifications as read
+ */
+function markAllNotificationsAsRead() {
+    const notificationItems = document.querySelectorAll('.notification-item.unread');
+    notificationItems.forEach(item => {
+        item.classList.remove('unread');
+    });
+    
+    // Update badge count
+    updateNotificationBadge();
+    
+    console.log('All notifications marked as read');
+}
+
+/**
+ * Update notification badge count
+ */
+function updateNotificationBadge() {
+    const badge = document.querySelector('.notification-badge');
+    const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+    
+    if (badge) {
+        if (unreadCount > 0) {
+            badge.textContent = unreadCount;
+            badge.style.display = 'block';
+        } else {
+            badge.style.display = 'none';
+        }
     }
 }
 
@@ -147,8 +274,15 @@ function initializeProfileMenu() {
  */
 function toggleProfileMenu() {
     const profileMenu = document.querySelector('.profile-menu');
+    const notificationBell = document.querySelector('.notification-bell');
+    
     if (profileMenu) {
         const isActive = profileMenu.classList.contains('active');
+        
+        // Close notification dropdown if open
+        if (notificationBell) {
+            notificationBell.classList.remove('active');
+        }
         
         if (isActive) {
             closeProfileMenu();
