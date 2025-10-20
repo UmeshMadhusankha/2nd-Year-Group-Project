@@ -34,36 +34,48 @@ $searchPlaceholder = 'Search settings...';
         <div class="main-content-wrapper">
             <main class="main-content">
                 <div class="content-wrapper">
-                    <!-- Settings Navigation Tabs (Horizontal) -->
-                    <section class="settings-nav-section">
-                        <div class="settings-nav">
-                            <button class="settings-tab active" data-tab="account">
-                                <i class="fas fa-user-circle"></i>
-                                <span>Account</span>
-                            </button>
-                            <button class="settings-tab" data-tab="notifications">
-                                <i class="fas fa-bell"></i>
-                                <span>Notifications</span>
-                            </button>
-                            <button class="settings-tab" data-tab="privacy">
-                                <i class="fas fa-shield-alt"></i>
-                                <span>Privacy & Security</span>
-                            </button>
-                            <button class="settings-tab" data-tab="preferences">
-                                <i class="fas fa-sliders-h"></i>
-                                <span>Preferences</span>
-                            </button>
-                            <button class="settings-tab" data-tab="billing">
-                                <i class="fas fa-credit-card"></i>
-                                <span>Billing</span>
-                            </button>
+                    <!-- Page Header -->
+                    <section class="page-header-section">
+                        <div class="page-header">
+                            <div class="page-header-text">
+                                <h1 class="page-header-title">Settings</h1>
+                                <p class="page-header-subtitle">Manage your account preferences and application settings</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Settings Navigation Tabs -->
+                    <section class="filter-tabs-section">
+                        <div class="filter-tabs-container">
+                            <div class="filter-tabs settings-tabs">
+                                <button class="filter-tab settings-tab active" data-tab="account">
+                                    <i class="fas fa-user-circle"></i>
+                                    <span>Account</span>
+                                </button>
+                                <button class="filter-tab settings-tab" data-tab="notifications">
+                                    <i class="fas fa-bell"></i>
+                                    <span>Notifications</span>
+                                </button>
+                                <button class="filter-tab settings-tab" data-tab="privacy">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <span>Privacy & Security</span>
+                                </button>
+                                <button class="filter-tab settings-tab" data-tab="preferences">
+                                    <i class="fas fa-sliders-h"></i>
+                                    <span>Preferences</span>
+                                </button>
+                                <button class="filter-tab settings-tab" data-tab="billing">
+                                    <i class="fas fa-credit-card"></i>
+                                    <span>Billing</span>
+                                </button>
+                            </div>
                         </div>
                     </section>
 
                     <!-- Settings Content -->
-                    <div class="settings-container">
-                        <!-- Account Settings -->
-                        <div class="settings-panel active" id="account-panel">
+                    <div class="settings-content">
+                    <!-- Account Settings -->
+                    <div class="settings-panel active" id="account-panel">
                         <div class="settings-header">
                             <h2>Account Settings</h2>
                             <p>Manage your account information and profile details</p>
@@ -530,7 +542,7 @@ $searchPlaceholder = 'Search settings...';
                             <button class="btn btn-primary">Update Billing Info</button>
                         </div>
                     </div>
-                    </div>
+                </div>
                 </div>
             </main>
         </div>

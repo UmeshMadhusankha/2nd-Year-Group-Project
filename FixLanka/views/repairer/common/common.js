@@ -167,6 +167,7 @@ function openNotificationDropdown() {
     const notificationBell = document.querySelector('.notification-bell');
     if (notificationBell) {
         notificationBell.classList.add('active');
+        console.log('Notification dropdown opened');
     }
 }
 
@@ -177,6 +178,7 @@ function closeNotificationDropdown() {
     const notificationBell = document.querySelector('.notification-bell');
     if (notificationBell) {
         notificationBell.classList.remove('active');
+        console.log('Notification dropdown closed');
     }
 }
 
