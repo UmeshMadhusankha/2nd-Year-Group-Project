@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fix Lanka - Your Trusted Service Professionals</title>
-    <link rel="stylesheet" href="../../assets/css/user/landing.css">
-    <link rel="stylesheet" href="../../assets/css/user/navbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/landing.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/navbar.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -136,6 +136,6 @@
         </div>
     </footer>
 
-    <script src="../../assets/javascript/user/landing.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/landing.js"></script>
 </body>
 </html>

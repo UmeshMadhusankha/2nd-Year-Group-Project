@@ -1,0 +1,40 @@
+RewriteEngine On
+
+# Set base directory
+RewriteBase /2nd-Year-Group-Project/FixLanka/
+
+# Security: Block access to sensitive files and directories
+RewriteRule ^(config|controllers|models|\.env|\.git|\.htaccess) - [F,L]
+
+# Handle static files (CSS, JS, images, fonts)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|pdf|webp)$ [NC]
+RewriteRule ^ - [L]
+
+# Skip rewriting for existing files and directories
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Add cache headers for static files (1 month)
+<FilesMatch "\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|pdf|webp)$">
+    <IfModule mod_expires.c>
+        ExpiresActive On
+        ExpiresDefault "access plus 1 month"
+    </IfModule>
+    <IfModule mod_headers.c>
+        Header set Cache-Control "public, max-age=2592000"
+    </IfModule>
+</FilesMatch>
+
+# Gzip compression for text files
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/json
+</IfModule>
+
+# Route everything else through index.php
+RewriteRule ^(.*)$ index.php [QSA,L]
