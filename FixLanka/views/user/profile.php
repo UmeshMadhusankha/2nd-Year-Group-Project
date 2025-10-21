@@ -1,76 +1,27 @@
+<?php
+// filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\views\user\profile.php
+require_once __DIR__ . '/../../config/session.php';
+
+// Redirect if not logged in
+if (!isLoggedIn()) {
+    header('Location: /2nd-Year-Group-Project/FixLanka/login');
+    exit;
+}
+
+$userData = getUserData();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - Fix Lanka</title>
-    <link rel="stylesheet" href="../../assets/css/user/profile.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/profile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar">
-        <div class="navbar-container">
-            <div class="navbar-left">
-                <button class="sidebar-toggle" id="sidebarToggle">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="logo">
-                    <a href="landing.php">
-                        <span class="logo-text">Fix<span class="logo-highlight">Lanka</span></span>
-                    </a>
-                </div>
-            </div>
-
-            <div class="navbar-right">
-                <div class="notification-bell">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge">3</span>
-                </div>
-
-                <div class="profile-dropdown-container">
-                    <div class="profile-avatar" id="profileToggle">
-                        <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-image">
-                    </div>
-                    <div class="profile-dropdown" id="profileDropdown">
-                        <ul class="dropdown-menu">
-                            <li class="dropdown-item">
-                                <a href="profile.html" class="dropdown-link">
-                                    <i class="fas fa-user"></i>
-                                    My Profile
-                                </a>
-                            </li>
-                            <li class="dropdown-item">
-                                <a href="#settings" class="dropdown-link">
-                                    <i class="fas fa-cog"></i>
-                                    Settings
-                                </a>
-                            </li>
-                            <li class="dropdown-item">
-                                <a href="#help" class="dropdown-link">
-                                    <i class="fas fa-question-circle"></i>
-                                    Help & Support
-                                </a>
-                            </li>
-                            <li class="dropdown-divider"></li>
-                            <li class="dropdown-item">
-                                <a href="#logout" class="dropdown-link logout">
-                                    <i class="fas fa-sign-out-alt"></i>
-                                    Logout
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="mobile-menu-toggle" id="mobileMenuToggle">
-                    <span class="hamburger"></span>
-                    <span class="hamburger"></span>
-                    <span class="hamburger"></span>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <?php include 'navbar.php'; ?>
 
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
@@ -88,50 +39,40 @@
             <nav class="sidebar-nav">
                 <ul class="nav-list">
                     <li class="nav-item">
-                        <a href="dashboard.php" class="nav-link">
+                        <a href="/2nd-Year-Group-Project/FixLanka/" class="nav-link">
                             <i class="fas fa-home nav-icon"></i>
                             <span class="nav-text">Dashboard</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="job-history.html" class="nav-link">
+                        <a href="/2nd-Year-Group-Project/FixLanka/job-history" class="nav-link">
                             <i class="fas fa-briefcase nav-icon"></i>
                             <span class="nav-text">My Jobs</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="chat.html" class="nav-link">
+                        <a href="/2nd-Year-Group-Project/FixLanka/chat" class="nav-link">
                             <i class="fas fa-comments nav-icon"></i>
                             <span class="nav-text">Messages</span>
                             <span class="nav-badge">5</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="profile.html" class="nav-link active">
+                        <a href="/2nd-Year-Group-Project/FixLanka/profile" class="nav-link active">
                             <i class="fas fa-user nav-icon"></i>
                             <span class="nav-text">Profile</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#settings" class="nav-link">
-                            <i class="fas fa-cog nav-icon"></i>
-                            <span class="nav-text">Settings</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#support" class="nav-link">
-                            <i class="fas fa-life-ring nav-icon"></i>
-                            <span class="nav-text">Help & Support</span>
                         </a>
                     </li>
                 </ul>
             </nav>
 
             <div class="sidebar-footer">
-                <button class="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </button>
+                <form action="/2nd-Year-Group-Project/FixLanka/logout" method="POST">
+                    <button type="submit" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </form>
             </div>
         </div>
     </aside>
@@ -615,6 +556,6 @@
         </div>
     </div>
 
-    <script src="../../assets/javascript/user/profile.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/profile.js"></script>
 </body>
 </html>

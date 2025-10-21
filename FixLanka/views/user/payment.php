@@ -1,17 +1,30 @@
+<?php
+// filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\views\user\payment.php
+require_once __DIR__ . '/../../config/session.php';
+
+// Redirect if not logged in
+if (!isLoggedIn()) {
+    header('Location: /2nd-Year-Group-Project/FixLanka/login');
+    exit;
+}
+
+// Get job/agreement details (you'll implement this later)
+$jobId = $_GET['job_id'] ?? null;
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secure Payment - Fix Lanka</title>
-    <link rel="stylesheet" href="../../assets/css/user/payment.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/payment.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <!-- Header -->
     <header class="payment-header">
         <div class="header-container">
-            <a href="dashboard.html" class="logo">
+            <a href="/2nd-Year-Group-Project/FixLanka/" class="logo">
                 <span class="logo-text">Fix<span class="logo-highlight">Lanka</span></span>
             </a>
             <div class="secure-badge">
@@ -417,6 +430,6 @@
         <i class="fas fa-headset"></i>
     </a>
 
-    <script src="../../assets/javascript/user/payment.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/payment.js"></script>
 </body>
 </html>

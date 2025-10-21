@@ -1,3 +1,9 @@
+<?php
+// filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\views\user\landing.php
+require_once __DIR__ . '/../../config/session.php';
+
+$isLoggedIn = isLoggedIn();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,8 +29,22 @@
                 </div>
             </div>
             
-            <!-- Search Form -->
+            <!-- Search Form with Post Job Button -->
             <div class="search-form-container">
+                <?php if ($isLoggedIn): ?>
+                    <!-- Quick Actions for Logged In Users -->
+                    <div class="quick-actions">
+                        <a href="/2nd-Year-Group-Project/FixLanka/post-job" class="post-job-btn">
+                            <i class="fas fa-plus-circle"></i>
+                            Post a Job
+                        </a>
+                        <a href="/2nd-Year-Group-Project/FixLanka/job-history" class="view-jobs-btn">
+                            <i class="fas fa-list-alt"></i>
+                            My Jobs
+                        </a>
+                    </div>
+                <?php endif; ?>
+                
                 <form class="search-form" id="searchForm">
                     <div class="form-row">
                         <div class="form-group">

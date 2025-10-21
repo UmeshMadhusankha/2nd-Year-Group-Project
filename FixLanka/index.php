@@ -38,6 +38,50 @@ switch ($request) {
         $controller->logout();
         break;
     
+    case '/post-job':
+        require_once __DIR__ . '/views/user/post_job.php';
+        break;
+    
+    case '/create-job':
+        require_once __DIR__ . '/controllers/JobRequestController.php';
+        $controller = new JobRequestController();
+        $controller->create();
+        break;
+    
+    case '/job-history':
+        require_once __DIR__ . '/controllers/JobRequestController.php';
+        $controller = new JobRequestController();
+        $controller->index();
+        break;
+    
+    case '/update-job':
+        require_once __DIR__ . '/controllers/JobRequestController.php';
+        $controller = new JobRequestController();
+        $controller->update();
+        break;
+    
+    case '/delete-job':
+        require_once __DIR__ . '/controllers/JobRequestController.php';
+        $controller = new JobRequestController();
+        $controller->delete();
+        break;
+    
+    case '/payment':
+        require_once __DIR__ . '/views/user/payment.php';
+        break;
+    
+    case '/provider':
+        require_once __DIR__ . '/views/user/provider.php';
+        break;
+    
+    case '/profile':
+        require_once __DIR__ . '/views/user/profile.php';
+        break;
+    
+    case '/chat':
+        require_once __DIR__ . '/views/user/chat.php';
+        break;
+    
     default:
         http_response_code(404);
         echo "404 - Page Not Found";

@@ -1,104 +1,25 @@
+<?php
+// filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\views\user\chat.php
+require_once __DIR__ . '/../../config/session.php';
+
+// Redirect if not logged in
+if (!isLoggedIn()) {
+    header('Location: /2nd-Year-Group-Project/FixLanka/login');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chats - Fix Lanka</title>
-    <link rel="stylesheet" href="../../assets/css/user/chat.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/chat.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar">
-        <div class="navbar-container">
-            <div class="navbar-left">
-                <div class="logo">
-                    <a href="landing.php">
-                        <span class="logo-text">Fix<span class="logo-highlight">Lanka</span></span>
-                    </a>
-                </div>
-            </div>
-            
-            <div class="navbar-center">
-                <ul class="nav-menu">
-                    <li class="nav-item">
-                        <a href="landing.php" class="nav-link">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="dashboard.php" class="nav-link">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="job-history.html" class="nav-link">My Jobs</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="chat.html" class="nav-link active">Chats</a>
-                    </li>
-                </ul>
-            </div>
-            
-            <div class="navbar-right">
-                <div class="notification-bell">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge">3</span>
-                </div>
-                
-                <div class="profile-dropdown-container">
-                    <div class="profile-avatar" id="profileAvatar">
-                        <img src="https://via.placeholder.com/40" alt="Profile" class="avatar-image">
-                    </div>
-                    
-                    <div class="profile-dropdown" id="profileDropdown">
-                        <ul class="dropdown-menu">
-                            <li class="dropdown-item">
-                                <a href="#profile" class="dropdown-link">
-                                    <i class="fas fa-user"></i>
-                                    My Profile
-                                </a>
-                            </li>
-                            <li class="dropdown-item">
-                                <a href="job-history.html" class="dropdown-link">
-                                    <i class="fas fa-briefcase"></i>
-                                    Job History
-                                </a>
-                            </li>
-                            <li class="dropdown-item">
-                                <a href="chat.html" class="dropdown-link">
-                                    <i class="fas fa-comments"></i>
-                                    Messages
-                                </a>
-                            </li>
-                            <li class="dropdown-divider"></li>
-                            <li class="dropdown-item">
-                                <a href="#logout" class="dropdown-link logout">
-                                    <i class="fas fa-sign-out-alt"></i>
-                                    Logout
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Mobile menu toggle -->
-            <div class="mobile-menu-toggle" id="mobileMenuToggle">
-                <span class="hamburger"></span>
-                <span class="hamburger"></span>
-                <span class="hamburger"></span>
-            </div>
-        </div>
-        
-        <!-- Mobile menu -->
-        <div class="mobile-menu" id="mobileMenu">
-            <ul class="mobile-nav-menu">
-                <li><a href="landing.php" class="mobile-nav-link">Home</a></li>
-                <li><a href="dashboard.php" class="mobile-nav-link">Dashboard</a></li>
-                <li><a href="job-history.html" class="mobile-nav-link">My Jobs</a></li>
-                <li><a href="chat.html" class="mobile-nav-link active">Chats</a></li>
-                <li><a href="#profile" class="mobile-nav-link">My Profile</a></li>
-                <li><a href="#logout" class="mobile-nav-link">Logout</a></li>
-            </ul>
-        </div>
-    </nav>
+    <?php include 'navbar.php'; ?>
 
     <!-- Main Chat Container -->
     <main class="main-content">
@@ -216,7 +137,6 @@
             
             <div class="modal-content">
                 <form id="agreementForm">
-                    <!-- Job Title -->
                     <div class="form-group">
                         <label for="agreementJobTitle">Job Title <span class="required">*</span></label>
                         <input 
@@ -228,7 +148,6 @@
                         >
                     </div>
 
-                    <!-- Job Description -->
                     <div class="form-group">
                         <label for="agreementDescription">Job Description <span class="required">*</span></label>
                         <textarea 
@@ -240,7 +159,6 @@
                         ></textarea>
                     </div>
 
-                    <!-- Deadline -->
                     <div class="form-group">
                         <label for="agreementDeadline">Deadline <span class="required">*</span></label>
                         <input 
@@ -251,18 +169,13 @@
                         >
                     </div>
 
-                    <!-- Milestone-based Payment Toggle -->
                     <div class="form-group">
                         <label class="checkbox-label">
-                            <input 
-                                type="checkbox" 
-                                id="milestonePayment"
-                            >
+                            <input type="checkbox" id="milestonePayment">
                             <span>Enable milestone-based payments</span>
                         </label>
                     </div>
 
-                    <!-- Milestone Details (hidden by default) -->
                     <div id="milestoneDetails" style="display: none;">
                         <div class="form-group">
                             <label for="milestoneCount">Number of Milestones <span class="required">*</span></label>
@@ -274,12 +187,9 @@
                             </select>
                         </div>
 
-                        <div id="milestonesList">
-                            <!-- Milestone inputs will be generated here -->
-                        </div>
+                        <div id="milestonesList"></div>
                     </div>
 
-                    <!-- Total Budget -->
                     <div class="form-group">
                         <label for="agreementBudget">Total Budget (LKR) <span class="required">*</span></label>
                         <input 
@@ -293,7 +203,6 @@
                         >
                     </div>
 
-                    <!-- Payment Method -->
                     <div class="form-group">
                         <label for="paymentMethod">Payment Method <span class="required">*</span></label>
                         <select id="paymentMethod" class="form-select" required>
@@ -304,7 +213,6 @@
                         </select>
                     </div>
 
-                    <!-- Modal Actions -->
                     <div class="modal-actions">
                         <button type="button" class="btn-secondary" id="cancelAgreement">Cancel</button>
                         <button type="submit" class="btn-primary">
@@ -330,9 +238,7 @@
             <div class="modal-content">
                 <div class="payment-info">
                     <p>You will be redirected to the payment page to complete the transaction.</p>
-                    <div class="payment-details" id="paymentDetails">
-                        <!-- Payment details will be populated -->
-                    </div>
+                    <div class="payment-details" id="paymentDetails"></div>
                 </div>
                 
                 <div class="modal-actions">
@@ -354,46 +260,6 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-section">
-                <h3>FixLanka</h3>
-                <p>Your trusted repair service platform in Sri Lanka</p>
-                <div class="social-icons">
-                    <a href="#facebook" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
-                    <a href="#twitter" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
-                    <a href="#instagram" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                    <a href="#linkedin" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
-                </div>
-            </div>
-            
-            <div class="footer-section">
-                <h4>Services</h4>
-                <ul>
-                    <li><a href="#plumbing">Plumbing</a></li>
-                    <li><a href="#electrical">Electrical</a></li>
-                    <li><a href="#cleaning">Cleaning</a></li>
-                    <li><a href="#hvac">HVAC</a></li>
-                </ul>
-            </div>
-            
-            <div class="footer-section">
-                <h4>Support</h4>
-                <ul>
-                    <li><a href="#help">Help Center</a></li>
-                    <li><a href="#contact">Contact Us</a></li>
-                    <li><a href="#faq">FAQ</a></li>
-                    <li><a href="#terms">Terms of Service</a></li>
-                </ul>
-            </div>
-        </div>
-        
-        <div class="footer-bottom">
-            <p>&copy; 2025 FixLanka. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <script src="../../assets/javascript/user/chat.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/chat.js"></script>
 </body>
 </html>
