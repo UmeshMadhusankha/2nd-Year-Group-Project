@@ -12,11 +12,11 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Available Jobs - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../common/global.css">
-    <link rel="stylesheet" href="../common/variables.css">
-    <link rel="stylesheet" href="../common/topbar.css">
-    <link rel="stylesheet" href="../common/sidebar.css">
-    <link rel="stylesheet" href="available-jobs.css">
+    <link rel="stylesheet" href="../../../assets/css/common/global.css">
+    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/available-jobs.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -411,7 +411,7 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
         </div>
     </div>
 
-    <script src="../common/common.js"></script>
-    <script src="available-jobs.js"></script>
+    <script src="../../../assets/javascript/common/common.js"></script>
+    <script src="../../../assets/javascript/repairer/available-jobs.js"></script>
 </body>
 </html>

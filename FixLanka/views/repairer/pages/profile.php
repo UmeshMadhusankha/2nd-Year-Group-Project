@@ -12,11 +12,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../common/global.css">
-    <link rel="stylesheet" href="../common/variables.css">
-    <link rel="stylesheet" href="../common/topbar.css">
-    <link rel="stylesheet" href="../common/sidebar.css">
-    <link rel="stylesheet" href="profile.css">
+    <link rel="stylesheet" href="../../../assets/css/common/global.css">
+    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/profile.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -280,6 +280,6 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
         </div>
     </div>
 
-    <script src="profile.js"></script>
+    <script src="../../../assets/javascript/repairer/profile.js"></script>
 </body>
 </html>

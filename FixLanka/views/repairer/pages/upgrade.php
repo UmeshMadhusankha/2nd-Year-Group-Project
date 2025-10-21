@@ -12,11 +12,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upgrade to Pro - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../common/global.css">
-    <link rel="stylesheet" href="../common/variables.css">
-    <link rel="stylesheet" href="../common/topbar.css">
-    <link rel="stylesheet" href="../common/sidebar.css">
-    <link rel="stylesheet" href="upgrade.css">
+    <link rel="stylesheet" href="../../../assets/css/common/global.css">
+    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/upgrade.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -349,40 +349,116 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
             
             <div class="modal-body">
                 <div class="upgrade-summary">
-                    <div class="selected-plan">
-                        <div class="plan-info">
-                            <div class="plan-icon">
-                                <i class="fas fa-star"></i>
+                    <!-- Plan Header -->
+                    <div class="modal-plan-header">
+                        <div class="plan-icon-large">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div>
+                            <h4 class="modal-plan-title" id="modal-plan-name">Pro Plan</h4>
+                            <p class="modal-plan-subtitle">Premium subscription</p>
+                        </div>
+                    </div>
+
+                    <!-- Billing Options -->
+                    <div class="billing-options-section">
+                        <h5 class="section-label">
+                            <i class="fas fa-calendar-alt"></i>
+                            Select Billing Period
+                        </h5>
+                        <div class="billing-options-grid">
+                            <div class="billing-option-card active" data-billing="monthly">
+                                <div class="option-radio">
+                                    <input type="radio" name="billing-period" value="monthly" checked>
+                                    <span class="radio-checkmark"></span>
+                                </div>
+                                <div class="option-details">
+                                    <div class="option-icon">
+                                        <i class="fas fa-calendar"></i>
+                                    </div>
+                                    <div class="option-text">
+                                        <div class="option-title">Monthly Billing</div>
+                                        <div class="option-price" id="monthly-option-price">LKR 2,500/month</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="plan-details">
-                                <h4 class="plan-name" id="modal-plan-name">Pro Plan</h4>
-                                <div class="plan-price" id="modal-plan-price">LKR 2,500/month</div>
+                            <div class="billing-option-card" data-billing="annual">
+                                <div class="option-badge">
+                                    <i class="fas fa-tag"></i>
+                                    Save 20%
+                                </div>
+                                <div class="option-radio">
+                                    <input type="radio" name="billing-period" value="annual">
+                                    <span class="radio-checkmark"></span>
+                                </div>
+                                <div class="option-details">
+                                    <div class="option-icon">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </div>
+                                    <div class="option-text">
+                                        <div class="option-title">Annual Billing</div>
+                                        <div class="option-price" id="annual-option-price">LKR 2,000/month</div>
+                                        <div class="option-info" id="annual-yearly-total">Billed LKR 24,000/year</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="billing-summary">
-                        <div class="summary-row">
-                            <span class="summary-label">Plan:</span>
-                            <span class="summary-value" id="summary-plan">Pro Plan</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Billing:</span>
-                            <span class="summary-value" id="summary-billing">Monthly</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Total:</span>
-                            <span class="summary-value total" id="summary-total">LKR 2,500</span>
+
+                    <!-- Order Summary -->
+                    <div class="order-summary-section">
+                        <h5 class="section-label">
+                            <i class="fas fa-file-invoice"></i>
+                            Order Summary
+                        </h5>
+                        <div class="summary-box">
+                            <div class="summary-item">
+                                <span class="item-label">Plan Selected</span>
+                                <span class="item-value" id="summary-plan-name">Pro Plan</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="item-label">Billing Cycle</span>
+                                <span class="item-value" id="summary-billing-cycle">Monthly</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="item-label">Price per Month</span>
+                                <span class="item-value" id="summary-price-per-month">LKR 2,500</span>
+                            </div>
+                            <div class="summary-divider"></div>
+                            <div class="summary-item summary-total">
+                                <span class="item-label">
+                                    <i class="fas fa-credit-card"></i>
+                                    Total Due Now
+                                </span>
+                                <span class="item-value total-amount" id="summary-total-amount">LKR 2,500</span>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="upgrade-benefits">
-                        <h5>You'll get instant access to:</h5>
-                        <ul class="benefits-list" id="modal-benefits">
-                            <li><i class="fas fa-check"></i> Unlimited job applications</li>
-                            <li><i class="fas fa-check"></i> Priority in search results</li>
-                            <li><i class="fas fa-check"></i> Customer contact information</li>
-                        </ul>
+
+                    <!-- Included Features -->
+                    <div class="features-section">
+                        <h5 class="section-label">
+                            <i class="fas fa-check-circle"></i>
+                            What's Included
+                        </h5>
+                        <div class="features-list-grid" id="modal-features-list">
+                            <div class="feature-item">
+                                <i class="fas fa-check"></i>
+                                <span>Unlimited job applications</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-check"></i>
+                                <span>Priority in search results</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-check"></i>
+                                <span>Advanced analytics</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-check"></i>
+                                <span>24/7 priority support</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -401,7 +477,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     </div>
 
     <!-- Include JavaScript -->
-    <script src="../common/common.js"></script>
-    <script src="upgrade.js"></script>
+    <script src="../../../assets/javascript/common/common.js"></script>
+    <script src="../../../assets/javascript/repairer/upgrade.js"></script>
 </body>
 </html>
