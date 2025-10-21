@@ -1,0 +1,139 @@
+/* Analytics specific styles */
+.analytics-stats-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  margin-bottom: 1.5rem;
+}
+
+.analytics-charts-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  margin-bottom: 1.5rem;
+}
+
+.analytics-chart-card {
+  background-color: var(--card);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  border: 1px solid var(--border);
+}
+
+.analytics-chart-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.analytics-chart-content {
+  padding: 1.5rem;
+}
+
+.analytics-chart-placeholder {
+  height: 300px;
+  background-color: var(--muted);
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+.analytics-metrics-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.analytics-metrics-card {
+  background-color: var(--card);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  border: 1px solid var(--border);
+}
+
+.analytics-metrics-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.analytics-metrics-content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.analytics-metric-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.analytics-metric-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.analytics-metric-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.analytics-metric-description {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.analytics-metric-value {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.analytics-trend-positive {
+  color: var(--fixlanka-primary);
+}
+
+.analytics-trend-negative {
+  color: var(--fixlanka-error);
+}
+
+.analytics-filters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.analytics-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.analytics-filter-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+.analytics-export-btn {
+  background-color: var(--fixlanka-primary);
+  color: var(--background);
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  border: none;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.analytics-export-btn:hover {
+  background-color: rgba(77, 230, 213, 0.9);
+}

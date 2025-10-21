@@ -1,0 +1,48 @@
+/* Advertisement Review specific styles */
+.ads-container {
+  display: flex;
+  height: 100vh;
+}
+
+.ads-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ads-content {
+  flex: 1;
+  overflow: auto;
+  padding: 1.5rem;
+}
+
+.ad-preview {
+  border: 1px solid rgb(var(--border));
+  border-radius: 0.5rem;
+  padding: 1rem;
+  background-color: rgb(var(--muted));
+}
+
+.ad-preview-content {
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(to right, rgb(var(--fixlanka-primary)), rgb(var(--fixlanka-highlight)));
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgb(var(--background));
+}
+
+.ad-details {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .ad-details {
+    grid-template-columns: 1fr;
+  }
+}
