@@ -202,45 +202,12 @@ function initializeProfileDropdown() {
             }
         });
 
-        // Close dropdown when clicking on dropdown links
-        const dropdownLinks = profileDropdown.querySelectorAll('.dropdown-link');
-        dropdownLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-                // Handle logout separately
-                if (this.classList.contains('logout')) {
-                    e.preventDefault();
-                    handleLogout();
-                } else {
-                    // For other links, you can add navigation logic here
-                    console.log('Navigating to:', this.getAttribute('href'));
-                }
-                
-                // Close dropdown
-                profileDropdown.classList.remove('active');
-            });
-        });
-
         // Close dropdown on escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && profileDropdown.classList.contains('active')) {
                 profileDropdown.classList.remove('active');
             }
         });
-    }
-}
-
-// Handle Logout
-function handleLogout() {
-    if (confirm('Are you sure you want to logout?')) {
-        // Simulate logout process
-        console.log('Logging out...');
-        
-        // You can add actual logout logic here
-        // For demo purposes, just show an alert
-        alert('You have been logged out successfully!');
-        
-        // Optionally redirect to login page
-        // window.location.href = 'login.html';
     }
 }
 

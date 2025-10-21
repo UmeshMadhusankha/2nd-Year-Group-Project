@@ -84,10 +84,12 @@ $userData = getUserData();
                             </li>
                             <li class="dropdown-divider"></li>
                             <li class="dropdown-item">
-                                <a href="/2nd-Year-Group-Project/FixLanka/logout" class="dropdown-link logout">
-                                    <i class="fas fa-sign-out-alt"></i>
-                                    Logout
-                                </a>
+                                <form action="/2nd-Year-Group-Project/FixLanka/logout" method="POST" id="logoutForm" style="margin: 0;">
+                                    <button type="submit" class="dropdown-link logout" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: inherit; font-family: inherit; padding: 12px 20px;">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        Logout
+                                    </button>
+                                </form>
                             </li>
                         </ul>
                     </div>
@@ -122,7 +124,11 @@ $userData = getUserData();
                 <li><a href="/2nd-Year-Group-Project/FixLanka/messages" class="mobile-nav-link">Messages</a></li>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/settings" class="mobile-nav-link">Settings</a></li>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/help" class="mobile-nav-link">Help Center</a></li>
-                <li><a href="/2nd-Year-Group-Project/FixLanka/logout" class="mobile-nav-link">Logout</a></li>
+                <li>
+                    <form action="/2nd-Year-Group-Project/FixLanka/logout" method="POST" style="margin: 0;">
+                        <button type="submit" class="mobile-nav-link" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: inherit; font-family: inherit;">Logout</button>
+                    </form>
+                </li>
             <?php else: ?>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/login" class="mobile-nav-link mobile-login-btn">Login</a></li>
             <?php endif; ?>
