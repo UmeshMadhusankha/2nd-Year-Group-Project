@@ -1,34 +1,19 @@
-// Sidebar Component JavaScript
-
-// Sidebar functionality
 function initializeSidebar() {
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebarToggle');
     
-    if (!sidebar || !sidebarToggle) {
-        console.error('Sidebar elements not found');
-        return;
-    }
+    if (!sidebar || !sidebarToggle) return;
     
     sidebarToggle.addEventListener('click', function() {
         sidebar.classList.toggle('collapsed');
-        
-        // Store collapsed state in localStorage
         localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
     });
     
-    // Restore collapsed state from localStorage
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-    if (isCollapsed) {
-        sidebar.classList.add('collapsed');
-    }
+    if (isCollapsed) sidebar.classList.add('collapsed');
     
-    // Auto-collapse on mobile
-    if (window.innerWidth <= 768) {
-        sidebar.classList.add('collapsed');
-    }
+    if (window.innerWidth <= 768) sidebar.classList.add('collapsed');
     
-    // Handle window resize
     window.addEventListener('resize', function() {
         if (window.innerWidth <= 768) {
             sidebar.classList.add('collapsed');
@@ -37,66 +22,49 @@ function initializeSidebar() {
         }
     });
     
-    // Handle navigation clicks
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             const href = this.getAttribute('href');
-            
-            // Check if it's a link to another page
-            const isPageLink = href.endsWith('.html') || href === 'repair-requests.html' || href === 'dashboard.html' || href === 'projects.html' || href === 'workforce.html' || href === 'payments.html' || href === 'contracts.html' || href === 'support.html';
+            const isPageLink = href.endsWith('.html') || href === 'repair-requests.html' || href === 'dashboard.html' || href === 'projects.html' || href === 'workforce.html' || href === 'payments.html' || href === 'contracts.html' || href === 'support.html' || href === 'settings.html';
             
             if (isPageLink) {
-                // Allow normal navigation for page links
-                // Remove active class from all nav items
                 document.querySelectorAll('.nav-item').forEach(item => {
                     item.classList.remove('active');
                 });
                 
-                // Add active class to clicked item's parent
                 this.closest('.nav-item').classList.add('active');
                 
-                // Store active page for later restoration
                 const linkText = this.querySelector('span').textContent;
                 localStorage.setItem('activePage', linkText);
                 
-                return; // Allow default navigation
+                return;
             }
             
-            // For hash links, prevent default
             e.preventDefault();
             
-            // Remove active class from all nav items
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
             
-            // Add active class to clicked item's parent
             this.closest('.nav-item').classList.add('active');
             
-            // Update page title based on clicked link
             const linkText = this.querySelector('span').textContent;
             updatePageTitle(linkText);
             
-            // Store active page in localStorage
             localStorage.setItem('activePage', linkText);
         });
     });
     
-    // Restore active page from localStorage
     const activePage = localStorage.getItem('activePage');
-    if (activePage) {
-        restoreActivePage(activePage);
-    }
+    if (activePage) restoreActivePage(activePage);
 }
 
-// Update page title in header
 function updatePageTitle(title) {
     const pageTitle = document.querySelector('.page-title');
     if (pageTitle) {
         pageTitle.textContent = title;
         
-        // Update subtitle based on page
         const pageSubtitle = document.querySelector('.page-subtitle');
         if (pageSubtitle) {
             pageSubtitle.textContent = getPageSubtitle(title);
@@ -104,7 +72,6 @@ function updatePageTitle(title) {
     }
 }
 
-// Get appropriate subtitle for each page
 function getPageSubtitle(page) {
     const subtitles = {
         'Dashboard': 'Welcome back, let\'s see what\'s happening today',
@@ -121,29 +88,24 @@ function getPageSubtitle(page) {
     return subtitles[page] || 'Manage your business operations';
 }
 
-// Restore active page state
 function restoreActivePage(pageName) {
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
         const linkText = link.querySelector('span').textContent;
         if (linkText === pageName) {
-            // Remove active from all
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
             
-            // Add active to current
             link.closest('.nav-item').classList.add('active');
             updatePageTitle(pageName);
         }
     });
 }
 
-// Mobile sidebar toggle for touch devices
 function setupMobileSidebarToggle() {
     const sidebar = document.getElementById('sidebar');
     
-    // Close sidebar when clicking outside on mobile
     document.addEventListener('click', function(e) {
         if (window.innerWidth <= 768) {
             const isClickInsideSidebar = sidebar.contains(e.target);
@@ -155,7 +117,6 @@ function setupMobileSidebarToggle() {
         }
     });
     
-    // Add touch gesture support for mobile
     let touchStartX = 0;
     let touchEndX = 0;
     
@@ -173,11 +134,9 @@ function setupMobileSidebarToggle() {
         const swipeDistance = touchEndX - touchStartX;
         
         if (window.innerWidth <= 768) {
-            // Swipe right to open sidebar
             if (swipeDistance > swipeThreshold && touchStartX < 50) {
                 sidebar.classList.add('open');
             }
-            // Swipe left to close sidebar
             else if (swipeDistance < -swipeThreshold && sidebar.classList.contains('open')) {
                 sidebar.classList.remove('open');
             }
@@ -185,13 +144,11 @@ function setupMobileSidebarToggle() {
     }
 }
 
-// Initialize sidebar when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeSidebar();
     setupMobileSidebarToggle();
 });
 
-// Export functions for global access
 if (typeof window !== 'undefined') {
     window.initializeSidebar = initializeSidebar;
     window.updatePageTitle = updatePageTitle;

@@ -36,7 +36,7 @@
                                 <h1><i class="fas fa-users-cog"></i> Workforce Management</h1>
                                 <p class="subtitle">Manage your company employees and freelance contractors</p>
                                 <nav class="breadcrumbs">
-                                    <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                                    <a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
                                     <span class="separator">/</span>
                                     <span class="current">Workforce</span>
                                 </nav>
@@ -471,8 +471,8 @@
     <script>
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
-            loadComponent('sidebar-container', 'sidebar.html');
-            loadComponent('header-container', 'topbar.html');
+            loadComponent('sidebar-container', 'sidebar.php');
+            loadComponent('header-container', 'topbar.php');
 
             setTimeout(() => {
                 initializePage();
@@ -494,7 +494,7 @@
                         allNavItems.forEach(item => item.classList.remove('active'));
                         
                         // Set workforce as active immediately
-                        const workforceLink = tempDiv.querySelector('a[href="workforce.html"]');
+                        const workforceLink = tempDiv.querySelector('a[href="workforce.php"]');
                         if (workforceLink) {
                             workforceLink.parentElement.classList.add('active');
                         }
@@ -503,6 +503,16 @@
                         document.getElementById(containerId).innerHTML = tempDiv.innerHTML;
                     } else {
                         document.getElementById(containerId).innerHTML = html;
+                    }
+
+                    // Initialize topbar after loading
+                    if (containerId === 'header-container') {
+                        if (typeof initializeTopbar === 'function') {
+                            setTimeout(initializeTopbar, 100);
+                        }
+                        if (typeof initProfileDropdown === 'function') {
+                            setTimeout(initProfileDropdown, 200);
+                        }
                     }
                 })
                 .catch(error => console.error('Error loading component:', error));

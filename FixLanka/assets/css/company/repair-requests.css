@@ -1,78 +1,68 @@
-/* ====================================
-   FixLanka Repair Requests Page CSS
-   ====================================
-   
-   This file contains all styles for the repair 
-   requests management page for company actors
-   following FixLanka design system.
-   ==================================== */
-
+/* Import shared design system variables for consistent styling across the app */
 @import "../common/variables.css";
 
-/* ===============================================
-   GLOBAL RESET & BASE STYLES
-   =============================================== */
+/* Reset default browser styles to ensure consistent appearance across all browsers */
 *,
 html,
 body {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+  box-sizing: border-box; /* Makes width/height calculations include padding and border */
 }
 
+/* Enable smooth scrolling for better user experience when navigating within the page */
 html {
   scroll-behavior: smooth;
 }
 
+/* Base body styles that apply to the entire repair requests page */
 body {
   font-family: var(--font-family-primary);
   color: var(--text-primary);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
-  min-height: 100vh;
+  line-height: 1.6; /* Comfortable reading line height */
+  -webkit-font-smoothing: antialiased; /* Better font rendering on Mac/iOS */
+  -moz-osx-font-smoothing: grayscale; /* Better font rendering on Firefox */
+  overflow-x: hidden; /* Prevent horizontal scrollbar */
+  min-height: 100vh; /* Ensure page fills viewport height */
 }
 
-/* ===============================================
-   LAYOUT STRUCTURE
-   =============================================== */
+/* Main container that holds the sidebar and content area using flexbox layout */
 .dashboard-container {
   display: flex;
-  min-height: 100vh;
+  min-height: 100vh; /* Full viewport height */
   background: transparent;
 }
 
+/* Main content area where repair requests are displayed */
 .main-content {
-  flex: 1;
-  margin-left: var(--sidebar-width);
-  margin-top: var(--header-height);
+  flex: 1; /* Take up remaining space after sidebar */
+  margin-left: var(--sidebar-width); /* Push content right to make room for sidebar */
+  margin-top: var(--header-height); /* Push content down to make room for top navigation */
   padding: var(--spacing-xl);
-  transition: margin-left var(--transition-normal);
-  height: calc(100vh - var(--header-height));
-  overflow-y: auto;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+  transition: margin-left var(--transition-normal); /* Smooth animation when sidebar opens/closes */
+  height: calc(100vh - var(--header-height)); /* Full height minus header */
+  overflow-y: auto; /* Enable vertical scrolling for long content */
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%); /* Beautiful gradient background */
   scroll-behavior: smooth;
   border-radius: var(--border-radius-xl);
 }
 
-/* Sidebar collapsed state */
+/* Adjust content margin when sidebar is collapsed to save screen space */
 #sidebar-toggle:checked~.dashboard-container .main-content {
   margin-left: var(--sidebar-collapsed-width);
 }
 
-/* ===============================================
-   PAGE HEADER SECTION
-   =============================================== */
+/* Header section at the top of the repair requests page with title and quick stats */
 .page-header {
   padding: var(--spacing-xl) var(--spacing-lg);
   background: transparent;
   color: white;
   position: relative;
-  overflow: hidden;
+  overflow: hidden; /* Clip decorative elements that overflow */
   margin-bottom: var(--spacing-xl);
 }
 
+/* Decorative circular element in the header background (subtle visual enhancement) */
 .page-header::before {
   content: '';
   position: absolute;
@@ -80,43 +70,49 @@ body {
   right: 0;
   width: 300px;
   height: 300px;
-  border-radius: 50%;
-  transform: translate(100px, -100px);
+  border-radius: 50%; /* Makes it circular */
+  transform: translate(100px, -100px); /* Position partially off-screen for effect */
 }
 
+/* Container for header content with max width to prevent it from getting too wide on large screens */
 .page-header .header-content {
   max-width: 1500px;
-  margin: 0 auto;
+  margin: 0 auto; /* Center the content */
   position: relative;
-  z-index: 1;
+  z-index: 1; /* Keep content above decorative background elements */
 }
 
+/* Flexbox layout for header: splits into left (title) and right (stats) sections */
 .page-header .header-main {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  justify-content: space-between; /* Push left and right sections apart */
   align-items: flex-start;
   gap: var(--spacing-xl);
-  flex-wrap: wrap;
+  flex-wrap: wrap; /* Stack vertically on smaller screens */
 }
 
+/* Left section of header containing page title and breadcrumbs */
 .page-header .header-left {
-  flex: 1;
-  min-width: 300px;
+  flex: 1; /* Take up available space */
+  min-width: 300px; /* Prevent getting too narrow */
 }
 
+/* Right section of header containing action buttons and quick stats */
 .page-header .header-right {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
-  align-items: flex-end;
+  align-items: flex-end; /* Align items to the right */
 }
 
+/* Container for quick stat cards displayed in the header */
 .page-header .header-stats {
   display: flex;
   gap: var(--spacing-md);
 }
 
+/* Main page title with icon - large and prominent to clearly identify the page */
 .title-section h1 {
   font-size: var(--font-size-3xl);
   font-weight: 700;
@@ -124,110 +120,124 @@ body {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for better readability on gradient */
 }
 
+/* Title section wrapper - limits width so it doesn't stretch too wide */
 .title-section {
   margin-bottom: var(--spacing-lg);
-  max-width: 50%;
+  max-width: 50%; /* Keep title area to half the width for balanced layout */
 }
 
+/* Icon next to the title - slightly smaller than the title text */
 .title-section h1 i {
   font-size: var(--font-size-2xl);
   opacity: 0.9;
 }
 
+/* Subtitle text below the main title - provides context about the page */
 .subtitle {
   font-size: var(--font-size-lg);
-  opacity: 0.85;
+  opacity: 0.85; /* Slightly transparent to de-emphasize vs. title */
   margin-bottom: var(--spacing-lg);
   font-weight: 400;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.3px; /* Slight spacing for better readability */
 }
 
+/* Breadcrumb navigation showing current page location in site hierarchy */
 .breadcrumbs {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
   font-size: var(--font-size-sm);
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1); /* Translucent white background */
+  backdrop-filter: blur(10px); /* Blur effect for glass-morphism look */
   padding: var(--spacing-xs) var(--spacing-md);
   border-radius: var(--border-radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border for definition */
   margin-bottom: var(--spacing-lg);
 }
 
+/* Links within breadcrumbs - styled for visibility against colored background */
 .breadcrumbs a {
   color: white;
-  text-decoration: none;
+  text-decoration: none; /* Remove underline */
   opacity: 0.9;
-  transition: opacity var(--transition-fast);
+  transition: opacity var(--transition-fast); /* Smooth fade on hover */
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
 }
 
+/* Brighten breadcrumb links on hover to indicate they're clickable */
 .breadcrumbs a:hover {
   opacity: 1;
 }
 
+/* Separator between breadcrumb items (usually a "/" or ">") */
 .separator {
-  opacity: 0.6;
+  opacity: 0.6; /* Faded to be less prominent than actual links */
   margin: 0 var(--spacing-xs);
 }
 
+/* Current page in breadcrumb - not clickable, styled to stand out */
 .current {
   opacity: 1;
-  font-weight: 600;
+  font-weight: 600; /* Bold to show this is where we are */
 }
 
+/* Container for action buttons in the header area */
 .header-actions {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
-  align-items: flex-end;
+  align-items: flex-end; /* Align buttons to the right */
 }
 
-/* Header Stats */
+/* Quick stats cards showing key metrics at a glance (e.g., total requests, pending, etc.) */
 .quick-stats {
   display: flex;
   gap: var(--spacing-lg);
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(15px);
+  background: rgba(255, 255, 255, 0.1); /* Glass-morphism background */
+  backdrop-filter: blur(15px); /* Strong blur for depth effect */
   padding: var(--spacing-lg);
   border-radius: var(--border-radius-lg);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* Individual stat item card showing one metric (number + label) */
 .stat-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  min-width: 80px;
+  min-width: 80px; /* Prevent stats from getting too narrow */
 }
 
+/* Large number display for the stat value (e.g., "24" for total requests) */
 .stat-number {
   font-size: var(--font-size-xl);
   font-weight: 700;
   margin-bottom: var(--spacing-xs);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
 }
 
+/* Label below the stat number explaining what it represents */
 .stat-label {
   font-size: var(--font-size-xs);
   opacity: 0.8;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  text-transform: uppercase; /* ALL CAPS for visual hierarchy */
+  letter-spacing: 0.5px; /* Spacing makes uppercase text more readable */
   font-weight: 500;
 }
 
+/* Container for action buttons in the header */
 .action-buttons {
   display: flex;
   gap: var(--spacing-md);
 }
 
+/* Base styles for all action buttons (e.g., "New Request", "Export") */
 .action-btn {
   padding: var(--spacing-md) var(--spacing-lg);
   border: none;
@@ -235,58 +245,63 @@ body {
   font-size: var(--font-size-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth, natural easing */
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  white-space: nowrap;
+  gap: var(--spacing-sm); /* Space between icon and text */
+  white-space: nowrap; /* Prevent button text from wrapping */
   position: relative;
-  overflow: hidden;
-  text-decoration: none;
+  overflow: hidden; /* Hide the shine effect overflow */
+  text-decoration: none; /* Remove underline if used as link */
 }
 
+/* Shine effect that sweeps across button on hover - adds polish and interactivity */
 .action-btn::before {
   content: '';
   position: absolute;
   top: 0;
-  left: -100%;
+  left: -100%; /* Start off-screen to the left */
   width: 100%;
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   transition: left 0.5s ease;
 }
 
+/* Move shine effect across button when hovering */
 .action-btn:hover::before {
-  left: 100%;
+  left: 100%; /* Move to off-screen right */
 }
 
+/* Primary button style - highest emphasis for main actions */
 .action-btn.primary {
   background: rgba(255, 255, 255, 0.9);
   color: var(--primary-color);
   box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
 }
 
+/* Lift primary button on hover for tactile feedback */
 .action-btn.primary:hover {
   background: white;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.3);
+  color: var(--primary-color);
+  transform: translateY(-2px); /* Slight lift effect */
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.3); /* Stronger shadow when lifted */
 }
 
+/* Secondary button style - lower emphasis for less important actions */
 .action-btn.secondary {
   background: rgba(255, 255, 255, 0.1);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+/* Hover effect for secondary buttons - subtle brightening */
 .action-btn.secondary:hover {
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.5);
   transform: translateY(-2px);
 }
 
-/* ===============================================
-   TAB NAVIGATION
-   =============================================== */
+/* Tab navigation container - allows switching between "Public" and "Direct" requests */
 .requests-tabs {
   background: var(--bg-card);
   border-radius: var(--border-radius-xl);
@@ -352,9 +367,7 @@ body {
   color: var(--text-secondary);
 }
 
-/* ===============================================
-   TAB CONTENT
-   =============================================== */
+
 .tab-content {
   display: none;
   animation: fadeInUp 0.4s ease-out;
@@ -375,13 +388,11 @@ body {
   }
 }
 
-/* ===============================================
-   FILTERS & CONTROLS
-   =============================================== */
+
 .requests-controls {
   background: var(--bg-card);
   border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-sm);
   margin-bottom: var(--spacing-xl);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
@@ -397,39 +408,103 @@ body {
 
 .filters-group {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
+  align-items: flex-end;
+  gap: var(--spacing-lg);
   flex-wrap: wrap;
+  padding: var(--spacing-lg);
+  background: transparent;
+  backdrop-filter: blur(20px);
+  border-radius: var(--border-radius-xl);
 }
 
 .filter-item {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
+  min-width: 160px;
 }
 
 .filter-label {
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .filter-select {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 2px solid var(--border-color);
-  border-radius: var(--border-radius);
-  background: var(--bg-primary);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 2px solid rgba(10, 186, 181, 0.15);
+  border-radius: var(--border-radius-lg);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
   color: var(--text-primary);
   font-size: var(--font-size-sm);
-  min-width: 120px;
+  font-weight: 500;
+  min-width: 160px;
   cursor: pointer;
-  transition: var(--transition-normal);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04),
+              inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230abab5' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-md) center;
+  padding-right: calc(var(--spacing-lg) + 24px);
+}
+
+.filter-select:hover {
+  border-color: rgba(10, 186, 181, 0.3);
+  background: rgba(255, 255, 255, 1);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230abab5' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-md) center;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(10, 186, 181, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .filter-select:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(10, 186, 181, 0.1);
+  background: rgba(255, 255, 255, 1);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230abab5' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-md) center;
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 4px rgba(10, 186, 181, 0.15),
+              0 8px 20px rgba(10, 186, 181, 0.15),
+              inset 0 2px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* Modern Select Dropdown Options */
+.filter-select option,
+select option {
+  padding: var(--spacing-md);
+  background: #ffffff;
+  color: var(--text-primary);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.filter-select option:hover,
+.filter-select option:focus,
+.filter-select option:checked,
+select option:hover,
+select option:focus,
+select option:checked {
+  background: linear-gradient(135deg,
+    rgba(10, 186, 181, 0.12),
+    rgba(10, 186, 181, 0.08));
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.filter-select option:disabled,
+select option:disabled {
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  cursor: not-allowed;
 }
 
 .search-box {
@@ -492,9 +567,7 @@ body {
   color: white;
 }
 
-/* ===============================================
-   PUBLIC REQUESTS - CARD LAYOUT
-   =============================================== */
+
 .requests-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -502,74 +575,69 @@ body {
   margin-bottom: var(--spacing-xl);
 }
 
+/* Individual repair request card - displays one request with all its details */
 .request-card {
   display: flex;
+  margin-bottom: var(--spacing-sm);
   flex-direction: column;
   background: var(--bg-card);
   border-radius: var(--border-radius-xl);
   padding: var(--spacing-xl);
   box-shadow: var(--shadow-lg);
-  border: 1px solid var(--border-color);
-  transition: all var(--transition-normal);
+  transition: all var(--transition-normal); /* Smooth animation for hover effects */
   position: relative;
-  overflow: hidden;
+  overflow: hidden; /* Clip any effects that extend beyond card bounds */
 }
 
-.request-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
-  opacity: 0;
-  transition: opacity var(--transition-normal);
-}
-
+/* Lift card slightly on hover to show it's interactive */
 .request-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-2xl);
-  border-color: var(--primary-color);
+  transform: translateY(-4px); /* Move up 4px */
+  box-shadow: var(--shadow-2xl); /* Stronger shadow when elevated */
 }
 
+/* Fade in a decorative element when hovering over card */
 .request-card:hover::before {
   opacity: 1;
 }
 
+/* Top section of card containing title and priority badge */
 .card-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* Push title left, badge right */
   align-items: flex-start;
   margin-bottom: var(--spacing-lg);
   gap: var(--spacing-md);
 }
 
+/* Main title of the repair request (e.g., "AC Unit Not Cooling") */
 .request-title {
   font-size: var(--font-size-xl);
   font-weight: 700;
   color: var(--text-primary);
   margin: 0 0 var(--spacing-xs) 0;
-  line-height: 1.3;
+  line-height: 1.3; /* Tight line height for multi-line titles */
 }
 
+/* Request ID number shown below the title (e.g., "REQ-2024-001") */
 .request-id {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
   font-weight: 500;
 }
 
+/* Priority badge showing urgency level (High, Medium, Low) */
 .priority-badge {
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-xs);
   font-weight: 600;
-  text-transform: uppercase;
+  text-transform: uppercase; /* ALL CAPS for emphasis */
   letter-spacing: 0.5px;
 }
 
+/* High priority badge - red color to indicate urgency */
 .priority-badge.high {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.1); /* Light red background */
   color: var(--danger-color);
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
@@ -788,9 +856,7 @@ body {
   border-color: var(--primary-color);
 }
 
-/* ===============================================
-   DIRECT REQUESTS - TABLE LAYOUT
-   =============================================== */
+
 .requests-table-container {
   background: var(--bg-card);
   border-radius: var(--border-radius-xl);
@@ -959,9 +1025,7 @@ body {
   color: white;
 }
 
-/* ===============================================
-   LOGS SECTION
-   =============================================== */
+
 .logs-container {
   display: grid;
   gap: var(--spacing-xl);
@@ -1096,54 +1160,56 @@ body {
   font-weight: 500;
 }
 
-/* ===============================================
-   MODALS
-   =============================================== */
+/* Modal overlay - dark background that covers the entire screen when modal is open */
 .modal-overlay {
-  position: fixed;
+  position: fixed; /* Stay in place even when scrolling */
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  z-index: 1000;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.3s ease-out;
+  background: rgba(0, 0, 0, 0.5); /* Semi-transparent black backdrop */
+  backdrop-filter: blur(8px); /* Blur the content behind the modal for focus */
+  -webkit-backdrop-filter: blur(8px); /* Safari support for blur */
+  z-index: 1000; /* Display above all other content */
+  display: none; /* Hidden by default */
+  align-items: center; /* Center modal vertically */
+  justify-content: center; /* Center modal horizontally */
+  animation: fadeIn 0.3s ease-out; /* Smooth fade-in animation */
 }
 
+/* Show modal overlay when active class is added */
 .modal-overlay.active {
   display: flex;
 }
 
+/* The actual modal content container */
 .modal-container {
   background: var(--bg-card);
   border-radius: var(--border-radius-xl);
-  box-shadow: var(--shadow-2xl);
+  box-shadow: var(--shadow-2xl); /* Strong shadow for depth */
   border: 1px solid var(--border-color);
-  max-width: 600px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: slideInUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: 600px; /* Prevent modal from getting too wide */
+  width: 90%; /* Responsive width with padding on sides */
+  max-height: 90vh; /* Prevent modal from exceeding viewport height */
+  overflow-y: auto; /* Allow scrolling if content is long */
+  animation: slideInUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy entrance animation */
 }
 
+/* Fade-in animation for modal background */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
+/* Slide up animation for modal - gives sense of content emerging from bottom */
 @keyframes slideInUp {
   from {
     opacity: 0;
-    transform: translateY(30px) scale(0.95);
+    transform: translateY(30px) scale(0.95); /* Start slightly below and smaller */
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0) scale(1); /* End at normal position and size */
   }
 }
 
@@ -1273,29 +1339,192 @@ body {
   font-weight: 500;
 }
 
-/* ===============================================
-   RESPONSIVE DESIGN
-   =============================================== */
+/* ============================================
+   Request Details Modal Specific Styles
+   ============================================ */
+
+.modal-large {
+  max-width: 900px;
+}
+
+.request-details-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.detail-header-left h3 {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.request-id-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin: 0;
+}
+
+.detail-section {
+  padding: var(--spacing-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+}
+
+.detail-section h4 {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-md) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.detail-section h4 i {
+  color: var(--primary-color);
+}
+
+.customer-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.info-item label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-item span {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.status-text {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--primary-color);
+  color: white;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.description-text {
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.attachments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.attachment-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  transition: all var(--transition-normal);
+}
+
+.attachment-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+
+.attachment-card i {
+  font-size: var(--font-size-lg);
+  color: var(--primary-color);
+}
+
+.attachment-card span {
+  flex: 1;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.download-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.download-btn:hover {
+  background: var(--primary-dark);
+  transform: scale(1.1);
+}
+
+/* ============================================
+   End Request Details Modal Styles
+   ============================================ */
+
+/* Responsive breakpoint for tablets and small desktops (screens under 1200px wide) */
 @media (max-width: 1200px) {
   .requests-grid {
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); /* Adjust grid for smaller screens */
   }
 }
 
+/* Responsive breakpoint for tablets (screens under 768px wide) */
 @media (max-width: 768px) {
+  /* Remove sidebar margin and reduce padding on mobile */
   .main-content {
-    margin-left: 0;
+    margin-left: 0; /* No sidebar on mobile, takes full width */
     padding: var(--spacing-md);
   }
   
+  /* Compact header for mobile screens */
   .page-header {
     padding: var(--spacing-xl) var(--spacing-md);
     min-height: 140px;
   }
   
+  /* Stack header sections vertically on mobile */
   .page-header .header-main {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: column; /* Stack title and actions */
+    align-items: stretch; /* Full width for both sections */
     gap: var(--spacing-lg);
   }
   
@@ -1376,29 +1605,53 @@ body {
   .requests-table {
     min-width: 600px;
   }
+  
+  /* Request Details Modal responsive */
+  .modal-large {
+    max-width: 95%;
+  }
+  
+  .customer-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .attachments-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .detail-header {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
 }
 
+/* Responsive breakpoint for mobile phones (screens under 480px wide) */
 @media (max-width: 480px) {
+  /* Further reduce padding for very small screens */
   .main-content {
     padding: var(--spacing-sm);
   }
   
+  /* Minimal header padding for small phones */
   .page-header {
     padding: var(--spacing-lg) var(--spacing-sm);
   }
   
+  /* Reduce title size and stack icon with text on small phones */
   .title-section h1 {
-    font-size: var(--font-size-2xl);
-    flex-direction: column;
+    font-size: var(--font-size-2xl); /* Smaller title for mobile */
+    flex-direction: column; /* Stack icon above text */
     align-items: flex-start;
     text-align: left;
   }
   
+  /* Make modal take up almost full screen on small phones */
   .modal-container {
-    width: 95%;
+    width: 95%; /* Leave small margins on sides */
     margin: var(--spacing-md);
   }
   
+  /* Reduce padding inside modal on small screens */
   .modal-header,
   .modal-body,
   .modal-footer {
@@ -1424,9 +1677,7 @@ body {
   }
 }
 
-/* ===============================================
-   UTILITY CLASSES
-   =============================================== */
+
 .text-center { text-align: center; }
 .text-right { text-align: right; }
 .text-left { text-align: left; }
@@ -1434,33 +1685,7 @@ body {
 .hidden { display: none !important; }
 .visible { display: block !important; }
 
-.loading {
-  opacity: 0.6;
-  pointer-events: none;
-}
 
-.loading::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border-color);
-  border-top: 2px solid var(--primary-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: translate(-50%, -50%) rotate(0deg); }
-  100% { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-/* ===============================================
-   SCROLLBAR STYLING
-   =============================================== */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -1486,3 +1711,5 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--primary-color) var(--bg-secondary);
 }
+
+

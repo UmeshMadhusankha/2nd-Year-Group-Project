@@ -1,9 +1,27 @@
 /* ================================================
-   FixLanka Standardized Action Button System
+   FixLanka Unified Button System
    ================================================
    
-   This file contains consistent action button styles 
-   that should be used across all pages for uniform UX.
+   This file contains ALL common button styles used
+   across the entire application for consistency.
+   
+   BUTTON TYPES:
+   1. .action-btn - Large action buttons (header CTAs)
+   2. .view-toggle - Toggle buttons (table/card views)
+   3. .action-btn-sm - Small icon buttons (table actions)
+   4. .btn-cancel / .btn-save - Modal action buttons
+   
+   USAGE:
+   - Import this file AFTER variables.css
+   - Import this file BEFORE page-specific CSS
+   - Do NOT duplicate these styles in other files
+   - Use these classes consistently across all pages
+   
+   VARIANTS:
+   - .primary, .secondary, .info, .success, .danger
+   - .small, .large (for action-btn)
+   - .active (for view-toggle)
+   
    ================================================ */
 
 @import "variables.css";
@@ -273,32 +291,215 @@
   margin-right: 0;
 }
 
-/* ===============================================
-   LOADING STATE
-   =============================================== */
+/* ================================================
+   VIEW TOGGLE BUTTONS (Card/List View)
+   Common style for all view toggle buttons
+   ================================================ */
 
-.action-btn.loading {
-  pointer-events: none;
+.view-toggle-group {
+  display: flex;
+  gap: var(--spacing-xs);
+  background: var(--bg-secondary);
+  padding: 4px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.view-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  height: 32px;
+  min-width: 80px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-normal);
   position: relative;
 }
 
-.action-btn.loading::after {
-  content: '';
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
-  border-radius: 50%;
-  animation: button-spinner 1s linear infinite;
+.view-toggle i {
+  font-size: 14px;
+  margin-right: var(--spacing-xs);
 }
 
-@keyframes button-spinner {
-  to {
-    transform: rotate(360deg);
-  }
+.view-toggle:hover:not(.active) {
+  color: var(--primary-color);
+  background: var(--bg-hover);
 }
 
-.action-btn.loading .action-btn-text {
-  opacity: 0;
+.view-toggle.active {
+  color: var(--text-white);
+  background: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.view-toggle.active:hover {
+  background: var(--primary-dark);
+}
+
+/* ================================================
+   SMALL ACTION BUTTONS (Icon Buttons in Tables)
+   Common style for action buttons in table rows
+   ================================================ */
+
+.action-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  font-size: 14px;
+}
+
+.action-btn-sm:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.action-btn-sm.primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.action-btn-sm.primary:hover {
+  background: var(--primary-color);
+  color: var(--text-white);
+}
+
+.action-btn-sm.secondary {
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+.action-btn-sm.secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.action-btn-sm.info {
+  color: var(--info-color);
+  border-color: var(--info-color);
+}
+
+.action-btn-sm.info:hover {
+  background: var(--info-color);
+  color: var(--text-white);
+}
+
+/* Action Button Group in Tables */
+.action-btn-group {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+/* ================================================
+   MODAL BUTTONS
+   Common style for modal action buttons
+   ================================================ */
+
+.modal-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: flex-end;
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
+  margin-top: var(--spacing-lg);
+}
+
+.btn-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  height: 40px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+.btn-save,
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  height: 40px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  background: var(--primary-color);
+  color: var(--text-white);
+  border: 1px solid var(--primary-color);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.btn-save:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  height: 40px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  background: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+/* Button disabled state (all button types) */
+.view-toggle:disabled,
+.action-btn-sm:disabled,
+.btn-cancel:disabled,
+.btn-save:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }

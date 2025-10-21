@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FixLanka Company Dashboard</title>
     <link rel="stylesheet" href="../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../assets/css/common/progress-bars.css">
+    <link rel="stylesheet" href="../../assets/css/common/buttons.css">
     <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
     <link rel="stylesheet" href="../../assets/css/company/topbar.css">
     <link rel="stylesheet" href="../../assets/css/company/dashboard.css">
@@ -97,7 +99,7 @@
                                     <button class="tab-button" data-tab="public"><i class="fas fa-globe"></i> Public
                                         Requests</button>
                                 </div>
-                                <a href="repair-requests.html" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
+                                <a href="repair-requests.php" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
                             </div>
                         </div>
 
@@ -155,7 +157,7 @@
                                     <option value="completed">Completed</option>
                                     <option value="pending">Pending</option>
                                 </select>
-                                <button class="view-all-btn"><i class="fas fa-plus"></i> New Project</button>
+                                <button class="view-all-btn" id="dashboardNewProjectBtn" onclick="showProjectStartOptions()"><i class="fas fa-plus"></i> New Project</button>
                             </div>
                         </div>
 
@@ -217,7 +219,7 @@
                     <div class="contracts-panel">
                         <div class="panel-header">
                             <h2><i class="fas fa-handshake"></i> Contracts</h2>
-                            <button class="view-all-btn"><i class="fas fa-eye"></i> View All</button>
+                            <a href="contracts.php" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
                         </div>
                         <div class="contracts-list">
                             <div class="contract-item">
@@ -273,7 +275,7 @@
                         <div class="payments-list-section">
                             <div class="section-header">
                                 <h3><i class="fas fa-credit-card"></i> Recent Payments</h3>
-                                <button class="view-all-btn"><i class="fas fa-eye"></i> View All</button>
+                                <a href="payments.php" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
                             </div>
                             <div class="payments-list">
                                 <div class="payment-item">
@@ -381,7 +383,7 @@
                                     <option value="offline">Offline</option>
                                 </select>
 
-                                <button class="action-btn primary" type="button" aria-describedby="create-post-help">
+                                <button class="view-all-btn" type="button" aria-describedby="create-post-help">
                                     <i class="fas fa-plus icon-left" aria-hidden="true"></i>
                                     <span class="btn-text">Create Post</span>
                                 </button>
@@ -431,7 +433,7 @@
                                 <div class="workforce-actions" role="group" aria-label="Carpenter workforce actions">
                                     <button class="action-btn primary" type="button" 
                                             aria-describedby="carpenters-count"
-                                            onclick="window.location.href='workforce.html#carpenters'">
+                                            onclick="window.location.href='workforce.php#carpenters'">
                                         <i class="fas fa-eye icon-left" aria-hidden="true"></i>
                                         <span class="btn-text">View All</span>
                                     </button>
@@ -478,7 +480,7 @@
                                 <div class="workforce-actions" role="group" aria-label="Electrician workforce actions">
                                     <button class="action-btn primary" type="button" 
                                             aria-describedby="electricians-count"
-                                            onclick="window.location.href='workforce.html#electricians'">
+                                            onclick="window.location.href='workforce.php#electricians'">
                                         <i class="fas fa-eye icon-left" aria-hidden="true"></i>
                                         <span class="btn-text">View All</span>
                                     </button>
@@ -525,7 +527,7 @@
                                 <div class="workforce-actions" role="group" aria-label="Plumber workforce actions">
                                     <button class="action-btn primary" type="button" 
                                             aria-describedby="plumbers-count"
-                                            onclick="window.location.href='workforce.html#plumbers'">
+                                            onclick="window.location.href='workforce.php#plumbers'">
                                         <i class="fas fa-eye icon-left" aria-hidden="true"></i>
                                         <span class="btn-text">View All</span>
                                     </button>
@@ -572,7 +574,7 @@
                                 <div class="workforce-actions" role="group" aria-label="Painter workforce actions">
                                     <button class="action-btn primary" type="button" 
                                             aria-describedby="painters-count"
-                                            onclick="window.location.href='workforce.html#painters'">
+                                            onclick="window.location.href='workforce.php#painters'">
                                         <i class="fas fa-eye icon-left" aria-hidden="true"></i>
                                         <span class="btn-text">View All</span>
                                     </button>
@@ -583,6 +585,7 @@
                     <div class="feedback-panel">
                         <div class="panel-header">
                             <h2><i class="fas fa-comments"></i> Customer Feedback</h2>
+                            <a href="reviews.php" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
                         </div>
                         <div class="feedback-list">
                             <div class="feedback-item">
@@ -614,6 +617,7 @@
                     <div class="support-panel">
                         <div class="panel-header">
                             <h2><i class="fas fa-life-ring"></i> Issues & Support</h2>
+                            <a href="support.php" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
                         </div>
                         <div class="support-tickets">
                             <div class="ticket-item high">
@@ -639,12 +643,104 @@
     </main>
     </div>
 
-    <script src="dashboard.js"></script>
+    <!-- Project Start Options Modal -->
+    <div class="project-start-modal" id="projectStartModal">
+        <div class="modal-overlay-blur" onclick="closeProjectStartModal()"></div>
+        <div class="project-start-content">
+            <button class="modal-close-btn" onclick="closeProjectStartModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="modal-header-section">
+                <div class="modal-icon-wrapper">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <h2>Start a New Project</h2>
+                <p class="modal-subtitle">Choose the best workflow for your project needs</p>
+            </div>
+
+            <div class="project-options-grid">
+                <!-- Option 1: Browse Repair Requests -->
+                <div class="project-option-card">
+                    <div class="option-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h3>Browse Repair Requests</h3>
+                    <p>Start from customer repair requests and follow the complete workflow</p>
+                    
+                    <div class="option-steps">
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Browse available repair requests</span>
+                        </div>
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Accept a repair request</span>
+                        </div>
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Create and sign contract</span>
+                        </div>
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Initialize project</span>
+                        </div>
+                    </div>
+
+                    <button class="option-action-btn primary" onclick="navigateToRepairRequests()">
+                        <i class="fas fa-arrow-right"></i>
+                        Go to Repair Requests
+                    </button>
+                </div>
+
+                <!-- Option 2: From Signed Contract -->
+                <div class="project-option-card">
+                    <div class="option-icon">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
+                    <h3>From Signed Contract</h3>
+                    <p>Initialize a project from an already signed contract</p>
+                    
+                    <div class="option-steps">
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>View signed contracts</span>
+                        </div>
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Select a contract</span>
+                        </div>
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Verify contract terms</span>
+                        </div>
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Start project execution</span>
+                        </div>
+                    </div>
+
+                    <button class="option-action-btn secondary" onclick="navigateToContracts()">
+                        <i class="fas fa-arrow-right"></i>
+                        Go to Contracts
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-footer-note">
+                <i class="fas fa-info-circle"></i>
+                <p>
+                    <strong>Note:</strong> Projects must originate from either customer repair requests or signed contracts to ensure proper documentation and workflow compliance.
+                </p>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
-            loadComponent('sidebar-container', 'sidebar.html');
-            loadComponent('header-container', 'topbar.html');
+            loadComponent('sidebar-container', 'sidebar.php');
+            loadComponent('header-container', 'topbar.php');
         });
 
         // Function to load HTML components
@@ -662,7 +758,7 @@
                         allNavItems.forEach(item => item.classList.remove('active'));
                         
                         // Set dashboard as active immediately
-                        const dashboardLink = tempDiv.querySelector('a[href="dashboard.html"]');
+                        const dashboardLink = tempDiv.querySelector('a[href="dashboard.php"]');
                         if (dashboardLink) {
                             dashboardLink.parentElement.classList.add('active');
                         }
@@ -672,11 +768,81 @@
                     } else {
                         document.getElementById(containerId).innerHTML = html;
                     }
+                    
+                    // Initialize profile dropdown after topbar loads
+                    if (containerId === 'header-container') {
+                        // Initialize topbar functionality
+                        if (typeof initializeTopbar === 'function') {
+                            setTimeout(initializeTopbar, 100);
+                        }
+                        // Initialize profile dropdown
+                        if (typeof initProfileDropdown === 'function') {
+                            setTimeout(initProfileDropdown, 200);
+                        }
+                    }
                 })
                 .catch(error => {
                     console.error('Error loading component:', error);
                 });
         }
+
+        // Project Start Modal Functions
+        function showProjectStartOptions() {
+            const modal = document.getElementById('projectStartModal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeProjectStartModal() {
+            const modal = document.getElementById('projectStartModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function navigateToRepairRequests() {
+            showNavigationMessage('Redirecting to Repair Requests...', 'info');
+            setTimeout(() => {
+                window.location.href = 'repair-requests.php';
+            }, 500);
+        }
+
+        function navigateToContracts() {
+            showNavigationMessage('Redirecting to Contracts...', 'info');
+            setTimeout(() => {
+                window.location.href = 'contracts.php';
+            }, 500);
+        }
+
+        function showNavigationMessage(message, type) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 16px 24px;
+                background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+                color: white;
+                border-radius: var(--border-radius-lg);
+                box-shadow: 0 8px 24px rgba(10, 186, 181, 0.3);
+                z-index: 10001;
+                font-weight: 600;
+                animation: slideInRight 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeProjectStartModal();
+            }
+        });
     </script>
 </body>
 

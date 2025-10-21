@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Support - FixLanka</title>
     <link rel="stylesheet" href="../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../assets/css/common/progress-bars.css">
     <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
     <link rel="stylesheet" href="../../assets/css/company/topbar.css">
     <link rel="stylesheet" href="../../assets/css/company/dashboard.css">
@@ -35,7 +36,7 @@
                                 <h1><i class="fas fa-life-ring"></i> Support Center</h1>
                                 <p class="subtitle">Get help and manage support tickets</p>
                                 <nav class="breadcrumbs">
-                                    <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                                    <a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
                                     <span class="separator">/</span>
                                     <span class="current">Support</span>
                                 </nav>
@@ -490,8 +491,8 @@
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
             Promise.all([
-                loadComponent('sidebar-container', 'sidebar.html'),
-                loadComponent('header-container', 'topbar.html')
+                loadComponent('sidebar-container', 'sidebar.php'),
+                loadComponent('header-container', 'topbar.php')
             ]).then(() => {
                 initializeTicketForm();
             });
@@ -512,7 +513,7 @@
                         allNavItems.forEach(item => item.classList.remove('active'));
                         
                         // Set support as active immediately
-                        const supportLink = tempDiv.querySelector('a[href="support.html"]');
+                        const supportLink = tempDiv.querySelector('a[href="support.php"]');
                         if (supportLink) {
                             supportLink.parentElement.classList.add('active');
                         }
@@ -521,6 +522,16 @@
                         document.getElementById(containerId).innerHTML = tempDiv.innerHTML;
                     } else {
                         document.getElementById(containerId).innerHTML = html;
+                    }
+
+                    // Initialize topbar after loading
+                    if (containerId === 'header-container') {
+                        if (typeof initializeTopbar === 'function') {
+                            setTimeout(initializeTopbar, 100);
+                        }
+                        if (typeof initProfileDropdown === 'function') {
+                            setTimeout(initProfileDropdown, 200);
+                        }
                     }
                 })
                 .catch(error => {
@@ -957,23 +968,13 @@
                     return;
                 }
 
-                // Simulate form submission
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-                submitBtn.disabled = true;
-
-                setTimeout(() => {
-                    // Hide form and show success state
-                    form.style.display = 'none';
-                    successState.style.display = 'block';
-                    
-                    // Generate ticket ID
-                    const ticketId = '#SP-' + String(Math.floor(Math.random() * 1000) + 100).padStart(3, '0');
-                    document.getElementById('ticketId').textContent = ticketId;
-                    
-                    // Reset submit button
-                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Ticket';
-                    submitBtn.disabled = false;
-                }, 2000);
+                // Hide form and show success state
+                form.style.display = 'none';
+                successState.style.display = 'block';
+                
+                // Generate ticket ID
+                const ticketId = '#SP-' + String(Math.floor(Math.random() * 1000) + 100).padStart(3, '0');
+                document.getElementById('ticketId').textContent = ticketId;
             }
 
             function resetForm() {

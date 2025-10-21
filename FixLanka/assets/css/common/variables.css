@@ -17,6 +17,7 @@
   /* Primary Colors */
   --primary-color: #0abab5;
   --primary-hover: #08908c;
+  --primary-dark: #08908c;
   --secondary-color: #0a2e33;
   --accent-color: #2a515c;
   
@@ -43,6 +44,7 @@
   --bg-tertiary: #e0f7f6;
   --bg-card: #ffffff;
   --bg-overlay: #0a2e331a;
+  --bg-hover: #e0f7f6;
   
   /* ===============================================
      BORDERS & RADIUS
@@ -145,4 +147,12 @@
   --content-width-lg: 1024px;
   --content-width-xl: 1280px;
   --content-width-2xl: 1536px;
+  
+  /* Button Sizing */
+  --btn-height-sm: 32px;
+  --btn-height-md: 40px;
+  --btn-height-lg: 48px;
+  --btn-padding-sm: var(--spacing-sm) var(--spacing-md);
+  --btn-padding-md: var(--spacing-sm) var(--spacing-lg);
+  --btn-padding-lg: var(--spacing-md) var(--spacing-xl);
 }

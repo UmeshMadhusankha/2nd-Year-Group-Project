@@ -3,49 +3,55 @@
     <nav class="sidebar-nav">
         <ul class="nav-list">
             <li class="nav-item">
-                <a href="dashboard.html" class="nav-link" data-tooltip="Dashboard">
+                <a href="dashboard.php" class="nav-link" data-tooltip="Dashboard">
                     <i class="fas fa-chart-pie"></i>
                     <span>Dashboard</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="repair-requests.html" class="nav-link" data-tooltip="Repair Requests">
+                <a href="repair-requests.php" class="nav-link" data-tooltip="Repair Requests">
                     <i class="fas fa-tools"></i>
                     <span>Repair Requests</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="projects.html" class="nav-link" data-tooltip="Projects">
+                <a href="projects.php" class="nav-link" data-tooltip="Projects">
                     <i class="fas fa-tasks"></i>
                     <span>Projects</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="workforce.html" class="nav-link" data-tooltip="Workforce">
+                <a href="workforce.php" class="nav-link" data-tooltip="Workforce">
                     <i class="fas fa-users-cog"></i>
                     <span>Workforce</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="payments.html" class="nav-link" data-tooltip="Payments">
+                <a href="payments.php" class="nav-link" data-tooltip="Payments">
                     <i class="fas fa-wallet"></i>
                     <span>Payments</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="contracts.html" class="nav-link" data-tooltip="Contracts">
+                <a href="contracts.php" class="nav-link" data-tooltip="Contracts">
                     <i class="fas fa-handshake"></i>
                     <span>Contracts</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="support.html" class="nav-link" data-tooltip="Support">
+                <a href="support.php" class="nav-link" data-tooltip="Support">
                     <i class="fas fa-life-ring"></i>
                     <span>Support</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#settings" class="nav-link" data-tooltip="Settings">
+                <a href="reviews.php" class="nav-link" data-tooltip="Reviews & Feedback">
+                    <i class="fas fa-star"></i>
+                    <span>Reviews</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="settings.php" class="nav-link" data-tooltip="Settings">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </a>
@@ -86,9 +92,15 @@
     function handleNavClick(e) {
         console.log('Nav link clicked:', this.textContent.trim()); // Debug log
 
-        // Check if it's a link to another page (repair-requests.html, dashboard.html, projects.html, workforce.html, payments.html, contracts.html, or support.html)
+        // Check if it's a link to another page (repair-requests.php, dashboard.php, projects.php, workforce.php, payments.php, contracts.php, support.php, reviews.php, or settings.php)
         const href = this.getAttribute('href');
-        if (href === 'repair-requests.html' || href === 'support.html' || href === 'dashboard.html' || href === 'projects.html' || href === 'workforce.html' || href === 'payments.html' || href === 'contracts.html') {
+        if (href === 'repair-requests.php' || href === 'support.php' || href === 'dashboard.php' || href === 'projects.php' || href === 'workforce.php' || href === 'payments.php' || href === 'contracts.php' || href === 'reviews.php' || href === 'settings.php') {
+            // Extract page name and update topbar if function exists
+            const pageName = href.replace('.php', '');
+            if (typeof window.updatePageHeader === 'function') {
+                console.log('Updating page header to:', pageName);
+                window.updatePageHeader(pageName);
+            }
             // Allow normal navigation to the page
             return;
         }

@@ -8,6 +8,8 @@
 
     <!-- CSS Files -->
     <link rel="stylesheet" href="../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../assets/css/common/progress-bars.css">
+    <link rel="stylesheet" href="../../assets/css/common/buttons.css">
     <link rel="stylesheet" href="../../assets/css/company/global.css">
     <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
     <link rel="stylesheet" href="../../assets/css/company/topbar.css">
@@ -47,7 +49,7 @@
                                 requests
                             </p>
                             <div class="breadcrumbs">
-                                <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                                <a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
                                 <span class="separator">/</span>
                                 <span class="current">Repair Requests</span>
                             </div>
@@ -212,7 +214,7 @@
                                 <i class="fas fa-file-invoice-dollar"></i>
                                 Submit Quotation
                             </button>
-                            <button class="action-btn secondary">
+                            <button class="action-btn secondary" onclick="viewRequestDetails('REQ-2025-001')">
                                 <i class="fas fa-eye"></i>
                                 View
                             </button>
@@ -266,7 +268,7 @@
                                 <i class="fas fa-file-invoice-dollar"></i>
                                 Submit Quotation
                             </button>
-                            <button class="action-btn secondary">
+                            <button class="action-btn secondary" onclick="viewRequestDetails('REQ-2025-002')">
                                 <i class="fas fa-eye"></i>
                                 View
                             </button>
@@ -341,9 +343,9 @@
                                 <i class="fas fa-file-invoice-dollar"></i>
                                 Submit Quotation
                             </button>
-                            <button class="action-btn secondary">
+                            <button class="action-btn secondary" onclick="viewRequestDetails('REQ-2025-003')">
                                 <i class="fas fa-eye"></i>
-                                view
+                                View
                             </button>
                         </div>
                     </article>
@@ -381,7 +383,7 @@
                             <input type="text" class="search-input" placeholder="Search direct requests...">
                         </div>
                     </div>
-                </div>
+                <!-- </div> -->
 
                 <!-- Direct Requests Table -->
                 <div class="requests-table-container">
@@ -424,10 +426,10 @@
                                 </td>
                                 <td>
                                     <div class="table-actions">
-                                        <a href="#" class="table-action-btn view">
+                                        <button class="table-action-btn view" onclick="viewRequestDetails('REQ-2025-004')">
                                             <i class="fas fa-eye"></i>
                                             View
-                                        </a>
+                                        </button>
                                         <button class="table-action-btn accept"
                                             onclick="acceptDirectRequest('REQ-2025-004')">
                                             <i class="fas fa-check"></i>
@@ -469,10 +471,10 @@
                                 </td>
                                 <td>
                                     <div class="table-actions">
-                                        <a href="#" class="table-action-btn view">
+                                        <button class="table-action-btn view" onclick="viewRequestDetails('REQ-2025-005')">
                                             <i class="fas fa-eye"></i>
                                             View
-                                        </a>
+                                        </button>
                                         <button class="table-action-btn accept"
                                             onclick="acceptDirectRequest('REQ-2025-005')">
                                             <i class="fas fa-check"></i>
@@ -514,7 +516,7 @@
                                 </td>
                                 <td>
                                     <div class="table-actions">
-                                        <a href="#" class="table-action-btn view">
+                                        <a href="contracts.php?id=REQ-2025-006" class="table-action-btn view">
                                             <i class="fas fa-eye"></i>
                                             View Contract
                                         </a>
@@ -740,6 +742,36 @@
         </div>
     </div>
 
+    <!-- Request Details Modal -->
+    <div id="request-details-modal" class="modal-overlay">
+        <div class="modal-container modal-large">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-info-circle"></i>
+                    Request Details
+                </h2>
+                <button class="modal-close" onclick="closeRequestDetailsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="request-details-content">
+                    <!-- Request details will be dynamically populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="action-btn secondary" onclick="closeRequestDetailsModal()">
+                    <i class="fas fa-times"></i>
+                    Close
+                </button>
+                <button type="button" class="action-btn primary" id="submit-quote-from-details">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    Submit Quotation
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript -->
     <script src="../../assets/javascript/company/sidebar.js"></script>
     <script src="../../assets/javascript/company/repair-requests.js"></script>
@@ -747,8 +779,8 @@
     <script>
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
-            loadComponent('sidebar-container', 'sidebar.html');
-            loadComponent('header-container', 'topbar.html');
+            loadComponent('sidebar-container', 'sidebar.php');
+            loadComponent('header-container', 'topbar.php');
         });
 
         // Function to load HTML components
@@ -766,7 +798,7 @@
                         allNavItems.forEach(item => item.classList.remove('active'));
 
                         // Set repair requests as active immediately
-                        const repairRequestsLink = tempDiv.querySelector('a[href="repair-requests.html"]');
+                        const repairRequestsLink = tempDiv.querySelector('a[href="repair-requests.php"]');
                         if (repairRequestsLink) {
                             repairRequestsLink.parentElement.classList.add('active');
                         }
@@ -775,6 +807,16 @@
                         document.getElementById(containerId).innerHTML = tempDiv.innerHTML;
                     } else {
                         document.getElementById(containerId).innerHTML = html;
+                    }
+
+                    // Initialize topbar after loading
+                    if (containerId === 'header-container') {
+                        if (typeof initializeTopbar === 'function') {
+                            setTimeout(initializeTopbar, 100);
+                        }
+                        if (typeof initProfileDropdown === 'function') {
+                            setTimeout(initProfileDropdown, 200);
+                        }
                     }
                 })
                 .catch(error => {

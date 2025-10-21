@@ -1,6 +1,4 @@
-/* ====================================
-   Payment Reports Styles
-   ==================================== */
+
 
 /* Import CSS Variables */
 @import "../common/variables.css";
@@ -90,31 +88,65 @@
 }
 
 .filter-section {
-    background: var(--bg-secondary);
-    padding: var(--spacing-lg);
-    border-radius: var(--border-radius);
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.95),
+        rgba(255, 255, 255, 0.9));
+    backdrop-filter: blur(20px);
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius-xl);
     margin-bottom: var(--spacing-xl);
-    border: 1px solid var(--border-color);
+    border: 1px solid rgba(10, 186, 181, 0.15);
+    box-shadow: 0 8px 24px rgba(10, 186, 181, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.filter-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg,
+        var(--primary-color),
+        var(--secondary-color),
+        var(--primary-color));
+    background-size: 200% 100%;
+    animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
 }
 
 .filter-section h4 {
-    margin: 0 0 var(--spacing-lg) 0;
+    margin: 0 0 var(--spacing-xl) 0;
     color: var(--text-primary);
-    font-size: var(--font-size-base);
-    font-weight: 600;
+    font-size: var(--font-size-lg);
+    font-weight: 700;
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .filter-section h4 i {
     color: var(--primary-color);
+    font-size: var(--font-size-xl);
+    filter: drop-shadow(0 2px 4px rgba(10, 186, 181, 0.3));
 }
 
 .filter-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-lg);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--spacing-xl);
     margin-bottom: var(--spacing-lg);
 }
 
@@ -126,32 +158,88 @@
 
 .filter-group label {
     font-size: var(--font-size-sm);
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-xs);
 }
 
 .filter-group select,
 .filter-group input {
-    padding: var(--spacing-sm) var(--spacing-md);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 2px solid rgba(10, 186, 181, 0.15);
+    border-radius: var(--border-radius-lg);
     font-size: var(--font-size-sm);
-    background: var(--bg-primary);
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
     color: var(--text-primary);
-    transition: var(--transition-normal);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+}
+
+.filter-group select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230abab5' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--spacing-md) center;
+    padding-right: calc(var(--spacing-lg) + 24px);
+}
+
+.filter-group select:hover,
+.filter-group input:hover {
+    border-color: rgba(10, 186, 181, 0.3);
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(10, 186, 181, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .filter-group select:focus,
 .filter-group input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px var(--bg-overlay);
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 4px rgba(10, 186, 181, 0.15),
+                0 8px 20px rgba(10, 186, 181, 0.15),
+                inset 0 2px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* Modern Select Dropdown Options */
+.filter-group select option {
+    padding: var(--spacing-md);
+    background: #ffffff;
+    color: var(--text-primary);
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.filter-group select option:hover,
+.filter-group select option:focus,
+.filter-group select option:checked {
+    background: linear-gradient(135deg,
+        rgba(10, 186, 181, 0.12),
+        rgba(10, 186, 181, 0.08));
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.filter-group select option:disabled {
+    color: var(--text-muted);
+    background: var(--bg-secondary);
+    cursor: not-allowed;
 }
 
 .filter-actions {
     display: flex;
     gap: var(--spacing-md);
-    margin-top: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid rgba(10, 186, 181, 0.1);
 }
 
 .table-container {
@@ -2686,9 +2774,7 @@
     }
 }
 
-/* ====================================
-   Expense History Styles
-   ==================================== */
+
 
 .expense-history {
     margin-bottom: 32px;
@@ -3088,3 +3174,4 @@
         grid-template-columns: 1fr;
     }
 }
+

@@ -1,16 +1,3 @@
-/* ================================================
-   FixLanka Contracts Page JavaScript
-   ================================================
-   
-   This file handles all interactive functionality
-   for the contracts management page including:
-   - Search and filtering
-   - View switching (grid/list)
-   - Modal dialogs
-   - Status updates
-   - Dynamic content loading
-   ================================================ */
-
 document.addEventListener('DOMContentLoaded', function() {
     initializeContractsPage();
 });
@@ -25,9 +12,6 @@ function initializeContractsPage() {
     initializeScrollToTop();
 }
 
-/* ===============================================
-   SEARCH FUNCTIONALITY
-   =============================================== */
 function initializeSearch() {
     const searchInput = document.getElementById('contractSearch');
     
@@ -67,9 +51,6 @@ function updateResultsCount(count) {
     }
 }
 
-/* ===============================================
-   FILTER FUNCTIONALITY
-   =============================================== */
 function initializeFilters() {
     const statusFilter = document.getElementById('statusFilter');
     const typeFilter = document.getElementById('typeFilter');
@@ -128,9 +109,6 @@ function applyFilters() {
     updateResultsCount(visibleCount);
 }
 
-/* ===============================================
-   VIEW SWITCHER (GRID/LIST)
-   =============================================== */
 function initializeViewSwitcher() {
     const viewButtons = document.querySelectorAll('.view-btn');
     const contractsContainer = document.getElementById('contractsContainer');
@@ -165,9 +143,6 @@ function initializeViewSwitcher() {
     }
 }
 
-/* ===============================================
-   MODAL FUNCTIONALITY
-   =============================================== */
 function initializeModals() {
     const modal = document.getElementById('contractModal');
     const closeModal = document.getElementById('closeModal');
@@ -348,9 +323,6 @@ function populateAttachments(attachmentsData) {
     });
 }
 
-/* ===============================================
-   CONTRACT ACTION HANDLERS
-   =============================================== */
 function initializeContractActions() {
     // Contract card click handler
     document.addEventListener('click', function(e) {
@@ -443,7 +415,7 @@ function handleViewContract(contractCard) {
     openContractModal(contractData);
 }
 
-// Helper functions to generate realistic contract data
+
 function generateContractId(title) {
     const hash = title.split('').reduce((a, b) => {
         a = ((a << 5) - a) + b.charCodeAt(0);
@@ -675,9 +647,7 @@ function handleExportContracts() {
     }, 2000);
 }
 
-/* ===============================================
-   INFINITE SCROLL FUNCTIONALITY
-   =============================================== */
+
 let currentPage = 1;
 let isLoading = false;
 let hasMoreContracts = true;
@@ -685,7 +655,6 @@ const contractsPerPage = 6;
 
 function initializeInfiniteScroll() {
     const loadMoreBtn = document.getElementById('loadMoreBtn');
-    const scrollLoading = document.getElementById('scrollLoading');
     const contractsEnd = document.getElementById('contractsEnd');
     const mainContent = document.querySelector('.main-content');
     
@@ -713,51 +682,33 @@ function loadMoreContracts(autoLoad = false) {
     
     isLoading = true;
     const loadMoreBtn = document.getElementById('loadMoreBtn');
-    const scrollLoading = document.getElementById('scrollLoading');
     const contractsEnd = document.getElementById('contractsEnd');
     
-    // Show loading state
-    if (autoLoad) {
-        scrollLoading.classList.add('visible');
-    } else {
-        loadMoreBtn.classList.add('loading');
-        loadMoreBtn.innerHTML = '<i class="fas fa-spinner"></i> Loading...';
-    }
+    currentPage++;
     
-    // Simulate API call delay
-    setTimeout(() => {
-        currentPage++;
+    // Simulate loading more contracts (replace with actual API call)
+    const newContracts = generateContractCards(contractsPerPage);
+    
+    if (newContracts.length > 0) {
+        appendContractsToContainer(newContracts);
         
-        // Simulate loading more contracts (replace with actual API call)
-        const newContracts = generateContractCards(contractsPerPage);
-        
-        if (newContracts.length > 0) {
-            appendContractsToContainer(newContracts);
-            
-            // Check if we've reached the end (simulate with max 4 pages)
-            if (currentPage >= 4) {
-                hasMoreContracts = false;
-                if (loadMoreBtn) loadMoreBtn.style.display = 'none';
-                if (contractsEnd) contractsEnd.style.display = 'block';
-            }
-        } else {
+        // Check if we've reached the end (simulate with max 4 pages)
+        if (currentPage >= 4) {
             hasMoreContracts = false;
             if (loadMoreBtn) loadMoreBtn.style.display = 'none';
             if (contractsEnd) contractsEnd.style.display = 'block';
         }
-        
-        // Hide loading state
-        isLoading = false;
-        if (scrollLoading) scrollLoading.classList.remove('visible');
-        if (loadMoreBtn) {
-            loadMoreBtn.classList.remove('loading');
-            loadMoreBtn.innerHTML = '<i class="fas fa-plus"></i> Load More Contracts';
-        }
-        
-        // Animate new cards
-        animateNewCards();
-        
-    }, 1500); // Simulate network delay
+    } else {
+        hasMoreContracts = false;
+        if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+        if (contractsEnd) contractsEnd.style.display = 'block';
+    }
+    
+    // Reset loading state
+    isLoading = false;
+    
+    // Animate new cards
+    animateNewCards();
 }
 
 function generateContractCards(count) {
@@ -871,9 +822,6 @@ function animateNewCards() {
     });
 }
 
-/* ===============================================
-   SCROLL TO TOP FUNCTIONALITY
-   =============================================== */
 function initializeScrollToTop() {
     const scrollToTopBtn = document.getElementById('scrollToTop');
     const mainContent = document.querySelector('.main-content');
@@ -898,9 +846,6 @@ function initializeScrollToTop() {
     });
 }
 
-/* ===============================================
-   UTILITY FUNCTIONS
-   =============================================== */
 function showNotification(message, type = 'info') {
     // Create notification element if it doesn't exist
     let notification = document.getElementById('notification');
@@ -943,9 +888,6 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-/* ===============================================
-   CONTRACT CARD ANIMATIONS
-   =============================================== */
 function animateContractCards() {
     const contractCards = document.querySelectorAll('.contract-card');
     
@@ -961,11 +903,7 @@ function animateContractCards() {
     });
 }
 
-/* ===============================================
-   REAL-TIME UPDATES SIMULATION
-   =============================================== */
 function simulateRealTimeUpdates() {
-    // Simulate periodic updates to contract data
     setInterval(() => {
         const activeContracts = document.querySelectorAll('[data-status="active"] .progress-fill');
         
@@ -980,18 +918,12 @@ function simulateRealTimeUpdates() {
                 progressText.textContent = `${Math.round(newWidth)}%`;
             }
         });
-    }, 30000); // Update every 30 seconds
+    }, 30000);
 }
 
-// Initialize real-time updates
 setTimeout(simulateRealTimeUpdates, 5000);
-
-// Initialize card animations on load
 setTimeout(animateContractCards, 500);
 
-/* ===============================================
-   EXPORT FUNCTIONALITY
-   =============================================== */
 function initializeExportModal() {
     const exportBtn = document.getElementById('exportBtn');
     const exportModal = document.getElementById('exportModal');
@@ -1000,7 +932,6 @@ function initializeExportModal() {
     const exportDownload = document.getElementById('exportDownload');
     const exportPreview = document.getElementById('exportPreview');
     
-    // Modal controls
     if (exportBtn) {
         exportBtn.addEventListener('click', () => {
             exportModal.classList.add('active');
@@ -1020,7 +951,6 @@ function initializeExportModal() {
         });
     }
     
-    // Close modal when clicking overlay
     if (exportModal) {
         exportModal.addEventListener('click', (e) => {
             if (e.target === exportModal) {
@@ -1029,11 +959,8 @@ function initializeExportModal() {
         });
     }
     
-    // Initialize export filters
     initializeExportFilters();
     initializeDatePresets();
-    
-    // Export actions
     if (exportPreview) {
         exportPreview.addEventListener('click', showExportPreview);
     }
@@ -1048,7 +975,6 @@ function initializeExportFilters() {
     const statusCheckboxes = document.querySelectorAll('#exportActive, #exportPending, #exportCompleted, #exportCancelled, #exportExpired');
     const specialCheckboxes = document.querySelectorAll('#exportWithIssues, #exportHighValue, #exportRecentUpdates');
     
-    // Handle "All Contracts" checkbox
     if (allCheckbox) {
         allCheckbox.addEventListener('change', function() {
             if (this.checked) {
@@ -1061,7 +987,6 @@ function initializeExportFilters() {
         });
     }
     
-    // Handle specific status checkboxes
     [...statusCheckboxes, ...specialCheckboxes].forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             if (this.checked && allCheckbox) {
@@ -1071,7 +996,6 @@ function initializeExportFilters() {
         });
     });
     
-    // Handle date inputs
     const startDate = document.getElementById('exportStartDate');
     const endDate = document.getElementById('exportEndDate');
     
@@ -1091,9 +1015,7 @@ function initializeDatePresets() {
     
     presetButtons.forEach(btn => {
         btn.addEventListener('click', function() {
-            // Remove active class from all buttons
             presetButtons.forEach(b => b.classList.remove('active'));
-            // Add active class to clicked button
             this.classList.add('active');
             
             const days = parseInt(this.dataset.preset);
@@ -1146,7 +1068,6 @@ function getSelectedFilters() {
         format: document.querySelector('input[name="exportFormat"]:checked')?.value || 'excel'
     };
     
-    // Get selected status filters
     const statusMap = {
         'exportActive': 'Active',
         'exportPending': 'Pending',
@@ -1161,7 +1082,6 @@ function getSelectedFilters() {
         }
     });
     
-    // Get selected special filters
     const specialMap = {
         'exportWithIssues': 'With Issues',
         'exportHighValue': 'High Value',
@@ -1178,7 +1098,6 @@ function getSelectedFilters() {
 }
 
 function calculateEstimatedCount(filters) {
-    // Get all contract cards for estimation
     const allContracts = document.querySelectorAll('.contract-card');
     let estimatedCount = 0;
     
@@ -1188,7 +1107,6 @@ function calculateEstimatedCount(filters) {
         allContracts.forEach(card => {
             let matches = false;
             
-            // Check status filters
             if (filters.statuses.length > 0) {
                 const cardStatus = card.querySelector('.contract-status');
                 if (cardStatus) {
@@ -1199,19 +1117,11 @@ function calculateEstimatedCount(filters) {
                 }
             }
             
-            // Check special filters
             if (filters.special.length > 0) {
                 filters.special.forEach(special => {
-                    if (special === 'With Issues') {
-                        // Simulate contracts with issues (random for demo)
-                        if (Math.random() > 0.7) matches = true;
-                    } else if (special === 'High Value') {
-                        // Simulate high value contracts
-                        if (Math.random() > 0.6) matches = true;
-                    } else if (special === 'Recently Updated') {
-                        // Simulate recently updated contracts
-                        if (Math.random() > 0.5) matches = true;
-                    }
+                    if (special === 'With Issues' && Math.random() > 0.7) matches = true;
+                    else if (special === 'High Value' && Math.random() > 0.6) matches = true;
+                    else if (special === 'Recently Updated' && Math.random() > 0.5) matches = true;
                 });
             }
             
@@ -1224,8 +1134,6 @@ function calculateEstimatedCount(filters) {
 
 function showExportPreview() {
     const filters = getSelectedFilters();
-    
-    // Create a simple preview table
     const previewWindow = window.open('', '_blank', 'width=800,height=600');
     previewWindow.document.write(`
         <html>
@@ -1276,7 +1184,6 @@ function showExportPreview() {
 }
 
 function generatePreviewData(filters) {
-    // Generate sample data based on filters
     const sampleData = [
         { id: 'CNT-001', title: 'Smart Home Installation', client: 'John Smith', status: 'Active', value: '$2,500', progress: '75%', start: '2024-01-15', end: '2024-03-15' },
         { id: 'CNT-002', title: 'Office Network Setup', client: 'TechCorp Ltd', status: 'Pending', value: '$5,200', progress: '25%', start: '2024-02-01', end: '2024-04-01' },
@@ -1326,21 +1233,16 @@ function getStatusColor(status) {
 function performExport() {
     const filters = getSelectedFilters();
     const format = filters.format;
-    
-    // Show loading state
     const exportBtn = document.getElementById('exportDownload');
     const originalText = exportBtn.innerHTML;
     exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
     exportBtn.disabled = true;
     
-    // Simulate export process
     setTimeout(() => {
-        // Generate filename
         const timestamp = new Date().toISOString().split('T')[0];
         const filterSuffix = filters.all ? 'all' : 'filtered';
         const filename = `fixlanka-contracts-${filterSuffix}-${timestamp}.${format}`;
         
-        // Create and download file based on format
         if (format === 'excel') {
             downloadExcelFile(filename, filters);
         } else if (format === 'pdf') {
@@ -1349,27 +1251,20 @@ function performExport() {
             downloadCSVFile(filename, filters);
         }
         
-        // Reset button
         exportBtn.innerHTML = originalText;
         exportBtn.disabled = false;
-        
-        // Close modal
         document.getElementById('exportModal').classList.remove('active');
-        
-        // Show success notification
         showNotification('Export completed successfully!', 'success');
     }, 2000);
 }
 
 function downloadExcelFile(filename, filters) {
-    // Simulate Excel file download
     const data = generateExportData(filters);
     const csvContent = convertToCSV(data);
     downloadFile(csvContent, filename.replace('.excel', '.xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 }
 
 function downloadPDFFile(filename, filters) {
-    // Simulate PDF file download
     const data = generateExportData(filters);
     const pdfContent = generatePDFContent(data, filters);
     downloadFile(pdfContent, filename, 'application/pdf');
@@ -1382,7 +1277,6 @@ function downloadCSVFile(filename, filters) {
 }
 
 function generateExportData(filters) {
-    // This would typically fetch real data from the server
     return [
         ['Contract ID', 'Project Title', 'Client Name', 'Status', 'Contract Value', 'Progress %', 'Start Date', 'End Date', 'Issues'],
         ['CNT-001', 'Smart Home Installation', 'John Smith', 'Active', '$2,500', '75', '2024-01-15', '2024-03-15', 'None'],
@@ -1400,7 +1294,6 @@ function convertToCSV(data) {
 }
 
 function generatePDFContent(data, filters) {
-    // This would generate actual PDF content in a real implementation
     return `PDF content for contracts export with filters: ${JSON.stringify(filters)}`;
 }
 
@@ -1416,8 +1309,7 @@ function downloadFile(content, filename, mimeType) {
     window.URL.revokeObjectURL(url);
 }
 
-// Add export initialization to the main initialization function
 document.addEventListener('DOMContentLoaded', function() {
     initializeContractsPage();
-    initializeExportModal(); // Add this line
+    initializeExportModal();
 });

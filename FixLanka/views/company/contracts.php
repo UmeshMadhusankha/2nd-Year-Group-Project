@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FixLanka - Contracts Management</title>
     <link rel="stylesheet" href="../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../assets/css/common/progress-bars.css">
     <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
     <link rel="stylesheet" href="../../assets/css/company/topbar.css">
     <link rel="stylesheet" href="../../assets/css/company/contracts.css">
@@ -31,7 +32,7 @@
                 <header class="page-header">
                     <div class="header-content">
                         <div class="breadcrumbs">
-                            <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                            <a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
                             <span class="separator">/</span>
                             <span class="current">Contracts</span>
                         </div>
@@ -763,11 +764,6 @@
                     </button>
                 </div>
 
-                <!-- Scroll Loading Indicator -->
-                <div class="scroll-loading" id="scrollLoading">
-                    <div class="loading-spinner"></div>
-                </div>
-
                 <!-- End of Contracts Indicator -->
                 <div class="contracts-end" id="contractsEnd" style="display: none;">
                     <i class="fas fa-check-circle"></i>
@@ -1212,8 +1208,8 @@
     <script>
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
-            loadComponent('sidebar-container', 'sidebar.html');
-            loadComponent('header-container', 'topbar.html');
+            loadComponent('sidebar-container', 'sidebar.php');
+            loadComponent('header-container', 'topbar.php');
         });
 
         // Function to load HTML components
@@ -1231,7 +1227,7 @@
                         allNavItems.forEach(item => item.classList.remove('active'));
 
                         // Set contracts as active immediately
-                        const contractsLink = tempDiv.querySelector('a[href="contracts.html"]');
+                        const contractsLink = tempDiv.querySelector('a[href="contracts.php"]');
                         if (contractsLink) {
                             contractsLink.parentElement.classList.add('active');
                         }
@@ -1240,6 +1236,16 @@
                         document.getElementById(containerId).innerHTML = tempDiv.innerHTML;
                     } else {
                         document.getElementById(containerId).innerHTML = html;
+                    }
+
+                    // Initialize topbar after loading
+                    if (containerId === 'header-container') {
+                        if (typeof initializeTopbar === 'function') {
+                            setTimeout(initializeTopbar, 100);
+                        }
+                        if (typeof initProfileDropdown === 'function') {
+                            setTimeout(initProfileDropdown, 200);
+                        }
                     }
                 })
                 .catch(error => {

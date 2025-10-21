@@ -1,9 +1,4 @@
-/* ====================================
-   Tab Switching System
-   ==================================== */
-
 function setupTabSwitching() {
-    // Set payments tab as default
     showTab('payments');
 }
 
@@ -39,10 +34,6 @@ function showTab(tabName) {
     }
 }
 
-/* ====================================
-   Payment Reports JavaScript
-   ==================================== */
-
 // Global variables
 let currentPage = 1;
 let pageSize = 25;
@@ -67,9 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupTabSwitching();
 });
 
-// Sample milestone payment data
 function loadPaymentData() {
-    // Sample milestone payment data for FixLanka repair services
     allTransactions = [
         {
             id: 'PAY-2025-001',
@@ -333,8 +322,6 @@ function loadPaymentData() {
         }
     ];
     
-    // Update summary stats and display the data
-    console.log('Loaded transactions:', allTransactions.length);
     updateSummaryStats();
     applyFilters();
 }
@@ -555,9 +542,6 @@ function applyFilters() {
         return true;
     });
     
-    console.log('Filtered transactions:', filteredTransactions.length);
-    
-    // Apply sorting
     sortTransactions();
     
     // Reset to first page
@@ -1326,16 +1310,11 @@ document.addEventListener('click', function(event) {
     }
 });
 
-// Initialize summary stats on load
 document.addEventListener('DOMContentLoaded', function() {
     updateSummaryStats();
     loadExpenseData();
     setupExpenseEventListeners();
 });
-
-/* ====================================
-   Expense Management System
-   ==================================== */
 
 // Expense global variables
 let allExpenses = [];
@@ -1477,7 +1456,6 @@ function loadExpenseData() {
         }
     ];
     
-    console.log('Loaded expenses:', allExpenses.length);
     updateExpenseSummaryStats();
     applyExpenseFilters();
     populateExpenseProjectFilters();
@@ -1581,9 +1559,6 @@ function applyExpenseFilters() {
         return true;
     });
     
-    console.log('Filtered expenses:', filteredExpenses.length);
-    
-    // Apply sorting
     sortExpenseData();
     
     // Reset to first page

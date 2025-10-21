@@ -1,9 +1,7 @@
 /* Import Global Variables */
 @import "variables.css";
 
-/* ================================================
-   CLEAN LOGIN PAGE - FixLanka
-   ================================================ */
+
 
 .login-container {
   min-height: 100vh;
@@ -15,9 +13,7 @@
   padding: var(--spacing-md);
 }
 
-/* ===============================================
-   LOGIN CARD
-   =============================================== */
+
 .login-card {
   background: var(--bg-primary);
   border-radius: var(--border-radius-lg);
@@ -31,9 +27,7 @@
   padding: var(--spacing-xl);
 }
 
-/* ===============================================
-   LOGO & WELCOME SECTION
-   =============================================== */
+
 .logo-section {
   text-align: center;
   margin-bottom: var(--spacing-xl);
@@ -58,9 +52,7 @@
   margin: 0;
 }
 
-/* ===============================================
-   FORM STYLING
-   =============================================== */
+
 .form {
   display: flex;
   flex-direction: column;
@@ -68,9 +60,7 @@
   margin-bottom: var(--spacing-lg);
 }
 
-/* ===============================================
-   INPUT GROUPS
-   =============================================== */
+
 .input-group {
   display: flex;
   flex-direction: column;
@@ -100,9 +90,7 @@
   color: var(--primary-hover);
 }
 
-/* ===============================================
-   INPUT CONTAINERS
-   =============================================== */
+
 .input-container {
   position: relative;
   display: flex;
@@ -194,9 +182,7 @@
   text-align: center;
 }
 
-/* ===============================================
-   CHECKBOX
-   =============================================== */
+
 .checkbox-group {
   display: flex;
   align-items: center;
@@ -215,9 +201,7 @@
   cursor: pointer;
 }
 
-/* ===============================================
-   LOGIN BUTTON
-   =============================================== */
+
 .login-btn {
   width: 100%;
   height: 44px;
@@ -245,9 +229,7 @@
   box-shadow: 0 2px 4px rgba(10, 186, 181, 0.2);
 }
 
-/* ===============================================
-   REGISTER SECTION
-   =============================================== */
+
 .register-section {
   text-align: center;
   margin-bottom: var(--spacing-lg);
@@ -270,9 +252,7 @@
   color: var(--primary-hover);
 }
 
-/* ===============================================
-   DIVIDER
-   =============================================== */
+
 .divider {
   position: relative;
   text-align: center;
@@ -297,9 +277,7 @@
   position: relative;
 }
 
-/* ===============================================
-   SOCIAL LOGIN BUTTONS
-   =============================================== */
+
 .social-login {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -346,9 +324,7 @@
   color: #1877f2;
 }
 
-/* ===============================================
-   RESPONSIVE DESIGN
-   =============================================== */
+
 @media (max-width: 480px) {
   .login-container {
     padding: var(--spacing-sm);
@@ -387,3 +363,4 @@
     gap: var(--spacing-md);
   }
 }
+

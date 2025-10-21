@@ -1,15 +1,9 @@
-// ====================================
-// FixLanka Repair Requests JavaScript
-// ====================================
-
-// DOM Elements
 const tabButtons = document.querySelectorAll('.tab-button');
 const tabContents = document.querySelectorAll('.tab-content');
 const viewButtons = document.querySelectorAll('.view-btn');
 const quotationModal = document.getElementById('quotation-modal');
 const quotationForm = document.getElementById('quotation-form');
 
-// Initialize page
 document.addEventListener('DOMContentLoaded', function() {
     initializeTabs();
     initializeFilters();
@@ -19,14 +13,11 @@ document.addEventListener('DOMContentLoaded', function() {
     setActiveNavigation();
 });
 
-// Set active navigation item for this page
 function setActiveNavigation() {
-    // Remove active class from all navigation items
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
     });
     
-    // Find and activate the repair requests navigation item
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
         const linkText = link.querySelector('span')?.textContent;
@@ -37,13 +28,8 @@ function setActiveNavigation() {
         }
     });
     
-    // Store active page in localStorage for persistence
     localStorage.setItem('activePage', 'Repair Requests');
 }
-
-// ===============================================
-// TAB FUNCTIONALITY
-// ===============================================
 function initializeTabs() {
     tabButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -54,23 +40,16 @@ function initializeTabs() {
 }
 
 function switchTab(tabName) {
-    // Remove active class from all tabs and contents
     tabButtons.forEach(btn => btn.classList.remove('active'));
     tabContents.forEach(content => content.classList.remove('active'));
     
-    // Add active class to selected tab and content
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
     document.getElementById(tabName).classList.add('active');
     
-    // Update URL without page reload (optional)
     const url = new URL(window.location);
     url.searchParams.set('tab', tabName);
     window.history.pushState({}, '', url);
 }
-
-// ===============================================
-// FILTER FUNCTIONALITY
-// ===============================================
 function initializeFilters() {
     const filterSelects = document.querySelectorAll('.filter-select');
     
@@ -91,22 +70,10 @@ function applyFilters() {
     requestCards.forEach(card => {
         let showCard = true;
         
-        // Apply service filter
-        if (serviceFilter && !cardMatchesService(card, serviceFilter)) {
-            showCard = false;
-        }
+        if (serviceFilter && !cardMatchesService(card, serviceFilter)) showCard = false;
+        if (priorityFilter && !cardMatchesPriority(card, priorityFilter)) showCard = false;
+        if (locationFilter && !cardMatchesLocation(card, locationFilter)) showCard = false;
         
-        // Apply priority filter
-        if (priorityFilter && !cardMatchesPriority(card, priorityFilter)) {
-            showCard = false;
-        }
-        
-        // Apply location filter
-        if (locationFilter && !cardMatchesLocation(card, locationFilter)) {
-            showCard = false;
-        }
-        
-        // Show/hide card with animation
         if (showCard) {
             card.style.display = 'block';
             setTimeout(() => card.style.opacity = '1', 10);
@@ -132,16 +99,12 @@ function cardMatchesLocation(card, location) {
     return locationText.includes(location.toLowerCase());
 }
 
-// ===============================================
-// SEARCH FUNCTIONALITY
-// ===============================================
 function initializeSearch() {
     const searchInputs = document.querySelectorAll('.search-input');
     
     searchInputs.forEach(input => {
         input.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            performSearch(searchTerm);
+            performSearch(this.value.toLowerCase());
         });
     });
 }
@@ -150,15 +113,12 @@ function performSearch(searchTerm) {
     const requestCards = document.querySelectorAll('.request-card');
     const tableRows = document.querySelectorAll('.requests-table tbody tr');
     
-    // Search in cards (Public Requests)
     requestCards.forEach(card => {
         const title = card.querySelector('.request-title').textContent.toLowerCase();
         const customer = card.querySelector('.customer-details h4').textContent.toLowerCase();
         const description = card.querySelector('.request-description p').textContent.toLowerCase();
         
-        const matches = title.includes(searchTerm) || 
-                       customer.includes(searchTerm) || 
-                       description.includes(searchTerm);
+        const matches = title.includes(searchTerm) || customer.includes(searchTerm) || description.includes(searchTerm);
         
         if (matches || searchTerm === '') {
             card.style.display = 'block';
@@ -169,20 +129,13 @@ function performSearch(searchTerm) {
         }
     });
     
-    // Search in table rows (Direct Requests)
     tableRows.forEach(row => {
         const title = row.querySelector('h5').textContent.toLowerCase();
         const customer = row.querySelector('.table-customer-info h5').textContent.toLowerCase();
-        
         const matches = title.includes(searchTerm) || customer.includes(searchTerm);
-        
         row.style.display = matches || searchTerm === '' ? 'table-row' : 'none';
     });
 }
-
-// ===============================================
-// VIEW CONTROLS
-// ===============================================
 function initializeViewControls() {
     viewButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -207,18 +160,13 @@ function switchView(viewType) {
     }
 }
 
-// ===============================================
-// MODAL FUNCTIONALITY
-// ===============================================
 function initializeModals() {
-    // Close modal when clicking outside
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('modal-overlay')) {
             closeAllModals();
         }
     });
     
-    // Close modal with Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeAllModals();
@@ -230,7 +178,6 @@ function openQuotationModal(requestId) {
     const modal = document.getElementById('quotation-modal');
     const requestDetails = document.getElementById('quotation-request-details');
     
-    // Populate request details (you can fetch this from the server or parse from DOM)
     requestDetails.innerHTML = `
         <h4>Request #${requestId}</h4>
         <p>Please review the request details above and provide your quotation.</p>
@@ -239,7 +186,6 @@ function openQuotationModal(requestId) {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
     
-    // Focus on first input
     setTimeout(() => {
         document.getElementById('quote-price').focus();
     }, 300);
@@ -249,8 +195,6 @@ function closeQuotationModal() {
     const modal = document.getElementById('quotation-modal');
     modal.classList.remove('active');
     document.body.style.overflow = 'auto';
-    
-    // Reset form
     document.getElementById('quotation-form').reset();
 }
 
@@ -262,20 +206,274 @@ function closeAllModals() {
     document.body.style.overflow = 'auto';
 }
 
-// ===============================================
-// QUOTATION SUBMISSION
-// ===============================================
+// Request Details Modal Functions
+function viewRequestDetails(requestId) {
+    const modal = document.getElementById('request-details-modal');
+    const content = document.getElementById('request-details-content');
+    
+    // Get request data (in a real app, this would come from an API)
+    const requestData = getRequestData(requestId);
+    
+    // Populate modal content
+    content.innerHTML = `
+        <div class="request-details-modal-content">
+            <div class="detail-header">
+                <div class="detail-header-left">
+                    <h3>${requestData.title}</h3>
+                    <p class="request-id-text">${requestId}</p>
+                </div>
+                <span class="priority-badge ${requestData.priority.toLowerCase()}">${requestData.priority} Priority</span>
+            </div>
+            
+            <div class="detail-section">
+                <h4><i class="fas fa-user"></i> Customer Information</h4>
+                <div class="customer-info-grid">
+                    <div class="info-item">
+                        <label>Name:</label>
+                        <span>${requestData.customer.name}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Type:</label>
+                        <span>${requestData.customer.type}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Email:</label>
+                        <span>${requestData.customer.email || 'Not provided'}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Phone:</label>
+                        <span>${requestData.customer.phone || 'Not provided'}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h4><i class="fas fa-map-marker-alt"></i> Location & Schedule</h4>
+                <div class="customer-info-grid">
+                    <div class="info-item">
+                        <label>Location:</label>
+                        <span>${requestData.location}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Date Needed:</label>
+                        <span>${requestData.dateNeeded}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Posted:</label>
+                        <span>${requestData.posted}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Status:</label>
+                        <span class="status-text">${requestData.status || 'Open'}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h4><i class="fas fa-file-alt"></i> Description</h4>
+                <p class="description-text">${requestData.description}</p>
+            </div>
+            
+            ${requestData.attachments && requestData.attachments.length > 0 ? `
+                <div class="detail-section">
+                    <h4><i class="fas fa-paperclip"></i> Attachments (${requestData.attachments.length})</h4>
+                    <div class="attachments-grid">
+                        ${requestData.attachments.map(attachment => `
+                            <div class="attachment-card">
+                                <i class="fas ${getAttachmentIcon(attachment)}"></i>
+                                <span>${attachment}</span>
+                                <button class="download-btn" onclick="downloadAttachment('${attachment}')">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            
+            ${requestData.additionalInfo ? `
+                <div class="detail-section">
+                    <h4><i class="fas fa-info-circle"></i> Additional Information</h4>
+                    <p class="description-text">${requestData.additionalInfo}</p>
+                </div>
+            ` : ''}
+        </div>
+    `;
+    
+    // Set up the quotation button
+    const quoteBtn = document.getElementById('submit-quote-from-details');
+    quoteBtn.onclick = function() {
+        closeRequestDetailsModal();
+        setTimeout(() => openQuotationModal(requestId), 300);
+    };
+    
+    // Show modal
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeRequestDetailsModal() {
+    const modal = document.getElementById('request-details-modal');
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+function getRequestData(requestId) {
+    // Mock data - in a real application, this would fetch from an API
+    const requestsData = {
+        'REQ-2025-001': {
+            title: 'Air Conditioner Repair',
+            priority: 'High',
+            customer: {
+                name: 'John Doe',
+                type: 'Residential Customer',
+                email: 'john.doe@email.com',
+                phone: '+94 77 123 4567'
+            },
+            location: 'Colombo 07',
+            dateNeeded: 'September 15, 2025',
+            posted: '2 hours ago',
+            status: 'Open',
+            description: 'AC unit not cooling properly. Making strange noises and consuming more electricity than usual. Urgent repair needed as weather is getting hotter.',
+            attachments: ['ac-problem.jpg', 'warranty.pdf'],
+            additionalInfo: 'Customer is available for inspection between 9 AM - 5 PM on weekdays.'
+        },
+        'REQ-2025-002': {
+            title: 'Electrical Wiring - Office',
+            priority: 'Medium',
+            customer: {
+                name: 'ABC Pvt Ltd',
+                type: 'Commercial Customer',
+                email: 'contact@abcpvtltd.com',
+                phone: '+94 11 234 5678'
+            },
+            location: 'Nugegoda',
+            dateNeeded: 'September 20, 2025',
+            posted: '5 hours ago',
+            status: 'Open',
+            description: 'Complete rewiring of office building for safety compliance. Need certified electrician with commercial experience. Project timeline flexible.',
+            attachments: [],
+            additionalInfo: 'Building inspection report available upon request. Work must be completed during weekends to avoid business disruption.'
+        },
+        'REQ-2025-003': {
+            title: 'Plumbing Emergency',
+            priority: 'High',
+            customer: {
+                name: 'Sarah Miller',
+                type: 'Residential Customer',
+                email: 'sarah.miller@email.com',
+                phone: '+94 76 987 6543'
+            },
+            location: 'Kandy',
+            dateNeeded: 'ASAP',
+            posted: '30 minutes ago',
+            status: 'Urgent',
+            description: 'Burst pipe in main bathroom causing water damage. Need emergency plumber immediately. Water supply currently shut off.',
+            attachments: ['water-damage.jpg', 'pipe-burst.jpg', 'damage-video.mp4'],
+            additionalInfo: 'Emergency situation. Customer is at home and available immediately. Insurance claim will be filed.'
+        },
+        'REQ-2025-004': {
+            title: 'AC Repair - Colombo',
+            priority: 'High',
+            customer: {
+                name: 'Robert Johnson',
+                type: 'Residential Customer',
+                email: 'robert@email.com',
+                phone: '+94 77 456 7890'
+            },
+            location: 'Colombo 05',
+            dateNeeded: 'September 12, 2025',
+            posted: '1 day ago',
+            status: 'Pending',
+            description: 'Emergency AC repair service needed. Unit completely stopped working during heatwave.',
+            attachments: ['ac-unit.jpg'],
+            additionalInfo: 'This is a direct request. Customer specifically requested your company based on previous work.'
+        },
+        'REQ-2025-005': {
+            title: 'Plumbing Fix - Kandy',
+            priority: 'Medium',
+            customer: {
+                name: 'Jane Smith',
+                type: 'Residential Customer',
+                email: 'jane.smith@email.com',
+                phone: '+94 81 234 5678'
+            },
+            location: 'Kandy',
+            dateNeeded: 'September 18, 2025',
+            posted: '2 days ago',
+            status: 'Pending',
+            description: 'Bathroom renovation plumbing work. Need to install new fixtures and update piping.',
+            attachments: ['bathroom-layout.pdf'],
+            additionalInfo: 'Customer is planning a complete bathroom renovation and needs plumbing expertise.'
+        },
+        'REQ-2025-006': {
+            title: 'Electrical Installation',
+            priority: 'Low',
+            customer: {
+                name: 'Mike Brown',
+                type: 'Commercial Customer',
+                email: 'mike.brown@email.com',
+                phone: '+94 11 345 6789'
+            },
+            location: 'Galle',
+            dateNeeded: 'September 25, 2025',
+            posted: '3 days ago',
+            status: 'Accepted',
+            description: 'New construction electrical installation work. Complete wiring for a new commercial building.',
+            attachments: ['building-plan.pdf', 'electrical-diagram.pdf'],
+            additionalInfo: 'Contract already accepted. This is for viewing contract details.'
+        }
+    };
+    
+    return requestsData[requestId] || {
+        title: 'Request Not Found',
+        priority: 'Low',
+        customer: { name: 'Unknown', type: 'Unknown' },
+        location: 'Unknown',
+        dateNeeded: 'Unknown',
+        posted: 'Unknown',
+        description: 'No details available for this request.',
+        attachments: []
+    };
+}
+
+function getAttachmentIcon(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const iconMap = {
+        'pdf': 'fa-file-pdf',
+        'doc': 'fa-file-word',
+        'docx': 'fa-file-word',
+        'xls': 'fa-file-excel',
+        'xlsx': 'fa-file-excel',
+        'jpg': 'fa-image',
+        'jpeg': 'fa-image',
+        'png': 'fa-image',
+        'gif': 'fa-image',
+        'mp4': 'fa-video',
+        'avi': 'fa-video',
+        'mov': 'fa-video',
+        'zip': 'fa-file-archive',
+        'rar': 'fa-file-archive'
+    };
+    return iconMap[ext] || 'fa-file';
+}
+
+function downloadAttachment(filename) {
+    showNotification(`Downloading ${filename}...`, 'info');
+    // In a real application, this would trigger an actual download
+    setTimeout(() => {
+        showNotification(`${filename} downloaded successfully`, 'success');
+    }, 1000);
+}
+
 function submitQuotation() {
     const form = document.getElementById('quotation-form');
-    const formData = new FormData(form);
     
-    // Validate form
     if (!form.checkValidity()) {
         form.reportValidity();
         return;
     }
     
-    // Collect form data
     const quotationData = {
         price: document.getElementById('quote-price').value,
         currency: document.getElementById('quote-currency').value,
@@ -285,40 +483,15 @@ function submitQuotation() {
         additionalNotes: document.getElementById('additional-notes').value
     };
     
-    // Show loading state
-    const submitBtn = document.querySelector('.modal-footer .action-btn.primary');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-    submitBtn.disabled = true;
-    
-    // Simulate API call (replace with actual implementation)
-    setTimeout(() => {
-        // Success
-        showNotification('Quotation submitted successfully!', 'success');
-        closeQuotationModal();
-        
-        // Reset button
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-        
-        // Optionally refresh the page or update the UI
-        // location.reload();
-    }, 2000);
+    showNotification('Quotation submitted successfully!', 'success');
+    closeQuotationModal();
 }
-
-// ===============================================
-// DIRECT REQUEST ACTIONS
-// ===============================================
 function acceptDirectRequest(requestId) {
     if (confirm(`Are you sure you want to accept request ${requestId}?`)) {
-        // Show loading state
         showNotification('Processing request...', 'info');
         
-        // Simulate API call
         setTimeout(() => {
             showNotification('Request accepted! Redirecting to contract creation...', 'success');
-            
-            // Redirect to contract creation page
             setTimeout(() => {
                 window.location.href = `contract-creation.html?request=${requestId}`;
             }, 1500);
@@ -330,20 +503,16 @@ function rejectDirectRequest(requestId) {
     const reason = prompt('Please provide a reason for rejecting this request:');
     
     if (reason && reason.trim() !== '') {
-        // Show loading state
         showNotification('Processing rejection...', 'info');
         
-        // Simulate API call
         setTimeout(() => {
             showNotification('Request rejected successfully', 'success');
             
-            // Update UI to reflect rejection
             const row = document.querySelector(`[onclick*="${requestId}"]`).closest('tr');
             const statusBadge = row.querySelector('.status-badge');
             statusBadge.className = 'status-badge rejected';
             statusBadge.innerHTML = '<i class="fas fa-times"></i> Rejected';
             
-            // Update actions
             const actionsCell = row.querySelector('.table-actions');
             actionsCell.innerHTML = `
                 <a href="#" class="table-action-btn view">
@@ -354,12 +523,7 @@ function rejectDirectRequest(requestId) {
         }, 1000);
     }
 }
-
-// ===============================================
-// NOTIFICATION SYSTEM
-// ===============================================
 function showNotification(message, type = 'info') {
-    // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.innerHTML = `
@@ -370,13 +534,9 @@ function showNotification(message, type = 'info') {
         </button>
     `;
     
-    // Add to page
     document.body.appendChild(notification);
-    
-    // Show notification
     setTimeout(() => notification.classList.add('show'), 100);
     
-    // Auto remove after 5 seconds
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => notification.remove(), 300);
@@ -392,9 +552,6 @@ function getNotificationIcon(type) {
     }
 }
 
-// ===============================================
-// UTILITY FUNCTIONS
-// ===============================================
 function formatCurrency(amount, currency = 'LKR') {
     return new Intl.NumberFormat('en-LK', {
         style: 'currency',
@@ -421,33 +578,24 @@ function validateDateRange() {
     return true;
 }
 
-// ===============================================
-// REAL-TIME UPDATES (WebSocket simulation)
-// ===============================================
 function initializeRealTimeUpdates() {
-    // Simulate real-time updates every 30 seconds
     setInterval(() => {
-        // Update counters
         updateRequestCounters();
         
-        // Show new request notification (randomly)
-        if (Math.random() < 0.1) { // 10% chance
+        if (Math.random() < 0.1) {
             showNotification('New repair request received!', 'info');
         }
     }, 30000);
 }
 
 function updateRequestCounters() {
-    // This would typically fetch updated counts from the server
     const publicCount = document.querySelector('[data-tab="public-requests"] .tab-count');
     const directCount = document.querySelector('[data-tab="direct-requests"] .tab-count');
     
-    // Simulate count updates (replace with actual API calls)
     if (Math.random() < 0.3) {
         const currentPublic = parseInt(publicCount.textContent);
         publicCount.textContent = currentPublic + 1;
         
-        // Update header stats
         const publicStat = document.querySelector('.stat-card .stat-number');
         if (publicStat) {
             publicStat.textContent = currentPublic + 1;
@@ -455,12 +603,7 @@ function updateRequestCounters() {
     }
 }
 
-// Initialize real-time updates
 document.addEventListener('DOMContentLoaded', initializeRealTimeUpdates);
-
-// ===============================================
-// URL PARAMETER HANDLING
-// ===============================================
 function handleUrlParameters() {
     const urlParams = new URLSearchParams(window.location.search);
     const activeTab = urlParams.get('tab');
@@ -470,12 +613,7 @@ function handleUrlParameters() {
     }
 }
 
-// Handle URL parameters on load
 document.addEventListener('DOMContentLoaded', handleUrlParameters);
-
-// ===============================================
-// EXPORT FUNCTIONALITY
-// ===============================================
 function exportRequests(format = 'csv') {
     const data = collectRequestsData();
     
@@ -493,7 +631,6 @@ function exportRequests(format = 'csv') {
 }
 
 function collectRequestsData() {
-    // Collect data from current view
     const requests = [];
     const cards = document.querySelectorAll('.request-card:not([style*="display: none"])');
     
@@ -529,17 +666,12 @@ function downloadFile(content, filename, mimeType) {
     URL.revokeObjectURL(url);
 }
 
-// ===============================================
-// KEYBOARD SHORTCUTS
-// ===============================================
 document.addEventListener('keydown', function(e) {
-    // Ctrl/Cmd + K for search
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         document.querySelector('.search-input').focus();
     }
     
-    // Ctrl/Cmd + N for new quotation
     if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault();
         const firstRequestCard = document.querySelector('.request-card');
@@ -549,7 +681,6 @@ document.addEventListener('keydown', function(e) {
         }
     }
     
-    // Tab navigation with numbers
     if (e.key >= '1' && e.key <= '3' && e.altKey) {
         e.preventDefault();
         const tabIndex = parseInt(e.key) - 1;
@@ -559,15 +690,10 @@ document.addEventListener('keydown', function(e) {
         }
     }
 });
-
-// ===============================================
-// PRINT FUNCTIONALITY
-// ===============================================
 function printCurrentView() {
     window.print();
 }
 
-// Add print styles dynamically
 const printStyles = `
     @media print {
         .sidebar, .topbar, .tab-nav, .requests-controls, .modal-overlay {

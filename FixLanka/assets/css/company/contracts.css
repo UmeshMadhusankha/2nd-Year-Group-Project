@@ -1,18 +1,9 @@
-/* ================================================
-   FixLanka Contracts Page CSS
-   ================================================
-   
-   This file contains all styles for the contracts 
-   management page following FixLanka design system
-   and best UX practices.
-   ================================================ */
+
 
 @import "../common/variables.css";
 @import "../common/buttons.css";
 
-/* ===============================================
-   GLOBAL RESET & BASE STYLES
-   =============================================== */
+
 *,
 html,
 body {
@@ -36,9 +27,7 @@ body {
 }
 
 
-/* ===============================================
-   LAYOUT STRUCTURE
-   =============================================== */
+
 .dashboard-container {
   display: flex;
   min-height: 100vh;
@@ -66,9 +55,7 @@ body {
   margin-left: var(--sidebar-collapsed-width);
 }
 
-/* ===============================================
-   PAGE HEADER SECTION
-   =============================================== */
+
 .page-header {
   display: flex;
   flex-direction: column;
@@ -251,51 +238,9 @@ body {
   line-height: 1.3;
 }
 
-/* ===============================================
-   STANDARDIZED ACTION BUTTON USAGE
-   ===============================================
-   
-   Use these classes consistently across all pages:
-   
-   PRIMARY BUTTONS (Main actions):
-   <button class="action-btn primary">Create Contract</button>
-   <a href="#" class="action-btn primary">Add New</a>
-   
-   SECONDARY BUTTONS (Secondary actions):
-   <button class="action-btn secondary">Export</button>
-   <a href="#" class="action-btn secondary">Filter</a>
-   
-   OUTLINE BUTTONS (Tertiary actions):
-   <button class="action-btn outline">View Details</button>
-   
-   DANGER BUTTONS (Destructive actions):
-   <button class="action-btn danger">Delete</button>
-   
-   SUCCESS BUTTONS (Confirmation actions):
-   <button class="action-btn success">Approve</button>
-   
-   SIZES:
-   <button class="action-btn primary small">Small</button>
-   <button class="action-btn primary">Default</button>
-   <button class="action-btn primary large">Large</button>
-   
-   WITH ICONS:
-   <button class="action-btn primary">
-     <i class="fas fa-plus icon-left"></i> Add Contract
-   </button>
-   
-   HEADER ACTION GROUPS:
-   <div class="header-actions">
-     <button class="action-btn primary">Create</button>
-     <button class="action-btn secondary">Export</button>
-     <button class="action-btn outline">Filter</button>
-   </div>
-   
-   =============================================== */
 
-/* ===============================================
-   BUTTON SYSTEM (Legacy - Remove when standardized)
-   =============================================== */
+
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -363,9 +308,7 @@ body {
   color: var(--primary-color);
 }
 
-/* ===============================================
-   CONTROLS SECTION
-   =============================================== */
+
 .contracts-controls {
   background: var(--bg-card);
   border-radius: var(--border-radius-lg);
@@ -457,9 +400,7 @@ body {
   color: var(--text-white);
 }
 
-/* ===============================================
-   CONTRACTS CONTAINER
-   =============================================== */
+
 .contracts-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -468,9 +409,7 @@ body {
   /* Remove min-height to allow natural content height */
 }
 
-/* ===============================================
-   CONTRACT CARD DESIGN
-   =============================================== */
+
 .contract-card {
   background: var(--bg-card);
   border-radius: var(--border-radius-lg);
@@ -737,54 +676,7 @@ body {
   border-radius: var(--border-radius);
 }
 
-.progress-bar {
-  flex: 1;
-  height: 8px;
-  background: linear-gradient(90deg,
-      rgba(10, 186, 181, 0.1) 0%,
-      rgba(10, 186, 181, 0.15) 100%);
-  border-radius: var(--border-radius-xl);
-  overflow: hidden;
-  position: relative;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.progress-bar::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.3) 50%,
-      transparent 100%);
-  animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg,
-      var(--primary-color) 0%,
-      var(--success-color) 50%,
-      var(--info-color) 100%);
-  border-radius: var(--border-radius-xl);
-  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(10, 186, 181, 0.3);
-}
+/* Progress bar styles moved to common/progress-bars.css for consistency */
 
 .progress-fill::after {
   content: '';
@@ -883,17 +775,13 @@ body {
   height: 1px;
 }
 
-/* ===============================================
-   PAGINATION SECTION - HIDDEN FOR SCROLL VIEW
-   =============================================== */
+
 .pagination-container {
   display: none;
   /* Hidden to allow continuous scrolling */
 }
 
-/* ===============================================
-   LOAD MORE / INFINITE SCROLL SECTION
-   =============================================== */
+
 .load-more-container {
   display: flex;
   justify-content: center;
@@ -945,49 +833,6 @@ body {
   transform: translateY(0);
 }
 
-.load-more-btn.loading {
-  pointer-events: none;
-  opacity: 0.8;
-}
-
-.load-more-btn.loading i {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Infinite Scroll Loading Indicator */
-.scroll-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 0px;
-  /* padding: var(--spacing-sm) 0; */
-  opacity: 0;
-  transition: opacity var(--transition-normal);
-}
-
-.scroll-loading.visible {
-  opacity: 1;
-}
-
-.loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 2px solid rgba(10, 186, 181, 0.1);
-  border-top: 2px solid var(--primary-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
 /* End of contracts indicator */
 .contracts-end {
   text-align: center;
@@ -1005,9 +850,7 @@ body {
   margin-right: var(--spacing-sm);
 }
 
-/* ===============================================
-   SCROLL TO TOP BUTTON
-   =============================================== */
+
 .scroll-to-top {
   position: fixed;
   bottom: var(--spacing-xl);
@@ -1120,9 +963,7 @@ body {
   cursor: not-allowed;
 }
 
-/* ===============================================
-   MODAL SYSTEM
-   =============================================== */
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1250,9 +1091,7 @@ body {
   gap: var(--spacing-md);
 }
 
-/* ===============================================
-   FULL CONTRACT MODAL STYLES
-   =============================================== */
+
 .contract-modal-header {
   display: flex;
   justify-content: space-between;
@@ -1604,9 +1443,7 @@ body {
   }
 }
 
-/* ===============================================
-   LIST VIEW LAYOUT (Alternative View)
-   =============================================== */
+
 .contracts-container.list-view {
   display: flex;
   flex-direction: column;
@@ -1643,9 +1480,7 @@ body {
   margin-bottom: var(--spacing-sm);
 }
 
-/* ===============================================
-   RESPONSIVE DESIGN
-   =============================================== */
+
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0;
@@ -1803,38 +1638,7 @@ body {
   }
 }
 
-/* ===============================================
-   LOADING & ANIMATION STATES
-   =============================================== */
-.contract-card.loading {
-  opacity: 0.7;
-  pointer-events: none;
-}
 
-.contract-card.loading::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  animation: shimmer 1.5s infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-/* ===============================================
-   SCROLLBAR CUSTOMIZATION
-   =============================================== */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -1855,9 +1659,7 @@ body {
   background: linear-gradient(135deg, rgba(10, 186, 181, 0.8), var(--primary-color));
 }
 
-/* ===============================================
-   EXPORT MODAL STYLES
-   =============================================== */
+
 .export-modal {
   max-width: 900px;
   width: 90%;
@@ -2221,9 +2023,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   scrollbar-color: rgba(10, 186, 181, 0.6) var(--bg-secondary);
 }
 
-/* ================================================
-   IMPROVED CONTRACT CARD STYLES
-   ================================================ */
+
 
 /* Client Info Section - Updated Layout */
 .client-info {
@@ -2327,21 +2127,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   min-width: 120px;
 }
 
-.progress-bar {
-  flex: 1;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  overflow: hidden;
-  min-width: 80px;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
+/* Progress bar styles moved to common/progress-bars.css for consistency */
 
 .progress-text {
   color: var(--primary-color);

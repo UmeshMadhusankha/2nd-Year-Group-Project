@@ -11,6 +11,7 @@
 
     <!-- Custom Styles -->
     <link rel="stylesheet" href="../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../assets/css/common/progress-bars.css">
     <link rel="stylesheet" href="../../assets/css/company/global.css">
     <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
     <link rel="stylesheet" href="../../assets/css/company/dashboard.css">
@@ -43,7 +44,7 @@
                                     Income payments and expense tracking for your repair services
                                 </p>
                                 <nav class="breadcrumbs">
-                                    <a href="dashboard.html">
+                                    <a href="dashboard.php">
                                         <i class="fas fa-home"></i>
                                         Dashboard
                                     </a>
@@ -512,7 +513,7 @@
     <!-- Scripts -->
     <script>
         // Load sidebar and topbar
-        fetch('sidebar.html')
+        fetch('sidebar.php')
             .then(response => response.text())
             .then(data => {
                 // Set active state immediately in the HTML before inserting
@@ -524,7 +525,7 @@
                 allNavItems.forEach(item => item.classList.remove('active'));
 
                 // Set payments as active immediately
-                const paymentsLink = tempDiv.querySelector('a[href="payments.html"]');
+                const paymentsLink = tempDiv.querySelector('a[href="payments.php"]');
                 if (paymentsLink) {
                     paymentsLink.parentElement.classList.add('active');
                 }
@@ -533,10 +534,18 @@
                 document.getElementById('sidebar-container').innerHTML = tempDiv.innerHTML;
             });
 
-        fetch('topbar.html')
+        fetch('topbar.php')
             .then(response => response.text())
             .then(data => {
                 document.getElementById('topbar-container').innerHTML = data;
+                
+                // Initialize topbar after loading
+                if (typeof initializeTopbar === 'function') {
+                    setTimeout(initializeTopbar, 100);
+                }
+                if (typeof initProfileDropdown === 'function') {
+                    setTimeout(initProfileDropdown, 200);
+                }
             });
     </script>
     <script src="../../assets/javascript/company/payments_layout.js"></script>

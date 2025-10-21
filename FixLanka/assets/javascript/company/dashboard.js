@@ -201,80 +201,8 @@ function initializeWorkforceNavigation() {
 }
 
 function navigateToPage(url, pageName) {
-    // Show loading indicator
-    showPageTransition(pageName);
-    
-    // Navigate after brief delay for smooth transition
-    setTimeout(() => {
-        window.location.href = url;
-    }, 300);
-}
-
-function showPageTransition(pageName) {
-    // Create transition overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'page-transition-overlay';
-    overlay.innerHTML = `
-        <div class="transition-content">
-            <div class="transition-spinner"></div>
-            <p>Loading ${pageName}...</p>
-        </div>
-    `;
-    
-    // Add styles
-    overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(10, 186, 181, 0.9);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    `;
-    
-    const transitionStyles = `
-        .transition-content {
-            text-align: center;
-            color: white;
-        }
-        .transition-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top: 3px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .transition-content p {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 500;
-        }
-    `;
-    
-    if (!document.getElementById('transitionStyles')) {
-        const styleSheet = document.createElement('style');
-        styleSheet.id = 'transitionStyles';
-        styleSheet.textContent = transitionStyles;
-        document.head.appendChild(styleSheet);
-    }
-    
-    document.body.appendChild(overlay);
-    
-    // Show overlay
-    setTimeout(() => {
-        overlay.style.opacity = '1';
-    }, 50);
+    // Direct navigation without loading screen
+    window.location.href = url;
 }
 
 function showEarningsModal() {
@@ -927,10 +855,24 @@ function loadCalendarEvents() {
     if (saved) {
         try {
             const events = JSON.parse(saved);
-            calendarState.events = events.map(event => ({
-                ...event,
-                date: new Date(event.date)
-            }));
+            calendarState.events = events.map(event => {
+                // Parse date string to avoid timezone issues
+                let eventDate;
+                if (typeof event.date === 'string') {
+                    const parts = event.date.split('T')[0].split('-');
+                    const year = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10) - 1;
+                    const day = parseInt(parts[2], 10);
+                    eventDate = new Date(year, month, day);
+                } else {
+                    eventDate = new Date(event.date);
+                }
+                
+                return {
+                    ...event,
+                    date: eventDate
+                };
+            });
         } catch (e) {
             console.warn('Failed to load calendar events:', e);
             loadSampleEvents();
@@ -1059,7 +1001,14 @@ function initializeDateClicking() {
 }
 
 function selectDate(dateString) {
-    calendarState.selectedDate = new Date(dateString);
+    // Parse date string properly to avoid timezone issues
+    // Split the date string (YYYY-MM-DD) and create date in local timezone
+    const parts = dateString.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+    const day = parseInt(parts[2], 10);
+    
+    calendarState.selectedDate = new Date(year, month, day);
     
     // Update calendar display
     updateCalendarDisplay();
@@ -1156,7 +1105,7 @@ function showDateModal(dateStr, message, events) {
             .modal-content {
                 background: white;
                 border-radius: 12px;
-                max-width: 500px;
+                max-width: 700px;
                 width: 90%;
                 max-height: 80vh;
                 overflow-y: auto;
@@ -1197,9 +1146,12 @@ function showDateModal(dateStr, message, events) {
             .event-item {
                 background: #f9fafb;
                 border-radius: 8px;
-                padding: 16px;
+                padding: 20px;
                 margin: 12px 0;
                 border-left: 4px solid #0abab5;
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 16px;
             }
             .event-item.meeting {
                 border-left-color: #3b82f6;
@@ -1219,33 +1171,42 @@ function showDateModal(dateStr, message, events) {
             .event-header {
                 display: flex;
                 justify-content: space-between;
-                align-items: center;
+                align-items: flex-start;
                 margin-bottom: 8px;
+                gap: 16px;
+                grid-column: 1 / -1;
             }
             .event-header h4 {
                 margin: 0;
                 color: #111827;
                 font-size: 16px;
+                flex: 1;
             }
             .event-time {
                 color: #6b7280;
                 font-size: 14px;
                 font-weight: 500;
+                white-space: nowrap;
             }
             .event-description {
                 color: #4b5563;
                 margin: 8px 0;
                 font-size: 14px;
+                line-height: 1.5;
+                grid-column: 1 / -1;
             }
             .event-meta {
                 color: #6b7280;
                 font-size: 13px;
                 margin: 4px 0;
+                grid-column: 1 / -1;
             }
             .event-actions {
                 margin-top: 12px;
                 display: flex;
                 gap: 8px;
+                grid-column: 1 / -1;
+                justify-content: flex-end;
             }
             .action-btn {
                 padding: 6px 12px;
@@ -1274,6 +1235,32 @@ function showDateModal(dateStr, message, events) {
             .action-btn:hover {
                 transform: translateY(-1px);
             }
+            
+            @media (max-width: 768px) {
+                .modal-content {
+                    max-width: 95%;
+                    width: 95%;
+                }
+                .event-item {
+                    padding: 16px;
+                }
+                .event-header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 8px;
+                }
+                .event-time {
+                    white-space: normal;
+                }
+                .event-actions {
+                    flex-direction: column;
+                }
+                .action-btn {
+                    width: 100%;
+                    justify-content: center;
+                }
+            }
+            
             .calendar-date {
                 cursor: pointer;
                 transition: all 0.2s ease;
@@ -1326,7 +1313,12 @@ function closeDateModal() {
 
 function addEventToDate(dateString) {
     closeDateModal();
-    showEventForm(new Date(dateString));
+    // Parse date string properly to avoid timezone issues
+    const parts = dateString.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    showEventForm(new Date(year, month, day));
 }
 
 function showEventForm(date = null, event = null) {
@@ -1477,10 +1469,17 @@ function saveEvent(isEdit) {
     const form = document.getElementById('eventForm');
     const formData = new FormData(form);
     
+    // Parse date string to avoid timezone issues
+    const dateStr = document.getElementById('eventDate').value;
+    const parts = dateStr.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    
     const eventData = {
         id: isEdit ? document.getElementById('eventId').value : generateEventId(),
         title: document.getElementById('eventTitle').value,
-        date: new Date(document.getElementById('eventDate').value),
+        date: new Date(year, month, day),
         time: document.getElementById('eventTime').value || '12:00',
         type: document.getElementById('eventType').value,
         description: document.getElementById('eventDescription').value,
@@ -1670,12 +1669,20 @@ function getEventsForDate(date) {
 }
 
 function formatDateString(date) {
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
+// ✅ FIX: Same local-safe version for input fields
 function formatDateForInput(date) {
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
+
 
 function formatDisplayDate(date) {
     return date.toLocaleDateString('en-US', {

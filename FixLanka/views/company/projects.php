@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Projects - FixLanka Dashboard</title>
     <link rel="stylesheet" href="../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../assets/css/common/buttons.css">
+    <link rel="stylesheet" href="../../assets/css/common/progress-bars.css">
     <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
     <link rel="stylesheet" href="../../assets/css/company/topbar.css">
     <link rel="stylesheet" href="../../assets/css/company/projects.css">
@@ -35,7 +37,7 @@
                                 <h1><i class="fas fa-project-diagram"></i> Projects</h1>
                                 <p class="subtitle">Manage and track all your projects from start to completion</p>
                                 <nav class="breadcrumbs">
-                                    <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                                    <a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
                                     <span class="separator">/</span>
                                     <span class="current">Projects</span>
                                 </nav>
@@ -56,10 +58,10 @@
                                     </div>
                                 </div>
                                 <div class="action-buttons">
-                                    <button class="action-btn secondary">
+                                    <button class="action-btn secondary" id="exportBtn" onclick="openExportModal()">
                                         <i class="fas fa-file-export"></i> Export
                                     </button>
-                                    <button class="action-btn primary">
+                                    <button class="action-btn primary" id="startProjectBtn" onclick="showProjectStartOptions()">
                                         <i class="fas fa-plus"></i> Start a New Project
                                     </button>
                                 </div>
@@ -89,10 +91,10 @@
 
                         </div>
                         <div class="view-controls">
-                            <button class="view-toggle active" data-view="table">
+                            <button class="view-toggle active" data-view="table" title="Table View">
                                 <i class="fas fa-list"></i>
                             </button>
-                            <button class="view-toggle" data-view="cards">
+                            <button class="view-toggle" data-view="cards" title="Card View">
                                 <i class="fas fa-th-large"></i>
                             </button>
                         </div>
@@ -258,7 +260,8 @@
                                                 <button class="action-btn-sm secondary" title="Update">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <button class="action-btn-sm info" title="Chat">
+                                                <!-- need to link this directly to the chat section -->
+                                                <button class="action-btn-sm info" title="Chat" onclick="event.stopPropagation(); openDrawerWithTab('1', 'communication')">
                                                     <i class="fas fa-comments"></i>
                                                 </button>
                                             </div>
@@ -315,7 +318,7 @@
                                                 <button class="action-btn-sm secondary" title="Update">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <button class="action-btn-sm info" title="Chat">
+                                                <button class="action-btn-sm info" title="Chat" onclick="event.stopPropagation(); openDrawerWithTab('2', 'communication')">
                                                     <i class="fas fa-comments"></i>
                                                 </button>
                                             </div>
@@ -375,7 +378,7 @@
                                 <div class="card-actions">
                                     <button class="action-btn-sm primary">View</button>
                                     <button class="action-btn-sm secondary">Update</button>
-                                    <button class="action-btn-sm info">Chat</button>
+                                    <button class="action-btn-sm info" onclick="event.stopPropagation(); openDrawerWithTab('1', 'communication')">Chat</button>
                                 </div>
                             </div>
 
@@ -422,7 +425,7 @@
                                 <div class="card-actions">
                                     <button class="action-btn-sm primary">View</button>
                                     <button class="action-btn-sm secondary">Update</button>
-                                    <button class="action-btn-sm info">Chat</button>
+                                    <button class="action-btn-sm info" onclick="event.stopPropagation(); openDrawerWithTab('2', 'communication')">Chat</button>
                                 </div>
                             </div>
                         </div>
@@ -465,7 +468,8 @@
                                         </div>
                                     </div>
                                     <div class="contract-header-right">
-                                        <button class="contract-action-btn secondary">
+                                        <!-- button need to link to full contract -->
+                                        <button class="contract-action-btn secondary" onclick="navigateToContracts()">
                                             <i class="fas fa-external-link-alt"></i>
                                             View Full Contract
                                         </button>
@@ -712,8 +716,7 @@
                                             <p>Order parts and perform repairs</p>
                                             <div class="milestone-meta">
                                                 <span class="milestone-amount">LKR 75,000</span>
-                                                <span class="milestone-date editable" contenteditable="true">Due Sep
-                                                    5</span>
+                                                <span class="milestone-date">Due Sep 5</span>
                                             </div>
                                         </div>
                                     </div>
@@ -725,8 +728,7 @@
                                             <h5>Final Testing & Handover</h5>
                                             <p>System testing and customer handover</p>
                                             <div class="milestone-meta">
-                                                <span class="milestone-amount editable" contenteditable="true">LKR
-                                                    37,500</span>
+                                                <span class="milestone-amount">LKR 37,500</span>
                                                 <span class="milestone-date">Due Sep 10</span>
                                             </div>
                                         </div>
@@ -1005,12 +1007,99 @@
     </main> <!-- End main-content -->
     </div> <!-- End dashboard-container -->
 
+    <!-- Project Start Options Modal -->
+    <div class="project-start-modal" id="projectStartModal">
+        <div class="modal-overlay-blur" onclick="closeProjectStartModal()"></div>
+        <div class="project-start-content">
+            <button class="modal-close-btn" onclick="closeProjectStartModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="modal-header-section">
+                <div class="modal-icon-wrapper">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <h2>Start a New Project</h2>
+                <p class="modal-subtitle">Choose how you'd like to begin your new project</p>
+            </div>
+
+            <div class="project-options-grid">
+                <!-- Option 1: Browse Repair Requests -->
+                <div class="project-option-card" onclick="navigateToRepairRequests()">
+                    <div class="option-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3>Browse Repair Requests</h3>
+                    <p>View and accept incoming repair requests from customers</p>
+                    <div class="option-steps">
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Review customer requests</span>
+                        </div>
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Accept suitable requests</span>
+                        </div>
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Create contract</span>
+                        </div>
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Start project</span>
+                        </div>
+                    </div>
+                    <button class="option-action-btn primary">
+                        <i class="fas fa-arrow-right"></i>
+                        Go to Repair Requests
+                    </button>
+                </div>
+
+                <!-- Option 2: From Signed Contract -->
+                <div class="project-option-card" onclick="navigateToContracts()">
+                    <div class="option-icon">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
+                    <h3>From Signed Contract</h3>
+                    <p>Convert an already signed contract into an active project</p>
+                    <div class="option-steps">
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>View signed contracts</span>
+                        </div>
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Verify agreement terms</span>
+                        </div>
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Initialize project</span>
+                        </div>
+                        <div class="step-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Begin work</span>
+                        </div>
+                    </div>
+                    <button class="option-action-btn secondary">
+                        <i class="fas fa-arrow-right"></i>
+                        Go to Contracts
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-footer-note">
+                <i class="fas fa-info-circle"></i>
+                <p><strong>Note:</strong> All projects must originate from either a customer repair request or a signed contract to ensure proper documentation and workflow.</p>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
-            loadComponent('sidebar-container', 'sidebar.html');
-            loadComponent('header-container', 'topbar.html');
+            loadComponent('sidebar-container', 'sidebar.php');
+            loadComponent('header-container', 'topbar.php');
         });
 
         // Function to load HTML components
@@ -1024,9 +1113,19 @@
                         const allNavItems = document.querySelectorAll('.sidebar .nav-item');
                         allNavItems.forEach(item => item.classList.remove('active'));
 
-                        const projectsLink = document.querySelector('.sidebar a[href="projects.html"]');
+                        const projectsLink = document.querySelector('.sidebar a[href="projects.php"]');
                         if (projectsLink) {
                             projectsLink.parentElement.classList.add('active');
+                        }
+                    }
+
+                    // Initialize topbar after loading
+                    if (containerId === 'header-container') {
+                        if (typeof initializeTopbar === 'function') {
+                            setTimeout(initializeTopbar, 100);
+                        }
+                        if (typeof initProfileDropdown === 'function') {
+                            setTimeout(initProfileDropdown, 200);
                         }
                     }
                 })
@@ -1034,7 +1133,186 @@
                     console.error(`Error loading ${componentFile}:`, error);
                 });
         }
+
+        // Project Start Modal Functions
+        function showProjectStartOptions() {
+            const modal = document.getElementById('projectStartModal');
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeProjectStartModal() {
+            const modal = document.getElementById('projectStartModal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function navigateToRepairRequests() {
+            // Show a brief loading/transition message
+            showNavigationMessage('Redirecting to Repair Requests...', 'info');
+            setTimeout(() => {
+                window.location.href = 'repair-requests.php';
+            }, 500);
+        }
+
+        function navigateToContracts() {
+            // Show a brief loading/transition message
+            showNavigationMessage('Redirecting to Contracts...', 'info');
+            setTimeout(() => {
+                window.location.href = 'contracts.php';
+            }, 500);
+        }
+
+        function showNavigationMessage(message, type) {
+            // Create a temporary notification
+            const notification = document.createElement('div');
+            notification.className = `navigation-notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'info' ? 'info-circle' : 'check-circle'}"></i>
+                <span>${message}</span>
+            `;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+                color: white;
+                padding: 16px 24px;
+                border-radius: 12px;
+                box-shadow: 0 8px 24px rgba(10, 186, 181, 0.3);
+                z-index: 10001;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-weight: 600;
+                animation: slideInRight 0.3s ease;
+            `;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeProjectStartModal();
+            }
+        });
     </script>
+
+    <!-- Export Modal -->
+    <div class="modal-overlay" id="exportModal" style="display: none;">
+        <div class="export-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-export"></i> Export Projects</h3>
+                <button class="close-modal" onclick="closeExportModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <div class="form-group">
+                        <label>Export Format</label>
+                        <div class="format-options">
+                            <label class="format-option">
+                                <input type="radio" name="exportFormat" value="csv" checked>
+                                <div class="format-card">
+                                    <i class="fas fa-file-csv"></i>
+                                    <span>CSV</span>
+                                    <small>Comma-separated values</small>
+                                </div>
+                            </label>
+                            <label class="format-option">
+                                <input type="radio" name="exportFormat" value="excel">
+                                <div class="format-card">
+                                    <i class="fas fa-file-excel"></i>
+                                    <span>Excel</span>
+                                    <small>Microsoft Excel format</small>
+                                </div>
+                            </label>
+                            <label class="format-option">
+                                <input type="radio" name="exportFormat" value="pdf">
+                                <div class="format-card">
+                                    <i class="fas fa-file-pdf"></i>
+                                    <span>PDF</span>
+                                    <small>Portable Document Format</small>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Data to Export</label>
+                        <div class="data-options">
+                            <label class="checkbox-option">
+                                <input type="radio" name="dataRange" value="all" checked>
+                                <span>All Projects</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="radio" name="dataRange" value="visible">
+                                <span>Visible/Filtered Projects Only</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Columns to Include</label>
+                        <div class="columns-grid">
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="column" value="title" checked>
+                                <span>Project Title</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="column" value="customer" checked>
+                                <span>Customer</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="column" value="timeline" checked>
+                                <span>Timeline</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="column" value="contract" checked>
+                                <span>Contract Status</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="column" value="progress" checked>
+                                <span>Progress</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="column" value="budget" checked>
+                                <span>Budget</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="column" value="status" checked>
+                                <span>Status</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="export-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>The export will include data based on your selected filters and options.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeExportModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn-primary" onclick="executeExport()">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>

@@ -1,12 +1,9 @@
-/* =================================================================
-   SIDEBAR COMPONENT - Clean & Optimized
-   Features: Pure CSS toggle, responsive design, mobile-first approach
-   ================================================================= */
+
 
 /* Import Global Variables */
 @import "variables.css";
 
-/* ===== CORE SIDEBAR STRUCTURE ===== */
+
 
 /* Hidden checkbox input for pure CSS toggle functionality */
 #sidebar-toggle {
@@ -35,7 +32,7 @@
   overflow: hidden;
 }
 
-/* ===== NAVIGATION STRUCTURE ===== */
+
 
 /* Navigation container with flex-grow */
 .sidebar-nav {
@@ -57,7 +54,7 @@
   margin: var(--spacing-sm) var(--spacing-sm);
 }
 
-/* ===== NAVIGATION LINKS ===== */
+
 
 /* Base navigation link styling */
 .nav-link {
@@ -90,7 +87,7 @@
   box-shadow: 0 2px 8px rgba(10, 186, 181, 0.3);
 }
 
-/* ===== ICON STYLING ===== */
+
 
 /* Navigation icons - consistent sizing and centering */
 .nav-link i {
@@ -103,7 +100,7 @@
   justify-content: center;
 }
 
-/* ===== DESKTOP COLLAPSED STATE ===== */
+
 
 /* Collapsed navigation links - center icons, hide text */
 #sidebar-toggle:checked ~ .dashboard-container .sidebar .nav-link {
@@ -127,7 +124,7 @@
   display: none;
 }
 
-/* ===== RESPONSIVE MOBILE DESIGN ===== */
+
 
 /* Mobile/Tablet: 768px and below - Sidebar slides in from left */
 @media (max-width: 768px) {
@@ -308,7 +305,7 @@
   }
 }
 
-/* ===== SIDEBAR FOOTER ===== */
+
 
 /* Footer container with decorative separator */
 .sidebar-footer {
@@ -366,7 +363,7 @@
   display: none;
 }
 
-/* ===== ACCESSIBILITY & SCROLL ===== */
+
 
 /* Focus states for keyboard navigation */
 .sidebar-toggle:focus,
@@ -392,3 +389,4 @@
 .sidebar::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
