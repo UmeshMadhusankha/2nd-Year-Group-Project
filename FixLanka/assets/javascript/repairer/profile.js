@@ -95,6 +95,46 @@ document.addEventListener('DOMContentLoaded', function() {
         // Form submission
         profileForm.addEventListener('submit', handleFormSubmit);
         
+        // Real-time validation for email and phone
+        const emailField = document.getElementById('email');
+        const phoneField = document.getElementById('phone');
+        
+        if (emailField) {
+            emailField.addEventListener('blur', function() {
+                if (isEditing && this.value) {
+                    if (!isValidEmail(this.value)) {
+                        showFieldError(this, 'Please enter a valid email address (e.g., user@example.com)');
+                    } else {
+                        clearFieldError(this);
+                    }
+                }
+            });
+            
+            emailField.addEventListener('input', function() {
+                if (this.classList.contains('error')) {
+                    clearFieldError(this);
+                }
+            });
+        }
+        
+        if (phoneField) {
+            phoneField.addEventListener('blur', function() {
+                if (isEditing && this.value) {
+                    if (!isValidPhone(this.value)) {
+                        showFieldError(this, 'Please enter a valid phone number (e.g., 0771234567 or +94771234567)');
+                    } else {
+                        clearFieldError(this);
+                    }
+                }
+            });
+            
+            phoneField.addEventListener('input', function() {
+                if (this.classList.contains('error')) {
+                    clearFieldError(this);
+                }
+            });
+        }
+        
         // Escape key to close modal
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
@@ -300,13 +340,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function isValidEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // More comprehensive email validation
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         return emailRegex.test(email);
     }
     
     function isValidPhone(phone) {
-        const phoneRegex = /^[\+]?[\d\s\-\(\)]+$/;
-        return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 10;
+        // Sri Lankan phone number validation
+        // Accepts: +94xxxxxxxxx, 0xxxxxxxxx, or plain 10 digits
+        const cleanPhone = phone.replace(/\D/g, '');
+        
+        // Sri Lankan mobile numbers: 10 digits starting with 0, or 11-12 digits with country code
+        if (cleanPhone.length === 10 && cleanPhone.startsWith('0')) {
+            return true;
+        }
+        if ((cleanPhone.length === 11 || cleanPhone.length === 12) && cleanPhone.startsWith('94')) {
+            return true;
+        }
+        
+        // International format
+        const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
+        return phoneRegex.test(phone) && cleanPhone.length >= 10;
     }
     
     function updateProfileDisplay() {

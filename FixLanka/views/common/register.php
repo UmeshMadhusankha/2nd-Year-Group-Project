@@ -16,8 +16,16 @@
             <!-- Logo and Header -->
             <div class="register-header">
                 <div class="logo">
+<<<<<<< HEAD
+                    <img src="../../assets/images/fixlanka.png" alt="FixLanka Logo">
+=======
+<<<<<<< HEAD
+                    <img src="../../assets/images/fixlanka.png" alt="FixLanka Logo">
+=======
                     <i class="fas fa-tools"></i>
                     <span>FixLanka</span>
+>>>>>>> 5cf60e1a4b45d324ae1e648957683d9ac638ab61
+>>>>>>> 43f9b3f7df35756b085fa19a2aba69e4597f6567
                 </div>
                 <h1 class="register-title">Join FixLanka</h1>
                 <p class="register-subtitle">Choose your role and register to get started.</p>
@@ -209,11 +217,127 @@
                         </div>
 
                         <div class="form-group">
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 43f9b3f7df35756b085fa19a2aba69e4597f6567
+                            <label>
+                                <i class="fas fa-map-marked-alt"></i>
+                                Service Areas (Select one or more districts)
+                            </label>
+                            <div class="checkbox-grid" id="repairer-service-areas">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Ampara">
+                                    <span>Ampara</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Anuradhapura">
+                                    <span>Anuradhapura</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Badulla">
+                                    <span>Badulla</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Batticaloa">
+                                    <span>Batticaloa</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Colombo">
+                                    <span>Colombo</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Galle">
+                                    <span>Galle</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Gampaha">
+                                    <span>Gampaha</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Hambantota">
+                                    <span>Hambantota</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Jaffna">
+                                    <span>Jaffna</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Kalutara">
+                                    <span>Kalutara</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Kandy">
+                                    <span>Kandy</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Kegalle">
+                                    <span>Kegalle</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Kilinochchi">
+                                    <span>Kilinochchi</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Kurunegala">
+                                    <span>Kurunegala</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Mannar">
+                                    <span>Mannar</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Matale">
+                                    <span>Matale</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Matara">
+                                    <span>Matara</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Monaragala">
+                                    <span>Monaragala</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Mullaitivu">
+                                    <span>Mullaitivu</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Nuwara Eliya">
+                                    <span>Nuwara Eliya</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Polonnaruwa">
+                                    <span>Polonnaruwa</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Puttalam">
+                                    <span>Puttalam</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Ratnapura">
+                                    <span>Ratnapura</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Trincomalee">
+                                    <span>Trincomalee</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="service_areas[]" value="Vavuniya">
+                                    <span>Vavuniya</span>
+                                </label>
+                            </div>
+                            <small class="form-hint">Select all districts where you provide services</small>
+<<<<<<< HEAD
+=======
+=======
                             <label for="repairer-service-areas">
                                 <i class="fas fa-map-marked-alt"></i>
                                 Service Areas
                             </label>
                             <input type="text" id="repairer-service-areas" name="service_areas" class="form-input" placeholder="e.g., Colombo, Gampaha, Kalutara" required>
+>>>>>>> 5cf60e1a4b45d324ae1e648957683d9ac638ab61
+>>>>>>> 43f9b3f7df35756b085fa19a2aba69e4597f6567
                         </div>
 
                         <div class="form-group">
