@@ -12,11 +12,11 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Reviews - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../common/global.css">
-    <link rel="stylesheet" href="../common/variables.css">
-    <link rel="stylesheet" href="../common/topbar.css">
-    <link rel="stylesheet" href="../common/sidebar.css">
-    <link rel="stylesheet" href="reviews.css">
+    <link rel="stylesheet" href="../../../assets/css/common/global.css">
+    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/reviews.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -449,7 +449,7 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
         </div>
     </div>
 
-    <script src="../common/common.js"></script>
-    <script src="reviews.js"></script>
+    <script src="../../../assets/javascript/common/common.js"></script>
+    <script src="../../../assets/javascript/repairer/reviews.js"></script>
 </body>
 </html>

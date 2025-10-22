@@ -5,7 +5,7 @@
             <i class="fas fa-bars"></i>
         </label>
         <div class="logo">
-            <img src="../common/fixlanka.png" alt="FixLanka" class="logo-image">
+            <img src="../../../assets/images/fixlanka.png" alt="FixLanka" class="logo-image">
         </div>
         <div class="page-info">
             <h1 class="page-title"><?php echo isset($pageTitle) ? $pageTitle : 'Dashboard'; ?></h1>
