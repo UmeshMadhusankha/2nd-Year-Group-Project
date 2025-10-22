@@ -126,9 +126,9 @@ $isLoggedIn = isLoggedIn();
             <div class="footer-section footer-support">
                 <h3 class="footer-title">Support</h3>
                 <ul class="footer-links">
-                    <li><a href="#help">Help Center</a></li>
-                    <li><a href="#contact">Contact Us</a></li>
-                    <li><a href="#terms">Terms of Service</a></li>
+                    <li><a href="/2nd-Year-Group-Project/FixLanka/views/user/help-center.php">Help Center</a></li>
+                    <li><a href="/2nd-Year-Group-Project/FixLanka/views/user/contact-us.php">Contact Us</a></li>
+                    <li><a href="/2nd-Year-Group-Project/FixLanka/views/user/terms-of-service.php">Terms of Service</a></li>
                 </ul>
                 <div class="footer-contact-info">
                     <p><i class="fas fa-envelope"></i> support@fixlanka.lk</p>

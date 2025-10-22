@@ -20,13 +20,13 @@ $userData = getUserData();
         <div class="navbar-center">
             <ul class="nav-menu">
                 <li class="nav-item">
-                    <a href="#services" class="nav-link">Services</a>
+                    <a href="/2nd-Year-Group-Project/FixLanka/views/user/services.php" class="nav-link">Services</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#how-it-works" class="nav-link">How it works</a>
+                    <a href="/2nd-Year-Group-Project/FixLanka/views/user/how-it-works.php" class="nav-link">How it works</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#support" class="nav-link">Support</a>
+                    <a href="/2nd-Year-Group-Project/FixLanka/views/user/support.php" class="nav-link">Support</a>
                 </li>
             </ul>
         </div>
@@ -114,9 +114,9 @@ $userData = getUserData();
     <!-- Mobile menu -->
     <div class="mobile-menu" id="mobileMenu">
         <ul class="mobile-nav-menu">
-            <li><a href="#services" class="mobile-nav-link">Services</a></li>
-            <li><a href="#how-it-works" class="mobile-nav-link">How it works</a></li>
-            <li><a href="#support" class="mobile-nav-link">Support</a></li>
+            <li><a href="/2nd-Year-Group-Project/FixLanka/views/user/services.php" class="mobile-nav-link">Services</a></li>
+            <li><a href="/2nd-Year-Group-Project/FixLanka/views/user/how-it-works.php" class="mobile-nav-link">How it works</a></li>
+            <li><a href="/2nd-Year-Group-Project/FixLanka/views/user/support.php" class="mobile-nav-link">Support</a></li>
             
             <?php if ($isLoggedIn): ?>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/profile" class="mobile-nav-link">My Profile</a></li>
