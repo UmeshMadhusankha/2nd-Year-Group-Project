@@ -82,6 +82,22 @@ switch ($request) {
         require_once __DIR__ . '/views/user/chat.php';
         break;
     
+    case '/settings':
+        require_once __DIR__ . '/views/user/settings.php';
+        break;
+    
+    case '/help-center':
+        require_once __DIR__ . '/views/user/help-center.php';
+        break;
+    
+    case '/repairer-dashboard':
+        require_once __DIR__ . '/views/repairer/dashboard.php';
+        break;
+    
+    case '/company-dashboard':
+        require_once __DIR__ . '/views/company/dashboard.php';
+        break;
+    
     default:
         http_response_code(404);
         echo "404 - Page Not Found";

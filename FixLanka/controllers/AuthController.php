@@ -61,6 +61,24 @@ class AuthController {
             exit;
         }
         
+        // Detect user type and route to appropriate registration method
+        $userType = $_POST['user_type'] ?? 'user';
+        
+        switch ($userType) {
+            case 'repairer':
+                $this->registerRepairer();
+                break;
+            case 'company':
+                $this->registerCompany();
+                break;
+            case 'user':
+            default:
+                $this->registerUser();
+                break;
+        }
+    }
+    
+    private function registerUser() {
         $f_name = trim($_POST['f_name'] ?? '');
         $l_name = trim($_POST['l_name'] ?? '');
         $email = trim($_POST['email'] ?? '');
@@ -116,7 +134,6 @@ class AuthController {
             $_SESSION['user_role'] = 'user';
             $_SESSION['success'] = 'Account created successfully!';
             
-            // Redirect to landing page (home) instead of dashboard
             header('Location: /2nd-Year-Group-Project/FixLanka/');
             exit;
             
@@ -126,6 +143,237 @@ class AuthController {
             header('Location: /2nd-Year-Group-Project/FixLanka/signup');
             exit;
         }
+    }
+    
+    private function registerRepairer() {
+        $f_name = trim($_POST['f_name'] ?? '');
+        $l_name = trim($_POST['l_name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $phoneNumber = trim($_POST['phoneNumber'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+        $category_id = $_POST['category_id'] ?? '';
+        $districts = $_POST['districts'] ?? [];
+        $about = trim($_POST['about'] ?? '');
+        
+        // Validation
+        if (empty($f_name) || empty($l_name) || empty($email) || empty($password) || 
+            empty($phoneNumber) || empty($category_id) || empty($about)) {
+            $_SESSION['error'] = 'All required fields must be filled';
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
+        
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['error'] = 'Invalid email format';
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
+        
+        if (strlen($password) < 6) {
+            $_SESSION['error'] = 'Password must be at least 6 characters long';
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
+        
+        if ($password !== $confirm_password) {
+            $_SESSION['error'] = 'Passwords do not match';
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
+        
+        if (empty($districts) || !is_array($districts)) {
+            $_SESSION['error'] = 'Please select at least one service district';
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
+        
+        try {
+            // Check email uniqueness
+            $stmt = $this->pdo->prepare("SELECT repairer_id FROM Repairer WHERE email = ?");
+            $stmt->execute([$email]);
+            if ($stmt->fetch()) {
+                $_SESSION['error'] = 'Email already registered';
+                header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+                exit;
+            }
+            
+            // Handle file upload
+            $profilePicture = null;
+            if (isset($_FILES['profilePicture']) && $_FILES['profilePicture']['error'] === UPLOAD_ERR_OK) {
+                $profilePicture = $this->handleFileUpload($_FILES['profilePicture'], 'repairers');
+                if ($profilePicture === false) {
+                    $_SESSION['error'] = 'Failed to upload profile picture';
+                    header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+                    exit;
+                }
+            }
+            
+            // Convert districts array to CSV
+            $districtsCSV = implode(',', $districts);
+            
+            // Hash password
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            
+            // Insert into Repairer table
+            $stmt = $this->pdo->prepare("
+                INSERT INTO Repairer (f_name, l_name, email, password, phoneNumber, about, profilePicture, districts, category_id, availability) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')
+            ");
+            $stmt->execute([$f_name, $l_name, $email, $hashedPassword, $phoneNumber, $about, $profilePicture, $districtsCSV, $category_id]);
+            
+            $repairerId = $this->pdo->lastInsertId();
+            $_SESSION['user_id'] = $repairerId;
+            $_SESSION['user_name'] = $f_name . ' ' . $l_name;
+            $_SESSION['user_email'] = $email;
+            $_SESSION['user_role'] = 'repairer';
+            $_SESSION['success'] = 'Repairer account created successfully!';
+            
+            header('Location: /2nd-Year-Group-Project/FixLanka/repairer-dashboard');
+            exit;
+            
+        } catch (PDOException $e) {
+            $_SESSION['error'] = 'Registration failed. Please try again.';
+            error_log("Repairer registration error: " . $e->getMessage());
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
+    }
+    
+    private function registerCompany() {
+        $name = trim($_POST['name'] ?? '');
+        $business_type = $_POST['business_type'] ?? [];
+        $registration_no = trim($_POST['registration_no'] ?? '');
+        $tax_id = trim($_POST['tax_id'] ?? '');
+        $address = trim($_POST['address'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $website = trim($_POST['website'] ?? '');
+        $contact_no = trim($_POST['contact_no'] ?? '');
+        $districts = $_POST['districts'] ?? [];
+        $password = $_POST['password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+        $description = trim($_POST['description'] ?? '');
+        
+        // Validation
+        if (empty($name) || empty($registration_no) || empty($address) || empty($email) || 
+            empty($password) || empty($contact_no) || empty($description)) {
+            $_SESSION['error'] = 'All required fields must be filled';
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
+        
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['error'] = 'Invalid email format';
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
+        
+        if (strlen($password) < 6) {
+            $_SESSION['error'] = 'Password must be at least 6 characters long';
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
+        
+        if ($password !== $confirm_password) {
+            $_SESSION['error'] = 'Passwords do not match';
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
+        
+        if (empty($business_type) || !is_array($business_type)) {
+            $_SESSION['error'] = 'Please select at least one business type';
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
+        
+        if (empty($districts) || !is_array($districts)) {
+            $_SESSION['error'] = 'Please select at least one service district';
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
+        
+        try {
+            // Check email uniqueness
+            $stmt = $this->pdo->prepare("SELECT company_id FROM Company WHERE email = ?");
+            $stmt->execute([$email]);
+            if ($stmt->fetch()) {
+                $_SESSION['error'] = 'Email already registered';
+                header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+                exit;
+            }
+            
+            // Check registration number uniqueness
+            $stmt = $this->pdo->prepare("SELECT company_id FROM Company WHERE registration_no = ?");
+            $stmt->execute([$registration_no]);
+            if ($stmt->fetch()) {
+                $_SESSION['error'] = 'Registration number already exists';
+                header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+                exit;
+            }
+            
+            // Convert arrays to CSV
+            $businessTypeCSV = implode(',', $business_type);
+            $districtsCSV = implode(',', $districts);
+            
+            // Hash password
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            
+            // Insert into Company table
+            $stmt = $this->pdo->prepare("
+                INSERT INTO Company (name, business_type, registration_no, tax_id, address, email, website, contact_no, districts, password, description) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$name, $businessTypeCSV, $registration_no, $tax_id, $address, $email, $website, $contact_no, $districtsCSV, $hashedPassword, $description]);
+            
+            $companyId = $this->pdo->lastInsertId();
+            $_SESSION['user_id'] = $companyId;
+            $_SESSION['user_name'] = $name;
+            $_SESSION['user_email'] = $email;
+            $_SESSION['user_role'] = 'company';
+            $_SESSION['success'] = 'Company account created successfully!';
+            
+            header('Location: /2nd-Year-Group-Project/FixLanka/company-dashboard');
+            exit;
+            
+        } catch (PDOException $e) {
+            $_SESSION['error'] = 'Registration failed. Please try again.';
+            error_log("Company registration error: " . $e->getMessage());
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
+    }
+    
+    private function handleFileUpload($file, $userType) {
+        // Validate file type
+        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($file['type'], $allowedTypes)) {
+            return false;
+        }
+        
+        // Validate file size (5MB max)
+        $maxSize = 5 * 1024 * 1024;
+        if ($file['size'] > $maxSize) {
+            return false;
+        }
+        
+        // Create upload directory if it doesn't exist
+        $uploadDir = __DIR__ . '/../assets/uploads/profiles/' . $userType . '/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+        
+        // Generate unique filename
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = uniqid() . '_' . time() . '.' . $extension;
+        $targetPath = $uploadDir . $filename;
+        
+        // Move uploaded file
+        if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+            // Return relative path for database storage
+            return '/2nd-Year-Group-Project/FixLanka/assets/uploads/profiles/' . $userType . '/' . $filename;
+        }
+        
+        return false;
     }
     
     public function logout() {

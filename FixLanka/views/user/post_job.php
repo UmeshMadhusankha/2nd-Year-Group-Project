@@ -18,6 +18,7 @@ unset($_SESSION['error'], $_SESSION['success']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Post a Job - Fix Lanka</title>
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/post_job.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <main class="main-content">
@@ -26,6 +27,9 @@ unset($_SESSION['error'], $_SESSION['success']);
                 <div class="form-header">
                     <h1>Post a New Job</h1>
                     <p>Fill in the details below to post your repair job</p>
+                    <a href="/2nd-Year-Group-Project/FixLanka/views/user/landing.php" class="btn-home">
+                        <i class="fas fa-home"></i> Home
+                    </a>
                 </div>
 
                 <?php if ($error): ?>
@@ -76,8 +80,15 @@ unset($_SESSION['error'], $_SESSION['success']);
 
                     <div class="form-group">
                         <label for="photos">Photos (Optional)</label>
-                        <input type="file" id="photos" name="photos" accept="image/*">
-                        <small>Upload a photo related to your job request</small>
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="photos" name="photos" accept="image/*" onchange="updateFileName(this)">
+                            <label for="photos" class="file-upload-label">
+                                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                <span class="upload-text">Choose File</span>
+                            </label>
+                        </div>
+                        <small class="hint-text">Upload a photo related to your job request</small>
+                        <div id="file-name-display" class="file-preview"></div>
                     </div>
 
                     <button type="submit" class="submit-btn">Post Job</button>
@@ -85,6 +96,18 @@ unset($_SESSION['error'], $_SESSION['success']);
             </div>
         </div>
     </main>
+
+    <script>
+    function updateFileName(input) {
+        const fileDisplay = document.getElementById('file-name-display');
+        if (input.files && input.files[0]) {
+            const fileName = input.files[0].name;
+            fileDisplay.innerHTML = `<div class="file-preview-item">${fileName}</div>`;
+        } else {
+            fileDisplay.innerHTML = '';
+        }
+    }
+    </script>
 
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/post_job.js"></script>
 </body>

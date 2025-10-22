@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Company Dashboard - FixLanka</title>
+    <title>Repairer Dashboard - FixLanka</title>
     <style>
         * {
             margin: 0;
@@ -88,8 +88,8 @@
 </head>
 <body>
     <div class="container">
-        <div class="icon">🏢</div>
-        <h1>Welcome, Company!</h1>
+        <div class="icon">🔧</div>
+        <h1>Welcome, Repairer!</h1>
         
         <?php
         session_start();
@@ -103,18 +103,17 @@
         }
         ?>
         
-        <p>Your company account has been successfully created and verified.</p>
+        <p>Your repairer account has been successfully created and verified.</p>
         
-        <p>The full Company Dashboard is currently under development and will include:</p>
+        <p>The full Repairer Dashboard is currently under development and will include:</p>
         
         <div class="info">
             <ul style="list-style-position: inside; color: #666;">
-                <li><strong>Team Management:</strong> Manage your service providers</li>
-                <li><strong>Job Assignments:</strong> Distribute jobs to your team</li>
-                <li><strong>Analytics:</strong> Track performance metrics</li>
-                <li><strong>Revenue Reports:</strong> Monitor business income</li>
-                <li><strong>Client Management:</strong> View and manage customer relationships</li>
-                <li><strong>Marketing Tools:</strong> Promote your services</li>
+                <li><strong>Job Management:</strong> View and accept available jobs</li>
+                <li><strong>Profile Management:</strong> Update your skills and availability</li>
+                <li><strong>Earnings Tracker:</strong> Monitor your income and payments</li>
+                <li><strong>Customer Reviews:</strong> View ratings and feedback</li>
+                <li><strong>Support System:</strong> Get help when you need it</li>
             </ul>
         </div>
         
