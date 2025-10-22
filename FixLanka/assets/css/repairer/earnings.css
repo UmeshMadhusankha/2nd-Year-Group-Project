@@ -104,6 +104,62 @@
   gap: var(--spacing-md);
 }
 
+/* ===== TABS SECTION ===== */
+.tabs-container {
+  background: var(--bg-card);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid var(--border-color);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.tab-btn i {
+  font-size: var(--font-size-lg);
+}
+
+.tab-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: rgba(10, 186, 181, 0.05);
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  border-color: var(--primary-color);
+  color: white;
+  box-shadow: 0 4px 12px rgba(10, 186, 181, 0.3);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
 /* ===== SUMMARY SECTION ===== */
 .summary-section {
   margin-bottom: var(--spacing-lg);
@@ -466,6 +522,28 @@
 .actions-cell {
   display: flex;
   gap: var(--spacing-sm);
+}
+
+.hours-cell {
+  text-align: center;
+}
+
+.hours-worked {
+  display: inline-block;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rate-cell {
+  text-align: right;
+}
+
+.hourly-rate {
+  display: inline-block;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 /* ===== BUTTONS ===== */

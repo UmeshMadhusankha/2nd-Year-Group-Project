@@ -105,11 +105,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                     <div class="quick-actions-grid">
                         <a href="available-jobs.php" class="action-card">
                             <div class="action-icon">
-                                <i class="fas fa-search"></i>
+                                <i class="fas fa-briefcase"></i>
                             </div>
                             <div class="action-content">
-                                <h3 class="action-title">Browse Jobs</h3>
-                                <p class="action-description">Find new repair requests in your area</p>
+                                <h3 class="action-title">Browse Available Jobs</h3>
+                                <p class="action-description">Find repair requests from customers</p>
                             </div>
                             <div class="action-arrow">
                                 <i class="fas fa-arrow-right"></i>
@@ -121,8 +121,21 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                 <i class="fas fa-clipboard-list"></i>
                             </div>
                             <div class="action-content">
-                                <h3 class="action-title">My Active Jobs</h3>
+                                <h3 class="action-title">My Jobs</h3>
                                 <p class="action-description">Manage your current repair tasks</p>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </a>
+
+                        <a href="company-jobs.php" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="action-content">
+                                <h3 class="action-title">Company Jobs</h3>
+                                <p class="action-description">Browse side projects from companies</p>
                             </div>
                             <div class="action-arrow">
                                 <i class="fas fa-arrow-right"></i>

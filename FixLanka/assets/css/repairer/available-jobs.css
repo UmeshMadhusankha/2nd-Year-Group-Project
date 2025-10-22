@@ -395,6 +395,10 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .job-urgency.urgent {
