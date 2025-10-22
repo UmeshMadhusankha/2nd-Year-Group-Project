@@ -611,8 +611,8 @@ input:checked + .toggle-slider:before {
 .upgrade-modal {
   background: var(--bg-primary);
   border-radius: var(--border-radius-lg);
-  max-width: 500px;
-  width: 90vw;
+  max-width: 650px;
+  width: 95%;
   max-height: 90vh;
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
@@ -1068,7 +1068,8 @@ input:checked + .toggle-slider:before {
   }
   
   .upgrade-modal {
-    width: 95vw;
+    width: 90%;
+    max-width: 95vw;
     margin: var(--spacing-md);
   }
   

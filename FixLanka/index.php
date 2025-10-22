@@ -81,6 +81,10 @@ switch ($request) {
     case '/chat':
         require_once __DIR__ . '/views/user/chat.php';
         break;
+
+    case '/admin':
+        require_once __DIR__ . '/views/admin/index.php';
+        break;
     
     default:
         http_response_code(404);

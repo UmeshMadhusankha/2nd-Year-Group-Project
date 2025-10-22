@@ -678,3 +678,170 @@ function searchJobs(searchTerm) {
         }
     }
 }
+
+// ===== CALENDAR FUNCTIONALITY =====
+let currentDate = new Date();
+let currentMonth = currentDate.getMonth();
+let currentYear = currentDate.getFullYear();
+
+// Sample events data - dates with scheduled jobs
+const jobEvents = [
+    { date: '2025-10-25', title: 'Client Consultation', time: '2:00 PM', type: 'consultation' },
+    { date: '2025-10-27', title: 'Team Meeting', time: '10:00 AM', type: 'meeting' },
+    { date: '2025-10-28', title: 'Equipment Maintenance', time: '9:00 AM', type: 'maintenance' },
+    { date: '2025-10-29', title: 'Kitchen Sink Repair', time: '11:00 AM', type: 'job' },
+    { date: '2025-10-30', title: 'Ceiling Fan Installation', time: '2:00 PM', type: 'job' }
+];
+
+// Initialize calendar
+function initializeCalendar() {
+    const prevBtn = document.getElementById('prev-month');
+    const nextBtn = document.getElementById('next-month');
+    
+    if (prevBtn && nextBtn) {
+        prevBtn.addEventListener('click', () => {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        });
+        
+        nextBtn.addEventListener('click', () => {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar();
+        });
+        
+        renderCalendar();
+        renderUpcomingEvents();
+    }
+}
+
+function renderCalendar() {
+    const calendarDays = document.getElementById('calendar-days');
+    const monthYearDisplay = document.getElementById('current-month-year');
+    
+    if (!calendarDays || !monthYearDisplay) return;
+    
+    // Clear previous days
+    calendarDays.innerHTML = '';
+    
+    // Update month/year display
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+    monthYearDisplay.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+    
+    // Get first day of month and number of days
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+    
+    // Get today's date for comparison
+    const today = new Date();
+    const todayDate = today.getDate();
+    const todayMonth = today.getMonth();
+    const todayYear = today.getFullYear();
+    
+    // Add previous month's days
+    for (let i = firstDay - 1; i >= 0; i--) {
+        const day = daysInPrevMonth - i;
+        const dayElement = createDayElement(day, 'prev-month');
+        calendarDays.appendChild(dayElement);
+    }
+    
+    // Add current month's days
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayElement = createDayElement(day, 'current-month');
+        
+        // Check if it's today
+        if (day === todayDate && currentMonth === todayMonth && currentYear === todayYear) {
+            dayElement.classList.add('today');
+        }
+        
+        // Check if day has events
+        const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const hasEvent = jobEvents.some(event => event.date === dateString);
+        if (hasEvent) {
+            dayElement.classList.add('has-event');
+        }
+        
+        calendarDays.appendChild(dayElement);
+    }
+    
+    // Add next month's days to fill grid
+    const totalCells = calendarDays.children.length;
+    const remainingCells = 42 - totalCells; // 6 rows * 7 days
+    for (let day = 1; day <= remainingCells; day++) {
+        const dayElement = createDayElement(day, 'next-month');
+        calendarDays.appendChild(dayElement);
+    }
+}
+
+function createDayElement(day, monthClass) {
+    const dayElement = document.createElement('div');
+    dayElement.className = `calendar-day ${monthClass}`;
+    dayElement.textContent = day;
+    return dayElement;
+}
+
+function renderUpcomingEvents() {
+    const eventsList = document.getElementById('upcoming-events-list');
+    
+    if (!eventsList) return;
+    
+    // Clear previous events
+    eventsList.innerHTML = '';
+    
+    // Filter and sort upcoming events
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const upcomingEvents = jobEvents
+        .filter(event => {
+            const eventDate = new Date(event.date);
+            return eventDate >= today;
+        })
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(0, 5); // Show only next 5 events
+    
+    if (upcomingEvents.length === 0) {
+        eventsList.innerHTML = '<div class="no-events-message">No upcoming events</div>';
+        return;
+    }
+    
+    upcomingEvents.forEach(event => {
+        const eventItem = document.createElement('div');
+        eventItem.className = 'event-item';
+        
+        // Format date
+        const eventDate = new Date(event.date);
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const dateStr = `${monthNames[eventDate.getMonth()]} ${eventDate.getDate()}`;
+        
+        eventItem.innerHTML = `
+            <div class="event-date-badge">${dateStr}</div>
+            <div class="event-details">
+                <div class="event-title">${event.title}</div>
+                <div class="event-time">
+                    <i class="fas fa-clock"></i>
+                    ${event.time}
+                </div>
+            </div>
+        `;
+        
+        eventsList.appendChild(eventItem);
+    });
+}
+
+// Initialize calendar when DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCalendar);
+} else {
+    initializeCalendar();
+}

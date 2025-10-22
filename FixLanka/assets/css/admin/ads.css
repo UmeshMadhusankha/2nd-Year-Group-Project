@@ -1,0 +1,340 @@
+/* Advertisement Review specific styles */
+.ads-stats-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  margin-bottom: 1.5rem;
+}
+
+.ads-table-container {
+  background-color: var(--card);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  border: 1px solid var(--border);
+}
+
+.ads-table-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ads-search-container {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ads-search-input {
+  position: relative;
+  max-width: 24rem;
+}
+
+.ads-search-input input {
+  padding-left: 2rem;
+  width: 100%;
+}
+
+.ads-search-icon {
+  position: absolute;
+  left: 0.5rem;
+  top: 0.625rem;
+  width: 1rem;
+  height: 1rem;
+  color: var(--muted-foreground);
+}
+
+.ads-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.ads-table thead {
+  background-color: var(--muted);
+}
+
+.ads-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--border);
+}
+
+.ads-table tbody {
+  background-color: var(--card);
+}
+
+.ads-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.ads-table tbody tr:hover {
+  background-color: var(--muted);
+}
+
+.ads-table tbody tr + tr {
+  border-top: 1px solid var(--border);
+}
+
+.ads-table td {
+  padding: 1rem;
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+
+.ads-title {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.ads-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ads-type-banner {
+  background-color: rgba(77, 230, 213, 0.15);
+  color: var(--fixlanka-primary);
+  border: 1px solid rgba(77, 230, 213, 0.3);
+}
+
+.ads-type-sponsored {
+  background-color: rgba(185, 244, 228, 0.2);
+  color: var(--fixlanka-primary);
+  border: 1px solid rgba(185, 244, 228, 0.4);
+}
+
+.ads-type-featured {
+  background-color: rgba(228, 86, 79, 0.15);
+  color: var(--fixlanka-error);
+  border: 1px solid rgba(228, 86, 79, 0.3);
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: rgb(var(--foreground));
+  background-color: rgb(var(--background));
+  border: 1px solid rgb(var(--border));
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: rgb(var(--fixlanka-primary));
+  box-shadow: 0 0 0 3px rgba(var(--fixlanka-primary), 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .ads-search-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .ads-search-input {
+    max-width: 100%;
+  }
+  
+  .ads-table-container {
+    overflow-x: auto;
+  }
+  
+  .ads-table {
+    min-width: 800px;
+  }
+  
+  .ads-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Action buttons styling */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.btn-primary {
+  background-color: var(--fixlanka-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
+.btn-secondary:hover {
+  background-color: var(--border);
+}
+
+.btn-destructive {
+  background-color: var(--fixlanka-error);
+  color: white;
+}
+
+.btn-destructive:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(228, 86, 79, 0.3);
+}
+
+/* Badge styles */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badge-default {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: rgb(22, 163, 74);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.badge-outline {
+  background-color: rgba(234, 179, 8, 0.1);
+  color: rgb(161, 98, 7);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+}
+
+.badge-destructive {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: rgb(220, 38, 38);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.badge-secondary {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+}
+
+/* Utility classes - Override common.css for ads page */
+.ads-table td .flex {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.ads-table td .flex.space-x-2 {
+  gap: 0.5rem !important;
+}
+
+.ads-table td .flex.justify-center {
+  justify-content: center !important;
+}
+
+.ads-table td .space-x-2 > * + * {
+  margin-left: 0.5rem;
+}
+
+.flex {
+  display: flex !important;
+}
+
+.flex.space-x-2 {
+  gap: 0.5rem;
+}
+
+.space-x-2 > * + * {
+  margin-left: 0.5rem;
+}
+
+.flex.justify-center {
+  justify-content: center !important;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.space-x-3 {
+  gap: 0.75rem;
+}
+
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+
+.grid {
+  display: grid;
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.gap-4 {
+  gap: 1rem;
+}
