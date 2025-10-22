@@ -149,8 +149,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Close dropdown when clicking outside
-        document.addEventListener('click', function() {
-            profileDropdown.classList.remove('show');
+        document.addEventListener('click', function(e) {
+            if (!profileAvatar.contains(e.target) && !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.remove('show');
+            }
         });
     }
     
