@@ -14,8 +14,8 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../../../assets/css/common/global.css">
     <link rel="stylesheet" href="../../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
-    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/common/sidebar.css">
     <link rel="stylesheet" href="../../../assets/css/repairer/available-jobs.css">
 </head>
 <body>
@@ -459,7 +459,129 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
         </div>
     </div>
 
-    <script src="../../../assets/javascript/common/common.js"></script>
+    <!-- Job Details Drawer -->
+    <div class="drawer" id="jobDetailsDrawer">
+        <div class="drawer-overlay" onclick="closeJobDetails()"></div>
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <h3><i class="fas fa-briefcase"></i> Job Details</h3>
+                <button class="drawer-close" onclick="closeJobDetails()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="drawer-body">
+                <!-- Job Header -->
+                <div class="job-detail-header">
+                    <div class="job-detail-category" id="detailCategory">
+                        <i class="fas fa-wrench"></i>
+                        <span>Plumbing</span>
+                    </div>
+                    <div class="job-detail-urgency" id="detailUrgency">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>Urgent</span>
+                    </div>
+                </div>
+
+                <h2 class="job-detail-title" id="detailTitle">Kitchen Sink Repair</h2>
+
+                <!-- Customer Information -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-user"></i> Customer Information</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Name</span>
+                            <span class="detail-value" id="detailCustomerName">Sarah Fernando</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Phone</span>
+                            <span class="detail-value" id="detailCustomerPhone">+94 77 123 4567</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Email</span>
+                            <span class="detail-value" id="detailCustomerEmail">sarah.fernando@email.com</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Posted</span>
+                            <span class="detail-value" id="detailPosted">2 hours ago</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Information -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-map-marker-alt"></i> Location</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">District</span>
+                            <span class="detail-value" id="detailDistrict">Colombo</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Address</span>
+                            <span class="detail-value" id="detailAddress">No. 45, Galle Road, Colombo 07</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedule Information -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-calendar"></i> Schedule</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Preferred Date & Time</span>
+                            <span class="detail-value" id="detailSchedule">Tomorrow, 2:00 PM - 4:00 PM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Job Description -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-file-alt"></i> Job Description</h4>
+                    <p class="detail-description" id="detailDescription">
+                        The kitchen sink is leaking from the pipe connection underneath. Water is dripping constantly and has created a puddle. The sink was installed about 5 years ago. Need urgent repair to prevent water damage to the cabinet.
+                    </p>
+                </div>
+
+                <!-- Additional Details -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-info-circle"></i> Additional Information</h4>
+                    <div class="detail-list">
+                        <div class="detail-list-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="detailInfo1">Customer will provide necessary materials</span>
+                        </div>
+                        <div class="detail-list-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="detailInfo2">Parking available on premises</span>
+                        </div>
+                        <div class="detail-list-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="detailInfo3">Customer prefers afternoon appointments</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Required Skills -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-tools"></i> Required Skills</h4>
+                    <div class="skills-tags" id="detailSkills">
+                        <span class="skill-tag">Plumbing</span>
+                        <span class="skill-tag">Pipe Fitting</span>
+                        <span class="skill-tag">Leak Repair</span>
+                    </div>
+                </div>
+            </div>
+            <div class="drawer-footer">
+                <button class="btn btn-secondary" onclick="closeJobDetails()">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button class="btn btn-primary" onclick="submitQuoteFromDetails()">
+                    <i class="fas fa-file-invoice-dollar"></i> Submit Quote
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../../assets/javascript/repairer/common/common.js"></script>
     <script src="../../../assets/javascript/repairer/available-jobs.js"></script>
 </body>
 </html>

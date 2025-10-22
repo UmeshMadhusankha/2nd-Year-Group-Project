@@ -14,8 +14,8 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../../../assets/css/common/global.css">
     <link rel="stylesheet" href="../../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
-    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/common/sidebar.css">
     <link rel="stylesheet" href="../../../assets/css/repairer/earnings.css">
 </head>
 <body>
@@ -656,7 +656,160 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
         </div>
     </div>
 
-    <script src="../../../assets/javascript/common/common.js"></script>
+    <!-- Earning Details Drawer -->
+    <div class="drawer" id="earningDetailsDrawer">
+        <div class="drawer-overlay" onclick="closeEarningDetailsDrawer()"></div>
+        <div class="drawer-content large">
+            <div class="drawer-header">
+                <h3><i class="fas fa-receipt"></i> Earning Details</h3>
+                <button class="drawer-close" onclick="closeEarningDetailsDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="drawer-body">
+                <!-- Payment Status Banner -->
+                <div class="earning-status-banner" id="earningStatusBanner">
+                    <div class="status-icon" id="earningStatusIcon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="status-content">
+                        <h4 id="earningStatusTitle">Payment Received</h4>
+                        <p id="earningStatusMessage">This payment has been successfully received</p>
+                    </div>
+                </div>
+
+                <!-- Job Information -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-briefcase"></i> Job Information</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Job Title</span>
+                            <span class="detail-value" id="earningJobTitle">Kitchen Sink Repair</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Category</span>
+                            <span class="detail-value" id="earningCategory">Plumbing</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Date Completed</span>
+                            <span class="detail-value" id="earningDate">Sep 1, 2025</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Duration</span>
+                            <span class="detail-value" id="earningDuration">2.5 hours</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Information -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-user"></i> Customer Information</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Customer Name</span>
+                            <span class="detail-value" id="earningCustomerName">Sarah Fernando</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Location</span>
+                            <span class="detail-value" id="earningLocation">Colombo 07</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Contact</span>
+                            <span class="detail-value" id="earningContact">+94 77 123 4567</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Rating Given</span>
+                            <span class="detail-value" id="earningRating">
+                                <i class="fas fa-star" style="color: #f39c12;"></i>
+                                <i class="fas fa-star" style="color: #f39c12;"></i>
+                                <i class="fas fa-star" style="color: #f39c12;"></i>
+                                <i class="fas fa-star" style="color: #f39c12;"></i>
+                                <i class="fas fa-star" style="color: #f39c12;"></i>
+                                <span style="margin-left: 8px;">5.0</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Breakdown -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-money-bill-wave"></i> Payment Breakdown</h4>
+                    <div class="payment-breakdown">
+                        <div class="breakdown-row">
+                            <span class="breakdown-label">Service Fee</span>
+                            <span class="breakdown-value" id="earningServiceFee">LKR 2,800</span>
+                        </div>
+                        <div class="breakdown-row">
+                            <span class="breakdown-label">Platform Fee (10%)</span>
+                            <span class="breakdown-value text-danger" id="earningPlatformFee">- LKR 280</span>
+                        </div>
+                        <div class="breakdown-row">
+                            <span class="breakdown-label">Materials Cost</span>
+                            <span class="breakdown-value" id="earningMaterialsCost">LKR 500</span>
+                        </div>
+                        <div class="breakdown-row total">
+                            <span class="breakdown-label"><strong>Total Earned</strong></span>
+                            <span class="breakdown-value" id="earningTotalEarned"><strong>LKR 3,020</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Information -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-credit-card"></i> Payment Information</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Payment Method</span>
+                            <span class="detail-value" id="earningPaymentMethod">Cash</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Transaction ID</span>
+                            <span class="detail-value" id="earningTransactionId">TXN-2025-09-001</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Payment Date</span>
+                            <span class="detail-value" id="earningPaymentDate">Sep 1, 2025 - 3:45 PM</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Status</span>
+                            <span class="detail-value">
+                                <span class="status-badge paid" id="earningPaymentStatus">Paid</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Job Description -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-align-left"></i> Job Description</h4>
+                    <p id="earningDescription" style="color: var(--text-secondary); line-height: 1.6; background: var(--bg-secondary); padding: 16px; border-radius: 8px;">
+                        Repaired leaking kitchen sink faucet, replaced worn-out washers, and installed new O-rings. Also cleaned the drain and checked all connections for potential issues.
+                    </p>
+                </div>
+
+                <!-- Timeline -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-history"></i> Timeline</h4>
+                    <div id="earningTimeline" class="timeline">
+                        <!-- Timeline items will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            <div class="drawer-footer">
+                <button class="btn btn-secondary" onclick="closeEarningDetailsDrawer()">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button class="btn btn-outline" onclick="downloadInvoiceFromDrawer()">
+                    <i class="fas fa-download"></i> Download Invoice
+                </button>
+                <button class="btn btn-primary" id="drawerReminderBtn" style="display: none;" onclick="sendReminderFromDrawer()">
+                    <i class="fas fa-bell"></i> Send Reminder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../../assets/javascript/repairer/common/common.js"></script>
     <script src="../../../assets/javascript/repairer/earnings.js"></script>
     <script>
         // Tab switching function

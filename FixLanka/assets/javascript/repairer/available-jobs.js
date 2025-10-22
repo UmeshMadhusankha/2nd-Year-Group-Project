@@ -591,8 +591,220 @@ function searchJobs(query) {
     updateResultsCount(visibleCount);
 }
 
+/**
+ * Mock job data for detailed view
+ */
+const jobDetailsData = {
+    1: {
+        title: "Kitchen Sink Repair",
+        category: "Plumbing",
+        urgency: "urgent",
+        customerName: "Sarah Fernando",
+        customerPhone: "+94 77 123 4567",
+        customerEmail: "sarah.fernando@email.com",
+        posted: "2 hours ago",
+        district: "Colombo",
+        address: "No. 45, Galle Road, Colombo 07",
+        schedule: "Tomorrow, 2:00 PM - 4:00 PM",
+        description: "The kitchen sink is leaking from the pipe connection underneath. Water is dripping constantly and has created a puddle. The sink was installed about 5 years ago. Need urgent repair to prevent water damage to the cabinet.",
+        additionalInfo: [
+            "Customer will provide necessary materials",
+            "Parking available on premises",
+            "Customer prefers afternoon appointments"
+        ],
+        skills: ["Plumbing", "Pipe Fitting", "Leak Repair"]
+    },
+    2: {
+        title: "Ceiling Fan Installation",
+        category: "Electrical",
+        urgency: "normal",
+        customerName: "ABC Trading Company",
+        customerPhone: "+94 81 234 5678",
+        customerEmail: "contact@abctrading.lk",
+        posted: "4 hours ago",
+        district: "Kandy",
+        address: "123, Peradeniya Road, Kandy",
+        schedule: "Sept 3, 9:00 AM - 12:00 PM",
+        description: "Need to install a new ceiling fan in the office conference room. Fan and all mounting hardware provided. Requires proper wiring and balancing. Must ensure fan is properly secured as it's a large room with high ceilings.",
+        additionalInfo: [
+            "All materials provided by company",
+            "Access available during business hours",
+            "Prior electrical work certificate required"
+        ],
+        skills: ["Electrical Wiring", "Fan Installation", "Safety Compliance"]
+    },
+    3: {
+        title: "Washing Machine Repair",
+        category: "Appliance",
+        urgency: "urgent",
+        customerName: "Nimal Perera",
+        customerPhone: "+94 77 987 6543",
+        customerEmail: "nimal.perera@email.com",
+        posted: "6 hours ago",
+        district: "Colombo",
+        address: "78, High Level Road, Nugegoda",
+        schedule: "Sept 4, 3:00 PM - 5:00 PM",
+        description: "Washing machine not spinning properly and making loud noise during wash cycle. Machine is 3 years old, Samsung model. Need diagnostic and repair as soon as possible.",
+        additionalInfo: [
+            "Machine still under extended warranty",
+            "Original purchase receipt available",
+            "Home occupied during working hours"
+        ],
+        skills: ["Appliance Repair", "Motor Diagnosis", "Washing Machines"]
+    },
+    4: {
+        title: "Air Conditioner Service",
+        category: "HVAC",
+        urgency: "normal",
+        customerName: "Kamala Silva",
+        customerPhone: "+94 33 456 7890",
+        customerEmail: "kamala.silva@email.com",
+        posted: "1 day ago",
+        district: "Gampaha",
+        address: "56, Yakkala Road, Gampaha",
+        schedule: "Sept 5, 10:00 AM - 1:00 PM",
+        description: "Annual servicing required for 2 split AC units. Units need cleaning, gas refill check, and general maintenance. Both units are Daikin brand, installed 2 years ago.",
+        additionalInfo: [
+            "Regular customer, annual service",
+            "Both units easily accessible",
+            "Payment on completion"
+        ],
+        skills: ["HVAC", "AC Maintenance", "Gas Filling"]
+    },
+    5: {
+        title: "Cabinet Door Repair",
+        category: "Carpentry",
+        urgency: "normal",
+        customerName: "Rajesh Kumar",
+        customerPhone: "+94 77 234 5678",
+        customerEmail: "rajesh.kumar@email.com",
+        posted: "1 day ago",
+        district: "Colombo",
+        address: "34, Beach Road, Mount Lavinia",
+        schedule: "Sept 6, 8:00 AM - 11:00 AM",
+        description: "Kitchen cabinet door hinge is broken and needs replacement. Door is hanging at an angle. Need experienced carpenter to fix or replace hinge and ensure door closes properly.",
+        additionalInfo: [
+            "Customer can provide hinge if needed",
+            "Other cabinets may need inspection",
+            "Morning time slot preferred"
+        ],
+        skills: ["Carpentry", "Cabinet Repair", "Hinge Replacement"]
+    },
+    6: {
+        title: "Room Wall Painting",
+        category: "Painting",
+        urgency: "urgent",
+        customerName: "Priya Wickramasinghe",
+        customerPhone: "+94 37 345 6789",
+        customerEmail: "priya.w@email.com",
+        posted: "2 days ago",
+        district: "Kurunegala",
+        address: "89, Colombo Road, Kurunegala",
+        schedule: "Sept 7-8, 9:00 AM - 5:00 PM",
+        description: "Need to paint one bedroom (12x12 ft). Walls need preparation, one coat of primer and two coats of paint. Color to be selected. Professional finish required as it's for rental property.",
+        additionalInfo: [
+            "Paint to be purchased by painter",
+            "Room is empty, furniture removed",
+            "Budget discussed before work"
+        ],
+        skills: ["Painting", "Wall Preparation", "Professional Finishing"]
+    }
+};
+
+/**
+ * Open job details drawer
+ */
+function viewJobDetails(jobId) {
+    const drawer = document.getElementById('jobDetailsDrawer');
+    const jobData = jobDetailsData[jobId];
+    
+    if (!jobData) {
+        showToast('Job details not available', 'error');
+        return;
+    }
+    
+    // Populate drawer with job data
+    document.getElementById('detailCategory').innerHTML = `
+        <i class="fas fa-${getCategoryIcon(jobData.category)}"></i>
+        <span>${jobData.category}</span>
+    `;
+    
+    const urgencyElement = document.getElementById('detailUrgency');
+    urgencyElement.className = `job-detail-urgency ${jobData.urgency}`;
+    urgencyElement.innerHTML = `
+        <i class="fas fa-${jobData.urgency === 'urgent' ? 'exclamation-circle' : 'info-circle'}"></i>
+        <span>${jobData.urgency.charAt(0).toUpperCase() + jobData.urgency.slice(1)}</span>
+    `;
+    
+    document.getElementById('detailTitle').textContent = jobData.title;
+    document.getElementById('detailCustomerName').textContent = jobData.customerName;
+    document.getElementById('detailCustomerPhone').textContent = jobData.customerPhone;
+    document.getElementById('detailCustomerEmail').textContent = jobData.customerEmail;
+    document.getElementById('detailPosted').textContent = jobData.posted;
+    document.getElementById('detailDistrict').textContent = jobData.district;
+    document.getElementById('detailAddress').textContent = jobData.address;
+    document.getElementById('detailSchedule').textContent = jobData.schedule;
+    document.getElementById('detailDescription').textContent = jobData.description;
+    
+    // Populate additional info
+    const infoContainer = document.querySelector('.detail-list');
+    infoContainer.innerHTML = jobData.additionalInfo.map(info => `
+        <div class="detail-list-item">
+            <i class="fas fa-check-circle"></i>
+            <span>${info}</span>
+        </div>
+    `).join('');
+    
+    // Populate skills
+    const skillsContainer = document.getElementById('detailSkills');
+    skillsContainer.innerHTML = jobData.skills.map(skill => `
+        <span class="skill-tag">${skill}</span>
+    `).join('');
+    
+    // Show drawer
+    drawer.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Close job details drawer
+ */
+function closeJobDetails() {
+    const drawer = document.getElementById('jobDetailsDrawer');
+    drawer.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+/**
+ * Submit quote from details drawer
+ */
+function submitQuoteFromDetails() {
+    closeJobDetails();
+    const jobTitle = document.getElementById('detailTitle').textContent;
+    showToast(`Opening quote form for: ${jobTitle}`, 'success');
+    // Here you would typically open a quote submission form
+}
+
+/**
+ * Get category icon
+ */
+function getCategoryIcon(category) {
+    const icons = {
+        'Plumbing': 'wrench',
+        'Electrical': 'bolt',
+        'Appliance': 'tv',
+        'HVAC': 'snowflake',
+        'Carpentry': 'hammer',
+        'Painting': 'paint-brush'
+    };
+    return icons[category] || 'tools';
+}
+
 // Export functions for global use
 window.viewJobDetails = viewJobDetails;
+window.closeJobDetails = closeJobDetails;
+window.submitQuote = submitQuote;
+window.submitQuoteFromDetails = submitQuoteFromDetails;
 window.applyForJob = applyForJob;
 window.searchJobs = searchJobs;
 window.refreshJobs = refreshJobs;

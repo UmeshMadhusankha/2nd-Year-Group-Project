@@ -208,6 +208,10 @@
     background: linear-gradient(135deg, #1abc9c, #16a085);
 }
 
+.stat-card.success .stat-icon {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+}
+
 .stat-card.info .stat-icon {
     background: linear-gradient(135deg, #9b59b6, #8e44ad);
 }
@@ -345,11 +349,21 @@
 
 /* ===== SECTION STYLES ===== */
 .jobs-section,
-.applications-section {
+.applications-section,
+.contracts-section,
+.assignments-section {
     background: var(--bg-card);
     border-radius: var(--border-radius);
     padding: var(--spacing-lg);
     border: 1px solid var(--border-color);
+}
+
+/* Messages section has its own layout structure */
+.messages-chat-section {
+    background: var(--bg-card);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
 }
 
 .section-header {
@@ -667,10 +681,6 @@
 
 .tab-content {
     display: none;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: var(--spacing-xl);
 }
 
 .tab-content.active {
@@ -1755,15 +1765,7 @@
     transform: scale(1.05);
 }
 
-/* ===== TWO-COLUMN CHAT LAYOUT ===== */
-.messages-chat-section {
-    background: var(--bg-card);
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-}
-
-.messages-layout {
+/* ===== TWO-COLUMN CHAT LAYOUT ===== */.messages-layout {
     display: grid;
     grid-template-columns: 350px 1fr;
     height: calc(100vh - 280px);

@@ -12,10 +12,11 @@ $searchPlaceholder = 'Search company jobs...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Company Jobs - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../../../assets/css/common/global.css">
     <link rel="stylesheet" href="../../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
-    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/common/global.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/common/buttons.css">
     <link rel="stylesheet" href="../../../assets/css/repairer/jobs.css">
 </head>
 <body>
@@ -440,6 +441,12 @@ $searchPlaceholder = 'Search company jobs...';
                         <span class="skill-tag">Refrigeration</span>
                     </div>
                 </div>
+
+                <!-- Location Requirements -->
+                <div class="job-location-section">
+                    <h4><i class="fas fa-map-marker-alt"></i> Location Requirements</h4>
+                    <p id="jobLocationRequirements">Colombo and surrounding areas, must have own transportation</p>
+                </div>
             </div>
             <div class="drawer-footer">
                 <button class="btn btn-secondary" onclick="closeJobDetailsDrawer()">
@@ -542,6 +549,14 @@ $searchPlaceholder = 'Search company jobs...';
                             <span class="detail-value" id="appCompanyName">TechCorp Solutions</span>
                         </div>
                         <div class="detail-item">
+                            <span class="detail-label">Category</span>
+                            <span class="detail-value" id="appJobCategory">HVAC</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Job Budget</span>
+                            <span class="detail-value" id="appJobBudget">LKR 2,500 - 3,200/hr</span>
+                        </div>
+                        <div class="detail-item">
                             <span class="detail-label">Applied On</span>
                             <span class="detail-value" id="appAppliedDate">October 20, 2025</span>
                         </div>
@@ -553,10 +568,41 @@ $searchPlaceholder = 'Search company jobs...';
                         </div>
                     </div>
                 </div>
+
+                <div class="detail-section">
+                    <h4><i class="fas fa-money-bill-wave"></i> Your Proposal</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Proposed Rate</span>
+                            <span class="detail-value" id="appProposedRate">LKR 2,800/hr</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Availability</span>
+                            <span class="detail-value" id="appAvailability">Immediately</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h4><i class="fas fa-file-alt"></i> Cover Letter</h4>
+                    <p id="appCoverLetter" style="color: var(--text-secondary); line-height: 1.6; background: var(--bg-secondary); padding: 16px; border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                        I am an experienced HVAC technician with over 5 years of hands-on experience...
+                    </p>
+                </div>
+
+                <div class="detail-section">
+                    <h4><i class="fas fa-history"></i> Application Timeline</h4>
+                    <div id="appTimeline" class="timeline">
+                        <!-- Timeline items will be loaded here dynamically -->
+                    </div>
+                </div>
             </div>
             <div class="drawer-footer">
                 <button class="btn btn-secondary" onclick="closeApplicationDetailsDrawer()">
                     <i class="fas fa-times"></i> Close
+                </button>
+                <button class="btn btn-danger" id="withdrawBtn" style="display: none;">
+                    <i class="fas fa-ban"></i> Withdraw Application
                 </button>
             </div>
         </div>
@@ -594,6 +640,14 @@ $searchPlaceholder = 'Search company jobs...';
                             <span class="detail-value" id="contractType">Long-term</span>
                         </div>
                         <div class="detail-item">
+                            <span class="detail-label">Start Date</span>
+                            <span class="detail-value" id="contractStartDate">Oct 1, 2025</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Hourly Rate</span>
+                            <span class="detail-value" id="contractRate">LKR 2,800/hr</span>
+                        </div>
+                        <div class="detail-item">
                             <span class="detail-label">Total Assignments</span>
                             <span class="detail-value" id="totalAssignments">5</span>
                         </div>
@@ -605,6 +659,27 @@ $searchPlaceholder = 'Search company jobs...';
                             <span class="detail-label">Total Earnings</span>
                             <span class="detail-value" id="totalEarnings">LKR 45,000</span>
                         </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h4><i class="fas fa-address-book"></i> Contact Information</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Email</span>
+                            <span class="detail-value" id="companyEmail">contact@techcorp.com</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Phone</span>
+                            <span class="detail-value" id="companyPhone">+94 11 234 5678</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h4><i class="fas fa-clipboard-list"></i> Recent Assignments</h4>
+                    <div id="contractAssignments" style="display: flex; flex-direction: column; gap: 12px;">
+                        <!-- Assignments will be loaded here dynamically -->
                     </div>
                 </div>
             </div>
@@ -648,15 +723,53 @@ $searchPlaceholder = 'Search company jobs...';
                             <span class="detail-value" id="assignmentDate">Oct 22, 2025</span>
                         </div>
                         <div class="detail-item">
+                            <span class="detail-label">Time</span>
+                            <span class="detail-value" id="assignmentTime">9:00 AM - 5:00 PM</span>
+                        </div>
+                        <div class="detail-item">
                             <span class="detail-label">Location</span>
                             <span class="detail-value" id="assignmentLocation">Colombo 07</span>
                         </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Estimated Hours</span>
+                            <span class="detail-value" id="estimatedHours">8 hours</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Priority</span>
+                            <span class="detail-value" id="assignmentPriority">
+                                <span class="priority-badge normal">Normal Priority</span>
+                            </span>
+                        </div>
                     </div>
+                </div>
+
+                <div class="detail-section">
+                    <h4><i class="fas fa-align-left"></i> Description</h4>
+                    <p id="assignmentDescription" style="color: var(--text-secondary); line-height: 1.6;">
+                        Perform routine maintenance on HVAC systems at the office complex including filter replacement, system checks, and performance optimization.
+                    </p>
+                </div>
+
+                <div class="detail-section">
+                    <h4><i class="fas fa-tasks"></i> Update Status</h4>
+                    <select id="jobStatus" class="form-select" onchange="updateAssignmentStatus()" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px;">
+                        <option value="assigned">Assigned</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+
+                <div class="detail-section">
+                    <h4><i class="fas fa-sticky-note"></i> Progress Notes</h4>
+                    <textarea id="progressNote" rows="4" placeholder="Add notes about progress..." style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
                 </div>
             </div>
             <div class="drawer-footer">
                 <button class="btn btn-secondary" onclick="closeAssignmentDetailsDrawer()">
                     <i class="fas fa-times"></i> Close
+                </button>
+                <button class="btn btn-primary" onclick="saveProgressUpdate()">
+                    <i class="fas fa-save"></i> Save Update
                 </button>
                 <button class="btn btn-success" onclick="markAssignmentComplete()">
                     <i class="fas fa-check"></i> Mark as Complete
@@ -700,7 +813,7 @@ $searchPlaceholder = 'Search company jobs...';
         </div>
     </div>
 
-    <script src="../../../assets/javascript/common/common.js"></script>
+    <script src="../../../assets/javascript/repairer/common/common.js"></script>
     <script src="../../../assets/javascript/repairer/jobs.js"></script>
     <script>
         // Initialize page on load

@@ -1284,12 +1284,15 @@ function updateContractStats() {
     let pendingPayments = 0;
     
     contractsData.forEach(contract => {
-        totalEarnings += parseFloat(contract.totalEarned.replace(/[^\d.]/g, ''));
+        totalEarnings += contract.totalEarnings || 0;
     });
     
     assignmentsData.forEach(assignment => {
         if (assignment.paymentStatus === 'pending') {
-            pendingPayments += parseFloat(assignment.totalPaid.replace(/[^\d.]/g, ''));
+            const amount = typeof assignment.totalPaid === 'string' 
+                ? parseFloat(assignment.totalPaid.replace(/[^\d.]/g, ''))
+                : assignment.totalPaid;
+            pendingPayments += amount || 0;
         }
     });
     

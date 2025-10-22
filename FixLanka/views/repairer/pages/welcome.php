@@ -14,8 +14,8 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../../../assets/css/common/global.css">
     <link rel="stylesheet" href="../../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
-    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/common/sidebar.css">
     <link rel="stylesheet" href="../../../assets/css/repairer/welcome.css">
 </head>
 <body>
@@ -180,19 +180,6 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                 <i class="fas fa-arrow-right"></i>
                             </div>
                         </a>
-
-                        <a href="support.php" class="action-card">
-                            <div class="action-icon">
-                                <i class="fas fa-headset"></i>
-                            </div>
-                            <div class="action-content">
-                                <h3 class="action-title">Get Support</h3>
-                                <p class="action-description">Contact our support team</p>
-                            </div>
-                            <div class="action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
                     </div>
                 </section>
 
@@ -280,7 +267,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
         </div>
     </div>
 
-    <script src="../../../assets/javascript/common/common.js"></script>
+    <script src="../../../assets/javascript/repairer/common/common.js"></script>
     <script src="../../../assets/javascript/repairer/welcome.js"></script>
 </body>
 </html>
