@@ -82,6 +82,14 @@ switch ($request) {
         require_once __DIR__ . '/views/user/chat.php';
         break;
     
+    case '/settings':
+        require_once __DIR__ . '/views/user/settings.php';
+        break;
+    
+    case '/help-center':
+        require_once __DIR__ . '/views/user/help-center.php';
+        break;
+    
     case '/repairer-dashboard':
         require_once __DIR__ . '/views/repairer/dashboard.php';
         break;

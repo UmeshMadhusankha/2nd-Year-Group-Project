@@ -59,13 +59,13 @@ $userData = getUserData();
                                 </a>
                             </li>
                             <li class="dropdown-item">
-                                <a href="/2nd-Year-Group-Project/FixLanka/bookings" class="dropdown-link">
+                                <a href="/2nd-Year-Group-Project/FixLanka/job-history" class="dropdown-link">
                                     <i class="fas fa-calendar-check"></i>
-                                    My Bookings
+                                    My Jobs
                                 </a>
                             </li>
                             <li class="dropdown-item">
-                                <a href="/2nd-Year-Group-Project/FixLanka/messages" class="dropdown-link">
+                                <a href="/2nd-Year-Group-Project/FixLanka/chat" class="dropdown-link">
                                     <i class="fas fa-envelope"></i>
                                     Messages
                                 </a>
@@ -77,7 +77,7 @@ $userData = getUserData();
                                 </a>
                             </li>
                             <li class="dropdown-item">
-                                <a href="/2nd-Year-Group-Project/FixLanka/help" class="dropdown-link">
+                                <a href="/2nd-Year-Group-Project/FixLanka/help-center" class="dropdown-link">
                                     <i class="fas fa-question-circle"></i>
                                     Help Center
                                 </a>
@@ -120,10 +120,10 @@ $userData = getUserData();
             
             <?php if ($isLoggedIn): ?>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/profile" class="mobile-nav-link">My Profile</a></li>
-                <li><a href="/2nd-Year-Group-Project/FixLanka/bookings" class="mobile-nav-link">My Bookings</a></li>
-                <li><a href="/2nd-Year-Group-Project/FixLanka/messages" class="mobile-nav-link">Messages</a></li>
+                <li><a href="/2nd-Year-Group-Project/FixLanka/job-history" class="mobile-nav-link">My Jobs</a></li>
+                <li><a href="/2nd-Year-Group-Project/FixLanka/chat" class="mobile-nav-link">Messages</a></li>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/settings" class="mobile-nav-link">Settings</a></li>
-                <li><a href="/2nd-Year-Group-Project/FixLanka/help" class="mobile-nav-link">Help Center</a></li>
+                <li><a href="/2nd-Year-Group-Project/FixLanka/help-center" class="mobile-nav-link">Help Center</a></li>
                 <li>
                     <form action="/2nd-Year-Group-Project/FixLanka/logout" method="POST" style="margin: 0;">
                         <button type="submit" class="mobile-nav-link" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: inherit; font-family: inherit;">Logout</button>
