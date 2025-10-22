@@ -16,8 +16,14 @@
             </li>
             <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'my-jobs') ? 'active' : ''; ?>">
                 <a href="my-jobs.php" class="nav-link" data-tooltip="My Jobs">
-                    <i class="fas fa-tasks"></i>
+                    <i class="fas fa-clipboard-list"></i>
                     <span>My Jobs</span>
+                </a>
+            </li>
+            <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'company-jobs') ? 'active' : ''; ?>">
+                <a href="company-jobs.php" class="nav-link" data-tooltip="Company Jobs">
+                    <i class="fas fa-building"></i>
+                    <span>Company Jobs</span>
                 </a>
             </li>
             <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'earnings') ? 'active' : ''; ?>">
