@@ -40,7 +40,7 @@ function applyJobFilter(filter) {
     const jobsList = document.querySelector('.jobs-list');
     
     // Remove existing filter classes
-    jobsList.classList.remove('filter-active', 'filter-completed');
+    jobsList.classList.remove('filter-active', 'filter-completed', 'filter-paid', 'filter-cancelled');
     
     jobItems.forEach(item => {
         if (filter === 'all') {
@@ -52,9 +52,16 @@ function applyJobFilter(filter) {
             } else {
                 item.style.display = 'none';
             }
+        } else if (filter === 'completed') {
+            jobsList.classList.add('filter-completed');
+            if (item.getAttribute('data-status') === 'completed') {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
         } else if (filter === 'paid') {
             jobsList.classList.add('filter-paid');
-            if (['complete', 'paid', 'completed'].includes(item.getAttribute('data-status'))) {
+            if (['paid'].includes(item.getAttribute('data-status'))) {
                 item.style.display = 'flex';
             } else {
                 item.style.display = 'none';
@@ -73,9 +80,10 @@ function applyJobFilter(filter) {
 function updateFilteredJobCount(filter) {
     const sectionSubtitle = document.querySelector('.section-subtitle');
     const activeJobs = document.querySelectorAll('.job-item[data-status="active"], .job-item[data-status="in-progress"], .job-item[data-status="on-hold"], .job-item[data-status="scheduled"]').length;
-    const completedJobs = document.querySelectorAll('.job-item[data-status="complete"], .job-item[data-status="paid"], .job-item[data-status="completed"]').length;
+    const completedJobs = document.querySelectorAll('.job-item[data-status="completed"]').length;
+    const paidJobs = document.querySelectorAll('.job-item[data-status="paid"]').length;
     const cancelledJobs = document.querySelectorAll('.job-item[data-status="cancelled"]').length;
-    const totalJobs = activeJobs + completedJobs + cancelledJobs;
+    const totalJobs = activeJobs + completedJobs + paidJobs + cancelledJobs;
     
     let count = 0;
     let label = '';
@@ -89,8 +97,12 @@ function updateFilteredJobCount(filter) {
             count = activeJobs;
             label = 'active jobs';
             break;
-        case 'paid':
+        case 'completed':
             count = completedJobs;
+            label = 'completed jobs awaiting payment';
+            break;
+        case 'paid':
+            count = paidJobs;
             label = 'paid jobs';
             break;
         case 'cancelled':
@@ -104,24 +116,27 @@ function updateFilteredJobCount(filter) {
 
 function updateJobCounts() {
     const activeJobs = document.querySelectorAll('.job-item[data-status="active"], .job-item[data-status="in-progress"], .job-item[data-status="on-hold"], .job-item[data-status="scheduled"]').length;
-    const completedJobs = document.querySelectorAll('.job-item[data-status="complete"], .job-item[data-status="paid"], .job-item[data-status="completed"]').length;
+    const completedJobs = document.querySelectorAll('.job-item[data-status="completed"]').length;
+    const paidJobs = document.querySelectorAll('.job-item[data-status="paid"]').length;
     const cancelledJobs = document.querySelectorAll('.job-item[data-status="cancelled"]').length;
-    const totalJobs = activeJobs + completedJobs + cancelledJobs;
+    const totalJobs = activeJobs + completedJobs + paidJobs + cancelledJobs;
     
     // Update header stats
     const headerStats = document.querySelectorAll('.header-stat-number');
-    if (headerStats.length >= 2) {
+    if (headerStats.length >= 3) {
         headerStats[0].textContent = activeJobs;
-        headerStats[1].textContent = totalJobs;
+        headerStats[1].textContent = completedJobs; // Awaiting Payment
+        headerStats[2].textContent = totalJobs;
     }
     
     // Update tab counts
     const tabCounts = document.querySelectorAll('.tab-count');
-    if (tabCounts.length >= 4) {
+    if (tabCounts.length >= 5) {
         tabCounts[0].textContent = totalJobs; // All jobs
         tabCounts[1].textContent = activeJobs; // Active jobs
-        tabCounts[2].textContent = completedJobs; // Paid jobs
-        tabCounts[3].textContent = cancelledJobs; // Cancelled jobs
+        tabCounts[2].textContent = completedJobs; // Completed jobs
+        tabCounts[3].textContent = paidJobs; // Paid jobs
+        tabCounts[4].textContent = cancelledJobs; // Cancelled jobs
     }
 }
 
@@ -292,7 +307,65 @@ function cancelJob(button, jobId) {
     // If reason is null, user clicked Cancel, so do nothing
 }
 
-function markJobAsCompleted(jobItem) {
+// ===== MARK JOB AS COMPLETED FUNCTIONALITY =====
+function markJobAsCompleted(button, jobId) {
+    const jobItem = button.closest('.job-item');
+    const jobTitle = jobItem.querySelector('.job-title').textContent;
+    
+    // Show confirmation dialog
+    if (confirm(`Mark "${jobTitle}" as completed?\n\nThe customer will be notified and requested to make payment.`)) {
+        // Update the job item to completed state
+        jobItem.setAttribute('data-status', 'completed');
+        
+        // Update the status badge
+        const statusBadge = jobItem.querySelector('.job-status-badge');
+        statusBadge.className = 'job-status-badge completed';
+        statusBadge.innerHTML = '<i class="fas fa-clipboard-check"></i>Completed';
+        
+        // Replace actions with completion info
+        const jobActions = jobItem.querySelector('.job-actions');
+        jobActions.innerHTML = `
+            <div class="completion-info">
+                <span class="completed-label">
+                    <i class="fas fa-hourglass-half"></i>
+                    Awaiting Payment
+                </span>
+                <span class="completion-note">Customer has been notified to proceed with payment</span>
+            </div>
+            <button class="btn btn-primary" onclick="viewJobDetails(${jobId})">
+                <i class="fas fa-eye"></i>
+                View Details
+            </button>
+        `;
+        
+        // Update the date to show completion
+        const jobDate = jobItem.querySelector('.job-date span');
+        jobDate.textContent = 'Completed just now';
+        
+        // Update counts
+        updateJobCounts();
+        
+        // Get current active filter
+        const activeFilter = document.querySelector('.filter-tab.active');
+        if (activeFilter) {
+            const filter = activeFilter.getAttribute('data-filter');
+            updateFilteredJobCount(filter);
+            
+            // If we're on 'active' filter, hide the completed job
+            if (filter === 'active') {
+                jobItem.style.display = 'none';
+            }
+        }
+        
+        // Show success message
+        showNotification('Job marked as completed! Customer notified to make payment.', 'success');
+        
+        // Log the completion (in production, this would be an API call)
+        console.log(`Job ${jobId} marked as completed. Customer notified for payment.`);
+    }
+}
+
+function markJobAsCompleted_old(jobItem) {
     // Update the job item to completed state
     jobItem.setAttribute('data-status', 'completed');
     
@@ -419,17 +492,266 @@ function updateJobStatus(jobId) {
     }, 1000);
 }
 
+// Mock job data
+const jobsData = {
+    1: {
+        title: 'Kitchen Sink Repair',
+        status: 'Active',
+        statusClass: 'active',
+        amount: 'LKR 2,800',
+        customerName: 'Sarah Fernando',
+        customerPhone: '+94 77 123 4567',
+        customerEmail: 'sarah.fernando@email.com',
+        location: 'Colombo 07, Western Province',
+        started: 'October 21, 2025',
+        completion: 'October 24, 2025',
+        jobId: '#JOB-2025-001',
+        category: 'Plumbing',
+        description: 'The kitchen sink is leaking from the pipe underneath. Water is dripping constantly and needs immediate repair. The customer mentioned that the issue started 3 days ago and has been getting worse. Please bring necessary tools and replacement parts if needed.',
+        serviceCharge: 'LKR 2,500',
+        platformFee: 'LKR 375',
+        tax: 'LKR 125',
+        totalAmount: 'LKR 2,800',
+        earnings: 'LKR 2,125',
+        timeline: [
+            { title: 'Job Accepted', date: 'October 21, 2025 - 10:30 AM', status: 'completed' },
+            { title: 'Work Started', date: 'October 21, 2025 - 2:00 PM', status: 'completed' },
+            { title: 'In Progress', date: 'Current Status', status: 'active' },
+            { title: 'Pending Completion', date: 'Est. October 24, 2025', status: 'pending' }
+        ],
+        primaryAction: 'Mark as Complete'
+    },
+    2: {
+        title: 'Ceiling Fan Installation',
+        status: 'Active',
+        statusClass: 'active',
+        amount: 'LKR 4,200',
+        customerName: 'Kandy Hardware Store',
+        customerPhone: '+94 81 234 5678',
+        customerEmail: 'contact@kandyhardware.lk',
+        location: 'Kandy, Central Province',
+        started: 'October 22, 2025',
+        completion: 'October 25, 2025',
+        jobId: '#JOB-2025-002',
+        category: 'Electrical',
+        description: 'Installation of 3 ceiling fans in the showroom. The fans have been purchased and are ready for installation. Wiring is already in place. Need to install fans securely and test all functions including speed controls.',
+        serviceCharge: 'LKR 3,800',
+        platformFee: 'LKR 570',
+        tax: 'LKR 190',
+        totalAmount: 'LKR 4,200',
+        earnings: 'LKR 3,230',
+        timeline: [
+            { title: 'Job Accepted', date: 'October 22, 2025 - 9:00 AM', status: 'completed' },
+            { title: 'Work Started', date: 'October 22, 2025 - 11:30 AM', status: 'completed' },
+            { title: 'In Progress', date: 'Current Status', status: 'active' },
+            { title: 'Pending Completion', date: 'Est. October 25, 2025', status: 'pending' }
+        ],
+        primaryAction: 'Mark as Complete'
+    },
+    3: {
+        title: 'Air Conditioning Repair',
+        status: 'Active',
+        statusClass: 'active',
+        amount: 'LKR 3,500',
+        customerName: 'Priya Wickramasinghe',
+        customerPhone: '+94 71 987 6543',
+        customerEmail: 'priya.w@email.com',
+        location: 'Nugegoda, Western Province',
+        started: 'October 23, 2025',
+        completion: 'October 26, 2025',
+        jobId: '#JOB-2025-003',
+        category: 'Air Conditioning',
+        description: 'AC unit not cooling properly. Customer reports that the AC runs but only blows warm air. Needs diagnostic check and repair. Unit is approximately 3 years old, regular brand.',
+        serviceCharge: 'LKR 3,100',
+        platformFee: 'LKR 465',
+        tax: 'LKR 155',
+        totalAmount: 'LKR 3,500',
+        earnings: 'LKR 2,635',
+        timeline: [
+            { title: 'Job Accepted', date: 'October 23, 2025 - 8:15 AM', status: 'completed' },
+            { title: 'Work Started', date: 'October 23, 2025 - 10:00 AM', status: 'completed' },
+            { title: 'In Progress', date: 'Current Status', status: 'active' },
+            { title: 'Pending Completion', date: 'Est. October 26, 2025', status: 'pending' }
+        ],
+        primaryAction: 'Mark as Complete'
+    },
+    4: {
+        title: 'Washing Machine Repair',
+        status: 'Paid',
+        statusClass: 'paid',
+        amount: 'LKR 2,500',
+        customerName: 'Nimal Perera',
+        customerPhone: '+94 77 555 1234',
+        customerEmail: 'nimal.p@email.com',
+        location: 'Maharagama, Western Province',
+        started: 'October 17, 2025',
+        completion: 'October 20, 2025',
+        jobId: '#JOB-2025-004',
+        category: 'Appliance Repair',
+        description: 'Washing machine making loud noise during spin cycle and not draining water properly. Fixed the drainage pump and replaced worn bearings. Machine now operates smoothly.',
+        serviceCharge: 'LKR 2,200',
+        platformFee: 'LKR 330',
+        tax: 'LKR 110',
+        totalAmount: 'LKR 2,500',
+        earnings: 'LKR 1,870',
+        timeline: [
+            { title: 'Job Accepted', date: 'October 17, 2025 - 9:30 AM', status: 'completed' },
+            { title: 'Work Started', date: 'October 17, 2025 - 1:00 PM', status: 'completed' },
+            { title: 'Work Completed', date: 'October 20, 2025 - 3:30 PM', status: 'completed' },
+            { title: 'Payment Received', date: 'October 20, 2025 - 4:00 PM', status: 'completed' }
+        ],
+        primaryAction: 'Download Invoice'
+    },
+    5: {
+        title: 'Bathroom Plumbing Fix',
+        status: 'Paid',
+        statusClass: 'paid',
+        amount: 'LKR 1,800',
+        customerName: 'Kamala Silva',
+        customerPhone: '+94 71 444 3333',
+        customerEmail: 'kamala.silva@email.com',
+        location: 'Dehiwala, Western Province',
+        started: 'October 14, 2025',
+        completion: 'October 16, 2025',
+        jobId: '#JOB-2025-005',
+        category: 'Plumbing',
+        description: 'Leaky bathroom faucet and slow draining sink. Replaced faulty washers and cleared pipe blockage. All fixtures now working properly.',
+        serviceCharge: 'LKR 1,600',
+        platformFee: 'LKR 240',
+        tax: 'LKR 80',
+        totalAmount: 'LKR 1,800',
+        earnings: 'LKR 1,360',
+        timeline: [
+            { title: 'Job Accepted', date: 'October 14, 2025 - 10:00 AM', status: 'completed' },
+            { title: 'Work Started', date: 'October 14, 2025 - 2:30 PM', status: 'completed' },
+            { title: 'Work Completed', date: 'October 16, 2025 - 11:00 AM', status: 'completed' },
+            { title: 'Payment Received', date: 'October 16, 2025 - 11:30 AM', status: 'completed' }
+        ],
+        primaryAction: 'Download Invoice'
+    },
+    6: {
+        title: 'Electrical Wiring Repair',
+        status: 'Cancelled',
+        statusClass: 'cancelled',
+        amount: 'LKR 3,200',
+        customerName: 'Rajith Kumar',
+        customerPhone: '+94 77 666 7777',
+        customerEmail: 'rajith.k@email.com',
+        location: 'Moratuwa, Western Province',
+        started: 'N/A',
+        completion: 'N/A',
+        jobId: '#JOB-2025-006',
+        category: 'Electrical',
+        description: 'Faulty wiring in bedroom causing power outages. Job was cancelled by customer before work could begin. Reason: Customer requested another repairer.',
+        serviceCharge: 'LKR 3,000',
+        platformFee: 'LKR 450',
+        tax: 'LKR 150',
+        totalAmount: 'LKR 3,200',
+        earnings: 'LKR 0',
+        timeline: [
+            { title: 'Job Accepted', date: 'October 19, 2025 - 9:00 AM', status: 'completed' },
+            { title: 'Job Cancelled', date: 'October 21, 2025 - 10:30 AM', status: 'cancelled' }
+        ],
+        primaryAction: 'Close'
+    }
+};
+
 function viewJobDetails(jobId) {
     console.log(`Viewing details for job ID: ${jobId}`);
     
-    // In a real application, this would open a modal or navigate to a details page
-    showNotification('Opening job details...', 'info');
+    // Get job data
+    const job = jobsData[jobId];
     
-    // Simulate navigation
-    setTimeout(() => {
-        alert(`Job Details for ID: ${jobId}\n\nThis would open a detailed view of the job with:\n- Full job description\n- Customer contact information\n- Progress timeline\n- Messages and updates\n- Payment information`);
-    }, 500);
+    if (!job) {
+        showNotification('Job details not found', 'error');
+        return;
+    }
+    
+    // Update modal content
+    document.getElementById('modal-job-title').textContent = job.title;
+    document.getElementById('modal-job-status').innerHTML = `<i class="fas fa-${job.statusClass === 'active' ? 'tools' : job.statusClass === 'paid' ? 'check-circle' : 'times-circle'}"></i> ${job.status}`;
+    document.getElementById('modal-job-status').className = `job-detail-status ${job.statusClass}`;
+    document.getElementById('modal-job-amount').textContent = job.amount;
+    
+    document.getElementById('modal-customer-name').textContent = job.customerName;
+    document.getElementById('modal-customer-phone').textContent = job.customerPhone;
+    document.getElementById('modal-customer-email').textContent = job.customerEmail;
+    document.getElementById('modal-job-location').textContent = job.location;
+    
+    document.getElementById('modal-job-started').textContent = job.started;
+    document.getElementById('modal-job-completion').textContent = job.completion;
+    document.getElementById('modal-job-id').textContent = job.jobId;
+    document.getElementById('modal-job-category').textContent = job.category;
+    
+    document.getElementById('modal-job-description').textContent = job.description;
+    
+    document.getElementById('modal-service-charge').textContent = job.serviceCharge;
+    document.getElementById('modal-platform-fee').textContent = job.platformFee;
+    document.getElementById('modal-tax').textContent = job.tax;
+    document.getElementById('modal-total-amount').textContent = job.totalAmount;
+    document.getElementById('modal-earnings').textContent = job.earnings;
+    
+    // Update timeline
+    const timelineContainer = document.getElementById('modal-timeline');
+    timelineContainer.innerHTML = job.timeline.map(item => `
+        <div class="timeline-item ${item.status}">
+            <div class="timeline-icon">
+                <i class="fas fa-${item.status === 'completed' ? 'check' : item.status === 'active' ? 'tools' : item.status === 'cancelled' ? 'times' : 'clock'}"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-title">${item.title}</div>
+                <div class="timeline-date">${item.date}</div>
+            </div>
+        </div>
+    `).join('');
+    
+    // Update primary action button
+    const primaryActionBtn = document.getElementById('modal-primary-action');
+    primaryActionBtn.textContent = job.primaryAction;
+    primaryActionBtn.onclick = () => {
+        if (job.primaryAction === 'Mark as Complete') {
+            showNotification('Job marked as complete!', 'success');
+            closeJobDetailsModal();
+        } else if (job.primaryAction === 'Download Invoice') {
+            downloadInvoice(jobId);
+        } else {
+            closeJobDetailsModal();
+        }
+    };
+    
+    // Show modal
+    const modal = document.getElementById('jobDetailsModal');
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
 }
+
+function closeJobDetailsModal() {
+    const modal = document.getElementById('jobDetailsModal');
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+// Close modal on overlay click
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('jobDetailsModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeJobDetailsModal();
+            }
+        });
+    }
+    
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('jobDetailsModal');
+            if (modal && modal.classList.contains('show')) {
+                closeJobDetailsModal();
+            }
+        }
+    });
+});
 
 function downloadInvoice(jobId) {
     console.log(`Downloading invoice for job ID: ${jobId}`);
@@ -677,4 +999,171 @@ function searchJobs(searchTerm) {
             updateFilteredJobCount(activeTab.getAttribute('data-filter'));
         }
     }
+}
+
+// ===== CALENDAR FUNCTIONALITY =====
+let currentDate = new Date();
+let currentMonth = currentDate.getMonth();
+let currentYear = currentDate.getFullYear();
+
+// Sample events data - dates with scheduled jobs
+const jobEvents = [
+    { date: '2025-10-25', title: 'Client Consultation', time: '2:00 PM', type: 'consultation' },
+    { date: '2025-10-27', title: 'Team Meeting', time: '10:00 AM', type: 'meeting' },
+    { date: '2025-10-28', title: 'Equipment Maintenance', time: '9:00 AM', type: 'maintenance' },
+    { date: '2025-10-29', title: 'Kitchen Sink Repair', time: '11:00 AM', type: 'job' },
+    { date: '2025-10-30', title: 'Ceiling Fan Installation', time: '2:00 PM', type: 'job' }
+];
+
+// Initialize calendar
+function initializeCalendar() {
+    const prevBtn = document.getElementById('prev-month');
+    const nextBtn = document.getElementById('next-month');
+    
+    if (prevBtn && nextBtn) {
+        prevBtn.addEventListener('click', () => {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        });
+        
+        nextBtn.addEventListener('click', () => {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar();
+        });
+        
+        renderCalendar();
+        renderUpcomingEvents();
+    }
+}
+
+function renderCalendar() {
+    const calendarDays = document.getElementById('calendar-days');
+    const monthYearDisplay = document.getElementById('current-month-year');
+    
+    if (!calendarDays || !monthYearDisplay) return;
+    
+    // Clear previous days
+    calendarDays.innerHTML = '';
+    
+    // Update month/year display
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+    monthYearDisplay.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+    
+    // Get first day of month and number of days
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+    
+    // Get today's date for comparison
+    const today = new Date();
+    const todayDate = today.getDate();
+    const todayMonth = today.getMonth();
+    const todayYear = today.getFullYear();
+    
+    // Add previous month's days
+    for (let i = firstDay - 1; i >= 0; i--) {
+        const day = daysInPrevMonth - i;
+        const dayElement = createDayElement(day, 'prev-month');
+        calendarDays.appendChild(dayElement);
+    }
+    
+    // Add current month's days
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayElement = createDayElement(day, 'current-month');
+        
+        // Check if it's today
+        if (day === todayDate && currentMonth === todayMonth && currentYear === todayYear) {
+            dayElement.classList.add('today');
+        }
+        
+        // Check if day has events
+        const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const hasEvent = jobEvents.some(event => event.date === dateString);
+        if (hasEvent) {
+            dayElement.classList.add('has-event');
+        }
+        
+        calendarDays.appendChild(dayElement);
+    }
+    
+    // Add next month's days to fill grid
+    const totalCells = calendarDays.children.length;
+    const remainingCells = 42 - totalCells; // 6 rows * 7 days
+    for (let day = 1; day <= remainingCells; day++) {
+        const dayElement = createDayElement(day, 'next-month');
+        calendarDays.appendChild(dayElement);
+    }
+}
+
+function createDayElement(day, monthClass) {
+    const dayElement = document.createElement('div');
+    dayElement.className = `calendar-day ${monthClass}`;
+    dayElement.textContent = day;
+    return dayElement;
+}
+
+function renderUpcomingEvents() {
+    const eventsList = document.getElementById('upcoming-events-list');
+    
+    if (!eventsList) return;
+    
+    // Clear previous events
+    eventsList.innerHTML = '';
+    
+    // Filter and sort upcoming events
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const upcomingEvents = jobEvents
+        .filter(event => {
+            const eventDate = new Date(event.date);
+            return eventDate >= today;
+        })
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(0, 5); // Show only next 5 events
+    
+    if (upcomingEvents.length === 0) {
+        eventsList.innerHTML = '<div class="no-events-message">No upcoming events</div>';
+        return;
+    }
+    
+    upcomingEvents.forEach(event => {
+        const eventItem = document.createElement('div');
+        eventItem.className = 'event-item';
+        
+        // Format date
+        const eventDate = new Date(event.date);
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const dateStr = `${monthNames[eventDate.getMonth()]} ${eventDate.getDate()}`;
+        
+        eventItem.innerHTML = `
+            <div class="event-date-badge">${dateStr}</div>
+            <div class="event-details">
+                <div class="event-title">${event.title}</div>
+                <div class="event-time">
+                    <i class="fas fa-clock"></i>
+                    ${event.time}
+                </div>
+            </div>
+        `;
+        
+        eventsList.appendChild(eventItem);
+    });
+}
+
+// Initialize calendar when DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCalendar);
+} else {
+    initializeCalendar();
 }

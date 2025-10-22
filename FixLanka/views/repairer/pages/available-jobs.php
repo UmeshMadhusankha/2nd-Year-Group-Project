@@ -14,8 +14,8 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../../../assets/css/common/global.css">
     <link rel="stylesheet" href="../../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
-    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/common/sidebar.css">
     <link rel="stylesheet" href="../../../assets/css/repairer/available-jobs.css">
 </head>
 <body>
@@ -154,17 +154,25 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                         <i class="fas fa-user"></i>
                                         <span>Sarah Fernando</span>
                                     </div>
-                                    <div class="job-location">
+                                    <div class="job-district">
                                         <i class="fas fa-map-marker-alt"></i>
-                                        <span>Colombo 07, Western Province</span>
+                                        <span>Colombo</span>
                                     </div>
-                                    <div class="job-schedule">
+                                    <div class="job-address">
+                                        <i class="fas fa-location-dot"></i>
+                                        <span>No. 45, Galle Road, Colombo 07</span>
+                                    </div>
+                                    <div class="job-type">
+                                        <i class="fas fa-wrench"></i>
+                                        <span>Plumbing</span>
+                                    </div>
+                                    <div class="job-urgency urgent">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        <span>Urgent</span>
+                                    </div>
+                                    <div class="job-date">
                                         <i class="fas fa-calendar"></i>
                                         <span>Tomorrow, 2:00 PM - 4:00 PM</span>
-                                    </div>
-                                    <div class="job-budget">
-                                        <i class="fas fa-money-bill"></i>
-                                        <span class="budget-amount">LKR 2,500 - 3,500</span>
                                     </div>
                                 </div>
 
@@ -199,17 +207,25 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                         <i class="fas fa-building"></i>
                                         <span>ABC Trading Company</span>
                                     </div>
-                                    <div class="job-location">
+                                    <div class="job-district">
                                         <i class="fas fa-map-marker-alt"></i>
-                                        <span>Kandy, Central Province</span>
+                                        <span>Kandy</span>
                                     </div>
-                                    <div class="job-schedule">
+                                    <div class="job-address">
+                                        <i class="fas fa-location-dot"></i>
+                                        <span>123, Peradeniya Road, Kandy</span>
+                                    </div>
+                                    <div class="job-type">
+                                        <i class="fas fa-bolt"></i>
+                                        <span>Electrical</span>
+                                    </div>
+                                    <div class="job-urgency normal">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>Normal</span>
+                                    </div>
+                                    <div class="job-date">
                                         <i class="fas fa-calendar"></i>
                                         <span>Sept 3, 9:00 AM - 12:00 PM</span>
-                                    </div>
-                                    <div class="job-budget">
-                                        <i class="fas fa-money-bill"></i>
-                                        <span class="budget-amount">LKR 4,000 - 5,000</span>
                                     </div>
                                 </div>
 
@@ -244,17 +260,25 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                         <i class="fas fa-user"></i>
                                         <span>Nimal Perera</span>
                                     </div>
-                                    <div class="job-location">
+                                    <div class="job-district">
                                         <i class="fas fa-map-marker-alt"></i>
-                                        <span>Nugegoda, Western Province</span>
+                                        <span>Colombo</span>
                                     </div>
-                                    <div class="job-schedule">
+                                    <div class="job-address">
+                                        <i class="fas fa-location-dot"></i>
+                                        <span>78, High Level Road, Nugegoda</span>
+                                    </div>
+                                    <div class="job-type">
+                                        <i class="fas fa-tv"></i>
+                                        <span>Appliance Repair</span>
+                                    </div>
+                                    <div class="job-urgency urgent">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        <span>Urgent</span>
+                                    </div>
+                                    <div class="job-date">
                                         <i class="fas fa-calendar"></i>
                                         <span>Sept 4, 3:00 PM - 5:00 PM</span>
-                                    </div>
-                                    <div class="job-budget">
-                                        <i class="fas fa-money-bill"></i>
-                                        <span class="budget-amount">LKR 1,800 - 2,200</span>
                                     </div>
                                 </div>
 
@@ -289,17 +313,25 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                         <i class="fas fa-user"></i>
                                         <span>Kamala Silva</span>
                                     </div>
-                                    <div class="job-location">
+                                    <div class="job-district">
                                         <i class="fas fa-map-marker-alt"></i>
-                                        <span>Gampaha, Western Province</span>
+                                        <span>Gampaha</span>
                                     </div>
-                                    <div class="job-schedule">
+                                    <div class="job-address">
+                                        <i class="fas fa-location-dot"></i>
+                                        <span>56, Yakkala Road, Gampaha</span>
+                                    </div>
+                                    <div class="job-type">
+                                        <i class="fas fa-snowflake"></i>
+                                        <span>HVAC</span>
+                                    </div>
+                                    <div class="job-urgency normal">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>Normal</span>
+                                    </div>
+                                    <div class="job-date">
                                         <i class="fas fa-calendar"></i>
                                         <span>Sept 5, 10:00 AM - 1:00 PM</span>
-                                    </div>
-                                    <div class="job-budget">
-                                        <i class="fas fa-money-bill"></i>
-                                        <span class="budget-amount">LKR 3,200 - 4,500</span>
                                     </div>
                                 </div>
 
@@ -334,17 +366,25 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                         <i class="fas fa-user"></i>
                                         <span>Rajesh Kumar</span>
                                     </div>
-                                    <div class="job-location">
+                                    <div class="job-district">
                                         <i class="fas fa-map-marker-alt"></i>
-                                        <span>Mount Lavinia, Western Province</span>
+                                        <span>Colombo</span>
                                     </div>
-                                    <div class="job-schedule">
+                                    <div class="job-address">
+                                        <i class="fas fa-location-dot"></i>
+                                        <span>34, Beach Road, Mount Lavinia</span>
+                                    </div>
+                                    <div class="job-type">
+                                        <i class="fas fa-hammer"></i>
+                                        <span>Carpentry</span>
+                                    </div>
+                                    <div class="job-urgency normal">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>Normal</span>
+                                    </div>
+                                    <div class="job-date">
                                         <i class="fas fa-calendar"></i>
                                         <span>Sept 6, 8:00 AM - 11:00 AM</span>
-                                    </div>
-                                    <div class="job-budget">
-                                        <i class="fas fa-money-bill"></i>
-                                        <span class="budget-amount">LKR 1,500 - 2,000</span>
                                     </div>
                                 </div>
 
@@ -379,17 +419,25 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                         <i class="fas fa-user"></i>
                                         <span>Priya Wickramasinghe</span>
                                     </div>
-                                    <div class="job-location">
+                                    <div class="job-district">
                                         <i class="fas fa-map-marker-alt"></i>
-                                        <span>Kurunegala, North Western Province</span>
+                                        <span>Kurunegala</span>
                                     </div>
-                                    <div class="job-schedule">
+                                    <div class="job-address">
+                                        <i class="fas fa-location-dot"></i>
+                                        <span>89, Colombo Road, Kurunegala</span>
+                                    </div>
+                                    <div class="job-type">
+                                        <i class="fas fa-paint-brush"></i>
+                                        <span>Painting</span>
+                                    </div>
+                                    <div class="job-urgency urgent">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        <span>Urgent</span>
+                                    </div>
+                                    <div class="job-date">
                                         <i class="fas fa-calendar"></i>
                                         <span>Sept 7-8, 9:00 AM - 5:00 PM</span>
-                                    </div>
-                                    <div class="job-budget">
-                                        <i class="fas fa-money-bill"></i>
-                                        <span class="budget-amount">LKR 8,000 - 12,000</span>
                                     </div>
                                 </div>
 
@@ -411,7 +459,129 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
         </div>
     </div>
 
-    <script src="../../../assets/javascript/common/common.js"></script>
+    <!-- Job Details Drawer -->
+    <div class="drawer" id="jobDetailsDrawer">
+        <div class="drawer-overlay" onclick="closeJobDetails()"></div>
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <h3><i class="fas fa-briefcase"></i> Job Details</h3>
+                <button class="drawer-close" onclick="closeJobDetails()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="drawer-body">
+                <!-- Job Header -->
+                <div class="job-detail-header">
+                    <div class="job-detail-category" id="detailCategory">
+                        <i class="fas fa-wrench"></i>
+                        <span>Plumbing</span>
+                    </div>
+                    <div class="job-detail-urgency" id="detailUrgency">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>Urgent</span>
+                    </div>
+                </div>
+
+                <h2 class="job-detail-title" id="detailTitle">Kitchen Sink Repair</h2>
+
+                <!-- Customer Information -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-user"></i> Customer Information</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Name</span>
+                            <span class="detail-value" id="detailCustomerName">Sarah Fernando</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Phone</span>
+                            <span class="detail-value" id="detailCustomerPhone">+94 77 123 4567</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Email</span>
+                            <span class="detail-value" id="detailCustomerEmail">sarah.fernando@email.com</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Posted</span>
+                            <span class="detail-value" id="detailPosted">2 hours ago</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Information -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-map-marker-alt"></i> Location</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">District</span>
+                            <span class="detail-value" id="detailDistrict">Colombo</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Address</span>
+                            <span class="detail-value" id="detailAddress">No. 45, Galle Road, Colombo 07</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedule Information -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-calendar"></i> Schedule</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Preferred Date & Time</span>
+                            <span class="detail-value" id="detailSchedule">Tomorrow, 2:00 PM - 4:00 PM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Job Description -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-file-alt"></i> Job Description</h4>
+                    <p class="detail-description" id="detailDescription">
+                        The kitchen sink is leaking from the pipe connection underneath. Water is dripping constantly and has created a puddle. The sink was installed about 5 years ago. Need urgent repair to prevent water damage to the cabinet.
+                    </p>
+                </div>
+
+                <!-- Additional Details -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-info-circle"></i> Additional Information</h4>
+                    <div class="detail-list">
+                        <div class="detail-list-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="detailInfo1">Customer will provide necessary materials</span>
+                        </div>
+                        <div class="detail-list-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="detailInfo2">Parking available on premises</span>
+                        </div>
+                        <div class="detail-list-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="detailInfo3">Customer prefers afternoon appointments</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Required Skills -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-tools"></i> Required Skills</h4>
+                    <div class="skills-tags" id="detailSkills">
+                        <span class="skill-tag">Plumbing</span>
+                        <span class="skill-tag">Pipe Fitting</span>
+                        <span class="skill-tag">Leak Repair</span>
+                    </div>
+                </div>
+            </div>
+            <div class="drawer-footer">
+                <button class="btn btn-secondary" onclick="closeJobDetails()">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button class="btn btn-primary" onclick="submitQuoteFromDetails()">
+                    <i class="fas fa-file-invoice-dollar"></i> Submit Quote
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../../assets/javascript/repairer/common/common.js"></script>
     <script src="../../../assets/javascript/repairer/available-jobs.js"></script>
 </body>
 </html>

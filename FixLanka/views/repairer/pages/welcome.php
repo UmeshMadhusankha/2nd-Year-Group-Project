@@ -14,8 +14,8 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../../../assets/css/common/global.css">
     <link rel="stylesheet" href="../../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
-    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/common/sidebar.css">
     <link rel="stylesheet" href="../../../assets/css/repairer/welcome.css">
 </head>
 <body>
@@ -105,11 +105,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                     <div class="quick-actions-grid">
                         <a href="available-jobs.php" class="action-card">
                             <div class="action-icon">
-                                <i class="fas fa-search"></i>
+                                <i class="fas fa-briefcase"></i>
                             </div>
                             <div class="action-content">
-                                <h3 class="action-title">Browse Jobs</h3>
-                                <p class="action-description">Find new repair requests in your area</p>
+                                <h3 class="action-title">Browse Available Jobs</h3>
+                                <p class="action-description">Find repair requests from customers</p>
                             </div>
                             <div class="action-arrow">
                                 <i class="fas fa-arrow-right"></i>
@@ -121,8 +121,21 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                 <i class="fas fa-clipboard-list"></i>
                             </div>
                             <div class="action-content">
-                                <h3 class="action-title">My Active Jobs</h3>
+                                <h3 class="action-title">My Jobs</h3>
                                 <p class="action-description">Manage your current repair tasks</p>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </a>
+
+                        <a href="company-jobs.php" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="action-content">
+                                <h3 class="action-title">Company Jobs</h3>
+                                <p class="action-description">Browse side projects from companies</p>
                             </div>
                             <div class="action-arrow">
                                 <i class="fas fa-arrow-right"></i>
@@ -162,19 +175,6 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                             <div class="action-content">
                                 <h3 class="action-title">Update Profile</h3>
                                 <p class="action-description">Edit your skills and availability</p>
-                            </div>
-                            <div class="action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="support.php" class="action-card">
-                            <div class="action-icon">
-                                <i class="fas fa-headset"></i>
-                            </div>
-                            <div class="action-content">
-                                <h3 class="action-title">Get Support</h3>
-                                <p class="action-description">Contact our support team</p>
                             </div>
                             <div class="action-arrow">
                                 <i class="fas fa-arrow-right"></i>
@@ -267,7 +267,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
         </div>
     </div>
 
-    <script src="../../../assets/javascript/common/common.js"></script>
+    <script src="../../../assets/javascript/repairer/common/common.js"></script>
     <script src="../../../assets/javascript/repairer/welcome.js"></script>
 </body>
 </html>
