@@ -238,10 +238,12 @@
                                 </div>
                                 <button class="btn-revoke">Revoke</button>
                             </div>
+                            <!-- button class action-btn.danger -->
 
-                            <button class="btn-danger-outline" id="revokeAllBtn">
+                            <button class="action-btn danger" id="revokeAllBtn">
                                 <i class="fas fa-times-circle"></i> Revoke All Other Sessions
                             </button>
+
                         </div>
 
                         <div class="settings-section">
@@ -433,7 +435,7 @@
                                 </div>
                                 <div class="plan-actions">
                                     <button class="btn-secondary">Change Plan</button>
-                                    <button class="btn-danger-outline">Cancel Subscription</button>
+                                    <button class="action-btn danger">Cancel Subscription</button>
                                 </div>
                             </div>
 

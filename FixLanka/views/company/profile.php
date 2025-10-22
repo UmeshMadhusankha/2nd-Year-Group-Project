@@ -42,11 +42,7 @@
             <div class="settings-container">
                 <!-- Profile Navigation Tabs -->
                 <div class="settings-tabs">
-                    <button class="tab-btn active" data-tab="personal-tab">
-                        <i class="fas fa-user"></i>
-                        <span>Personal Info</span>
-                    </button>
-                    <button class="tab-btn" data-tab="company-tab">
+                    <button class="tab-btn active" data-tab="company-tab">
                         <i class="fas fa-building"></i>
                         <span>Company Profile</span>
                     </button>
@@ -66,71 +62,6 @@
 
                 <!-- Profile Content Panels -->
                 <div class="settings-content">
-
-                    <!-- Personal Info Tab -->
-                    <div class="tab-content active" id="personal-tab">
-                        <div class="settings-section">
-                            <h2 class="section-title">Account Manager Information</h2>
-
-                            <div class="form-group">
-                                <label>Profile Picture</label>
-                                <div class="profile-picture-upload">
-                                    <img src="../../assets/images/user.png" alt="Profile" id="profileImage">
-                                    <div class="profile-actions">
-                                        <button class="btn-upload" id="uploadProfileBtn">
-                                            <i class="fas fa-camera"></i> Change Photo
-                                        </button>
-                                        <input type="file" id="profilePicture" accept="image/*" hidden>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="firstName">First Name *</label>
-                                    <input type="text" id="firstName" value="John" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="lastName">Last Name *</label>
-                                    <input type="text" id="lastName" value="Doe" required>
-                                </div>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="position">Position</label>
-                                    <input type="text" id="position" value="Operations Manager">
-                                </div>
-                                <div class="form-group">
-                                    <label for="accountEmail">Email Address *</label>
-                                    <input type="email" id="accountEmail" value="john.doe@fixlanka.com" required>
-                                </div>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="accountPhone">Mobile Number</label>
-                                    <input type="tel" id="accountPhone" value="+94 77 123 4567">
-                                </div>
-                                <div class="form-group">
-                                    <label for="whatsapp">WhatsApp Number</label>
-                                    <input type="tel" id="whatsapp" value="+94 77 123 4567">
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="bio">Bio / About Me</label>
-                                <textarea id="bio" rows="4" placeholder="Tell us about yourself...">Experienced operations manager with 5+ years in the repair and maintenance industry.</textarea>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <button class="btn-secondary" id="cancelPersonalBtn">Cancel</button>
-                            <button class="btn-primary" id="savePersonalBtn">
-                                <i class="fas fa-save"></i> Save Changes
-                            </button>
-                        </div>
-                    </div>
 
                     <!-- Company Profile Tab -->
                     <div class="tab-content" id="company-tab">
@@ -1155,21 +1086,7 @@
             });
         });
 
-        // Profile Picture Upload
-        document.getElementById('uploadProfileBtn')?.addEventListener('click', () => {
-            document.getElementById('profilePicture').click();
-        });
-
-        document.getElementById('profilePicture')?.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    document.getElementById('profileImage').src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+        // Profile Picture Upload - Removed (no longer needed)
 
         // Company Logo Upload
         document.getElementById('uploadLogoBtn')?.addEventListener('click', () => {
@@ -1259,10 +1176,6 @@
         });
 
         // Save Buttons
-        document.getElementById('savePersonalBtn')?.addEventListener('click', () => {
-            alert('Personal information saved successfully!');
-        });
-
         document.getElementById('saveCompanyBtn')?.addEventListener('click', () => {
             alert('Company profile saved successfully!');
         });
@@ -1404,8 +1317,8 @@
             }
             if (cancelReviewsBtn) {
                 cancelReviewsBtn.addEventListener('click', () => {
-                    // Switch back to first tab
-                    document.querySelector('.tab-btn[data-tab="personal-tab"]')?.click();
+                    // Switch back to company tab
+                    document.querySelector('.tab-btn[data-tab="company-tab"]')?.click();
                 });
             }
 

@@ -60,10 +60,6 @@ $searchPlaceholder = 'Search settings...';
                                     <i class="fas fa-shield-alt"></i>
                                     <span>Privacy & Security</span>
                                 </button>
-                                <button class="filter-tab settings-tab" data-tab="billing">
-                                    <i class="fas fa-credit-card"></i>
-                                    <span>Billing</span>
-                                </button>
                             </div>
                         </div>
                     </section>
@@ -321,122 +317,6 @@ $searchPlaceholder = 'Search settings...';
 
                         <div class="settings-actions">
                             <button class="btn btn-primary">Save Security Settings</button>
-                        </div>
-                    </div>
-
-                    <!-- Billing Settings -->
-                    <div class="settings-panel" id="billing-panel">
-                        <div class="settings-header">
-                            <h2>Billing & Payments</h2>
-                            <p>Manage your payment methods and billing information</p>
-                        </div>
-
-                        <div class="settings-section">
-                            <h3>Payment Methods</h3>
-                            <div class="payment-methods">
-                                <div class="payment-card">
-                                    <div class="card-icon">
-                                        <i class="fab fa-cc-visa"></i>
-                                    </div>
-                                    <div class="card-info">
-                                        <p class="card-type">Visa ending in 4242</p>
-                                        <p class="card-expiry">Expires 12/2025</p>
-                                    </div>
-                                    <div class="card-actions">
-                                        <span class="badge badge-primary">Default</span>
-                                        <button class="btn-icon"><i class="fas fa-trash"></i></button>
-                                    </div>
-                                </div>
-
-                                <div class="payment-card">
-                                    <div class="card-icon">
-                                        <i class="fab fa-cc-mastercard"></i>
-                                    </div>
-                                    <div class="card-info">
-                                        <p class="card-type">Mastercard ending in 8888</p>
-                                        <p class="card-expiry">Expires 06/2026</p>
-                                    </div>
-                                    <div class="card-actions">
-                                        <button class="btn btn-sm btn-outline">Set as Default</button>
-                                        <button class="btn-icon"><i class="fas fa-trash"></i></button>
-                                    </div>
-                                </div>
-
-                                <button class="btn btn-outline add-payment-btn">
-                                    <i class="fas fa-plus"></i>
-                                    Add New Payment Method
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="settings-section">
-                            <h3>Bank Account</h3>
-                            <div class="settings-form">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="bankName">Bank Name</label>
-                                        <input type="text" id="bankName" value="Commercial Bank" class="form-input">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="accountNumber">Account Number</label>
-                                        <input type="text" id="accountNumber" value="************1234" class="form-input">
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="accountName">Account Holder Name</label>
-                                        <input type="text" id="accountName" value="John Doe" class="form-input">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="branchCode">Branch Code</label>
-                                        <input type="text" id="branchCode" value="001" class="form-input">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="settings-section">
-                            <h3>Billing History</h3>
-                            <div class="billing-table">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Description</th>
-                                            <th>Amount</th>
-                                            <th>Status</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Oct 15, 2025</td>
-                                            <td>Monthly Subscription</td>
-                                            <td>LKR 2,500</td>
-                                            <td><span class="badge badge-success">Paid</span></td>
-                                            <td><button class="btn-link">Download</button></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Sep 15, 2025</td>
-                                            <td>Monthly Subscription</td>
-                                            <td>LKR 2,500</td>
-                                            <td><span class="badge badge-success">Paid</span></td>
-                                            <td><button class="btn-link">Download</button></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Aug 15, 2025</td>
-                                            <td>Monthly Subscription</td>
-                                            <td>LKR 2,500</td>
-                                            <td><span class="badge badge-success">Paid</span></td>
-                                            <td><button class="btn-link">Download</button></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div class="settings-actions">
-                            <button class="btn btn-primary">Update Billing Info</button>
                         </div>
                     </div>
                 </div>

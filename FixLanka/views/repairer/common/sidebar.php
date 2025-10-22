@@ -38,16 +38,16 @@
                     <span>My Profile</span>
                 </a>
             </li>
+            <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'subscription') ? 'active' : ''; ?>">
+                <a href="subscription.php" class="nav-link" data-tooltip="Subscription">
+                    <i class="fas fa-crown"></i>
+                    <span>Subscription</span>
+                </a>
+            </li>
             <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'support') ? 'active' : ''; ?>">
                 <a href="support.php" class="nav-link" data-tooltip="Support">
                     <i class="fas fa-life-ring"></i>
                     <span>Support</span>
-                </a>
-            </li>
-            <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'upgrade') ? 'active' : ''; ?>">
-                <a href="upgrade.php" class="nav-link" data-tooltip="Upgrade">
-                    <i class="fas fa-crown"></i>
-                    <span>Upgrade</span>
                 </a>
             </li>
             <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'settings') ? 'active' : ''; ?>">
