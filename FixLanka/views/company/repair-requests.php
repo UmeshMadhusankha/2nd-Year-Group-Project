@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repair Requests - FixLanka</title>
+
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../assets/css/common/progress-bars.css">
+    <link rel="stylesheet" href="../../assets/css/common/buttons.css">
+    <link rel="stylesheet" href="../../assets/css/company/global.css">
+    <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
+    <link rel="stylesheet" href="../../assets/css/company/topbar.css">
+    <link rel="stylesheet" href="../../assets/css/company/repair-requests.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <!-- Sidebar Toggle -->
+    <input type="checkbox" id="sidebar-toggle">
+
+    <div class="dashboard-container">
+        <!-- Sidebar Container -->
+        <div id="sidebar-container"></div>
+
+        <main class="main-content">
+            <!-- Header Container -->
+            <div id="header-container"></div>
+
+            <!-- Page Header -->
+            <header class="page-header">
+                <div class="header-content">
+                    <div class="header-main">
+                        <div class="title-section">
+                            <h1>
+                                <i class="fas fa-tools"></i>
+                                Repair Requests
+                            </h1>
+                            <p class="subtitle">
+                                Manage customer repair requests - view public opportunities and handle direct
+                                requests
+                            </p>
+                            <div class="breadcrumbs">
+                                <a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                                <span class="separator">/</span>
+                                <span class="current">Repair Requests</span>
+                            </div>
+                        </div>
+
+                        <!-- Header Stats -->
+                        <div class="header-stats">
+                            <div class="stat-card">
+                                <div class="stat-number">24</div>
+                                <div class="stat-label">Public Requests</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">8</div>
+                                <div class="stat-label">Direct Requests</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">15</div>
+                                <div class="stat-label">Pending Response</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">42</div>
+                                <div class="stat-label">This Month</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Tab Navigation -->
+            <section class="requests-tabs">
+                <nav class="tab-nav">
+                    <button class="tab-button active" data-tab="public-requests">
+                        <i class="fas fa-globe"></i>
+                        Public Requests
+                        <span class="tab-count">24</span>
+                    </button>
+                    <button class="tab-button" data-tab="direct-requests">
+                        <i class="fas fa-inbox"></i>
+                        Direct Requests
+                        <span class="tab-count">8</span>
+                    </button>
+                    <button class="tab-button" data-tab="logs">
+                        <i class="fas fa-history"></i>
+                        Request Logs
+                        <span class="tab-count">156</span>
+                    </button>
+                </nav>
+            </section>
+
+            <!-- Public Requests Tab -->
+            <section id="public-requests" class="tab-content active">
+                <!-- Controls -->
+                <div class="requests-controls">
+                    <div class="controls-row">
+                        <div class="filters-group">
+                            <div class="filter-item">
+                                <label class="filter-label">Service Type</label>
+                                <select class="filter-select" id="service-filter">
+                                    <option value="">All Services</option>
+                                    <option value="plumbing">Plumbing</option>
+                                    <option value="electrical">Electrical</option>
+                                    <option value="carpentry">Carpentry</option>
+                                    <option value="hvac">HVAC</option>
+                                    <option value="painting">Painting</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label class="filter-label">Priority</label>
+                                <select class="filter-select" id="priority-filter">
+                                    <option value="">All Priorities</option>
+                                    <option value="high">High</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label class="filter-label">Location</label>
+                                <select class="filter-select" id="location-filter">
+                                    <option value="">All Locations</option>
+                                    <option value="colombo">Colombo</option>
+                                    <option value="kandy">Kandy</option>
+                                    <option value="galle">Galle</option>
+                                    <option value="negombo">Negombo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="view-controls">
+                            <button class="view-btn active" data-view="grid">
+                                <i class="fas fa-th"></i>
+                            </button>
+                            <button class="view-btn" data-view="list">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Requests Grid -->
+                <div class="requests-grid">
+                    <!-- Request Card 1 -->
+                    <article class="request-card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="request-title">Air Conditioner Repair</h3>
+                                <p class="request-id">Request #REQ-2025-001</p>
+                            </div>
+                            <span class="priority-badge high">High Priority</span>
+                        </div>
+
+                        <div class="customer-info">
+                            <div class="customer-avatar">JD</div>
+                            <div class="customer-details">
+                                <h4>John Doe</h4>
+                                <p>Residential Customer</p>
+                            </div>
+                            <a href="#" class="view-profile-btn">View Profile</a>
+                        </div>
+
+                        <div class="request-details">
+                            <div class="detail-row">
+                                <i class="fas fa-map-marker-alt detail-icon"></i>
+                                <span class="detail-label">Location:</span>
+                                <span class="detail-value">Colombo 07</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-calendar detail-icon"></i>
+                                <span class="detail-label">Date Needed:</span>
+                                <span class="detail-value">September 15, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-clock detail-icon"></i>
+                                <span class="detail-label">Posted:</span>
+                                <span class="detail-value">2 hours ago</span>
+                            </div>
+                        </div>
+
+                        <div class="request-description">
+                            <p>AC unit not cooling properly. Making strange noises and consuming more electricity than
+                                usual. Urgent repair needed as weather is getting hotter.</p>
+                        </div>
+
+                        <div class="attachments-section">
+                            <div class="attachments-label">
+                                <i class="fas fa-paperclip"></i>
+                                Attachments (2)
+                            </div>
+                            <div class="attachments-list">
+                                <div class="attachment-item">
+                                    <i class="fas fa-image"></i>
+                                    ac-problem.jpg
+                                </div>
+                                <div class="attachment-item">
+                                    <i class="fas fa-file-pdf"></i>
+                                    warranty.pdf
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn primary" onclick="openQuotationModal('REQ-2025-001')">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                                Submit Quotation
+                            </button>
+                            <button class="action-btn secondary" onclick="viewRequestDetails('REQ-2025-001')">
+                                <i class="fas fa-eye"></i>
+                                View
+                            </button>
+                        </div>
+                    </article>
+
+                    <!-- Request Card 2 -->
+                    <article class="request-card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="request-title">Electrical Wiring - Office</h3>
+                                <p class="request-id">Request #REQ-2025-002</p>
+                            </div>
+                            <span class="priority-badge medium">Medium Priority</span>
+                        </div>
+
+                        <div class="customer-info">
+                            <div class="customer-avatar">AL</div>
+                            <div class="customer-details">
+                                <h4>ABC Pvt Ltd</h4>
+                                <p>Commercial Customer</p>
+                            </div>
+                            <a href="#" class="view-profile-btn">View Profile</a>
+                        </div>
+
+                        <div class="request-details">
+                            <div class="detail-row">
+                                <i class="fas fa-map-marker-alt detail-icon"></i>
+                                <span class="detail-label">Location:</span>
+                                <span class="detail-value">Nugegoda</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-calendar detail-icon"></i>
+                                <span class="detail-label">Date Needed:</span>
+                                <span class="detail-value">September 20, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-clock detail-icon"></i>
+                                <span class="detail-label">Posted:</span>
+                                <span class="detail-value">5 hours ago</span>
+                            </div>
+                        </div>
+
+                        <div class="request-description">
+                            <p>Complete rewiring of office building for safety compliance. Need certified electrician
+                                with commercial experience. Project timeline flexible.</p>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn primary" onclick="openQuotationModal('REQ-2025-002')">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                                Submit Quotation
+                            </button>
+                            <button class="action-btn secondary" onclick="viewRequestDetails('REQ-2025-002')">
+                                <i class="fas fa-eye"></i>
+                                View
+                            </button>
+                        </div>
+                    </article>
+
+                    <!-- Request Card 3 -->
+                    <article class="request-card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="request-title">Plumbing Emergency</h3>
+                                <p class="request-id">Request #REQ-2025-003</p>
+                            </div>
+                            <span class="priority-badge high">High Priority</span>
+                        </div>
+
+                        <div class="customer-info">
+                            <div class="customer-avatar">SM</div>
+                            <div class="customer-details">
+                                <h4>Sarah Miller</h4>
+                                <p>Residential Customer</p>
+                            </div>
+                            <a href="#" class="view-profile-btn">View Profile</a>
+                        </div>
+
+                        <div class="request-details">
+                            <div class="detail-row">
+                                <i class="fas fa-map-marker-alt detail-icon"></i>
+                                <span class="detail-label">Location:</span>
+                                <span class="detail-value">Kandy</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-calendar detail-icon"></i>
+                                <span class="detail-label">Date Needed:</span>
+                                <span class="detail-value">ASAP</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-clock detail-icon"></i>
+                                <span class="detail-label">Posted:</span>
+                                <span class="detail-value">30 minutes ago</span>
+                            </div>
+                        </div>
+
+                        <div class="request-description">
+                            <p>Burst pipe in main bathroom causing water damage. Need emergency plumber immediately.
+                                Water supply currently shut off.</p>
+                        </div>
+
+                        <div class="attachments-section">
+                            <div class="attachments-label">
+                                <i class="fas fa-paperclip"></i>
+                                Attachments (3)
+                            </div>
+                            <div class="attachments-list">
+                                <div class="attachment-item">
+                                    <i class="fas fa-image"></i>
+                                    water-damage.jpg
+                                </div>
+                                <div class="attachment-item">
+                                    <i class="fas fa-image"></i>
+                                    pipe-burst.jpg
+                                </div>
+                                <div class="attachment-item">
+                                    <i class="fas fa-video"></i>
+                                    damage-video.mp4
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn primary" onclick="openQuotationModal('REQ-2025-003')">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                                Submit Quotation
+                            </button>
+                            <button class="action-btn secondary" onclick="viewRequestDetails('REQ-2025-003')">
+                                <i class="fas fa-eye"></i>
+                                View
+                            </button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- Direct Requests Tab -->
+            <section id="direct-requests" class="tab-content">
+                <!-- Controls -->
+                <div class="requests-controls">
+                    <div class="controls-row">
+                        <div class="filters-group">
+                            <div class="filter-item">
+                                <label class="filter-label">Status</label>
+                                <select class="filter-select">
+                                    <option value="">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="accepted">Accepted</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label class="filter-label">Date Range</label>
+                                <select class="filter-select">
+                                    <option value="">All Time</option>
+                                    <option value="today">Today</option>
+                                    <option value="week">This Week</option>
+                                    <option value="month">This Month</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="search-input" placeholder="Search direct requests...">
+                        </div>
+                    </div>
+                <!-- </div> -->
+
+                <!-- Direct Requests Table -->
+                <div class="requests-table-container">
+                    <table class="requests-table">
+                        <thead>
+                            <tr>
+                                <th>Request Details</th>
+                                <th>Customer</th>
+                                <th>Date Received</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div>
+                                        <h5>AC Repair - Colombo</h5>
+                                        <p
+                                            style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
+                                            #REQ-2025-004 • Emergency Service
+                                        </p>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="table-customer">
+                                        <div class="table-customer-avatar">RJ</div>
+                                        <div class="table-customer-info">
+                                            <h5>Robert Johnson</h5>
+                                            <p>robert@email.com</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Sept 10, 2025</td>
+                                <td>
+                                    <span class="status-badge pending">
+                                        <i class="fas fa-clock"></i>
+                                        Pending
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="table-actions">
+                                        <button class="table-action-btn view" onclick="viewRequestDetails('REQ-2025-004')">
+                                            <i class="fas fa-eye"></i>
+                                            View
+                                        </button>
+                                        <button class="table-action-btn accept"
+                                            onclick="acceptDirectRequest('REQ-2025-004')">
+                                            <i class="fas fa-check"></i>
+                                            Accept
+                                        </button>
+                                        <button class="table-action-btn reject"
+                                            onclick="rejectDirectRequest('REQ-2025-004')">
+                                            <i class="fas fa-times"></i>
+                                            Reject
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div>
+                                        <h5>Plumbing Fix - Kandy</h5>
+                                        <p
+                                            style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
+                                            #REQ-2025-005 • Bathroom Renovation
+                                        </p>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="table-customer">
+                                        <div class="table-customer-avatar">JS</div>
+                                        <div class="table-customer-info">
+                                            <h5>Jane Smith</h5>
+                                            <p>jane.smith@email.com</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Sept 12, 2025</td>
+                                <td>
+                                    <span class="status-badge pending">
+                                        <i class="fas fa-clock"></i>
+                                        Pending
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="table-actions">
+                                        <button class="table-action-btn view" onclick="viewRequestDetails('REQ-2025-005')">
+                                            <i class="fas fa-eye"></i>
+                                            View
+                                        </button>
+                                        <button class="table-action-btn accept"
+                                            onclick="acceptDirectRequest('REQ-2025-005')">
+                                            <i class="fas fa-check"></i>
+                                            Accept
+                                        </button>
+                                        <button class="table-action-btn reject"
+                                            onclick="rejectDirectRequest('REQ-2025-005')">
+                                            <i class="fas fa-times"></i>
+                                            Reject
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div>
+                                        <h5>Electrical Installation</h5>
+                                        <p
+                                            style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
+                                            #REQ-2025-006 • New Construction
+                                        </p>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="table-customer">
+                                        <div class="table-customer-avatar">MB</div>
+                                        <div class="table-customer-info">
+                                            <h5>Mike Brown</h5>
+                                            <p>mike.brown@email.com</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Sept 11, 2025</td>
+                                <td>
+                                    <span class="status-badge accepted">
+                                        <i class="fas fa-check"></i>
+                                        Accepted
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="table-actions">
+                                        <a href="contracts.php?id=REQ-2025-006" class="table-action-btn view">
+                                            <i class="fas fa-eye"></i>
+                                            View Contract
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Logs Tab -->
+            <section id="logs" class="tab-content">
+                <div class="logs-container">
+                    <!-- Successful Requests -->
+                    <div class="log-section">
+                        <div class="log-section-header">
+                            <div class="log-section-icon success">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="log-section-title">
+                                <h3>Successful Contracts</h3>
+                                <p>Completed projects with positive outcomes</p>
+                            </div>
+                            <div class="log-count">24</div>
+                        </div>
+                        <div class="log-items">
+                            <div class="log-item">
+                                <div class="log-item-icon">
+                                    <i class="fas fa-wrench"></i>
+                                </div>
+                                <div class="log-item-content">
+                                    <h4 class="log-item-title">AC Repair - Colombo</h4>
+                                    <p class="log-item-meta">Contract #C-2025-112 • Customer: John Doe • LKR 75,000</p>
+                                </div>
+                                <div class="log-item-date">Sept 2025</div>
+                            </div>
+                            <div class="log-item">
+                                <div class="log-item-icon">
+                                    <i class="fas fa-hammer"></i>
+                                </div>
+                                <div class="log-item-content">
+                                    <h4 class="log-item-title">Kitchen Renovation</h4>
+                                    <p class="log-item-meta">Contract #C-2025-108 • Customer: Sarah Wilson • LKR 350,000
+                                    </p>
+                                </div>
+                                <div class="log-item-date">Aug 2025</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pending Requests -->
+                    <div class="log-section">
+                        <div class="log-section-header">
+                            <div class="log-section-icon pending">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="log-section-title">
+                                <h3>Pending & In Progress</h3>
+                                <p>Active contracts and pending responses</p>
+                            </div>
+                            <div class="log-count">15</div>
+                        </div>
+                        <div class="log-items">
+                            <div class="log-item">
+                                <div class="log-item-icon">
+                                    <i class="fas fa-tools"></i>
+                                </div>
+                                <div class="log-item-content">
+                                    <h4 class="log-item-title">Plumbing Fix - Kandy</h4>
+                                    <p class="log-item-meta">Request #REQ-2025-204 • Waiting for contract approval</p>
+                                </div>
+                                <div class="log-item-date">In Progress</div>
+                            </div>
+                            <div class="log-item">
+                                <div class="log-item-icon">
+                                    <i class="fas fa-bolt"></i>
+                                </div>
+                                <div class="log-item-content">
+                                    <h4 class="log-item-title">Electrical Wiring</h4>
+                                    <p class="log-item-meta">Quotation #Q-2025-089 • Awaiting customer response</p>
+                                </div>
+                                <div class="log-item-date">Pending</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rejected Requests -->
+                    <div class="log-section">
+                        <div class="log-section-header">
+                            <div class="log-section-icon rejected">
+                                <i class="fas fa-times"></i>
+                            </div>
+                            <div class="log-section-title">
+                                <h3>Rejected Requests</h3>
+                                <p>Declined requests with reasons</p>
+                            </div>
+                            <div class="log-count">8</div>
+                        </div>
+                        <div class="log-items">
+                            <div class="log-item">
+                                <div class="log-item-icon">
+                                    <i class="fas fa-paint-brush"></i>
+                                </div>
+                                <div class="log-item-content">
+                                    <h4 class="log-item-title">Painting Project</h4>
+                                    <p class="log-item-meta">Request #REQ-2025-198 • Reason: Budget constraints</p>
+                                </div>
+                                <div class="log-item-date">Sept 8</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Draft Contracts -->
+                    <div class="log-section">
+                        <div class="log-section-header">
+                            <div class="log-section-icon draft">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="log-section-title">
+                                <h3>Draft Contracts</h3>
+                                <p>Saved contract drafts for future completion</p>
+                            </div>
+                            <div class="log-count">3</div>
+                        </div>
+                        <div class="log-items">
+                            <div class="log-item">
+                                <div class="log-item-icon">
+                                    <i class="fas fa-drafting-compass"></i>
+                                </div>
+                                <div class="log-item-content">
+                                    <h4 class="log-item-title">Carpentry Work</h4>
+                                    <p class="log-item-meta">Draft #D-2025-077 • Custom furniture installation</p>
+                                </div>
+                                <div class="log-item-date">Sept 12</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Quotation Modal -->
+    <div id="quotation-modal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    Submit Quotation
+                </h2>
+                <button class="modal-close" onclick="closeQuotationModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="quotation-form">
+                    <div class="form-group">
+                        <label class="form-label">Request Details</label>
+                        <div id="quotation-request-details"
+                            style="padding: var(--spacing-md); background: var(--bg-secondary); border-radius: var(--border-radius); margin-bottom: var(--spacing-md);">
+                            <!-- Request details will be populated here -->
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="quote-price">Price Offer (LKR)</label>
+                            <input type="number" id="quote-price" class="form-input" placeholder="Enter your quote"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="quote-currency">Currency</label>
+                            <select id="quote-currency" class="form-select">
+                                <option value="LKR">Sri Lankan Rupee (LKR)</option>
+                                <option value="USD">US Dollar (USD)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="start-date">Start Date</label>
+                            <input type="date" id="start-date" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="end-date">Completion Date</label>
+                            <input type="date" id="end-date" class="form-input" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Materials Supply</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" id="materials-company" name="materials" value="company" checked>
+                                <label for="materials-company" class="radio-label">Company Provides Materials</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="materials-customer" name="materials" value="customer">
+                                <label for="materials-customer" class="radio-label">Customer Provides Materials</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="additional-notes">Additional Notes & Terms</label>
+                        <textarea id="additional-notes" class="form-textarea"
+                            placeholder="Include any special requirements, terms, or conditions..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="action-btn secondary" onclick="closeQuotationModal()">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button type="submit" form="quotation-form" class="action-btn primary" onclick="submitQuotation()">
+                    <i class="fas fa-paper-plane"></i>
+                    Submit Quotation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Details Modal -->
+    <div id="request-details-modal" class="modal-overlay">
+        <div class="modal-container modal-large">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-info-circle"></i>
+                    Request Details
+                </h2>
+                <button class="modal-close" onclick="closeRequestDetailsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="request-details-content">
+                    <!-- Request details will be dynamically populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="action-btn secondary" onclick="closeRequestDetailsModal()">
+                    <i class="fas fa-times"></i>
+                    Close
+                </button>
+                <button type="button" class="action-btn primary" id="submit-quote-from-details">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    Submit Quotation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="../../assets/javascript/company/sidebar.js"></script>
+    <script src="../../assets/javascript/company/repair-requests.js"></script>
+
+    <script>
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function () {
+            loadComponent('sidebar-container', 'sidebar.php');
+            loadComponent('header-container', 'topbar.php');
+        });
+
+        // Function to load HTML components
+        function loadComponent(containerId, componentFile) {
+            fetch(componentFile)
+                .then(response => response.text())
+                .then(html => {
+                    if (containerId === 'sidebar-container') {
+                        // Set active state immediately in the HTML before inserting
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+
+                        // Remove any existing active classes
+                        const allNavItems = tempDiv.querySelectorAll('.nav-item');
+                        allNavItems.forEach(item => item.classList.remove('active'));
+
+                        // Set repair requests as active immediately
+                        const repairRequestsLink = tempDiv.querySelector('a[href="repair-requests.php"]');
+                        if (repairRequestsLink) {
+                            repairRequestsLink.parentElement.classList.add('active');
+                        }
+
+                        // Insert the modified HTML
+                        document.getElementById(containerId).innerHTML = tempDiv.innerHTML;
+                    } else {
+                        document.getElementById(containerId).innerHTML = html;
+                    }
+
+                    // Initialize topbar after loading
+                    if (containerId === 'header-container') {
+                        if (typeof initializeTopbar === 'function') {
+                            setTimeout(initializeTopbar, 100);
+                        }
+                        if (typeof initProfileDropdown === 'function') {
+                            setTimeout(initProfileDropdown, 200);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading component:', error);
+                });
+        }
+    </script>
+</body>
+
+</html>
