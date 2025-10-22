@@ -274,7 +274,11 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                     </div>
                                     <div class="job-urgency urgent">
                                         <i class="fas fa-exclamation-circle"></i>
+<<<<<<< HEAD
                                         <span>Urgent</span>
+=======
+                                        <span>Urgent (Pro)</span>
+>>>>>>> 43f9b3f7df35756b085fa19a2aba69e4597f6567
                                     </div>
                                     <div class="job-date">
                                         <i class="fas fa-calendar"></i>
@@ -433,7 +437,11 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                     </div>
                                     <div class="job-urgency urgent">
                                         <i class="fas fa-exclamation-circle"></i>
+<<<<<<< HEAD
                                         <span>Urgent</span>
+=======
+                                        <span>Urgent (Pro)</span>
+>>>>>>> 43f9b3f7df35756b085fa19a2aba69e4597f6567
                                     </div>
                                     <div class="job-date">
                                         <i class="fas fa-calendar"></i>
