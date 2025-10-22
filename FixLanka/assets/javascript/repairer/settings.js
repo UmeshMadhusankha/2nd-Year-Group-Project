@@ -5,7 +5,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     initializeSettingsTabs();
     initializeFormHandlers();
-    initializeRangeSlider();
     initializeSaveButtons();
 });
 
@@ -87,20 +86,6 @@ function initializeFormHandlers() {
         phoneInput.addEventListener('input', function() {
             // Remove non-numeric characters except + and space
             this.value = this.value.replace(/[^0-9+\s]/g, '');
-        });
-    }
-}
-
-/**
- * Initialize Range Slider
- */
-function initializeRangeSlider() {
-    const rangeInput = document.getElementById('radiusRange');
-    const rangeValue = document.getElementById('radiusValue');
-
-    if (rangeInput && rangeValue) {
-        rangeInput.addEventListener('input', function() {
-            rangeValue.textContent = `${this.value} km`;
         });
     }
 }
@@ -291,17 +276,6 @@ if (addPaymentBtn) {
     addPaymentBtn.addEventListener('click', function() {
         showNotification('Payment method form would open here', 'info');
         // In a real application, this would open a modal with a payment form
-    });
-}
-
-/**
- * Handle Enable 2FA
- */
-const enable2FABtn = document.querySelector('.btn-outline');
-if (enable2FABtn && enable2FABtn.textContent.includes('2FA')) {
-    enable2FABtn.addEventListener('click', function() {
-        showNotification('Two-factor authentication setup would start here', 'info');
-        // In a real application, this would start the 2FA setup process
     });
 }
 

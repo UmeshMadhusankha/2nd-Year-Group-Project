@@ -5,6 +5,7 @@
 // Global variables
 let selectedPlan = null;
 let isAnnualBilling = false;
+let modalBillingType = 'monthly'; // Separate billing type for modal
 
 // Plan data
 const plans = {
@@ -64,7 +65,7 @@ function initializePage() {
 }
 
 function attachEventListeners() {
-    // Billing toggle
+    // Billing toggle (main page)
     if (billingToggle) {
         billingToggle.addEventListener('change', function() {
             isAnnualBilling = this.checked;
@@ -116,43 +117,114 @@ function selectPlan(planType) {
         return;
     }
     
+    // Reset modal billing to monthly when opening modal
+    modalBillingType = 'monthly';
+    
     // Update modal content
     updateModalContent(plan);
     
     // Show modal
     showUpgradeModal();
+    
+    // Attach billing option listeners after a short delay
+    setTimeout(() => {
+        attachBillingOptionListeners();
+    }, 100);
 }
 
 function updateModalContent(plan) {
-    // Update plan name
+    console.log('Updating modal for:', plan.name, 'Billing:', modalBillingType);
+    
+    // Update plan name and icon
     const modalPlanName = document.getElementById('modal-plan-name');
-    const summaryPlan = document.getElementById('summary-plan');
     if (modalPlanName) modalPlanName.textContent = plan.name;
-    if (summaryPlan) summaryPlan.textContent = plan.name;
     
-    // Update plan price
-    const price = isAnnualBilling ? plan.annualPrice : plan.monthlyPrice;
-    const modalPlanPrice = document.getElementById('modal-plan-price');
-    const summaryTotal = document.getElementById('summary-total');
-    if (modalPlanPrice) modalPlanPrice.textContent = `LKR ${price.toLocaleString()}/month`;
-    if (summaryTotal) summaryTotal.textContent = `LKR ${price.toLocaleString()}`;
+    const modalIcon = document.querySelector('.plan-icon-large i');
+    if (modalIcon) modalIcon.className = plan.icon;
     
-    // Update billing type
-    const summaryBilling = document.getElementById('summary-billing');
-    if (summaryBilling) summaryBilling.textContent = isAnnualBilling ? 'Annual' : 'Monthly';
+    // Calculate prices
+    const monthlyPrice = plan.monthlyPrice;
+    const annualPrice = plan.annualPrice;
+    const selectedPrice = modalBillingType === 'annual' ? annualPrice : monthlyPrice;
+    const totalAmount = modalBillingType === 'annual' ? annualPrice * 12 : monthlyPrice;
     
-    // Update plan icon
-    const modalIcon = document.querySelector('.modal-body .plan-icon i');
-    if (modalIcon) {
-        modalIcon.className = plan.icon;
+    // Update billing option prices
+    const monthlyOptionPrice = document.getElementById('monthly-option-price');
+    const annualOptionPrice = document.getElementById('annual-option-price');
+    const annualYearlyTotal = document.getElementById('annual-yearly-total');
+    
+    if (monthlyOptionPrice) monthlyOptionPrice.textContent = `LKR ${monthlyPrice.toLocaleString()}/month`;
+    if (annualOptionPrice) annualOptionPrice.textContent = `LKR ${annualPrice.toLocaleString()}/month`;
+    if (annualYearlyTotal) annualYearlyTotal.textContent = `Billed LKR ${(annualPrice * 12).toLocaleString()}/year`;
+    
+    // Update summary section
+    const summaryPlanName = document.getElementById('summary-plan-name');
+    const summaryBillingCycle = document.getElementById('summary-billing-cycle');
+    const summaryPricePerMonth = document.getElementById('summary-price-per-month');
+    const summaryTotalAmount = document.getElementById('summary-total-amount');
+    
+    if (summaryPlanName) summaryPlanName.textContent = plan.name;
+    if (summaryBillingCycle) summaryBillingCycle.textContent = modalBillingType === 'annual' ? 'Annual (12 months)' : 'Monthly';
+    if (summaryPricePerMonth) summaryPricePerMonth.textContent = `LKR ${selectedPrice.toLocaleString()}`;
+    
+    // Update total with animation
+    if (summaryTotalAmount) {
+        summaryTotalAmount.style.animation = 'none';
+        setTimeout(() => {
+            summaryTotalAmount.textContent = `LKR ${totalAmount.toLocaleString()}`;
+            summaryTotalAmount.style.animation = 'priceUpdate 0.4s ease';
+        }, 10);
     }
     
-    // Update benefits list
-    const modalBenefits = document.getElementById('modal-benefits');
-    if (modalBenefits) {
-        modalBenefits.innerHTML = plan.features.map(feature => 
-            `<li><i class="fas fa-check"></i> ${feature}</li>`
-        ).join('');
+    // Update features list
+    const modalFeaturesList = document.getElementById('modal-features-list');
+    if (modalFeaturesList) {
+        modalFeaturesList.innerHTML = plan.features.slice(0, 4).map(feature => `
+            <div class="feature-item">
+                <i class="fas fa-check"></i>
+                <span>${feature}</span>
+            </div>
+        `).join('');
+    }
+    
+    console.log('Total amount:', totalAmount);
+}
+
+function attachBillingOptionListeners() {
+    const billingOptions = document.querySelectorAll('.billing-option-card');
+    console.log('Attaching listeners to', billingOptions.length, 'billing options');
+    
+    billingOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const billingType = this.getAttribute('data-billing');
+            console.log('Billing option clicked:', billingType);
+            switchBillingType(billingType);
+        });
+    });
+}
+
+function switchBillingType(billingType) {
+    modalBillingType = billingType;
+    console.log('Switching to:', billingType);
+    
+    // Update active state on cards
+    const billingOptions = document.querySelectorAll('.billing-option-card');
+    billingOptions.forEach(option => {
+        if (option.getAttribute('data-billing') === billingType) {
+            option.classList.add('active');
+            const radio = option.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+        } else {
+            option.classList.remove('active');
+            const radio = option.querySelector('input[type="radio"]');
+            if (radio) radio.checked = false;
+        }
+    });
+    
+    // Update prices
+    if (selectedPlan) {
+        const plan = plans[selectedPlan];
+        updateModalContent(plan);
     }
 }
 
@@ -160,6 +232,20 @@ function showUpgradeModal() {
     if (upgradeModal) {
         upgradeModal.classList.add('active');
         document.body.style.overflow = 'hidden';
+        
+        // Reset billing options to monthly
+        const billingOptions = document.querySelectorAll('.billing-option-card');
+        billingOptions.forEach(option => {
+            if (option.getAttribute('data-billing') === 'monthly') {
+                option.classList.add('active');
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio) radio.checked = true;
+            } else {
+                option.classList.remove('active');
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio) radio.checked = false;
+            }
+        });
     }
 }
 
@@ -168,6 +254,7 @@ function closeUpgradeModal() {
         upgradeModal.classList.remove('active');
         document.body.style.overflow = '';
         selectedPlan = null;
+        modalBillingType = 'monthly'; // Reset to monthly
     }
 }
 
@@ -178,7 +265,8 @@ function processUpgrade() {
     }
     
     const plan = plans[selectedPlan];
-    const price = isAnnualBilling ? plan.annualPrice : plan.monthlyPrice;
+    const price = modalBillingType === 'annual' ? plan.annualPrice : plan.monthlyPrice;
+    const totalPrice = modalBillingType === 'annual' ? price * 12 : price;
     
     // Show loading state
     confirmUpgradeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
@@ -194,14 +282,14 @@ function processUpgrade() {
         closeUpgradeModal();
         
         // Show success message
-        showSuccessMessage(plan.name);
+        showSuccessMessage(plan.name, modalBillingType);
         
         // In a real application, you would redirect to payment processor
-        console.log('Redirecting to payment for:', plan.name, 'Price:', price);
+        console.log('Redirecting to payment for:', plan.name, 'Billing:', modalBillingType, 'Total:', totalPrice);
     }, 2000);
 }
 
-function showSuccessMessage(planName) {
+function showSuccessMessage(planName, billingType) {
     // Create success notification
     const notification = document.createElement('div');
     notification.className = 'upgrade-notification success';
@@ -210,7 +298,7 @@ function showSuccessMessage(planName) {
             <i class="fas fa-check-circle"></i>
             <div class="notification-text">
                 <h4>Upgrade Initiated!</h4>
-                <p>You will be redirected to payment for ${planName}</p>
+                <p>You will be redirected to payment for ${planName} (${billingType === 'annual' ? 'Annual' : 'Monthly'})</p>
             </div>
         </div>
     `;

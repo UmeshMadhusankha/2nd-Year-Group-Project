@@ -12,11 +12,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../common/global.css">
-    <link rel="stylesheet" href="../common/variables.css">
-    <link rel="stylesheet" href="../common/topbar.css">
-    <link rel="stylesheet" href="../common/sidebar.css">
-    <link rel="stylesheet" href="welcome.css">
+    <link rel="stylesheet" href="../../../assets/css/common/global.css">
+    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/welcome.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -267,7 +267,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
         </div>
     </div>
 
-    <script src="../common/common.js"></script>
-    <script src="welcome.js"></script>
+    <script src="../../../assets/javascript/common/common.js"></script>
+    <script src="../../../assets/javascript/repairer/welcome.js"></script>
 </body>
 </html>

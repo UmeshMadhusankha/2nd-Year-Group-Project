@@ -12,11 +12,11 @@ $searchPlaceholder = 'Search settings...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../common/global.css">
-    <link rel="stylesheet" href="../common/variables.css">
-    <link rel="stylesheet" href="../common/topbar.css">
-    <link rel="stylesheet" href="../common/sidebar.css">
-    <link rel="stylesheet" href="settings.css">
+    <link rel="stylesheet" href="../../../assets/css/common/global.css">
+    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/settings.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -59,10 +59,6 @@ $searchPlaceholder = 'Search settings...';
                                 <button class="filter-tab settings-tab" data-tab="privacy">
                                     <i class="fas fa-shield-alt"></i>
                                     <span>Privacy & Security</span>
-                                </button>
-                                <button class="filter-tab settings-tab" data-tab="preferences">
-                                    <i class="fas fa-sliders-h"></i>
-                                    <span>Preferences</span>
                                 </button>
                                 <button class="filter-tab settings-tab" data-tab="billing">
                                     <i class="fas fa-credit-card"></i>
@@ -288,14 +284,6 @@ $searchPlaceholder = 'Search settings...';
                             <div class="settings-options">
                                 <div class="setting-option">
                                     <div class="option-info">
-                                        <label>Two-Factor Authentication</label>
-                                        <p>Add an extra layer of security to your account</p>
-                                    </div>
-                                    <button class="btn btn-outline">Enable 2FA</button>
-                                </div>
-
-                                <div class="setting-option">
-                                    <div class="option-info">
                                         <label>Login Alerts</label>
                                         <p>Get notified of login attempts from new devices</p>
                                     </div>
@@ -333,97 +321,6 @@ $searchPlaceholder = 'Search settings...';
 
                         <div class="settings-actions">
                             <button class="btn btn-primary">Save Security Settings</button>
-                        </div>
-                    </div>
-
-                    <!-- Preferences Settings -->
-                    <div class="settings-panel" id="preferences-panel">
-                        <div class="settings-header">
-                            <h2>Preferences</h2>
-                            <p>Customize your experience</p>
-                        </div>
-
-                        <div class="settings-section">
-                            <h3>Appearance</h3>
-                            <div class="settings-options">
-                                <div class="setting-option">
-                                    <div class="option-info">
-                                        <label>Theme</label>
-                                        <p>Choose your preferred color theme</p>
-                                    </div>
-                                    <select class="form-select">
-                                        <option selected>Light</option>
-                                        <option>Dark</option>
-                                        <option>Auto</option>
-                                    </select>
-                                </div>
-
-                                <div class="setting-option">
-                                    <div class="option-info">
-                                        <label>Language</label>
-                                        <p>Select your preferred language</p>
-                                    </div>
-                                    <select class="form-select">
-                                        <option selected>English</option>
-                                        <option>Sinhala</option>
-                                        <option>Tamil</option>
-                                    </select>
-                                </div>
-
-                                <div class="setting-option">
-                                    <div class="option-info">
-                                        <label>Date Format</label>
-                                        <p>Choose how dates are displayed</p>
-                                    </div>
-                                    <select class="form-select">
-                                        <option>MM/DD/YYYY</option>
-                                        <option selected>DD/MM/YYYY</option>
-                                        <option>YYYY-MM-DD</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="settings-section">
-                            <h3>Job Preferences</h3>
-                            <div class="settings-options">
-                                <div class="setting-option">
-                                    <div class="option-info">
-                                        <label>Service Radius</label>
-                                        <p>Maximum distance for job matching</p>
-                                    </div>
-                                    <div class="range-input">
-                                        <input type="range" min="5" max="50" value="20" id="radiusRange">
-                                        <span id="radiusValue">20 km</span>
-                                    </div>
-                                </div>
-
-                                <div class="setting-option">
-                                    <div class="option-info">
-                                        <label>Availability Status</label>
-                                        <p>Let customers know you're available</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" checked>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-
-                                <div class="setting-option">
-                                    <div class="option-info">
-                                        <label>Auto-Accept Simple Jobs</label>
-                                        <p>Automatically accept jobs under LKR 5,000</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="settings-actions">
-                            <button class="btn btn-primary">Save Preferences</button>
                         </div>
                     </div>
 
@@ -548,7 +445,7 @@ $searchPlaceholder = 'Search settings...';
         </div>
     </div>
 
-    <script src="../common/common.js"></script>
-    <script src="settings.js"></script>
+    <script src="../../../assets/javascript/common/common.js"></script>
+    <script src="../../../assets/javascript/repairer/settings.js"></script>
 </body>
 </html>

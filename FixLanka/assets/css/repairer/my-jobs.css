@@ -226,6 +226,17 @@
   margin-bottom: var(--spacing-lg);
 }
 
+/* Two Column Layout - Jobs and Calendar */
+.jobs-container {
+  display: grid;
+  grid-template-columns: 1fr 480px;
+  gap: var(--spacing-lg);
+}
+
+.jobs-list-container {
+  min-width: 0;
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -625,8 +636,276 @@
   display: none;
 }
 
+/* ===== CALENDAR SECTION ===== */
+.calendar-container {
+  position: sticky;
+  top: var(--spacing-lg);
+  align-self: flex-start;
+}
+
+.calendar-widget {
+  background: var(--bg-card);
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.calendar-header {
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  padding: var(--spacing-xl);
+  color: white;
+}
+
+.calendar-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  margin-bottom: var(--spacing-lg);
+}
+
+.calendar-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.calendar-nav-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.calendar-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.calendar-month-year {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  flex: 1;
+  text-align: center;
+}
+
+.calendar-body {
+  padding: var(--spacing-xl);
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-weight: 700;
+  font-size: var(--font-size-base);
+  color: var(--primary-color);
+  padding: var(--spacing-sm);
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  color: var(--text-primary);
+  min-height: 45px;
+}
+
+.calendar-day:hover {
+  background: var(--bg-tertiary);
+}
+
+.calendar-day.prev-month,
+.calendar-day.next-month {
+  color: var(--text-tertiary);
+  opacity: 0.5;
+}
+
+.calendar-day.today {
+  background: var(--primary-color);
+  color: white;
+  font-weight: 700;
+}
+
+.calendar-day.has-event {
+  position: relative;
+}
+
+.calendar-day.has-event::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  background: #ff6b6b;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.calendar-day.today.has-event::after {
+  background: white;
+  border: 2px solid var(--primary-color);
+}
+
+.calendar-footer {
+  background: var(--bg-tertiary);
+  padding: var(--spacing-xl);
+  border-top: 1px solid var(--border-color);
+}
+
+.upcoming-events-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-lg) 0;
+}
+
+.upcoming-events-title i {
+  color: var(--primary-color);
+}
+
+.upcoming-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.upcoming-events-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.upcoming-events-list::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.upcoming-events-list::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+
+.event-item {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--bg-card);
+  border-radius: var(--border-radius);
+  border-left: 4px solid var(--primary-color);
+  transition: all var(--transition-fast);
+}
+
+.event-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateX(3px);
+}
+
+.event-date-badge {
+  background: var(--primary-color);
+  color: white;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+  min-width: 60px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.event-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.event-title {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+  line-height: 1.4;
+}
+
+.event-time {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.event-time i {
+  font-size: 0.8rem;
+}
+
+.no-events-message {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 1600px) {
+  .jobs-container {
+    grid-template-columns: 1fr 420px;
+  }
+}
+
+@media (max-width: 1400px) {
+  .jobs-container {
+    grid-template-columns: 1fr 380px;
+  }
+}
+
 @media (max-width: 1200px) {
+  .jobs-container {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-container {
+    position: relative;
+    top: 0;
+    order: -1;
+    margin-bottom: var(--spacing-lg);
+  }
+
   .page-header {
     flex-direction: column;
     align-items: flex-start;
