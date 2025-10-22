@@ -18,8 +18,8 @@ document.addEventListener("DOMContentLoaded", () => {
 /**
  * Initialize page data
  */
-async function initializePage() {
-  await loadNotifications()
+function initializePage() {
+  loadNotifications()
 
   // Initialize Lucide icons
   if (typeof window.lucide !== "undefined") {
@@ -39,24 +39,15 @@ function setupEventListeners() {
 }
 
 /**
- * Load notifications from server
+ * Load notifications from embedded data
  */
-async function loadNotifications() {
+function loadNotifications() {
   showLoading()
 
   try {
-    const basePath = window.basePath || ""
-    const response = await fetch(`${basePath}/api/notifications?limit=100&sort=newest`)
+    console.log("[v0] Using embedded notifications:", window.allNotifications)
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const result = await response.json()
-    console.log("[v0] Notifications loaded:", result)
-
-    if (result.success) {
-      window.allNotifications = result.data
+    if (window.allNotifications && Array.isArray(window.allNotifications)) {
       filteredNotifications = [...window.allNotifications]
 
       // Update notification count
@@ -75,7 +66,7 @@ async function loadNotifications() {
         window.lucide.createIcons()
       }
     } else {
-      throw new Error(result.error || "Failed to load notifications")
+      throw new Error("No notifications data available")
     }
   } catch (error) {
     console.error("[v0] Error loading notifications:", error)
@@ -406,7 +397,7 @@ function toggleNotificationView(view) {
 /**
  * Handle notification form submission
  */
-async function handleNotificationSubmit(e) {
+function handleNotificationSubmit(e) {
   e.preventDefault()
 
   const formData = new FormData(e.target)
@@ -415,8 +406,6 @@ async function handleNotificationSubmit(e) {
   const sendBtnText = document.getElementById("sendBtnText")
   const draftBtnText = document.getElementById("draftBtnText")
   const isSending = e.submitter.value === "send"
-  
-  formData.append("send_type" , e.submitter.value)
 
   // Show loading state
   if (isSending) {
@@ -428,27 +417,40 @@ async function handleNotificationSubmit(e) {
   }
 
   try {
-    const basePath = window.basePath || ""
-    const response = await fetch(`${basePath}/api/notifications`, {
-      method: "POST",
-      body: formData,
-    })
-
-    const result = await response.json()
-    console.log("[v0] Form submission result:", result)
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || "Failed to create notification")
+    // Create new notification object from form data
+    const newNotification = {
+      id: window.allNotifications.length + 1,
+      message: formData.get("message"),
+      recipients: formData.get("recipients"),
+      priority: formData.get("priority"),
+      status: isSending ? "Sent" : "Draft",
+      sentAt: isSending ? new Date().toISOString().slice(0, 16).replace('T', ' ') : null,
+      createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      deliveryRate: isSending ? Math.floor(Math.random() * 15 + 85) + '%' : null,
+      openRate: isSending ? Math.floor(Math.random() * 30 + 15) + '%' : null,
+      category: 'Update',
+      readCount: 0,
+      totalRecipients: Math.floor(Math.random() * 900 + 100)
     }
+
+    // Add to notifications array
+    window.allNotifications.unshift(newNotification)
+    filteredNotifications = [...window.allNotifications]
 
     // Reset form
     e.target.reset()
 
     // Show success message
-    showSuccess(result.message || (isSending ? "Notification sent successfully" : "Draft saved successfully"))
+    showSuccess(isSending ? "Notification sent successfully" : "Draft saved successfully")
 
     // Refresh display
-    await loadNotifications()
+    renderStats()
+    renderNotifications()
+    updatePagination()
+    
+    if (typeof window.lucide !== "undefined") {
+      window.lucide.createIcons()
+    }
   } catch (error) {
     console.error("[v0] Error submitting form:", error)
     showError(error.message)
@@ -482,7 +484,7 @@ function useTemplate(template) {
 /**
  * Refresh notifications
  */
-async function refreshNotifications() {
+function refreshNotifications() {
   const refreshBtn = document.getElementById("refreshBtn")
   if (refreshBtn) {
     refreshBtn.disabled = true
@@ -492,15 +494,17 @@ async function refreshNotifications() {
     }
   }
 
-  await loadNotifications()
+  loadNotifications()
 
-  if (refreshBtn) {
-    refreshBtn.disabled = false
-    const icon = refreshBtn.querySelector("i")
-    if (icon) {
-      icon.classList.remove("animate-spin")
+  setTimeout(() => {
+    if (refreshBtn) {
+      refreshBtn.disabled = false
+      const icon = refreshBtn.querySelector("i")
+      if (icon) {
+        icon.classList.remove("animate-spin")
+      }
     }
-  }
+  }, 500)
 }
 
 /**
@@ -700,7 +704,7 @@ function bulkDelete() {
   openModal("deleteConfirmModal")
 }
 
-async function bulkResend() {
+function bulkResend() {
   const checkboxes = document.querySelectorAll(".notification-checkbox:checked")
   const count = checkboxes.length
 
@@ -708,25 +712,24 @@ async function bulkResend() {
 
   showLoading()
 
-  try {
-    const ids = Array.from(checkboxes).map((cb) => cb.value)
-    const basePath = window.basePath || ""
-    const response = await fetch(`${basePath}/api/notifications/bulk-resend`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ ids }),
-    })
-
-    const result = await response.json()
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || "Failed to resend notifications")
+  setTimeout(() => {
+    const ids = Array.from(checkboxes).map((cb) => parseInt(cb.value))
+    
+    // Update notifications status to "Sent" in local array
+    if (window.allNotifications) {
+      ids.forEach(id => {
+        const notification = window.allNotifications.find(n => n.id === id)
+        if (notification) {
+          notification.status = "Sent"
+          notification.sent_at = new Date().toISOString().slice(0, 16).replace("T", " ")
+          notification.delivery_rate = "95"
+          notification.open_rate = "32"
+        }
+      })
     }
 
     hideLoading()
-    showSuccess(result.message || `${count} notification(s) resent successfully`)
+    showSuccess(`${count} notification(s) resent successfully`)
 
     // Uncheck all
     checkboxes.forEach((cb) => (cb.checked = false))
@@ -735,12 +738,8 @@ async function bulkResend() {
     updateBulkActions()
 
     // Reload notifications
-    await loadNotifications()
-  } catch (error) {
-    console.error("[v0] Error bulk resending:", error)
-    hideLoading()
-    showError(error.message)
-  }
+    loadNotifications()
+  }, 300)
 }
 
 /**

@@ -4,14 +4,14 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once __DIR__ . '/../../../views/other/includes/auth.php';
+require_once '../../includes/admin-modarator/auth.php';
 
 function renderPageHeader($basePath, $title, $pageSubtitle = null, $currentPage = null, $searchPlaceholder = 'Search...')
 {
     $user = getCurrentUser();
     $userName = $user ? htmlspecialchars($user['name']) : 'Guest';
     $userEmail = $user ? htmlspecialchars($user['email'] ?? 'guest@fixlanka.com') : 'guest@fixlanka.com';
-    $userAvatar = $user['avatar'] ?? $basePath . '/placeholder-user.jpg'; // default avatar
+    $userAvatar = $user['avatar'] ?? '../../assets/images/admin-moderator/placeholder-user.jpg'; // default avatar
 
     // Default values
     $pageSubtitle = $pageSubtitle ?: 'Welcome to FixLanka';
@@ -24,7 +24,7 @@ function renderPageHeader($basePath, $title, $pageSubtitle = null, $currentPage 
     echo '<div class="header-left">';
     echo '<label for="sidebar-toggle" class="sidebar-toggle"><i class="fas fa-bars"></i></label>';
     echo '<div class="logo">';
-    echo '<img src="' . htmlspecialchars($basePath . '/logo.jpg') . '" alt="FixLanka" class="logo-image">';
+    echo '<img src="../../assets/images/admin-moderator/logo.jpg" alt="FixLanka" class="logo-image">';
     echo '</div>';
     echo '<div class="page-info">';
     echo '<h1 class="page-title">' . $pageTitle . '</h1>';
