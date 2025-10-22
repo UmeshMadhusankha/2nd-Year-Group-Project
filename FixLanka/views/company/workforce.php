@@ -184,7 +184,7 @@
                         <div class="card-content">
                             <div class="stats-overview">
                                 <div class="main-stat">
-                                    <span class="stat-number">7</span>
+                                    <span class="stat-number" id="applicationCount">8</span>
                                     <span class="stat-label">Pending</span>
                                 </div>
                                 <div class="sub-stats">
@@ -193,8 +193,8 @@
                                         <span class="sub-label">New Today</span>
                                     </div>
                                     <div class="sub-stat">
-                                        <span class="sub-number">2</span>
-                                        <span class="sub-label">Approved</span>
+                                        <span class="sub-number">0</span>
+                                        <span class="sub-label">Reviewed</span>
                                     </div>
                                 </div>
                             </div>
@@ -545,6 +545,10 @@
                 // Load data for specific sections
                 if (section === 'job-postings') {
                     loadJobPostings();
+                } else if (section === 'freelancers') {
+                    loadFreelancers();
+                } else if (section === 'applications') {
+                    loadApplications();
                 }
             }
 
@@ -593,7 +597,10 @@
                 rating: 4.8,
                 status: 'Available',
                 email: 'kasun.perera@email.com',
-                avatar: 'KP'
+                phone: '+94 77 123 4501',
+                avatar: 'KP',
+                completedJobs: 156,
+                responseTime: '2 hours'
             },
             {
                 id: 'f2',
@@ -605,7 +612,10 @@
                 rating: 4.6,
                 status: 'Busy',
                 email: 'nimali.fernando@email.com',
-                avatar: 'NF'
+                phone: '+94 71 234 5602',
+                avatar: 'NF',
+                completedJobs: 89,
+                responseTime: '1 hour'
             },
             {
                 id: 'f3',
@@ -617,7 +627,145 @@
                 rating: 4.9,
                 status: 'Available',
                 email: 'rohan.silva@email.com',
-                avatar: 'RS'
+                phone: '+94 76 345 6703',
+                avatar: 'RS',
+                completedJobs: 234,
+                responseTime: '30 mins'
+            },
+            {
+                id: 'f4',
+                firstName: 'Dilani',
+                lastName: 'Wickramasinghe',
+                specialty: 'Air Conditioner Repair',
+                experience: 6,
+                hourlyRate: 3200,
+                rating: 4.7,
+                status: 'Available',
+                email: 'dilani.wick@email.com',
+                phone: '+94 77 456 7804',
+                avatar: 'DW',
+                completedJobs: 178,
+                responseTime: '1 hour'
+            },
+            {
+                id: 'f5',
+                firstName: 'Tharindu',
+                lastName: 'Jayasuriya',
+                specialty: 'Refrigerator Repair',
+                experience: 4,
+                hourlyRate: 2600,
+                rating: 4.5,
+                status: 'Available',
+                email: 'tharindu.j@email.com',
+                phone: '+94 71 567 8905',
+                avatar: 'TJ',
+                completedJobs: 123,
+                responseTime: '3 hours'
+            },
+            {
+                id: 'f6',
+                firstName: 'Amaya',
+                lastName: 'Dissanayake',
+                specialty: 'Washing Machine Repair',
+                experience: 3,
+                hourlyRate: 2400,
+                rating: 4.8,
+                status: 'Busy',
+                email: 'amaya.diss@email.com',
+                phone: '+94 76 678 9006',
+                avatar: 'AD',
+                completedJobs: 95,
+                responseTime: '2 hours'
+            },
+            {
+                id: 'f7',
+                firstName: 'Nuwan',
+                lastName: 'Bandara',
+                specialty: 'Microwave Repair',
+                experience: 2,
+                hourlyRate: 2200,
+                rating: 4.4,
+                status: 'Available',
+                email: 'nuwan.band@email.com',
+                phone: '+94 77 789 0107',
+                avatar: 'NB',
+                completedJobs: 67,
+                responseTime: '4 hours'
+            },
+            {
+                id: 'f8',
+                firstName: 'Sanduni',
+                lastName: 'Perera',
+                specialty: 'Computer Repair',
+                experience: 5,
+                hourlyRate: 3500,
+                rating: 4.9,
+                status: 'Available',
+                email: 'sanduni.p@email.com',
+                phone: '+94 71 890 1208',
+                avatar: 'SP',
+                completedJobs: 201,
+                responseTime: '1 hour'
+            },
+            {
+                id: 'f9',
+                firstName: 'Ishara',
+                lastName: 'Gunasekara',
+                specialty: 'Printer Repair',
+                experience: 4,
+                hourlyRate: 2300,
+                rating: 4.6,
+                status: 'Available',
+                email: 'ishara.guna@email.com',
+                phone: '+94 76 901 2309',
+                avatar: 'IG',
+                completedJobs: 134,
+                responseTime: '2 hours'
+            },
+            {
+                id: 'f10',
+                firstName: 'Chamath',
+                lastName: 'Silva',
+                specialty: 'Home Theater Setup',
+                experience: 6,
+                hourlyRate: 3000,
+                rating: 4.7,
+                status: 'Busy',
+                email: 'chamath.silva@email.com',
+                phone: '+94 77 012 3410',
+                avatar: 'CS',
+                completedJobs: 167,
+                responseTime: '1 hour'
+            },
+            {
+                id: 'f11',
+                firstName: 'Malsha',
+                lastName: 'Rajapaksha',
+                specialty: 'Dishwasher Repair',
+                experience: 3,
+                hourlyRate: 2500,
+                rating: 4.5,
+                status: 'Available',
+                email: 'malsha.raja@email.com',
+                phone: '+94 71 123 4511',
+                avatar: 'MR',
+                completedJobs: 89,
+                responseTime: '3 hours'
+            },
+            {
+                id: 'f12',
+                firstName: 'Dinuka',
+                lastName: 'Wijesinghe',
+                specialty: 'Water Heater Repair',
+                experience: 5,
+                hourlyRate: 2700,
+                rating: 4.8,
+                status: 'Available',
+                email: 'dinuka.wije@email.com',
+                phone: '+94 76 234 5612',
+                avatar: 'DW',
+                completedJobs: 145,
+                responseTime: '2 hours'
             }
         ];
 
@@ -629,12 +777,15 @@
                 specialty: 'Air Conditioner Repair',
                 experience: 4,
                 expectedRate: 3200,
-                applicationDate: '2024-01-15',
+                applicationDate: '2025-10-21',
                 email: 'saman.jayasinghe@email.com',
                 phone: '+94 77 123 4567',
                 avatar: 'SJ',
+                status: 'new',
                 coverLetter: 'Experienced HVAC technician with 4 years of hands-on experience in air conditioning repair and maintenance. Specialized in both residential and commercial systems with excellent problem-solving skills and customer service.',
-                skills: ['HVAC Systems', 'Refrigeration', 'Electrical Troubleshooting', 'Customer Service', 'Safety Protocols']
+                skills: ['HVAC Systems', 'Refrigeration', 'Electrical Troubleshooting', 'Customer Service', 'Safety Protocols'],
+                certifications: ['HVAC Certified', 'Refrigeration License'],
+                previousEmployer: 'Cool Air Solutions'
             },
             {
                 id: 'a2',
@@ -643,12 +794,117 @@
                 specialty: 'Washing Machine Repair',
                 experience: 2,
                 expectedRate: 2200,
-                applicationDate: '2024-01-12',
+                applicationDate: '2025-10-20',
                 email: 'priya.rathnayake@email.com',
                 phone: '+94 71 234 5678',
                 avatar: 'PR',
+                status: 'new',
                 coverLetter: 'Dedicated appliance repair specialist with 2 years of experience in washing machine and dryer repairs. Known for quick diagnostics and efficient repairs with high customer satisfaction ratings.',
-                skills: ['Appliance Repair', 'Mechanical Systems', 'Diagnostic Tools', 'Time Management', 'Technical Documentation']
+                skills: ['Appliance Repair', 'Mechanical Systems', 'Diagnostic Tools', 'Time Management', 'Technical Documentation'],
+                certifications: ['Appliance Technician Certificate'],
+                previousEmployer: 'Home Appliance Center'
+            },
+            {
+                id: 'a3',
+                firstName: 'Ravindu',
+                lastName: 'Amarasinghe',
+                specialty: 'Plumbing',
+                experience: 6,
+                expectedRate: 2800,
+                applicationDate: '2025-10-20',
+                email: 'ravindu.amar@email.com',
+                phone: '+94 76 345 6789',
+                avatar: 'RA',
+                status: 'new',
+                coverLetter: 'Professional plumber with 6 years of experience in residential and commercial plumbing. Expert in pipe fitting, leak detection, and water system maintenance.',
+                skills: ['Pipe Fitting', 'Leak Detection', 'Water Systems', 'Drainage', 'Emergency Repairs'],
+                certifications: ['Master Plumber License', 'Gas Fitting Certificate'],
+                previousEmployer: 'Lanka Plumbing Services'
+            },
+            {
+                id: 'a4',
+                firstName: 'Sachini',
+                lastName: 'Fernando',
+                specialty: 'Electrical Work',
+                experience: 5,
+                expectedRate: 3000,
+                applicationDate: '2025-10-19',
+                email: 'sachini.fern@email.com',
+                phone: '+94 77 456 7890',
+                avatar: 'SF',
+                status: 'pending',
+                coverLetter: 'Certified electrician with 5 years experience in residential and commercial electrical installations and repairs. Specialized in modern electrical systems and energy-efficient solutions.',
+                skills: ['Electrical Installation', 'Wiring', 'Circuit Design', 'Safety Compliance', 'Troubleshooting'],
+                certifications: ['Licensed Electrician', 'Electrical Safety Certificate'],
+                previousEmployer: 'Power Solutions Lanka'
+            },
+            {
+                id: 'a5',
+                firstName: 'Hasitha',
+                lastName: 'Wijeratne',
+                specialty: 'Carpentry',
+                experience: 7,
+                expectedRate: 2600,
+                applicationDate: '2025-10-19',
+                email: 'hasitha.wije@email.com',
+                phone: '+94 71 567 8901',
+                avatar: 'HW',
+                status: 'pending',
+                coverLetter: 'Master carpenter with 7 years of experience in custom woodwork, furniture repair, and interior finishing. Known for attention to detail and quality craftsmanship.',
+                skills: ['Custom Woodwork', 'Furniture Making', 'Cabinet Installation', 'Wood Finishing', 'Blueprint Reading'],
+                certifications: ['Master Carpenter Certificate'],
+                previousEmployer: 'Fine Wood Crafts'
+            },
+            {
+                id: 'a6',
+                firstName: 'Nadeesha',
+                lastName: 'Bandara',
+                specialty: 'Painting',
+                experience: 3,
+                expectedRate: 2000,
+                applicationDate: '2025-10-18',
+                email: 'nadeesha.band@email.com',
+                phone: '+94 76 678 9012',
+                avatar: 'NB',
+                status: 'pending',
+                coverLetter: 'Professional painter with 3 years of experience in interior and exterior painting. Expertise in color consultation, surface preparation, and finishing techniques.',
+                skills: ['Interior Painting', 'Exterior Painting', 'Surface Prep', 'Color Matching', 'Spray Painting'],
+                certifications: ['Professional Painter Certificate'],
+                previousEmployer: 'Color Masters'
+            },
+            {
+                id: 'a7',
+                firstName: 'Kavinda',
+                lastName: 'Perera',
+                specialty: 'TV & Audio Repair',
+                experience: 4,
+                expectedRate: 2700,
+                applicationDate: '2025-10-17',
+                email: 'kavinda.per@email.com',
+                phone: '+94 77 789 0123',
+                avatar: 'KP',
+                status: 'reviewed',
+                coverLetter: 'Electronics technician specializing in TV and audio equipment repair. 4 years of experience with LED/LCD TVs, home theater systems, and sound equipment.',
+                skills: ['TV Repair', 'Audio Systems', 'Electronics Diagnosis', 'Component Replacement', 'System Calibration'],
+                certifications: ['Electronics Technician Certificate', 'Audio/Video Specialist'],
+                previousEmployer: 'Tech Repair Center'
+            },
+            {
+                id: 'a8',
+                firstName: 'Tharushi',
+                lastName: 'Silva',
+                specialty: 'Refrigeration',
+                experience: 5,
+                expectedRate: 2900,
+                applicationDate: '2025-10-16',
+                email: 'tharushi.silva@email.com',
+                phone: '+94 71 890 1234',
+                avatar: 'TS',
+                status: 'reviewed',
+                coverLetter: 'Refrigeration specialist with 5 years experience in repairing and maintaining refrigerators, freezers, and commercial cooling systems. EPA certified.',
+                skills: ['Refrigeration Systems', 'Coolant Handling', 'Compressor Repair', 'Temperature Control', 'Preventive Maintenance'],
+                certifications: ['EPA Section 608', 'Refrigeration Technician License'],
+                previousEmployer: 'Cool Tech Services'
             }
         ];
 
@@ -666,14 +922,288 @@
         }
 
         // Action functions
+        let currentFreelancerId = null;
+
         function assignJob(freelancerId) {
-            alert(`Assigning job to freelancer ${freelancerId}`);
-            // Implementation for job assignment
+            currentFreelancerId = freelancerId;
+            const freelancer = freelancersData.find(f => f.id === freelancerId);
+            if (!freelancer) return;
+
+            // Populate freelancer info in assignment drawer
+            document.getElementById('assignFreelancerAvatar').textContent = freelancer.avatar;
+            document.getElementById('assignFreelancerName').textContent = `${freelancer.firstName} ${freelancer.lastName}`;
+            document.getElementById('assignFreelancerSpecialty').textContent = freelancer.specialty;
+            document.getElementById('agreedRate').value = freelancer.hourlyRate;
+
+            // Set default start date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('assignmentStartDate').value = today;
+
+            // Close freelancer details drawer if open
+            document.getElementById('freelancerDetailsDrawer').classList.remove('active');
+            
+            // Open assignment drawer
+            document.getElementById('assignJobDrawer').classList.add('active');
+            updateCostSummary();
         }
 
         function viewFreelancerDetails(freelancerId) {
-            alert(`Viewing details for freelancer ${freelancerId}`);
-            // Implementation for viewing freelancer details
+            currentFreelancerId = freelancerId;
+            const freelancer = freelancersData.find(f => f.id === freelancerId);
+            if (!freelancer) return;
+
+            // Populate drawer with freelancer data
+            document.getElementById('freelancerAvatar').textContent = freelancer.avatar;
+            document.getElementById('freelancerFullName').textContent = `${freelancer.firstName} ${freelancer.lastName}`;
+            document.getElementById('freelancerSpecialty').textContent = freelancer.specialty;
+            document.getElementById('freelancerRating').textContent = freelancer.rating;
+            document.getElementById('freelancerCompletedJobs').textContent = freelancer.completedJobs || 0;
+            document.getElementById('freelancerResponseTime').textContent = freelancer.responseTime || '< 1 hour';
+            document.getElementById('freelancerEmail').textContent = freelancer.email;
+            document.getElementById('freelancerPhone').textContent = freelancer.phone;
+            document.getElementById('freelancerExperience').textContent = `${freelancer.experience} years`;
+            document.getElementById('freelancerHourlyRate').textContent = `LKR ${freelancer.hourlyRate.toLocaleString()}/hr`;
+
+            // Update availability status
+            const statusContainer = document.getElementById('freelancerAvailabilityStatus');
+            let statusClass = 'available';
+            let statusText = 'AVAILABLE';
+            
+            if (freelancer.status.toLowerCase() === 'busy') {
+                statusClass = 'busy';
+                statusText = 'BUSY';
+            } else if (freelancer.status.toLowerCase() === 'unavailable') {
+                statusClass = 'unavailable';
+                statusText = 'UNAVAILABLE';
+            }
+
+            statusContainer.innerHTML = `<span class="status-badge ${statusClass}">${statusText}</span>`;
+
+            // Show/hide assign button based on availability
+            const assignJobBtn = document.querySelector('#freelancerDetailsDrawer .detail-actions .action-btn.primary');
+            const isAvailable = freelancer.status.toLowerCase() === 'available';
+            
+            if (assignJobBtn) {
+                if (isAvailable) {
+                    assignJobBtn.style.display = 'flex';
+                    assignJobBtn.disabled = false;
+                } else {
+                    assignJobBtn.style.display = 'none';
+                }
+            }
+
+            // Open drawer
+            document.getElementById('freelancerDetailsDrawer').classList.add('active');
+        }
+
+        function closeFreelancerDetailsDrawer() {
+            document.getElementById('freelancerDetailsDrawer').classList.remove('active');
+        }
+
+        function openAssignJobDrawer() {
+            if (currentFreelancerId) {
+                assignJob(currentFreelancerId);
+            }
+        }
+
+        function closeAssignJobDrawer() {
+            document.getElementById('assignJobDrawer').classList.remove('active');
+            document.getElementById('assignJobForm').reset();
+            updateCostSummary();
+        }
+
+        function contactFreelancer() {
+            const freelancer = freelancersData.find(f => f.id === currentFreelancerId);
+            if (!freelancer) return;
+            
+            // Populate chat drawer with freelancer info
+            document.getElementById('chatPersonName').textContent = freelancer.name;
+            document.getElementById('chatPersonAvatar').textContent = freelancer.avatar;
+            document.getElementById('chatPersonSpecialty').textContent = freelancer.specialty;
+            
+            // Clear previous messages and load chat history (dummy data for now)
+            loadChatMessages(currentFreelancerId);
+            
+            // Open chat drawer
+            document.getElementById('chatDrawer').classList.add('active');
+        }
+
+        function closeChatDrawer() {
+            document.getElementById('chatDrawer').classList.remove('active');
+            document.getElementById('chatMessageInput').value = '';
+        }
+
+        function loadChatMessages(freelancerId) {
+            const chatContainer = document.getElementById('chatMessagesContainer');
+            
+            // Dummy chat history
+            const chatHistory = [
+                {
+                    sender: 'freelancer',
+                    name: 'Kasun Perera',
+                    avatar: 'KP',
+                    message: 'Hello! I received the job assignment notification. When should I start?',
+                    time: 'Today, 10:30 AM'
+                },
+                {
+                    sender: 'company',
+                    name: 'FixLanka Team',
+                    avatar: 'FL',
+                    message: 'Great! You can start tomorrow morning. The customer will be available from 9 AM.',
+                    time: 'Today, 10:45 AM'
+                },
+                {
+                    sender: 'freelancer',
+                    name: 'Kasun Perera',
+                    avatar: 'KP',
+                    message: 'Perfect! Do I need to bring any specific tools or parts?',
+                    time: 'Today, 11:00 AM'
+                },
+                {
+                    sender: 'company',
+                    name: 'FixLanka Team',
+                    avatar: 'FL',
+                    message: 'Yes, please bring your standard mobile repair toolkit. The replacement screen will be provided by the customer.',
+                    time: 'Today, 11:15 AM'
+                }
+            ];
+            
+            chatContainer.innerHTML = '';
+            chatHistory.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${msg.sender}`;
+                messageDiv.innerHTML = `
+                    <div class="chat-message-avatar">${msg.avatar}</div>
+                    <div class="chat-message-content">
+                        <div class="chat-message-header">
+                            <span class="chat-sender">${msg.name}</span>
+                            <span class="chat-time">${msg.time}</span>
+                        </div>
+                        <div class="chat-message-text">${msg.message}</div>
+                    </div>
+                `;
+                chatContainer.appendChild(messageDiv);
+            });
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatMessageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            const chatContainer = document.getElementById('chatMessagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message company';
+            
+            const now = new Date();
+            const timeStr = `Today, ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
+            
+            messageDiv.innerHTML = `
+                <div class="chat-message-avatar">FL</div>
+                <div class="chat-message-content">
+                    <div class="chat-message-header">
+                        <span class="chat-sender">FixLanka Team</span>
+                        <span class="chat-time">${timeStr}</span>
+                    </div>
+                    <div class="chat-message-text">${message}</div>
+                </div>
+            `;
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            input.value = '';
+            showNotification('Message sent successfully', 'success');
+        }
+
+        // Allow Enter key to send message
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendChatMessage();
+            }
+        }
+
+        // Update cost summary in real-time
+        function updateCostSummary() {
+            const hours = parseFloat(document.getElementById('estimatedHours').value) || 0;
+            const rate = parseFloat(document.getElementById('agreedRate').value) || 0;
+            const total = hours * rate;
+
+            document.getElementById('summaryHours').textContent = hours > 0 ? `${hours} hrs` : '0 hrs';
+            document.getElementById('summaryRate').textContent = `LKR ${rate.toLocaleString()}`;
+            document.getElementById('summaryTotal').textContent = `LKR ${total.toLocaleString()}`;
+        }
+
+        // Add event listeners for cost calculation
+        document.addEventListener('DOMContentLoaded', function() {
+            const hoursInput = document.getElementById('estimatedHours');
+            const rateInput = document.getElementById('agreedRate');
+            
+            if (hoursInput) {
+                hoursInput.addEventListener('input', updateCostSummary);
+            }
+            if (rateInput) {
+                rateInput.addEventListener('input', updateCostSummary);
+            }
+
+            // Handle assignment form submission
+            const assignForm = document.getElementById('assignJobForm');
+            if (assignForm) {
+                assignForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    handleJobAssignment();
+                });
+            }
+        });
+
+        function handleJobAssignment() {
+            const freelancer = freelancersData.find(f => f.id === currentFreelancerId);
+            if (!freelancer) return;
+
+            const jobSelect = document.getElementById('jobSelect').value;
+            const startDate = document.getElementById('assignmentStartDate').value;
+            const deadline = document.getElementById('assignmentDeadline').value;
+            const hours = document.getElementById('estimatedHours').value;
+            const rate = document.getElementById('agreedRate').value;
+
+            if (!jobSelect || !startDate || !deadline || !hours || !rate) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+
+            // Validate dates
+            if (new Date(deadline) < new Date(startDate)) {
+                showNotification('Deadline must be after start date', 'error');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = document.querySelector('#assignJobForm button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Assigning...';
+            submitBtn.disabled = true;
+
+            // Simulate API call
+            setTimeout(() => {
+                // Update freelancer status to busy
+                freelancer.status = 'Busy';
+                
+                // Reload freelancer list
+                loadFreelancers();
+                
+                // Close drawer and show success
+                closeAssignJobDrawer();
+                showNotification(`Job successfully assigned to ${freelancer.firstName} ${freelancer.lastName}!`, 'success');
+                
+                // Reset button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 1000);
         }
 
         function approveApplication(applicationId) {
@@ -881,6 +1411,14 @@
             const item = document.createElement('div');
             item.className = 'freelancer-item';
 
+            // Determine if freelancer is available for assignment
+            const isAvailable = freelancer.status.toLowerCase() === 'available';
+            const assignButton = isAvailable 
+                ? `<button class="action-btn-sm primary" onclick="assignJob('${freelancer.id}')">
+                       <i class="fas fa-plus"></i> Assign
+                   </button>`
+                : '';
+
             item.innerHTML = `
                 <div class="freelancer-main">
                     <div class="freelancer-avatar">${freelancer.avatar}</div>
@@ -898,10 +1436,8 @@
                     </div>
                 </div>
                 <div class="freelancer-actions">
-                    <span class="freelancer-status">${freelancer.status}</span>
-                    <button class="action-btn-sm primary" onclick="assignJob('${freelancer.id}')">
-                        <i class="fas fa-plus"></i> Assign
-                    </button>
+                    <span class="freelancer-status ${freelancer.status.toLowerCase()}">${freelancer.status}</span>
+                    ${assignButton}
                     <button class="action-btn-sm info" onclick="viewFreelancerDetails('${freelancer.id}')">
                         <i class="fas fa-eye"></i> View
                     </button>
@@ -1174,11 +1710,154 @@
         }
 
         function assignJob(employeeId) {
-            showNotification('Job assignment modal would open here', 'info');
+            // Find the employee/freelancer
+            let person = null;
+            let isFreelancer = false;
+            
+            // Check in freelancers
+            person = freelancersData.find(f => f.id === employeeId);
+            if (person) {
+                isFreelancer = true;
+            } else {
+                // Check in employees
+                person = employeesData.find(e => e.id === employeeId);
+            }
+            
+            if (!person) {
+                showNotification('Person not found', 'error');
+                return;
+            }
+            
+            // Store current assignment context
+            window.currentAssignmentId = employeeId;
+            window.currentAssignmentType = isFreelancer ? 'freelancer' : 'employee';
+            
+            // Populate the assignment form
+            document.getElementById('assignPersonName').textContent = person.name;
+            document.getElementById('assignPersonSpecialty').textContent = person.specialty;
+            document.getElementById('assignPersonAvatar').textContent = person.avatar;
+            document.getElementById('assignHourlyRate').value = person.hourlyRate;
+            
+            // Set default start date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('assignStartDate').value = today;
+            
+            // Clear other fields
+            document.getElementById('assignJobSelect').value = '';
+            document.getElementById('assignDeadline').value = '';
+            document.getElementById('assignEstimatedHours').value = '';
+            document.getElementById('assignNotes').value = '';
+            
+            // Update cost summary
+            updateAssignmentCost();
+            
+            // Open the drawer
+            document.getElementById('assignJobDrawer').classList.add('active');
         }
 
         function editEmployee(employeeId) {
             showNotification('Edit employee modal would open here', 'info');
+        }
+
+        function closeAssignJobDrawer() {
+            document.getElementById('assignJobDrawer').classList.remove('active');
+            // Reset form after animation
+            setTimeout(() => {
+                document.getElementById('assignJobForm').reset();
+                window.currentAssignmentId = null;
+                window.currentAssignmentType = null;
+            }, 300);
+        }
+
+        function updateAssignmentCost() {
+            const hours = parseFloat(document.getElementById('assignEstimatedHours').value) || 0;
+            const rate = parseFloat(document.getElementById('assignHourlyRate').value) || 0;
+            const totalCost = hours * rate;
+            
+            document.getElementById('assignCostHours').textContent = hours.toFixed(1);
+            document.getElementById('assignCostRate').textContent = rate.toLocaleString();
+            document.getElementById('assignCostTotal').textContent = totalCost.toLocaleString();
+        }
+
+        function handleJobAssignment(event) {
+            event.preventDefault();
+            
+            const jobSelect = document.getElementById('assignJobSelect');
+            const startDate = document.getElementById('assignStartDate');
+            const deadline = document.getElementById('assignDeadline');
+            const hours = document.getElementById('assignEstimatedHours');
+            const rate = document.getElementById('assignHourlyRate');
+            const notes = document.getElementById('assignNotes');
+            
+            // Validation
+            if (!jobSelect.value) {
+                showNotification('Please select a job/project', 'error');
+                jobSelect.focus();
+                return false;
+            }
+            
+            if (!startDate.value) {
+                showNotification('Please set a start date', 'error');
+                startDate.focus();
+                return false;
+            }
+            
+            if (!deadline.value) {
+                showNotification('Please set a deadline', 'error');
+                deadline.focus();
+                return false;
+            }
+            
+            if (new Date(deadline.value) <= new Date(startDate.value)) {
+                showNotification('Deadline must be after start date', 'error');
+                deadline.focus();
+                return false;
+            }
+            
+            if (!hours.value || hours.value <= 0) {
+                showNotification('Please enter valid estimated hours', 'error');
+                hours.focus();
+                return false;
+            }
+            
+            // Note: Hourly rate is pre-filled from the repairer's application and is read-only
+            // No validation needed as it's always a valid value from their profile
+            
+            // Show loading state
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Assigning...';
+            
+            // Simulate API call
+            setTimeout(() => {
+                // Find and update the person's status
+                if (window.currentAssignmentType === 'freelancer') {
+                    const freelancer = freelancersData.find(f => f.id === window.currentAssignmentId);
+                    if (freelancer) {
+                        freelancer.status = 'Busy';
+                    }
+                } else {
+                    const employee = employeesData.find(e => e.id === window.currentAssignmentId);
+                    if (employee) {
+                        employee.status = 'Busy';
+                    }
+                }
+                
+                // Reload workforce display
+                loadWorkforce();
+                
+                // Show success and close drawer
+                const personName = document.getElementById('assignPersonName').textContent;
+                showNotification(`Job successfully assigned to ${personName}!`, 'success');
+                closeAssignJobDrawer();
+                
+                // Reset button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }, 1000);
+            
+            return false;
         }
 
         function renewContract(freelancerId) {
@@ -1215,14 +1894,38 @@
         }
 
         function openJobPostingModal() {
-            document.getElementById('jobPostingDrawer').classList.add('active');
+            // Reset form for creating new job
             resetJobPostingForm();
+            
+            // Update drawer title for creating new job
+            const drawerHeader = document.querySelector('#jobPostingDrawer .job-posting-header h3');
+            if (drawerHeader) {
+                drawerHeader.innerHTML = '<i class="fas fa-bullhorn"></i> Create New Job Posting';
+            }
+            
+            // Remove editing ID
+            delete document.getElementById('jobPostingForm').dataset.editingId;
+            
+            document.getElementById('jobPostingDrawer').classList.add('active');
             showStep(1);
         }
 
         function closeJobPostingDrawer() {
             document.getElementById('jobPostingDrawer').classList.remove('active');
-            resetJobPostingForm();
+            
+            // Reset form after closing animation
+            setTimeout(() => {
+                resetJobPostingForm();
+                
+                // Reset drawer title
+                const drawerHeader = document.querySelector('#jobPostingDrawer .job-posting-header h3');
+                if (drawerHeader) {
+                    drawerHeader.innerHTML = '<i class="fas fa-bullhorn"></i> Create New Job Posting';
+                }
+                
+                // Remove editing ID
+                delete document.getElementById('jobPostingForm').dataset.editingId;
+            }, 300);
         }
 
         function resetJobPostingForm() {
@@ -1350,34 +2053,73 @@
         }
 
         function saveAsDraft() {
-            const formData = collectFormData();
-            formData.status = 'draft';
-            
-            // Here you would typically send to server
-            console.log('Saving as draft:', formData);
-            showNotification('Job posting saved as draft!', 'success');
-            closeJobPostingDrawer();
+            saveDraftJobPosting();
         }
 
         function publishJobPosting() {
             if (!validateCurrentStep()) return;
             
+            const form = document.getElementById('jobPostingForm');
+            const editingId = form.dataset.editingId;
             const formData = collectFormData();
             formData.status = 'active';
             formData.publishedAt = new Date().toISOString();
             
+            if (editingId) {
+                // Update existing job posting
+                formData.id = parseInt(editingId);
+                formData.updatedAt = new Date().toISOString();
+                console.log('Updating job posting:', formData);
+                showNotification('Job posting updated and published successfully!', 'success');
+            } else {
+                // Create new job posting
+                console.log('Publishing new job posting:', formData);
+                showNotification('Job posting published successfully!', 'success');
+            }
+            
             // Here you would typically send to server
-            console.log('Publishing job posting:', formData);
-            showNotification('Job posting published successfully!', 'success');
+            // Example: await fetch('/api/job-postings', { method: editingId ? 'PUT' : 'POST', body: JSON.stringify(formData) })
+            
             closeJobPostingDrawer();
             
-            // Refresh job postings list if we're on that section
-            if (document.getElementById('job-postingsSection').style.display !== 'none') {
+            // Refresh job postings list
+            setTimeout(() => {
                 loadJobPostings();
+            }, 300);
+        }
+
+        function saveDraftJobPosting() {
+            const form = document.getElementById('jobPostingForm');
+            const editingId = form.dataset.editingId;
+            const formData = collectFormData();
+            formData.status = 'draft';
+            
+            if (editingId) {
+                // Update existing draft
+                formData.id = parseInt(editingId);
+                formData.updatedAt = new Date().toISOString();
+                console.log('Updating job posting draft:', formData);
+                showNotification('Job posting draft updated successfully!', 'success');
+            } else {
+                // Create new draft
+                console.log('Saving job posting as draft:', formData);
+                showNotification('Job posting saved as draft!', 'success');
             }
+            
+            // Here you would typically send to server
+            
+            closeJobPostingDrawer();
+            
+            // Refresh job postings list
+            setTimeout(() => {
+                loadJobPostings();
+            }, 300);
         }
 
         function collectFormData() {
+            const notifyCheckbox = document.getElementById('notifyRelevantRepairers');
+            const directAppCheckbox = document.getElementById('allowDirectApplications');
+            
             return {
                 title: document.getElementById('jobTitle').value,
                 category: document.getElementById('jobCategory').value,
@@ -1391,8 +2133,8 @@
                 applicationDeadline: document.getElementById('applicationDeadline').value,
                 requiredSkills: document.getElementById('requiredSkills').value,
                 locationRequirements: document.getElementById('locationRequirements').value,
-                notifyRepairers: document.getElementById('notifyRelevantRepairers').checked,
-                allowDirectApplications: document.getElementById('allowDirectApplications').checked,
+                notifyRepairers: notifyCheckbox ? notifyCheckbox.checked : false,
+                allowDirectApplications: directAppCheckbox ? directAppCheckbox.checked : false,
                 createdAt: new Date().toISOString()
             };
         }
@@ -1464,6 +2206,13 @@
             const statusClass = posting.status === 'active' ? 'success' : 
                                posting.status === 'draft' ? 'warning' : 'secondary';
             
+            // Only show edit button for draft/closed jobs, not active ones
+            const editButton = posting.status !== 'active' 
+                ? `<button class="action-btn-sm secondary" onclick="editJobPosting(${posting.id})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>`
+                : '';
+            
             card.innerHTML = `
                 <div class="posting-header">
                     <div class="posting-title">
@@ -1478,10 +2227,8 @@
                     <span><i class="fas fa-calendar"></i> ${formatDate(posting.createdAt)}</span>
                 </div>
                 <div class="posting-actions">
-                    <button class="action-btn-sm secondary" onclick="editJobPosting(${posting.id})">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="action-btn-sm primary" onclick="viewApplications(${posting.id})">
+                    ${editButton}
+                    <button class="action-btn-sm primary" onclick="viewApplications(${posting.id}, '${posting.title}')">
                         <i class="fas fa-eye"></i> View Applications
                     </button>
                     <button class="action-btn-sm danger" onclick="deleteJobPosting(${posting.id})">
@@ -1494,11 +2241,245 @@
         }
 
         function editJobPosting(id) {
-            showNotification('Edit job posting functionality will be implemented', 'info');
+            // Find the job posting data
+            const jobPostings = [
+                {
+                    id: 1,
+                    title: 'Senior HVAC Technician',
+                    category: 'hvac',
+                    status: 'active',
+                    applications: 12,
+                    createdAt: '2024-01-15',
+                    budget: 'LKR 2,500 - 3,200/hr',
+                    minBudget: 2500,
+                    maxBudget: 3200,
+                    employmentType: 'freelance',
+                    description: 'Experienced HVAC technician needed for commercial and residential projects. Must have at least 5 years of experience in installation and maintenance.',
+                    minExperience: 'senior',
+                    priorityLevel: 'high',
+                    requiredSkills: 'HVAC Systems, Refrigeration, Electrical Troubleshooting, Customer Service',
+                    locationRequirements: 'Colombo, Must have own transportation',
+                    applicationDeadline: '2024-02-15'
+                },
+                {
+                    id: 2,
+                    title: 'Electrical Repair Specialist',
+                    category: 'electrical',
+                    status: 'active',
+                    applications: 8,
+                    createdAt: '2024-01-10',
+                    budget: 'LKR 2,000 - 2,800/hr',
+                    minBudget: 2000,
+                    maxBudget: 2800,
+                    employmentType: 'contract',
+                    description: 'Looking for skilled electrician for various residential and commercial electrical repairs and installations.',
+                    minExperience: 'mid',
+                    priorityLevel: 'medium',
+                    requiredSkills: 'Electrical Installation, Wiring, Circuit Design, Safety Compliance',
+                    locationRequirements: 'Colombo and suburbs',
+                    applicationDeadline: '2024-02-10'
+                },
+                {
+                    id: 3,
+                    title: 'Emergency Plumber',
+                    category: 'plumbing',
+                    status: 'draft',
+                    applications: 0,
+                    createdAt: '2024-01-20',
+                    budget: 'LKR 2,200 - 3,000/hr',
+                    minBudget: 2200,
+                    maxBudget: 3000,
+                    employmentType: 'project-based',
+                    description: 'Emergency plumber needed for residential plumbing repairs and maintenance work.',
+                    minExperience: 'mid',
+                    priorityLevel: 'urgent',
+                    requiredSkills: 'Pipe Fitting, Leak Detection, Water Systems, Emergency Repairs',
+                    locationRequirements: 'Colombo area, 24/7 availability preferred',
+                    applicationDeadline: '2024-02-20'
+                }
+            ];
+            
+            const posting = jobPostings.find(p => p.id === id);
+            
+            if (!posting) {
+                showNotification('Job posting not found', 'error');
+                return;
+            }
+            
+            // Update drawer title to indicate editing
+            const drawerHeader = document.querySelector('#jobPostingDrawer .job-posting-header h3');
+            if (drawerHeader) {
+                drawerHeader.innerHTML = '<i class="fas fa-edit"></i> Edit Job Posting';
+            }
+            
+            // Populate form fields with existing data
+            document.getElementById('jobTitle').value = posting.title;
+            document.getElementById('jobCategory').value = posting.category;
+            document.getElementById('employmentType').value = posting.employmentType;
+            document.getElementById('jobDescription').value = posting.description;
+            document.getElementById('minExperience').value = posting.minExperience;
+            document.getElementById('priorityLevel').value = posting.priorityLevel;
+            document.getElementById('minBudget').value = posting.minBudget;
+            document.getElementById('maxBudget').value = posting.maxBudget;
+            document.getElementById('requiredSkills').value = posting.requiredSkills;
+            document.getElementById('locationRequirements').value = posting.locationRequirements;
+            
+            if (posting.applicationDeadline) {
+                document.getElementById('applicationDeadline').value = posting.applicationDeadline;
+            }
+            
+            // Store the job ID for updating
+            document.getElementById('jobPostingForm').dataset.editingId = id;
+            
+            // Update preview
+            updatePreview();
+            
+            // Open drawer
+            document.getElementById('jobPostingDrawer').classList.add('active');
+            showStep(1);
+            
+            showNotification('You can now edit this job posting', 'info');
         }
 
-        function viewApplications(id) {
-            showNotification('View applications functionality will be implemented', 'info');
+        function viewApplications(jobId, jobTitle) {
+            // Get applications for this specific job posting
+            // In a real app, you would filter applications by jobId from the server
+            // For now, we'll show all applications as sample data
+            const jobApplications = applicationsData.filter(app => {
+                // Mock: assign applications to jobs randomly for demo
+                // In production, applications would have a jobId field
+                return true; // Show all for demo purposes
+            });
+
+            // Update drawer title with job title
+            document.getElementById('jobApplicationsTitle').textContent = jobTitle;
+            document.getElementById('jobApplicationsCount').textContent = `${jobApplications.length} Application${jobApplications.length !== 1 ? 's' : ''}`;
+            
+            // Populate applications list
+            const container = document.getElementById('jobApplicationsList');
+            container.innerHTML = '';
+            
+            if (jobApplications.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fas fa-inbox" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px;"></i>
+                        <p>No applications received yet for this job posting.</p>
+                    </div>
+                `;
+            } else {
+                jobApplications.forEach(application => {
+                    const appCard = createJobApplicationCard(application);
+                    container.appendChild(appCard);
+                });
+            }
+            
+            // Show drawer
+            document.getElementById('viewApplicationsDrawer').classList.add('active');
+        }
+
+        function createJobApplicationCard(application) {
+            const card = document.createElement('div');
+            card.className = 'job-application-card';
+            
+            const statusBadge = application.status === 'new' 
+                ? '<span class="status-badge new">New</span>'
+                : '<span class="status-badge pending">Pending Review</span>';
+            
+            card.innerHTML = `
+                <div class="job-app-header">
+                    <div class="job-app-avatar">${application.avatar}</div>
+                    <div class="job-app-info">
+                        <h4>${application.firstName} ${application.lastName}</h4>
+                        <span class="job-app-specialty">${application.specialty}</span>
+                        <div class="job-app-meta">
+                            <span><i class="fas fa-calendar"></i> ${application.experience} years exp</span>
+                            <span><i class="fas fa-money-bill"></i> LKR ${application.expectedRate.toLocaleString()}/hr</span>
+                        </div>
+                    </div>
+                    ${statusBadge}
+                </div>
+                <div class="job-app-contact">
+                    <span><i class="fas fa-envelope"></i> ${application.email}</span>
+                    <span><i class="fas fa-phone"></i> ${application.phone}</span>
+                    <span><i class="fas fa-clock"></i> Applied ${formatDate(application.applicationDate)}</span>
+                </div>
+                ${application.coverLetter ? `
+                    <div class="job-app-cover-letter">
+                        <strong><i class="fas fa-file-alt"></i> Cover Letter:</strong>
+                        <p>${application.coverLetter.substring(0, 150)}${application.coverLetter.length > 150 ? '...' : ''}</p>
+                    </div>
+                ` : ''}
+                <div class="job-app-actions">
+                    <button class="action-btn-sm info" onclick="viewApplicationDetailsFromJobDrawer('${application.id}')">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
+                    <button class="action-btn-sm success" onclick="approveApplicationFromList('${application.id}')">
+                        <i class="fas fa-check"></i> Accept
+                    </button>
+                    <button class="action-btn-sm danger" onclick="rejectApplicationFromList('${application.id}')">
+                        <i class="fas fa-times"></i> Decline
+                    </button>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function viewApplicationDetailsFromJobDrawer(applicationId) {
+            // Close the job applications drawer first
+            closeViewApplicationsDrawer();
+            
+            // Switch to the applications section
+            const applicationsCard = document.querySelector('[data-section="applications"]');
+            if (applicationsCard) {
+                // Remove active class from all preview cards
+                document.querySelectorAll('.preview-card').forEach(card => {
+                    card.classList.remove('active');
+                });
+                
+                // Add active class to applications card
+                applicationsCard.classList.add('active');
+                
+                // Hide all sections
+                document.querySelectorAll('.section-content').forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                // Show applications section
+                const applicationsSection = document.getElementById('applications');
+                if (applicationsSection) {
+                    applicationsSection.classList.add('active');
+                }
+            }
+            
+            // Wait a moment for the transition, then open the application details
+            setTimeout(() => {
+                viewApplicationDetails(applicationId);
+            }, 300);
+        }
+
+        function closeViewApplicationsDrawer() {
+            document.getElementById('viewApplicationsDrawer').classList.remove('active');
+        }
+
+        function approveApplicationFromList(applicationId) {
+            approveApplication(applicationId);
+            // Refresh the applications list after a short delay
+            setTimeout(() => {
+                const jobTitle = document.getElementById('jobApplicationsTitle').textContent;
+                const jobId = 1; // You would track this properly in production
+                viewApplications(jobId, jobTitle);
+            }, 500);
+        }
+
+        function rejectApplicationFromList(applicationId) {
+            rejectApplication(applicationId);
+            // Refresh the applications list after a short delay
+            setTimeout(() => {
+                const jobTitle = document.getElementById('jobApplicationsTitle').textContent;
+                const jobId = 1; // You would track this properly in production
+                viewApplications(jobId, jobTitle);
+            }, 500);
         }
 
         function deleteJobPosting(id) {
@@ -1647,11 +2628,20 @@
         let staffRowCounter = 0;
 
         function openBulkStaffModal() {
-            document.getElementById('bulkStaffDrawer').classList.add('active');
-            // Initialize with one row
-            if (document.querySelectorAll('.staff-row').length === 0) {
+            const drawer = document.getElementById('bulkStaffDrawer');
+            drawer.classList.add('active');
+            
+            // Initialize with one row if empty
+            const container = document.getElementById('staffRowsContainer');
+            if (container.children.length === 0) {
                 addStaffRow();
             }
+            
+            // Focus first select
+            setTimeout(() => {
+                const firstSelect = container.querySelector('.skill-category-select');
+                if (firstSelect) firstSelect.focus();
+            }, 300);
         }
 
         function closeBulkStaffDrawer() {
@@ -1671,6 +2661,8 @@
             const staffRow = document.createElement('div');
             staffRow.className = 'staff-row';
             staffRow.id = `staffRow${staffRowCounter}`;
+            staffRow.style.opacity = '0';
+            staffRow.style.transform = 'translateY(20px)';
 
             staffRow.innerHTML = `
                 <div class="staff-row-content">
@@ -1716,6 +2708,14 @@
             `;
 
             container.appendChild(staffRow);
+            
+            // Animate in
+            setTimeout(() => {
+                staffRow.style.transition = 'all 0.3s ease-out';
+                staffRow.style.opacity = '1';
+                staffRow.style.transform = 'translateY(0)';
+            }, 10);
+            
             updateBulkStaffSummary();
 
             // Show remove button for all rows if there's more than one
@@ -1725,9 +2725,16 @@
         function removeStaffRow(rowId) {
             const row = document.getElementById(`staffRow${rowId}`);
             if (row) {
-                row.remove();
-                updateBulkStaffSummary();
-                updateRemoveButtons();
+                // Animate out
+                row.style.transition = 'all 0.3s ease-out';
+                row.style.opacity = '0';
+                row.style.transform = 'translateX(-20px)';
+                
+                setTimeout(() => {
+                    row.remove();
+                    updateBulkStaffSummary();
+                    updateRemoveButtons();
+                }, 300);
             }
         }
 
@@ -1768,14 +2775,28 @@
                 }
             });
 
-            document.getElementById('totalCategories').textContent = totalCategories;
-            document.getElementById('totalStaff').textContent = totalStaff;
+            const totalCategoriesEl = document.getElementById('totalCategories');
+            const totalStaffEl = document.getElementById('totalStaff');
+            
+            // Animate the number change
+            if (totalCategoriesEl.textContent !== totalCategories.toString()) {
+                totalCategoriesEl.textContent = totalCategories;
+                totalCategoriesEl.classList.add('pulse');
+                setTimeout(() => totalCategoriesEl.classList.remove('pulse'), 500);
+            }
+            
+            if (totalStaffEl.textContent !== totalStaff.toString()) {
+                totalStaffEl.textContent = totalStaff;
+                totalStaffEl.classList.add('pulse');
+                setTimeout(() => totalStaffEl.classList.remove('pulse'), 500);
+            }
         }
 
         function saveBulkStaff() {
             const staffRows = document.querySelectorAll('.staff-row');
             const staffData = [];
             let isValid = true;
+            const selectedCategories = new Set();
 
             staffRows.forEach(row => {
                 const skillSelect = row.querySelector('.skill-category-select');
@@ -1783,12 +2804,23 @@
 
                 if (!skillSelect.value) {
                     showNotification('Please select a skill category for all rows', 'error');
+                    skillSelect.focus();
                     isValid = false;
                     return;
                 }
 
+                // Check for duplicate categories
+                if (selectedCategories.has(skillSelect.value)) {
+                    showNotification(`Duplicate category "${skillSelect.value}" detected. Please combine or remove duplicates.`, 'error');
+                    skillSelect.focus();
+                    isValid = false;
+                    return;
+                }
+                selectedCategories.add(skillSelect.value);
+
                 if (!quantityInput.value || parseInt(quantityInput.value) < 1) {
                     showNotification('Please enter a valid quantity for all rows', 'error');
+                    quantityInput.focus();
                     isValid = false;
                     return;
                 }
@@ -1810,16 +2842,44 @@
             const fileInput = document.getElementById('verificationDocs');
             const files = fileInput.files;
 
-            // Here you would normally send the data to the server
-            console.log('Bulk Staff Data:', staffData);
-            console.log('Verification Documents:', files);
+            // Show loading state
+            const saveBtn = event.target;
+            saveBtn.classList.add('loading');
+            saveBtn.disabled = true;
 
-            // Simulate saving
-            showNotification('Staff summary saved successfully!', 'success');
-            closeBulkStaffDrawer();
+            // Simulate API call with timeout
+            setTimeout(() => {
+                // Here you would normally send the data to the server
+                console.log('Bulk Staff Data:', staffData);
+                console.log('Verification Documents:', files);
 
-            // Update the workforce display if needed
-            updateStats();
+                saveBtn.classList.remove('loading');
+                saveBtn.disabled = false;
+
+                // Simulate success
+                const totalStaff = staffData.reduce((sum, item) => sum + item.quantity, 0);
+                showNotification(`Successfully added ${totalStaff} staff members across ${staffData.length} categories!`, 'success');
+                closeBulkStaffDrawer();
+
+                // Update the workforce display if needed
+                updateStats();
+                updateStaffDataAfterAdd(staffData);
+            }, 1500);
+        }
+
+        function updateStaffDataAfterAdd(staffData) {
+            // Update mock data with new staff
+            staffData.forEach(staff => {
+                if (currentStaffData[staff.skillCategory]) {
+                    currentStaffData[staff.skillCategory].current += staff.quantity;
+                    currentStaffData[staff.skillCategory].active += staff.quantity;
+                } else {
+                    currentStaffData[staff.skillCategory] = {
+                        current: staff.quantity,
+                        active: staff.quantity
+                    };
+                }
+            });
         }
 
         // File upload handling
@@ -1931,12 +2991,21 @@
         let reductionRowCounter = 0;
 
         function openReduceStaffModal() {
-            document.getElementById('reduceStaffDrawer').classList.add('active');
+            const drawer = document.getElementById('reduceStaffDrawer');
+            drawer.classList.add('active');
             loadCurrentStaffOverview();
-            // Initialize with one row
-            if (document.querySelectorAll('.reduction-row').length === 0) {
+            
+            // Initialize with one row if empty
+            const container = document.getElementById('reductionRowsContainer');
+            if (container.children.length === 0) {
                 addReductionRow();
             }
+            
+            // Focus first select
+            setTimeout(() => {
+                const firstSelect = container.querySelector('.reduction-category-select');
+                if (firstSelect) firstSelect.focus();
+            }, 300);
         }
 
         function closeReduceStaffDrawer() {
@@ -1976,6 +3045,8 @@
             const reductionRow = document.createElement('div');
             reductionRow.className = 'reduction-row';
             reductionRow.id = `reductionRow${reductionRowCounter}`;
+            reductionRow.style.opacity = '0';
+            reductionRow.style.transform = 'translateY(20px)';
             
             reductionRow.innerHTML = `
                 <div class="reduction-row-content">
@@ -2002,7 +3073,7 @@
                             </button>
                         </div>
                         <div class="reduction-info">
-                            <span class="max-reduction" id="maxReduction${reductionRowCounter}">Max: 0</span>
+                            <span class="max-reduction" id="maxReduction${reductionRowCounter}"><i class="fas fa-info-circle"></i> Max: 0</span>
                         </div>
                     </div>
                     
@@ -2016,6 +3087,14 @@
             `;
             
             container.appendChild(reductionRow);
+            
+            // Animate in
+            setTimeout(() => {
+                reductionRow.style.transition = 'all 0.3s ease-out';
+                reductionRow.style.opacity = '1';
+                reductionRow.style.transform = 'translateY(0)';
+            }, 10);
+            
             updateReductionSummary();
             updateReductionRemoveButtons();
         }
@@ -2023,15 +3102,24 @@
         function removeReductionRow(rowId) {
             const row = document.getElementById(`reductionRow${rowId}`);
             if (row) {
-                row.remove();
-                updateReductionSummary();
-                updateReductionRemoveButtons();
+                // Animate out
+                row.style.transition = 'all 0.3s ease-out';
+                row.style.opacity = '0';
+                row.style.transform = 'translateX(-20px)';
+                
+                setTimeout(() => {
+                    row.remove();
+                    updateReductionSummary();
+                    updateReductionRemoveButtons();
+                }, 300);
             }
         }
 
         function changeReductionQuantity(rowId, change) {
             const quantityInput = document.getElementById(`reductionQuantity${rowId}`);
             const categorySelect = document.querySelector(`#reductionRow${rowId} .reduction-category-select`);
+            const minusBtn = document.querySelector(`#reductionRow${rowId} .quantity-btn.minus`);
+            const plusBtn = document.querySelector(`#reductionRow${rowId} .quantity-btn.plus`);
             
             if (quantityInput && categorySelect.value) {
                 const selectedOption = categorySelect.selectedOptions[0];
@@ -2040,6 +3128,11 @@
                 let currentValue = parseInt(quantityInput.value) || 1;
                 currentValue = Math.max(1, Math.min(maxReduction, currentValue + change));
                 quantityInput.value = currentValue;
+                
+                // Update button states
+                if (minusBtn) minusBtn.disabled = currentValue <= 1;
+                if (plusBtn) plusBtn.disabled = currentValue >= maxReduction;
+                
                 updateReductionSummary();
             }
         }
@@ -2058,6 +3151,7 @@
             let totalCategories = 0;
             let totalReduction = 0;
             let totalRemaining = 0;
+            const usedCategories = new Set();
             
             reductionRows.forEach(row => {
                 const categorySelect = row.querySelector('.reduction-category-select');
@@ -2066,6 +3160,7 @@
                 
                 if (categorySelect && categorySelect.value) {
                     totalCategories++;
+                    usedCategories.add(categorySelect.value);
                     
                     const selectedOption = categorySelect.selectedOptions[0];
                     const currentStaff = parseInt(selectedOption.dataset.current) || 0;
@@ -2073,8 +3168,8 @@
                     
                     totalReduction += reduction;
                     
-                    // Update max reduction display
-                    maxReductionSpan.textContent = `Max: ${currentStaff}`;
+                    // Update max reduction display with icon
+                    maxReductionSpan.innerHTML = `<i class="fas fa-info-circle"></i> Max: ${currentStaff}`;
                     
                     // Update quantity input max attribute
                     quantityInput.max = currentStaff;
@@ -2083,6 +3178,19 @@
                     if (quantityInput.value > currentStaff) {
                         quantityInput.value = currentStaff;
                     }
+                    
+                    // Visual feedback for input validation
+                    if (reduction >= currentStaff) {
+                        quantityInput.classList.add('at-max');
+                    } else {
+                        quantityInput.classList.remove('at-max');
+                    }
+                } else {
+                    // Reset when no category selected
+                    maxReductionSpan.innerHTML = `<i class="fas fa-info-circle"></i> Max: 0`;
+                    quantityInput.max = 1;
+                    quantityInput.value = 1;
+                    quantityInput.classList.remove('at-max');
                 }
             });
             
@@ -2092,15 +3200,35 @@
             });
             totalRemaining -= totalReduction;
             
-            document.getElementById('totalReductionCategories').textContent = totalCategories;
-            document.getElementById('totalStaffReduction').textContent = totalReduction;
-            document.getElementById('totalRemainingStaff').textContent = totalRemaining;
+            // Update with animation
+            const totalCategoriesEl = document.getElementById('totalReductionCategories');
+            const totalReductionEl = document.getElementById('totalStaffReduction');
+            const totalRemainingEl = document.getElementById('totalRemainingStaff');
+            
+            if (totalCategoriesEl.textContent !== totalCategories.toString()) {
+                totalCategoriesEl.textContent = totalCategories;
+                totalCategoriesEl.classList.add('pulse');
+                setTimeout(() => totalCategoriesEl.classList.remove('pulse'), 500);
+            }
+            
+            if (totalReductionEl.textContent !== totalReduction.toString()) {
+                totalReductionEl.textContent = totalReduction;
+                totalReductionEl.classList.add('pulse');
+                setTimeout(() => totalReductionEl.classList.remove('pulse'), 500);
+            }
+            
+            if (totalRemainingEl.textContent !== totalRemaining.toString()) {
+                totalRemainingEl.textContent = totalRemaining;
+                totalRemainingEl.classList.add('pulse');
+                setTimeout(() => totalRemainingEl.classList.remove('pulse'), 500);
+            }
         }
 
         function confirmStaffReduction() {
             const reductionRows = document.querySelectorAll('.reduction-row');
             const reductionData = [];
             let isValid = true;
+            const usedCategories = new Set();
             
             reductionRows.forEach(row => {
                 const categorySelect = row.querySelector('.reduction-category-select');
@@ -2108,9 +3236,19 @@
                 
                 if (!categorySelect.value) {
                     showNotification('Please select a skill category for all rows', 'error');
+                    categorySelect.focus();
                     isValid = false;
                     return;
                 }
+                
+                // Check for duplicate categories
+                if (usedCategories.has(categorySelect.value)) {
+                    showNotification(`Duplicate category "${categorySelect.value}" detected. Please combine or remove duplicates.`, 'error');
+                    categorySelect.focus();
+                    isValid = false;
+                    return;
+                }
+                usedCategories.add(categorySelect.value);
                 
                 const reduction = parseInt(quantityInput.value);
                 const selectedOption = categorySelect.selectedOptions[0];
@@ -2118,12 +3256,14 @@
                 
                 if (!reduction || reduction < 1) {
                     showNotification('Please enter a valid reduction quantity for all rows', 'error');
+                    quantityInput.focus();
                     isValid = false;
                     return;
                 }
                 
                 if (reduction > currentStaff) {
                     showNotification(`Cannot reduce more staff than currently employed in ${categorySelect.value}`, 'error');
+                    quantityInput.focus();
                     isValid = false;
                     return;
                 }
@@ -2145,22 +3285,35 @@
             
             // Show confirmation dialog
             const totalReduction = reductionData.reduce((sum, item) => sum + item.reductionQuantity, 0);
-            if (confirm(`Are you sure you want to reduce ${totalReduction} staff members across ${reductionData.length} categories? This action cannot be undone.`)) {
+            const confirmMessage = `Are you sure you want to reduce ${totalReduction} staff member${totalReduction > 1 ? 's' : ''} across ${reductionData.length} categor${reductionData.length > 1 ? 'ies' : 'y'}?\n\nThis action cannot be undone.`;
+            
+            if (confirm(confirmMessage)) {
                 // Get uploaded files
                 const fileInput = document.getElementById('reductionDocs');
                 const files = fileInput.files;
                 
-                // Here you would normally send the data to the server
-                console.log('Staff Reduction Data:', reductionData);
-                console.log('Reduction Documentation:', files);
+                // Show loading state
+                const confirmBtn = event.target;
+                confirmBtn.classList.add('loading');
+                confirmBtn.disabled = true;
                 
-                // Simulate saving
-                showNotification('Staff reduction processed successfully!', 'success');
-                closeReduceStaffDrawer();
-                
-                // Update the workforce display
-                updateStatsAfterReduction(reductionData);
-                updateStats();
+                // Simulate API call with timeout
+                setTimeout(() => {
+                    // Here you would normally send the data to the server
+                    console.log('Staff Reduction Data:', reductionData);
+                    console.log('Reduction Documentation:', files);
+                    
+                    confirmBtn.classList.remove('loading');
+                    confirmBtn.disabled = false;
+                    
+                    // Simulate success
+                    showNotification(`Successfully reduced ${totalReduction} staff members!`, 'success');
+                    closeReduceStaffDrawer();
+                    
+                    // Update the workforce display
+                    updateStatsAfterReduction(reductionData);
+                    updateStats();
+                }, 1500);
             }
         }
 
@@ -2558,6 +3711,27 @@
         </div>
     </div>
 
+    <!-- View Job Applications Drawer -->
+    <div class="drawer-overlay" id="viewApplicationsDrawer">
+        <div class="drawer-panel drawer-panel-wide">
+            <div class="drawer-header">
+                <div>
+                    <h3><i class="fas fa-clipboard-list"></i> <span id="jobApplicationsTitle">Job Applications</span></h3>
+                    <p style="margin: 4px 0 0 0; color: var(--text-secondary); font-size: 14px;" id="jobApplicationsCount">0 Applications</p>
+                </div>
+                <button class="close-drawer" onclick="closeViewApplicationsDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="drawer-content">
+                <div id="jobApplicationsList" class="job-applications-container">
+                    <!-- Applications will be dynamically loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Bulk Staff Drawer -->
     <div class="drawer-overlay" id="bulkStaffDrawer">
         <div class="drawer-panel">
@@ -2711,6 +3885,363 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Freelancer Details Drawer -->
+    <div class="drawer-overlay" id="freelancerDetailsDrawer">
+        <div class="drawer-panel">
+            <div class="drawer-header">
+                <h3><i class="fas fa-user-circle"></i> Freelancer Details</h3>
+                <button class="close-drawer" onclick="closeFreelancerDetailsDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="drawer-content">
+                <div class="freelancer-details-content">
+                    <!-- Profile Section -->
+                    <div class="detail-section">
+                        <div class="freelancer-profile-header">
+                            <div class="freelancer-profile-avatar" id="freelancerAvatar">KP</div>
+                            <div class="freelancer-profile-info">
+                                <h4 id="freelancerFullName">Kasun Perera</h4>
+                                <span class="freelancer-profile-specialty" id="freelancerSpecialty">MOBILE PHONE REPAIR</span>
+                                <div class="freelancer-profile-stats">
+                                    <span class="stat-item">
+                                        <i class="fas fa-star"></i>
+                                        <span id="freelancerRating">4.8</span>
+                                    </span>
+                                    <span class="stat-item">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span id="freelancerCompletedJobs">0</span> jobs
+                                    </span>
+                                    <span class="stat-item">
+                                        <i class="fas fa-clock"></i>
+                                        <span id="freelancerResponseTime">0</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="detail-section">
+                        <h4 class="section-title"><i class="fas fa-address-book"></i> Contact Information</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label"><i class="fas fa-envelope"></i> Email</span>
+                                <span class="info-value" id="freelancerEmail">kasun.perera@email.com</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="fas fa-phone"></i> Phone</span>
+                                <span class="info-value" id="freelancerPhone">+94 77 123 4567</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Experience & Rate -->
+                    <div class="detail-section">
+                        <h4 class="section-title"><i class="fas fa-briefcase"></i> Experience & Rate</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label"><i class="fas fa-calendar-alt"></i> Experience</span>
+                                <span class="info-value" id="freelancerExperience">5 years</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="fas fa-money-bill-wave"></i> Hourly Rate</span>
+                                <span class="info-value" id="freelancerHourlyRate">LKR 2,500/hr</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Availability Status -->
+                    <div class="detail-section">
+                        <h4 class="section-title"><i class="fas fa-info-circle"></i> Availability</h4>
+                        <div class="availability-status" id="freelancerAvailabilityStatus">
+                            <span class="status-badge available">AVAILABLE</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="detail-actions">
+                        <button class="action-btn primary" onclick="openAssignJobDrawer()">
+                            <i class="fas fa-plus"></i> Assign to Job
+                        </button>
+                        <button class="action-btn secondary" onclick="contactFreelancer()">
+                            <i class="fas fa-envelope"></i> Send Message
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Job Drawer -->
+    <div class="drawer-overlay" id="assignJobDrawer">
+        <div class="drawer-panel">
+            <div class="drawer-header">
+                <h3><i class="fas fa-briefcase"></i> Assign Job to Freelancer</h3>
+                <button class="close-drawer" onclick="closeAssignJobDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="drawer-content">
+                <form id="assignJobForm" class="assign-job-form">
+                    <!-- Freelancer Info (Read-only) -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-user"></i> Freelancer</h4>
+                        <div class="selected-freelancer-info">
+                            <div class="freelancer-mini-card">
+                                <div class="freelancer-mini-avatar" id="assignFreelancerAvatar">KP</div>
+                                <div class="freelancer-mini-details">
+                                    <strong id="assignFreelancerName">Kasun Perera</strong>
+                                    <span id="assignFreelancerSpecialty">Mobile Phone Repair</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Job Selection -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-briefcase"></i> Select Job/Project</h4>
+                        <div class="form-group">
+                            <label for="jobSelect"><i class="fas fa-tasks"></i> Available Jobs <span class="required">*</span></label>
+                            <select id="jobSelect" class="form-control" required>
+                                <option value="">-- Select a job to assign --</option>
+                                <option value="job1">Mobile Repair - Customer A (Project #12345)</option>
+                                <option value="job2">Screen Replacement - Customer B (Project #12346)</option>
+                                <option value="job3">Battery Replacement - Customer C (Project #12347)</option>
+                                <option value="job4">Device Diagnostics - Customer D (Project #12348)</option>
+                                <option value="job5">Water Damage Repair - Customer E (Project #12349)</option>
+                            </select>
+                            <span class="helper-text"><i class="fas fa-info-circle"></i> Select the project you want to assign to this freelancer</span>
+                        </div>
+                    </div>
+
+                    <!-- Job Details -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-info-circle"></i> Assignment Details</h4>
+                        
+                        <div class="form-group">
+                            <label for="assignmentStartDate"><i class="fas fa-calendar-day"></i> Start Date <span class="required">*</span></label>
+                            <input type="date" id="assignmentStartDate" class="form-control" required>
+                            <span class="helper-text"><i class="fas fa-info-circle"></i> When should the freelancer begin work?</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="assignmentDeadline"><i class="fas fa-calendar-check"></i> Deadline <span class="required">*</span></label>
+                            <input type="date" id="assignmentDeadline" class="form-control" required>
+                            <span class="helper-text"><i class="fas fa-info-circle"></i> Expected completion date for this assignment</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="estimatedHours"><i class="fas fa-clock"></i> Estimated Hours <span class="required">*</span></label>
+                            <input type="number" id="estimatedHours" class="form-control" min="1" step="0.5" placeholder="e.g., 8 or 8.5" required>
+                            <span class="helper-text"><i class="fas fa-info-circle"></i> Approximate hours needed to complete the job</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="agreedRate"><i class="fas fa-money-bill-wave"></i> Agreed Hourly Rate (LKR) <span class="required">*</span></label>
+                            <input type="number" id="agreedRate" class="form-control" min="0" step="100" placeholder="e.g., 2500" required>
+                            <span class="helper-text"><i class="fas fa-info-circle"></i> Hourly rate for this specific assignment</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="assignmentNotes"><i class="fas fa-sticky-note"></i> Additional Notes</label>
+                            <textarea id="assignmentNotes" class="form-control" rows="4" placeholder="Add any special instructions, requirements, or notes for the freelancer..."></textarea>
+                            <span class="helper-text"><i class="fas fa-info-circle"></i> Optional: Include any specific requirements or instructions</span>
+                        </div>
+                    </div>
+
+                    <!-- Cost Summary -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-calculator"></i> Cost Estimate</h4>
+                        <div class="cost-summary">
+                            <div class="cost-item">
+                                <span><i class="fas fa-clock"></i> Estimated Hours</span>
+                                <span id="summaryHours">0 hrs</span>
+                            </div>
+                            <div class="cost-item">
+                                <span><i class="fas fa-money-bill"></i> Hourly Rate</span>
+                                <span id="summaryRate">LKR 0</span>
+                            </div>
+                            <div class="cost-item total">
+                                <span><i class="fas fa-calculator"></i> Total Estimated Cost</span>
+                                <span id="summaryTotal">LKR 0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="drawer-btn secondary" onclick="closeAssignJobDrawer()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="drawer-btn primary">
+                            <i class="fas fa-check"></i> Confirm Assignment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Job Drawer -->
+    <div class="drawer-overlay" id="assignJobDrawer">
+        <div class="drawer-panel">
+            <div class="drawer-header">
+                <h3><i class="fas fa-briefcase"></i> Assign Job</h3>
+                <button class="close-drawer" onclick="closeAssignJobDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="drawer-content">
+                <form id="assignJobForm" class="assign-job-form" onsubmit="return handleJobAssignment(event)">
+                    <!-- Person Info (Read-only) -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-user"></i> Assigned To</h4>
+                        <div class="selected-person-info">
+                            <div class="person-mini-card">
+                                <div class="person-mini-avatar" id="assignPersonAvatar">KP</div>
+                                <div class="person-mini-details">
+                                    <div class="person-mini-name" id="assignPersonName">Kasun Perera</div>
+                                    <div class="person-mini-specialty" id="assignPersonSpecialty">Mobile Phone Repair</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Job Selection -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-tasks"></i> Select Job/Project <span class="required">*</span></h4>
+                        <small class="form-helper-top">Select the project you want to assign to this freelancer</small>
+                        <select id="assignJobSelect" class="form-control" required>
+                            <option value="">-- Select a job --</option>
+                            <option value="job1">Mobile Repair - Customer A (Project #12345)</option>
+                            <option value="job2">Screen Replacement - Customer B (Project #12346)</option>
+                            <option value="job3">Battery Replacement - Customer C (Project #12347)</option>
+                            <option value="job4">Device Diagnostics - Customer D (Project #12348)</option>
+                            <option value="job5">Water Damage Repair - Customer E (Project #12349)</option>
+                        </select>
+                    </div>
+
+                    <!-- Assignment Details -->
+                    <div class="form-section">
+                        <h4><i class="fas fa-calendar"></i> Assignment Details</h4>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="assignStartDate">Start Date <span class="required">*</span></label>
+                                <small class="form-helper-top">When should work begin?</small>
+                                <input type="date" id="assignStartDate" class="form-control" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="assignDeadline">Deadline <span class="required">*</span></label>
+                                <small class="form-helper-top">Expected completion date</small>
+                                <input type="date" id="assignDeadline" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="assignEstimatedHours">Estimated Hours <span class="required">*</span></label>
+                                <small class="form-helper-top">Approximate hours needed to complete</small>
+                                <input type="number" id="assignEstimatedHours" class="form-control" 
+                                       min="1" step="0.5" placeholder="e.g., 8 or 8.5" 
+                                       oninput="updateAssignmentCost()" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="assignHourlyRate">
+                                    <i class="fas fa-lock"></i> Hourly Rate (LKR) 
+                                    <span class="fixed-rate-badge">FIXED</span>
+                                </label>
+                                <small class="form-helper-top">
+                                    <i class="fas fa-info-circle"></i> Rate from repairer's application (cannot be changed)
+                                </small>
+                                <input type="number" id="assignHourlyRate" class="form-control readonly-field" 
+                                       readonly disabled
+                                       min="100" step="100" placeholder="Loading rate...">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="assignNotes">Additional Notes</label>
+                            <small class="form-helper-top">Optional: Include any specific requirements or instructions</small>
+                            <textarea id="assignNotes" class="form-control" rows="4" 
+                                      placeholder="Add any special instructions, requirements, or notes..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Cost Summary -->
+                    <div class="form-section cost-summary">
+                        <h4><i class="fas fa-calculator"></i> Cost Estimate</h4>
+                        <div class="cost-breakdown">
+                            <div class="cost-item">
+                                <span class="cost-label"><i class="fas fa-clock"></i> Estimated Hours:</span>
+                                <span class="cost-value"><span id="assignCostHours">0</span> hrs</span>
+                            </div>
+                            <div class="cost-item">
+                                <span class="cost-label"><i class="fas fa-money-bill-wave"></i> Hourly Rate:</span>
+                                <span class="cost-value">LKR <span id="assignCostRate">0</span></span>
+                            </div>
+                            <div class="cost-divider"></div>
+                            <div class="cost-item total">
+                                <span class="cost-label"><i class="fas fa-calculator"></i> Total Estimated Cost:</span>
+                                <span class="cost-value total-value">LKR <span id="assignCostTotal">0</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="drawer-actions">
+                        <button type="button" class="btn-cancel" onclick="closeAssignJobDrawer()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn-confirm">
+                            <i class="fas fa-check"></i> Confirm Assignment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Drawer -->
+    <div class="drawer-overlay" id="chatDrawer">
+        <div class="drawer-panel">
+            <div class="drawer-header">
+                <div class="chat-header-info">
+                    <div class="chat-header-avatar" id="chatPersonAvatar">KP</div>
+                    <div class="chat-header-details">
+                        <h3 id="chatPersonName">Kasun Perera</h3>
+                        <span class="chat-header-specialty" id="chatPersonSpecialty">Mobile Phone Repair</span>
+                    </div>
+                </div>
+                <button class="close-drawer" onclick="closeChatDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="drawer-content chat-content">
+                <div class="chat-messages-container" id="chatMessagesContainer">
+                    <!-- Messages will be loaded dynamically -->
+                </div>
+            </div>
+
+            <div class="chat-input-section">
+                <input type="text" 
+                       id="chatMessageInput" 
+                       class="chat-input" 
+                       placeholder="Type your message..." 
+                       onkeypress="handleChatKeyPress(event)">
+                <button class="chat-send-btn" onclick="sendChatMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
             </div>
         </div>
     </div>

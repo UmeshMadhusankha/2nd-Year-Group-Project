@@ -3,10 +3,10 @@ function loadComponent(containerId, componentFile) {
         .then(response => response.text())
         .then(data => {
             document.getElementById(containerId).innerHTML = data;
-            if (componentFile === 'sidebar.html' && typeof initializeSidebar === 'function') {
+            if (componentFile.includes('sidebar') && typeof initializeSidebar === 'function') {
                 initializeSidebar();
             }
-            if (componentFile === 'topbar.html' && typeof initializeTopbar === 'function') {
+            if (componentFile.includes('topbar') && typeof initializeTopbar === 'function') {
                 initializeTopbar();
             }
         })
@@ -14,6 +14,15 @@ function loadComponent(containerId, componentFile) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    loadComponent('sidebar-container', 'sidebar.html');
-    loadComponent('header-container', 'topbar.html');
+    // Load sidebar and topbar PHP components
+    if (document.getElementById('sidebar-container')) {
+        loadComponent('sidebar-container', 'sidebar.php');
+    }
+    if (document.getElementById('topbar-container')) {
+        loadComponent('topbar-container', 'topbar.php');
+    }
+    // Legacy support for header-container
+    if (document.getElementById('header-container')) {
+        loadComponent('header-container', 'topbar.php');
+    }
 });

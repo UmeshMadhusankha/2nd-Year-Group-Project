@@ -47,7 +47,7 @@
                                         <i class="fas fa-download"></i>
                                         Export
                                     </button>
-                                    <button class="action-btn primary">
+                                    <button class="action-btn primary" id="newContractBtn">
                                         <i class="fas fa-plus"></i>
                                         New Contract
                                     </button>
@@ -189,7 +189,89 @@
                         </div>
                     </div>
 
-                    <!-- Contract Card 2 -->
+                    <!-- Contract Card 2 - REJECTED (With Chat) -->
+                    <div class="contract-card" data-status="rejected" data-type="construction">
+                        <div class="contract-header">
+                            <div class="contract-info">
+                                <h3>Shopping Mall Construction</h3>
+                                <p class="contract-id">Contract #CNT-2025-011</p>
+                            </div>
+                            <div class="contract-status rejected">
+                                <i class="fas fa-times-circle"></i>
+                                Rejected by Customer
+                            </div>
+                        </div>
+
+                        <div class="client-info">
+                            <div class="client-avatar">JD</div>
+                            <div class="client-details">
+                                <h4>John Doe Enterprises</h4>
+                                <p>Commercial Client</p>
+                                <span class="contract-value">LKR 1,500,000</span>
+                            </div>
+                        </div>
+
+                        <div class="contract-details">
+                            <div class="detail-row">
+                                <i class="fas fa-calendar-alt detail-icon"></i>
+                                <span class="detail-label">Start Date:</span>
+                                <span class="detail-value">Nov 1, 2025</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-calendar-check detail-icon"></i>
+                                <span class="detail-label">End Date:</span>
+                                <span class="detail-value">Mar 1, 2026</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-exclamation-triangle detail-icon" style="color: #ef4444;"></i>
+                                <span class="detail-label">Rejected:</span>
+                                <span class="detail-value" style="color: #ef4444;">Budget concerns</span>
+                            </div>
+                        </div>
+
+                        <div class="contract-description">
+                            <p><strong style="color: #ef4444;">⚠️ Customer Feedback:</strong> Budget too high and timeline too tight. Willing to negotiate terms.</p>
+                        </div>
+
+                        <div class="card-actions">
+                            <button class="action-btn danger" title="Open Chat" onclick="openNegotiationModal({
+                                id: 'CNT-2025-011',
+                                title: 'Shopping Mall Construction',
+                                status: 'rejected',
+                                client: 'John Doe Enterprises',
+                                value: 'LKR 1,500,000',
+                                rejectionReason: 'Budget too high and timeline too tight',
+                                rejectionDate: 'October 20, 2025 at 2:45 PM'
+                            })">
+                                <i class="fas fa-comments"></i>
+                                Open Chat
+                            </button>
+                            <button class="action-btn warning" title="Edit & Revise Contract" onclick="handleEditContract({
+                                id: 'CNT-2025-011',
+                                title: 'Shopping Mall Construction',
+                                client: 'John Doe Enterprises',
+                                type: 'construction',
+                                value: 1500000,
+                                startDate: '2025-11-01',
+                                endDate: '2026-03-01',
+                                description: 'Large shopping mall construction project'
+                            })">
+                                <i class="fas fa-edit"></i>
+                                <span>Edit & Revise</span>
+                            </button>
+                            <button class="action-btn secondary" title="View Details" onclick="handleViewContract({
+                                id: 'CNT-2025-011',
+                                title: 'Shopping Mall Construction',
+                                client: 'John Doe Enterprises',
+                                status: 'rejected'
+                            })">
+                                <i class="fas fa-eye"></i>
+                                Details
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contract Card 3 -->
                     <div class="contract-card" data-status="pending" data-type="maintenance">
                         <div class="contract-header">
                             <div class="contract-info">
@@ -1203,8 +1285,651 @@
         </div>
     </div>
 
+    <!-- New Contract Modal -->
+    <div class="modal-overlay" id="newContractModal">
+        <div class="modal-container form-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> <span id="formModalTitle">Create New Contract</span></h2>
+                <button class="modal-close" id="newContractClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <form id="contractForm" class="contract-form">
+                    <!-- Step Indicators -->
+                    <div class="form-steps">
+                        <div class="form-step-indicator active" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Client Info</div>
+                        </div>
+                        <div class="form-step-indicator" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Project Details</div>
+                        </div>
+                        <div class="form-step-indicator" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Financial Terms</div>
+                        </div>
+                        <div class="form-step-indicator" data-step="4">
+                            <div class="step-number">4</div>
+                            <div class="step-label">Review</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 1: Client Information -->
+                    <div class="form-step-content active" data-step="1">
+                        <h3><i class="fas fa-user-tie"></i> Client Information</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="clientName">Client Name <span class="required">*</span></label>
+                                <input type="text" id="clientName" name="clientName" required placeholder="Enter client name">
+                            </div>
+                            <div class="form-group">
+                                <label for="clientType">Client Type <span class="required">*</span></label>
+                                <select id="clientType" name="clientType" required>
+                                    <option value="">Select type</option>
+                                    <option value="residential">Residential</option>
+                                    <option value="commercial">Commercial</option>
+                                    <option value="industrial">Industrial</option>
+                                    <option value="government">Government</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="contactPerson">Contact Person <span class="required">*</span></label>
+                                <input type="text" id="contactPerson" name="contactPerson" required placeholder="Enter contact person name">
+                            </div>
+                            <div class="form-group">
+                                <label for="clientEmail">Email Address <span class="required">*</span></label>
+                                <input type="email" id="clientEmail" name="clientEmail" required placeholder="client@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="clientPhone">Phone Number <span class="required">*</span></label>
+                                <input type="tel" id="clientPhone" name="clientPhone" required placeholder="+94 77 123 4567">
+                            </div>
+                            <div class="form-group">
+                                <label for="clientAddress">Address</label>
+                                <input type="text" id="clientAddress" name="clientAddress" placeholder="Enter address">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Project Details -->
+                    <div class="form-step-content" data-step="2">
+                        <h3><i class="fas fa-project-diagram"></i> Project Details</h3>
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="projectTitle">Project Title <span class="required">*</span></label>
+                                <input type="text" id="projectTitle" name="projectTitle" required placeholder="Enter project title">
+                            </div>
+                            <div class="form-group">
+                                <label for="projectType">Project Type <span class="required">*</span></label>
+                                <select id="projectType" name="projectType" required>
+                                    <option value="">Select type</option>
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="repair">Repair</option>
+                                    <option value="installation">Installation</option>
+                                    <option value="renovation">Renovation</option>
+                                    <option value="construction">Construction</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="projectLocation">Location <span class="required">*</span></label>
+                                <input type="text" id="projectLocation" name="projectLocation" required placeholder="Project location">
+                            </div>
+                            <div class="form-group">
+                                <label for="startDate">Start Date <span class="required">*</span></label>
+                                <input type="date" id="startDate" name="startDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="endDate">End Date <span class="required">*</span></label>
+                                <input type="date" id="endDate" name="endDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="priority">Priority</label>
+                                <select id="priority" name="priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="assignedTeam">Assigned Team</label>
+                                <select id="assignedTeam" name="assignedTeam">
+                                    <option value="">Select team</option>
+                                    <option value="team-alpha">Team Alpha</option>
+                                    <option value="team-beta">Team Beta</option>
+                                    <option value="team-gamma">Team Gamma</option>
+                                    <option value="team-delta">Team Delta</option>
+                                </select>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="projectDescription">Project Description <span class="required">*</span></label>
+                                <textarea id="projectDescription" name="projectDescription" rows="4" required placeholder="Describe the project scope and requirements..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Financial Terms -->
+                    <div class="form-step-content" data-step="3">
+                        <h3><i class="fas fa-dollar-sign"></i> Financial Terms</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="contractValue">Contract Value (LKR) <span class="required">*</span></label>
+                                <input type="number" id="contractValue" name="contractValue" required placeholder="150000" min="0" step="1000">
+                            </div>
+                            <div class="form-group">
+                                <label for="contractType">Contract Type <span class="required">*</span></label>
+                                <select id="contractType" name="contractType" required>
+                                    <option value="">Select type</option>
+                                    <option value="fixed-price">Fixed Price</option>
+                                    <option value="time-material">Time & Material</option>
+                                    <option value="cost-plus">Cost Plus</option>
+                                    <option value="retainer">Retainer</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="paymentTerms">Payment Terms <span class="required">*</span></label>
+                                <select id="paymentTerms" name="paymentTerms" required>
+                                    <option value="">Select terms</option>
+                                    <option value="full-upfront">Full Payment Upfront</option>
+                                    <option value="50-50">50% Upfront, 50% on Completion</option>
+                                    <option value="installments-3">3 Installments</option>
+                                    <option value="installments-4">4 Installments</option>
+                                    <option value="monthly">Monthly Payments</option>
+                                    <option value="milestone">Milestone Based</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="advancePayment">Advance Payment (LKR)</label>
+                                <input type="number" id="advancePayment" name="advancePayment" placeholder="50000" min="0" step="1000">
+                            </div>
+                            <div class="form-group">
+                                <label for="currency">Currency</label>
+                                <select id="currency" name="currency">
+                                    <option value="LKR" selected>Sri Lankan Rupee (LKR)</option>
+                                    <option value="USD">US Dollar (USD)</option>
+                                    <option value="EUR">Euro (EUR)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="taxRate">Tax Rate (%)</label>
+                                <input type="number" id="taxRate" name="taxRate" placeholder="15" min="0" max="100" step="0.1">
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="paymentNotes">Payment Notes</label>
+                                <textarea id="paymentNotes" name="paymentNotes" rows="3" placeholder="Additional payment terms or conditions..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Review -->
+                    <div class="form-step-content" data-step="4">
+                        <h3><i class="fas fa-check-circle"></i> Review Contract Details</h3>
+                        <div class="review-container">
+                            <div class="review-section">
+                                <h4><i class="fas fa-user-tie"></i> Client Information</h4>
+                                <div class="review-grid">
+                                    <div class="review-item"><label>Client Name:</label><span id="reviewClientName">-</span></div>
+                                    <div class="review-item"><label>Client Type:</label><span id="reviewClientType">-</span></div>
+                                    <div class="review-item"><label>Contact Person:</label><span id="reviewContactPerson">-</span></div>
+                                    <div class="review-item"><label>Email:</label><span id="reviewClientEmail">-</span></div>
+                                    <div class="review-item"><label>Phone:</label><span id="reviewClientPhone">-</span></div>
+                                    <div class="review-item"><label>Address:</label><span id="reviewClientAddress">-</span></div>
+                                </div>
+                            </div>
+                            <div class="review-section">
+                                <h4><i class="fas fa-project-diagram"></i> Project Details</h4>
+                                <div class="review-grid">
+                                    <div class="review-item"><label>Project Title:</label><span id="reviewProjectTitle">-</span></div>
+                                    <div class="review-item"><label>Project Type:</label><span id="reviewProjectType">-</span></div>
+                                    <div class="review-item"><label>Location:</label><span id="reviewProjectLocation">-</span></div>
+                                    <div class="review-item"><label>Start Date:</label><span id="reviewStartDate">-</span></div>
+                                    <div class="review-item"><label>End Date:</label><span id="reviewEndDate">-</span></div>
+                                    <div class="review-item"><label>Priority:</label><span id="reviewPriority">-</span></div>
+                                    <div class="review-item full-width"><label>Description:</label><span id="reviewDescription">-</span></div>
+                                </div>
+                            </div>
+                            <div class="review-section">
+                                <h4><i class="fas fa-dollar-sign"></i> Financial Terms</h4>
+                                <div class="review-grid">
+                                    <div class="review-item"><label>Contract Value:</label><span id="reviewContractValue">-</span></div>
+                                    <div class="review-item"><label>Contract Type:</label><span id="reviewContractType">-</span></div>
+                                    <div class="review-item"><label>Payment Terms:</label><span id="reviewPaymentTerms">-</span></div>
+                                    <div class="review-item"><label>Advance Payment:</label><span id="reviewAdvancePayment">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="formPrevBtn" style="display: none;">
+                    <i class="fas fa-arrow-left"></i> Previous
+                </button>
+                <button type="button" class="btn btn-outline" id="formCancelBtn">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="formNextBtn">
+                    Next <i class="fas fa-arrow-right"></i>
+                </button>
+                <button type="button" class="btn btn-primary" id="formSubmitBtn" style="display: none;">
+                    <i class="fas fa-check"></i> Create Contract
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Contract Modal -->
+    <div class="modal-overlay" id="sendContractModal">
+        <div class="modal-container small-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-paper-plane"></i> Send Contract</h2>
+                <button class="modal-close" id="sendModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <form id="sendContractForm" class="send-form">
+                    <div class="form-group">
+                        <label for="sendToEmail">Recipient Email <span class="required">*</span></label>
+                        <input type="email" id="sendToEmail" name="sendToEmail" required placeholder="client@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="sendCcEmail">CC (Optional)</label>
+                        <input type="email" id="sendCcEmail" name="sendCcEmail" placeholder="manager@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="sendSubject">Subject <span class="required">*</span></label>
+                        <input type="text" id="sendSubject" name="sendSubject" required value="Contract Agreement - FixLanka">
+                    </div>
+                    <div class="form-group">
+                        <label for="sendMessage">Message <span class="required">*</span></label>
+                        <textarea id="sendMessage" name="sendMessage" rows="6" required>Dear Client,
+
+Please find attached the contract agreement for your review. Kindly review the terms and conditions and provide your signature if everything is in order.
+
+If you have any questions or concerns, please don't hesitate to contact us.
+
+Best regards,
+FixLanka Team</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="sendCopy" name="sendCopy" checked>
+                            <span>Send a copy to myself</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="requestSignature" name="requestSignature" checked>
+                            <span>Request digital signature</span>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="sendCancelBtn">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="sendSubmitBtn">
+                    <i class="fas fa-paper-plane"></i> Send Contract
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-container confirmation-modal">
+            <div class="modal-header warning">
+                <h2><i class="fas fa-exclamation-triangle"></i> Confirm Delete</h2>
+                <button class="modal-close" id="deleteModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <p class="warning-text">Are you sure you want to delete this contract?</p>
+                <p class="contract-info-text" id="deleteContractInfo">Contract Title</p>
+                <p class="warning-note"><strong>Warning:</strong> This action cannot be undone. All contract data, documents, and history will be permanently deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="deleteCancelBtn">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="deleteConfirmBtn">
+                    <i class="fas fa-trash"></i> Delete Contract
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contract Negotiation/Chat Modal -->
+    <div class="modal-overlay" id="negotiationModal">
+        <div class="modal-container chat-modal">
+            <div class="modal-header">
+                <div class="chat-header-info">
+                    <h2><i class="fas fa-comments"></i> Contract Negotiation</h2>
+                    <p class="chat-contract-title" id="chatContractTitle">Contract Title</p>
+                    <div class="contract-status-badge rejected" id="chatContractStatus">
+                        <i class="fas fa-times-circle"></i> Rejected by Customer
+                    </div>
+                </div>
+                <button class="modal-close" id="negotiationModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="chat-container">
+                <!-- Rejection Reason Banner (if rejected) -->
+                <div class="rejection-banner" id="rejectionBanner" style="display: none;">
+                    <div class="rejection-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="rejection-details">
+                        <h4>Customer Rejected Contract</h4>
+                        <p class="rejection-reason" id="rejectionReason">Reason: Budget concerns and timeline too tight</p>
+                        <p class="rejection-date" id="rejectionDate">Rejected on: October 20, 2025 at 2:45 PM</p>
+                        <button class="rejection-cta-btn" id="editContractFromBanner">
+                            <i class="fas fa-edit"></i>
+                            Edit Contract Now
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Bar -->
+                <div class="chat-quick-actions">
+                    <button class="quick-action-btn primary-action" id="reviseContractBtn" title="Open contract editor to make changes">
+                        <i class="fas fa-edit"></i>
+                        <span>Edit Contract</span>
+                    </button>
+                    <button class="quick-action-btn" id="viewOriginalBtn" title="View full contract details">
+                        <i class="fas fa-file-alt"></i>
+                        <span>View Original</span>
+                    </button>
+                    <button class="quick-action-btn" id="sendRevisedBtn" title="Send updated contract to customer">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Send Revised</span>
+                    </button>
+                    <button class="quick-action-btn danger" id="withdrawContractBtn" title="Cancel this contract permanently">
+                        <i class="fas fa-ban"></i>
+                        <span>Withdraw</span>
+                    </button>
+                </div>
+
+                <!-- Chat Messages -->
+                <div class="chat-messages" id="chatMessages">
+                    <!-- System Message -->
+                    <div class="chat-message system-message">
+                        <div class="message-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="message-content">
+                            <p><strong>Contract Sent</strong></p>
+                            <p>You sent this contract to the customer for review.</p>
+                            <span class="message-time">October 18, 2025 at 10:30 AM</span>
+                        </div>
+                    </div>
+
+                    <!-- Customer Message -->
+                    <div class="chat-message customer-message">
+                        <div class="message-avatar">JD</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-sender">John Doe</span>
+                                <span class="message-role">Customer</span>
+                            </div>
+                            <p>Thank you for sending the contract. I've reviewed it carefully, but I have some concerns about the timeline and budget.</p>
+                            <span class="message-time">October 19, 2025 at 3:15 PM</span>
+                        </div>
+                    </div>
+
+                    <!-- Company Response -->
+                    <div class="chat-message company-message">
+                        <div class="message-avatar company">FL</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-sender">FixLanka Team</span>
+                                <span class="message-role">Company</span>
+                            </div>
+                            <p>We understand your concerns. What specific aspects would you like us to adjust?</p>
+                            <span class="message-time">October 19, 2025 at 4:00 PM</span>
+                        </div>
+                    </div>
+
+                    <!-- System Message - Rejection -->
+                    <div class="chat-message system-message rejection-message">
+                        <div class="message-icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="message-content">
+                            <p><strong>Contract Rejected</strong></p>
+                            <p>The customer has declined the current contract terms.</p>
+                            <p class="rejection-details"><strong>Reason:</strong> Budget concerns and timeline too tight</p>
+                            <span class="message-time">October 20, 2025 at 2:45 PM</span>
+                        </div>
+                    </div>
+
+                    <!-- Customer Explanation -->
+                    <div class="chat-message customer-message">
+                        <div class="message-avatar">JD</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-sender">John Doe</span>
+                                <span class="message-role">Customer</span>
+                            </div>
+                            <p>The proposed budget of LKR 250,000 is above our limit. We can go up to LKR 180,000. Also, can we extend the timeline from 60 days to 90 days?</p>
+                            <span class="message-time">October 20, 2025 at 2:50 PM</span>
+                        </div>
+                    </div>
+
+                    <!-- Typing Indicator (hidden by default) -->
+                    <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <span class="typing-text">Customer is typing...</span>
+                    </div>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="chat-input-container">
+                    <div class="chat-input-wrapper">
+                        <textarea 
+                            id="chatInput" 
+                            class="chat-input" 
+                            placeholder="Type your message to the customer..."
+                            rows="1"
+                        ></textarea>
+                        <div class="chat-input-actions">
+                            <button class="input-action-btn" id="attachFileBtn" title="Attach File">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <button class="input-action-btn" id="sendMessageBtn" title="Send Message">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="message-tips">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>Tip: Be professional and address customer concerns clearly. Use "Revise Contract" to update terms.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer chat-footer">
+                <div class="footer-left">
+                    <span class="chat-status">
+                        <i class="fas fa-circle online"></i>
+                        Customer active 5 minutes ago
+                    </span>
+                </div>
+                <div class="footer-right">
+                    <button type="button" class="btn btn-outline" id="closeNegotiationBtn">
+                        <i class="fas fa-times"></i> Close Chat
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contract Status Update Modal -->
+    <div class="modal-overlay" id="statusUpdateModal">
+        <div class="modal-container small-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-sync-alt"></i> Update Contract Status</h2>
+                <button class="modal-close" id="statusUpdateClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <form id="statusUpdateForm">
+                    <div class="status-current">
+                        <label>Current Status:</label>
+                        <div class="status-badge" id="currentStatusBadge">Rejected</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newStatus">Change Status To: <span class="required">*</span></label>
+                        <select id="newStatus" name="newStatus" required>
+                            <option value="">Select new status</option>
+                            <option value="draft">Draft</option>
+                            <option value="sent">Sent to Customer</option>
+                            <option value="under-review">Under Review</option>
+                            <option value="negotiating">Negotiating</option>
+                            <option value="accepted">Accepted by Customer</option>
+                            <option value="active">Active (Work Started)</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="withdrawn">Withdrawn</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="statusNotes">Notes (Optional):</label>
+                        <textarea id="statusNotes" name="statusNotes" rows="3" placeholder="Add any notes about this status change..."></textarea>
+                    </div>
+
+                    <div class="status-info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <p><strong>Status Workflow:</strong></p>
+                        <ul>
+                            <li><strong>Draft</strong> → Contract being prepared</li>
+                            <li><strong>Sent</strong> → Awaiting customer response</li>
+                            <li><strong>Under Review</strong> → Customer reviewing</li>
+                            <li><strong>Rejected</strong> → Customer declined</li>
+                            <li><strong>Negotiating</strong> → Changes being discussed</li>
+                            <li><strong>Accepted</strong> → Customer agreed</li>
+                            <li><strong>Active</strong> → Work in progress</li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="statusUpdateCancel">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="statusUpdateSubmit">
+                    <i class="fas fa-check"></i> Update Status
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rejection Reason Modal (Customer View Simulation) -->
+    <div class="modal-overlay" id="rejectionModal">
+        <div class="modal-container small-modal">
+            <div class="modal-header warning">
+                <h2><i class="fas fa-times-circle"></i> Reject Contract</h2>
+                <button class="modal-close" id="rejectionModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <p class="modal-description">Please provide a reason for rejecting this contract. This will help us understand your concerns and make necessary adjustments.</p>
+                
+                <form id="rejectionForm">
+                    <div class="form-group">
+                        <label>Primary Reason: <span class="required">*</span></label>
+                        <div class="rejection-reasons">
+                            <label class="reason-option">
+                                <input type="radio" name="rejectionReason" value="budget" required>
+                                <span class="reason-text">
+                                    <i class="fas fa-dollar-sign"></i>
+                                    Budget too high
+                                </span>
+                            </label>
+                            <label class="reason-option">
+                                <input type="radio" name="rejectionReason" value="timeline" required>
+                                <span class="reason-text">
+                                    <i class="fas fa-clock"></i>
+                                    Timeline doesn't work
+                                </span>
+                            </label>
+                            <label class="reason-option">
+                                <input type="radio" name="rejectionReason" value="scope" required>
+                                <span class="reason-text">
+                                    <i class="fas fa-project-diagram"></i>
+                                    Project scope mismatch
+                                </span>
+                            </label>
+                            <label class="reason-option">
+                                <input type="radio" name="rejectionReason" value="terms" required>
+                                <span class="reason-text">
+                                    <i class="fas fa-file-contract"></i>
+                                    Payment terms unclear
+                                </span>
+                            </label>
+                            <label class="reason-option">
+                                <input type="radio" name="rejectionReason" value="quality" required>
+                                <span class="reason-text">
+                                    <i class="fas fa-star"></i>
+                                    Quality concerns
+                                </span>
+                            </label>
+                            <label class="reason-option">
+                                <input type="radio" name="rejectionReason" value="other" required>
+                                <span class="reason-text">
+                                    <i class="fas fa-question-circle"></i>
+                                    Other reason
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rejectionDetails">Detailed Explanation: <span class="required">*</span></label>
+                        <textarea 
+                            id="rejectionDetails" 
+                            name="rejectionDetails" 
+                            rows="4" 
+                            required
+                            placeholder="Please explain your concerns in detail. This will help us revise the contract to better meet your needs..."
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="openNegotiation" name="openNegotiation" checked>
+                            <span>I'm willing to negotiate and discuss revisions</span>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="rejectionCancel">
+                    <i class="fas fa-arrow-left"></i> Go Back
+                </button>
+                <button type="button" class="btn btn-danger" id="rejectionSubmit">
+                    <i class="fas fa-times-circle"></i> Submit Rejection
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
-    <script src="../../assets/javascript/company/contracts.js"></script>
+    <script src="../../assets/javascript/company/contracts-enhanced.js"></script>
     <script>
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {

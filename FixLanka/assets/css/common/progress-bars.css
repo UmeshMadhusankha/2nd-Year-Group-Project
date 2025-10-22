@@ -46,12 +46,7 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, 
-    var(--primary-color) 0%, 
-    #08a39e 50%, 
-    var(--primary-color) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 2s ease-in-out infinite;
+  background: var(--primary-color);
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 8px rgba(10, 186, 181, 0.4);
   border-radius: 100px;
@@ -291,12 +286,7 @@
 
 .summary-progress-bar {
   height: 12px;
-  background: linear-gradient(90deg, 
-    var(--primary-color) 0%, 
-    #08a39e 50%, 
-    var(--primary-color) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 2s ease-in-out infinite;
+  background: var(--primary-color);
   border-radius: 100px;
   box-shadow: 0 2px 8px rgba(10, 186, 181, 0.4);
   position: relative;

@@ -531,7 +531,7 @@
                                                 <span class="value">26 Days</span>
                                             </div>
                                         </div>
-                                        <div class="info-card payment-status">
+                                        <div class="info-card">
                                             <div class="info-icon">
                                                 <i class="fas fa-chart-line"></i>
                                             </div>

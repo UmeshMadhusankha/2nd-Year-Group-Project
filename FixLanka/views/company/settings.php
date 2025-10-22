@@ -14,16 +14,14 @@
 </head>
 
 <body>
-    <input type="checkbox" id="sidebar-toggle">
-
-    <div class="dashboard-container">
-        <!-- Sidebar Component -->
+    <div class="app-container">
+        <!-- Include Sidebar -->
         <div id="sidebar-container"></div>
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Header Component -->
-            <div id="header-container"></div>
+            <!-- Include Topbar -->
+            <div id="topbar-container"></div>
 
             <!-- Settings Header -->
             <div class="settings-header">
@@ -38,7 +36,7 @@
                 </div>
             </div>
             <!-- Settings Content -->
-            <div class="settings-container"
+            <div class="settings-container">
                 <!-- Settings Navigation Tabs -->
                 <div class="settings-tabs">
                     <button class="tab-btn active" data-tab="notifications-tab">

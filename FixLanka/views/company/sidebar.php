@@ -45,12 +45,6 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="reviews.php" class="nav-link" data-tooltip="Reviews & Feedback">
-                    <i class="fas fa-star"></i>
-                    <span>Reviews</span>
-                </a>
-            </li>
-            <li class="nav-item">
                 <a href="settings.php" class="nav-link" data-tooltip="Settings">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
@@ -92,9 +86,9 @@
     function handleNavClick(e) {
         console.log('Nav link clicked:', this.textContent.trim()); // Debug log
 
-        // Check if it's a link to another page (repair-requests.php, dashboard.php, projects.php, workforce.php, payments.php, contracts.php, support.php, reviews.php, or settings.php)
+        // Check if it's a link to another page (repair-requests.php, dashboard.php, projects.php, workforce.php, payments.php, contracts.php, support.php, or settings.php)
         const href = this.getAttribute('href');
-        if (href === 'repair-requests.php' || href === 'support.php' || href === 'dashboard.php' || href === 'projects.php' || href === 'workforce.php' || href === 'payments.php' || href === 'contracts.php' || href === 'reviews.php' || href === 'settings.php') {
+        if (href === 'repair-requests.php' || href === 'support.php' || href === 'dashboard.php' || href === 'projects.php' || href === 'workforce.php' || href === 'payments.php' || href === 'contracts.php' || href === 'settings.php') {
             // Extract page name and update topbar if function exists
             const pageName = href.replace('.php', '');
             if (typeof window.updatePageHeader === 'function') {
