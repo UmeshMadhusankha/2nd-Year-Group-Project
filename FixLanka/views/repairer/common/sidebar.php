@@ -16,8 +16,14 @@
             </li>
             <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'my-jobs') ? 'active' : ''; ?>">
                 <a href="my-jobs.php" class="nav-link" data-tooltip="My Jobs">
-                    <i class="fas fa-tasks"></i>
+                    <i class="fas fa-clipboard-list"></i>
                     <span>My Jobs</span>
+                </a>
+            </li>
+            <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'company-jobs') ? 'active' : ''; ?>">
+                <a href="company-jobs.php" class="nav-link" data-tooltip="Company Jobs">
+                    <i class="fas fa-building"></i>
+                    <span>Company Jobs</span>
                 </a>
             </li>
             <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'earnings') ? 'active' : ''; ?>">
@@ -38,16 +44,16 @@
                     <span>My Profile</span>
                 </a>
             </li>
+            <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'subscription') ? 'active' : ''; ?>">
+                <a href="subscription.php" class="nav-link" data-tooltip="Subscription">
+                    <i class="fas fa-crown"></i>
+                    <span>Subscription</span>
+                </a>
+            </li>
             <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'support') ? 'active' : ''; ?>">
                 <a href="support.php" class="nav-link" data-tooltip="Support">
                     <i class="fas fa-life-ring"></i>
                     <span>Support</span>
-                </a>
-            </li>
-            <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'upgrade') ? 'active' : ''; ?>">
-                <a href="upgrade.php" class="nav-link" data-tooltip="Upgrade">
-                    <i class="fas fa-crown"></i>
-                    <span>Upgrade</span>
                 </a>
             </li>
             <li class="nav-item <?php echo (isset($currentPage) && $currentPage == 'settings') ? 'active' : ''; ?>">

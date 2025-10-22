@@ -29,13 +29,22 @@ unset($_SESSION['error']);
                 <p>Join Fix Lanka today</p>
             </div>
             
+            <!-- Role Selection Buttons -->
+            <div class="role-buttons">
+                <button type="button" class="role-btn active" data-role="user">User</button>
+                <button type="button" class="role-btn" data-role="repairer">Repairer</button>
+                <button type="button" class="role-btn" data-role="company">Company</button>
+            </div>
+            
             <?php if (!empty($error)): ?>
                 <div class="error-message">
                     <?php echo htmlspecialchars($error); ?>
                 </div>
             <?php endif; ?>
             
-            <form action="/2nd-Year-Group-Project/FixLanka/register" method="POST" class="signup-form" id="signupForm" autocomplete="off">
+            <!-- USER REGISTRATION FORM -->
+            <form action="/2nd-Year-Group-Project/FixLanka/register" method="POST" class="signup-form active" id="userForm" data-role="user" autocomplete="off">
+                <input type="hidden" name="user_type" value="user">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="f_name">First Name *</label>
@@ -76,7 +85,244 @@ unset($_SESSION['error']);
                     </label>
                 </div>
                 
-                <button type="submit" class="signup-submit-btn">Create Account</button>
+                <button type="submit" class="signup-submit-btn">Create User Account</button>
+            </form>
+            
+            <!-- REPAIRER REGISTRATION FORM -->
+            <form action="/2nd-Year-Group-Project/FixLanka/register" method="POST" class="signup-form" id="repairerForm" data-role="repairer" enctype="multipart/form-data" autocomplete="off">
+                <input type="hidden" name="user_type" value="repairer">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="repairer_f_name">First Name *</label>
+                        <input type="text" id="repairer_f_name" name="f_name" required placeholder="Enter first name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="repairer_l_name">Last Name *</label>
+                        <input type="text" id="repairer_l_name" name="l_name" required placeholder="Enter last name">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="repairer_email">Email Address *</label>
+                    <input type="email" id="repairer_email" name="email" required placeholder="Enter your email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="repairer_phone">Phone Number *</label>
+                    <input type="tel" id="repairer_phone" name="phoneNumber" required placeholder="Enter phone number">
+                </div>
+                
+                <div class="form-group">
+                    <label for="repairer_password">Password *</label>
+                    <input type="password" id="repairer_password" name="password" required placeholder="Create a password" minlength="6">
+                    <small class="password-hint">At least 6 characters</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="repairer_confirm_password">Confirm Password *</label>
+                    <input type="password" id="repairer_confirm_password" name="confirm_password" required placeholder="Confirm your password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="category_id">Service Category *</label>
+                    <select id="category_id" name="category_id" required>
+                        <option value="">Select a category</option>
+                        <option value="1">Plumbing</option>
+                        <option value="2">Electrical</option>
+                        <option value="3">HVAC</option>
+                        <option value="4">Cleaning</option>
+                        <option value="5">Carpentry</option>
+                        <option value="6">Painting</option>
+                        <option value="7">Appliance Repair</option>
+                        <option value="8">Roofing</option>
+                        <option value="9">Landscaping</option>
+                        <option value="10">Pest Control</option>
+                        <option value="11">Home Security</option>
+                        <option value="12">Interior Design</option>
+                        <option value="13">Flooring</option>
+                        <option value="14">Masonry</option>
+                        <option value="15">Welding</option>
+                        <option value="16">Glass & Mirror</option>
+                        <option value="17">Tile Work</option>
+                        <option value="18">Drywall</option>
+                        <option value="19">Insulation</option>
+                        <option value="20">Window Installation</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Service Districts * (Select at least one)</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="districts[]" value="Colombo"> Colombo</label>
+                        <label><input type="checkbox" name="districts[]" value="Gampaha"> Gampaha</label>
+                        <label><input type="checkbox" name="districts[]" value="Kalutara"> Kalutara</label>
+                        <label><input type="checkbox" name="districts[]" value="Kandy"> Kandy</label>
+                        <label><input type="checkbox" name="districts[]" value="Matale"> Matale</label>
+                        <label><input type="checkbox" name="districts[]" value="Nuwara Eliya"> Nuwara Eliya</label>
+                        <label><input type="checkbox" name="districts[]" value="Galle"> Galle</label>
+                        <label><input type="checkbox" name="districts[]" value="Matara"> Matara</label>
+                        <label><input type="checkbox" name="districts[]" value="Hambantota"> Hambantota</label>
+                        <label><input type="checkbox" name="districts[]" value="Jaffna"> Jaffna</label>
+                        <label><input type="checkbox" name="districts[]" value="Kilinochchi"> Kilinochchi</label>
+                        <label><input type="checkbox" name="districts[]" value="Mannar"> Mannar</label>
+                        <label><input type="checkbox" name="districts[]" value="Vavuniya"> Vavuniya</label>
+                        <label><input type="checkbox" name="districts[]" value="Mullaitivu"> Mullaitivu</label>
+                        <label><input type="checkbox" name="districts[]" value="Batticaloa"> Batticaloa</label>
+                        <label><input type="checkbox" name="districts[]" value="Ampara"> Ampara</label>
+                        <label><input type="checkbox" name="districts[]" value="Trincomalee"> Trincomalee</label>
+                        <label><input type="checkbox" name="districts[]" value="Kurunegala"> Kurunegala</label>
+                        <label><input type="checkbox" name="districts[]" value="Puttalam"> Puttalam</label>
+                        <label><input type="checkbox" name="districts[]" value="Anuradhapura"> Anuradhapura</label>
+                        <label><input type="checkbox" name="districts[]" value="Polonnaruwa"> Polonnaruwa</label>
+                        <label><input type="checkbox" name="districts[]" value="Badulla"> Badulla</label>
+                        <label><input type="checkbox" name="districts[]" value="Monaragala"> Monaragala</label>
+                        <label><input type="checkbox" name="districts[]" value="Ratnapura"> Ratnapura</label>
+                        <label><input type="checkbox" name="districts[]" value="Kegalle"> Kegalle</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="about">About / Experience *</label>
+                    <textarea id="about" name="about" required placeholder="Tell us about your experience and skills" rows="4"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="profilePicture">Profile Picture (Optional)</label>
+                    <input type="file" id="profilePicture" name="profilePicture" accept="image/*">
+                    <small class="password-hint">Max 5MB - JPG, PNG, GIF</small>
+                </div>
+                
+                <div class="terms-checkbox">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="terms" required>
+                        I agree to the <a href="/terms" target="_blank">Terms & Conditions</a>
+                    </label>
+                </div>
+                
+                <button type="submit" class="signup-submit-btn">Create Repairer Account</button>
+            </form>
+            
+            <!-- COMPANY REGISTRATION FORM -->
+            <form action="/2nd-Year-Group-Project/FixLanka/register" method="POST" class="signup-form" id="companyForm" data-role="company" autocomplete="off">
+                <input type="hidden" name="user_type" value="company">
+                
+                <div class="form-group">
+                    <label for="company_name">Company Name *</label>
+                    <input type="text" id="company_name" name="name" required placeholder="Enter company name">
+                </div>
+                
+                <div class="form-group">
+                    <label>Business Type * (Select at least one)</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="business_type[]" value="Plumbing"> Plumbing</label>
+                        <label><input type="checkbox" name="business_type[]" value="Electrical"> Electrical</label>
+                        <label><input type="checkbox" name="business_type[]" value="HVAC"> HVAC</label>
+                        <label><input type="checkbox" name="business_type[]" value="Cleaning"> Cleaning</label>
+                        <label><input type="checkbox" name="business_type[]" value="Carpentry"> Carpentry</label>
+                        <label><input type="checkbox" name="business_type[]" value="Painting"> Painting</label>
+                        <label><input type="checkbox" name="business_type[]" value="Appliance Repair"> Appliance Repair</label>
+                        <label><input type="checkbox" name="business_type[]" value="Roofing"> Roofing</label>
+                        <label><input type="checkbox" name="business_type[]" value="Landscaping"> Landscaping</label>
+                        <label><input type="checkbox" name="business_type[]" value="Pest Control"> Pest Control</label>
+                        <label><input type="checkbox" name="business_type[]" value="Home Security"> Home Security</label>
+                        <label><input type="checkbox" name="business_type[]" value="Interior Design"> Interior Design</label>
+                        <label><input type="checkbox" name="business_type[]" value="Flooring"> Flooring</label>
+                        <label><input type="checkbox" name="business_type[]" value="Masonry"> Masonry</label>
+                        <label><input type="checkbox" name="business_type[]" value="Welding"> Welding</label>
+                        <label><input type="checkbox" name="business_type[]" value="Construction"> Construction</label>
+                        <label><input type="checkbox" name="business_type[]" value="Other"> Other</label>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="registration_no">Registration Number *</label>
+                        <input type="text" id="registration_no" name="registration_no" required placeholder="Company reg. number">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tax_id">Tax ID / VAT Number</label>
+                        <input type="text" id="tax_id" name="tax_id" placeholder="Tax ID (optional)">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="company_email">Email Address *</label>
+                    <input type="email" id="company_email" name="email" required placeholder="Company email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="website">Website</label>
+                    <input type="url" id="website" name="website" placeholder="https://yourcompany.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="company_address">Address *</label>
+                    <textarea id="company_address" name="address" required placeholder="Company address" rows="2"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="contact_no">Contact Number *</label>
+                    <input type="tel" id="contact_no" name="contact_no" required placeholder="Contact number">
+                </div>
+                
+                <div class="form-group">
+                    <label>Service Districts * (Select at least one)</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="districts[]" value="Colombo"> Colombo</label>
+                        <label><input type="checkbox" name="districts[]" value="Gampaha"> Gampaha</label>
+                        <label><input type="checkbox" name="districts[]" value="Kalutara"> Kalutara</label>
+                        <label><input type="checkbox" name="districts[]" value="Kandy"> Kandy</label>
+                        <label><input type="checkbox" name="districts[]" value="Matale"> Matale</label>
+                        <label><input type="checkbox" name="districts[]" value="Nuwara Eliya"> Nuwara Eliya</label>
+                        <label><input type="checkbox" name="districts[]" value="Galle"> Galle</label>
+                        <label><input type="checkbox" name="districts[]" value="Matara"> Matara</label>
+                        <label><input type="checkbox" name="districts[]" value="Hambantota"> Hambantota</label>
+                        <label><input type="checkbox" name="districts[]" value="Jaffna"> Jaffna</label>
+                        <label><input type="checkbox" name="districts[]" value="Kilinochchi"> Kilinochchi</label>
+                        <label><input type="checkbox" name="districts[]" value="Mannar"> Mannar</label>
+                        <label><input type="checkbox" name="districts[]" value="Vavuniya"> Vavuniya</label>
+                        <label><input type="checkbox" name="districts[]" value="Mullaitivu"> Mullaitivu</label>
+                        <label><input type="checkbox" name="districts[]" value="Batticaloa"> Batticaloa</label>
+                        <label><input type="checkbox" name="districts[]" value="Ampara"> Ampara</label>
+                        <label><input type="checkbox" name="districts[]" value="Trincomalee"> Trincomalee</label>
+                        <label><input type="checkbox" name="districts[]" value="Kurunegala"> Kurunegala</label>
+                        <label><input type="checkbox" name="districts[]" value="Puttalam"> Puttalam</label>
+                        <label><input type="checkbox" name="districts[]" value="Anuradhapura"> Anuradhapura</label>
+                        <label><input type="checkbox" name="districts[]" value="Polonnaruwa"> Polonnaruwa</label>
+                        <label><input type="checkbox" name="districts[]" value="Badulla"> Badulla</label>
+                        <label><input type="checkbox" name="districts[]" value="Monaragala"> Monaragala</label>
+                        <label><input type="checkbox" name="districts[]" value="Ratnapura"> Ratnapura</label>
+                        <label><input type="checkbox" name="districts[]" value="Kegalle"> Kegalle</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="company_password">Password *</label>
+                    <input type="password" id="company_password" name="password" required placeholder="Create a password" minlength="6">
+                    <small class="password-hint">At least 6 characters</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="company_confirm_password">Confirm Password *</label>
+                    <input type="password" id="company_confirm_password" name="confirm_password" required placeholder="Confirm your password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Company Description *</label>
+                    <textarea id="description" name="description" required placeholder="Describe your company and services" rows="4"></textarea>
+                </div>
+                
+                <div class="terms-checkbox">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="terms" required>
+                        I agree to the <a href="/terms" target="_blank">Terms & Conditions</a>
+                    </label>
+                </div>
+                
+                <button type="submit" class="signup-submit-btn">Create Company Account</button>
             </form>
             
             <div class="login-link">

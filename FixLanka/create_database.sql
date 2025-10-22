@@ -1,6 +1,6 @@
 -- =====================================================
 -- Database Schema for Home Repair Service Platform
--- Version 1.0.0
+-- Version 1.1.0
 -- =====================================================
 
 DROP DATABASE IF EXISTS fix_lanka;
@@ -16,6 +16,7 @@ CREATE TABLE User (
     password VARCHAR(255) NOT NULL,
     profilePicture VARCHAR(500),
     address TEXT,
+    district VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -72,9 +73,8 @@ CREATE TABLE Repairer (
     profilePicture VARCHAR(500),
     ratings DECIMAL(3,2) DEFAULT 0.00,
     completedJobsCount INT DEFAULT 0,
-    serviceAreas VARCHAR(100), -- Store multiple service areas
+    districts TEXT, -- Store multiple service districts (comma-separated)
     availability ENUM('available', 'busy', 'unavailable') DEFAULT 'available',
-    price DECIMAL(10,2),
     dateJoined TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     category_id INT,
     FOREIGN KEY (category_id) REFERENCES Category(category_id) ON DELETE SET NULL,
@@ -162,10 +162,16 @@ CREATE TABLE Promotion (
 CREATE TABLE Company (
     company_id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
+    business_type VARCHAR(255), -- Store multiple business types (comma-separated)
     registration_no VARCHAR(100) UNIQUE NOT NULL,
+    tax_id VARCHAR(100),
     address TEXT NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
+    website VARCHAR(255),
     contact_no VARCHAR(20) NOT NULL,
+    districts TEXT, -- Store multiple service districts (comma-separated)
+    password VARCHAR(255) NOT NULL,
+    description TEXT,
     rating DECIMAL(3,2) DEFAULT 0.00,
     date_of_joined TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_email (email)
@@ -441,3 +447,28 @@ CREATE TABLE StaffSummary (
     FOREIGN KEY (company_id) REFERENCES Company(company_id) ON DELETE CASCADE,
     INDEX idx_company (company_id)
 );
+
+-- =====================================================
+-- Insert Default Categories
+-- =====================================================
+INSERT INTO Category (name) VALUES 
+('Plumbing'),
+('Electrical'),
+('HVAC'),
+('Cleaning'),
+('Carpentry'),
+('Painting'),
+('Appliance Repair'),
+('Roofing'),
+('Landscaping'),
+('Pest Control'),
+('Home Security'),
+('Interior Design'),
+('Flooring'),
+('Masonry'),
+('Welding'),
+('Glass & Mirror'),
+('Tile Work'),
+('Drywall'),
+('Insulation'),
+('Window Installation');

@@ -41,16 +41,24 @@ foreach ($jobRequests as $job) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job History - Fix Lanka</title>
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/job-history.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/navbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/job-history.css">
 </head>
 <body>
+    <?php include 'navbar.php'; ?>
+    
     <main class="main-content">
         <div class="page-container">
             <!-- Page Header -->
             <div class="page-header">
-                <h1 class="page-title">My Job Requests</h1>
-                <p class="page-subtitle">Track and manage all your job requests ordered by date</p>
+                <div>
+                    <h1 class="page-title">My Job Requests</h1>
+                    <p class="page-subtitle">Track and manage all your job requests ordered by date</p>
+                </div>
+                <a href="/2nd-Year-Group-Project/FixLanka/views/user/landing.php" class="btn-home">
+                    <i class="fas fa-home"></i> Home
+                </a>
             </div>
 
             <!-- Success/Error Messages -->
