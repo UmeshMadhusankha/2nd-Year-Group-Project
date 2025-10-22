@@ -32,7 +32,7 @@
                 <header class="page-header">
                     <div class="header-content">
                         <div class="breadcrumbs">
-                            <a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                            <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard"><i class="fas fa-home"></i> Dashboard</a>
                             <span class="separator">/</span>
                             <span class="current">Contracts</span>
                         </div>
@@ -1933,8 +1933,8 @@ FixLanka Team</textarea>
     <script>
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
-            loadComponent('sidebar-container', 'sidebar.php');
-            loadComponent('header-container', 'topbar.php');
+            loadComponent('sidebar-container', '/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php');
+            loadComponent('header-container', '/2nd-Year-Group-Project/FixLanka/views/company/topbar.php');
         });
 
         // Function to load HTML components
@@ -1952,7 +1952,7 @@ FixLanka Team</textarea>
                         allNavItems.forEach(item => item.classList.remove('active'));
 
                         // Set contracts as active immediately
-                        const contractsLink = tempDiv.querySelector('a[href="contracts.php"]');
+                        const contractsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/company-contracts"]');
                         if (contractsLink) {
                             contractsLink.parentElement.classList.add('active');
                         }
@@ -1981,3 +1981,6 @@ FixLanka Team</textarea>
 </body>
 
 </html>
+
+
+

@@ -18,12 +18,12 @@
 
     <div class="dashboard-container">
         <!-- Sidebar Component -->
-        <?php include 'sidebar.php'; ?>
+        <?php require_once __DIR__ . '/sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content">
             <!-- Header Component -->
-            <?php include 'topbar.php'; ?>
+            <?php require_once __DIR__ . '/topbar.php'; ?>
 
             <!-- Reviews Header -->
             <div class="settings-header">
@@ -596,3 +596,6 @@
 </body>
 
 </html>
+
+
+

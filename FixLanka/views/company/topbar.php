@@ -39,20 +39,20 @@
           </div>
         </div>
         <div class="dropdown-divider"></div>
-        <a href="profile.php" class="dropdown-item">
+        <a href="/2nd-Year-Group-Project/FixLanka/company-profile" class="dropdown-item">
           <i class="fas fa-user"></i>
           <span>My Profile</span>
         </a>
-        <a href="settings.php" class="dropdown-item">
+        <a href="/2nd-Year-Group-Project/FixLanka/company-settings" class="dropdown-item">
           <i class="fas fa-cog"></i>
           <span>Settings</span>
         </a>
-        <a href="support.php" class="dropdown-item">
+        <a href="/2nd-Year-Group-Project/FixLanka/company-support" class="dropdown-item">
           <i class="fas fa-question-circle"></i>
           <span>Help & Support</span>
         </a>
         <div class="dropdown-divider"></div>
-        <a href="../../index.php" class="dropdown-item logout" onclick="return confirm('Are you sure you want to logout?');">
+        <a href="/2nd-Year-Group-Project/FixLanka/logout" class="dropdown-item logout" onclick="return confirm('Are you sure you want to logout?');">
           <i class="fas fa-sign-out-alt"></i>
           <span>Logout</span>
         </a>

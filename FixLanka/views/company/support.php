@@ -36,7 +36,7 @@
                                 <h1><i class="fas fa-life-ring"></i> Support Center</h1>
                                 <p class="subtitle">Get help and manage support tickets</p>
                                 <nav class="breadcrumbs">
-                                    <a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                                    <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard"><i class="fas fa-home"></i> Dashboard</a>
                                     <span class="separator">/</span>
                                     <span class="current">Support</span>
                                 </nav>
@@ -491,8 +491,8 @@
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
             Promise.all([
-                loadComponent('sidebar-container', 'sidebar.php'),
-                loadComponent('header-container', 'topbar.php')
+                loadComponent('sidebar-container', '/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php'),
+                loadComponent('header-container', '/2nd-Year-Group-Project/FixLanka/views/company/topbar.php')
             ]).then(() => {
                 initializeTicketForm();
             });
@@ -513,7 +513,7 @@
                         allNavItems.forEach(item => item.classList.remove('active'));
                         
                         // Set support as active immediately
-                        const supportLink = tempDiv.querySelector('a[href="support.php"]');
+                        const supportLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/company-support"]');
                         if (supportLink) {
                             supportLink.parentElement.classList.add('active');
                         }
@@ -1010,3 +1010,6 @@
 </body>
 
 </html>
+
+
+

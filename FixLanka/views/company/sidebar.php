@@ -3,55 +3,55 @@
     <nav class="sidebar-nav">
         <ul class="nav-list">
             <li class="nav-item">
-                <a href="dashboard.php" class="nav-link" data-tooltip="Dashboard">
+                <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard" class="nav-link" data-tooltip="Dashboard">
                     <i class="fas fa-chart-pie"></i>
                     <span>Dashboard</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="repair-requests.php" class="nav-link" data-tooltip="Repair Requests">
+                <a href="/2nd-Year-Group-Project/FixLanka/company-repair-requests" class="nav-link" data-tooltip="Repair Requests">
                     <i class="fas fa-tools"></i>
                     <span>Repair Requests</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="projects.php" class="nav-link" data-tooltip="Projects">
+                <a href="/2nd-Year-Group-Project/FixLanka/company-projects" class="nav-link" data-tooltip="Projects">
                     <i class="fas fa-tasks"></i>
                     <span>Projects</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="workforce.php" class="nav-link" data-tooltip="Workforce">
+                <a href="/2nd-Year-Group-Project/FixLanka/company-workforce" class="nav-link" data-tooltip="Workforce">
                     <i class="fas fa-users-cog"></i>
                     <span>Workforce</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="payments.php" class="nav-link" data-tooltip="Payments">
+                <a href="/2nd-Year-Group-Project/FixLanka/company-payments" class="nav-link" data-tooltip="Payments">
                     <i class="fas fa-wallet"></i>
                     <span>Payments</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="contracts.php" class="nav-link" data-tooltip="Contracts">
+                <a href="/2nd-Year-Group-Project/FixLanka/company-contracts" class="nav-link" data-tooltip="Contracts">
                     <i class="fas fa-handshake"></i>
                     <span>Contracts</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="advertisements.php" class="nav-link" data-tooltip="Advertisements">
+                <a href="/2nd-Year-Group-Project/FixLanka/company-advertisements" class="nav-link" data-tooltip="Advertisements">
                     <i class="fas fa-bullhorn"></i>
                     <span>Advertisements</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="support.php" class="nav-link" data-tooltip="Support">
+                <a href="/2nd-Year-Group-Project/FixLanka/company-support" class="nav-link" data-tooltip="Support">
                     <i class="fas fa-life-ring"></i>
                     <span>Support</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="settings.php" class="nav-link" data-tooltip="Settings">
+                <a href="/2nd-Year-Group-Project/FixLanka/company-settings" class="nav-link" data-tooltip="Settings">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </a>
@@ -92,11 +92,11 @@
     function handleNavClick(e) {
         console.log('Nav link clicked:', this.textContent.trim()); // Debug log
 
-        // Check if it's a link to another page (repair-requests.php, dashboard.php, projects.php, workforce.php, payments.php, contracts.php, advertisements.php, support.php, or settings.php)
+        // Check if it's a link to another page
         const href = this.getAttribute('href');
-        if (href === 'repair-requests.php' || href === 'support.php' || href === 'dashboard.php' || href === 'projects.php' || href === 'workforce.php' || href === 'payments.php' || href === 'contracts.php' || href === 'advertisements.php' || href === 'settings.php') {
+        if (href && href.startsWith('/2nd-Year-Group-Project/FixLanka/company-')) {
             // Extract page name and update topbar if function exists
-            const pageName = href.replace('.php', '');
+            const pageName = href.replace('/2nd-Year-Group-Project/FixLanka/company-', '');
             if (typeof window.updatePageHeader === 'function') {
                 console.log('Updating page header to:', pageName);
                 window.updatePageHeader(pageName);

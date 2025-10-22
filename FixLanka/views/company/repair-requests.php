@@ -49,7 +49,7 @@
                                 requests
                             </p>
                             <div class="breadcrumbs">
-                                <a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                                <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard"><i class="fas fa-home"></i> Dashboard</a>
                                 <span class="separator">/</span>
                                 <span class="current">Repair Requests</span>
                             </div>
@@ -779,8 +779,8 @@
     <script>
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
-            loadComponent('sidebar-container', 'sidebar.php');
-            loadComponent('header-container', 'topbar.php');
+            loadComponent('sidebar-container', '/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php');
+            loadComponent('header-container', '/2nd-Year-Group-Project/FixLanka/views/company/topbar.php');
         });
 
         // Function to load HTML components
@@ -798,7 +798,7 @@
                         allNavItems.forEach(item => item.classList.remove('active'));
 
                         // Set repair requests as active immediately
-                        const repairRequestsLink = tempDiv.querySelector('a[href="repair-requests.php"]');
+                        const repairRequestsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/company-repair-requests"]');
                         if (repairRequestsLink) {
                             repairRequestsLink.parentElement.classList.add('active');
                         }
@@ -827,3 +827,6 @@
 </body>
 
 </html>
+
+
+

@@ -152,6 +152,50 @@ switch ($request) {
         require_once __DIR__ . '/views/company/dashboard.php';
         break;
     
+    case '/company-repair-requests':
+        require_once __DIR__ . '/views/company/repair-requests.php';
+        break;
+    
+    case '/company-contracts':
+        require_once __DIR__ . '/views/company/contracts.php';
+        break;
+    
+    case '/company-projects':
+        require_once __DIR__ . '/views/company/projects.php';
+        break;
+    
+    case '/company-workforce':
+        require_once __DIR__ . '/views/company/workforce.php';
+        break;
+    
+    case '/company-payments':
+        require_once __DIR__ . '/views/company/payments.php';
+        break;
+    
+    case '/company-reviews':
+        require_once __DIR__ . '/views/company/reviews.php';
+        break;
+    
+    case '/company-support':
+        require_once __DIR__ . '/views/company/support.php';
+        break;
+    
+    case '/company-profile':
+        require_once __DIR__ . '/views/company/profile.php';
+        break;
+    
+    case '/company-settings':
+        require_once __DIR__ . '/views/company/settings.php';
+        break;
+    
+    case '/company-advertisements':
+        require_once __DIR__ . '/views/company/advertisements.php';
+        break;
+    
+    case '/company-feedback':
+        require_once __DIR__ . '/views/company/feedback.php';
+        break;
+    
     default:
         http_response_code(404);
         echo "404 - Page Not Found";

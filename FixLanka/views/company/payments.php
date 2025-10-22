@@ -44,7 +44,7 @@
                                     Income payments and expense tracking for your repair services
                                 </p>
                                 <nav class="breadcrumbs">
-                                    <a href="dashboard.php">
+                                    <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard">
                                         <i class="fas fa-home"></i>
                                         Dashboard
                                     </a>
@@ -513,7 +513,7 @@
     <!-- Scripts -->
     <script>
         // Load sidebar and topbar
-        fetch('sidebar.php')
+        fetch('/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php')
             .then(response => response.text())
             .then(data => {
                 // Set active state immediately in the HTML before inserting
@@ -525,7 +525,7 @@
                 allNavItems.forEach(item => item.classList.remove('active'));
 
                 // Set payments as active immediately
-                const paymentsLink = tempDiv.querySelector('a[href="payments.php"]');
+                const paymentsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/company-payments"]');
                 if (paymentsLink) {
                     paymentsLink.parentElement.classList.add('active');
                 }
@@ -534,7 +534,7 @@
                 document.getElementById('sidebar-container').innerHTML = tempDiv.innerHTML;
             });
 
-        fetch('topbar.php')
+        fetch('/2nd-Year-Group-Project/FixLanka/views/company/topbar.php')
             .then(response => response.text())
             .then(data => {
                 document.getElementById('topbar-container').innerHTML = data;
@@ -552,3 +552,6 @@
 </body>
 
 </html>
+
+
+

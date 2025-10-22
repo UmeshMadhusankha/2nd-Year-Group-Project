@@ -449,32 +449,52 @@
     </div>
 
     <!-- Load Components and Scripts -->
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/component-loader.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/settings.js"></script>
 
-    <!-- Set active sidebar item for Settings page -->
+    <!-- Load Sidebar and Topbar Components -->
     <script>
-        // Wait for sidebar to load
-        setTimeout(() => {
-            // Set Settings as active page in localStorage
-            localStorage.setItem('activePage', 'Settings');
-
-            // Remove active class from all nav items
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
+        // Load sidebar and topbar
+        fetch('/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('sidebar-container').innerHTML = data;
+                
+                // Set active state after loading
+                setTimeout(() => {
+                    const navLinks = document.querySelectorAll('.nav-link');
+                    navLinks.forEach(link => {
+                        const linkText = link.querySelector('span')?.textContent;
+                        if (linkText === 'Settings') {
+                            link.closest('.nav-item').classList.add('active');
+                        }
+                    });
+                }, 100);
             });
 
-            // Find and activate the Settings nav item
-            const navLinks = document.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
-                const linkText = link.querySelector('span')?.textContent;
-                if (linkText === 'Settings') {
-                    link.closest('.nav-item').classList.add('active');
+        fetch('/2nd-Year-Group-Project/FixLanka/views/company/topbar.php')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('topbar-container').innerHTML = data;
+                
+                // Initialize topbar after loading
+                if (typeof initializeTopbar === 'function') {
+                    setTimeout(initializeTopbar, 100);
+                }
+                if (typeof initProfileDropdown === 'function') {
+                    setTimeout(initProfileDropdown, 200);
                 }
             });
-        }, 300);
+    </script>
+
+    <!-- Set active sidebar item for Settings page -->
+    <script>
+        // Set Settings as active page in localStorage
+        localStorage.setItem('activePage', 'Settings');
     </script>
 </body>
 
 </html>
+
+
+

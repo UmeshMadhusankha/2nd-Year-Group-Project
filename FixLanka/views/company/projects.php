@@ -37,7 +37,7 @@
                                 <h1><i class="fas fa-project-diagram"></i> Projects</h1>
                                 <p class="subtitle">Manage and track all your projects from start to completion</p>
                                 <nav class="breadcrumbs">
-                                    <a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                                    <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard"><i class="fas fa-home"></i> Dashboard</a>
                                     <span class="separator">/</span>
                                     <span class="current">Projects</span>
                                 </nav>
@@ -1098,8 +1098,8 @@
     <script>
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
-            loadComponent('sidebar-container', 'sidebar.php');
-            loadComponent('header-container', 'topbar.php');
+            loadComponent('sidebar-container', '/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php');
+            loadComponent('header-container', '/2nd-Year-Group-Project/FixLanka/views/company/topbar.php');
         });
 
         // Function to load HTML components
@@ -1113,7 +1113,7 @@
                         const allNavItems = document.querySelectorAll('.sidebar .nav-item');
                         allNavItems.forEach(item => item.classList.remove('active'));
 
-                        const projectsLink = document.querySelector('.sidebar a[href="projects.php"]');
+                        const projectsLink = document.querySelector('.sidebar a[href="/2nd-Year-Group-Project/FixLanka/company-projects"]');
                         if (projectsLink) {
                             projectsLink.parentElement.classList.add('active');
                         }
@@ -1316,3 +1316,6 @@
 </body>
 
 </html>
+
+
+

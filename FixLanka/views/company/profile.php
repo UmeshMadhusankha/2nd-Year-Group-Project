@@ -1041,8 +1041,8 @@
     <script>
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
-            loadComponent('sidebar-container', 'sidebar.php');
-            loadComponent('header-container', 'topbar.php');
+            loadComponent('sidebar-container', '/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php');
+            loadComponent('header-container', '/2nd-Year-Group-Project/FixLanka/views/company/topbar.php');
         });
 
         // Function to load HTML components
@@ -1407,3 +1407,6 @@
 </body>
 
 </html>
+
+
+
