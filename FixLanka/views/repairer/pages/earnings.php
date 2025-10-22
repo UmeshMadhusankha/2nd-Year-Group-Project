@@ -48,10 +48,6 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                     <i class="fas fa-download"></i>
                                     Export Report
                                 </button>
-                                <button class="btn btn-secondary">
-                                    <i class="fas fa-chart-line"></i>
-                                    View Analytics
-                                </button>
                             </div>
                         </div>
                     </section>
