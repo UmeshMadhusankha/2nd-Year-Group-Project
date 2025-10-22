@@ -101,6 +101,7 @@
 .logo {
   display: inline-flex;
   align-items: center;
+<<<<<<< HEAD
   justify-content: center;
   margin-bottom: var(--spacing-lg);
 }
@@ -109,6 +110,17 @@
   height: 80px;
   width: auto;
   object-fit: contain;
+=======
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-lg);
+}
+
+.logo i {
+  font-size: var(--font-size-3xl);
+>>>>>>> 5cf60e1a4b45d324ae1e648957683d9ac638ab61
 }
 
 .register-title {
@@ -477,6 +489,7 @@ select.form-input {
     font-size: var(--font-size-base);
   }
 }
+<<<<<<< HEAD
 
 /* ===== CHECKBOX GRID ===== */
 #repairer-service-areas.checkbox-grid,
@@ -561,3 +574,5 @@ select.form-input {
     font-size: 13px;
   }
 }
+=======
+>>>>>>> 5cf60e1a4b45d324ae1e648957683d9ac638ab61

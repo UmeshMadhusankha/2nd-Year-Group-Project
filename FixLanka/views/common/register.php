@@ -16,7 +16,12 @@
             <!-- Logo and Header -->
             <div class="register-header">
                 <div class="logo">
+<<<<<<< HEAD
                     <img src="../../assets/images/fixlanka.png" alt="FixLanka Logo">
+=======
+                    <i class="fas fa-tools"></i>
+                    <span>FixLanka</span>
+>>>>>>> 5cf60e1a4b45d324ae1e648957683d9ac638ab61
                 </div>
                 <h1 class="register-title">Join FixLanka</h1>
                 <p class="register-subtitle">Choose your role and register to get started.</p>
@@ -208,6 +213,7 @@
                         </div>
 
                         <div class="form-group">
+<<<<<<< HEAD
                             <label>
                                 <i class="fas fa-map-marked-alt"></i>
                                 Service Areas (Select one or more districts)
@@ -315,6 +321,13 @@
                                 </label>
                             </div>
                             <small class="form-hint">Select all districts where you provide services</small>
+=======
+                            <label for="repairer-service-areas">
+                                <i class="fas fa-map-marked-alt"></i>
+                                Service Areas
+                            </label>
+                            <input type="text" id="repairer-service-areas" name="service_areas" class="form-input" placeholder="e.g., Colombo, Gampaha, Kalutara" required>
+>>>>>>> 5cf60e1a4b45d324ae1e648957683d9ac638ab61
                         </div>
 
                         <div class="form-group">
