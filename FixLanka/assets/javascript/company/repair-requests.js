@@ -23,7 +23,7 @@ function setActiveNavigation() {
         const linkText = link.querySelector('span')?.textContent;
         const href = link.getAttribute('href');
         
-        if (linkText === 'Repair Requests' || href === 'repair-requests.html') {
+        if (linkText === 'Repair Requests' || href === 'repair-requests.php') {
             link.closest('.nav-item').classList.add('active');
         }
     });

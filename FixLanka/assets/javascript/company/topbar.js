@@ -84,7 +84,7 @@ function initializeTopbar() {
  */
 function getPageNameFromURL() {
   const currentPath = window.location.pathname;
-  let pageName = currentPath.split('/').pop().replace('.html', '') || 'dashboard';
+  let pageName = currentPath.split('/').pop().replace('.php', '') || 'dashboard';
   
   // Handle cases where filename might be index
   if (pageName === 'index' || pageName === '') {
@@ -154,12 +154,12 @@ function setPageTitle(pageName) {
 function attachSidebarLinkListeners() {
   // Listen for all links that might navigate to different pages
   document.addEventListener('click', function(e) {
-    const link = e.target.closest('a[href*=".html"]');
+    const link = e.target.closest('a[href*=".php"]');
     
     if (link) {
       const href = link.getAttribute('href');
       // Extract page name from href
-      const pageName = href.split('/').pop().replace('.html', '');
+      const pageName = href.split('/').pop().replace('.php', '');
       
       if (pageName && PAGE_INFO[pageName]) {
         // Update page title immediately (before navigation)
@@ -305,7 +305,7 @@ function toggleNotificationDropdown() {
       </div>
     </div>
     <div class="notification-footer">
-      <a href="support.html">View All Notifications</a>
+      <a href="support.php">View All Notifications</a>
     </div>
   `;
   

@@ -26,7 +26,7 @@ function initializeSidebar() {
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             const href = this.getAttribute('href');
-            const isPageLink = href.endsWith('.html') || href === 'repair-requests.html' || href === 'dashboard.html' || href === 'projects.html' || href === 'workforce.html' || href === 'payments.html' || href === 'contracts.html' || href === 'support.html' || href === 'settings.html';
+            const isPageLink = href.endsWith('.php') || href === 'repair-requests.php' || href === 'dashboard.php' || href === 'projects.php' || href === 'workforce.php' || href === 'payments.php' || href === 'contracts.php' || href === 'support.php' || href === 'settings.php' || href === 'advertisements.php';
             
             if (isPageLink) {
                 document.querySelectorAll('.nav-item').forEach(item => {
