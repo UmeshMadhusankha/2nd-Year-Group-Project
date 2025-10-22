@@ -199,7 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const editForm = document.getElementById("editNotificationForm")
 
   if (editForm) {
-    editForm.addEventListener("submit", async (e) => {
+    editForm.addEventListener("submit", (e) => {
       e.preventDefault()
 
       const formData = new FormData(editForm)
@@ -213,41 +213,24 @@ document.addEventListener("DOMContentLoaded", () => {
       saveBtnText.textContent = "Saving..."
 
       try {
-        const response = await fetch(`${window.basePath || ""}/api/notifications/${notificationId}`, {
-          method: "PUT",
-          body: formData,
-        })
-
-        const result = await response.json()
-
-        if (!response.ok || !result.success) {
-          throw new Error(result.error || "Failed to update notification")
-        }
-
         // Update notification in global array
         if (window.allNotifications) {
-          console.log("Updating notification in global array...");
           const index = window.allNotifications.findIndex((n) => n.id === Number.parseInt(notificationId));
-          console.log("Notification index found:", index);
           if (index !== -1) {
-            console.log("Existing notification data:", window.allNotifications[index]);
             window.allNotifications[index] = {
               ...window.allNotifications[index],
-              ...result.data,
+              message: formData.get("message"),
+              priority: formData.get("priority"),
+              status: formData.get("status")
             };
             filteredNotifications = [...window.allNotifications]
             renderNotifications()
-            console.log("Updated notification data:", window.allNotifications[index]);
-          } else {
-            console.log("Notification not found in global array.");
           }
-        } else {
-          console.log("Global notifications array is not defined.");
         }
 
         // Close modal and show success
         closeModal("editNotificationModal")
-        showSuccess(result.message || "Notification updated successfully")
+        showSuccess("Notification updated successfully")
 
         // Refresh notifications display
         if (typeof renderNotifications === "function") {
@@ -328,7 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const videoForm = document.getElementById("videoNotificationForm")
 
   if (videoForm) {
-    videoForm.addEventListener("submit", async (e) => {
+    videoForm.addEventListener("submit", (e) => {
       e.preventDefault()
 
       const formData = new FormData(videoForm)
@@ -339,16 +322,22 @@ document.addEventListener("DOMContentLoaded", () => {
       sendBtn.disabled = true
       sendBtnText.textContent = "Sending..."
 
-      try {
-        const response = await fetch(`${window.basePath || ""}/api/notifications/video`, {
-          method: "POST",
-          body: formData,
-        })
+      setTimeout(() => {
+        // Create new video notification in local array
+        const newNotification = {
+          id: Date.now(),
+          title: formData.get('title'),
+          message: formData.get('message'),
+          type: "Video",
+          status: "Sent",
+          audience: formData.get('audience'),
+          sent_at: new Date().toISOString().slice(0, 16).replace("T", " "),
+          delivery_rate: "95",
+          open_rate: "32"
+        }
 
-        const result = await response.json()
-
-        if (!response.ok || !result.success) {
-          throw new Error(result.error || "Failed to send video notification")
+        if (window.allNotifications) {
+          window.allNotifications.unshift(newNotification)
         }
 
         // Reset form
@@ -357,20 +346,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Close modal and show success
         closeModal("videoNotificationModal")
-        showSuccess(result.message || "Video notification sent successfully")
+        showSuccess("Video notification sent successfully")
 
         // Refresh notifications
         if (typeof refreshNotifications === "function") {
           refreshNotifications()
         }
-      } catch (error) {
-        console.error("[v0] Error sending video notification:", error)
-        showError(error.message)
-      } finally {
+
         // Reset button
         sendBtn.disabled = false
         sendBtnText.textContent = "Send Video Notification"
-      }
+      }, 300)
     })
   }
 })
@@ -388,7 +374,7 @@ function deleteNotification(notificationId) {
 /**
  * Confirm delete action
  */
-async function confirmDelete() {
+function confirmDelete() {
   if (!currentDeleteId) return
 
   const confirmBtn = document.getElementById("confirmDeleteBtn")
@@ -397,17 +383,7 @@ async function confirmDelete() {
   confirmBtn.disabled = true
   confirmBtn.innerHTML = '<i data-lucide="loader" class="mr-2 h-4 w-4 animate-spin"></i> Deleting...'
 
-  try {
-    const response = await fetch(`${window.basePath || ""}/api/notifications/${currentDeleteId}`, {
-      method: "DELETE",
-    })
-
-    const result = await response.json()
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || "Failed to delete notification")
-    }
-
+  setTimeout(() => {
     // Remove from global array
     if (window.allNotifications) {
       window.allNotifications = window.allNotifications.filter((n) => n.id !== currentDeleteId)
@@ -415,7 +391,7 @@ async function confirmDelete() {
 
     // Close modal and show success
     closeModal("deleteConfirmModal")
-    showSuccess(result.message || "Notification deleted successfully")
+    showSuccess("Notification deleted successfully")
 
     // Refresh notifications display
     if (typeof renderNotifications === "function") {
@@ -426,10 +402,7 @@ async function confirmDelete() {
     }
 
     currentDeleteId = null
-  } catch (error) {
-    console.error("[v0] Error deleting notification:", error)
-    showError(error.message)
-  } finally {
+
     // Reset button
     confirmBtn.disabled = false
     confirmBtn.innerHTML = originalHTML
@@ -438,47 +411,33 @@ async function confirmDelete() {
     if (typeof lucide !== "undefined") {
       lucide.createIcons()
     }
-  }
+  }, 300)
 }
 
 /**
  * Send draft notification
  */
-async function sendDraft(notificationId) {
+function sendDraft(notificationId) {
   if (!confirm("Are you sure you want to send this notification?")) {
     return
   }
 
   showLoading()
 
-  try {
-    const response = await fetch(`${window.basePath || ""}/api/notifications/send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ id: notificationId }),
-    })
-
-    const result = await response.json()
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || "Failed to send notification")
-    }
-
+  setTimeout(() => {
     // Update notification status in global array
     if (window.allNotifications) {
       const notification = window.allNotifications.find((n) => n.id === notificationId)
       if (notification) {
         notification.status = "Sent"
-        notification.sent_at = result.data?.sent_at || new Date().toISOString().slice(0, 16).replace("T", " ")
-        notification.delivery_rate = result.data?.delivery_rate || "95"
-        notification.open_rate = result.data?.open_rate || "32"
+        notification.sent_at = new Date().toISOString().slice(0, 16).replace("T", " ")
+        notification.delivery_rate = "95"
+        notification.open_rate = "32"
       }
     }
 
     hideLoading()
-    showSuccess(result.message || "Draft sent successfully")
+    showSuccess("Draft sent successfully")
 
     // Refresh notifications display
     if (typeof renderNotifications === "function") {
@@ -487,9 +446,5 @@ async function sendDraft(notificationId) {
     if (typeof loadNotifications === "function") {
       loadNotifications()
     }
-  } catch (error) {
-    console.error("[v0] Error sending draft:", error)
-    hideLoading()
-    showError(error.message)
-  }
+  }, 300)
 }

@@ -22,11 +22,11 @@ function renderMeta($title = 'Advanced PHP Router', $description = 'A Next.js-in
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="<?= $basePath ?>/public/css/common/common.css">
-    <link rel="stylesheet" href="<?= $basePath ?>/public/css/common/sidebar.css">
-    <link rel="stylesheet" href="<?= $basePath ?>/public/css/common/topbar.css">
-    <link rel="stylesheet" href="<?= $basePath ?>/public/css/common/modals.css">
-    <link rel="icon" href="<?= $basePath ?>/public/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="../../assets/css/admin-moderator/common.css">
+    <link rel="stylesheet" href="../../assets/css/admin-moderator/sidebar.css">
+    <link rel="stylesheet" href="../../assets/css/admin-moderator/topbar.css">
+    <link rel="stylesheet" href="../../assets/css/admin-moderator/modals.css">
+    <link rel="icon" href="../../assets/images/common/favicon.ico" type="image/x-icon">
 <?php
 }
 ?>
