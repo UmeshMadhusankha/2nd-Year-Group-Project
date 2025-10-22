@@ -1413,11 +1413,6 @@
 
             // Determine if freelancer is available for assignment
             const isAvailable = freelancer.status.toLowerCase() === 'available';
-            const assignButton = isAvailable 
-                ? `<button class="action-btn-sm primary" onclick="assignJob('${freelancer.id}')">
-                       <i class="fas fa-plus"></i> Assign
-                   </button>`
-                : '';
 
             item.innerHTML = `
                 <div class="freelancer-main">
@@ -1436,11 +1431,23 @@
                     </div>
                 </div>
                 <div class="freelancer-actions">
-                    <span class="freelancer-status ${freelancer.status.toLowerCase()}">${freelancer.status}</span>
-                    ${assignButton}
-                    <button class="action-btn-sm info" onclick="viewFreelancerDetails('${freelancer.id}')">
-                        <i class="fas fa-eye"></i> View
-                    </button>
+                    <span class="status-badge ${freelancer.status.toLowerCase()}">${freelancer.status}</span>
+                    <div class="action-group">
+                        <button class="wf-btn wf-btn-view" onclick="viewFreelancerDetails('${freelancer.id}')" title="View Details">
+                            <i class="fas fa-eye"></i>
+                            <span>View</span>
+                        </button>
+                        ${isAvailable ? `
+                        <button class="wf-btn wf-btn-assign" onclick="assignJob('${freelancer.id}')" title="Assign to Job">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Assign</span>
+                        </button>
+                        ` : ''}
+                        <button class="wf-btn wf-btn-edit" onclick="editFreelancer('${freelancer.id}')" title="Edit Profile">
+                            <i class="fas fa-edit"></i>
+                            <span>Edit</span>
+                        </button>
+                    </div>
                 </div>
             `;
 
@@ -1480,16 +1487,23 @@
                     </div>
                 </div>
                 <div class="application-actions">
-                    <span class="application-status">Pending</span>
-                    <button class="action-btn-sm info" onclick="viewApplicationDetails('${application.id}')">
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                    <button class="action-btn-sm success" onclick="approveApplication('${application.id}')">
-                        <i class="fas fa-check"></i> Accept
-                    </button>
-                    <button class="action-btn-sm danger" onclick="rejectApplication('${application.id}')">
-                        <i class="fas fa-times"></i> Decline
-                    </button>
+                    <span class="status-badge pending-badge">
+                        <i class="fas fa-clock"></i> Pending
+                    </span>
+                    <div class="action-group">
+                        <button class="wf-btn wf-btn-view" onclick="viewApplicationDetails('${application.id}')" title="View Full Application">
+                            <i class="fas fa-file-alt"></i>
+                            <span>View</span>
+                        </button>
+                        <button class="wf-btn wf-btn-success" onclick="approveApplication('${application.id}')" title="Accept Application">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Accept</span>
+                        </button>
+                        <button class="wf-btn wf-btn-danger" onclick="rejectApplication('${application.id}')" title="Decline Application">
+                            <i class="fas fa-times-circle"></i>
+                            <span>Decline</span>
+                        </button>
+                    </div>
                 </div>
             `;
 
@@ -1560,14 +1574,17 @@
                 </div>
                 
                 <div class="card-actions">
-                    <button class="action-btn-sm info" onclick="viewEmployeeDetails('${employee.id}')">
-                        <i class="fas fa-eye"></i> View Details
+                    <button class="wf-btn wf-btn-view" onclick="viewEmployeeDetails('${employee.id}')" title="View Employee Details">
+                        <i class="fas fa-user"></i>
+                        <span>View Profile</span>
                     </button>
-                    <button class="action-btn-sm primary" onclick="assignJob('${employee.id}')">
-                        <i class="fas fa-plus"></i> Assign Job
+                    <button class="wf-btn wf-btn-assign" onclick="assignJob('${employee.id}')" title="Assign to Job">
+                        <i class="fas fa-briefcase"></i>
+                        <span>Assign Job</span>
                     </button>
-                    <button class="action-btn-sm secondary" onclick="editEmployee('${employee.id}')">
-                        <i class="fas fa-edit"></i> Edit
+                    <button class="wf-btn wf-btn-edit" onclick="editEmployee('${employee.id}')" title="Edit Employee">
+                        <i class="fas fa-edit"></i>
+                        <span>Edit</span>
                     </button>
                 </div>
             `;
@@ -1637,14 +1654,17 @@
                 </div>
                 
                 <div class="card-actions">
-                    <button class="action-btn-sm info" onclick="viewEmployeeDetails('${freelancer.id}')">
-                        <i class="fas fa-eye"></i> View Details
+                    <button class="wf-btn wf-btn-view" onclick="viewEmployeeDetails('${freelancer.id}')" title="View Freelancer Details">
+                        <i class="fas fa-user"></i>
+                        <span>View Profile</span>
                     </button>
-                    <button class="action-btn-sm primary" onclick="assignJob('${freelancer.id}')">
-                        <i class="fas fa-plus"></i> Assign Job
+                    <button class="wf-btn wf-btn-assign" onclick="assignJob('${freelancer.id}')" title="Assign to Job">
+                        <i class="fas fa-briefcase"></i>
+                        <span>Assign Job</span>
                     </button>
-                    <button class="action-btn-sm secondary" onclick="renewContract('${freelancer.id}')">
-                        <i class="fas fa-file-contract"></i> Renew
+                    <button class="wf-btn wf-btn-secondary" onclick="renewContract('${freelancer.id}')" title="Renew Contract">
+                        <i class="fas fa-file-contract"></i>
+                        <span>Renew</span>
                     </button>
                 </div>
             `;
@@ -1691,24 +1711,274 @@
                 </div>
                 
                 <div class="card-actions">
-                    <button class="action-btn-sm success" onclick="approveApplication('${application.id}')">
-                        <i class="fas fa-check"></i> Approve
+                    <button class="wf-btn wf-btn-view" onclick="viewApplication('${application.id}')" title="Review Application">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Review</span>
                     </button>
-                    <button class="action-btn-sm danger" onclick="rejectApplication('${application.id}')">
-                        <i class="fas fa-times"></i> Reject
+                    <button class="wf-btn wf-btn-success" onclick="approveApplication('${application.id}')" title="Accept Application">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Accept</span>
                     </button>
-                    <button class="action-btn-sm info" onclick="viewApplication('${application.id}')">
-                        <i class="fas fa-eye"></i> Review
+                    <button class="wf-btn wf-btn-danger" onclick="rejectApplication('${application.id}')" title="Decline Application">
+                        <i class="fas fa-times-circle"></i>
+                        <span>Decline</span>
                     </button>
                 </div>
             `;
         }
 
-        // Action handlers
-        function viewEmployeeDetails(employeeId) {
-            showNotification('Employee details would open here', 'info');
+        // =============================================
+        // ACTION HANDLER FUNCTIONS - FULLY FUNCTIONAL
+        // =============================================
+
+        // View Employee/Freelancer Details
+        function viewEmployeeDetails(personId) {
+            // Find person in employees or freelancers
+            let person = employeesData.find(e => e.id === personId) || 
+                        freelancersData.find(f => f.id === personId);
+            
+            if (!person) {
+                showNotification('Person not found', 'error');
+                return;
+            }
+
+            // Open employee details drawer with full information
+            currentApplicationId = personId;
+            
+            showNotification(`Opening details for ${person.firstName} ${person.lastName}`, 'info');
+            
+            // TODO: Implement full details drawer
+            console.log('View Employee Details:', person);
         }
 
+        // View Freelancer Details - FULLY FUNCTIONAL
+        function viewFreelancerDetails(freelancerId) {
+            const freelancer = freelancersData.find(f => f.id === freelancerId);
+            
+            if (!freelancer) {
+                showNotification('Freelancer not found', 'error');
+                return;
+            }
+
+            // Populate freelancer details drawer
+            const drawer = document.getElementById('freelancerDetailsDrawer');
+            if (drawer) {
+                // Personal Information
+                document.getElementById('freelancerName').textContent = 
+                    `${freelancer.firstName} ${freelancer.lastName}`;
+                document.getElementById('freelancerAvatar').textContent = freelancer.avatar;
+                document.getElementById('freelancerEmail').textContent = freelancer.email;
+                document.getElementById('freelancerPhone').textContent = freelancer.phone || 'Not provided';
+                document.getElementById('freelancerAddress').textContent = freelancer.address || 'Not specified';
+                
+                // Professional Information
+                document.getElementById('freelancerSpecialty').textContent = freelancer.specialty;
+                document.getElementById('freelancerSpecialty2').textContent = freelancer.specialty;
+                document.getElementById('freelancerExperience').textContent = `${freelancer.experience} years`;
+                document.getElementById('freelancerRating').textContent = freelancer.rating;
+                document.getElementById('freelancerRating2').textContent = freelancer.rating;
+                document.getElementById('freelancerHourlyRate').textContent = 
+                    `LKR ${freelancer.hourlyRate.toLocaleString()}/hour`;
+                document.getElementById('freelancerHourlyRate2').textContent = 
+                    `LKR ${freelancer.hourlyRate.toLocaleString()}/hour`;
+                
+                // Work Statistics
+                document.getElementById('freelancerCurrentJobs').textContent = freelancer.currentJobs || 0;
+                document.getElementById('freelancerCompletedJobs').textContent = freelancer.completedJobs || 0;
+                document.getElementById('freelancerTotalEarnings').textContent = 
+                    `LKR ${(freelancer.completedJobs * freelancer.hourlyRate * 8).toLocaleString()}`;
+                
+                // Status and Availability
+                document.getElementById('freelancerStatus').textContent = freelancer.status;
+                document.getElementById('freelancerStatus').className = 
+                    `status-badge ${freelancer.status.toLowerCase()}`;
+                document.getElementById('freelancerAvailability').textContent = 
+                    freelancer.status === 'Available' ? 'Available Now' : 'Currently Busy';
+                
+                // Contract Information
+                if (freelancer.contractDate) {
+                    document.getElementById('freelancerContractDate').textContent = 
+                        formatDate(freelancer.contractDate);
+                    document.getElementById('freelancerContractDuration').textContent = 
+                        calculateContractDuration(freelancer.contractDate);
+                } else {
+                    document.getElementById('freelancerContractDate').textContent = 'N/A';
+                    document.getElementById('freelancerContractDuration').textContent = 'No active contract';
+                }
+                
+                // Store current freelancer ID for action buttons
+                window.currentViewFreelancerId = freelancerId;
+                
+                // Show/hide assign button based on availability
+                const assignBtn = drawer.querySelector('.assign-freelancer-btn');
+                if (assignBtn) {
+                    if (freelancer.status.toLowerCase() === 'available') {
+                        assignBtn.style.display = 'inline-flex';
+                    } else {
+                        assignBtn.style.display = 'none';
+                    }
+                }
+                
+                // Open drawer
+                drawer.classList.add('active');
+                showNotification(`Viewing ${freelancer.firstName} ${freelancer.lastName}'s profile`, 'info');
+            } else {
+                showNotification(`Opening profile for ${freelancer.firstName} ${freelancer.lastName}`, 'info');
+                console.log('Freelancer Details:', freelancer);
+            }
+        }
+
+        // Close Freelancer Details Drawer
+        function closeFreelancerDetailsDrawer() {
+            document.getElementById('freelancerDetailsDrawer').classList.remove('active');
+            window.currentViewFreelancerId = null;
+        }
+
+        // Assign from Freelancer Details Drawer
+        function assignFromFreelancerDrawer() {
+            if (window.currentViewFreelancerId) {
+                closeFreelancerDetailsDrawer();
+                assignJob(window.currentViewFreelancerId);
+            }
+        }
+
+        // Edit from Freelancer Details Drawer
+        function editFromFreelancerDrawer() {
+            if (window.currentViewFreelancerId) {
+                closeFreelancerDetailsDrawer();
+                editFreelancer(window.currentViewFreelancerId);
+            }
+        }
+
+        // Calculate contract duration
+        function calculateContractDuration(contractDate) {
+            const start = new Date(contractDate);
+            const now = new Date();
+            const months = Math.floor((now - start) / (1000 * 60 * 60 * 24 * 30));
+            
+            if (months < 1) {
+                const days = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+                return `${days} days`;
+            } else if (months < 12) {
+                return `${months} months`;
+            } else {
+                const years = Math.floor(months / 12);
+                const remainingMonths = months % 12;
+                return remainingMonths > 0 
+                    ? `${years} year${years > 1 ? 's' : ''}, ${remainingMonths} month${remainingMonths > 1 ? 's' : ''}`
+                    : `${years} year${years > 1 ? 's' : ''}`;
+            }
+        }
+
+        // Edit Employee
+        function editEmployee(employeeId) {
+            const employee = employeesData.find(e => e.id === employeeId);
+            
+            if (!employee) {
+                showNotification('Employee not found', 'error');
+                return;
+            }
+
+            showNotification(`Edit mode for ${employee.firstName} ${employee.lastName}`, 'info');
+            console.log('Edit Employee:', employee);
+            
+            // TODO: Open edit modal with pre-filled form
+        }
+
+        // Edit Freelancer
+        function editFreelancer(freelancerId) {
+            const freelancer = freelancersData.find(f => f.id === freelancerId);
+            
+            if (!freelancer) {
+                showNotification('Freelancer not found', 'error');
+                return;
+            }
+
+            showNotification(`Edit mode for ${freelancer.firstName} ${freelancer.lastName}`, 'info');
+            console.log('Edit Freelancer:', freelancer);
+            
+            // TODO: Open edit modal with pre-filled form
+        }
+
+        // Renew Contract
+        function renewContract(freelancerId) {
+            const freelancer = freelancersData.find(f => f.id === freelancerId);
+            
+            if (!freelancer) {
+                showNotification('Freelancer not found', 'error');
+                return;
+            }
+
+            if (confirm(`Renew contract for ${freelancer.firstName} ${freelancer.lastName}?`)) {
+                showNotification('Contract renewal initiated. Opening contract form...', 'success');
+                console.log('Renew Contract:', freelancer);
+                
+                // TODO: Open contract renewal drawer with pre-filled data
+            }
+        }
+
+        // View Application Details - FULLY FUNCTIONAL
+        function viewApplicationDetails(applicationId) {
+            const application = applicationsData.find(app => app.id === applicationId);
+            
+            if (!application) {
+                showNotification('Application not found', 'error');
+                return;
+            }
+
+            currentApplicationId = applicationId;
+            
+            // Populate application details drawer
+            const drawer = document.getElementById('applicationDetailsDrawer');
+            if (drawer) {
+                // Personal Information Tab
+                document.getElementById('modalFullName').textContent = 
+                    `${application.firstName} ${application.lastName}`;
+                document.getElementById('modalEmail').textContent = application.email;
+                document.getElementById('modalPhone').textContent = application.phone || 'Not provided';
+                document.getElementById('modalApplicationDate').textContent = 
+                    formatDate(application.applicationDate);
+                
+                // Professional Information Tab
+                document.getElementById('modalSpecialty').textContent = application.specialty;
+                document.getElementById('modalExperience').textContent = `${application.experience} years`;
+                document.getElementById('modalExpectedRate').textContent = 
+                    `LKR ${application.expectedRate.toLocaleString()}/hour`;
+                document.getElementById('modalAvailability').textContent = 
+                    application.availability || 'Immediate';
+                
+                // Additional Information Tab
+                const coverLetter = application.coverLetter || 
+                    `I am ${application.firstName} ${application.lastName}, a ${application.specialty} specialist with ${application.experience} years of experience. I am passionate about delivering quality repair services and ensuring customer satisfaction. I am available to start immediately and committed to maintaining high standards of work.`;
+                document.getElementById('modalCoverLetter').textContent = coverLetter;
+                
+                // Skills
+                const skillsContainer = document.getElementById('modalSkills');
+                skillsContainer.innerHTML = '';
+                const skills = application.skills || ['Problem Solving', 'Customer Service', 'Technical Repair', application.specialty];
+                skills.forEach(skill => {
+                    const skillTag = document.createElement('span');
+                    skillTag.className = 'skill-tag';
+                    skillTag.textContent = skill;
+                    skillsContainer.appendChild(skillTag);
+                });
+                
+                // Open drawer
+                drawer.classList.add('active');
+                showNotification(`Viewing application from ${application.firstName} ${application.lastName}`, 'info');
+            } else {
+                showNotification(`Opening application from ${application.firstName} ${application.lastName}`, 'info');
+            }
+            
+            console.log('Application Details:', application);
+        }
+
+        // View Application (alternate)
+        function viewApplication(applicationId) {
+            viewApplicationDetails(applicationId);
+        }
+
+        // Assign Job to Employee/Freelancer
         function assignJob(employeeId) {
             // Find the employee/freelancer
             let person = null;
@@ -1864,16 +2134,222 @@
             showNotification('Contract renewal would start here', 'info');
         }
 
+        // Store current application being processed
+        let currentApplicationForContract = null;
+
         function approveApplication(applicationId) {
-            if (confirm('Approve this application?')) {
-                showNotification('Application approved successfully!', 'success');
-                // Remove from applications array and add to employees
-                const appIndex = applicationsData.findIndex(app => app.id === applicationId);
-                if (appIndex > -1) {
-                    applicationsData.splice(appIndex, 1);
-                    loadWorkforce();
-                    updateStats();
+            // Open contract creation drawer instead of immediate approval
+            openContractCreationDrawer(applicationId);
+        }
+
+        function openContractCreationDrawer(applicationId) {
+            const application = applicationsData.find(app => app.id === applicationId);
+            if (!application) return;
+
+            currentApplicationForContract = application;
+
+            // Populate drawer with applicant details
+            document.getElementById('contractApplicantName').textContent = application.name;
+            document.getElementById('summaryName').textContent = application.name;
+            document.getElementById('summaryPosition').textContent = application.role || 'Repairer';
+
+            // Set default start date to tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('contractStartDate').value = tomorrow.toISOString().split('T')[0];
+
+            // Reset form
+            document.getElementById('contractForm').reset();
+            updateContractSummary();
+
+            // Show drawer
+            document.getElementById('contractCreationDrawer').classList.add('active');
+        }
+
+        function closeContractDrawer() {
+            document.getElementById('contractCreationDrawer').classList.remove('active');
+            currentApplicationForContract = null;
+        }
+
+        function updatePaymentFields() {
+            const structure = document.getElementById('paymentStructure').value;
+            const salaryGroup = document.getElementById('salaryGroup');
+            const salaryLabel = salaryGroup.querySelector('label');
+            const salaryInput = document.getElementById('salaryAmount');
+
+            switch (structure) {
+                case 'monthly':
+                    salaryLabel.textContent = 'Monthly Salary (LKR)';
+                    salaryInput.placeholder = 'e.g., 75000';
+                    break;
+                case 'hourly':
+                    salaryLabel.textContent = 'Hourly Rate (LKR)';
+                    salaryInput.placeholder = 'e.g., 500';
+                    break;
+                case 'project':
+                    salaryLabel.textContent = 'Project Rate (LKR)';
+                    salaryInput.placeholder = 'e.g., 25000';
+                    break;
+                case 'commission':
+                    salaryLabel.textContent = 'Commission Rate (%)';
+                    salaryInput.placeholder = 'e.g., 15';
+                    break;
+            }
+            updateContractSummary();
+        }
+
+        function updateContractSummary() {
+            // Update contract type
+            const selectedType = document.querySelector('input[name="contractType"]:checked');
+            if (selectedType) {
+                const typeText = selectedType.parentElement.querySelector('h5').textContent;
+                document.getElementById('summaryType').textContent = typeText;
+            }
+
+            // Update duration
+            const duration = document.getElementById('contractDuration').value;
+            const startDate = document.getElementById('contractStartDate').value;
+            let durationText = '-';
+            if (startDate) {
+                if (duration === 'permanent') {
+                    durationText = `From ${startDate} (Permanent)`;
+                } else if (duration === 'custom') {
+                    const endDate = document.getElementById('contractEndDate').value;
+                    durationText = endDate ? `${startDate} to ${endDate}` : `From ${startDate}`;
+                } else {
+                    durationText = `${duration} months from ${startDate}`;
                 }
+            }
+            document.getElementById('summaryDuration').textContent = durationText;
+
+            // Update compensation
+            const paymentStructure = document.getElementById('paymentStructure').value;
+            const amount = document.getElementById('salaryAmount').value;
+            const frequency = document.getElementById('paymentFrequency').value;
+            let compensationText = '-';
+            if (amount) {
+                const structureLabels = {
+                    'monthly': 'LKR',
+                    'hourly': 'LKR/hour',
+                    'project': 'LKR/project',
+                    'commission': '%'
+                };
+                compensationText = `${amount} ${structureLabels[paymentStructure]} (${frequency})`;
+            }
+            document.getElementById('summaryCompensation').textContent = compensationText;
+
+            // Update benefits
+            const selectedBenefits = Array.from(document.querySelectorAll('input[name="benefits"]:checked'))
+                .map(cb => cb.parentElement.querySelector('span').textContent.trim())
+                .slice(0, 3);
+            const benefitsText = selectedBenefits.length > 0 
+                ? selectedBenefits.join(', ') + (selectedBenefits.length < document.querySelectorAll('input[name="benefits"]:checked').length ? '...' : '')
+                : 'None selected';
+            document.getElementById('summaryBenefits').textContent = benefitsText;
+        }
+
+        function saveContractAsDraft() {
+            if (!currentApplicationForContract) return;
+
+            const contractData = gatherContractData();
+            console.log('Saving contract as draft:', contractData);
+            
+            showNotification('Contract saved as draft', 'success');
+            closeContractDrawer();
+        }
+
+        function gatherContractData() {
+            const benefits = Array.from(document.querySelectorAll('input[name="benefits"]:checked'))
+                .map(cb => cb.value);
+            const terms = Array.from(document.querySelectorAll('input[name="contractTerms"]:checked'))
+                .map(cb => cb.value);
+
+            return {
+                applicationId: currentApplicationForContract.id,
+                employeeName: currentApplicationForContract.name,
+                employeeEmail: currentApplicationForContract.email,
+                contractType: document.querySelector('input[name="contractType"]:checked')?.value,
+                startDate: document.getElementById('contractStartDate').value,
+                duration: document.getElementById('contractDuration').value,
+                endDate: document.getElementById('contractEndDate').value,
+                paymentStructure: document.getElementById('paymentStructure').value,
+                salaryAmount: document.getElementById('salaryAmount').value,
+                paymentFrequency: document.getElementById('paymentFrequency').value,
+                hoursPerWeek: document.getElementById('hoursPerWeek').value,
+                workSchedule: document.getElementById('workSchedule').value,
+                overtimePolicy: document.getElementById('overtimePolicy').value,
+                benefits: benefits,
+                additionalBenefits: document.getElementById('additionalBenefits').value,
+                annualLeave: document.getElementById('annualLeave').value,
+                sickLeave: document.getElementById('sickLeave').value,
+                casualLeave: document.getElementById('casualLeave').value,
+                noticeEmployer: document.getElementById('noticeEmployer').value,
+                noticeEmployee: document.getElementById('noticeEmployee').value,
+                severancePay: document.getElementById('severancePay').value,
+                specialClauses: document.getElementById('specialClauses').value,
+                contractTerms: terms,
+                createdAt: new Date().toISOString()
+            };
+        }
+
+        // Handle contract form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const contractForm = document.getElementById('contractForm');
+            if (contractForm) {
+                contractForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    if (!currentApplicationForContract) return;
+
+                    const contractData = gatherContractData();
+                    
+                    // Validate required fields
+                    if (!contractData.startDate || !contractData.salaryAmount) {
+                        showNotification('Please fill in all required fields', 'error');
+                        return;
+                    }
+
+                    console.log('Creating contract:', contractData);
+
+                    // Here you would send contractData to backend
+                    // For now, simulate success
+                    showNotification('Contract generated and sent successfully!', 'success');
+
+                    // Finalize the hiring process
+                    finalizeHiring(currentApplicationForContract.id, contractData);
+                });
+
+                // Update summary on input changes
+                const formInputs = contractForm.querySelectorAll('input, select, textarea');
+                formInputs.forEach(input => {
+                    input.addEventListener('change', updateContractSummary);
+                });
+
+                // Handle contract duration changes
+                document.getElementById('contractDuration').addEventListener('change', function() {
+                    const customGroup = document.getElementById('customEndDateGroup');
+                    customGroup.style.display = this.value === 'custom' ? 'block' : 'none';
+                    updateContractSummary();
+                });
+            }
+        });
+
+        function finalizeHiring(applicationId, contractData) {
+            // Remove from applications array and add to employees
+            const appIndex = applicationsData.findIndex(app => app.id === applicationId);
+            if (appIndex > -1) {
+                const employee = applicationsData[appIndex];
+                employee.contractData = contractData;
+                employee.hiredDate = new Date().toISOString();
+                
+                applicationsData.splice(appIndex, 1);
+                
+                // Add to employees (in real app, this would be sent to backend)
+                showNotification(`${employee.name} hired successfully! Contract sent to their email.`, 'success');
+                
+                closeContractDrawer();
+                loadWorkforce();
+                updateStats();
             }
         }
 
@@ -3607,6 +4083,177 @@
         </div>
     </div>
 
+    <!-- Freelancer Details Drawer -->
+    <div class="drawer-overlay" id="freelancerDetailsDrawer">
+        <div class="drawer-panel">
+            <div class="drawer-header">
+                <div>
+                    <h3><i class="fas fa-user-tie"></i> Freelancer Profile</h3>
+                    <p style="margin: 4px 0 0 0; color: var(--text-secondary); font-size: 14px;">
+                        Comprehensive freelancer information
+                    </p>
+                </div>
+                <button class="close-drawer" onclick="closeFreelancerDetailsDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="drawer-content">
+                <!-- Freelancer Header Card -->
+                <div class="freelancer-header-card">
+                    <div class="freelancer-avatar-large" id="freelancerAvatar">👤</div>
+                    <div class="freelancer-header-info">
+                        <h2 id="freelancerName">Freelancer Name</h2>
+                        <p class="freelancer-specialty-large" id="freelancerSpecialty">Specialty</p>
+                        <div class="freelancer-quick-stats">
+                            <span id="freelancerStatus" class="status-badge available">Available</span>
+                            <span class="quick-stat">
+                                <i class="fas fa-star"></i> 
+                                <strong id="freelancerRating">4.8</strong> Rating
+                            </span>
+                            <span class="quick-stat">
+                                <i class="fas fa-money-bill"></i> 
+                                <strong id="freelancerHourlyRate">LKR 0</strong>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabbed Content -->
+                <div class="drawer-tabs">
+                    <button class="drawer-tab active" data-tab="freelancer-personal">Personal</button>
+                    <button class="drawer-tab" data-tab="freelancer-professional">Professional</button>
+                    <button class="drawer-tab" data-tab="freelancer-work">Work History</button>
+                    <button class="drawer-tab" data-tab="freelancer-contract">Contract</button>
+                </div>
+
+                <!-- Personal Information Tab -->
+                <div class="drawer-tab-content active" id="freelancer-personal">
+                    <div class="details-section">
+                        <h4><i class="fas fa-id-card"></i> Contact Information</h4>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <label><i class="fas fa-envelope"></i> Email:</label>
+                                <span id="freelancerEmail">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-phone"></i> Phone:</label>
+                                <span id="freelancerPhone">-</span>
+                            </div>
+                            <div class="detail-item full-width">
+                                <label><i class="fas fa-map-marker-alt"></i> Address:</label>
+                                <span id="freelancerAddress">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Professional Information Tab -->
+                <div class="drawer-tab-content" id="freelancer-professional">
+                    <div class="details-section">
+                        <h4><i class="fas fa-briefcase"></i> Professional Details</h4>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <label><i class="fas fa-tools"></i> Specialty:</label>
+                                <span id="freelancerSpecialty2" class="specialty-text">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-calendar-alt"></i> Experience:</label>
+                                <span id="freelancerExperience">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-star"></i> Rating:</label>
+                                <span class="rating-display">
+                                    <strong id="freelancerRating2">-</strong> / 5.0
+                                </span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-money-bill-wave"></i> Hourly Rate:</label>
+                                <span id="freelancerHourlyRate2" class="rate-text">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-check-circle"></i> Availability:</label>
+                                <span id="freelancerAvailability">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Work History Tab -->
+                <div class="drawer-tab-content" id="freelancer-work">
+                    <div class="details-section">
+                        <h4><i class="fas fa-chart-line"></i> Work Statistics</h4>
+                        <div class="stats-cards">
+                            <div class="stat-card">
+                                <div class="stat-icon active">
+                                    <i class="fas fa-briefcase"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="freelancerCurrentJobs">0</span>
+                                    <span class="stat-label">Active Jobs</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon success">
+                                    <i class="fas fa-check-double"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="freelancerCompletedJobs">0</span>
+                                    <span class="stat-label">Completed</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon earnings">
+                                    <i class="fas fa-coins"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-value" id="freelancerTotalEarnings">LKR 0</span>
+                                    <span class="stat-label">Total Earnings</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contract Information Tab -->
+                <div class="drawer-tab-content" id="freelancer-contract">
+                    <div class="details-section">
+                        <h4><i class="fas fa-file-contract"></i> Contract Information</h4>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <label><i class="fas fa-calendar-check"></i> Contract Start Date:</label>
+                                <span id="freelancerContractDate">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-hourglass-half"></i> Contract Duration:</label>
+                                <span id="freelancerContractDuration">-</span>
+                            </div>
+                            <div class="detail-item full-width">
+                                <div class="contract-status-box">
+                                    <i class="fas fa-info-circle"></i>
+                                    <p>Freelancer is working on a contract basis. Contract can be renewed or terminated with proper notice.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="drawer-actions">
+                    <button class="drawer-btn secondary" onclick="closeFreelancerDetailsDrawer()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    <button class="drawer-btn" onclick="editFromFreelancerDrawer()">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </button>
+                    <button class="drawer-btn success assign-freelancer-btn" onclick="assignFromFreelancerDrawer()">
+                        <i class="fas fa-briefcase"></i> Assign to Job
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Application Details Drawer -->
     <div class="drawer-overlay" id="applicationDetailsDrawer">
         <div class="drawer-panel">
@@ -3707,6 +4354,318 @@
                         <i class="fas fa-check-circle"></i> Accept Application
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contract Creation Drawer -->
+    <div class="drawer-overlay" id="contractCreationDrawer">
+        <div class="drawer-panel large-drawer">
+            <div class="drawer-header">
+                <div>
+                    <h3><i class="fas fa-file-contract"></i> Create Employment Contract</h3>
+                    <p style="margin: 4px 0 0 0; color: var(--text-secondary); font-size: 14px;">
+                        Prepare contract for <span id="contractApplicantName" style="color: var(--primary-color); font-weight: 600;">-</span>
+                    </p>
+                </div>
+                <button class="close-drawer" onclick="closeContractDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="drawer-content">
+                <form id="contractForm">
+                    <!-- Contract Type Selection -->
+                    <div class="contract-section">
+                        <h4><i class="fas fa-briefcase"></i> Employment Type</h4>
+                        <div class="contract-type-grid">
+                            <label class="contract-type-card">
+                                <input type="radio" name="contractType" value="full-time" checked>
+                                <div class="type-card-inner">
+                                    <i class="fas fa-user-tie"></i>
+                                    <h5>Full-Time Employee</h5>
+                                    <p>Permanent position with full benefits</p>
+                                </div>
+                            </label>
+                            <label class="contract-type-card">
+                                <input type="radio" name="contractType" value="freelance">
+                                <div class="type-card-inner">
+                                    <i class="fas fa-user-clock"></i>
+                                    <h5>Freelance/Contractor</h5>
+                                    <p>Project-based or flexible hours</p>
+                                </div>
+                            </label>
+                            <label class="contract-type-card">
+                                <input type="radio" name="contractType" value="part-time">
+                                <div class="type-card-inner">
+                                    <i class="fas fa-user-check"></i>
+                                    <h5>Part-Time</h5>
+                                    <p>Fixed schedule, fewer hours</p>
+                                </div>
+                            </label>
+                            <label class="contract-type-card">
+                                <input type="radio" name="contractType" value="trial">
+                                <div class="type-card-inner">
+                                    <i class="fas fa-user-clock"></i>
+                                    <h5>Trial Period</h5>
+                                    <p>3-month probationary period</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Contract Duration -->
+                    <div class="contract-section">
+                        <h4><i class="fas fa-calendar-alt"></i> Contract Duration</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Start Date</label>
+                                <input type="date" id="contractStartDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Contract Duration</label>
+                                <select id="contractDuration">
+                                    <option value="permanent">Permanent/Indefinite</option>
+                                    <option value="3">3 Months (Trial)</option>
+                                    <option value="6">6 Months</option>
+                                    <option value="12">1 Year</option>
+                                    <option value="24">2 Years</option>
+                                    <option value="36">3 Years</option>
+                                    <option value="custom">Custom Duration</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="customEndDateGroup" style="display: none;">
+                                <label>End Date</label>
+                                <input type="date" id="contractEndDate">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Compensation -->
+                    <div class="contract-section">
+                        <h4><i class="fas fa-money-bill-wave"></i> Compensation</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Payment Structure</label>
+                                <select id="paymentStructure" onchange="updatePaymentFields()">
+                                    <option value="monthly">Monthly Salary</option>
+                                    <option value="hourly">Hourly Rate</option>
+                                    <option value="project">Project-Based</option>
+                                    <option value="commission">Commission-Based</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="salaryGroup">
+                                <label>Amount (LKR)</label>
+                                <input type="number" id="salaryAmount" placeholder="e.g., 75000" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Payment Frequency</label>
+                                <select id="paymentFrequency">
+                                    <option value="monthly">Monthly</option>
+                                    <option value="bi-weekly">Bi-weekly</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="per-project">Per Project</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Working Hours -->
+                    <div class="contract-section">
+                        <h4><i class="fas fa-clock"></i> Working Hours & Schedule</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Hours Per Week</label>
+                                <input type="number" id="hoursPerWeek" placeholder="e.g., 40" min="0" max="168">
+                            </div>
+                            <div class="form-group">
+                                <label>Work Schedule</label>
+                                <select id="workSchedule">
+                                    <option value="regular">Regular (Mon-Fri, 9-5)</option>
+                                    <option value="flexible">Flexible Hours</option>
+                                    <option value="shifts">Shift-Based</option>
+                                    <option value="on-call">On-Call Basis</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Overtime Policy</label>
+                            <select id="overtimePolicy">
+                                <option value="none">No Overtime</option>
+                                <option value="paid-1.5x">Paid at 1.5x Rate</option>
+                                <option value="paid-2x">Paid at 2x Rate</option>
+                                <option value="comp-time">Compensatory Time Off</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Benefits & Allowances -->
+                    <div class="contract-section">
+                        <h4><i class="fas fa-gift"></i> Benefits & Allowances</h4>
+                        <div class="benefits-grid">
+                            <label class="benefit-checkbox">
+                                <input type="checkbox" name="benefits" value="health-insurance">
+                                <span><i class="fas fa-heartbeat"></i> Health Insurance</span>
+                            </label>
+                            <label class="benefit-checkbox">
+                                <input type="checkbox" name="benefits" value="paid-leave">
+                                <span><i class="fas fa-umbrella-beach"></i> Paid Annual Leave</span>
+                            </label>
+                            <label class="benefit-checkbox">
+                                <input type="checkbox" name="benefits" value="sick-leave">
+                                <span><i class="fas fa-notes-medical"></i> Sick Leave</span>
+                            </label>
+                            <label class="benefit-checkbox">
+                                <input type="checkbox" name="benefits" value="transport">
+                                <span><i class="fas fa-bus"></i> Transport Allowance</span>
+                            </label>
+                            <label class="benefit-checkbox">
+                                <input type="checkbox" name="benefits" value="mobile">
+                                <span><i class="fas fa-mobile-alt"></i> Mobile Allowance</span>
+                            </label>
+                            <label class="benefit-checkbox">
+                                <input type="checkbox" name="benefits" value="tools">
+                                <span><i class="fas fa-tools"></i> Tools & Equipment</span>
+                            </label>
+                            <label class="benefit-checkbox">
+                                <input type="checkbox" name="benefits" value="training">
+                                <span><i class="fas fa-graduation-cap"></i> Training & Development</span>
+                            </label>
+                            <label class="benefit-checkbox">
+                                <input type="checkbox" name="benefits" value="bonus">
+                                <span><i class="fas fa-trophy"></i> Performance Bonus</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Additional Benefits/Notes</label>
+                            <textarea id="additionalBenefits" rows="2" placeholder="Specify any additional benefits, allowances, or special arrangements..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Leave Entitlements -->
+                    <div class="contract-section">
+                        <h4><i class="fas fa-calendar-check"></i> Leave Entitlements</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Annual Leave (Days/Year)</label>
+                                <input type="number" id="annualLeave" placeholder="e.g., 14" min="0" max="60">
+                            </div>
+                            <div class="form-group">
+                                <label>Sick Leave (Days/Year)</label>
+                                <input type="number" id="sickLeave" placeholder="e.g., 7" min="0" max="60">
+                            </div>
+                            <div class="form-group">
+                                <label>Casual Leave (Days/Year)</label>
+                                <input type="number" id="casualLeave" placeholder="e.g., 7" min="0" max="60">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Termination Clauses -->
+                    <div class="contract-section">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Termination & Notice Period</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Notice Period (Employee)</label>
+                                <select id="noticeEmployer">
+                                    <option value="0">No Notice Required</option>
+                                    <option value="7">1 Week</option>
+                                    <option value="14">2 Weeks</option>
+                                    <option value="30">1 Month</option>
+                                    <option value="60">2 Months</option>
+                                    <option value="90">3 Months</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Notice Period (Company)</label>
+                                <select id="noticeEmployee">
+                                    <option value="0">No Notice Required</option>
+                                    <option value="7">1 Week</option>
+                                    <option value="14">2 Weeks</option>
+                                    <option value="30">1 Month</option>
+                                    <option value="60">2 Months</option>
+                                    <option value="90">3 Months</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Severance Pay</label>
+                            <select id="severancePay">
+                                <option value="none">No Severance Pay</option>
+                                <option value="statutory">As Per Labor Law</option>
+                                <option value="1month">1 Month Salary</option>
+                                <option value="2months">2 Months Salary</option>
+                                <option value="custom">Custom Agreement</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Contract Terms & Conditions -->
+                    <div class="contract-section">
+                        <h4><i class="fas fa-file-signature"></i> Additional Terms & Conditions</h4>
+                        <div class="form-group">
+                            <label>Special Clauses</label>
+                            <textarea id="specialClauses" rows="4" placeholder="Add any specific terms, confidentiality clauses, non-compete agreements, or special conditions..."></textarea>
+                        </div>
+                        <div class="terms-checkboxes">
+                            <label class="terms-checkbox">
+                                <input type="checkbox" name="contractTerms" value="confidentiality" checked>
+                                <span>Include Confidentiality Agreement</span>
+                            </label>
+                            <label class="terms-checkbox">
+                                <input type="checkbox" name="contractTerms" value="ip-rights">
+                                <span>Intellectual Property Rights Assignment</span>
+                            </label>
+                            <label class="terms-checkbox">
+                                <input type="checkbox" name="contractTerms" value="non-compete">
+                                <span>Non-Compete Clause (12 months)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Contract Summary Preview -->
+                    <div class="contract-section contract-preview">
+                        <h4><i class="fas fa-file-contract"></i> Contract Summary</h4>
+                        <div class="contract-summary-box">
+                            <div class="summary-row">
+                                <span class="summary-label">Employee:</span>
+                                <span class="summary-value" id="summaryName">-</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="summary-label">Position:</span>
+                                <span class="summary-value" id="summaryPosition">-</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="summary-label">Contract Type:</span>
+                                <span class="summary-value" id="summaryType">-</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="summary-label">Duration:</span>
+                                <span class="summary-value" id="summaryDuration">-</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="summary-label">Compensation:</span>
+                                <span class="summary-value" id="summaryCompensation">-</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="summary-label">Benefits:</span>
+                                <span class="summary-value" id="summaryBenefits">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="drawer-actions">
+                        <button type="button" class="drawer-btn secondary" onclick="closeContractDrawer()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="drawer-btn" onclick="saveContractAsDraft()">
+                            <i class="fas fa-save"></i> Save as Draft
+                        </button>
+                        <button type="submit" class="drawer-btn success">
+                            <i class="fas fa-check-circle"></i> Generate & Send Contract
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

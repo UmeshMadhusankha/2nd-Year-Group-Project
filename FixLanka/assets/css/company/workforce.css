@@ -1338,44 +1338,173 @@
 
 .application-actions {
     display: flex;
-    gap: 10px;
+    gap: 16px;
     flex-shrink: 0;
     align-items: center;
+    flex-wrap: wrap;
 }
 
-.application-actions .action-btn-sm {
+/* Action Buttons Group Container */
+.action-buttons-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Redesigned Application Action Buttons */
+.app-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
     white-space: nowrap;
-    min-width: fit-content;
-    padding: 8px 16px;
+    min-width: 100px;
+    justify-content: center;
+    isolation: isolate; /* Prevent z-index conflicts */
 }
 
+.app-action-btn i {
+    font-size: 16px;
+    transition: transform 0.3s ease;
+}
+
+.app-action-btn span {
+    font-weight: 600;
+    transition: transform 0.3s ease;
+}
+
+/* View Button - Info Blue */
+.app-action-btn.view-btn {
+    background: linear-gradient(135deg, #3498db, #5dade2);
+    color: white;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.app-action-btn.view-btn:hover {
+    background: linear-gradient(135deg, #2980b9, #3498db);
+    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.4);
+    transform: translateY(-2px);
+}
+
+.app-action-btn.view-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+/* Accept Button - Success Green */
+.app-action-btn.accept-btn {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: white;
+    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+}
+
+.app-action-btn.accept-btn:hover {
+    background: linear-gradient(135deg, #229954, #27ae60);
+    box-shadow: 0 4px 16px rgba(39, 174, 96, 0.5);
+    transform: translateY(-2px);
+}
+
+.app-action-btn.accept-btn:hover i {
+    transform: scale(1.15) rotate(5deg);
+}
+
+.app-action-btn.accept-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+}
+
+/* Decline Button - Danger Red */
+.app-action-btn.decline-btn {
+    background: linear-gradient(135deg, #e74c3c, #ec7063);
+    color: white;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.app-action-btn.decline-btn:hover {
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+    box-shadow: 0 4px 16px rgba(231, 76, 60, 0.5);
+    transform: translateY(-2px);
+}
+
+.app-action-btn.decline-btn:hover i {
+    transform: scale(1.15) rotate(-5deg);
+}
+
+.app-action-btn.decline-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+/* Ripple Effect */
+.app-action-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.app-action-btn:active::after {
+    width: 200px;
+    height: 200px;
+}
+
+/* Application Status Badge */
 .application-status {
     background: var(--warning-color);
     color: var(--text-white);
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 10px;
-    font-weight: 600;
-    margin-right: 8px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     transition: all 0.3s ease;
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.application-status:hover {
-    transform: scale(1.05);
+.application-status i {
+    font-size: 11px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.application-status.pending-status {
+    background: linear-gradient(135deg, #f39c12, #f1c40f);
 }
 
 .application-status.new {
-    background: var(--secondary-color);
+    background: linear-gradient(135deg, #3498db, #5dade2);
 }
 
 .application-status.reviewed {
-    background: var(--success-color);
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
 }
 
 .application-status.rejected {
@@ -1591,43 +1720,17 @@
 .card-actions {
     padding: 20px 24px;
     background: var(--background-color);
-    /* border-top: 1px solid var(--border-color); */
     display: flex;
-    gap: 12px;
+    gap: 16px;
     flex-wrap: wrap;
-}
-
-.card-actions button {
-    flex: 1;
-    min-width: 110px;
-    padding: 12px 16px;
-    border: none;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
+    justify-content: flex-start;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    position: relative;
-    overflow: hidden;
 }
 
-.card-actions button::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s ease;
-}
-
-.card-actions button:hover::before {
-    left: 100%;
+/* Use the new button styles for card-actions too */
+.card-actions .app-action-btn {
+    flex: 0 1 auto;
+    min-width: 110px;
 }
 
 .action-btn-sm {
@@ -2631,6 +2734,204 @@
     margin-top: auto;
 }
 
+/* Freelancer Header Card Styles */
+.freelancer-header-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xl);
+    padding: var(--spacing-xl);
+    background: linear-gradient(135deg, rgba(10, 186, 181, 0.08), rgba(10, 186, 181, 0.04));
+    border-radius: var(--border-radius-lg);
+    border: 1px solid rgba(10, 186, 181, 0.15);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: 0 4px 12px rgba(10, 186, 181, 0.08);
+}
+
+.freelancer-avatar-large {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+    box-shadow: 0 8px 16px rgba(10, 186, 181, 0.3);
+    flex-shrink: 0;
+}
+
+.freelancer-header-info {
+    flex: 1;
+}
+
+.freelancer-header-info h2 {
+    margin: 0 0 var(--spacing-xs) 0;
+    color: var(--text-primary);
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.freelancer-specialty-large {
+    color: var(--primary-color);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 var(--spacing-md) 0;
+}
+
+.freelancer-quick-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
+.quick-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.quick-stat i {
+    color: var(--primary-color);
+}
+
+.quick-stat strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Stats Cards for Work History */
+.stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--bg-primary);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(10, 186, 181, 0.15);
+    border-color: var(--primary-color);
+}
+
+.stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--border-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.stat-icon.active {
+    background: linear-gradient(135deg, rgba(10, 186, 181, 0.15), rgba(10, 186, 181, 0.08));
+    color: var(--primary-color);
+}
+
+.stat-icon.success {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.08));
+    color: #22c55e;
+}
+
+.stat-icon.earnings {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.08));
+    color: #f59e0b;
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Contract Status Box */
+.contract-status-box {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: rgba(59, 130, 246, 0.08);
+    border-radius: var(--border-radius);
+    border-left: 4px solid #3b82f6;
+    margin-top: var(--spacing-md);
+}
+
+.contract-status-box i {
+    color: #3b82f6;
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.contract-status-box p {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+/* Specialty and Rate Text Styling */
+.specialty-text {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.rate-text {
+    color: #22c55e;
+    font-weight: 700;
+}
+
+.rating-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rating-display strong {
+    color: #f59e0b;
+    font-size: 16px;
+}
+
+/* Assign Button in Drawer */
+.assign-freelancer-btn {
+    display: none; /* Hidden by default for contracted freelancers */
+}
+
+.assign-freelancer-btn.show {
+    display: inline-flex;
+}
+
 /* Responsive Design for Drawers */
 @media (max-width: 768px) {
     .drawer-panel {
@@ -2667,6 +2968,31 @@
     .drawer-tab.active {
         border-bottom-color: var(--border-color);
         border-left: 3px solid var(--primary-color);
+    }
+
+    /* Freelancer drawer responsive */
+    .freelancer-header-card {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-md);
+    }
+
+    .freelancer-avatar-large {
+        width: 80px;
+        height: 80px;
+        font-size: 40px;
+    }
+
+    .freelancer-header-info h2 {
+        font-size: 22px;
+    }
+
+    .freelancer-quick-stats {
+        justify-content: center;
+    }
+
+    .stats-cards {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -6307,6 +6633,746 @@ textarea.form-control {
     .job-app-actions .action-btn-sm {
         width: 100%;
         justify-content: center;
+    }
+}
+
+/* ============================================ */
+/*       CONTRACT CREATION DRAWER STYLES        */
+/* ============================================ */
+
+/* Large Drawer Variant */
+.large-drawer {
+    max-width: 900px;
+    width: 95%;
+}
+
+/* Contract Sections */
+.contract-section {
+    background: var(--card-background);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-lg);
+    margin-bottom: var(--spacing-lg);
+    border: 1px solid var(--border-color);
+}
+
+.contract-section h4 {
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.contract-section h4 i {
+    color: var(--primary-color);
+    font-size: 18px;
+}
+
+/* Contract Type Grid */
+.contract-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.contract-type-card {
+    position: relative;
+    cursor: pointer;
+    display: block;
+}
+
+.contract-type-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.type-card-inner {
+    background: var(--background-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-lg);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.type-card-inner i {
+    font-size: 32px;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+    display: block;
+    transition: all 0.3s ease;
+}
+
+.type-card-inner h5 {
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    transition: all 0.3s ease;
+}
+
+.type-card-inner p {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin: 0;
+}
+
+.contract-type-card:hover .type-card-inner {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.05), rgba(87, 157, 255, 0.05));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.15);
+}
+
+.contract-type-card input:checked ~ .type-card-inner {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(87, 157, 255, 0.1));
+    box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.1);
+}
+
+.contract-type-card input:checked ~ .type-card-inner i {
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+.contract-type-card input:checked ~ .type-card-inner h5 {
+    color: var(--primary-color);
+}
+
+/* Form Rows and Groups */
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.form-group input[type="date"],
+.form-group input[type="number"],
+.form-group input[type="text"],
+.form-group select,
+.form-group textarea {
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--background-primary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Benefits Grid */
+.benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.benefit-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.benefit-checkbox:hover {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.05), rgba(87, 157, 255, 0.05));
+}
+
+.benefit-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.benefit-checkbox span {
+    font-size: 14px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.benefit-checkbox span i {
+    color: var(--primary-color);
+    font-size: 16px;
+}
+
+.benefit-checkbox input:checked ~ span {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Terms Checkboxes */
+.terms-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.terms-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.terms-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.terms-checkbox span {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.terms-checkbox input:checked ~ span {
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+/* Contract Preview/Summary */
+.contract-preview {
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.05), rgba(87, 157, 255, 0.05));
+    border: 2px solid var(--primary-color);
+}
+
+.contract-summary-box {
+    background: var(--background-primary);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.summary-row:last-child {
+    border-bottom: none;
+}
+
+.summary-label {
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.summary-value {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+    max-width: 60%;
+}
+
+/* Responsive Adjustments for Contract Drawer */
+@media (max-width: 768px) {
+    .large-drawer {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .contract-type-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .benefits-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .summary-value {
+        max-width: 100%;
+        text-align: left;
+    }
+}
+
+/* ============================================ */
+/*       RESPONSIVE: ACTION BUTTONS             */
+/* ============================================ */
+
+@media (max-width: 992px) {
+    .application-actions {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .action-buttons-group {
+        width: 100%;
+    }
+
+    .app-action-btn {
+        flex: 1;
+        min-width: 90px;
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+
+    .app-action-btn i {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 640px) {
+    .application-actions {
+        gap: 10px;
+    }
+
+    .action-buttons-group {
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .app-action-btn {
+        width: 100%;
+        padding: 12px 16px;
+        justify-content: center;
+    }
+
+    .application-status {
+        align-self: flex-start;
+        font-size: 11px;
+        padding: 6px 12px;
+    }
+
+    .card-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .card-actions .app-action-btn {
+        width: 100%;
+        min-width: 100%;
+    }
+}
+
+/* ============================================ */
+/*     UNIFIED WORKFORCE BUTTON SYSTEM (WF-BTN) */
+/* ============================================ */
+
+/* Base Button - Clean and Modern */
+.wf-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    min-width: 110px;
+    isolation: isolate;
+    text-decoration: none;
+    font-family: inherit;
+}
+
+.wf-btn i {
+    font-size: 16px;
+    transition: transform 0.3s ease;
+}
+
+.wf-btn span {
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+/* Hover Effect - Lift and Glow */
+.wf-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.wf-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Ripple Effect on Click */
+.wf-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+    pointer-events: none;
+}
+
+.wf-btn:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* ========== BUTTON VARIANTS ========== */
+
+/* View Button - Blue */
+.wf-btn-view {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.wf-btn-view:hover {
+    background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.45);
+}
+
+.wf-btn-view:hover i {
+    transform: scale(1.1);
+}
+
+/* Assign Button - Purple */
+.wf-btn-assign {
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
+}
+
+.wf-btn-assign:hover {
+    background: linear-gradient(135deg, #8e44ad 0%, #71368a 100%);
+    box-shadow: 0 6px 20px rgba(155, 89, 182, 0.45);
+}
+
+.wf-btn-assign:hover i {
+    transform: scale(1.15) rotate(90deg);
+}
+
+/* Edit Button - Orange */
+.wf-btn-edit {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+}
+
+.wf-btn-edit:hover {
+    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+    box-shadow: 0 6px 20px rgba(243, 156, 18, 0.45);
+}
+
+.wf-btn-edit:hover i {
+    transform: scale(1.1) rotate(-5deg);
+}
+
+/* Success Button - Green (Accept) */
+.wf-btn-success {
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.wf-btn-success:hover {
+    background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+    box-shadow: 0 6px 20px rgba(39, 174, 96, 0.45);
+}
+
+.wf-btn-success:hover i {
+    transform: scale(1.2) rotate(15deg);
+}
+
+/* Danger Button - Red (Decline/Delete) */
+.wf-btn-danger {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.wf-btn-danger:hover {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.45);
+}
+
+.wf-btn-danger:hover i {
+    transform: scale(1.2) rotate(-15deg);
+}
+
+/* Secondary Button - Gray */
+.wf-btn-secondary {
+    background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
+}
+
+.wf-btn-secondary:hover {
+    background: linear-gradient(135deg, #7f8c8d 0%, #616a6b 100%);
+    box-shadow: 0 6px 20px rgba(149, 165, 166, 0.45);
+}
+
+/* Warning Button - Yellow/Orange */
+.wf-btn-warning {
+    background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+    color: #2c3e50;
+    box-shadow: 0 4px 12px rgba(241, 196, 15, 0.3);
+}
+
+.wf-btn-warning:hover {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    box-shadow: 0 6px 20px rgba(241, 196, 15, 0.45);
+    color: white;
+}
+
+/* Info Button - Cyan */
+.wf-btn-info {
+    background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(26, 188, 156, 0.3);
+}
+
+.wf-btn-info:hover {
+    background: linear-gradient(135deg, #16a085 0%, #138d75 100%);
+    box-shadow: 0 6px 20px rgba(26, 188, 156, 0.45);
+}
+
+/* ========== BUTTON SIZES ========== */
+
+.wf-btn-sm {
+    padding: 8px 14px;
+    font-size: 13px;
+    min-width: 90px;
+}
+
+.wf-btn-sm i {
+    font-size: 14px;
+}
+
+.wf-btn-lg {
+    padding: 14px 24px;
+    font-size: 16px;
+    min-width: 140px;
+}
+
+.wf-btn-lg i {
+    font-size: 18px;
+}
+
+/* ========== BUTTON STATES ========== */
+
+.wf-btn:disabled,
+.wf-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.wf-btn.loading {
+    pointer-events: none;
+    position: relative;
+}
+
+.wf-btn.loading span,
+.wf-btn.loading i {
+    opacity: 0;
+}
+
+.wf-btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ========== ACTION GROUP CONTAINER ========== */
+
+.action-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.action-group .wf-btn {
+    flex: 0 1 auto;
+}
+
+/* ========== STATUS BADGES (UPDATED) ========== */
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.status-badge i {
+    font-size: 11px;
+}
+
+.status-badge.pending-badge {
+    background: linear-gradient(135deg, #f39c12, #f1c40f);
+    color: white;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.status-badge.active,
+.status-badge.available {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: white;
+}
+
+.status-badge.busy,
+.status-badge.assigned {
+    background: linear-gradient(135deg, #e67e22, #f39c12);
+    color: white;
+}
+
+.status-badge.inactive,
+.status-badge.unavailable {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    color: white;
+}
+
+.status-badge.rejected {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+/* ========== RESPONSIVE DESIGN ========== */
+
+@media (max-width: 992px) {
+    .action-group {
+        gap: 8px;
+    }
+
+    .wf-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        min-width: 100px;
+    }
+
+    .wf-btn i {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 768px) {
+    .action-group {
+        width: 100%;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .wf-btn {
+        width: 100%;
+        min-width: 100%;
+        justify-content: center;
+    }
+
+    .card-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .card-actions .wf-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .wf-btn {
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+
+    .wf-btn i {
+        font-size: 14px;
+    }
+
+    .status-badge {
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+}
+
+/* ========== DARK MODE SUPPORT (IF NEEDED) ========== */
+
+@media (prefers-color-scheme: dark) {
+    .wf-btn {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .wf-btn:hover {
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
     }
 }
 

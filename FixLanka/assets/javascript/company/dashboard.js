@@ -59,14 +59,14 @@ function initializeKPINavigation() {
             
             switch(cardContent) {
                 case 'Active Projects':
-                    navigateToPage('projects.html', 'Projects');
+                    navigateToPage('projects.php', 'Projects');
                     break;
                 case 'Pending Requests':
-                    navigateToPage('repair-requests.html', 'Repair Requests');
+                    navigateToPage('repair-requests.php', 'Repair Requests');
                     break;
                 case 'Total Earnings':
                     // Navigate to payments page for earnings details
-                    navigateToPage('payments.html', 'Payments');
+                    navigateToPage('payments.php', 'Payments');
                     break;
                 case 'Average Rating':
                     // Show rating details modal
@@ -94,7 +94,7 @@ function initializePanelNavigation() {
     if (repairRequestsViewAll) {
         repairRequestsViewAll.addEventListener('click', function(e) {
             e.preventDefault();
-            navigateToPage('repair-requests.html', 'Repair Requests');
+            navigateToPage('repair-requests.php', 'Repair Requests');
         });
     }
     
@@ -103,7 +103,7 @@ function initializePanelNavigation() {
     if (projectsNewBtn) {
         projectsNewBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            navigateToPage('projects.html', 'Projects');
+            navigateToPage('projects.php', 'Projects');
         });
     }
     
@@ -112,7 +112,7 @@ function initializePanelNavigation() {
     if (contractsViewAll) {
         contractsViewAll.addEventListener('click', function(e) {
             e.preventDefault();
-            navigateToPage('contracts.html', 'Contracts');
+            navigateToPage('contracts.php', 'Contracts');
         });
     }
     
@@ -121,7 +121,7 @@ function initializePanelNavigation() {
     if (paymentsViewAll) {
         paymentsViewAll.addEventListener('click', function(e) {
             e.preventDefault();
-            navigateToPage('payments.html', 'Payments');
+            navigateToPage('payments.php', 'Payments');
         });
     }
 }
@@ -132,25 +132,25 @@ function initializeActionButtonsNavigation() {
         const requestCard = e.target.closest('.request-card');
         if (requestCard && !e.target.closest('.request-actions')) {
             // Navigate to repair requests page with specific request
-            navigateToPage('repair-requests.html', 'Repair Requests');
+            navigateToPage('repair-requests.php', 'Repair Requests');
         }
         
         // Project items clickable
         const projectItem = e.target.closest('.project-item');
         if (projectItem && !e.target.closest('.project-actions')) {
-            navigateToPage('projects.html', 'Projects');
+            navigateToPage('projects.php', 'Projects');
         }
         
         // Contract items clickable
         const contractItem = e.target.closest('.contract-item');
         if (contractItem) {
-            navigateToPage('contracts.html', 'Contracts');
+            navigateToPage('contracts.php', 'Contracts');
         }
         
         // Payment items clickable
         const paymentItem = e.target.closest('.payment-item');
         if (paymentItem) {
-            navigateToPage('payments.html', 'Payments');
+            navigateToPage('payments.php', 'Payments');
         }
     });
     
@@ -170,16 +170,16 @@ function initializeActionButtonsNavigation() {
                 handleRequestAction(requestCard, buttonText);
                 break;
             case 'Assign Worker':
-                navigateToPage('workforce.html', 'Workforce');
+                navigateToPage('workforce.php', 'Workforce');
                 break;
             case 'View Details':
-                navigateToPage('repair-requests.html', 'Repair Requests');
+                navigateToPage('repair-requests.php', 'Repair Requests');
                 break;
             case 'Place Bid':
                 showBidModal(requestCard);
                 break;
             case 'Start Project':
-                navigateToPage('projects.html', 'Projects');
+                navigateToPage('projects.php', 'Projects');
                 break;
         }
     });
@@ -194,7 +194,7 @@ function initializeWorkforceNavigation() {
                 e.preventDefault();
                 const category = this.closest('.workforce-item').dataset.category;
                 const hash = category ? `#${category}s` : '';
-                navigateToPage(`workforce.html${hash}`, 'Workforce');
+                navigateToPage(`workforce.php${hash}`, 'Workforce');
             });
         }
     });
@@ -275,7 +275,7 @@ function showEarningsModal() {
             </div>
             <div class="modal-footer">
                 <button onclick="closeModal('earningsModal')" class="action-btn secondary">Close</button>
-                <button onclick="navigateToPage('repair-requests.html', 'Financial Reports')" class="action-btn primary">
+                <button onclick="navigateToPage('repair-requests.php', 'Financial Reports')" class="action-btn primary">
                     View Detailed Reports
                 </button>
             </div>
@@ -357,7 +357,7 @@ function showRatingModal() {
             </div>
             <div class="modal-footer">
                 <button onclick="closeModal('ratingModal')" class="action-btn secondary">Close</button>
-                <button onclick="navigateToPage('support.html', 'Customer Feedback')" class="action-btn primary">
+                <button onclick="navigateToPage('support.php', 'Customer Feedback')" class="action-btn primary">
                     View All Reviews
                 </button>
             </div>
