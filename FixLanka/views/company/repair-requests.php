@@ -7,13 +7,13 @@
     <title>Repair Requests - FixLanka</title>
 
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../assets/css/common/progress-bars.css">
-    <link rel="stylesheet" href="../../assets/css/common/buttons.css">
-    <link rel="stylesheet" href="../../assets/css/company/global.css">
-    <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
-    <link rel="stylesheet" href="../../assets/css/company/topbar.css">
-    <link rel="stylesheet" href="../../assets/css/company/repair-requests.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/progress-bars.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/global.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/repair-requests.css">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -773,8 +773,8 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="../../assets/javascript/company/sidebar.js"></script>
-    <script src="../../assets/javascript/company/repair-requests.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/repair-requests.js"></script>
 
     <script>
         // Load components when DOM is ready

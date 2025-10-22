@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workforce - FixLanka Dashboard</title>
-    <link rel="stylesheet" href="../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
-    <link rel="stylesheet" href="../../assets/css/company/topbar.css">
-    <link rel="stylesheet" href="../../assets/css/company/dashboard.css">
-    <link rel="stylesheet" href="../../assets/css/company/workforce.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/workforce.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 

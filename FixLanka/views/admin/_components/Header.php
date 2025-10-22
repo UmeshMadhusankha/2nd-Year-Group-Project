@@ -24,7 +24,7 @@ function renderPageHeader($basePath, $title, $pageSubtitle = null, $currentPage 
     echo '<div class="header-left">';
     echo '<label for="sidebar-toggle" class="sidebar-toggle"><i class="fas fa-bars"></i></label>';
     echo '<div class="logo">';
-    echo '<img src="../../assets/images/admin-moderator/logo.jpg" alt="FixLanka" class="logo-image">';
+    echo '<img src="/2nd-Year-Group-Project/FixLanka/assets/images/admin-moderator/logo.jpg" alt="FixLanka" class="logo-image">';
     echo '</div>';
     echo '<div class="page-info">';
     echo '<h1 class="page-title">' . $pageTitle . '</h1>';

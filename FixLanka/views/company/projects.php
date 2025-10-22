@@ -5,14 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Projects - FixLanka Dashboard</title>
-    <link rel="stylesheet" href="../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../assets/css/common/buttons.css">
-    <link rel="stylesheet" href="../../assets/css/common/progress-bars.css">
-    <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
-    <link rel="stylesheet" href="../../assets/css/company/topbar.css">
-    <link rel="stylesheet" href="../../assets/css/company/projects.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/progress-bars.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/projects.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="../../assets/javascript/company/projects.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/projects.js"></script>
 </head>
 
 <body>

@@ -9,8 +9,8 @@ require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
 require_once __DIR__ . '/_components/Common.php';
-require_once '../../includes/admin-modarator/auth.php';
-require_once '../../includes/admin-modarator/mock-data.php';
+require_once __DIR__ . '/../../includes/admin-modarator/auth.php';
+require_once __DIR__ . '/../../includes/admin-modarator/mock-data.php';
 
 // Check if user is logged in and get user info
 // $isLoggedIn = isLoggedIn();
@@ -45,7 +45,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
     <div class="dashboard-container">
         <?php renderModeratorSidebar($currentPath, $basePath); ?>
         <div class="dashboard-main">
-            <link rel="stylesheet" href="../../assets/css/moderator/ads.css">
+            <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/ads.css">
 
             <?php renderPageHeader($basePath, 'Advertisement Review', 'Review and manage submitted advertisements'); ?>
 
@@ -447,8 +447,9 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
     <script>
         lucide.createIcons();
     </script>
-    <script src="../../assets/javascript/admin-moderator/common.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
 
 </body>
 
 </html>
+

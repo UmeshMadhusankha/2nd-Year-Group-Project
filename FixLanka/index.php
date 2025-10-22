@@ -83,7 +83,12 @@ switch ($request) {
         break;
 
     case '/admin':
-        require_once __DIR__ . '/views/admin/index.php';
+    case '/admin-dashboard':
+        require_once __DIR__ . '/views/admin/dashboard.php';
+        break;
+    
+    case '/moderator-dashboard':
+        require_once __DIR__ . '/views/moderator/dashboard.php';
         break;
     
     case '/settings':
@@ -95,7 +100,52 @@ switch ($request) {
         break;
     
     case '/repairer-dashboard':
-        require_once __DIR__ . '/views/repairer/dashboard.php';
+    case '/repairer-welcome':
+        require_once __DIR__ . '/views/repairer/pages/welcome.php';
+        break;
+    
+    case '/repairer-available-jobs':
+        require_once __DIR__ . '/views/repairer/pages/available-jobs.php';
+        break;
+    
+    case '/repairer-my-jobs':
+        require_once __DIR__ . '/views/repairer/pages/my-jobs.php';
+        break;
+    
+    case '/repairer-company-jobs':
+        require_once __DIR__ . '/views/repairer/pages/company-jobs.php';
+        break;
+    
+    case '/repairer-earnings':
+        require_once __DIR__ . '/views/repairer/pages/earnings.php';
+        break;
+    
+    case '/repairer-reviews':
+        require_once __DIR__ . '/views/repairer/pages/reviews.php';
+        break;
+    
+    case '/repairer-profile':
+        require_once __DIR__ . '/views/repairer/pages/profile.php';
+        break;
+    
+    case '/repairer-subscription':
+        require_once __DIR__ . '/views/repairer/pages/subscription.php';
+        break;
+    
+    case '/repairer-support':
+        require_once __DIR__ . '/views/repairer/pages/support.php';
+        break;
+    
+    case '/repairer-settings':
+        require_once __DIR__ . '/views/repairer/pages/settings.php';
+        break;
+    
+    case '/repairer-upgrade':
+        require_once __DIR__ . '/views/repairer/pages/upgrade.php';
+        break;
+    
+    case '/repairer-submit-quote':
+        require_once __DIR__ . '/views/repairer/pages/submit-quote.php';
         break;
     
     case '/company-dashboard':

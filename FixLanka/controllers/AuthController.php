@@ -30,6 +30,7 @@ class AuthController {
         }
         
         try {
+            // Try to find user in User table
             $stmt = $this->pdo->prepare("SELECT user_id, f_name, l_name, email, password FROM User WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -40,16 +41,78 @@ class AuthController {
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['user_role'] = 'user';
                 
-                // Redirect to landing page (home) instead of dashboard
                 header('Location: /2nd-Year-Group-Project/FixLanka/');
                 exit;
-            } else {
-                $_SESSION['error'] = 'Invalid email or password';
-                header('Location: /2nd-Year-Group-Project/FixLanka/login');
+            }
+            
+            // Try to find user in Admin table
+            $stmt = $this->pdo->prepare("SELECT username, email, password FROM Admin WHERE email = ?");
+            $stmt->execute([$email]);
+            $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($admin && password_verify($password, $admin['password'])) {
+                $_SESSION['user_id'] = $admin['username']; // Using username as ID for admin
+                $_SESSION['user_name'] = $admin['username'];
+                $_SESSION['user_email'] = $admin['email'];
+                $_SESSION['user_role'] = 'admin';
+                
+                header('Location: /2nd-Year-Group-Project/FixLanka/admin-dashboard');
                 exit;
             }
+            
+            // Try to find user in Moderator table
+            $stmt = $this->pdo->prepare("SELECT moderator_id, username, email, password FROM Moderator WHERE email = ?");
+            $stmt->execute([$email]);
+            $moderator = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($moderator && password_verify($password, $moderator['password'])) {
+                $_SESSION['user_id'] = $moderator['moderator_id'];
+                $_SESSION['user_name'] = $moderator['username'];
+                $_SESSION['user_email'] = $moderator['email'];
+                $_SESSION['user_role'] = 'moderator';
+                
+                header('Location: /2nd-Year-Group-Project/FixLanka/moderator-dashboard');
+                exit;
+            }
+            
+            // Try to find user in Company table
+            $stmt = $this->pdo->prepare("SELECT company_id, name, email, password FROM Company WHERE email = ?");
+            $stmt->execute([$email]);
+            $company = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($company && password_verify($password, $company['password'])) {
+                $_SESSION['user_id'] = $company['company_id'];
+                $_SESSION['user_name'] = $company['name'];
+                $_SESSION['user_email'] = $company['email'];
+                $_SESSION['user_role'] = 'company';
+                
+                header('Location: /2nd-Year-Group-Project/FixLanka/company-dashboard');
+                exit;
+            }
+            
+            // Try to find user in Repairer table
+            $stmt = $this->pdo->prepare("SELECT repairer_id, f_name, l_name, email, password FROM Repairer WHERE email = ?");
+            $stmt->execute([$email]);
+            $repairer = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($repairer && password_verify($password, $repairer['password'])) {
+                $_SESSION['user_id'] = $repairer['repairer_id'];
+                $_SESSION['user_name'] = $repairer['f_name'] . ' ' . $repairer['l_name'];
+                $_SESSION['user_email'] = $repairer['email'];
+                $_SESSION['user_role'] = 'repairer';
+                
+                header('Location: /2nd-Year-Group-Project/FixLanka/repairer-welcome');
+                exit;
+            }
+            
+            // If no match found in any table
+            $_SESSION['error'] = 'Invalid email or password';
+            header('Location: /2nd-Year-Group-Project/FixLanka/login');
+            exit;
+            
         } catch (PDOException $e) {
             $_SESSION['error'] = 'Login failed. Please try again.';
+            error_log("Login error: " . $e->getMessage());
             header('Location: /2nd-Year-Group-Project/FixLanka/login');
             exit;
         }

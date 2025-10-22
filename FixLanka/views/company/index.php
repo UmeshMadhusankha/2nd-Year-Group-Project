@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login - FixLanka</title>
-  <link rel="stylesheet" href="../../assets/css/common/variables.css" />
-  <link rel="stylesheet" href="../../assets/css/common/global.css" />
-  <link rel="stylesheet" href="../../assets/css/company/style.css" />
+  <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css" />
+  <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css" />
+  <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="login-container">

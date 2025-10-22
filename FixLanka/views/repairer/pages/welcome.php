@@ -12,11 +12,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../../../assets/css/common/global.css">
-    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../../assets/css/repairer/common/topbar.css">
-    <link rel="stylesheet" href="../../../assets/css/repairer/common/sidebar.css">
-    <link rel="stylesheet" href="../../../assets/css/repairer/welcome.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/topbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/welcome.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -25,10 +25,10 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <!-- Dashboard Container -->
     <div class="dashboard-container">
         <!-- Include Topbar -->
-        <?php include '../common/topbar.php'; ?>
+        <?php require_once __DIR__ . '/../common/topbar.php'; ?>
 
         <!-- Include Sidebar -->
-        <?php include '../common/sidebar.php'; ?>
+        <?php require_once __DIR__ . '/../common/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content-wrapper">
@@ -267,7 +267,8 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
         </div>
     </div>
 
-    <script src="../../../assets/javascript/repairer/common/common.js"></script>
-    <script src="../../../assets/javascript/repairer/welcome.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/welcome.js"></script>
 </body>
 </html>
+

@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reviews & Feedback - FixLanka Company Dashboard</title>
-    <link rel="stylesheet" href="../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
-    <link rel="stylesheet" href="../../assets/css/company/topbar.css">
-    <link rel="stylesheet" href="../../assets/css/company/settings.css">
-    <link rel="stylesheet" href="../../assets/css/company/reviews.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/settings.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/reviews.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
@@ -180,7 +180,7 @@
                             <div class="review-header">
                                 <div class="review-meta">
                                     <div class="reviewer-info">
-                                        <img src="../../assets/images/user.png" alt="Customer" class="reviewer-avatar">
+                                        <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Customer" class="reviewer-avatar">
                                         <div class="reviewer-details">
                                             <h4>Sarah Johnson</h4>
                                             <p class="review-type">Company Review</p>
@@ -215,7 +215,7 @@
                             <!-- Reply Section -->
                             <div class="review-reply">
                                 <div class="reply-header">
-                                    <img src="../../assets/images/fixlanka.png" alt="FixLanka" class="reply-avatar">
+                                    <img src="/2nd-Year-Group-Project/FixLanka/assets/images/fixlanka.png" alt="FixLanka" class="reply-avatar">
                                     <div class="reply-info">
                                         <h5>FixLanka Solutions</h5>
                                         <span class="reply-date">1 day ago</span>
@@ -232,7 +232,7 @@
                             <div class="review-header">
                                 <div class="review-meta">
                                     <div class="reviewer-info">
-                                        <img src="../../assets/images/user.png" alt="Customer" class="reviewer-avatar">
+                                        <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Customer" class="reviewer-avatar">
                                         <div class="reviewer-details">
                                             <h4>Michael Chen</h4>
                                             <p class="review-type">Project: Kitchen Renovation</p>
@@ -270,7 +270,7 @@
                             <!-- Reply Section -->
                             <div class="review-reply">
                                 <div class="reply-header">
-                                    <img src="../../assets/images/fixlanka.png" alt="FixLanka" class="reply-avatar">
+                                    <img src="/2nd-Year-Group-Project/FixLanka/assets/images/fixlanka.png" alt="FixLanka" class="reply-avatar">
                                     <div class="reply-info">
                                         <h5>FixLanka Solutions</h5>
                                         <span class="reply-date">4 days ago</span>
@@ -287,7 +287,7 @@
                             <div class="review-header">
                                 <div class="review-meta">
                                     <div class="reviewer-info">
-                                        <img src="../../assets/images/user.png" alt="Customer" class="reviewer-avatar">
+                                        <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Customer" class="reviewer-avatar">
                                         <div class="reviewer-details">
                                             <h4>Amanda Rodriguez</h4>
                                             <p class="review-type">Worker: John Silva (Electrician)</p>
@@ -325,7 +325,7 @@
                             <!-- Reply Section -->
                             <div class="review-reply">
                                 <div class="reply-header">
-                                    <img src="../../assets/images/fixlanka.png" alt="FixLanka" class="reply-avatar">
+                                    <img src="/2nd-Year-Group-Project/FixLanka/assets/images/fixlanka.png" alt="FixLanka" class="reply-avatar">
                                     <div class="reply-info">
                                         <h5>FixLanka Solutions</h5>
                                         <span class="reply-date">6 days ago</span>
@@ -342,7 +342,7 @@
                             <div class="review-header">
                                 <div class="review-meta">
                                     <div class="reviewer-info">
-                                        <img src="../../assets/images/user.png" alt="Customer" class="reviewer-avatar">
+                                        <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Customer" class="reviewer-avatar">
                                         <div class="reviewer-details">
                                             <h4>David Thompson</h4>
                                             <p class="review-type">Project: Bathroom Repair</p>
@@ -380,7 +380,7 @@
                             <!-- Reply Section -->
                             <div class="review-reply">
                                 <div class="reply-header">
-                                    <img src="../../assets/images/fixlanka.png" alt="FixLanka" class="reply-avatar">
+                                    <img src="/2nd-Year-Group-Project/FixLanka/assets/images/fixlanka.png" alt="FixLanka" class="reply-avatar">
                                     <div class="reply-info">
                                         <h5>FixLanka Solutions</h5>
                                         <span class="reply-date">2 weeks ago</span>
@@ -515,7 +515,7 @@
         </main>
     </div>
 
-    <script src="../../assets/javascript/company/sidebar.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
     <script>
         // Reviews functionality
         document.addEventListener('DOMContentLoaded', function() {

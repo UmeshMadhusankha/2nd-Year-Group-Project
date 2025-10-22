@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - FixLanka Company Dashboard</title>
-    <link rel="stylesheet" href="../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../assets/css/company/sidebar.css">
-    <link rel="stylesheet" href="../../assets/css/company/topbar.css">
-    <link rel="stylesheet" href="../../assets/css/company/settings.css">
-    <link rel="stylesheet" href="../../assets/css/company/reviews.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/settings.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/reviews.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
@@ -72,7 +72,7 @@
                             <div class="form-group logo-upload">
                                 <label>Company Logo</label>
                                 <div class="logo-preview">
-                                    <img src="../../assets/images/fixlanka.png" alt="Company Logo" id="logoImage">
+                                    <img src="/2nd-Year-Group-Project/FixLanka/assets/images/fixlanka.png" alt="Company Logo" id="logoImage">
                                     <div class="logo-actions">
                                         <button class="btn-upload" id="uploadLogoBtn">
                                             <i class="fas fa-camera"></i> Change Logo
@@ -727,7 +727,7 @@
                                     <div class="review-header">
                                         <div class="review-meta">
                                             <div class="reviewer-info">
-                                                <img src="../../assets/images/user.png" alt="Customer" class="reviewer-avatar">
+                                                <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Customer" class="reviewer-avatar">
                                                 <div class="reviewer-details">
                                                     <h4>Sarah Johnson</h4>
                                                     <p class="review-type">Company Review</p>
@@ -772,7 +772,7 @@
                                     <div class="review-header">
                                         <div class="review-meta">
                                             <div class="reviewer-info">
-                                                <img src="../../assets/images/user.png" alt="Customer" class="reviewer-avatar">
+                                                <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Customer" class="reviewer-avatar">
                                                 <div class="reviewer-details">
                                                     <h4>Michael Chen</h4>
                                                     <p class="review-type">Project: Kitchen Renovation</p>
@@ -817,7 +817,7 @@
                                     <div class="review-header">
                                         <div class="review-meta">
                                             <div class="reviewer-info">
-                                                <img src="../../assets/images/user.png" alt="Customer" class="reviewer-avatar">
+                                                <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Customer" class="reviewer-avatar">
                                                 <div class="reviewer-details">
                                                     <h4>Amanda Rodriguez</h4>
                                                     <p class="review-type">Worker: John Silva (Electrician)</p>
@@ -862,7 +862,7 @@
                                     <div class="review-header">
                                         <div class="review-meta">
                                             <div class="reviewer-info">
-                                                <img src="../../assets/images/user.png" alt="Customer" class="reviewer-avatar">
+                                                <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Customer" class="reviewer-avatar">
                                                 <div class="reviewer-details">
                                                     <h4>David Thompson</h4>
                                                     <p class="review-type">Project: Bathroom Repair</p>

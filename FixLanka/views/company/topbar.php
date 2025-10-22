@@ -5,7 +5,7 @@
       <i class="fas fa-bars"></i>
     </label>
     <div class="logo">
-      <img src="../../assets/images/fixlanka.png" alt="FixLanka" class="logo-image">
+      <img src="/2nd-Year-Group-Project/FixLanka/assets/images/fixlanka.png" alt="FixLanka" class="logo-image">
     </div>
     <div class="page-info">
       <h1 class="page-title" id="page-title">Dashboard</h1>
@@ -27,12 +27,12 @@
     <!-- Profile Dropdown -->
     <div class="profile-menu" id="profileMenu">
       <div class="profile-trigger">
-        <img src="../../assets/images/user.png" alt="Admin" class="profile-avatar">
+        <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Admin" class="profile-avatar">
         <div class="profile-status-indicator"></div>
       </div>
       <div class="dropdown-menu" id="profileDropdown">
         <div class="dropdown-header">
-          <img src="../../assets/images/user.png" alt="Admin" class="dropdown-avatar">
+          <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Admin" class="dropdown-avatar">
           <div class="dropdown-user-info">
             <h4>John Doe</h4>
             <p>john.doe@fixlanka.com</p>
@@ -62,4 +62,4 @@
 </header>
 
 <!-- Load Topbar JavaScript -->
-<script src="../../assets/javascript/company/topbar.js"></script>
+<script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/topbar.js"></script>
