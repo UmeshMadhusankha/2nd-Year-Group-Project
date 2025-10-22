@@ -261,6 +261,11 @@ body {
 
 .page-header {
     margin-bottom: var(--spacing-xl);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
 }
 
 .page-title {
@@ -272,6 +277,38 @@ body {
 .page-subtitle {
     color: var(--text-muted);
     font-size: var(--font-size-base);
+}
+
+/* Home Button - Eye-catching design */
+.btn-home {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-xl);
+    background: linear-gradient(135deg, var(--primary-color), #0066cc);
+    color: white;
+    text-decoration: none;
+    border-radius: var(--border-radius-lg);
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+    transition: all var(--transition-normal);
+    border: 2px solid transparent;
+}
+
+.btn-home:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 102, 204, 0.4);
+    background: linear-gradient(135deg, #0066cc, var(--primary-color));
+}
+
+.btn-home:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+}
+
+.btn-home i {
+    font-size: var(--font-size-xl);
 }
 
 /* ================================================

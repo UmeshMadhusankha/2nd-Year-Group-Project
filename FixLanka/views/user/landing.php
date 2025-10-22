@@ -114,23 +114,13 @@ $isLoggedIn = isLoggedIn();
                 <div class="footer-logo">
                     <span class="logo-text">Fix Lanka</span>
                 </div>
-                <p class="footer-tagline">Connecting you with trusted local service professionals.</p>
-                <div class="social-links">
-                    <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
-                </div>
+                <p class="footer-tagline">Connecting you with trusted local service professionals across Sri Lanka.</p>
+                <p class="footer-description">Fix Lanka is your one-stop platform for finding reliable and verified service providers for all your home and business needs. We ensure quality service delivery through our network of skilled professionals.</p>
             </div>
             
-            <div class="footer-section footer-services">
-                <h3 class="footer-title">Services</h3>
-                <ul class="footer-links">
-                    <li><a href="#plumbing">Plumbing</a></li>
-                    <li><a href="#electrical">Electrical</a></li>
-                    <li><a href="#hvac">HVAC</a></li>
-                    <li><a href="#cleaning">Cleaning</a></li>
-                </ul>
+            <div class="footer-section footer-about">
+                <h3 class="footer-title">About Us</h3>
+                <p class="footer-text">Fix Lanka was established to bridge the gap between customers and quality service providers in Sri Lanka. Our mission is to make finding trusted professionals simple, fast, and reliable.</p>
             </div>
             
             <div class="footer-section footer-support">
@@ -138,20 +128,18 @@ $isLoggedIn = isLoggedIn();
                 <ul class="footer-links">
                     <li><a href="#help">Help Center</a></li>
                     <li><a href="#contact">Contact Us</a></li>
-                    <li><a href="#safety">Safety</a></li>
-                    <li><a href="#terms">Terms</a></li>
+                    <li><a href="#terms">Terms of Service</a></li>
                 </ul>
+                <div class="footer-contact-info">
+                    <p><i class="fas fa-envelope"></i> support@fixlanka.lk</p>
+                    <p><i class="fas fa-phone"></i> +94 11 234 5678</p>
+                </div>
             </div>
         </div>
         
         <div class="footer-bottom">
             <div class="footer-bottom-container">
                 <p>&copy; 2025 Fix Lanka. All rights reserved.</p>
-                <div class="footer-bottom-links">
-                    <a href="#privacy">Privacy Policy</a>
-                    <span class="separator">|</span>
-                    <a href="#terms">Terms of Service</a>
-                </div>
             </div>
         </div>
     </footer>

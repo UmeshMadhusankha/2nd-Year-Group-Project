@@ -49,8 +49,13 @@ foreach ($jobRequests as $job) {
         <div class="page-container">
             <!-- Page Header -->
             <div class="page-header">
-                <h1 class="page-title">My Job Requests</h1>
-                <p class="page-subtitle">Track and manage all your job requests ordered by date</p>
+                <div>
+                    <h1 class="page-title">My Job Requests</h1>
+                    <p class="page-subtitle">Track and manage all your job requests ordered by date</p>
+                </div>
+                <a href="/2nd-Year-Group-Project/FixLanka/views/user/landing.php" class="btn-home">
+                    <i class="fas fa-home"></i> Home
+                </a>
             </div>
 
             <!-- Success/Error Messages -->
