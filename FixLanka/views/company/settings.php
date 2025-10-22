@@ -47,10 +47,6 @@
                         <i class="fas fa-shield-alt"></i>
                         <span>Security</span>
                     </button>
-                    <button class="tab-btn" data-tab="preferences-tab">
-                        <i class="fas fa-sliders-h"></i>
-                        <span>Preferences</span>
-                    </button>
                     <button class="tab-btn" data-tab="billing-tab">
                         <i class="fas fa-credit-card"></i>
                         <span>Subscription</span>
@@ -179,26 +175,8 @@
                         </div>
                     </div>
 
-                    <!-- Security Tab -->
+                    Security Tab
                     <div class="tab-content" id="security-tab">
-                        <div class="settings-section">
-                            <h2 class="section-title">Two-Factor Authentication</h2>
-
-                            <div class="security-card">
-                                <div class="security-icon">
-                                    <i class="fas fa-shield-alt"></i>
-                                </div>
-                                <div class="security-content">
-                                    <h3>Two-Factor Authentication (2FA)</h3>
-                                    <p>Add an extra layer of security to your account by requiring both your password
-                                        and an authentication code</p>
-                                    <div class="security-status">
-                                        <span class="status-badge disabled">Disabled</span>
-                                        <button class="btn-enable" id="enable2FABtn">Enable 2FA</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
                         <div class="settings-section">
                             <h2 class="section-title">Active Sessions</h2>
@@ -286,115 +264,6 @@
 
                             <button class="btn-secondary" id="viewFullHistoryBtn">
                                 View Full History
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Preferences Tab -->
-                    <div class="tab-content" id="preferences-tab">
-                        <div class="settings-section">
-                            <h2 class="section-title">Display Preferences</h2>
-
-                            <div class="form-group">
-                                <label for="language">Language</label>
-                                <select id="language">
-                                    <option value="en">English</option>
-                                    <option value="si">Sinhala (සිංහල)</option>
-                                    <option value="ta">Tamil (தமிழ்)</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="timezone">Timezone</label>
-                                <select id="timezone">
-                                    <option value="Asia/Colombo">Asia/Colombo (GMT+5:30)</option>
-                                    <option value="Asia/Kolkata">Asia/Kolkata (GMT+5:30)</option>
-                                    <option value="UTC">UTC (GMT+0:00)</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="dateFormat">Date Format</label>
-                                <select id="dateFormat">
-                                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="currency">Currency</label>
-                                <select id="currency">
-                                    <option value="LKR">LKR - Sri Lankan Rupee</option>
-                                    <option value="USD">USD - US Dollar</option>
-                                    <option value="EUR">EUR - Euro</option>
-                                    <option value="GBP">GBP - British Pound</option>
-                                </select>
-                            </div>
-
-                            <div class="preference-item">
-                                <div class="preference-info">
-                                    <h3>Dark Mode</h3>
-                                    <p>Switch to dark theme for better visibility in low light</p>
-                                </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="darkModeToggle">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="settings-section">
-                            <h2 class="section-title">Dashboard Preferences</h2>
-
-                            <div class="preference-item">
-                                <div class="preference-info">
-                                    <h3>Compact View</h3>
-                                    <p>Display more information in less space</p>
-                                </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="compactView">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-
-                            <div class="preference-item">
-                                <div class="preference-info">
-                                    <h3>Show Request IDs</h3>
-                                    <p>Display request IDs on cards and lists</p>
-                                </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="showRequestIDs" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-
-                            <div class="preference-item">
-                                <div class="preference-info">
-                                    <h3>Auto-refresh Data</h3>
-                                    <p>Automatically refresh dashboard data every 5 minutes</p>
-                                </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="autoRefresh" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="defaultView">Default Dashboard View</label>
-                                <select id="defaultView">
-                                    <option value="overview">Overview</option>
-                                    <option value="requests">Repair Requests</option>
-                                    <option value="projects">Projects</option>
-                                    <option value="calendar">Calendar</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <button class="btn-secondary" id="cancelPreferencesBtn">Cancel</button>
-                            <button class="btn-primary" id="savePreferencesBtn">
-                                <i class="fas fa-save"></i> Save Preferences
                             </button>
                         </div>
                     </div>

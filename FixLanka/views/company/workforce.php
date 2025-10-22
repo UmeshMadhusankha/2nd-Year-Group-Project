@@ -402,6 +402,76 @@
                             <p class="section-subtitle">Independent contractors ready for assignments</p>
                         </div>
 
+                        <!-- Freelancer Filters -->
+                        <div class="freelancer-filters">
+                            <!-- Status Filter Tabs -->
+                            <div class="filter-tabs">
+                                <button class="filter-tab active" data-filter-type="status" data-filter-value="all" onclick="applyFreelancerFilter('status', 'all', this)">
+                                    All Freelancers
+                                </button>
+                                <button class="filter-tab" data-filter-type="status" data-filter-value="Available" onclick="applyFreelancerFilter('status', 'Available', this)">
+                                    Available
+                                </button>
+                                <button class="filter-tab" data-filter-type="status" data-filter-value="Busy" onclick="applyFreelancerFilter('status', 'Busy', this)">
+                                    Busy
+                                </button>
+                                <button class="filter-tab" data-filter-type="status" data-filter-value="assigned" onclick="applyFreelancerFilter('status', 'assigned', this)">
+                                    Assigned
+                                </button>
+                            </div>
+
+                            <!-- Specialty Filter -->
+                            <div class="filter-group">
+                                <label><i class="fas fa-tools"></i> Specialty:</label>
+                                <select class="filter-select" id="specialtyFilter" onchange="applyFreelancerFilter('specialty', this.value)">
+                                    <option value="all">All Specialties</option>
+                                    <option value="Mobile Phone Repair">Mobile Phone Repair</option>
+                                    <option value="Laptop Repair">Laptop Repair</option>
+                                    <option value="TV Repair">TV Repair</option>
+                                    <option value="AC Repair">AC Repair</option>
+                                    <option value="Refrigerator Repair">Refrigerator Repair</option>
+                                    <option value="Washing Machine Repair">Washing Machine Repair</option>
+                                    <option value="Electrical">Electrical</option>
+                                    <option value="Plumbing">Plumbing</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <!-- Rating Filter -->
+                            <div class="filter-group">
+                                <label><i class="fas fa-star"></i> Rating:</label>
+                                <select class="filter-select" id="ratingFilter" onchange="applyFreelancerFilter('rating', this.value)">
+                                    <option value="all">All Ratings</option>
+                                    <option value="5">5 Stars</option>
+                                    <option value="4">4+ Stars</option>
+                                    <option value="3">3+ Stars</option>
+                                </select>
+                            </div>
+
+                            <!-- Hourly Rate Filter -->
+                            <div class="filter-group">
+                                <label><i class="fas fa-money-bill"></i> Hourly Rate:</label>
+                                <select class="filter-select" id="rateFilter" onchange="applyFreelancerFilter('rate', this.value)">
+                                    <option value="all">All Rates</option>
+                                    <option value="0-2000">Under LKR 2,000</option>
+                                    <option value="2000-2500">LKR 2,000 - 2,500</option>
+                                    <option value="2500-3000">LKR 2,500 - 3,000</option>
+                                    <option value="3000+">Above LKR 3,000</option>
+                                </select>
+                            </div>
+
+                            <!-- Reset Filters -->
+                            <button class="filter-reset-btn" onclick="resetFreelancerFilters()">
+                                <i class="fas fa-redo"></i> Reset
+                            </button>
+                        </div>
+
+                        <!-- Active Filters Display -->
+                        <div class="active-filters" id="activeFiltersDisplay" style="display: none;">
+                            <span style="font-size: 13px; color: #6b7280; font-weight: 500;">Active Filters:</span>
+                            <!-- Filter tags will be added here dynamically -->
+                        </div>
+
                         <div class="freelancer-list">
                             <!-- Freelancer cards will be populated here -->
                         </div>
@@ -600,7 +670,10 @@
                 phone: '+94 77 123 4501',
                 avatar: 'KP',
                 completedJobs: 156,
-                responseTime: '2 hours'
+                responseTime: '2 hours',
+                // Assignment tracking
+                currentAssignment: null,
+                assignmentHistory: []
             },
             {
                 id: 'f2',
@@ -610,12 +683,39 @@
                 experience: 3,
                 hourlyRate: 3000,
                 rating: 4.6,
-                status: 'Busy',
+                status: 'Assigned',
                 email: 'nimali.fernando@email.com',
                 phone: '+94 71 234 5602',
                 avatar: 'NF',
                 completedJobs: 89,
-                responseTime: '1 hour'
+                responseTime: '1 hour',
+                // Assignment tracking
+                currentAssignment: {
+                    jobId: 'j102',
+                    jobTitle: 'Office Laptop Screen Replacement',
+                    assignedDate: '2025-10-18',
+                    startDate: '2025-10-19',
+                    deadline: '2025-10-25',
+                    estimatedHours: 8,
+                    agreedRate: 3000,
+                    workStatus: 'in-progress', // pending, in-progress, completed, verified
+                    completedDate: null,
+                    totalAmount: 24000,
+                    paymentStatus: 'pending', // pending, payment-due, processing, paid
+                    workProgress: 60,
+                    notes: 'Replacement parts ordered, work in progress'
+                },
+                assignmentHistory: [
+                    {
+                        jobId: 'j087',
+                        jobTitle: 'Gaming Laptop Overheating Fix',
+                        completedDate: '2025-10-12',
+                        hoursWorked: 5,
+                        amount: 15000,
+                        paymentStatus: 'paid',
+                        paidDate: '2025-10-14'
+                    }
+                ]
             },
             {
                 id: 'f3',
@@ -625,12 +725,49 @@
                 experience: 7,
                 hourlyRate: 2800,
                 rating: 4.9,
-                status: 'Available',
+                status: 'Work Completed',
                 email: 'rohan.silva@email.com',
                 phone: '+94 76 345 6703',
                 avatar: 'RS',
                 completedJobs: 234,
-                responseTime: '30 mins'
+                responseTime: '30 mins',
+                // Assignment tracking
+                currentAssignment: {
+                    jobId: 'j098',
+                    jobTitle: 'Smart TV Display Repair',
+                    assignedDate: '2025-10-15',
+                    startDate: '2025-10-16',
+                    deadline: '2025-10-22',
+                    estimatedHours: 6,
+                    agreedRate: 2800,
+                    workStatus: 'completed',
+                    completedDate: '2025-10-21',
+                    totalAmount: 16800,
+                    paymentStatus: 'payment-due', // Waiting for company to process payment
+                    workProgress: 100,
+                    completionEvidence: 'Replaced display panel, tested all functions. Customer verified.',
+                    notes: 'Work completed successfully, awaiting payment approval'
+                },
+                assignmentHistory: [
+                    {
+                        jobId: 'j075',
+                        jobTitle: 'LED TV Backlight Repair',
+                        completedDate: '2025-10-08',
+                        hoursWorked: 4,
+                        amount: 11200,
+                        paymentStatus: 'paid',
+                        paidDate: '2025-10-10'
+                    },
+                    {
+                        jobId: 'j062',
+                        jobTitle: 'TV Audio System Fix',
+                        completedDate: '2025-09-28',
+                        hoursWorked: 3,
+                        amount: 8400,
+                        paymentStatus: 'paid',
+                        paidDate: '2025-09-30'
+                    }
+                ]
             },
             {
                 id: 'f4',
@@ -640,12 +777,40 @@
                 experience: 6,
                 hourlyRate: 3200,
                 rating: 4.7,
-                status: 'Available',
+                status: 'Payment Pending',
                 email: 'dilani.wick@email.com',
                 phone: '+94 77 456 7804',
                 avatar: 'DW',
                 completedJobs: 178,
-                responseTime: '1 hour'
+                responseTime: '1 hour',
+                // Assignment tracking
+                currentAssignment: {
+                    jobId: 'j095',
+                    jobTitle: 'Central AC Maintenance',
+                    assignedDate: '2025-10-10',
+                    startDate: '2025-10-11',
+                    deadline: '2025-10-20',
+                    estimatedHours: 12,
+                    agreedRate: 3200,
+                    workStatus: 'completed',
+                    completedDate: '2025-10-19',
+                    totalAmount: 38400,
+                    paymentStatus: 'payment-due',
+                    workProgress: 100,
+                    completionEvidence: 'Full system cleaning, refrigerant refill, tested cooling efficiency. All working perfectly.',
+                    notes: 'Payment pending for 4 days'
+                },
+                assignmentHistory: [
+                    {
+                        jobId: 'j081',
+                        jobTitle: 'Split AC Installation',
+                        completedDate: '2025-10-05',
+                        hoursWorked: 10,
+                        amount: 32000,
+                        paymentStatus: 'paid',
+                        paidDate: '2025-10-07'
+                    }
+                ]
             },
             {
                 id: 'f5',
@@ -660,7 +825,20 @@
                 phone: '+94 71 567 8905',
                 avatar: 'TJ',
                 completedJobs: 123,
-                responseTime: '3 hours'
+                responseTime: '3 hours',
+                // Assignment tracking
+                currentAssignment: null,
+                assignmentHistory: [
+                    {
+                        jobId: 'j072',
+                        jobTitle: 'Refrigerator Compressor Replacement',
+                        completedDate: '2025-10-10',
+                        hoursWorked: 8,
+                        amount: 20800,
+                        paymentStatus: 'paid',
+                        paidDate: '2025-10-12'
+                    }
+                ]
             },
             {
                 id: 'f6',
@@ -670,12 +848,29 @@
                 experience: 3,
                 hourlyRate: 2400,
                 rating: 4.8,
-                status: 'Busy',
+                status: 'Assigned',
                 email: 'amaya.diss@email.com',
                 phone: '+94 76 678 9006',
                 avatar: 'AD',
                 completedJobs: 95,
-                responseTime: '2 hours'
+                responseTime: '2 hours',
+                // Assignment tracking
+                currentAssignment: {
+                    jobId: 'j103',
+                    jobTitle: 'Front Load Washer Drum Repair',
+                    assignedDate: '2025-10-20',
+                    startDate: '2025-10-21',
+                    deadline: '2025-10-27',
+                    estimatedHours: 7,
+                    agreedRate: 2400,
+                    workStatus: 'in-progress',
+                    completedDate: null,
+                    totalAmount: 16800,
+                    paymentStatus: 'pending',
+                    workProgress: 35,
+                    notes: 'Parts replaced, testing in progress'
+                },
+                assignmentHistory: []
             },
             {
                 id: 'f7',
@@ -690,7 +885,10 @@
                 phone: '+94 77 789 0107',
                 avatar: 'NB',
                 completedJobs: 67,
-                responseTime: '4 hours'
+                responseTime: '4 hours',
+                // Assignment tracking
+                currentAssignment: null,
+                assignmentHistory: []
             },
             {
                 id: 'f8',
@@ -705,7 +903,20 @@
                 phone: '+94 71 890 1208',
                 avatar: 'SP',
                 completedJobs: 201,
-                responseTime: '1 hour'
+                responseTime: '1 hour',
+                // Assignment tracking
+                currentAssignment: null,
+                assignmentHistory: [
+                    {
+                        jobId: 'j089',
+                        jobTitle: 'Desktop PC Motherboard Replacement',
+                        completedDate: '2025-10-15',
+                        hoursWorked: 6,
+                        amount: 21000,
+                        paymentStatus: 'paid',
+                        paidDate: '2025-10-17'
+                    }
+                ]
             },
             {
                 id: 'f9',
@@ -720,7 +931,10 @@
                 phone: '+94 76 901 2309',
                 avatar: 'IG',
                 completedJobs: 134,
-                responseTime: '2 hours'
+                responseTime: '2 hours',
+                // Assignment tracking
+                currentAssignment: null,
+                assignmentHistory: []
             },
             {
                 id: 'f10',
@@ -730,12 +944,29 @@
                 experience: 6,
                 hourlyRate: 3000,
                 rating: 4.7,
-                status: 'Busy',
+                status: 'Assigned',
                 email: 'chamath.silva@email.com',
                 phone: '+94 77 012 3410',
                 avatar: 'CS',
                 completedJobs: 167,
-                responseTime: '1 hour'
+                responseTime: '1 hour',
+                // Assignment tracking
+                currentAssignment: {
+                    jobId: 'j100',
+                    jobTitle: '5.1 Surround Sound Installation',
+                    assignedDate: '2025-10-17',
+                    startDate: '2025-10-18',
+                    deadline: '2025-10-24',
+                    estimatedHours: 10,
+                    agreedRate: 3000,
+                    workStatus: 'in-progress',
+                    completedDate: null,
+                    totalAmount: 30000,
+                    paymentStatus: 'pending',
+                    workProgress: 75,
+                    notes: 'Speaker installation complete, calibration in progress'
+                },
+                assignmentHistory: []
             },
             {
                 id: 'f11',
@@ -750,7 +981,10 @@
                 phone: '+94 71 123 4511',
                 avatar: 'MR',
                 completedJobs: 89,
-                responseTime: '3 hours'
+                responseTime: '3 hours',
+                // Assignment tracking
+                currentAssignment: null,
+                assignmentHistory: []
             },
             {
                 id: 'f12',
@@ -765,7 +999,10 @@
                 phone: '+94 76 234 5612',
                 avatar: 'DW',
                 completedJobs: 145,
-                responseTime: '2 hours'
+                responseTime: '2 hours',
+                // Assignment tracking
+                currentAssignment: null,
+                assignmentHistory: []
             }
         ];
 
@@ -1012,6 +1249,9 @@
             updateCostSummary();
         }
 
+        // Chat Data Storage
+        const chatMessagesData = {};
+
         function contactFreelancer() {
             const freelancer = freelancersData.find(f => f.id === currentFreelancerId);
             if (!freelancer) return;
@@ -1020,6 +1260,10 @@
             document.getElementById('chatPersonName').textContent = freelancer.name;
             document.getElementById('chatPersonAvatar').textContent = freelancer.avatar;
             document.getElementById('chatPersonSpecialty').textContent = freelancer.specialty;
+            updateOnlineStatus(freelancer);
+            
+            // Store current freelancer ID for chat
+            window.currentChatFreelancerId = currentFreelancerId;
             
             // Clear previous messages and load chat history (dummy data for now)
             loadChatMessages(currentFreelancerId);
@@ -1028,50 +1272,125 @@
             document.getElementById('chatDrawer').classList.add('active');
         }
 
+        function openChatWithFreelancer(freelancerId) {
+            const freelancer = freelancersData.find(f => f.id === freelancerId);
+            if (!freelancer) return;
+            
+            // Populate chat drawer with freelancer info
+            document.getElementById('chatPersonName').textContent = `${freelancer.firstName} ${freelancer.lastName}`;
+            document.getElementById('chatPersonAvatar').textContent = freelancer.avatar;
+            document.getElementById('chatPersonSpecialty').textContent = freelancer.specialty;
+            updateOnlineStatus(freelancer);
+            
+            // Store current freelancer ID for chat
+            window.currentChatFreelancerId = freelancerId;
+            
+            // Clear previous messages and load chat history
+            loadChatMessages(freelancerId);
+            
+            // Open chat drawer
+            document.getElementById('chatDrawer').classList.add('active');
+        }
+
         function closeChatDrawer() {
             document.getElementById('chatDrawer').classList.remove('active');
-            document.getElementById('chatMessageInput').value = '';
+            const input = document.getElementById('chatMessageInput');
+            input.value = '';
+            input.style.height = 'auto';
+        }
+
+        function updateOnlineStatus(freelancer) {
+            const statusElement = document.getElementById('chatOnlineStatus');
+            const isOnline = freelancer.status === 'Available';
+            
+            if (isOnline) {
+                statusElement.innerHTML = '<i class="fas fa-circle"></i> Online';
+                statusElement.className = 'chat-online-status online';
+            } else {
+                statusElement.innerHTML = '<i class="fas fa-circle"></i> Offline';
+                statusElement.className = 'chat-online-status offline';
+            }
         }
 
         function loadChatMessages(freelancerId) {
             const chatContainer = document.getElementById('chatMessagesContainer');
             
-            // Dummy chat history
-            const chatHistory = [
-                {
-                    sender: 'freelancer',
-                    name: 'Kasun Perera',
-                    avatar: 'KP',
-                    message: 'Hello! I received the job assignment notification. When should I start?',
-                    time: 'Today, 10:30 AM'
-                },
-                {
-                    sender: 'company',
-                    name: 'FixLanka Team',
-                    avatar: 'FL',
-                    message: 'Great! You can start tomorrow morning. The customer will be available from 9 AM.',
-                    time: 'Today, 10:45 AM'
-                },
-                {
-                    sender: 'freelancer',
-                    name: 'Kasun Perera',
-                    avatar: 'KP',
-                    message: 'Perfect! Do I need to bring any specific tools or parts?',
-                    time: 'Today, 11:00 AM'
-                },
-                {
-                    sender: 'company',
-                    name: 'FixLanka Team',
-                    avatar: 'FL',
-                    message: 'Yes, please bring your standard mobile repair toolkit. The replacement screen will be provided by the customer.',
-                    time: 'Today, 11:15 AM'
-                }
-            ];
+            // Initialize chat messages for this freelancer if not exists
+            if (!chatMessagesData[freelancerId]) {
+                chatMessagesData[freelancerId] = [
+                    {
+                        id: 1,
+                        sender: 'freelancer',
+                        name: 'Kasun Perera',
+                        avatar: 'KP',
+                        message: 'Hello! I received the job assignment notification. When should I start?',
+                        time: '10:30 AM',
+                        date: 'Today',
+                        timestamp: new Date().getTime()
+                    },
+                    {
+                        id: 2,
+                        sender: 'company',
+                        name: 'FixLanka Team',
+                        avatar: 'FL',
+                        message: 'Great! You can start tomorrow morning. The customer will be available from 9 AM.',
+                        time: '10:45 AM',
+                        date: 'Today',
+                        timestamp: new Date().getTime()
+                    },
+                    {
+                        id: 3,
+                        sender: 'freelancer',
+                        name: 'Kasun Perera',
+                        avatar: 'KP',
+                        message: 'Perfect! Do I need to bring any specific tools or parts?',
+                        time: '11:00 AM',
+                        date: 'Today',
+                        timestamp: new Date().getTime()
+                    },
+                    {
+                        id: 4,
+                        sender: 'company',
+                        name: 'FixLanka Team',
+                        avatar: 'FL',
+                        message: 'Yes, please bring your standard mobile repair toolkit. The replacement screen will be provided by the customer.',
+                        time: '11:15 AM',
+                        date: 'Today',
+                        timestamp: new Date().getTime()
+                    }
+                ];
+            }
             
+            const chatHistory = chatMessagesData[freelancerId];
             chatContainer.innerHTML = '';
-            chatHistory.forEach(msg => {
+            
+            let currentDate = '';
+            
+            chatHistory.forEach((msg, index) => {
+                // Add date separator if date changes
+                if (msg.date !== currentDate) {
+                    currentDate = msg.date;
+                    const dateSeparator = document.createElement('div');
+                    dateSeparator.className = 'chat-date-separator';
+                    dateSeparator.innerHTML = `<span>${msg.date}</span>`;
+                    chatContainer.appendChild(dateSeparator);
+                }
+                
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `chat-message ${msg.sender}`;
+                messageDiv.setAttribute('data-message-id', msg.id);
+                
+                // Check if message has attachment
+                const attachmentHTML = msg.attachment ? `
+                    <div class="chat-attachment">
+                        <i class="fas fa-${getFileIcon(msg.attachment.type)}"></i>
+                        <span>${msg.attachment.name}</span>
+                        <button class="attachment-download" onclick="downloadAttachment('${msg.attachment.url}')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                ` : '';
+                
                 messageDiv.innerHTML = `
                     <div class="chat-message-avatar">${msg.avatar}</div>
                     <div class="chat-message-content">
@@ -1080,13 +1399,21 @@
                             <span class="chat-time">${msg.time}</span>
                         </div>
                         <div class="chat-message-text">${msg.message}</div>
+                        ${attachmentHTML}
+                        ${msg.sender === 'company' ? `
+                            <div class="message-status">
+                                <i class="fas fa-check-double ${msg.read ? 'read' : ''}"></i>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
                 chatContainer.appendChild(messageDiv);
             });
             
-            // Scroll to bottom
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            // Scroll to bottom smoothly
+            setTimeout(() => {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 100);
         }
 
         function sendChatMessage() {
@@ -1095,12 +1422,36 @@
             
             if (!message) return;
             
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            const timeStr = `${displayHours}:${minutes} ${ampm}`;
+            
+            const newMessage = {
+                id: Date.now(),
+                sender: 'company',
+                name: 'FixLanka Team',
+                avatar: 'FL',
+                message: message,
+                time: timeStr,
+                date: 'Today',
+                timestamp: now.getTime(),
+                read: false
+            };
+            
+            // Add to chat data
+            if (!chatMessagesData[window.currentChatFreelancerId]) {
+                chatMessagesData[window.currentChatFreelancerId] = [];
+            }
+            chatMessagesData[window.currentChatFreelancerId].push(newMessage);
+            
+            // Add to UI
             const chatContainer = document.getElementById('chatMessagesContainer');
             const messageDiv = document.createElement('div');
             messageDiv.className = 'chat-message company';
-            
-            const now = new Date();
-            const timeStr = `Today, ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
+            messageDiv.setAttribute('data-message-id', newMessage.id);
             
             messageDiv.innerHTML = `
                 <div class="chat-message-avatar">FL</div>
@@ -1110,6 +1461,9 @@
                         <span class="chat-time">${timeStr}</span>
                     </div>
                     <div class="chat-message-text">${message}</div>
+                    <div class="message-status">
+                        <i class="fas fa-check"></i>
+                    </div>
                 </div>
             `;
             
@@ -1117,16 +1471,141 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
             
             input.value = '';
-            showNotification('Message sent successfully', 'success');
+            input.style.height = 'auto';
+            
+            // Simulate message sent status
+            setTimeout(() => {
+                const statusIcon = messageDiv.querySelector('.message-status i');
+                statusIcon.className = 'fas fa-check-double';
+            }, 1000);
+            
+            // Simulate message read status
+            setTimeout(() => {
+                const statusIcon = messageDiv.querySelector('.message-status i');
+                statusIcon.classList.add('read');
+                newMessage.read = true;
+            }, 3000);
+            
+            // Show typing indicator briefly (simulate response)
+            setTimeout(() => {
+                showTypingIndicator();
+                setTimeout(() => {
+                    hideTypingIndicator();
+                    simulateFreelancerResponse();
+                }, 2000);
+            }, 1000);
         }
 
-        // Allow Enter key to send message
+        function simulateFreelancerResponse() {
+            const responses = [
+                "Thank you for the information!",
+                "Got it, I'll make sure to handle that.",
+                "Understood. I'll get started on it right away.",
+                "Perfect! I appreciate the update.",
+                "Thanks! I'll keep you posted on the progress."
+            ];
+            
+            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            const timeStr = `${displayHours}:${minutes} ${ampm}`;
+            
+            const freelancer = freelancersData.find(f => f.id === window.currentChatFreelancerId);
+            if (!freelancer) return;
+            
+            const newMessage = {
+                id: Date.now(),
+                sender: 'freelancer',
+                name: `${freelancer.firstName} ${freelancer.lastName}`,
+                avatar: freelancer.avatar,
+                message: randomResponse,
+                time: timeStr,
+                date: 'Today',
+                timestamp: now.getTime()
+            };
+            
+            chatMessagesData[window.currentChatFreelancerId].push(newMessage);
+            
+            const chatContainer = document.getElementById('chatMessagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message freelancer';
+            messageDiv.setAttribute('data-message-id', newMessage.id);
+            
+            messageDiv.innerHTML = `
+                <div class="chat-message-avatar">${freelancer.avatar}</div>
+                <div class="chat-message-content">
+                    <div class="chat-message-header">
+                        <span class="chat-sender">${freelancer.firstName} ${freelancer.lastName}</span>
+                        <span class="chat-time">${timeStr}</span>
+                    </div>
+                    <div class="chat-message-text">${randomResponse}</div>
+                </div>
+            `;
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const indicator = document.getElementById('chatTypingIndicator');
+            indicator.style.display = 'flex';
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('chatTypingIndicator');
+            indicator.style.display = 'none';
+        }
+
+        function attachChatFile() {
+            document.getElementById('chatFileInput').click();
+        }
+
+        function autoResizeChatInput(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        function getFileIcon(fileType) {
+            const iconMap = {
+                'pdf': 'file-pdf',
+                'doc': 'file-word',
+                'docx': 'file-word',
+                'image': 'file-image',
+                'video': 'file-video'
+            };
+            return iconMap[fileType] || 'file';
+        }
+
+        function downloadAttachment(url) {
+            window.open(url, '_blank');
+        }
+
+        // Allow Enter key to send message, Shift+Enter for new line
         function handleChatKeyPress(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 sendChatMessage();
             }
         }
+
+        // Handle file input change
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('chatFileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        // Simulate file upload
+                        showNotification('File attachment feature coming soon!', 'info');
+                        // TODO: Implement actual file upload
+                        fileInput.value = '';
+                    }
+                });
+            }
+        });
 
         // Update cost summary in real-time
         function updateCostSummary() {
@@ -1263,6 +1742,204 @@
                 const text = card.textContent.toLowerCase();
                 card.style.display = text.includes(query) ? 'block' : 'none';
             });
+        }
+
+        // ================================================
+        // FREELANCER FILTERING SYSTEM
+        // ================================================
+        
+        const activeFilters = {
+            status: 'all',
+            specialty: 'all',
+            rating: 'all',
+            rate: 'all'
+        };
+
+        function applyFreelancerFilter(filterType, filterValue, buttonElement) {
+            // Update active filters
+            activeFilters[filterType] = filterValue;
+
+            // Update active tab styling for status filter
+            if (filterType === 'status' && buttonElement) {
+                document.querySelectorAll('.filter-tab[data-filter-type="status"]').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                buttonElement.classList.add('active');
+            }
+
+            // Update dropdowns
+            if (filterType !== 'status') {
+                const selectElement = document.getElementById(filterType + 'Filter');
+                if (selectElement) {
+                    selectElement.value = filterValue;
+                }
+            }
+
+            // Apply filters
+            filterFreelancers();
+            updateActiveFiltersDisplay();
+        }
+
+        function filterFreelancers() {
+            const freelancerCards = document.querySelectorAll('.freelancer-card');
+            let visibleCount = 0;
+
+            freelancerCards.forEach(card => {
+                const freelancerId = card.getAttribute('data-freelancer-id');
+                const freelancer = freelancersData.find(f => f.id === freelancerId);
+                
+                if (!freelancer) {
+                    card.style.display = 'none';
+                    return;
+                }
+
+                let shouldShow = true;
+
+                // Status filter
+                if (activeFilters.status !== 'all') {
+                    if (activeFilters.status === 'assigned') {
+                        shouldShow = shouldShow && freelancer.currentAssignment !== null;
+                    } else {
+                        shouldShow = shouldShow && freelancer.status === activeFilters.status;
+                    }
+                }
+
+                // Specialty filter
+                if (activeFilters.specialty !== 'all') {
+                    shouldShow = shouldShow && freelancer.specialty === activeFilters.specialty;
+                }
+
+                // Rating filter
+                if (activeFilters.rating !== 'all') {
+                    const ratingThreshold = parseFloat(activeFilters.rating);
+                    shouldShow = shouldShow && freelancer.rating >= ratingThreshold;
+                }
+
+                // Hourly rate filter
+                if (activeFilters.rate !== 'all') {
+                    const rate = freelancer.hourlyRate;
+                    if (activeFilters.rate === '0-2000') {
+                        shouldShow = shouldShow && rate < 2000;
+                    } else if (activeFilters.rate === '2000-2500') {
+                        shouldShow = shouldShow && rate >= 2000 && rate <= 2500;
+                    } else if (activeFilters.rate === '2500-3000') {
+                        shouldShow = shouldShow && rate >= 2500 && rate <= 3000;
+                    } else if (activeFilters.rate === '3000+') {
+                        shouldShow = shouldShow && rate > 3000;
+                    }
+                }
+
+                card.style.display = shouldShow ? 'block' : 'none';
+                if (shouldShow) visibleCount++;
+            });
+
+            // Show/hide empty state
+            const freelancerList = document.querySelector('.freelancer-list');
+            let emptyState = freelancerList.querySelector('.empty-state');
+            
+            if (visibleCount === 0) {
+                if (!emptyState) {
+                    emptyState = document.createElement('div');
+                    emptyState.className = 'empty-state';
+                    emptyState.innerHTML = `
+                        <i class="fas fa-filter" style="font-size: 48px; color: #d1d5db; margin-bottom: 15px;"></i>
+                        <h3 style="color: #6b7280; margin-bottom: 8px;">No freelancers match your filters</h3>
+                        <p style="color: #9ca3af;">Try adjusting your filter criteria</p>
+                    `;
+                    freelancerList.appendChild(emptyState);
+                }
+            } else if (emptyState) {
+                emptyState.remove();
+            }
+        }
+
+        function updateActiveFiltersDisplay() {
+            const activeFiltersDisplay = document.getElementById('activeFiltersDisplay');
+            const hasActiveFilters = Object.values(activeFilters).some(value => value !== 'all');
+
+            if (!hasActiveFilters) {
+                activeFiltersDisplay.style.display = 'none';
+                return;
+            }
+
+            activeFiltersDisplay.style.display = 'flex';
+            
+            // Clear existing tags (except the label)
+            const existingTags = activeFiltersDisplay.querySelectorAll('.active-filter-tag');
+            existingTags.forEach(tag => tag.remove());
+
+            // Add filter tags
+            Object.entries(activeFilters).forEach(([type, value]) => {
+                if (value !== 'all') {
+                    const tag = document.createElement('span');
+                    tag.className = 'active-filter-tag';
+                    
+                    let displayText = '';
+                    if (type === 'status') {
+                        displayText = `Status: ${value}`;
+                    } else if (type === 'specialty') {
+                        displayText = value;
+                    } else if (type === 'rating') {
+                        displayText = `${value}+ Stars`;
+                    } else if (type === 'rate') {
+                        displayText = `Rate: ${value.replace('-', ' - ')} LKR`;
+                    }
+                    
+                    tag.innerHTML = `
+                        ${displayText}
+                        <button class="remove-filter" onclick="removeFilter('${type}')" title="Remove filter">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    
+                    activeFiltersDisplay.appendChild(tag);
+                }
+            });
+        }
+
+        function removeFilter(filterType) {
+            applyFreelancerFilter(filterType, 'all');
+            
+            // Reset UI elements
+            if (filterType === 'status') {
+                const allTab = document.querySelector('.filter-tab[data-filter-value="all"]');
+                if (allTab) {
+                    document.querySelectorAll('.filter-tab[data-filter-type="status"]').forEach(tab => {
+                        tab.classList.remove('active');
+                    });
+                    allTab.classList.add('active');
+                }
+            } else {
+                const selectElement = document.getElementById(filterType + 'Filter');
+                if (selectElement) {
+                    selectElement.value = 'all';
+                }
+            }
+        }
+
+        function resetFreelancerFilters() {
+            // Reset all filters
+            activeFilters.status = 'all';
+            activeFilters.specialty = 'all';
+            activeFilters.rating = 'all';
+            activeFilters.rate = 'all';
+
+            // Reset UI
+            document.querySelectorAll('.filter-tab[data-filter-type="status"]').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            const allTab = document.querySelector('.filter-tab[data-filter-value="all"]');
+            if (allTab) allTab.classList.add('active');
+
+            document.getElementById('specialtyFilter').value = 'all';
+            document.getElementById('ratingFilter').value = 'all';
+            document.getElementById('rateFilter').value = 'all';
+
+            // Reapply filters
+            filterFreelancers();
+            updateActiveFiltersDisplay();
+            
+            showNotification('Filters reset successfully', 'success');
         }
 
         // Initialize page when DOM is loaded
@@ -1413,6 +2090,46 @@
 
             // Determine if freelancer is available for assignment
             const isAvailable = freelancer.status.toLowerCase() === 'available';
+            const hasCompletedWork = freelancer.currentAssignment && 
+                                     freelancer.currentAssignment.workStatus === 'completed' &&
+                                     freelancer.currentAssignment.paymentStatus === 'payment-due';
+
+            // Build assignment status HTML
+            let assignmentHTML = '';
+            if (freelancer.currentAssignment) {
+                const assignment = freelancer.currentAssignment;
+                const statusClass = getAssignmentStatusClass(assignment.workStatus, assignment.paymentStatus);
+                const statusText = getAssignmentStatusText(assignment.workStatus, assignment.paymentStatus);
+                
+                assignmentHTML = `
+                    <div class="current-assignment-info">
+                        <div class="assignment-header">
+                            <i class="fas fa-briefcase"></i>
+                            <span class="assignment-job-title">${assignment.jobTitle}</span>
+                        </div>
+                        <div class="assignment-details">
+                            <div class="assignment-progress">
+                                <div class="progress-bar-mini">
+                                    <div class="progress-fill-mini" style="width: ${assignment.workProgress}%"></div>
+                                </div>
+                                <span class="progress-text">${assignment.workProgress}% Complete</span>
+                            </div>
+                            <div class="assignment-meta">
+                                <span class="assignment-status ${statusClass}">
+                                    <i class="fas ${getStatusIcon(assignment.workStatus, assignment.paymentStatus)}"></i>
+                                    ${statusText}
+                                </span>
+                                ${assignment.workStatus === 'completed' ? `
+                                    <span class="assignment-amount">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                        LKR ${assignment.totalAmount.toLocaleString()}
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
 
             item.innerHTML = `
                 <div class="freelancer-main">
@@ -1428,10 +2145,11 @@
                         <div class="freelancer-contact">
                             <i class="fas fa-envelope"></i> ${freelancer.email}
                         </div>
+                        ${assignmentHTML}
                     </div>
                 </div>
                 <div class="freelancer-actions">
-                    <span class="status-badge ${freelancer.status.toLowerCase()}">${freelancer.status}</span>
+                    <span class="status-badge ${getFreelancerStatusClass(freelancer.status)}">${freelancer.status}</span>
                     <div class="action-group">
                         <button class="wf-btn wf-btn-view" onclick="viewFreelancerDetails('${freelancer.id}')" title="View Details">
                             <i class="fas fa-eye"></i>
@@ -1443,9 +2161,15 @@
                             <span>Assign</span>
                         </button>
                         ` : ''}
-                        <button class="wf-btn wf-btn-edit" onclick="editFreelancer('${freelancer.id}')" title="Edit Profile">
-                            <i class="fas fa-edit"></i>
-                            <span>Edit</span>
+                        ${hasCompletedWork ? `
+                        <button class="wf-btn wf-btn-payment" onclick="processPayment('${freelancer.id}')" title="Process Payment">
+                            <i class="fas fa-credit-card"></i>
+                            <span>Pay Now</span>
+                        </button>
+                        ` : ''}
+                        <button class="wf-btn wf-btn-chat" onclick="openChatWithFreelancer('${freelancer.id}')" title="Chat with Freelancer">
+                            <i class="fas fa-comments"></i>
+                            <span>Chat</span>
                         </button>
                     </div>
                 </div>
@@ -1844,9 +2568,10 @@
 
         // Edit from Freelancer Details Drawer
         function editFromFreelancerDrawer() {
+            // Open chat instead of edit
             if (window.currentViewFreelancerId) {
                 closeFreelancerDetailsDrawer();
-                editFreelancer(window.currentViewFreelancerId);
+                openChatWithFreelancer(window.currentViewFreelancerId);
             }
         }
 
@@ -1872,32 +2597,14 @@
 
         // Edit Employee
         function editEmployee(employeeId) {
-            const employee = employeesData.find(e => e.id === employeeId);
-            
-            if (!employee) {
-                showNotification('Employee not found', 'error');
-                return;
-            }
-
-            showNotification(`Edit mode for ${employee.firstName} ${employee.lastName}`, 'info');
-            console.log('Edit Employee:', employee);
-            
-            // TODO: Open edit modal with pre-filled form
+            // Redirect to chat instead of edit
+            openChatWithFreelancer(employeeId);
         }
 
-        // Edit Freelancer
+        // Chat with Freelancer/Repairer - Replaces Edit Function
         function editFreelancer(freelancerId) {
-            const freelancer = freelancersData.find(f => f.id === freelancerId);
-            
-            if (!freelancer) {
-                showNotification('Freelancer not found', 'error');
-                return;
-            }
-
-            showNotification(`Edit mode for ${freelancer.firstName} ${freelancer.lastName}`, 'info');
-            console.log('Edit Freelancer:', freelancer);
-            
-            // TODO: Open edit modal with pre-filled form
+            // Redirect to chat instead of edit
+            openChatWithFreelancer(freelancerId);
         }
 
         // Renew Contract
@@ -2026,7 +2733,8 @@
         }
 
         function editEmployee(employeeId) {
-            showNotification('Edit employee modal would open here', 'info');
+            // Redirect to chat instead of edit
+            openChatWithFreelancer(employeeId);
         }
 
         function closeAssignJobDrawer() {
@@ -2132,6 +2840,157 @@
 
         function renewContract(freelancerId) {
             showNotification('Contract renewal would start here', 'info');
+        }
+
+        // ====================================
+        // PAYMENT PROCESSING FUNCTIONS
+        // ====================================
+
+        function processPayment(freelancerId) {
+            const freelancer = freelancersData.find(f => f.id === freelancerId);
+            
+            if (!freelancer || !freelancer.currentAssignment) {
+                showNotification('No payment information available', 'error');
+                return;
+            }
+
+            const assignment = freelancer.currentAssignment;
+            
+            if (assignment.workStatus !== 'completed') {
+                showNotification('Work must be completed before processing payment', 'warning');
+                return;
+            }
+
+            if (assignment.paymentStatus === 'paid') {
+                showNotification('Payment has already been processed', 'info');
+                return;
+            }
+
+            // Populate payment drawer
+            document.getElementById('paymentFreelancerAvatar').textContent = freelancer.avatar;
+            document.getElementById('paymentFreelancerName').textContent = `${freelancer.firstName} ${freelancer.lastName}`;
+            document.getElementById('paymentFreelancerSpecialty').textContent = freelancer.specialty;
+            
+            document.getElementById('paymentJobTitle').textContent = assignment.jobTitle;
+            document.getElementById('paymentJobId').textContent = `#${assignment.jobId.toUpperCase()}`;
+            document.getElementById('paymentAssignedDate').textContent = formatDate(assignment.assignedDate);
+            document.getElementById('paymentCompletedDate').textContent = formatDate(assignment.completedDate);
+            document.getElementById('paymentEstimatedHours').textContent = assignment.estimatedHours;
+            document.getElementById('paymentHourlyRate').textContent = `LKR ${assignment.agreedRate.toLocaleString()}`;
+            document.getElementById('paymentTotalAmount').textContent = `LKR ${assignment.totalAmount.toLocaleString()}`;
+            
+            // Show completion evidence if available
+            const evidenceSection = document.getElementById('paymentEvidence');
+            if (assignment.completionEvidence) {
+                evidenceSection.style.display = 'block';
+                document.getElementById('paymentEvidenceText').textContent = assignment.completionEvidence;
+            } else {
+                evidenceSection.style.display = 'none';
+            }
+
+            // Calculate days pending
+            const completedDate = new Date(assignment.completedDate);
+            const today = new Date();
+            const daysPending = Math.floor((today - completedDate) / (1000 * 60 * 60 * 24));
+            document.getElementById('paymentDaysPending').textContent = daysPending;
+
+            if (daysPending > 3) {
+                document.getElementById('paymentDelayWarning').style.display = 'block';
+            } else {
+                document.getElementById('paymentDelayWarning').style.display = 'none';
+            }
+
+            // Set default payment method
+            document.getElementById('paymentMethod').value = 'bank-transfer';
+            updatePaymentMethodFields();
+
+            // Store current freelancer ID for payment
+            window.currentPaymentFreelancerId = freelancerId;
+
+            // Open payment drawer
+            document.getElementById('paymentDrawer').classList.add('active');
+        }
+
+        function closePaymentDrawer() {
+            document.getElementById('paymentDrawer').classList.remove('active');
+            window.currentPaymentFreelancerId = null;
+        }
+
+        function updatePaymentMethodFields() {
+            const method = document.getElementById('paymentMethod').value;
+            const bankFields = document.getElementById('bankTransferFields');
+            const mobileFields = document.getElementById('mobileMoneyFields');
+            const cashFields = document.getElementById('cashPaymentFields');
+
+            bankFields.style.display = method === 'bank-transfer' ? 'block' : 'none';
+            mobileFields.style.display = method === 'mobile-money' ? 'block' : 'none';
+            cashFields.style.display = method === 'cash' ? 'block' : 'none';
+        }
+
+        function confirmPayment() {
+            if (!window.currentPaymentFreelancerId) return;
+
+            const freelancer = freelancersData.find(f => f.id === window.currentPaymentFreelancerId);
+            if (!freelancer || !freelancer.currentAssignment) return;
+
+            const method = document.getElementById('paymentMethod').value;
+            const notes = document.getElementById('paymentNotes').value;
+
+            // Validate based on payment method
+            if (method === 'bank-transfer') {
+                const accountNumber = document.getElementById('bankAccountNumber').value;
+                const bank = document.getElementById('bankName').value;
+                if (!accountNumber || !bank) {
+                    showNotification('Please fill in all bank details', 'error');
+                    return;
+                }
+            } else if (method === 'mobile-money') {
+                const mobileNumber = document.getElementById('mobileMoneyNumber').value;
+                const provider = document.getElementById('mobileMoneyProvider').value;
+                if (!mobileNumber || !provider) {
+                    showNotification('Please fill in all mobile money details', 'error');
+                    return;
+                }
+            }
+
+            // Show loading state
+            const confirmBtn = document.querySelector('#paymentDrawer .payment-confirm-btn');
+            const originalText = confirmBtn.innerHTML;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Payment...';
+
+            // Simulate payment processing
+            setTimeout(() => {
+                // Update payment status
+                freelancer.currentAssignment.paymentStatus = 'paid';
+                freelancer.currentAssignment.paidDate = new Date().toISOString().split('T')[0];
+                
+                // Move to history
+                freelancer.assignmentHistory.unshift({
+                    jobId: freelancer.currentAssignment.jobId,
+                    jobTitle: freelancer.currentAssignment.jobTitle,
+                    completedDate: freelancer.currentAssignment.completedDate,
+                    hoursWorked: freelancer.currentAssignment.estimatedHours,
+                    amount: freelancer.currentAssignment.totalAmount,
+                    paymentStatus: 'paid',
+                    paidDate: freelancer.currentAssignment.paidDate
+                });
+                
+                // Clear current assignment and update status
+                freelancer.currentAssignment = null;
+                freelancer.status = 'Available';
+
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalText;
+
+                closePaymentDrawer();
+                showNotification(`Payment of LKR ${freelancer.assignmentHistory[0].amount.toLocaleString()} processed successfully!`, 'success');
+
+                // Refresh freelancer list
+                setTimeout(() => {
+                    loadFreelancers();
+                }, 500);
+            }, 2000);
         }
 
         // Store current application being processed
@@ -3036,6 +3895,70 @@
                 'pending': 'status-pending'
             };
             return classes[status] || 'status-default';
+        }
+
+        // Helper functions for freelancer assignment status
+        function getFreelancerStatusClass(status) {
+            const statusLower = status.toLowerCase().replace(/\s+/g, '-');
+            const classes = {
+                'available': 'status-available',
+                'assigned': 'status-assigned',
+                'work-completed': 'status-work-completed',
+                'payment-pending': 'status-payment-pending',
+                'busy': 'status-busy'
+            };
+            return classes[statusLower] || 'status-default';
+        }
+
+        function getAssignmentStatusClass(workStatus, paymentStatus) {
+            if (workStatus === 'completed' && paymentStatus === 'payment-due') {
+                return 'assignment-status-payment-due';
+            }
+            if (workStatus === 'completed' && paymentStatus === 'processing') {
+                return 'assignment-status-processing';
+            }
+            if (workStatus === 'in-progress') {
+                return 'assignment-status-in-progress';
+            }
+            if (workStatus === 'pending') {
+                return 'assignment-status-pending';
+            }
+            return 'assignment-status-default';
+        }
+
+        function getAssignmentStatusText(workStatus, paymentStatus) {
+            if (workStatus === 'completed' && paymentStatus === 'payment-due') {
+                return 'Payment Due';
+            }
+            if (workStatus === 'completed' && paymentStatus === 'processing') {
+                return 'Processing Payment';
+            }
+            if (workStatus === 'completed' && paymentStatus === 'paid') {
+                return 'Paid';
+            }
+            if (workStatus === 'in-progress') {
+                return 'Work in Progress';
+            }
+            if (workStatus === 'pending') {
+                return 'Not Started';
+            }
+            return 'Unknown';
+        }
+
+        function getStatusIcon(workStatus, paymentStatus) {
+            if (workStatus === 'completed' && paymentStatus === 'payment-due') {
+                return 'fa-exclamation-circle';
+            }
+            if (workStatus === 'completed' && paymentStatus === 'processing') {
+                return 'fa-spinner fa-spin';
+            }
+            if (workStatus === 'completed' && paymentStatus === 'paid') {
+                return 'fa-check-circle';
+            }
+            if (workStatus === 'in-progress') {
+                return 'fa-hourglass-half';
+            }
+            return 'fa-clock';
         }
 
         function formatDate(dateString) {
@@ -4243,9 +5166,6 @@
                     <button class="drawer-btn secondary" onclick="closeFreelancerDetailsDrawer()">
                         <i class="fas fa-times"></i> Close
                     </button>
-                    <button class="drawer-btn" onclick="editFromFreelancerDrawer()">
-                        <i class="fas fa-edit"></i> Edit Profile
-                    </button>
                     <button class="drawer-btn success assign-freelancer-btn" onclick="assignFromFreelancerDrawer()">
                         <i class="fas fa-briefcase"></i> Assign to Job
                     </button>
@@ -5179,6 +6099,9 @@
                     <div class="chat-header-details">
                         <h3 id="chatPersonName">Kasun Perera</h3>
                         <span class="chat-header-specialty" id="chatPersonSpecialty">Mobile Phone Repair</span>
+                        <span class="chat-online-status" id="chatOnlineStatus">
+                            <i class="fas fa-circle"></i> Online
+                        </span>
                     </div>
                 </div>
                 <button class="close-drawer" onclick="closeChatDrawer()">
@@ -5187,19 +6110,217 @@
             </div>
 
             <div class="drawer-content chat-content">
+                <!-- Date Separator -->
+                <div class="chat-date-separator" id="chatDateSeparator">
+                    <span>Today</span>
+                </div>
+                
                 <div class="chat-messages-container" id="chatMessagesContainer">
                     <!-- Messages will be loaded dynamically -->
                 </div>
             </div>
 
             <div class="chat-input-section">
-                <input type="text" 
-                       id="chatMessageInput" 
-                       class="chat-input" 
-                       placeholder="Type your message..." 
-                       onkeypress="handleChatKeyPress(event)">
+                <button class="chat-attach-btn" onclick="attachChatFile()" title="Attach file">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                <input type="file" id="chatFileInput" style="display: none;" accept="image/*,video/*,.pdf,.doc,.docx">
+                <textarea 
+                    id="chatMessageInput" 
+                    class="chat-input" 
+                    placeholder="Type your message..." 
+                    rows="1"
+                    onkeypress="handleChatKeyPress(event)"
+                    oninput="autoResizeChatInput(this)"></textarea>
                 <button class="chat-send-btn" onclick="sendChatMessage()">
                     <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+
+            <!-- Typing Indicator -->
+            <div class="chat-typing-indicator" id="chatTypingIndicator" style="display: none;">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <span class="typing-text">Typing...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Processing Drawer -->
+    <div class="drawer-overlay" id="paymentDrawer">
+        <div class="drawer-panel large-drawer">
+            <div class="drawer-header">
+                <div>
+                    <h3><i class="fas fa-credit-card"></i> Process Payment</h3>
+                    <p class="drawer-subtitle">Complete payment for completed work</p>
+                </div>
+                <button class="close-drawer" onclick="closePaymentDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="drawer-content">
+                <!-- Freelancer Info -->
+                <div class="payment-freelancer-info">
+                    <div class="payment-freelancer-avatar" id="paymentFreelancerAvatar">RS</div>
+                    <div class="payment-freelancer-details">
+                        <h4 id="paymentFreelancerName">Rohan Silva</h4>
+                        <p id="paymentFreelancerSpecialty">TV Repair</p>
+                    </div>
+                    <div class="payment-delay-warning" id="paymentDelayWarning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Payment is overdue</span>
+                    </div>
+                </div>
+
+                <!-- Job Details -->
+                <div class="payment-section">
+                    <h4 class="payment-section-title">
+                        <i class="fas fa-briefcase"></i> Job Details
+                    </h4>
+                    <div class="payment-info-grid">
+                        <div class="payment-info-item">
+                            <label>Job Title</label>
+                            <div class="payment-info-value">
+                                <span id="paymentJobTitle">Smart TV Display Repair</span>
+                                <span class="payment-job-id" id="paymentJobId">#J098</span>
+                            </div>
+                        </div>
+                        <div class="payment-info-item">
+                            <label>Assigned Date</label>
+                            <div class="payment-info-value" id="paymentAssignedDate">Oct 15, 2025</div>
+                        </div>
+                        <div class="payment-info-item">
+                            <label>Completed Date</label>
+                            <div class="payment-info-value" id="paymentCompletedDate">Oct 21, 2025</div>
+                        </div>
+                        <div class="payment-info-item">
+                            <label>Days Pending</label>
+                            <div class="payment-info-value">
+                                <span id="paymentDaysPending">2</span> days
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Work Completion Evidence -->
+                <div class="payment-section" id="paymentEvidence">
+                    <h4 class="payment-section-title">
+                        <i class="fas fa-check-circle"></i> Work Completion Evidence
+                    </h4>
+                    <div class="payment-evidence-box">
+                        <p id="paymentEvidenceText">Replaced display panel, tested all functions. Customer verified.</p>
+                    </div>
+                </div>
+
+                <!-- Payment Calculation -->
+                <div class="payment-section">
+                    <h4 class="payment-section-title">
+                        <i class="fas fa-calculator"></i> Payment Calculation
+                    </h4>
+                    <div class="payment-calculation">
+                        <div class="payment-calc-row">
+                            <span class="payment-calc-label">Hours Worked</span>
+                            <span class="payment-calc-value"><span id="paymentEstimatedHours">6</span> hrs</span>
+                        </div>
+                        <div class="payment-calc-row">
+                            <span class="payment-calc-label">Hourly Rate</span>
+                            <span class="payment-calc-value" id="paymentHourlyRate">LKR 2,800</span>
+                        </div>
+                        <div class="payment-calc-divider"></div>
+                        <div class="payment-calc-row payment-total-row">
+                            <span class="payment-calc-label">Total Amount</span>
+                            <span class="payment-calc-total" id="paymentTotalAmount">LKR 16,800</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="payment-section">
+                    <h4 class="payment-section-title">
+                        <i class="fas fa-money-check-alt"></i> Payment Method
+                    </h4>
+                    <div class="form-group">
+                        <select id="paymentMethod" class="form-control" onchange="updatePaymentMethodFields()">
+                            <option value="bank-transfer">Bank Transfer</option>
+                            <option value="mobile-money">Mobile Money (eSewa/Khalti)</option>
+                            <option value="cash">Cash Payment</option>
+                            <option value="cheque">Cheque</option>
+                        </select>
+                    </div>
+
+                    <!-- Bank Transfer Fields -->
+                    <div id="bankTransferFields" class="payment-method-fields">
+                        <div class="form-group">
+                            <label>Bank Account Number</label>
+                            <input type="text" id="bankAccountNumber" class="form-control" placeholder="Enter account number">
+                        </div>
+                        <div class="form-group">
+                            <label>Bank Name</label>
+                            <input type="text" id="bankName" class="form-control" placeholder="e.g., Commercial Bank">
+                        </div>
+                        <div class="form-group">
+                            <label>Account Holder Name</label>
+                            <input type="text" id="accountHolderName" class="form-control" placeholder="Account holder name">
+                        </div>
+                    </div>
+
+                    <!-- Mobile Money Fields -->
+                    <div id="mobileMoneyFields" class="payment-method-fields" style="display: none;">
+                        <div class="form-group">
+                            <label>Mobile Number</label>
+                            <input type="tel" id="mobileMoneyNumber" class="form-control" placeholder="07X XXX XXXX">
+                        </div>
+                        <div class="form-group">
+                            <label>Provider</label>
+                            <select id="mobileMoneyProvider" class="form-control">
+                                <option value="">Select provider</option>
+                                <option value="esewa">eSewa</option>
+                                <option value="khalti">Khalti</option>
+                                <option value="imepay">IME Pay</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Cash Payment Fields -->
+                    <div id="cashPaymentFields" class="payment-method-fields" style="display: none;">
+                        <div class="cash-payment-notice">
+                            <i class="fas fa-info-circle"></i>
+                            <p>Please confirm that cash payment will be made in person. Ensure to get a signed receipt.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Notes -->
+                <div class="payment-section">
+                    <h4 class="payment-section-title">
+                        <i class="fas fa-sticky-note"></i> Payment Notes (Optional)
+                    </h4>
+                    <div class="form-group">
+                        <textarea id="paymentNotes" class="form-control" rows="3" placeholder="Add any notes about this payment..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Payment Summary Box -->
+                <div class="payment-summary-box">
+                    <div class="payment-summary-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="payment-summary-details">
+                        <p class="payment-summary-label">You are about to pay</p>
+                        <h3 class="payment-summary-amount" id="paymentSummaryAmount">LKR 16,800</h3>
+                        <p class="payment-summary-to">to <span id="paymentSummaryFreelancer">Rohan Silva</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="drawer-footer">
+                <button type="button" class="btn-secondary" onclick="closePaymentDrawer()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn-primary payment-confirm-btn" onclick="confirmPayment()">
+                    <i class="fas fa-check-circle"></i> Confirm Payment
                 </button>
             </div>
         </div>
@@ -5209,3 +6330,4 @@
 </body>
 
 </html>
+

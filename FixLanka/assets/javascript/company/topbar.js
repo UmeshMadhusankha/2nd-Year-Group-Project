@@ -23,11 +23,11 @@ const PAGE_INFO = {
   },
   'repair-requests': {
     title: 'Repair Requests',
-    slogan: 'Manage customer repair requests - view opportunities and handle requests'
+    slogan: 'Handle customer requests and schedule repairs'
   },
   'requests': {
     title: 'Repair Requests',
-    slogan: 'Manage customer repair requests - view opportunities and handle requests'
+    slogan: 'Handle customer requests and schedule repairs'
   },
   'support': {
     title: 'Help & Support',
@@ -47,19 +47,11 @@ const PAGE_INFO = {
   },
   'reviews': {
     title: 'Reviews & Feedback',
-    slogan: 'Monitor customer feedback for your company'
+    slogan: 'Monitor and manage customer feedback for your company'
   },
   'settings': {
     title: 'Settings',
     slogan: 'Configure your account and system preferences'
-  },
-  'advertisements': {
-    title: 'Advertisements',
-    slogan: 'Create and manage your business advertisements'
-  },
-  'feedback': {
-    title: 'Feedback',
-    slogan: 'View and respond to customer feedback'
   }
 };
 
@@ -71,11 +63,17 @@ function initializeTopbar() {
   }
   window.topbarInitialized = true;
 
-  // Update page title from URL (in case inline script didn't run)
+  // Get current page from URL
   updatePageHeaderFromURL();
   initSearch();
   initNotifications();
   initProfileDropdown();
+  attachSidebarLinkListeners();
+
+  // Listen for page changes (for SPA-like navigation)
+  window.addEventListener('popstate', function() {
+    updatePageHeaderFromURL();
+  });
 
   console.log('✅ Topbar initialized successfully');
 }
@@ -109,16 +107,28 @@ function updatePageHeader(pageName) {
 
   if (pageTitle) {
     pageTitle.textContent = info.title;
+    // Add fade-in animation
+    pageTitle.style.opacity = '0';
+    setTimeout(() => {
+      pageTitle.style.transition = 'opacity 0.3s ease';
+      pageTitle.style.opacity = '1';
+    }, 50);
   }
 
   if (pageSlogan) {
     pageSlogan.textContent = info.slogan;
+    // Add fade-in animation
+    pageSlogan.style.opacity = '0';
+    setTimeout(() => {
+      pageSlogan.style.transition = 'opacity 0.3s ease';
+      pageSlogan.style.opacity = '1';
+    }, 100);
   }
 
   // Update browser tab title
   document.title = `${info.title} - FixLanka Company Dashboard`;
 
-  console.log('📄 Page title updated to:', info.title);
+  console.log('📄 Page Updated:', info.title);
 }
 
 /**
@@ -137,11 +147,26 @@ function setPageTitle(pageName) {
   updatePageHeader(pageName);
 }
 
-// Export functions for global access
-if (typeof window !== 'undefined') {
-  window.updatePageHeader = updatePageHeader;
-  window.updatePageHeaderFromURL = updatePageHeaderFromURL;
-  window.setPageTitle = setPageTitle;
+/**
+ * Attach listeners to sidebar links to update page title
+ * This function listens for clicks on sidebar navigation links
+ */
+function attachSidebarLinkListeners() {
+  // Listen for all links that might navigate to different pages
+  document.addEventListener('click', function(e) {
+    const link = e.target.closest('a[href*=".php"]');
+    
+    if (link) {
+      const href = link.getAttribute('href');
+      // Extract page name from href
+      const pageName = href.split('/').pop().replace('.php', '');
+      
+      if (pageName && PAGE_INFO[pageName]) {
+        // Update page title immediately (before navigation)
+        updatePageHeader(pageName);
+      }
+    }
+  });
 }
 
 /**

@@ -23,9 +23,32 @@
   
   /* Status Colors */
   --success-color: #10b981;
+  --success-dark: #059669;
   --warning-color: #f59e0b;
+  --warning-dark: #d97706;
+  --warning-light: #fbbf24;
   --danger-color: #ef4444;
+  --danger-dark: #dc2626;
   --info-color: #1285c7;
+  --info-dark: #1e40af;
+  --info-darker: #1e3a8a;
+  
+  /* Additional Theme Colors for Banners & Special Elements */
+  --pink-color: #ec4899;
+  --purple-color: #8b5cf6;
+  --purple-dark: #7c3aed;
+  --purple-light: #ede9fe;
+  --orange-color: #fb923c;
+  --orange-dark: #ea580c;
+  --cyan-color: #06b6d4;
+  --cyan-dark: #0891b2;
+  --cyan-light: #cffafe;
+  --blue-light: #dbeafe;
+  --gray-dark: #1f2937;
+  --gray-darker: #111827;
+  --gray-medium: #4b5563;
+  --black: #000000;
+  --yellow-gold: #fbbf24;
   
   /* ===============================================
      TEXT COLORS

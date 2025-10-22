@@ -679,39 +679,77 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         <!-- Milestone Status Updates with Verification -->
                         <div class="form-divider">
-                            <h4><i class="fas fa-tasks"></i> Milestone Completion</h4>
-                            <p class="helper-text">⚠️ Requires evidence/documentation to mark as completed</p>
+                            <h4><i class="fas fa-tasks"></i> Milestone & Payment Tracking</h4>
+                            <p class="helper-text">⚠️ Customer must verify completion before payment release</p>
                         </div>
 
                         ${projectData.milestones.map((milestone, index) => `
                             <div class="milestone-status-item" data-milestone="${index}">
                                 <div class="milestone-header-row">
                                     <div class="milestone-info">
-                                        <strong>${milestone.title}</strong>
-                                        <span class="milestone-amount">LKR ${milestone.amount}</span>
+                                        <div class="milestone-title-row">
+                                            <strong>${milestone.title}</strong>
+                                            <span class="milestone-payment-badge">
+                                                <i class="fas fa-money-bill-wave"></i>
+                                                LKR ${milestone.amount}
+                                            </span>
+                                        </div>
+                                        <div class="milestone-payment-status">
+                                            ${getMilestonePaymentStatus(milestone)}
+                                        </div>
                                     </div>
                                     <div class="form-group milestone-status-select">
                                         <select name="milestone_${index}_status" onchange="handleMilestoneStatusChange(${index}, this.value)">
-                                            <option value="pending">⏳ Pending</option>
+                                            <option value="pending">⏳ Not Started</option>
                                             <option value="active">🔄 In Progress</option>
-                                            <option value="completed">✅ Completed</option>
+                                            <option value="review">📋 Pending Customer Review</option>
+                                            <option value="completed" disabled>✅ Verified & Complete</option>
                                         </select>
                                     </div>
                                 </div>
                                 
-                                <!-- Verification Section (shows when completed is selected) -->
+                                <!-- Verification Section (shows when review is selected) -->
                                 <div class="verification-section" id="verification_${index}" style="display: none;">
-                                    <div class="warning-box">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                        <span>Marking as complete requires verification</span>
+                                    <div class="warning-box customer-verify">
+                                        <i class="fas fa-user-check"></i>
+                                        <div>
+                                            <strong>Customer Verification Required</strong>
+                                            <p>Customer will be notified to verify completion. Payment will be released after approval.</p>
+                                        </div>
                                     </div>
                                     <div class="form-group">
-                                        <label>Completion Evidence/Notes (Required)</label>
-                                        <textarea name="milestone_${index}_evidence" rows="2" placeholder="Describe work completed, add photo links, or reference documentation..." required></textarea>
+                                        <label>Completion Evidence/Documentation (Required)</label>
+                                        <textarea name="milestone_${index}_evidence" rows="3" placeholder="Describe completed work:
+• What was done?
+• Any photos/documentation?
+• Ready for customer inspection?" required></textarea>
                                     </div>
-                                    <div class="form-group">
-                                        <label>Verification Code (Admin Approval)</label>
-                                        <input type="text" name="milestone_${index}_code" placeholder="Enter verification code from admin" required>
+                                    <div class="notification-preview">
+                                        <i class="fas fa-bell"></i>
+                                        <div>
+                                            <strong>Customer will receive:</strong>
+                                            <ul>
+                                                <li>Email & SMS notification</li>
+                                                <li>Evidence/photos you provided</li>
+                                                <li>Option to approve or request changes</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Completion Timeline (readonly info) -->
+                                <div class="milestone-timeline-info" style="display: none;" id="timeline_${index}">
+                                    <div class="timeline-step">
+                                        <i class="fas fa-check-circle text-success"></i>
+                                        <span>Work completed - Awaiting verification</span>
+                                    </div>
+                                    <div class="timeline-step pending">
+                                        <i class="fas fa-clock text-muted"></i>
+                                        <span>Customer review pending</span>
+                                    </div>
+                                    <div class="timeline-step pending">
+                                        <i class="fas fa-money-bill-wave text-muted"></i>
+                                        <span>Payment release (auto after approval)</span>
                                     </div>
                                 </div>
                             </div>
@@ -755,11 +793,17 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const milestones = [];
         document.querySelectorAll('.milestone-item').forEach((item, index) => {
+            const status = item.classList.contains('completed') ? 'completed' : 
+                          item.classList.contains('active') ? 'active' : 'pending';
+            
             milestones.push({
                 title: item.querySelector('h5')?.textContent || '',
                 description: item.querySelector('p')?.textContent || '',
-                amount: item.querySelector('.milestone-amount')?.textContent.replace(/[^\d]/g, '') || '0',
-                date: '2025-09-05'
+                amount: item.querySelector('.payment-amount')?.textContent.replace(/[^\d]/g, '') || '37500',
+                date: '2025-09-05',
+                status: status,
+                paymentStatus: status === 'completed' ? 'paid' : 'pending',
+                verifiedByCustomer: status === 'completed'
             });
         });
         
@@ -767,6 +811,18 @@ document.addEventListener('DOMContentLoaded', function() {
             description: description,
             milestones: milestones
         };
+    }
+    
+    function getMilestonePaymentStatus(milestone) {
+        if (milestone.status === 'completed' && milestone.paymentStatus === 'paid') {
+            return `<span class="payment-status paid"><i class="fas fa-check-circle"></i> Payment Released</span>`;
+        } else if (milestone.status === 'completed' && !milestone.verifiedByCustomer) {
+            return `<span class="payment-status pending-review"><i class="fas fa-clock"></i> Awaiting Customer Approval</span>`;
+        } else if (milestone.status === 'active') {
+            return `<span class="payment-status in-progress"><i class="fas fa-hourglass-half"></i> Work In Progress</span>`;
+        } else {
+            return `<span class="payment-status unpaid"><i class="fas fa-circle"></i> Payment Pending</span>`;
+        }
     }
     
     function closeEditModal() {
@@ -779,21 +835,28 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function handleMilestoneStatusChange(index, status) {
         const verificationSection = document.getElementById(`verification_${index}`);
+        const timelineInfo = document.getElementById(`timeline_${index}`);
         
-        if (status === 'completed') {
+        if (status === 'review') {
             // Show verification requirements
             verificationSection.style.display = 'block';
+            timelineInfo.style.display = 'block';
             verificationSection.querySelector('textarea').required = true;
-            verificationSection.querySelector('input').required = true;
+            
+            // Update timeline to show current step
+            const timelineSteps = timelineInfo.querySelectorAll('.timeline-step');
+            timelineSteps[0].classList.remove('pending');
+            timelineSteps[1].classList.add('active');
+            timelineSteps[2].classList.add('pending');
         } else {
             // Hide verification section
             verificationSection.style.display = 'none';
+            timelineInfo.style.display = 'none';
             verificationSection.querySelector('textarea').required = false;
-            verificationSection.querySelector('input').required = false;
         }
         
-        // Recalculate progress
-        calculateProgress();
+        // Recalculate progress and auto-update project status
+        calculateProgressAndUpdateStatus();
     }
     
     function calculateProgress() {
@@ -816,6 +879,71 @@ document.addEventListener('DOMContentLoaded', function() {
         return progress;
     }
     
+    function calculateProgressAndUpdateStatus() {
+        const progress = calculateProgress();
+        const statusSelect = document.querySelector('[name="status"]');
+        
+        const milestoneSelects = document.querySelectorAll('[name^="milestone_"][name$="_status"]');
+        let hasDelayed = false;
+        let allCompleted = true;
+        
+        milestoneSelects.forEach(select => {
+            if (select.value === 'pending') {
+                allCompleted = false;
+            }
+            // Check if deadline passed for pending/active milestones
+            // You would implement actual deadline checking here
+        });
+        
+        // Auto-update project status based on milestones
+        if (progress === 100 && allCompleted) {
+            statusSelect.value = 'completed';
+            showStatusUpdateNotice('Project status auto-updated to Completed (all milestones done)');
+        } else if (hasDelayed) {
+            statusSelect.value = 'delayed';
+            showStatusUpdateNotice('Project status auto-updated to Delayed (milestone past due)');
+        } else if (progress > 0) {
+            statusSelect.value = 'ongoing';
+        }
+        
+        // Disable manual override if all milestones are complete
+        if (allCompleted) {
+            statusSelect.disabled = true;
+        } else {
+            statusSelect.disabled = false;
+        }
+    }
+    
+    function showStatusUpdateNotice(message) {
+        const existingNotice = document.querySelector('.auto-status-notice');
+        if (existingNotice) {
+            existingNotice.remove();
+        }
+        
+        const notice = document.createElement('div');
+        notice.className = 'auto-status-notice';
+        notice.innerHTML = `
+            <i class="fas fa-info-circle"></i>
+            <span>${message}</span>
+        `;
+        notice.style.cssText = `
+            background: linear-gradient(135deg, rgba(10, 186, 181, 0.1), rgba(10, 186, 181, 0.05));
+            border-left: 4px solid var(--primary-color);
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            animation: slideInDown 0.3s ease;
+        `;
+        
+        const statusGroup = document.querySelector('[name="status"]').closest('.form-group');
+        statusGroup.parentNode.insertBefore(notice, statusGroup);
+    }
+    
     function saveProjectChanges() {
         const form = document.getElementById('projectEditForm');
         
@@ -834,7 +962,8 @@ document.addEventListener('DOMContentLoaded', function() {
             notes: formData.get('notes'),
             milestones: [],
             timestamp: new Date().toISOString(),
-            updatedBy: 'Current User' // TODO: Get from auth system
+            updatedBy: 'Current User', // TODO: Get from auth system
+            customerNotifications: []
         };
         
         // Collect milestone status updates with verification
@@ -842,39 +971,132 @@ document.addEventListener('DOMContentLoaded', function() {
         milestoneItems.forEach((item, index) => {
             const status = formData.get(`milestone_${index}_status`);
             const milestoneData = {
+                index: index,
                 status: status
             };
             
-            // If completed, include verification data
-            if (status === 'completed') {
+            // If submitted for review, prepare customer notification
+            if (status === 'review') {
                 milestoneData.evidence = formData.get(`milestone_${index}_evidence`);
-                milestoneData.verificationCode = formData.get(`milestone_${index}_code`);
+                milestoneData.submittedForReview = new Date().toISOString();
+                milestoneData.requiresCustomerApproval = true;
+                
+                // Add to notifications queue
+                projectData.customerNotifications.push({
+                    type: 'milestone_review',
+                    milestoneIndex: index,
+                    milestoneTitle: item.querySelector('.milestone-title-row strong').textContent,
+                    evidence: milestoneData.evidence,
+                    notificationChannels: ['email', 'sms', 'in-app']
+                });
+            }
+            
+            // If already completed (customer verified), include verification details
+            if (status === 'completed') {
+                milestoneData.verifiedByCustomer = true;
                 milestoneData.completedAt = new Date().toISOString();
+                milestoneData.paymentStatus = 'released';
             }
             
             projectData.milestones.push(milestoneData);
         });
         
-        console.log('Updating project status with verification:', projectData);
+        console.log('Updating project with customer verification workflow:', projectData);
         
-        // TODO: Send to backend API for verification
+        // Show what will happen
+        let notificationMessage = `✅ Project status updated successfully!\n\n`;
+        notificationMessage += `📊 Progress: ${calculatedProgress}%\n`;
+        notificationMessage += `📋 Status: ${projectData.status}\n\n`;
+        
+        if (projectData.customerNotifications.length > 0) {
+            notificationMessage += `🔔 Customer Notifications:\n`;
+            projectData.customerNotifications.forEach(notif => {
+                notificationMessage += `  • ${notif.milestoneTitle} - Pending customer approval\n`;
+            });
+            notificationMessage += `\n📧 Customer will be notified via Email & SMS\n`;
+            notificationMessage += `💰 Payment will auto-release upon approval\n`;
+        }
+        
+        // TODO: Send to backend API
         // const response = await fetch('/api/projects/update-status', { 
         //     method: 'POST', 
         //     body: JSON.stringify(projectData),
         //     headers: { 'Content-Type': 'application/json' }
         // });
         
-        // Backend should verify:
-        // 1. Verification codes are valid
-        // 2. User has permission to update
-        // 3. Evidence is provided
+        // Backend should:
+        // 1. Update project status
+        // 2. Send customer notifications
+        // 3. Create approval requests for customer
         // 4. Log all changes for audit trail
+        // 5. Set up payment release triggers for approved milestones
         
-        alert('Project status updated successfully!\n\nProgress: ' + calculatedProgress + '%\nUpdates logged for audit.');
+        showEnhancedSuccessMessage(notificationMessage, projectData);
         closeEditModal();
         
         // Reload to show updated status
-        // location.reload();
+        // setTimeout(() => location.reload(), 2000);
+    }
+    
+    function showEnhancedSuccessMessage(message, projectData) {
+        const modal = document.createElement('div');
+        modal.className = 'success-modal-overlay active';
+        modal.innerHTML = `
+            <div class="success-modal">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3>Update Successful!</h3>
+                <div class="success-details">
+                    <div class="detail-row">
+                        <span class="label">Progress:</span>
+                        <span class="value">${projectData.progress}%</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Status:</span>
+                        <span class="value status-${projectData.status}">${projectData.status}</span>
+                    </div>
+                    ${projectData.customerNotifications.length > 0 ? `
+                        <div class="notifications-section">
+                            <h4><i class="fas fa-bell"></i> Customer Notifications Sent</h4>
+                            ${projectData.customerNotifications.map(notif => `
+                                <div class="notification-item">
+                                    <i class="fas fa-check"></i>
+                                    <span>${notif.milestoneTitle} - Pending customer review</span>
+                                </div>
+                            `).join('')}
+                            <p class="notification-note">
+                                <i class="fas fa-info-circle"></i>
+                                Payment will auto-release upon customer approval
+                            </p>
+                        </div>
+                    ` : ''}
+                </div>
+                <button class="btn-primary" onclick="closeSuccessModal()">
+                    <i class="fas fa-check"></i> Got it
+                </button>
+            </div>
+        `;
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10002;
+            animation: fadeIn 0.3s ease;
+        `;
+        
+        document.body.appendChild(modal);
+        
+        window.closeSuccessModal = function() {
+            modal.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => modal.remove(), 300);
+        };
     }
     
     window.enableEditMode = enableEditMode;

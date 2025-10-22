@@ -1,29 +1,4 @@
 <!-- Header/Topbar Component -->
-<?php
-// Get current page name from the URL
-$currentPage = basename($_SERVER['PHP_SELF'], '.php');
-
-// Page information mapping
-$pageInfo = [
-    'dashboard' => ['title' => 'Dashboard', 'slogan' => 'Welcome back, let\'s see what\'s happening today'],
-    'repair-requests' => ['title' => 'Repair Requests', 'slogan' => 'Manage customer repair requests - view opportunities and handle requests'],
-    'projects' => ['title' => 'Projects', 'slogan' => 'Manage and track your repair projects efficiently'],
-    'workforce' => ['title' => 'Workforce', 'slogan' => 'Manage your team and freelancers all in one place'],
-    'payments' => ['title' => 'Payments', 'slogan' => 'Track payments and financial transactions'],
-    'contracts' => ['title' => 'Contracts', 'slogan' => 'Manage agreements and legal documents'],
-    'advertisements' => ['title' => 'Advertisements', 'slogan' => 'Create and manage your business advertisements'],
-    'support' => ['title' => 'Help & Support', 'slogan' => 'Get help and manage customer support tickets'],
-    'settings' => ['title' => 'Settings', 'slogan' => 'Configure your account and system preferences'],
-    'profile' => ['title' => 'My Profile', 'slogan' => 'Manage your personal and company information'],
-    'reviews' => ['title' => 'Reviews & Feedback', 'slogan' => 'Monitor customer feedback for your company'],
-    'feedback' => ['title' => 'Feedback', 'slogan' => 'View and respond to customer feedback']
-];
-
-// Get page info or use default
-$info = $pageInfo[$currentPage] ?? ['title' => 'Dashboard', 'slogan' => 'FixLanka Company Dashboard'];
-$pageTitle = $info['title'];
-$pageSlogan = $info['slogan'];
-?>
 <header class="header">
   <div class="header-left">
     <label for="sidebar-toggle" class="sidebar-toggle">
@@ -33,8 +8,8 @@ $pageSlogan = $info['slogan'];
       <img src="../../assets/images/fixlanka.png" alt="FixLanka" class="logo-image">
     </div>
     <div class="page-info">
-      <h1 class="page-title" id="page-title"><?php echo htmlspecialchars($pageTitle); ?></h1>
-      <p class="page-slogan" id="page-slogan"><?php echo htmlspecialchars($pageSlogan); ?></p>
+      <h1 class="page-title" id="page-title">Dashboard</h1>
+      <p class="page-slogan" id="page-slogan">Welcome back, let's see what's happening today</p>
     </div>
   </div>
 
