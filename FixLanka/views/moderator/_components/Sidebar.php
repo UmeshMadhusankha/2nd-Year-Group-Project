@@ -7,14 +7,14 @@ function renderModeratorSidebar($currentPath, $basePath)
 
     // Menu items for the new UI
     $menuItems = [
-        ['title' => 'Dashboard', 'url' => 'dashboard', 'icon' => 'home'],
-        ['title' => 'Financial Reports', 'url' => 'finance', 'icon' => 'dollar-sign'],
-        ['title' => 'Advertisement Review', 'url' => 'ads', 'icon' => 'monitor'],
-        ['title' => 'Static Content', 'url' => 'static-content', 'icon' => 'file-text'],
-        ['title' => 'Ad Scheduling', 'url' => 'ad-schedule', 'icon' => 'calendar'],
-        ['title' => 'Ad Reports', 'url' => 'ad-reports', 'icon' => 'flag'],
-        ['title' => 'Notifications', 'url' => 'notifications', 'icon' => 'bell'],
-        ['title' => 'User Management', 'url' => 'account-moderation', 'icon' => 'users']
+        ['title' => 'Dashboard', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-dashboard', 'icon' => 'home'],
+        ['title' => 'Financial Reports', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-finance', 'icon' => 'dollar-sign'],
+        ['title' => 'Advertisement Review', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-ads', 'icon' => 'monitor'],
+        ['title' => 'Static Content', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-static-content', 'icon' => 'file-text'],
+        ['title' => 'Ad Scheduling', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-ad-schedule', 'icon' => 'calendar'],
+        ['title' => 'Ad Reports', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-ad-reports', 'icon' => 'flag'],
+        ['title' => 'Notifications', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-notifications', 'icon' => 'bell'],
+        ['title' => 'User Management', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-account-moderation', 'icon' => 'users']
     ];
 
     echo '<!-- Sidebar Component -->';
@@ -27,7 +27,7 @@ function renderModeratorSidebar($currentPath, $basePath)
         $activeClass = $isActive ? 'active' : '';
 
         echo '<li class="nav-item ' . $activeClass . '">';
-        echo '<a href="' . $item['url'] . '.php" class="nav-link" data-tooltip="' . htmlspecialchars($item['title']) . '">';
+        echo '<a href="' . htmlspecialchars($item['url']) . '" class="nav-link" data-tooltip="' . htmlspecialchars($item['title']) . '">';
         echo '<i data-lucide="' . htmlspecialchars($item['icon']) . '" class=""></i>';
         echo '<span>' . htmlspecialchars($item['title']) . '</span>';
         echo '</a>';

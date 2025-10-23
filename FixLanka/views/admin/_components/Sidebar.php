@@ -6,13 +6,13 @@ function renderAdminSidebar($currentPath, $basePath)
     $currentPath = trim($currentPath, '/');
 
     $menuItems = [
-        ['title' => 'Dashboard', 'url' => 'dashboard', 'icon' => 'home'],
-        ['title' => 'User Management', 'url' => 'users', 'icon' => 'users'],
-        ['title' => 'Send Alerts', 'url' => 'alerts', 'icon' => 'alert-triangle'],
-        ['title' => 'Issues & Reports', 'url' => 'issues', 'icon' => 'message-square'],
-        ['title' => 'Analytics', 'url' => 'analytics', 'icon' => 'bar-chart-3'],
-        ['title' => 'Advertisement Review', 'url' => 'ads', 'icon' => 'monitor'],
-        ['title' => 'Financial Overview', 'url' => 'finance', 'icon' => 'dollar-sign']
+        ['title' => 'Dashboard', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-dashboard', 'icon' => 'home'],
+        ['title' => 'User Management', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-users', 'icon' => 'users'],
+        ['title' => 'Send Alerts', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-alerts', 'icon' => 'alert-triangle'],
+        ['title' => 'Issues & Reports', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-issues', 'icon' => 'message-square'],
+        ['title' => 'Analytics', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-analytics', 'icon' => 'bar-chart-3'],
+        ['title' => 'Advertisement Review', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-ads', 'icon' => 'monitor'],
+        ['title' => 'Financial Overview', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-finance', 'icon' => 'dollar-sign']
     ];
 
     echo '<!-- Sidebar Component -->';
@@ -25,7 +25,7 @@ function renderAdminSidebar($currentPath, $basePath)
         $activeClass = $isActive ? 'active' : '';
 
         echo '<li class="nav-item ' . $activeClass . '">';
-        echo '<a href="' . $item['url'] . '.php" class="nav-link" data-tooltip="' . htmlspecialchars($item['title']) . '">';
+        echo '<a href="' . htmlspecialchars($item['url']) . '" class="nav-link" data-tooltip="' . htmlspecialchars($item['title']) . '">';
         echo '<i data-lucide="' . htmlspecialchars($item['icon']) . '" class=""></i>';
         echo '<span>' . htmlspecialchars($item['title']) . '</span>';
         echo '</a>';

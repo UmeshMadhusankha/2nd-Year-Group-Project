@@ -4,7 +4,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once '../../includes/admin-modarator/auth.php';
+require_once __DIR__ . '/../../../includes/admin-modarator/auth.php';
 
 function renderPageHeader($basePath, $title, $pageSubtitle = null, $currentPage = null, $searchPlaceholder = 'Search...')
 {
@@ -52,11 +52,10 @@ function renderPageHeader($basePath, $title, $pageSubtitle = null, $currentPage 
     echo '<p class="profile-dropdown-email">' . $userEmail . '</p>';
     echo '</div>';
     echo '<ul class="profile-dropdown-menu">';
-    echo '<li class="profile-dropdown-item"><a href="profile.php" class="profile-dropdown-link"><i class="fas fa-user"></i><span>My Profile</span></a></li>';
-    echo '<li class="profile-dropdown-item"><a href="settings.php" class="profile-dropdown-link"><i class="fas fa-cog"></i><span>Settings</span></a></li>';
-    echo '<li class="profile-dropdown-item"><a href="upgrade.php" class="profile-dropdown-link"><i class="fas fa-crown"></i><span>Upgrade</span></a></li>';
+    echo '<li class="profile-dropdown-item"><a href="/2nd-Year-Group-Project/FixLanka/moderator-dashboard" class="profile-dropdown-link"><i class="fas fa-user"></i><span>My Profile</span></a></li>';
+    echo '<li class="profile-dropdown-item"><a href="/2nd-Year-Group-Project/FixLanka/moderator-dashboard" class="profile-dropdown-link"><i class="fas fa-cog"></i><span>Settings</span></a></li>';
     echo '<li class="profile-dropdown-divider"></li>';
-    echo '<li class="profile-dropdown-item"><a href="' . htmlspecialchars($basePath . '/logout') . '" class="profile-dropdown-link logout" data-action="logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>';
+    echo '<li class="profile-dropdown-item"><a href="/2nd-Year-Group-Project/FixLanka/logout" class="profile-dropdown-link logout" data-action="logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>';
     echo '</ul>';
     echo '</div>';
     echo '</div>'; // profile-menu
