@@ -516,7 +516,7 @@
                                 </td>
                                 <td>
                                     <div class="table-actions">
-                                        <a href="contracts.php?id=REQ-2025-006" class="table-action-btn view">
+                                        <a href="/2nd-Year-Group-Project/FixLanka/views/company/contracts.php?id=REQ-2025-006" class="table-action-btn view">
                                             <i class="fas fa-eye"></i>
                                             View Contract
                                         </a>

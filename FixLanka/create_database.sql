@@ -1,6 +1,7 @@
 -- =====================================================
 -- Database Schema for Home Repair Service Platform
--- Version 1.1.0
+-- Version 1.2.0 - Enhanced for Repairer & Company CRUD
+-- Updated: October 23, 2025
 -- =====================================================
 
 DROP DATABASE IF EXISTS fix_lanka;
@@ -127,19 +128,21 @@ CREATE TABLE Review (
 -- Service Provider Tables
 -- =====================================================
 
--- Repairer Quote Table
+-- Repairer Quote Table (Enhanced for both User JobRequests and Company JobPosts)
 CREATE TABLE RepairerQuote (
     quote_id INT PRIMARY KEY AUTO_INCREMENT,
-    request_id INT NOT NULL,
     repairer_id INT NOT NULL,
+    job_source_type ENUM('user_request', 'company_post') NOT NULL,
+    job_source_id INT NOT NULL, -- References either JobRequest.request_id or CompanyJobPost.posting_id
     quoteAmount DECIMAL(10,2) NOT NULL,
+    estimated_duration VARCHAR(50), -- e.g., "3 days", "1 week"
     message TEXT,
-    status ENUM('pending', 'accepted', 'rejected', 'expired') DEFAULT 'pending',
+    status ENUM('pending', 'accepted', 'rejected', 'expired', 'withdrawn') DEFAULT 'pending',
     dateSubmitted TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (request_id) REFERENCES JobRequest(request_id) ON DELETE CASCADE,
+    dateUpdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (repairer_id) REFERENCES Repairer(repairer_id) ON DELETE CASCADE,
-    INDEX idx_request (request_id),
     INDEX idx_repairer (repairer_id),
+    INDEX idx_job_source (job_source_type, job_source_id),
     INDEX idx_status (status)
 );
 
@@ -177,18 +180,23 @@ CREATE TABLE Company (
     INDEX idx_email (email)
 );
 
--- Company Job Posting Table
+-- Company Job Posting Table (Enhanced with budget, deadline, and update tracking)
 CREATE TABLE CompanyJobPost (
     posting_id INT PRIMARY KEY AUTO_INCREMENT,
     company_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    category VARCHAR(100),
+    category_id INT, -- Link to Category table
     location TEXT NOT NULL,
+    budget DECIMAL(10,2), -- Job budget
+    deadline DATE, -- Job deadline
     posted_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status ENUM('open', 'closed', 'filled') DEFAULT 'open',
+    updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    status ENUM('open', 'closed', 'filled', 'cancelled') DEFAULT 'open',
     FOREIGN KEY (company_id) REFERENCES Company(company_id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES Category(category_id) ON DELETE SET NULL,
     INDEX idx_company (company_id),
+    INDEX idx_category (category_id),
     INDEX idx_status (status)
 );
 
@@ -197,12 +205,36 @@ CREATE TABLE RepairerApplication (
     app_id INT PRIMARY KEY AUTO_INCREMENT,
     repairer_id INT NOT NULL,
     posting_id INT NOT NULL,
+    cover_message TEXT, -- Repairer's message to company
+    proposed_rate DECIMAL(10,2), -- Optional: repairer's proposed rate
     date_applied TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     app_status ENUM('pending', 'reviewed', 'accepted', 'rejected') DEFAULT 'pending',
     FOREIGN KEY (repairer_id) REFERENCES Repairer(repairer_id) ON DELETE CASCADE,
     FOREIGN KEY (posting_id) REFERENCES CompanyJobPost(posting_id) ON DELETE CASCADE,
     INDEX idx_repairer (repairer_id),
-    INDEX idx_posting (posting_id)
+    INDEX idx_posting (posting_id),
+    INDEX idx_status (app_status)
+);
+
+-- Company Job (tracks active work between company and repairer)
+CREATE TABLE CompanyJob (
+    company_job_id INT PRIMARY KEY AUTO_INCREMENT,
+    posting_id INT NOT NULL,
+    repairer_id INT NOT NULL,
+    quote_id INT, -- Reference to accepted quote (if applicable)
+    application_id INT, -- Reference to accepted application (if applicable)
+    status ENUM('scheduled', 'in_progress', 'completed', 'cancelled') DEFAULT 'scheduled',
+    start_date DATE,
+    completion_date TIMESTAMP NULL,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (posting_id) REFERENCES CompanyJobPost(posting_id) ON DELETE CASCADE,
+    FOREIGN KEY (repairer_id) REFERENCES Repairer(repairer_id) ON DELETE RESTRICT,
+    FOREIGN KEY (quote_id) REFERENCES RepairerQuote(quote_id) ON DELETE SET NULL,
+    FOREIGN KEY (application_id) REFERENCES RepairerApplication(app_id) ON DELETE SET NULL,
+    INDEX idx_posting (posting_id),
+    INDEX idx_repairer (repairer_id),
+    INDEX idx_status (status)
 );
 
 -- Moderator Message Table
@@ -298,6 +330,31 @@ CREATE TABLE Notification (
     recipient_type ENUM('user', 'repairer', 'company', 'all') NOT NULL,
     status ENUM('sent', 'pending', 'failed') DEFAULT 'pending',
     INDEX idx_status (status)
+);
+
+-- User Notification Table (for individual user/repairer/company notifications)
+CREATE TABLE UserNotification (
+    notification_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
+    repairer_id INT,
+    company_id INT,
+    notification_type ENUM('quote_received', 'quote_updated', 'quote_accepted', 'quote_rejected', 
+                           'job_updated', 'job_accepted', 'job_completed', 'review_request', 
+                           'application_received', 'application_accepted') NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    reference_id INT, -- ID of related quote/job/application
+    reference_type VARCHAR(50), -- 'quote', 'job_request', 'job_post', 'application'
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (repairer_id) REFERENCES Repairer(repairer_id) ON DELETE CASCADE,
+    FOREIGN KEY (company_id) REFERENCES Company(company_id) ON DELETE CASCADE,
+    INDEX idx_user (user_id),
+    INDEX idx_repairer (repairer_id),
+    INDEX idx_company (company_id),
+    INDEX idx_read (is_read),
+    INDEX idx_type (notification_type)
 );
 
 -- Advertisement Table
