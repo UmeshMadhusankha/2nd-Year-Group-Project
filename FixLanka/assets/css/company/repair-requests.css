@@ -1726,4 +1726,102 @@ select option:disabled {
   scrollbar-color: var(--primary-color) var(--bg-secondary);
 }
 
+/* ==================== Quotation Item Styles ==================== */
+
+/* Quotation-specific log item enhancements */
+.log-item.quotation-item {
+  position: relative;
+}
+
+.log-item.quotation-item .log-item-icon {
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+}
+
+.log-item.quotation-item.accepted .log-item-icon {
+  background: var(--success-color);
+}
+
+/* Action buttons container */
+.log-item-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+/* Individual action buttons */
+.log-action-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--border-radius);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-normal);
+  font-size: var(--font-size-sm);
+}
+
+.log-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.log-action-btn.view:hover {
+  background: var(--info-color);
+  color: white;
+}
+
+.log-action-btn.edit:hover {
+  background: var(--warning-color);
+  color: white;
+}
+
+.log-action-btn.delete:hover {
+  background: var(--danger-color);
+  color: white;
+}
+
+/* Empty state styling */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  color: var(--text-secondary);
+}
+
+.empty-state i {
+  font-size: 2rem;
+  opacity: 0.5;
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Badge styling for quotation status */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Pending quotations section header count */
+#pending-quotations-count,
+#accepted-quotations-count {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: var(--spacing-xs);
+}
+
 

@@ -1,6 +1,6 @@
 -- =====================================================
 -- Database Schema for Home Repair Service Platform
--- Version 1.1.0
+-- Version 1.2.0
 -- =====================================================
 
 DROP DATABASE IF EXISTS fix_lanka;
