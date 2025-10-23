@@ -388,7 +388,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
-  padding: 8px 14px;
+  padding: 10px 16px;
   border-radius: 20px;
   font-size: var(--font-size-xs);
   font-weight: 800;
@@ -401,33 +401,62 @@
   white-space: nowrap;
 }
 
+.job-urgency.high {
+  background: linear-gradient(135deg, #dc2626, #f59e0b);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+}
+
+.job-urgency.high i {
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9));
+  font-size: 14px;
+}
+
+.job-urgency.low {
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.job-urgency.low i {
+  font-size: 13px;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.6));
+}
+
+/* Keep old classes for backwards compatibility */
 .job-urgency.urgent {
   background: linear-gradient(135deg, #dc2626, #f59e0b);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  animation: urgentGlow 1.5s ease-in-out infinite;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
 }
 
 .job-urgency.urgent i {
-  animation: urgentBounce 0.8s ease-in-out infinite;
-  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.8));
-  font-size: 13px;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9));
+  font-size: 14px;
 }
 
 .job-urgency.normal {
-  background: rgba(100, 116, 139, 0.12);
-  color: #64748b;
-  border: 1px solid rgba(100, 116, 139, 0.2);
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 @keyframes urgentGlow {
   0%, 100% {
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   }
   50% {
-    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.6), 0 0 15px rgba(245, 158, 11, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.7), 0 0 20px rgba(245, 158, 11, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   }
 }
 
@@ -818,20 +847,55 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--border-radius-full);
+  padding: 10px 18px;
+  border-radius: 20px;
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
+.job-detail-urgency.high {
+  background: linear-gradient(135deg, #dc2626, #f59e0b);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.job-detail-urgency.high i {
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9));
+  font-size: 15px;
+}
+
+.job-detail-urgency.low {
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.job-detail-urgency.low i {
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.6));
+  font-size: 14px;
+}
+
+/* Keep old classes for backwards compatibility */
 .job-detail-urgency.urgent {
-  background: #fee;
-  color: #c00;
+  background: linear-gradient(135deg, #dc2626, #f59e0b);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .job-detail-urgency.normal {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .job-detail-title {
