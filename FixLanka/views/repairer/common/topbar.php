@@ -86,8 +86,8 @@
             <img src="../common/user.png" alt="Admin" class="profile-avatar">
             <div class="profile-dropdown">
                 <div class="profile-dropdown-header">
-                    <h4 class="profile-dropdown-name">John Doe</h4>
-                    <p class="profile-dropdown-email">john.doe@fixlanka.com</p>
+                    <h4 class="profile-dropdown-name">Nimesha</h4>
+                    <p class="profile-dropdown-email">nimesha@gmail.com</p>
                 </div>
                 <ul class="profile-dropdown-menu">
                     <li class="profile-dropdown-item">

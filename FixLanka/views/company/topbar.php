@@ -34,8 +34,8 @@
         <div class="dropdown-header">
           <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Admin" class="dropdown-avatar">
           <div class="dropdown-user-info">
-            <h4>John Doe</h4>
-            <p>john.doe@fixlanka.com</p>
+            <h4>Dilanka</h4>
+            <p>dilanka@gmail.com</p>
           </div>
         </div>
         <div class="dropdown-divider"></div>

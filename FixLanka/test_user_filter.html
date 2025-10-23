@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test CompanyQuotation API - User Filter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>CompanyQuotation API Test - User Filter</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Get All Quotations (No Filter)</h2>
+        <button onclick="getAllQuotations()">Get All Quotations</button>
+        <div id="all-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Get Quotations for user_id = 1</h2>
+        <button onclick="getQuotationsByUser(1)">Get User 1 Quotations</button>
+        <div id="user1-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Get Quotations for user_id = 2</h2>
+        <button onclick="getQuotationsByUser(2)">Get User 2 Quotations</button>
+        <div id="user2-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 4: Check Database Directly</h2>
+        <p>Run this SQL query in phpMyAdmin:</p>
+        <pre>SELECT 
+    cq.quotation_id, 
+    cq.user_id as company_user_id, 
+    cq.title, 
+    cq.status,
+    jr.user_id as customer_user_id,
+    u.f_name as customer_name
+FROM CompanyQuotation cq
+INNER JOIN JobRequest jr ON cq.request_id = jr.request_id
+INNER JOIN User u ON jr.user_id = u.user_id;</pre>
+    </div>
+
+    <script>
+        const API_URL = '/2nd-Year-Group-Project/FixLanka/api/company-quotes.php';
+
+        async function getAllQuotations() {
+            const resultDiv = document.getElementById('all-result');
+            resultDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                
+                console.log('All Quotations:', data);
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✓ Success</p>
+                        <p><strong>Total Quotations:</strong> ${data.count}</p>
+                        <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p class="error">✗ Error: ${data.error}</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">✗ Error: ${error.message}</p>
+                `;
+                console.error('Error:', error);
+            }
+        }
+
+        async function getQuotationsByUser(userId) {
+            const resultDiv = document.getElementById(`user${userId}-result`);
+            resultDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch(`${API_URL}?user_id=${userId}`);
+                const data = await response.json();
+                
+                console.log(`User ${userId} Quotations:`, data);
+                
+                if (data.success) {
+                    const statusBreakdown = data.data.reduce((acc, q) => {
+                        acc[q.status] = (acc[q.status] || 0) + 1;
+                        return acc;
+                    }, {});
+                    
+                    resultDiv.innerHTML = `
+                        <p class="success">✓ Success</p>
+                        <p><strong>Total Quotations:</strong> ${data.count}</p>
+                        <p><strong>Status Breakdown:</strong></p>
+                        <pre>${JSON.stringify(statusBreakdown, null, 2)}</pre>
+                        <p><strong>Quotations:</strong></p>
+                        <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p class="error">✗ Error: ${data.error}</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">✗ Error: ${error.message}</p>
+                `;
+                console.error('Error:', error);
+            }
+        }
+
+        // Auto-run test on page load
+        window.onload = () => {
+            console.log('%c=== CompanyQuotation API Test Started ===', 'color: blue; font-weight: bold');
+            console.log('Testing user_id filter functionality');
+        };
+    </script>
+</body>
+</html>
