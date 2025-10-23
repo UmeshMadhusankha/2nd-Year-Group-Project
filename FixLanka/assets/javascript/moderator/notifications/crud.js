@@ -88,28 +88,49 @@ function setupNotificationForm() {
  */
 function setupEditNotificationForm() {
     const form = document.getElementById('editNotificationForm');
-    if (!form) return;
+    if (!form) {
+        console.error('[CRUD] Edit notification form not found!');
+        return;
+    }
+
+    console.log('[CRUD] Setting up edit notification form submit handler');
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
+        e.stopPropagation(); // Prevent other handlers
+        
+        console.log('[CRUD] Edit form submitted - UPDATE operation started');
         
         const formData = new FormData(this);
+        
+        // Log form data
+        console.log('[CRUD] Update form data:', {
+            notification_id: formData.get('notification_id'),
+            title: formData.get('title'),
+            message: formData.get('message'),
+            recipients: formData.get('recipients'),
+            action: formData.get('action')
+        });
+        
         const updateBtn = document.getElementById('updateBtn');
         const updateBtnText = document.getElementById('updateBtnText');
         const updateBtnLoader = document.getElementById('updateBtnLoader');
         
         // Disable button and show loader
         updateBtn.disabled = true;
-        updateBtnText.style.display = 'none';
-        updateBtnLoader.style.display = 'inline';
+        if (updateBtnText) updateBtnText.style.display = 'none';
+        if (updateBtnLoader) updateBtnLoader.style.display = 'inline';
         
         try {
+            console.log('[CRUD] Fetching API for UPDATE:', window.API_URL);
             const response = await fetch(window.API_URL, {
                 method: 'POST',
                 body: formData
             });
             
+            console.log('[CRUD] UPDATE Response status:', response.status);
             const result = await response.json();
+            console.log('[CRUD] UPDATE Response data:', result);
             
             if (result.success) {
                 showSuccessAlert(result.message || 'Notification updated successfully');
@@ -119,13 +140,13 @@ function setupEditNotificationForm() {
                 showErrorAlert(result.message || 'Failed to update notification');
             }
         } catch (error) {
-            console.error('Error updating notification:', error);
-            showErrorAlert('Failed to update notification');
+            console.error('[CRUD] Error updating notification:', error);
+            showErrorAlert('Failed to update notification: ' + error.message);
         } finally {
             // Re-enable button
             updateBtn.disabled = false;
-            updateBtnText.style.display = 'inline';
-            updateBtnLoader.style.display = 'none';
+            if (updateBtnText) updateBtnText.style.display = 'inline';
+            if (updateBtnLoader) updateBtnLoader.style.display = 'none';
         }
     });
 }
@@ -286,12 +307,18 @@ function renderNotificationsList(notifications) {
  * Edit notification - Open modal with data
  */
 function editNotification(notificationId) {
+    console.log('[CRUD] Edit notification clicked:', notificationId);
+    console.log('[CRUD] All notifications data:', allNotificationsData);
+    
     const notification = allNotificationsData.find(n => parseInt(n.notification_id) === parseInt(notificationId));
     
     if (!notification) {
+        console.error('[CRUD] Notification not found with ID:', notificationId);
         showErrorAlert('Notification not found');
         return;
     }
+
+    console.log('[CRUD] Found notification:', notification);
 
     // Map recipient type back to form values
     const recipientFormMap = {
@@ -301,11 +328,16 @@ function editNotification(notificationId) {
         'company': 'companies'
     };
 
+    const mappedRecipient = recipientFormMap[notification.recipient_type] || 'all';
+    console.log('[CRUD] Mapped recipient:', notification.recipient_type, '->', mappedRecipient);
+
+    // Populate form fields
     document.getElementById('editNotificationId').value = notification.notification_id;
     document.getElementById('editTitle').value = notification.title;
     document.getElementById('editMessage').value = notification.message;
-    document.getElementById('editRecipients').value = recipientFormMap[notification.recipient_type] || 'all';
+    document.getElementById('editRecipients').value = mappedRecipient;
     
+    console.log('[CRUD] Form populated, opening modal...');
     openEditModal();
 }
 
@@ -321,10 +353,18 @@ function deleteNotificationConfirm(notificationId) {
  * Open edit modal
  */
 function openEditModal() {
+    console.log('[CRUD] openEditModal called');
     const modal = document.getElementById('editNotificationModal');
+    console.log('[CRUD] Modal element:', modal);
+    
     if (modal) {
-        modal.classList.add('show');
+        console.log('[CRUD] Adding .active class to modal');
+        modal.classList.add('active');
         document.body.style.overflow = 'hidden';
+        console.log('[CRUD] Modal classes:', modal.className);
+        console.log('[CRUD] Modal display style:', window.getComputedStyle(modal).display);
+    } else {
+        console.error('[CRUD] Modal element not found!');
     }
 }
 
@@ -334,7 +374,7 @@ function openEditModal() {
 function closeEditModal() {
     const modal = document.getElementById('editNotificationModal');
     if (modal) {
-        modal.classList.remove('show');
+        modal.classList.remove('active');
         document.body.style.overflow = '';
     }
 }
@@ -345,7 +385,7 @@ function closeEditModal() {
 function openDeleteModal() {
     const modal = document.getElementById('deleteNotificationModal');
     if (modal) {
-        modal.classList.add('show');
+        modal.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
 }
@@ -356,7 +396,7 @@ function openDeleteModal() {
 function closeDeleteModal() {
     const modal = document.getElementById('deleteNotificationModal');
     if (modal) {
-        modal.classList.remove('show');
+        modal.classList.remove('active');
         document.body.style.overflow = '';
     }
 }

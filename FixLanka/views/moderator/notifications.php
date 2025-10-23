@@ -235,13 +235,13 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
 
             <?php
             renderNotificationDetailsModal();
-            renderEditNotificationModal();
+            // renderEditNotificationModal(); // DISABLED - Using custom CRUD modal below
             renderVideoNotificationModal();
-            renderDeleteConfirmModal();
+            // renderDeleteConfirmModal(); // DISABLED - Using custom CRUD modal below
             ?>
 
             <!-- Edit Notification Modal -->
-            <div id="editNotificationModal" class="moderators-modal">
+            <div id="editNotificationModal" class="modal-overlay">
                 <div class="moderators-modal-content">
                     <div class="moderators-modal-header">
                         <h3 class="text-lg font-medium text-card-foreground">Edit Notification</h3>
@@ -284,7 +284,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
             </div>
 
             <!-- Delete Notification Modal -->
-            <div id="deleteNotificationModal" class="moderators-modal">
+            <div id="deleteNotificationModal" class="modal-overlay">
                 <div class="moderators-modal-content" style="max-width: 400px;">
                     <div class="moderators-modal-header">
                         <h3 class="text-lg font-medium text-card-foreground">Confirm Delete</h3>
@@ -312,8 +312,8 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                 window.allNotifications = <?= json_encode($notificationsData) ?>;
             </script>
 
-            <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/moderator/notifications/modalFunctions.js"></script>
-            <!-- OLD notifications.js DISABLED - Using crud.js instead -->
+            <!-- OLD modalFunctions.js DISABLED - Conflicts with crud.js -->
+            <!-- <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/moderator/notifications/modalFunctions.js"></script> -->
             <!-- <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/moderator/notifications/notifications.js"></script> -->
             <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/moderator/notifications/crud.js"></script>
         </div>
