@@ -32,7 +32,7 @@
                 <header class="page-header">
                     <div class="header-content">
                         <div class="breadcrumbs">
-                            <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard"><i class="fas fa-home"></i> Dashboard</a>
+                            <a href="/2nd-Year-Group-Project/FixLanka/views/company/dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
                             <span class="separator">/</span>
                             <span class="current">Contracts</span>
                         </div>
@@ -1952,7 +1952,7 @@ FixLanka Team</textarea>
                         allNavItems.forEach(item => item.classList.remove('active'));
 
                         // Set contracts as active immediately
-                        const contractsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/company-contracts"]');
+                        const contractsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/views/company/contracts.php"]');
                         if (contractsLink) {
                             contractsLink.parentElement.classList.add('active');
                         }

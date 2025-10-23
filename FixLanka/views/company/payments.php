@@ -525,7 +525,7 @@
                 allNavItems.forEach(item => item.classList.remove('active'));
 
                 // Set payments as active immediately
-                const paymentsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/company-payments"]');
+                const paymentsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/views/company/payments.php"]');
                 if (paymentsLink) {
                     paymentsLink.parentElement.classList.add('active');
                 }
