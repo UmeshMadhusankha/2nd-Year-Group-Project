@@ -154,21 +154,13 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                         <i class="fas fa-user"></i>
                                         <span>Sarah Fernando</span>
                                     </div>
-                                    <div class="job-district">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>Colombo</span>
-                                    </div>
                                     <div class="job-address">
                                         <i class="fas fa-location-dot"></i>
-                                        <span>No. 45, Galle Road, Colombo 07</span>
+                                        <span>No. 45, Galle Road, Colombo 07, Western Province</span>
                                     </div>
-                                    <div class="job-type">
-                                        <i class="fas fa-wrench"></i>
-                                        <span>Plumbing</span>
-                                    </div>
-                                    <div class="job-urgency urgent">
+                                    <div class="job-urgency high">
                                         <i class="fas fa-exclamation-circle"></i>
-                                        <span>Urgent</span>
+                                        <span>High Priority</span>
                                     </div>
                                     <div class="job-date">
                                         <i class="fas fa-calendar"></i>
@@ -204,24 +196,16 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                 <div class="job-content">
                                     <h3 class="job-title">Ceiling Fan Installation</h3>
                                     <div class="job-customer">
-                                        <i class="fas fa-building"></i>
+                                        <i class="fas fa-user"></i>
                                         <span>ABC Trading Company</span>
-                                    </div>
-                                    <div class="job-district">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>Kandy</span>
                                     </div>
                                     <div class="job-address">
                                         <i class="fas fa-location-dot"></i>
-                                        <span>123, Peradeniya Road, Kandy</span>
+                                        <span>123, Peradeniya Road, Kandy, Central Province</span>
                                     </div>
-                                    <div class="job-type">
-                                        <i class="fas fa-bolt"></i>
-                                        <span>Electrical</span>
-                                    </div>
-                                    <div class="job-urgency normal">
+                                    <div class="job-urgency low">
                                         <i class="fas fa-info-circle"></i>
-                                        <span>Normal</span>
+                                        <span>Low Priority</span>
                                     </div>
                                     <div class="job-date">
                                         <i class="fas fa-calendar"></i>
@@ -260,21 +244,13 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                         <i class="fas fa-user"></i>
                                         <span>Nimal Perera</span>
                                     </div>
-                                    <div class="job-district">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>Colombo</span>
-                                    </div>
                                     <div class="job-address">
                                         <i class="fas fa-location-dot"></i>
-                                        <span>78, High Level Road, Nugegoda</span>
+                                        <span>78, High Level Road, Nugegoda, Western Province</span>
                                     </div>
-                                    <div class="job-type">
-                                        <i class="fas fa-tv"></i>
-                                        <span>Appliance Repair</span>
-                                    </div>
-                                    <div class="job-urgency urgent">
+                                    <div class="job-urgency high">
                                         <i class="fas fa-exclamation-circle"></i>
-                                        <span>Urgent</span>
+                                        <span>High Priority</span>
                                     </div>
                                     <div class="job-date">
                                         <i class="fas fa-calendar"></i>
@@ -313,21 +289,13 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                         <i class="fas fa-user"></i>
                                         <span>Kamala Silva</span>
                                     </div>
-                                    <div class="job-district">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>Gampaha</span>
-                                    </div>
                                     <div class="job-address">
                                         <i class="fas fa-location-dot"></i>
-                                        <span>56, Yakkala Road, Gampaha</span>
+                                        <span>56, Yakkala Road, Gampaha, Western Province</span>
                                     </div>
-                                    <div class="job-type">
-                                        <i class="fas fa-snowflake"></i>
-                                        <span>HVAC</span>
-                                    </div>
-                                    <div class="job-urgency normal">
+                                    <div class="job-urgency low">
                                         <i class="fas fa-info-circle"></i>
-                                        <span>Normal</span>
+                                        <span>Low Priority</span>
                                     </div>
                                     <div class="job-date">
                                         <i class="fas fa-calendar"></i>
@@ -366,21 +334,13 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                         <i class="fas fa-user"></i>
                                         <span>Rajesh Kumar</span>
                                     </div>
-                                    <div class="job-district">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>Colombo</span>
-                                    </div>
                                     <div class="job-address">
                                         <i class="fas fa-location-dot"></i>
-                                        <span>34, Beach Road, Mount Lavinia</span>
+                                        <span>34, Beach Road, Mount Lavinia, Western Province</span>
                                     </div>
-                                    <div class="job-type">
-                                        <i class="fas fa-hammer"></i>
-                                        <span>Carpentry</span>
-                                    </div>
-                                    <div class="job-urgency normal">
+                                    <div class="job-urgency low">
                                         <i class="fas fa-info-circle"></i>
-                                        <span>Normal</span>
+                                        <span>Low Priority</span>
                                     </div>
                                     <div class="job-date">
                                         <i class="fas fa-calendar"></i>
@@ -419,21 +379,13 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                         <i class="fas fa-user"></i>
                                         <span>Priya Wickramasinghe</span>
                                     </div>
-                                    <div class="job-district">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>Kurunegala</span>
-                                    </div>
                                     <div class="job-address">
                                         <i class="fas fa-location-dot"></i>
-                                        <span>89, Colombo Road, Kurunegala</span>
+                                        <span>89, Colombo Road, Kurunegala, North Western Province</span>
                                     </div>
-                                    <div class="job-type">
-                                        <i class="fas fa-paint-brush"></i>
-                                        <span>Painting</span>
-                                    </div>
-                                    <div class="job-urgency urgent">
+                                    <div class="job-urgency high">
                                         <i class="fas fa-exclamation-circle"></i>
-                                        <span>Urgent</span>
+                                        <span>High Priority</span>
                                     </div>
                                     <div class="job-date">
                                         <i class="fas fa-calendar"></i>
@@ -478,7 +430,7 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                     </div>
                     <div class="job-detail-urgency" id="detailUrgency">
                         <i class="fas fa-exclamation-circle"></i>
-                        <span>Urgent</span>
+                        <span>High Priority</span>
                     </div>
                 </div>
 
@@ -493,14 +445,6 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                             <span class="detail-value" id="detailCustomerName">Sarah Fernando</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">Phone</span>
-                            <span class="detail-value" id="detailCustomerPhone">+94 77 123 4567</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Email</span>
-                            <span class="detail-value" id="detailCustomerEmail">sarah.fernando@email.com</span>
-                        </div>
-                        <div class="detail-item">
                             <span class="detail-label">Posted</span>
                             <span class="detail-value" id="detailPosted">2 hours ago</span>
                         </div>
@@ -512,12 +456,8 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                     <h4><i class="fas fa-map-marker-alt"></i> Location</h4>
                     <div class="detail-grid">
                         <div class="detail-item">
-                            <span class="detail-label">District</span>
-                            <span class="detail-value" id="detailDistrict">Colombo</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Address</span>
-                            <span class="detail-value" id="detailAddress">No. 45, Galle Road, Colombo 07</span>
+                            <span class="detail-label">Full Address</span>
+                            <span class="detail-value" id="detailAddress">No. 45, Galle Road, Colombo 07, Western Province</span>
                         </div>
                     </div>
                 </div>
@@ -541,6 +481,21 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                     </p>
                 </div>
 
+                <!-- Attachments -->
+                <div class="detail-section">
+                    <h4><i class="fas fa-paperclip"></i> Attachments</h4>
+                    <div class="attachments-grid" id="detailAttachments">
+                        <div class="attachment-item">
+                            <i class="fas fa-image"></i>
+                            <span>sink-leak.jpg</span>
+                        </div>
+                        <div class="attachment-item">
+                            <i class="fas fa-image"></i>
+                            <span>pipe-close-up.jpg</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Additional Details -->
                 <div class="detail-section">
                     <h4><i class="fas fa-info-circle"></i> Additional Information</h4>
@@ -557,16 +512,6 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                             <i class="fas fa-check-circle"></i>
                             <span id="detailInfo3">Customer prefers afternoon appointments</span>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Required Skills -->
-                <div class="detail-section">
-                    <h4><i class="fas fa-tools"></i> Required Skills</h4>
-                    <div class="skills-tags" id="detailSkills">
-                        <span class="skill-tag">Plumbing</span>
-                        <span class="skill-tag">Pipe Fitting</span>
-                        <span class="skill-tag">Leak Repair</span>
                     </div>
                 </div>
             </div>

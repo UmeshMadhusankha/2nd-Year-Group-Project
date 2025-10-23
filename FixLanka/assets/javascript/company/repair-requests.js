@@ -220,7 +220,7 @@ function viewRequestDetails(requestId) {
             <div class="detail-header">
                 <div class="detail-header-left">
                     <h3>${requestData.title}</h3>
-                    <p class="request-id-text">${requestId}</p>
+                    <p class="request-id-text"><span class="category-label">${requestData.category}</span></p>
                 </div>
                 <span class="priority-badge ${requestData.priority.toLowerCase()}">${requestData.priority} Priority</span>
             </div>
@@ -232,18 +232,6 @@ function viewRequestDetails(requestId) {
                         <label>Name:</label>
                         <span>${requestData.customer.name}</span>
                     </div>
-                    <div class="info-item">
-                        <label>Type:</label>
-                        <span>${requestData.customer.type}</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Email:</label>
-                        <span>${requestData.customer.email || 'Not provided'}</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Phone:</label>
-                        <span>${requestData.customer.phone || 'Not provided'}</span>
-                    </div>
                 </div>
             </div>
             
@@ -251,8 +239,8 @@ function viewRequestDetails(requestId) {
                 <h4><i class="fas fa-map-marker-alt"></i> Location & Schedule</h4>
                 <div class="customer-info-grid">
                     <div class="info-item">
-                        <label>Location:</label>
-                        <span>${requestData.location}</span>
+                        <label>Full Address:</label>
+                        <span>${requestData.fullAddress}</span>
                     </div>
                     <div class="info-item">
                         <label>Date Needed:</label>
@@ -261,10 +249,6 @@ function viewRequestDetails(requestId) {
                     <div class="info-item">
                         <label>Posted:</label>
                         <span>${requestData.posted}</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Status:</label>
-                        <span class="status-text">${requestData.status || 'Open'}</span>
                     </div>
                 </div>
             </div>
@@ -323,102 +307,90 @@ function getRequestData(requestId) {
     const requestsData = {
         'REQ-2025-001': {
             title: 'Air Conditioner Repair',
+            category: 'HVAC',
             priority: 'High',
             customer: {
-                name: 'John Doe',
-                type: 'Residential Customer',
-                email: 'john.doe@email.com',
-                phone: '+94 77 123 4567'
+                name: 'John Doe'
             },
             location: 'Colombo 07',
+            fullAddress: '123, Flower Road, Colombo 07, Western Province',
             dateNeeded: 'September 15, 2025',
             posted: '2 hours ago',
-            status: 'Open',
             description: 'AC unit not cooling properly. Making strange noises and consuming more electricity than usual. Urgent repair needed as weather is getting hotter.',
             attachments: ['ac-problem.jpg', 'warranty.pdf'],
             additionalInfo: 'Customer is available for inspection between 9 AM - 5 PM on weekdays.'
         },
         'REQ-2025-002': {
             title: 'Electrical Wiring - Office',
-            priority: 'Medium',
+            category: 'Electrical',
+            priority: 'Low',
             customer: {
-                name: 'ABC Pvt Ltd',
-                type: 'Commercial Customer',
-                email: 'contact@abcpvtltd.com',
-                phone: '+94 11 234 5678'
+                name: 'ABC Pvt Ltd'
             },
             location: 'Nugegoda',
+            fullAddress: '456, Stanley Thilakarathne Mawatha, Nugegoda, Western Province',
             dateNeeded: 'September 20, 2025',
             posted: '5 hours ago',
-            status: 'Open',
             description: 'Complete rewiring of office building for safety compliance. Need certified electrician with commercial experience. Project timeline flexible.',
             attachments: [],
             additionalInfo: 'Building inspection report available upon request. Work must be completed during weekends to avoid business disruption.'
         },
         'REQ-2025-003': {
             title: 'Plumbing Emergency',
+            category: 'Plumbing',
             priority: 'High',
             customer: {
-                name: 'Sarah Miller',
-                type: 'Residential Customer',
-                email: 'sarah.miller@email.com',
-                phone: '+94 76 987 6543'
+                name: 'Sarah Miller'
             },
             location: 'Kandy',
+            fullAddress: '78, Peradeniya Road, Kandy, Central Province',
             dateNeeded: 'ASAP',
             posted: '30 minutes ago',
-            status: 'Urgent',
             description: 'Burst pipe in main bathroom causing water damage. Need emergency plumber immediately. Water supply currently shut off.',
             attachments: ['water-damage.jpg', 'pipe-burst.jpg', 'damage-video.mp4'],
             additionalInfo: 'Emergency situation. Customer is at home and available immediately. Insurance claim will be filed.'
         },
         'REQ-2025-004': {
             title: 'AC Repair - Colombo',
+            category: 'HVAC',
             priority: 'High',
             customer: {
-                name: 'Robert Johnson',
-                type: 'Residential Customer',
-                email: 'robert@email.com',
-                phone: '+94 77 456 7890'
+                name: 'Robert Johnson'
             },
             location: 'Colombo 05',
+            fullAddress: '234, Havelock Road, Colombo 05, Western Province',
             dateNeeded: 'September 12, 2025',
             posted: '1 day ago',
-            status: 'Pending',
             description: 'Emergency AC repair service needed. Unit completely stopped working during heatwave.',
             attachments: ['ac-unit.jpg'],
             additionalInfo: 'This is a direct request. Customer specifically requested your company based on previous work.'
         },
         'REQ-2025-005': {
             title: 'Plumbing Fix - Kandy',
-            priority: 'Medium',
+            category: 'Plumbing',
+            priority: 'Low',
             customer: {
-                name: 'Jane Smith',
-                type: 'Residential Customer',
-                email: 'jane.smith@email.com',
-                phone: '+94 81 234 5678'
+                name: 'Jane Smith'
             },
             location: 'Kandy',
+            fullAddress: '89, Dalada Veediya, Kandy, Central Province',
             dateNeeded: 'September 18, 2025',
             posted: '2 days ago',
-            status: 'Pending',
             description: 'Bathroom renovation plumbing work. Need to install new fixtures and update piping.',
             attachments: ['bathroom-layout.pdf'],
             additionalInfo: 'Customer is planning a complete bathroom renovation and needs plumbing expertise.'
         },
         'REQ-2025-006': {
             title: 'Electrical Installation',
+            category: 'Electrical',
             priority: 'Low',
             customer: {
-                name: 'Mike Brown',
-                type: 'Commercial Customer',
-                email: 'mike.brown@email.com',
-                phone: '+94 11 345 6789'
+                name: 'Mike Brown'
             },
             location: 'Galle',
+            fullAddress: '567, Galle Road, Galle, Southern Province',
             dateNeeded: 'September 25, 2025',
             posted: '3 days ago',
-            status: 'Accepted',
             description: 'New construction electrical installation work. Complete wiring for a new commercial building.',
             attachments: ['building-plan.pdf', 'electrical-diagram.pdf'],
             additionalInfo: 'Contract already accepted. This is for viewing contract details.'
@@ -427,9 +399,11 @@ function getRequestData(requestId) {
     
     return requestsData[requestId] || {
         title: 'Request Not Found',
+        category: 'Other',
         priority: 'Low',
-        customer: { name: 'Unknown', type: 'Unknown' },
+        customer: { name: 'Unknown' },
         location: 'Unknown',
+        fullAddress: 'Address not available',
         dateNeeded: 'Unknown',
         posted: 'Unknown',
         description: 'No details available for this request.',

@@ -120,9 +120,8 @@
                                 <label class="filter-label">Priority</label>
                                 <select class="filter-select" id="priority-filter">
                                     <option value="">All Priorities</option>
-                                    <option value="high">High</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="low">Low</option>
+                                    <option value="high">High Priority</option>
+                                    <option value="low">Low Priority</option>
                                 </select>
                             </div>
                             <div class="filter-item">
@@ -155,7 +154,7 @@
                         <div class="card-header">
                             <div>
                                 <h3 class="request-title">Air Conditioner Repair</h3>
-                                <p class="request-id">Request #REQ-2025-001</p>
+                                <p class="request-id"><span class="category-label">HVAC</span></p>
                             </div>
                             <span class="priority-badge high">High Priority</span>
                         </div>
@@ -164,7 +163,6 @@
                             <div class="customer-avatar">JD</div>
                             <div class="customer-details">
                                 <h4>John Doe</h4>
-                                <p>Residential Customer</p>
                             </div>
                             <a href="#" class="view-profile-btn">View Profile</a>
                         </div>
@@ -226,16 +224,15 @@
                         <div class="card-header">
                             <div>
                                 <h3 class="request-title">Electrical Wiring - Office</h3>
-                                <p class="request-id">Request #REQ-2025-002</p>
+                                <p class="request-id"><span class="category-label">Electrical</span></p>
                             </div>
-                            <span class="priority-badge medium">Medium Priority</span>
+                            <span class="priority-badge low">Low Priority</span>
                         </div>
 
                         <div class="customer-info">
                             <div class="customer-avatar">AL</div>
                             <div class="customer-details">
                                 <h4>ABC Pvt Ltd</h4>
-                                <p>Commercial Customer</p>
                             </div>
                             <a href="#" class="view-profile-btn">View Profile</a>
                         </div>
@@ -280,7 +277,7 @@
                         <div class="card-header">
                             <div>
                                 <h3 class="request-title">Plumbing Emergency</h3>
-                                <p class="request-id">Request #REQ-2025-003</p>
+                                <p class="request-id"><span class="category-label">Plumbing</span></p>
                             </div>
                             <span class="priority-badge high">High Priority</span>
                         </div>
@@ -289,7 +286,6 @@
                             <div class="customer-avatar">SM</div>
                             <div class="customer-details">
                                 <h4>Sarah Miller</h4>
-                                <p>Residential Customer</p>
                             </div>
                             <a href="#" class="view-profile-btn">View Profile</a>
                         </div>

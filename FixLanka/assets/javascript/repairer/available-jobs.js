@@ -598,13 +598,10 @@ const jobDetailsData = {
     1: {
         title: "Kitchen Sink Repair",
         category: "Plumbing",
-        urgency: "urgent",
+        priority: "high",
         customerName: "Sarah Fernando",
-        customerPhone: "+94 77 123 4567",
-        customerEmail: "sarah.fernando@email.com",
         posted: "2 hours ago",
-        district: "Colombo",
-        address: "No. 45, Galle Road, Colombo 07",
+        address: "No. 45, Galle Road, Colombo 07, Western Province",
         schedule: "Tomorrow, 2:00 PM - 4:00 PM",
         description: "The kitchen sink is leaking from the pipe connection underneath. Water is dripping constantly and has created a puddle. The sink was installed about 5 years ago. Need urgent repair to prevent water damage to the cabinet.",
         additionalInfo: [
@@ -612,18 +609,18 @@ const jobDetailsData = {
             "Parking available on premises",
             "Customer prefers afternoon appointments"
         ],
-        skills: ["Plumbing", "Pipe Fitting", "Leak Repair"]
+        attachments: [
+            { name: "sink-leak.jpg", icon: "fa-image" },
+            { name: "pipe-close-up.jpg", icon: "fa-image" }
+        ]
     },
     2: {
         title: "Ceiling Fan Installation",
         category: "Electrical",
-        urgency: "normal",
+        priority: "low",
         customerName: "ABC Trading Company",
-        customerPhone: "+94 81 234 5678",
-        customerEmail: "contact@abctrading.lk",
         posted: "4 hours ago",
-        district: "Kandy",
-        address: "123, Peradeniya Road, Kandy",
+        address: "123, Peradeniya Road, Kandy, Central Province",
         schedule: "Sept 3, 9:00 AM - 12:00 PM",
         description: "Need to install a new ceiling fan in the office conference room. Fan and all mounting hardware provided. Requires proper wiring and balancing. Must ensure fan is properly secured as it's a large room with high ceilings.",
         additionalInfo: [
@@ -631,18 +628,15 @@ const jobDetailsData = {
             "Access available during business hours",
             "Prior electrical work certificate required"
         ],
-        skills: ["Electrical Wiring", "Fan Installation", "Safety Compliance"]
+        attachments: []
     },
     3: {
         title: "Washing Machine Repair",
         category: "Appliance",
-        urgency: "urgent",
+        priority: "high",
         customerName: "Nimal Perera",
-        customerPhone: "+94 77 987 6543",
-        customerEmail: "nimal.perera@email.com",
         posted: "6 hours ago",
-        district: "Colombo",
-        address: "78, High Level Road, Nugegoda",
+        address: "78, High Level Road, Nugegoda, Western Province",
         schedule: "Sept 4, 3:00 PM - 5:00 PM",
         description: "Washing machine not spinning properly and making loud noise during wash cycle. Machine is 3 years old, Samsung model. Need diagnostic and repair as soon as possible.",
         additionalInfo: [
@@ -650,18 +644,17 @@ const jobDetailsData = {
             "Original purchase receipt available",
             "Home occupied during working hours"
         ],
-        skills: ["Appliance Repair", "Motor Diagnosis", "Washing Machines"]
+        attachments: [
+            { name: "machine-issue.mp4", icon: "fa-video" }
+        ]
     },
     4: {
         title: "Air Conditioner Service",
         category: "HVAC",
-        urgency: "normal",
+        priority: "low",
         customerName: "Kamala Silva",
-        customerPhone: "+94 33 456 7890",
-        customerEmail: "kamala.silva@email.com",
         posted: "1 day ago",
-        district: "Gampaha",
-        address: "56, Yakkala Road, Gampaha",
+        address: "56, Yakkala Road, Gampaha, Western Province",
         schedule: "Sept 5, 10:00 AM - 1:00 PM",
         description: "Annual servicing required for 2 split AC units. Units need cleaning, gas refill check, and general maintenance. Both units are Daikin brand, installed 2 years ago.",
         additionalInfo: [
@@ -669,18 +662,17 @@ const jobDetailsData = {
             "Both units easily accessible",
             "Payment on completion"
         ],
-        skills: ["HVAC", "AC Maintenance", "Gas Filling"]
+        attachments: [
+            { name: "ac-units.jpg", icon: "fa-image" }
+        ]
     },
     5: {
         title: "Cabinet Door Repair",
         category: "Carpentry",
-        urgency: "normal",
+        priority: "low",
         customerName: "Rajesh Kumar",
-        customerPhone: "+94 77 234 5678",
-        customerEmail: "rajesh.kumar@email.com",
         posted: "1 day ago",
-        district: "Colombo",
-        address: "34, Beach Road, Mount Lavinia",
+        address: "34, Beach Road, Mount Lavinia, Western Province",
         schedule: "Sept 6, 8:00 AM - 11:00 AM",
         description: "Kitchen cabinet door hinge is broken and needs replacement. Door is hanging at an angle. Need experienced carpenter to fix or replace hinge and ensure door closes properly.",
         additionalInfo: [
@@ -688,18 +680,18 @@ const jobDetailsData = {
             "Other cabinets may need inspection",
             "Morning time slot preferred"
         ],
-        skills: ["Carpentry", "Cabinet Repair", "Hinge Replacement"]
+        attachments: [
+            { name: "broken-hinge.jpg", icon: "fa-image" },
+            { name: "cabinet-door.jpg", icon: "fa-image" }
+        ]
     },
     6: {
         title: "Room Wall Painting",
         category: "Painting",
-        urgency: "urgent",
+        priority: "high",
         customerName: "Priya Wickramasinghe",
-        customerPhone: "+94 37 345 6789",
-        customerEmail: "priya.w@email.com",
         posted: "2 days ago",
-        district: "Kurunegala",
-        address: "89, Colombo Road, Kurunegala",
+        address: "89, Colombo Road, Kurunegala, North Western Province",
         schedule: "Sept 7-8, 9:00 AM - 5:00 PM",
         description: "Need to paint one bedroom (12x12 ft). Walls need preparation, one coat of primer and two coats of paint. Color to be selected. Professional finish required as it's for rental property.",
         additionalInfo: [
@@ -707,7 +699,10 @@ const jobDetailsData = {
             "Room is empty, furniture removed",
             "Budget discussed before work"
         ],
-        skills: ["Painting", "Wall Preparation", "Professional Finishing"]
+        attachments: [
+            { name: "room-photos.jpg", icon: "fa-image" },
+            { name: "wall-condition.jpg", icon: "fa-image" }
+        ]
     }
 };
 
@@ -730,18 +725,15 @@ function viewJobDetails(jobId) {
     `;
     
     const urgencyElement = document.getElementById('detailUrgency');
-    urgencyElement.className = `job-detail-urgency ${jobData.urgency}`;
+    urgencyElement.className = `job-detail-urgency ${jobData.priority}`;
     urgencyElement.innerHTML = `
-        <i class="fas fa-${jobData.urgency === 'urgent' ? 'exclamation-circle' : 'info-circle'}"></i>
-        <span>${jobData.urgency.charAt(0).toUpperCase() + jobData.urgency.slice(1)}</span>
+        <i class="fas fa-${jobData.priority === 'high' ? 'exclamation-circle' : 'info-circle'}"></i>
+        <span>${jobData.priority === 'high' ? 'High Priority' : 'Low Priority'}</span>
     `;
     
     document.getElementById('detailTitle').textContent = jobData.title;
     document.getElementById('detailCustomerName').textContent = jobData.customerName;
-    document.getElementById('detailCustomerPhone').textContent = jobData.customerPhone;
-    document.getElementById('detailCustomerEmail').textContent = jobData.customerEmail;
     document.getElementById('detailPosted').textContent = jobData.posted;
-    document.getElementById('detailDistrict').textContent = jobData.district;
     document.getElementById('detailAddress').textContent = jobData.address;
     document.getElementById('detailSchedule').textContent = jobData.schedule;
     document.getElementById('detailDescription').textContent = jobData.description;
@@ -755,11 +747,18 @@ function viewJobDetails(jobId) {
         </div>
     `).join('');
     
-    // Populate skills
-    const skillsContainer = document.getElementById('detailSkills');
-    skillsContainer.innerHTML = jobData.skills.map(skill => `
-        <span class="skill-tag">${skill}</span>
-    `).join('');
+    // Populate attachments
+    const attachmentsContainer = document.getElementById('detailAttachments');
+    if (jobData.attachments && jobData.attachments.length > 0) {
+        attachmentsContainer.innerHTML = jobData.attachments.map(attachment => `
+            <div class="attachment-item">
+                <i class="fas ${attachment.icon}"></i>
+                <span>${attachment.name}</span>
+            </div>
+        `).join('');
+    } else {
+        attachmentsContainer.innerHTML = '<p style="color: var(--text-secondary);">No attachments available</p>';
+    }
     
     // Show drawer
     drawer.classList.add('active');
