@@ -216,54 +216,123 @@ foreach ($jobRequests as $job) {
                     <input type="hidden" id="edit_request_id" name="request_id">
                     
                     <div class="form-group">
+                        <label for="edit_title">Job Title <span class="required">*</span></label>
+                        <input type="text" id="edit_title" name="title" required placeholder="e.g., Kitchen Sink Repair, AC Installation">
+                    </div>
+
+                    <div class="form-group">
                         <label for="edit_category_id">Category <span class="required">*</span></label>
                         <select id="edit_category_id" name="category_id" required>
                             <option value="">Select a category</option>
                             <option value="1">Plumbing</option>
                             <option value="2">Electrical</option>
-                            <option value="3">Cleaning</option>
-                            <option value="4">HVAC</option>
+                            <option value="3">HVAC</option>
+                            <option value="4">Cleaning</option>
                             <option value="5">Carpentry</option>
+                            <option value="6">Painting</option>
+                            <option value="7">Appliance Repair</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
                         <label for="edit_description">Description <span class="required">*</span></label>
-                        <textarea id="edit_description" name="description" rows="4" required></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit_location">Location <span class="required">*</span></label>
-                        <input type="text" id="edit_location" name="location" required>
+                        <textarea id="edit_description" name="description" rows="5" required placeholder="Describe your job in detail..."></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="edit_service_provider_type">Service Provider Type <span class="required">*</span></label>
-                        <select id="edit_service_provider_type" name="service_provider_type" required>
-                            <option value="">Select provider type</option>
-                            <option value="individual">Individual</option>
-                            <option value="company">Company</option>
+                        <label for="edit_district">District <span class="required">*</span></label>
+                        <select id="edit_district" name="district" required>
+                            <option value="">Select your district</option>
+                            <option value="Colombo">Colombo</option>
+                            <option value="Gampaha">Gampaha</option>
+                            <option value="Kalutara">Kalutara</option>
+                            <option value="Kandy">Kandy</option>
+                            <option value="Matale">Matale</option>
+                            <option value="Nuwara Eliya">Nuwara Eliya</option>
+                            <option value="Galle">Galle</option>
+                            <option value="Matara">Matara</option>
+                            <option value="Hambantota">Hambantota</option>
+                            <option value="Jaffna">Jaffna</option>
+                            <option value="Kilinochchi">Kilinochchi</option>
+                            <option value="Mannar">Mannar</option>
+                            <option value="Vavuniya">Vavuniya</option>
+                            <option value="Mullaitivu">Mullaitivu</option>
+                            <option value="Batticaloa">Batticaloa</option>
+                            <option value="Ampara">Ampara</option>
+                            <option value="Trincomalee">Trincomalee</option>
+                            <option value="Kurunegala">Kurunegala</option>
+                            <option value="Puttalam">Puttalam</option>
+                            <option value="Anuradhapura">Anuradhapura</option>
+                            <option value="Polonnaruwa">Polonnaruwa</option>
+                            <option value="Badulla">Badulla</option>
+                            <option value="Monaragala">Monaragala</option>
+                            <option value="Ratnapura">Ratnapura</option>
+                            <option value="Kegalle">Kegalle</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
-                        <label for="edit_urgency">Urgency <span class="required">*</span></label>
+                        <label for="edit_address">Address <span class="required">*</span></label>
+                        <input type="text" id="edit_address" name="address" required placeholder="Enter your full address (street, area)">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Service Provider Type <span class="required">*</span></label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="edit_provider_individual" name="provider_type[]" value="individual">
+                                <label for="edit_provider_individual" class="checkbox-label">
+                                    <i class="fas fa-user"></i>
+                                    Individual Repairer
+                                </label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="edit_provider_company" name="provider_type[]" value="company">
+                                <label for="edit_provider_company" class="checkbox-label">
+                                    <i class="fas fa-building"></i>
+                                    Company
+                                </label>
+                            </div>
+                        </div>
+                        <small class="hint-text">Select at least one service provider type</small>
+                        <span class="error-message" id="edit-provider-error"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_urgency">Urgency Level <span class="required">*</span></label>
                         <select id="edit_urgency" name="urgency" required>
-                            <option value="low">Low</option>
                             <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
+                            <option value="urgent">Urgent <span class="pro-badge">PRO</span></option>
                         </select>
+                        <div class="urgency-info">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Urgent priority is a PRO feature - Your job will be highlighted to service providers</span>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="edit_photos">Photo (Optional)</label>
-                        <input type="file" id="edit_photos" name="photos" accept="image/*">
-                        <small>Upload a new photo to replace the existing one</small>
+                        <label for="edit_finish_date">Expected Finish Date <span class="required">*</span></label>
+                        <input type="date" id="edit_finish_date" name="finish_date" required>
+                        <small class="hint-text">When do you need this work completed?</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_photos">Photos (Optional)</label>
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="edit_photos" name="photos" accept="image/*" onchange="updateEditFileName(this)">
+                            <label for="edit_photos" class="file-upload-label">
+                                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                <span class="upload-text">Choose File</span>
+                            </label>
+                        </div>
+                        <small class="hint-text">Upload a new photo to replace the existing one</small>
+                        <div id="edit-file-name-display" class="file-preview"></div>
                     </div>
                     
                     <div class="modal-actions">
-                        <button type="button" class="action-btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                        <button type="button" class="action-btn btn-secondary" onclick="closeEditModal()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
                         <button type="submit" class="action-btn btn-primary">
                             <i class="fas fa-save"></i> Update Job
                         </button>
@@ -275,6 +344,56 @@ foreach ($jobRequests as $job) {
 
     <script>
     const jobs = <?php echo json_encode($jobRequests); ?>;
+    
+    // File upload preview function
+    function updateEditFileName(input) {
+        const fileDisplay = document.getElementById('edit-file-name-display');
+        if (input.files && input.files[0]) {
+            const fileName = input.files[0].name;
+            fileDisplay.innerHTML = `<div class="file-preview-item">${fileName}</div>`;
+        } else {
+            fileDisplay.innerHTML = '';
+        }
+    }
+
+    // Set minimum date to today for finish date
+    document.addEventListener('DOMContentLoaded', function() {
+        const finishDateInput = document.getElementById('edit_finish_date');
+        if (finishDateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            finishDateInput.setAttribute('min', today);
+        }
+
+        // Validate provider type checkboxes on form submit
+        const editForm = document.getElementById('editForm');
+        const providerCheckboxes = document.querySelectorAll('#editForm input[name="provider_type[]"]');
+        const providerError = document.getElementById('edit-provider-error');
+
+        editForm.addEventListener('submit', function(e) {
+            const isChecked = Array.from(providerCheckboxes).some(checkbox => checkbox.checked);
+            
+            if (!isChecked) {
+                e.preventDefault();
+                providerError.textContent = 'Please select at least one service provider type';
+                providerCheckboxes[0].closest('.form-group').classList.add('error');
+                return false;
+            }
+            
+            providerError.textContent = '';
+            providerCheckboxes[0].closest('.form-group').classList.remove('error');
+        });
+
+        // Clear error on checkbox change
+        providerCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const isChecked = Array.from(providerCheckboxes).some(cb => cb.checked);
+                if (isChecked) {
+                    providerError.textContent = '';
+                    providerCheckboxes[0].closest('.form-group').classList.remove('error');
+                }
+            });
+        });
+    });
     
     // Filter jobs by status
     document.querySelectorAll('.filter-tab').forEach(tab => {
@@ -296,16 +415,29 @@ foreach ($jobRequests as $job) {
         });
     });
     
-    // Open edit modal
+    // Open edit modal with populated data
     function openEditModal(requestId) {
         const job = jobs.find(j => j.request_id == requestId);
         if (job) {
+            // Populate basic fields
             document.getElementById('edit_request_id').value = job.request_id;
+            document.getElementById('edit_title').value = job.title || '';
             document.getElementById('edit_category_id').value = job.category_id;
             document.getElementById('edit_description').value = job.description;
-            document.getElementById('edit_location').value = job.location;
-            document.getElementById('edit_service_provider_type').value = job.service_provider_type;
+            document.getElementById('edit_district').value = job.district || '';
+            document.getElementById('edit_address').value = job.address || '';
             document.getElementById('edit_urgency').value = job.urgency;
+            document.getElementById('edit_finish_date').value = job.finish_date || '';
+            
+            // Handle service provider type checkboxes
+            const providerType = job.service_provider_type || '';
+            document.getElementById('edit_provider_individual').checked = providerType.includes('individual');
+            document.getElementById('edit_provider_company').checked = providerType.includes('company');
+            
+            // Clear file preview
+            document.getElementById('edit-file-name-display').innerHTML = '';
+            
+            // Show modal
             document.getElementById('editModal').classList.add('show');
         }
     }

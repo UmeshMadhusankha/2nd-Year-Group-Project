@@ -93,8 +93,26 @@ $isLoggedIn = isLoggedIn();
                 <p class="section-subtitle">Discover trusted professionals in your area</p>
             </div>
             
-            <div class="providers-grid" id="providersGrid">
-                <!-- Provider cards will be dynamically loaded here -->
+            <!-- Provider Type Tabs -->
+            <div class="provider-tabs">
+                <button class="provider-tab active" data-type="repairers">
+                    <i class="fas fa-user-tie"></i>
+                    <span>Individual Repairers</span>
+                </button>
+                <button class="provider-tab" data-type="companies">
+                    <i class="fas fa-building"></i>
+                    <span>Companies</span>
+                </button>
+            </div>
+            
+            <!-- Repairers Grid -->
+            <div class="providers-grid active" id="repairersGrid" data-type="repairers">
+                <!-- Repairer cards will be dynamically loaded here -->
+            </div>
+            
+            <!-- Companies Grid -->
+            <div class="providers-grid" id="companiesGrid" data-type="companies">
+                <!-- Company cards will be dynamically loaded here -->
             </div>
             
             <!-- Loading indicator -->
