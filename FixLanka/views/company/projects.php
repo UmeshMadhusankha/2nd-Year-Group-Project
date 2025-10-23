@@ -37,7 +37,7 @@
                                 <h1><i class="fas fa-project-diagram"></i> Projects</h1>
                                 <p class="subtitle">Manage and track all your projects from start to completion</p>
                                 <nav class="breadcrumbs">
-                                    <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard"><i class="fas fa-home"></i> Dashboard</a>
+                                    <a href="/2nd-Year-Group-Project/FixLanka/views/company/dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
                                     <span class="separator">/</span>
                                     <span class="current">Projects</span>
                                 </nav>
@@ -1113,7 +1113,7 @@
                         const allNavItems = document.querySelectorAll('.sidebar .nav-item');
                         allNavItems.forEach(item => item.classList.remove('active'));
 
-                        const projectsLink = document.querySelector('.sidebar a[href="/2nd-Year-Group-Project/FixLanka/company-projects"]');
+                        const projectsLink = document.querySelector('.sidebar a[href="/2nd-Year-Group-Project/FixLanka/views/company/projects.php"]');
                         if (projectsLink) {
                             projectsLink.parentElement.classList.add('active');
                         }

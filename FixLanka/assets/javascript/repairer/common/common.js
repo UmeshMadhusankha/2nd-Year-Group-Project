@@ -320,16 +320,16 @@ function closeProfileMenu() {
 function handleProfileMenuAction(action) {
     switch (action) {
         case 'profile':
-            window.location.href = 'profile.php';
+            window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-profile';
             break;
         case 'settings':
-            window.location.href = 'settings.php';
+            window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-settings';
             break;
         case 'upgrade':
-            window.location.href = 'upgrade.php';
+            window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-subscription';
             break;
         case 'support':
-            window.location.href = 'support.php';
+            window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-support';
             break;
         case 'logout':
             handleLogout();

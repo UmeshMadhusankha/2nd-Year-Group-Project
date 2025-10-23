@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!quoteId) {
         showNotification('Invalid quote ID', 'error');
         setTimeout(() => {
-            window.location.href = '/2nd-Year-Group-Project/FixLanka/views/repairer/pages/available-jobs.php';
+            window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-available-jobs';
         }, 2000);
         return;
     }
@@ -42,7 +42,7 @@ function loadQuoteData(quoteId) {
                 if (quote.status !== 'pending') {
                     showNotification('This quote cannot be edited. Only pending quotes can be modified.', 'error');
                     setTimeout(() => {
-                        window.location.href = '/2nd-Year-Group-Project/FixLanka/views/repairer/pages/available-jobs.php';
+                        window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-available-jobs';
                     }, 2000);
                     return;
                 }
@@ -62,7 +62,7 @@ function loadQuoteData(quoteId) {
             console.error('Error loading quote:', error);
             showNotification('Failed to load quote data: ' + error.message, 'error');
             setTimeout(() => {
-                window.location.href = '/2nd-Year-Group-Project/FixLanka/views/repairer/pages/available-jobs.php';
+                window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-available-jobs';
             }, 2000);
         });
 }
@@ -125,7 +125,7 @@ function initializeEditForm() {
     if (backBtn) {
         backBtn.addEventListener('click', function() {
             if (confirm('Discard changes and go back?')) {
-                window.location.href = '/2nd-Year-Group-Project/FixLanka/views/repairer/pages/available-jobs.php';
+                window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-available-jobs';
             }
         });
     }
@@ -134,7 +134,7 @@ function initializeEditForm() {
     if (cancelBtn) {
         cancelBtn.addEventListener('click', function() {
             if (confirm('Are you sure you want to cancel? All changes will be lost.')) {
-                window.location.href = '/2nd-Year-Group-Project/FixLanka/views/repairer/pages/available-jobs.php';
+                window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-available-jobs';
             }
         });
     }
@@ -322,7 +322,7 @@ function confirmQuoteUpdate() {
             
             // Redirect after delay
             setTimeout(() => {
-                window.location.href = '/2nd-Year-Group-Project/FixLanka/views/repairer/pages/available-jobs.php';
+                window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-available-jobs';
             }, 2000);
         } else {
             throw new Error(data.error || 'Failed to update quote');

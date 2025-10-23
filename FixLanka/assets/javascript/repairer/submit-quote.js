@@ -146,10 +146,10 @@ function initializeQuoteForm() {
         backBtn.addEventListener('click', function() {
             if (hasUnsavedChanges()) {
                 if (confirm('You have unsaved changes. Are you sure you want to go back?')) {
-                    window.location.href = '/2nd-Year-Group-Project/FixLanka/views/repairer/pages/available-jobs.php';
+                    window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-available-jobs';
                 }
             } else {
-                window.location.href = '/2nd-Year-Group-Project/FixLanka/views/repairer/pages/available-jobs.php';
+                window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-available-jobs';
             }
         });
     }
@@ -393,7 +393,7 @@ function confirmQuoteSubmission() {
             
             // Redirect after delay
             setTimeout(() => {
-                window.location.href = '/2nd-Year-Group-Project/FixLanka/views/repairer/pages/my-jobs.php';
+                window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-my-jobs';
             }, 2000);
         } else {
             throw new Error(data.error || 'Failed to submit quote');

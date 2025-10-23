@@ -44,7 +44,7 @@
                                     Income payments and expense tracking for your repair services
                                 </p>
                                 <nav class="breadcrumbs">
-                                    <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard">
+                                    <a href="/2nd-Year-Group-Project/FixLanka/views/company/dashboard.php">
                                         <i class="fas fa-home"></i>
                                         Dashboard
                                     </a>

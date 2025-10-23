@@ -49,7 +49,7 @@
                                 requests
                             </p>
                             <div class="breadcrumbs">
-                                <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard"><i class="fas fa-home"></i> Dashboard</a>
+                                <a href="/2nd-Year-Group-Project/FixLanka/views/company/dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
                                 <span class="separator">/</span>
                                 <span class="current">Repair Requests</span>
                             </div>
@@ -721,7 +721,7 @@
                         allNavItems.forEach(item => item.classList.remove('active'));
 
                         // Set repair requests as active immediately
-                        const repairRequestsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/company-repair-requests"]');
+                        const repairRequestsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/views/company/repair-requests.php"]');
                         if (repairRequestsLink) {
                             repairRequestsLink.parentElement.classList.add('active');
                         }

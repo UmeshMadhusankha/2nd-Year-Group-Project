@@ -513,7 +513,7 @@
                         allNavItems.forEach(item => item.classList.remove('active'));
                         
                         // Set support as active immediately
-                        const supportLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/company-support"]');
+                        const supportLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/views/company/support.php"]');
                         if (supportLink) {
                             supportLink.parentElement.classList.add('active');
                         }

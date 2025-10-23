@@ -542,9 +542,11 @@ function submitApplication() {
     showNotification('Application submitted successfully!', 'success');
     closeApplicationFormDrawer();
     
-    // Optionally redirect to applications page
+    // Optionally reload the applications tab
     setTimeout(() => {
-        window.location.href = 'my-applications.php';
+        // Reload applications instead of redirecting to a non-existent page
+        loadApplicationsList();
+        switchMainTab('applications');
     }, 1500);
 }
 
@@ -607,7 +609,7 @@ function loadApplications() {
                 <i class="fas fa-inbox" style="font-size: 64px; opacity: 0.3; margin-bottom: 16px;"></i>
                 <h3>No Applications Yet</h3>
                 <p>You haven't submitted any job applications. Browse available jobs to get started!</p>
-                <button class="btn btn-primary" onclick="window.location.href='job-postings.php'" style="margin-top: 16px;">
+                <button class="btn btn-primary" onclick="switchMainTab('browse')" style="margin-top: 16px;">
                     <i class="fas fa-search"></i> Browse Jobs
                 </button>
             </div>
