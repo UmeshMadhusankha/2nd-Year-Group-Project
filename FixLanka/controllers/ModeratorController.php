@@ -1,26 +1,27 @@
 <?php
-// ModeratorController.php - Handles all moderator CRUD operations
+// ModeratorController.php - Business logic layer for moderator operations
+// Handles validation, password hashing, and coordinates between API and Model
 
 require_once __DIR__ . '/../config/databse.php';
+require_once __DIR__ . '/../models/ModeratorModel.php';
 
 class ModeratorController
 {
-    private $pdo;
+    private $model;
 
     public function __construct()
     {
         global $pdo;
-        $this->pdo = $pdo;
+        $this->model = new ModeratorModel($pdo);
     }
 
-    // Get all moderators
+    /**
+     * Get all moderators
+     */
     public function getAllModerators()
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT moderator_id, username, email, assigned_section, created_at FROM Moderator ORDER BY created_at DESC");
-            $stmt->execute();
-            $moderators = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
+            $moderators = $this->model->getAllModerators();
             $this->jsonResponse(['success' => true, 'data' => $moderators]);
         } catch (PDOException $e) {
             error_log("Error fetching moderators: " . $e->getMessage());
@@ -28,9 +29,12 @@ class ModeratorController
         }
     }
 
-    // Add new moderator
+    /**
+     * Add new moderator
+     */
     public function addModerator()
     {
+        // Get and sanitize input
         $username = trim($_POST['username'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
@@ -54,32 +58,25 @@ class ModeratorController
 
         try {
             // Check if username exists
-            $stmt = $this->pdo->prepare("SELECT moderator_id FROM Moderator WHERE username = ?");
-            $stmt->execute([$username]);
-            if ($stmt->fetch()) {
+            if ($this->model->usernameExists($username)) {
                 $this->jsonResponse(['success' => false, 'message' => 'Username already exists'], 409);
                 return;
             }
 
             // Check if email exists
-            $stmt = $this->pdo->prepare("SELECT moderator_id FROM Moderator WHERE email = ?");
-            $stmt->execute([$email]);
-            if ($stmt->fetch()) {
+            if ($this->model->emailExists($email)) {
                 $this->jsonResponse(['success' => false, 'message' => 'Email already exists'], 409);
                 return;
             }
 
-            // Hash password and insert
+            // Hash password
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $this->pdo->prepare("INSERT INTO Moderator (username, email, password, assigned_section) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$username, $email, $hashedPassword, $assigned_section]);
 
-            $moderator_id = $this->pdo->lastInsertId();
+            // Create moderator
+            $moderator_id = $this->model->createModerator($username, $email, $hashedPassword, $assigned_section);
 
             // Fetch the newly created moderator
-            $stmt = $this->pdo->prepare("SELECT moderator_id, username, email, assigned_section, created_at FROM Moderator WHERE moderator_id = ?");
-            $stmt->execute([$moderator_id]);
-            $moderator = $stmt->fetch(PDO::FETCH_ASSOC);
+            $moderator = $this->model->getModeratorById($moderator_id);
 
             $this->jsonResponse(['success' => true, 'message' => 'Moderator added successfully', 'data' => $moderator]);
         } catch (PDOException $e) {
@@ -88,9 +85,12 @@ class ModeratorController
         }
     }
 
-    // Update moderator
+    /**
+     * Update moderator
+     */
     public function updateModerator()
     {
+        // Get and sanitize input
         $moderator_id = (int)($_POST['moderator_id'] ?? 0);
         $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
@@ -109,33 +109,29 @@ class ModeratorController
 
         try {
             // Check if email exists for other moderators
-            $stmt = $this->pdo->prepare("SELECT moderator_id FROM Moderator WHERE email = ? AND moderator_id != ?");
-            $stmt->execute([$email, $moderator_id]);
-            if ($stmt->fetch()) {
+            if ($this->model->emailExists($email, $moderator_id)) {
                 $this->jsonResponse(['success' => false, 'message' => 'Email already exists'], 409);
                 return;
             }
 
+            // Update with or without password change
             if (!empty($password)) {
-                // Update with new password
+                // Validate password length
                 if (strlen($password) < 6) {
                     $this->jsonResponse(['success' => false, 'message' => 'Password must be at least 6 characters'], 400);
                     return;
                 }
 
+                // Hash password and update
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                $stmt = $this->pdo->prepare("UPDATE Moderator SET email = ?, password = ?, assigned_section = ? WHERE moderator_id = ?");
-                $stmt->execute([$email, $hashedPassword, $assigned_section, $moderator_id]);
+                $this->model->updateModeratorWithPassword($moderator_id, $email, $hashedPassword, $assigned_section);
             } else {
                 // Update without changing password
-                $stmt = $this->pdo->prepare("UPDATE Moderator SET email = ?, assigned_section = ? WHERE moderator_id = ?");
-                $stmt->execute([$email, $assigned_section, $moderator_id]);
+                $this->model->updateModerator($moderator_id, $email, $assigned_section);
             }
 
             // Fetch updated moderator
-            $stmt = $this->pdo->prepare("SELECT moderator_id, username, email, assigned_section, created_at FROM Moderator WHERE moderator_id = ?");
-            $stmt->execute([$moderator_id]);
-            $moderator = $stmt->fetch(PDO::FETCH_ASSOC);
+            $moderator = $this->model->getModeratorById($moderator_id);
 
             $this->jsonResponse(['success' => true, 'message' => 'Moderator updated successfully', 'data' => $moderator]);
         } catch (PDOException $e) {
@@ -144,21 +140,23 @@ class ModeratorController
         }
     }
 
-    // Delete moderator
+    /**
+     * Delete moderator
+     */
     public function deleteModerator()
     {
         $moderator_id = (int)($_POST['moderator_id'] ?? 0);
 
+        // Validation
         if (!$moderator_id) {
             $this->jsonResponse(['success' => false, 'message' => 'Moderator ID is required'], 400);
             return;
         }
 
         try {
-            $stmt = $this->pdo->prepare("DELETE FROM Moderator WHERE moderator_id = ?");
-            $stmt->execute([$moderator_id]);
+            $rowsAffected = $this->model->deleteModerator($moderator_id);
 
-            if ($stmt->rowCount() > 0) {
+            if ($rowsAffected > 0) {
                 $this->jsonResponse(['success' => true, 'message' => 'Moderator deleted successfully']);
             } else {
                 $this->jsonResponse(['success' => false, 'message' => 'Moderator not found'], 404);
@@ -169,7 +167,9 @@ class ModeratorController
         }
     }
 
-    // Helper function to send JSON response
+    /**
+     * Helper function to send JSON response
+     */
     private function jsonResponse($data, $statusCode = 200)
     {
         http_response_code($statusCode);

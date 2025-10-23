@@ -1,10 +1,8 @@
 <?php
 // API endpoint for moderator operations
-session_start();
+// Routes requests to ModeratorController
 
-// Uncomment when auth is ready
-// require_once __DIR__ . '/../includes/admin-modarator/auth.php';
-// requireRole("admin", "");
+session_start();
 
 require_once __DIR__ . '/../controllers/ModeratorController.php';
 

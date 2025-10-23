@@ -9,10 +9,6 @@ require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
 require_once __DIR__ . '/_components/Common.php';
-require_once __DIR__ . '/../../includes/admin-modarator/auth.php';
-
-// Check if user is admin
-// requireRole("admin", $basePath);
 
 $basePath = '';
 $currentPath = 'moderators';
