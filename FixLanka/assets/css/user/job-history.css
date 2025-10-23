@@ -1228,7 +1228,7 @@ body > * {
 
 .modal-content textarea {
     resize: vertical;
-    min-height: 100px;
+    min-height: 120px;
 }
 
 .modal-content small {
@@ -1238,16 +1238,239 @@ body > * {
     font-size: var(--font-size-sm);
 }
 
-.modal-content input:focus,
-.modal-content textarea:focus,
-.modal-content select:focus {
-    outline: none;
+.hint-text {
+    display: block;
+    margin-top: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+}
+
+/* Select Styling */
+.modal-content select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%232a515c' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--spacing-md) center;
+    padding-right: var(--spacing-xl);
+}
+
+/* Date Input Styling */
+.modal-content input[type="date"] {
+    position: relative;
+    cursor: pointer;
+}
+
+.modal-content input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    color: var(--primary-color);
+    font-size: var(--font-size-lg);
+}
+
+/* ================================================
+   CHECKBOX & RADIO GROUPS (Post Job Style)
+   ================================================ */
+.checkbox-group,
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-sm);
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-secondary);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    border: 2px solid var(--border-color);
+    transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+.checkbox-item:hover {
     border-color: var(--primary-color);
+    background-color: var(--bg-tertiary);
+    transform: translateX(4px);
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-right: var(--spacing-md);
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.checkbox-item input[type="checkbox"]:checked + .checkbox-label {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.checkbox-item:has(input:checked) {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(10, 186, 181, 0.1), rgba(10, 186, 181, 0.05));
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-secondary);
+    flex: 1;
+}
+
+.checkbox-label i {
+    font-size: var(--font-size-lg);
+    color: var(--primary-color);
+}
+
+/* Provider Type Error State */
+.form-group.error .checkbox-group {
+    border: 2px solid var(--danger-color);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm);
+}
+
+/* ================================================
+   FILE UPLOAD (Post Job Style)
+   ================================================ */
+.file-upload-wrapper {
+    position: relative;
+}
+
+.modal-content input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.file-upload-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--bg-secondary);
+    cursor: pointer;
+    transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.file-upload-label:hover {
+    border-color: var(--primary-color);
+    background-color: var(--bg-tertiary);
+}
+
+.upload-icon {
+    font-size: var(--font-size-xl);
+    color: var(--primary-color);
+}
+
+.upload-text {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.file-preview {
+    margin-top: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+}
+
+.file-preview-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background-color: var(--bg-tertiary);
+    border-radius: var(--border-radius-sm);
+    margin-top: var(--spacing-xs);
+}
+
+.file-preview-item::before {
+    content: '📄';
+}
+
+/* ================================================
+   ERROR MESSAGES
+   ================================================ */
+.error-message {
+    display: block;
+    margin-top: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+    color: var(--danger-color);
+    font-weight: 600;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: rgba(239, 68, 68, 0.1);
+    border-radius: var(--border-radius-sm);
+    border-left: 3px solid var(--danger-color);
+}
+
+.error-message:empty {
+    display: none;
+}
+
+.form-group.error input,
+.form-group.error select,
+.form-group.error textarea {
+    border-color: var(--danger-color);
+}
+
+.form-group.error .checkbox-item {
+    border-color: var(--danger-color);
+}
+
+/* ================================================
+   PRO FEATURE BADGE & URGENCY INFO
+   ================================================ */
+.pro-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+    vertical-align: middle;
+}
+
+.urgency-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+    border-left: 3px solid #fbbf24;
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-xs);
+    color: #92400e;
+}
+
+.urgency-info i {
+    color: #fbbf24;
+    font-size: var(--font-size-sm);
+}
+
+/* Style for urgent option in select */
+.modal-content select option[value="urgent"] {
+    background-color: #fef3c7;
+    font-weight: 600;
 }
 
 .modal-content textarea {
     resize: vertical;
-    min-height: 100px;
+    min-height: 120px;
 }
 
 .modal-content small {
@@ -1266,10 +1489,45 @@ body > * {
     border-top: 2px solid rgba(10, 186, 181, 0.1);
 }
 
-.modal-actions .btn-secondary,
-.modal-actions .btn-primary {
+.modal-actions .action-btn {
     padding: var(--spacing-md) var(--spacing-2xl);
     font-size: var(--font-size-base);
+    font-weight: 600;
+    border-radius: var(--border-radius-sm);
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    transition: all var(--transition-fast);
+}
+
+.modal-actions .btn-secondary {
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 2px solid var(--border-color);
+}
+
+.modal-actions .btn-secondary:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--text-secondary);
+    transform: translateY(-2px);
+}
+
+.modal-actions .btn-primary {
+    background-color: var(--primary-color);
+    color: var(--text-white);
+    box-shadow: 0 4px 12px rgba(10, 186, 181, 0.3);
+}
+
+.modal-actions .btn-primary:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(10, 186, 181, 0.4);
+}
+
+.modal-actions .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
 }
 
 .modal-actions .btn-primary:disabled {

@@ -155,13 +155,26 @@ class JobRequestController {
             }
         }
         
+        // Handle provider_type array from checkboxes
+        $providerType = 'individual'; // default
+        if (isset($_POST['provider_type']) && is_array($_POST['provider_type'])) {
+            // Join array values with comma (e.g., "individual,company")
+            $providerType = implode(',', $_POST['provider_type']);
+        } elseif (isset($_POST['service_provider_type'])) {
+            // Fallback to old field name
+            $providerType = $_POST['service_provider_type'];
+        }
+        
         $data = [
             'user_id' => $userId,
+            'title' => trim($_POST['title'] ?? ''),
             'category_id' => $_POST['category_id'] ?? 1,
             'description' => trim($_POST['description'] ?? ''),
-            'location' => trim($_POST['location'] ?? ''),
-            'service_provider_type' => $_POST['service_provider_type'] ?? 'individual',
+            'district' => trim($_POST['district'] ?? ''),
+            'address' => trim($_POST['address'] ?? ''),
+            'service_provider_type' => $providerType,
             'urgency' => $_POST['urgency'] ?? 'medium',
+            'finish_date' => $_POST['finish_date'] ?? null,
             'photos' => $photoPath
         ];
         
