@@ -50,19 +50,41 @@ class JobRequestController {
             }
         }
         
+        // Process provider type checkboxes
+        $providerType = 'individual'; // default
+        if (isset($_POST['provider_type']) && is_array($_POST['provider_type'])) {
+            $selectedTypes = $_POST['provider_type'];
+            if (count($selectedTypes) === 2) {
+                $providerType = 'both';
+            } else {
+                $providerType = $selectedTypes[0];
+            }
+        }
+
         $data = [
             'user_id' => $userId,
             'category_id' => $_POST['category_id'] ?? null,
+            'title' => trim($_POST['title'] ?? ''),
             'description' => trim($_POST['description'] ?? ''),
-            'location' => trim($_POST['location'] ?? ''),
-            'service_provider_type' => $_POST['service_provider_type'] ?? null,
+            'district' => trim($_POST['district'] ?? ''),
+            'address' => trim($_POST['address'] ?? ''),
+            'service_provider_type' => $providerType,
             'urgency' => $_POST['urgency'] ?? 'medium',
+            'finish_date' => $_POST['finish_date'] ?? null,
             'photos' => $photoPath
         ];
         
         // Validate required fields
-        if (empty($data['category_id']) || empty($data['description']) || empty($data['location']) || empty($data['service_provider_type'])) {
+        if (empty($data['category_id']) || empty($data['title']) || empty($data['description']) || 
+            empty($data['district']) || empty($data['address']) || empty($data['finish_date'])) {
             $_SESSION['error'] = 'All required fields must be filled';
+            header('Location: /2nd-Year-Group-Project/FixLanka/post-job');
+            exit;
+        }
+        
+        // Validate at least one provider type is selected
+        if (empty($providerType)) {
+            $_SESSION['error'] = 'Please select at least one service provider type';
             header('Location: /2nd-Year-Group-Project/FixLanka/post-job');
             exit;
         }

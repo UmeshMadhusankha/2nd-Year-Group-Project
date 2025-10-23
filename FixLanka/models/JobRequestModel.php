@@ -12,17 +12,20 @@ class JobRequest {
     public function create($data) {
         try {
             $stmt = $this->pdo->prepare("
-                INSERT INTO JobRequest (user_id, category_id, description, location, service_provider_type, urgency, photos) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO JobRequest (user_id, category_id, title, description, district, address, service_provider_type, urgency, finish_date, photos) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmt->execute([
                 $data['user_id'],
                 $data['category_id'],
+                $data['title'],
                 $data['description'],
-                $data['location'],
+                $data['district'],
+                $data['address'],
                 $data['service_provider_type'],
                 $data['urgency'],
+                $data['finish_date'],
                 $data['photos'] ?? null
             ]);
             
