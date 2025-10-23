@@ -12,6 +12,7 @@ $isLoggedIn = isLoggedIn();
     <title>Fix Lanka - Your Trusted Service Professionals</title>
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/landing.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/navbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/repairer-profile-popup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -144,6 +145,10 @@ $isLoggedIn = isLoggedIn();
         </div>
     </footer>
 
+    <!-- Repairer Profile Popup -->
+    <?php include 'repairer-profile-popup.php'; ?>
+
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/landing.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/repairer-profile-popup.js"></script>
 </body>
 </html>

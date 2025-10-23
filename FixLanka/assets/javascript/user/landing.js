@@ -35,6 +35,26 @@ const providerData = [
     },
     {
         id: 4,
+        name: "Ranjith Kumar",
+        title: "Carpentry Specialist",
+        rating: 4.6,
+        reviews: 127,
+        distance: "3.5 km away",
+        description: "Expert carpenter specializing in custom furniture, kitchen cabinets, and home renovations. Quality craftsmanship guaranteed.",
+        avatar: "RK"
+    },
+    {
+        id: 5,
+        name: "Pradeep Bandara",
+        title: "Painting Professional",
+        rating: 4.5,
+        reviews: 93,
+        distance: "1.8 km away",
+        description: "Professional painting contractor for interior and exterior projects. High-quality finishes with premium paints.",
+        avatar: "PB"
+    },
+    {
+        id: 6,
         name: "Amara Jayasinghe",
         title: "House Cleaning Pro",
         rating: 5.0,
@@ -44,17 +64,7 @@ const providerData = [
         avatar: "AJ"
     },
     {
-        id: 5,
-        name: "Chaminda Rathnayake",
-        title: "Carpenter & Handyman",
-        rating: 4.6,
-        reviews: 134,
-        distance: "1.8 km away",
-        description: "Skilled carpenter specializing in custom furniture and home repairs. Quality craftsmanship guaranteed.",
-        avatar: "CR"
-    },
-    {
-        id: 6,
+        id: 7,
         name: "Lakshmi Wijeratne",
         title: "Interior Painter",
         rating: 4.9,
@@ -64,7 +74,7 @@ const providerData = [
         avatar: "LW"
     },
     {
-        id: 7,
+        id: 8,
         name: "Roshan Mendis",
         title: "Appliance Repair",
         rating: 4.5,
@@ -74,7 +84,7 @@ const providerData = [
         avatar: "RM"
     },
     {
-        id: 8,
+        id: 9,
         name: "Priya Gunasekara",
         title: "Garden Maintenance",
         rating: 4.8,
@@ -84,7 +94,7 @@ const providerData = [
         avatar: "PG"
     },
     {
-        id: 9,
+        id: 10,
         name: "Dinesh Amarasinghe",
         title: "Tile Installation Expert",
         rating: 4.7,
@@ -94,7 +104,7 @@ const providerData = [
         avatar: "DA"
     },
     {
-        id: 10,
+        id: 11,
         name: "Kumari Abeysekera",
         title: "Home Security Specialist",
         rating: 4.9,
@@ -104,7 +114,7 @@ const providerData = [
         avatar: "KA"
     },
     {
-        id: 11,
+        id: 12,
         name: "Janaka Rodrigo",
         title: "Pest Control Expert",
         rating: 4.6,
@@ -114,7 +124,7 @@ const providerData = [
         avatar: "JR"
     },
     {
-        id: 12,
+        id: 13,
         name: "Sanduni Perera",
         title: "Window Cleaning Pro",
         rating: 4.8,
@@ -433,11 +443,24 @@ function generateStars(rating) {
     return starsHTML;
 }
 
-// View Profile Function (placeholder)
+// View Profile Function
 function viewProfile(providerId) {
     const provider = providerData.find(p => p.id === providerId);
-    if (provider) {
-        alert(`Viewing profile for ${provider.name}\n\nThis would normally navigate to a detailed profile page.`);
+    if (!provider) return;
+    
+    // Only show popup for repairers with detailed profiles (IDs 1-5)
+    // ID 1: Kamal Silva (Electrician)
+    // ID 2: Nimal Perera (Plumber)
+    // ID 3: Saman Fernando (HVAC)
+    // ID 4: Ranjith Kumar (Carpenter) - mapped from Chaminda
+    // ID 5: Pradeep Bandara (Painter) - mapped from Lakshmi
+    
+    if (providerId >= 1 && providerId <= 5) {
+        // Open the detailed profile popup
+        openRepairerProfile(providerId);
+    } else {
+        // For other providers, show placeholder message
+        alert(`Viewing profile for ${provider.name}\n\nDetailed profile coming soon!`);
         console.log('View profile for provider:', provider);
     }
 }
