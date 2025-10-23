@@ -43,11 +43,11 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                             </div>
                             <div class="page-header-stats">
                                 <div class="header-stat">
-                                    <span class="header-stat-number">24</span>
+                                    <span class="header-stat-number" id="new-jobs-count">0</span>
                                     <span class="header-stat-label">New Jobs</span>
                                 </div>
                                 <div class="header-stat">
-                                    <span class="header-stat-number">156</span>
+                                    <span class="header-stat-number" id="total-jobs-count">0</span>
                                     <span class="header-stat-label">Total Available</span>
                                 </div>
                             </div>
@@ -133,7 +133,7 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                             <button class="tab-button active" data-tab="available-jobs">
                                 <i class="fas fa-briefcase"></i>
                                 Available Jobs
-                                <span class="tab-badge">6</span>
+                                <span class="tab-badge" id="available-jobs-badge">0</span>
                             </button>
                             <button class="tab-button" data-tab="submitted-quotes">
                                 <i class="fas fa-file-invoice"></i>
@@ -149,281 +149,17 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                         <section class="jobs-section">
                             <div class="section-header">
                                 <h2 class="section-title">Available Jobs</h2>
-                                <span class="section-subtitle">6 jobs match your criteria</span>
+                                <span class="section-subtitle" id="jobs-count">Loading...</span>
                             </div>
 
-                        <div class="jobs-grid">
-                            <!-- Job Card 1 -->
-                            <div class="job-card">
-                                <div class="job-header">
-                                    <div class="job-category-badge plumbing">
-                                        <i class="fas fa-wrench"></i>
-                                        Plumbing
-                                    </div>
-                                    <div class="job-posted">
-                                        <i class="fas fa-clock"></i>
-                                        2 hours ago
-                                    </div>
-                                </div>
-                                
-                                <div class="job-content">
-                                    <h3 class="job-title">Kitchen Sink Repair</h3>
-                                    <div class="job-customer">
-                                        <i class="fas fa-user"></i>
-                                        <span>Sarah Fernando</span>
-                                    </div>
-                                    <div class="job-address">
-                                        <i class="fas fa-location-dot"></i>
-                                        <span>No. 45, Galle Road, Colombo 07, Western Province</span>
-                                    </div>
-                                    <div class="job-urgency high">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                        <span>High Priority</span>
-                                    </div>
-                                    <div class="job-date">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>Tomorrow, 2:00 PM - 4:00 PM</span>
-                                    </div>
-                                </div>
-
-                                <div class="job-actions">
-                                    <button class="btn btn-secondary job-btn" onclick="viewJobDetails(1)">
-                                        <i class="fas fa-eye"></i>
-                                        View Details
-                                    </button>
-                                    <button class="btn btn-primary job-btn" onclick="submitQuote(1)">
-                                        <i class="fas fa-file-invoice-dollar"></i>
-                                        Submit Quote
-                                    </button>
+                            <div class="jobs-grid" id="jobs-grid-container">
+                                <!-- Jobs will be loaded dynamically via JavaScript -->
+                                <div class="loading-state">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <p>Loading available jobs...</p>
                                 </div>
                             </div>
-
-                            <!-- Job Card 2 -->
-                            <div class="job-card">
-                                <div class="job-header">
-                                    <div class="job-category-badge electrical">
-                                        <i class="fas fa-bolt"></i>
-                                        Electrical
-                                    </div>
-                                    <div class="job-posted">
-                                        <i class="fas fa-clock"></i>
-                                        4 hours ago
-                                    </div>
-                                </div>
-                                
-                                <div class="job-content">
-                                    <h3 class="job-title">Ceiling Fan Installation</h3>
-                                    <div class="job-customer">
-                                        <i class="fas fa-user"></i>
-                                        <span>ABC Trading Company</span>
-                                    </div>
-                                    <div class="job-address">
-                                        <i class="fas fa-location-dot"></i>
-                                        <span>123, Peradeniya Road, Kandy, Central Province</span>
-                                    </div>
-                                    <div class="job-urgency low">
-                                        <i class="fas fa-info-circle"></i>
-                                        <span>Low Priority</span>
-                                    </div>
-                                    <div class="job-date">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>Sept 3, 9:00 AM - 12:00 PM</span>
-                                    </div>
-                                </div>
-
-                                <div class="job-actions">
-                                    <button class="btn btn-secondary job-btn" onclick="viewJobDetails(2)">
-                                        <i class="fas fa-eye"></i>
-                                        View Details
-                                    </button>
-                                    <button class="btn btn-primary job-btn" onclick="submitQuote(2)">
-                                        <i class="fas fa-file-invoice-dollar"></i>
-                                        Submit Quote
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Job Card 3 -->
-                            <div class="job-card">
-                                <div class="job-header">
-                                    <div class="job-category-badge appliance">
-                                        <i class="fas fa-tv"></i>
-                                        Appliance
-                                    </div>
-                                    <div class="job-posted">
-                                        <i class="fas fa-clock"></i>
-                                        6 hours ago
-                                    </div>
-                                </div>
-                                
-                                <div class="job-content">
-                                    <h3 class="job-title">Washing Machine Repair</h3>
-                                    <div class="job-customer">
-                                        <i class="fas fa-user"></i>
-                                        <span>Nimal Perera</span>
-                                    </div>
-                                    <div class="job-address">
-                                        <i class="fas fa-location-dot"></i>
-                                        <span>78, High Level Road, Nugegoda, Western Province</span>
-                                    </div>
-                                    <div class="job-urgency high">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                        <span>High Priority</span>
-                                    </div>
-                                    <div class="job-date">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>Sept 4, 3:00 PM - 5:00 PM</span>
-                                    </div>
-                                </div>
-
-                                <div class="job-actions">
-                                    <button class="btn btn-secondary job-btn" onclick="viewJobDetails(3)">
-                                        <i class="fas fa-eye"></i>
-                                        View Details
-                                    </button>
-                                    <button class="btn btn-primary job-btn" onclick="submitQuote(3)">
-                                        <i class="fas fa-file-invoice-dollar"></i>
-                                        Submit Quote
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Job Card 4 -->
-                            <div class="job-card">
-                                <div class="job-header">
-                                    <div class="job-category-badge hvac">
-                                        <i class="fas fa-snowflake"></i>
-                                        HVAC
-                                    </div>
-                                    <div class="job-posted">
-                                        <i class="fas fa-clock"></i>
-                                        1 day ago
-                                    </div>
-                                </div>
-                                
-                                <div class="job-content">
-                                    <h3 class="job-title">Air Conditioner Service</h3>
-                                    <div class="job-customer">
-                                        <i class="fas fa-user"></i>
-                                        <span>Kamala Silva</span>
-                                    </div>
-                                    <div class="job-address">
-                                        <i class="fas fa-location-dot"></i>
-                                        <span>56, Yakkala Road, Gampaha, Western Province</span>
-                                    </div>
-                                    <div class="job-urgency low">
-                                        <i class="fas fa-info-circle"></i>
-                                        <span>Low Priority</span>
-                                    </div>
-                                    <div class="job-date">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>Sept 5, 10:00 AM - 1:00 PM</span>
-                                    </div>
-                                </div>
-
-                                <div class="job-actions">
-                                    <button class="btn btn-secondary job-btn" onclick="viewJobDetails(4)">
-                                        <i class="fas fa-eye"></i>
-                                        View Details
-                                    </button>
-                                    <button class="btn btn-primary job-btn" onclick="submitQuote(4)">
-                                        <i class="fas fa-file-invoice-dollar"></i>
-                                        Submit Quote
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Job Card 5 -->
-                            <div class="job-card">
-                                <div class="job-header">
-                                    <div class="job-category-badge carpentry">
-                                        <i class="fas fa-hammer"></i>
-                                        Carpentry
-                                    </div>
-                                    <div class="job-posted">
-                                        <i class="fas fa-clock"></i>
-                                        1 day ago
-                                    </div>
-                                </div>
-                                
-                                <div class="job-content">
-                                    <h3 class="job-title">Cabinet Door Repair</h3>
-                                    <div class="job-customer">
-                                        <i class="fas fa-user"></i>
-                                        <span>Rajesh Kumar</span>
-                                    </div>
-                                    <div class="job-address">
-                                        <i class="fas fa-location-dot"></i>
-                                        <span>34, Beach Road, Mount Lavinia, Western Province</span>
-                                    </div>
-                                    <div class="job-urgency low">
-                                        <i class="fas fa-info-circle"></i>
-                                        <span>Low Priority</span>
-                                    </div>
-                                    <div class="job-date">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>Sept 6, 8:00 AM - 11:00 AM</span>
-                                    </div>
-                                </div>
-
-                                <div class="job-actions">
-                                    <button class="btn btn-secondary job-btn" onclick="viewJobDetails(5)">
-                                        <i class="fas fa-eye"></i>
-                                        View Details
-                                    </button>
-                                    <button class="btn btn-primary job-btn" onclick="submitQuote(5)">
-                                        <i class="fas fa-file-invoice-dollar"></i>
-                                        Submit Quote
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Job Card 6 -->
-                            <div class="job-card">
-                                <div class="job-header">
-                                    <div class="job-category-badge painting">
-                                        <i class="fas fa-paint-brush"></i>
-                                        Painting
-                                    </div>
-                                    <div class="job-posted">
-                                        <i class="fas fa-clock"></i>
-                                        2 days ago
-                                    </div>
-                                </div>
-                                
-                                <div class="job-content">
-                                    <h3 class="job-title">Room Wall Painting</h3>
-                                    <div class="job-customer">
-                                        <i class="fas fa-user"></i>
-                                        <span>Priya Wickramasinghe</span>
-                                    </div>
-                                    <div class="job-address">
-                                        <i class="fas fa-location-dot"></i>
-                                        <span>89, Colombo Road, Kurunegala, North Western Province</span>
-                                    </div>
-                                    <div class="job-urgency high">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                        <span>High Priority</span>
-                                    </div>
-                                    <div class="job-date">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>Sept 7-8, 9:00 AM - 5:00 PM</span>
-                                    </div>
-                                </div>
-
-                                <div class="job-actions">
-                                    <button class="btn btn-secondary job-btn" onclick="viewJobDetails(6)">
-                                        <i class="fas fa-eye"></i>
-                                        View Details
-                                    </button>
-                                    <button class="btn btn-primary job-btn" onclick="submitQuote(6)">
-                                        <i class="fas fa-file-invoice-dollar"></i>
-                                        Submit Quote
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+                        </section>
                     </div>
                     <!-- End Available Jobs Tab -->
 

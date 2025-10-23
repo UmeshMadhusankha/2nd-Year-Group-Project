@@ -3,11 +3,16 @@
  * Handles job filtering, application, and pagination
  */
 
+// Global variables
+let currentRepairerId = 1; // TODO: Get from session
+let availableJobs = [];
+let submittedQuotes = [];
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeJobsPage();
     initializeFilters();
-    initializeInfiniteScroll();
     initializeTabs();
+    loadAvailableJobs();
     loadSubmittedQuotations();
 });
 
@@ -58,33 +63,158 @@ function initializeJobsPage() {
     
     // Add smooth scroll behavior for better UX
     document.documentElement.style.scrollBehavior = 'smooth';
+}
+
+/**
+ * Load available jobs from API
+ */
+async function loadAvailableJobs(filters = {}) {
+    const container = document.getElementById('jobs-grid-container');
     
-    // Initialize job card animations
-    animateJobCards();
+    // Show loading state
+    container.innerHTML = `
+        <div class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading available jobs...</p>
+        </div>
+    `;
+    
+    try {
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (filters.category) params.append('category', filters.category);
+        if (filters.district) params.append('district', filters.district);
+        if (filters.sort) params.append('sort', filters.sort);
+        params.append('service_provider_type', 'individual'); // Only show jobs for individual repairers
+        
+        const apiUrl = `/2nd-Year-Group-Project/FixLanka/api/job-requests.php?${params.toString()}`;
+        console.log('Fetching jobs from:', apiUrl);
+        
+        const response = await fetch(apiUrl);
+        console.log('Response status:', response.status);
+        
+        // Check if response is ok
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('API Response:', result);
+        
+        if (result.success) {
+            availableJobs = result.data;
+            renderJobs(availableJobs);
+            updateJobCounts(result.count);
+        } else {
+            console.error('API returned error:', result.error);
+            showError('Failed to load jobs: ' + (result.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error loading jobs:', error);
+        showError('Failed to load jobs. Error: ' + error.message);
+    }
+}
+
+/**
+ * Render jobs to the grid
+ */
+function renderJobs(jobs) {
+    const container = document.getElementById('jobs-grid-container');
+    
+    if (jobs.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-briefcase"></i>
+                <h3>No jobs available</h3>
+                <p>There are no job requests matching your criteria at the moment.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = jobs.map(job => createJobCard(job)).join('');
+}
+
+/**
+ * Create HTML for a job card
+ */
+function createJobCard(job) {
+    const categoryClass = getCategoryClass(job.category_name);
+    const urgencyClass = job.urgency === 'urgent' ? 'high' : 'low';
+    const urgencyIcon = job.urgency === 'urgent' ? 'fa-exclamation-circle' : 'fa-info-circle';
+    const urgencyText = job.urgency === 'urgent' ? 'High Priority' : 'Low Priority';
+    
+    return `
+        <div class="job-card" data-job-id="${job.request_id}">
+            <div class="job-header">
+                <div class="job-category-badge ${categoryClass}">
+                    <i class="${getCategoryIcon(job.category_name)}"></i>
+                    ${job.category_name}
+                </div>
+                <div class="job-posted">
+                    <i class="fas fa-clock"></i>
+                    ${job.posted_ago}
+                </div>
+            </div>
+            
+            <div class="job-content">
+                <h3 class="job-title">${escapeHtml(job.title)}</h3>
+                <div class="job-customer">
+                    <i class="fas fa-user"></i>
+                    <span>${escapeHtml(job.customer_name)}</span>
+                </div>
+                <div class="job-address">
+                    <i class="fas fa-location-dot"></i>
+                    <span>${escapeHtml(job.address)}</span>
+                </div>
+                <div class="job-urgency ${urgencyClass}">
+                    <i class="fas ${urgencyIcon}"></i>
+                    <span>${urgencyText}</span>
+                </div>
+                <div class="job-date">
+                    <i class="fas fa-calendar"></i>
+                    <span>${formatDate(job.finish_date)}</span>
+                </div>
+            </div>
+
+            <div class="job-actions">
+                <button class="btn btn-secondary job-btn" onclick="viewJobDetails(${job.request_id})">
+                    <i class="fas fa-eye"></i>
+                    View Details
+                </button>
+                <button class="btn btn-primary job-btn" onclick="submitQuote(${job.request_id})">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    Submit Quote
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Update job counts in header and tabs
+ */
+function updateJobCounts(totalCount) {
+    // Update header stats
+    const newJobsCount = availableJobs.filter(job => {
+        const hoursAgo = (new Date() - new Date(job.dateCreated)) / (1000 * 60 * 60);
+        return hoursAgo < 24;
+    }).length;
+    
+    document.getElementById('new-jobs-count').textContent = newJobsCount;
+    document.getElementById('total-jobs-count').textContent = totalCount;
+    document.getElementById('available-jobs-badge').textContent = totalCount;
+    
+    // Update section subtitle
+    document.getElementById('jobs-count').textContent = `${totalCount} job${totalCount !== 1 ? 's' : ''} available`;
 }
 
 /**
  * Initialize filter functionality
  */
 function initializeFilters() {
-    const categoryFilter = document.getElementById('category-filter');
-    const locationFilter = document.getElementById('location-filter');
-    const sortFilter = document.getElementById('sort-filter');
     const applyFiltersBtn = document.querySelector('.btn-filter.btn-primary');
     const resetFiltersBtn = document.querySelector('.btn-filter.btn-secondary');
-    
-    // Add event listeners for filter changes
-    if (categoryFilter) {
-        categoryFilter.addEventListener('change', handleFilterChange);
-    }
-    
-    if (locationFilter) {
-        locationFilter.addEventListener('change', handleFilterChange);
-    }
-    
-    if (sortFilter) {
-        sortFilter.addEventListener('change', handleFilterChange);
-    }
     
     // Apply filters button
     if (applyFiltersBtn) {
@@ -98,15 +228,6 @@ function initializeFilters() {
 }
 
 /**
- * Handle filter changes
- */
-function handleFilterChange(event) {
-    console.log(`Filter changed: ${event.target.id} = ${event.target.value}`);
-    // In a real application, this would trigger immediate filtering
-    // For now, we'll just log the change
-}
-
-/**
  * Apply filters to job listings
  */
 function applyFilters() {
@@ -116,21 +237,12 @@ function applyFilters() {
     
     const filters = {
         category: categoryFilter ? categoryFilter.value : '',
-        location: locationFilter ? locationFilter.value : '',
+        district: locationFilter ? locationFilter.value : '',
         sort: sortFilter ? sortFilter.value : 'newest'
     };
     
     console.log('Applying filters:', filters);
-    
-    // Show loading state
-    showFilteringProgress();
-    
-    // Simulate API call
-    setTimeout(() => {
-        filterJobs(filters);
-        hideFilteringProgress();
-        showToast('Filters applied successfully!', 'success');
-    }, 1000);
+    loadAvailableJobs(filters);
 }
 
 /**
@@ -146,90 +258,7 @@ function resetFilters() {
     if (sortFilter) sortFilter.value = 'newest';
     
     console.log('Filters reset');
-    showToast('Filters reset successfully!', 'info');
-    
-    // Reload all jobs
-    setTimeout(() => {
-        location.reload();
-    }, 500);
-}
-
-/**
- * Filter jobs based on criteria
- */
-function filterJobs(filters) {
-    const jobCards = document.querySelectorAll('.job-card');
-    let visibleCount = 0;
-    
-    jobCards.forEach(card => {
-        let shouldShow = true;
-        
-        // Category filter
-        if (filters.category) {
-            const categoryBadge = card.querySelector('.job-category-badge');
-            if (categoryBadge && !categoryBadge.classList.contains(filters.category)) {
-                shouldShow = false;
-            }
-        }
-        
-        // Location filter (simplified - would normally check job location data)
-        if (filters.location) {
-            const locationText = card.querySelector('.job-location span');
-            if (locationText && !locationText.textContent.toLowerCase().includes(filters.location.toLowerCase())) {
-                shouldShow = false;
-            }
-        }
-        
-        // Show/hide card with animation
-        if (shouldShow) {
-            card.style.display = 'flex';
-            card.style.opacity = '0';
-            setTimeout(() => {
-                card.style.opacity = '1';
-            }, visibleCount * 100);
-            visibleCount++;
-        } else {
-            card.style.opacity = '0';
-            setTimeout(() => {
-                card.style.display = 'none';
-            }, 300);
-        }
-    });
-    
-    // Update results count
-    updateResultsCount(visibleCount);
-}
-
-/**
- * Update the results count display
- */
-function updateResultsCount(count) {
-    const subtitle = document.querySelector('.section-subtitle');
-    if (subtitle) {
-        subtitle.textContent = `${count} jobs match your criteria`;
-    }
-}
-
-/**
- * Show filtering progress
- */
-function showFilteringProgress() {
-    const applyBtn = document.querySelector('.btn-filter.btn-primary');
-    if (applyBtn) {
-        applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Filtering...';
-        applyBtn.disabled = true;
-    }
-}
-
-/**
- * Hide filtering progress
- */
-function hideFilteringProgress() {
-    const applyBtn = document.querySelector('.btn-filter.btn-primary');
-    if (applyBtn) {
-        applyBtn.innerHTML = '<i class="fas fa-filter"></i> Apply Filters';
-        applyBtn.disabled = false;
-    }
+    loadAvailableJobs();
 }
 
 /**
@@ -237,46 +266,77 @@ function hideFilteringProgress() {
  */
 function viewJobDetails(jobId) {
     console.log(`Viewing details for job ID: ${jobId}`);
-    
-    // In a real application, this would open a modal or navigate to details page
-    showToast(`Opening details for Job #${jobId}`, 'info');
-    
-    // Simulate navigation to job details
-    setTimeout(() => {
-        // window.location.href = `job-details.html?id=${jobId}`;
-        console.log(`Would navigate to job-details.html?id=${jobId}`);
-    }, 1000);
+    openJobDetailsDrawer(jobId);
 }
 
 /**
- * Apply for a job
+ * Open job details drawer
  */
-function applyForJob(jobId) {
-    console.log(`Applying for job ID: ${jobId}`);
+async function openJobDetailsDrawer(jobId) {
+    const job = availableJobs.find(j => j.request_id == jobId);
+    if (!job) return;
     
-    // Show confirmation dialog
-    if (confirm('Are you sure you want to apply for this job?')) {
-        // Show loading state
-        const button = event.target.closest('.btn-primary');
-        const originalContent = button.innerHTML;
-        
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Applying...';
-        button.disabled = true;
-        
-        // Simulate API call
-        setTimeout(() => {
-            button.innerHTML = '<i class="fas fa-check"></i> Applied';
-            button.classList.remove('btn-primary');
-            button.classList.add('btn-success');
-            button.style.background = 'var(--success-color)';
-            
-            showToast(`Successfully applied for Job #${jobId}!`, 'success');
-            
-            // Disable further applications
-            setTimeout(() => {
-                button.disabled = true;
-            }, 2000);
-        }, 1500);
+    const drawer = document.getElementById('jobDetailsDrawer');
+    
+    // Populate drawer with job details
+    const categoryClass = getCategoryClass(job.category_name);
+    const urgencyClass = job.urgency === 'urgent' ? 'high' : 'low';
+    
+    document.getElementById('detailCategory').innerHTML = `
+        <i class="${getCategoryIcon(job.category_name)}"></i>
+        <span>${job.category_name}</span>
+    `;
+    document.getElementById('detailCategory').className = `job-detail-category ${categoryClass}`;
+    
+    document.getElementById('detailUrgency').innerHTML = `
+        <i class="fas ${job.urgency === 'urgent' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+        <span>${job.urgency === 'urgent' ? 'High Priority' : 'Low Priority'}</span>
+    `;
+    document.getElementById('detailUrgency').className = `job-detail-urgency ${urgencyClass}`;
+    
+    document.getElementById('detailTitle').textContent = job.title;
+    document.getElementById('detailCustomerName').textContent = job.customer_name;
+    document.getElementById('detailPosted').textContent = job.posted_ago;
+    document.getElementById('detailAddress').textContent = job.address;
+    document.getElementById('detailSchedule').textContent = formatDate(job.finish_date);
+    document.getElementById('detailDescription').textContent = job.description;
+    
+    // Handle attachments
+    const attachmentsContainer = document.getElementById('detailAttachments');
+    if (job.photos && job.photos.length > 0) {
+        attachmentsContainer.innerHTML = job.photos.map(photo => `
+            <div class="attachment-item">
+                <i class="fas fa-image"></i>
+                <span>${photo}</span>
+            </div>
+        `).join('');
+    } else {
+        attachmentsContainer.innerHTML = '<p class="text-muted">No attachments</p>';
+    }
+    
+    // Store current job ID for submit quote button
+    drawer.dataset.currentJobId = jobId;
+    
+    // Show drawer
+    drawer.classList.add('open');
+}
+
+/**
+ * Close job details drawer
+ */
+function closeJobDetails() {
+    const drawer = document.getElementById('jobDetailsDrawer');
+    drawer.classList.remove('open');
+}
+
+/**
+ * Submit quote from details drawer
+ */
+function submitQuoteFromDetails() {
+    const drawer = document.getElementById('jobDetailsDrawer');
+    const jobId = drawer.dataset.currentJobId;
+    if (jobId) {
+        submitQuote(jobId);
     }
 }
 
@@ -288,6 +348,304 @@ function submitQuote(jobId) {
     
     // Navigate to submit quote page with job ID using absolute path
     window.location.href = `/2nd-Year-Group-Project/FixLanka/views/repairer/pages/submit-quote.php?jobId=${jobId}`;
+}
+
+/**
+ * Load submitted quotations
+ */
+async function loadSubmittedQuotations() {
+    const container = document.getElementById('submitted-quotes-container');
+    const countBadge = document.getElementById('quotes-count-badge');
+    const countText = document.getElementById('quotes-count');
+    
+    // Show loading state
+    container.innerHTML = `
+        <div class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading your quotations...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-quotes.php?repairer_id=${currentRepairerId}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            submittedQuotes = result.data;
+            renderQuotations(submittedQuotes);
+            
+            // Update counts
+            countBadge.textContent = result.count;
+            countText.textContent = `${result.count} quotation${result.count !== 1 ? 's' : ''} submitted`;
+        } else {
+            showError('Failed to load quotations: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error loading quotations:', error);
+        showError('Failed to load quotations. Please try again later.');
+    }
+}
+
+/**
+ * Render quotations to container
+ */
+function renderQuotations(quotes) {
+    const container = document.getElementById('submitted-quotes-container');
+    
+    if (quotes.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-file-invoice"></i>
+                <h3>No quotations submitted</h3>
+                <p>You haven't submitted any quotations yet. Browse available jobs and submit your quotes!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Group quotes by status
+    const pending = quotes.filter(q => q.status === 'pending');
+    const accepted = quotes.filter(q => q.status === 'accepted');
+    const rejected = quotes.filter(q => q.status === 'rejected');
+    const expired = quotes.filter(q => q.status === 'expired');
+    
+    let html = '';
+    
+    if (pending.length > 0) {
+        html += `<h3 class="quotes-section-title"><i class="fas fa-clock"></i> Pending Quotations</h3>`;
+        html += pending.map(q => createQuoteCard(q)).join('');
+    }
+    
+    if (accepted.length > 0) {
+        html += `<h3 class="quotes-section-title"><i class="fas fa-check-circle"></i> Accepted Quotations</h3>`;
+        html += accepted.map(q => createQuoteCard(q)).join('');
+    }
+    
+    if (rejected.length > 0) {
+        html += `<h3 class="quotes-section-title"><i class="fas fa-times-circle"></i> Rejected Quotations</h3>`;
+        html += rejected.map(q => createQuoteCard(q)).join('');
+    }
+    
+    if (expired.length > 0) {
+        html += `<h3 class="quotes-section-title"><i class="fas fa-hourglass-end"></i> Expired Quotations</h3>`;
+        html += expired.map(q => createQuoteCard(q)).join('');
+    }
+    
+    container.innerHTML = html;
+}
+
+/**
+ * Create HTML for a quotation card
+ */
+function createQuoteCard(quote) {
+    const statusClass = getQuoteStatusClass(quote.status);
+    const statusIcon = getQuoteStatusIcon(quote.status);
+    const canEdit = quote.status === 'pending';
+    
+    return `
+        <div class="quote-card ${statusClass}" data-quote-id="${quote.quote_id}">
+            <div class="quote-header">
+                <div class="quote-job-info">
+                    <h4 class="quote-job-title">${escapeHtml(quote.job_title || 'Job Request')}</h4>
+                    <p class="quote-job-meta">
+                        <i class="fas fa-calendar"></i> ${formatDate(quote.job_posted_date)}
+                        <span class="separator">•</span>
+                        <i class="fas fa-map-marker-alt"></i> ${escapeHtml(quote.district || 'N/A')}
+                    </p>
+                </div>
+                <div class="quote-status-badge ${statusClass}">
+                    <i class="fas ${statusIcon}"></i>
+                    ${quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
+                </div>
+            </div>
+            
+            <div class="quote-body">
+                <div class="quote-details-grid">
+                    <div class="quote-detail-item">
+                        <label>Quote Amount</label>
+                        <span class="quote-amount">LKR ${parseFloat(quote.quoteAmount).toLocaleString()}</span>
+                    </div>
+                    <div class="quote-detail-item">
+                        <label>Estimated Days</label>
+                        <span>${quote.estimatedDays || 'N/A'} days</span>
+                    </div>
+                    <div class="quote-detail-item">
+                        <label>Warranty Period</label>
+                        <span>${quote.warrantyPeriod || 0} months</span>
+                    </div>
+                    <div class="quote-detail-item">
+                        <label>Valid Until</label>
+                        <span>${formatDate(quote.validUntil)}</span>
+                    </div>
+                </div>
+                
+                ${quote.message ? `
+                    <div class="quote-message">
+                        <label><i class="fas fa-comment"></i> Your Message</label>
+                        <p>${escapeHtml(quote.message)}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="quote-meta">
+                    <span><i class="fas fa-clock"></i> Submitted ${formatDate(quote.dateSubmitted)}</span>
+                </div>
+            </div>
+            
+            ${canEdit ? `
+                <div class="quote-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="editQuote(${quote.quote_id})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteQuote(${quote.quote_id})">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+/**
+ * Edit a quotation
+ */
+function editQuote(quoteId) {
+    console.log(`Editing quote ID: ${quoteId}`);
+    window.location.href = `/2nd-Year-Group-Project/FixLanka/views/repairer/pages/edit-quote.php?quoteId=${quoteId}`;
+}
+
+/**
+ * Delete a quotation
+ */
+async function deleteQuote(quoteId) {
+    if (!confirm('Are you sure you want to delete this quotation? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-quotes.php?quote_id=${quoteId}&repairer_id=${currentRepairerId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Quotation deleted successfully!', 'success');
+            loadSubmittedQuotations(); // Reload quotations
+        } else {
+            showError('Failed to delete quotation: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error deleting quotation:', error);
+        showError('Failed to delete quotation. Please try again later.');
+    }
+}
+
+// Utility Functions
+
+function getCategoryClass(categoryName) {
+    if (!categoryName) return 'general';
+    const name = categoryName.toLowerCase();
+    if (name.includes('plumb')) return 'plumbing';
+    if (name.includes('electric')) return 'electrical';
+    if (name.includes('appliance')) return 'appliance';
+    if (name.includes('hvac') || name.includes('air')) return 'hvac';
+    if (name.includes('carpent') || name.includes('wood')) return 'carpentry';
+    if (name.includes('paint')) return 'painting';
+    return 'general';
+}
+
+function getCategoryIcon(categoryName) {
+    if (!categoryName) return 'fas fa-tools';
+    const name = categoryName.toLowerCase();
+    if (name.includes('plumb')) return 'fas fa-wrench';
+    if (name.includes('electric')) return 'fas fa-bolt';
+    if (name.includes('appliance')) return 'fas fa-tv';
+    if (name.includes('hvac') || name.includes('air')) return 'fas fa-snowflake';
+    if (name.includes('carpent') || name.includes('wood')) return 'fas fa-hammer';
+    if (name.includes('paint')) return 'fas fa-paint-brush';
+    return 'fas fa-tools';
+}
+
+function getQuoteStatusClass(status) {
+    const classes = {
+        'pending': 'status-pending',
+        'accepted': 'status-accepted',
+        'rejected': 'status-rejected',
+        'expired': 'status-expired'
+    };
+    return classes[status] || 'status-pending';
+}
+
+function getQuoteStatusIcon(status) {
+    const icons = {
+        'pending': 'fa-clock',
+        'accepted': 'fa-check-circle',
+        'rejected': 'fa-times-circle',
+        'expired': 'fa-hourglass-end'
+    };
+    return icons[status] || 'fa-question-circle';
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showError(message) {
+    const container = document.getElementById('jobs-grid-container') || document.getElementById('submitted-quotes-container');
+    if (container) {
+        container.innerHTML = `
+            <div class="error-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Error</h3>
+                <p>${escapeHtml(message)}</p>
+                <button class="btn btn-primary" onclick="location.reload()">Retry</button>
+            </div>
+        `;
+    }
+}
+
+function showToast(message, type = 'info') {
+    // Simple toast notification (can be enhanced with a toast library)
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    // Style toast
+    toast.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'};
+        color: white;
+        padding: 16px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    // Add to document
+    document.body.appendChild(toast);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 /**
@@ -1066,6 +1424,9 @@ function editQuote(quoteId) {
  * Delete quotation
  */
 function deleteQuote(quoteId) {
+    console.log('Delete quote called with quoteId:', quoteId);
+    console.log('currentRepairerId:', currentRepairerId);
+    
     if (!confirm('Are you sure you want to delete this quotation? This action cannot be undone.')) {
         return;
     }
@@ -1073,18 +1434,28 @@ function deleteQuote(quoteId) {
     // Show loading toast
     showToast('Deleting quotation...', 'info');
     
+    // Construct delete URL with both quote_id and repairer_id
+    const deleteUrl = `/2nd-Year-Group-Project/FixLanka/api/repairer-quotes.php?quote_id=${quoteId}&repairer_id=${currentRepairerId}`;
+    console.log('DELETE URL:', deleteUrl);
+    
     // Delete via API
-    fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-quotes.php?quote_id=${quoteId}`, {
+    fetch(deleteUrl, {
         method: 'DELETE'
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('DELETE Response status:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('DELETE Response data:', data);
+        
         if (data.success) {
             showToast('Quotation deleted successfully!', 'success');
             // Reload quotations
             loadSubmittedQuotations();
         } else {
             showToast('Failed to delete quotation: ' + (data.error || 'Unknown error'), 'error');
+            console.error('Delete failed:', data);
         }
     })
     .catch(error => {

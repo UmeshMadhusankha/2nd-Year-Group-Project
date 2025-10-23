@@ -11,6 +11,10 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 // Include database configuration
 require_once '../config/database.php';
+require_once '../models/RepairerQuoteModel.php';
+
+// Initialize model
+$quoteModel = new RepairerQuote($pdo);
 
 // Get request method
 $method = $_SERVER['REQUEST_METHOD'];
@@ -45,7 +49,7 @@ switch ($method) {
  * Handle GET requests - Retrieve quotes
  */
 function handleGet() {
-    global $conn;
+    global $quoteModel;
     
     // Get query parameters
     $repairer_id = isset($_GET['repairer_id']) ? intval($_GET['repairer_id']) : null;
@@ -53,143 +57,30 @@ function handleGet() {
     $quote_id = isset($_GET['quote_id']) ? intval($_GET['quote_id']) : null;
     $status = isset($_GET['status']) ? $_GET['status'] : null;
     
-    // **DUMMY DATA MODE**
-    // Return mock quotations for testing
-    $mockQuotes = [
-        [
-            'quote_id' => 1001,
-            'request_id' => 101,
-            'repairer_id' => 1,
-            'quoteAmount' => 3500.00,
-            'estimatedDays' => 2,
-            'warrantyPeriod' => 6,
-            'validUntil' => '2025-10-31',
-            'materialsIncluded' => true,
-            'message' => 'I can complete this plumbing repair with high-quality materials and guarantee no leaks. I have 10 years of experience in similar repairs.',
-            'status' => 'pending',
-            'dateSubmitted' => '2025-10-23 14:30:00'
-        ],
-        [
-            'quote_id' => 1002,
-            'request_id' => 102,
-            'repairer_id' => 1,
-            'quoteAmount' => 5200.00,
-            'estimatedDays' => 1,
-            'warrantyPeriod' => 12,
-            'validUntil' => '2025-11-01',
-            'materialsIncluded' => true,
-            'message' => 'Professional ceiling fan installation including electrical work and testing. All safety standards will be followed.',
-            'status' => 'accepted',
-            'dateSubmitted' => '2025-10-22 09:15:00'
-        ],
-        [
-            'quote_id' => 1003,
-            'request_id' => 103,
-            'repairer_id' => 1,
-            'quoteAmount' => 8500.00,
-            'estimatedDays' => 3,
-            'warrantyPeriod' => 3,
-            'validUntil' => '2025-10-28',
-            'materialsIncluded' => false,
-            'message' => 'Washing machine motor replacement. Customer to provide the motor. I will handle installation and testing.',
-            'status' => 'rejected',
-            'dateSubmitted' => '2025-10-21 16:45:00'
-        ],
-        [
-            'quote_id' => 1004,
-            'request_id' => 104,
-            'repairer_id' => 1,
-            'quoteAmount' => 12000.00,
-            'estimatedDays' => 5,
-            'warrantyPeriod' => 24,
-            'validUntil' => '2025-10-20',
-            'materialsIncluded' => true,
-            'message' => 'Complete AC servicing including gas refill, filter replacement, and coil cleaning. Premium service package.',
-            'status' => 'expired',
-            'dateSubmitted' => '2025-10-15 11:20:00'
-        ],
-        [
-            'quote_id' => 1005,
-            'request_id' => 105,
-            'repairer_id' => 1,
-            'quoteAmount' => 4500.00,
-            'estimatedDays' => 2,
-            'warrantyPeriod' => 6,
-            'validUntil' => '2025-11-05',
-            'materialsIncluded' => true,
-            'message' => 'Cabinet door repair with quality hinges and alignment. Will ensure smooth operation.',
-            'status' => 'pending',
-            'dateSubmitted' => '2025-10-24 08:00:00'
-        ]
-    ];
-    
-    // Filter mock data based on parameters
-    $filteredQuotes = array_filter($mockQuotes, function($quote) use ($quote_id, $repairer_id, $request_id, $status) {
-        if ($quote_id && $quote['quote_id'] != $quote_id) return false;
-        if ($repairer_id && $quote['repairer_id'] != $repairer_id) return false;
-        if ($request_id && $quote['request_id'] != $request_id) return false;
-        if ($status && $quote['status'] != $status) return false;
-        return true;
-    });
-    
-    // Convert to indexed array
-    $filteredQuotes = array_values($filteredQuotes);
-    
-    echo json_encode([
-        'success' => true,
-        'data' => $filteredQuotes,
-        'count' => count($filteredQuotes),
-        'mode' => 'dummy'
-    ]);
-    
-    /* UNCOMMENT THIS WHEN READY TO USE REAL DATABASE:
-    
-    // Build query
-    $sql = "SELECT * FROM RepairerQuote WHERE 1=1";
-    $params = [];
-    $types = "";
-    
-    if ($quote_id) {
-        $sql .= " AND quote_id = ?";
-        $params[] = $quote_id;
-        $types .= "i";
-    }
-    
-    if ($repairer_id) {
-        $sql .= " AND repairer_id = ?";
-        $params[] = $repairer_id;
-        $types .= "i";
-    }
-    
-    if ($request_id) {
-        $sql .= " AND request_id = ?";
-        $params[] = $request_id;
-        $types .= "i";
-    }
-    
-    if ($status) {
-        $sql .= " AND status = ?";
-        $params[] = $status;
-        $types .= "s";
-    }
-    
-    $sql .= " ORDER BY dateSubmitted DESC";
-    
     try {
-        if (!empty($params)) {
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param($types, ...$params);
-            $stmt->execute();
-            $result = $stmt->get_result();
-        } else {
-            $result = $conn->query($sql);
+        // Build filters array
+        $filters = [];
+        
+        if ($quote_id) {
+            $filters['quote_id'] = $quote_id;
         }
         
-        $quotes = [];
-        while ($row = $result->fetch_assoc()) {
-            $quotes[] = $row;
+        if ($repairer_id) {
+            $filters['repairer_id'] = $repairer_id;
         }
         
+        if ($request_id) {
+            $filters['request_id'] = $request_id;
+        }
+        
+        if ($status) {
+            $filters['status'] = $status;
+        }
+        
+        // Get quotes using model
+        $quotes = $quoteModel->getAll($filters);
+        
+        // Return response
         echo json_encode([
             'success' => true,
             'data' => $quotes,
@@ -200,17 +91,16 @@ function handleGet() {
         http_response_code(500);
         echo json_encode([
             'success' => false,
-            'error' => 'Database error: ' . $e->getMessage()
+            'error' => 'Error retrieving quotes: ' . $e->getMessage()
         ]);
     }
-    */
 }
 
 /**
  * Handle POST requests - Create new quote
  */
 function handlePost() {
-    global $conn;
+    global $quoteModel;
     
     // Get JSON input
     $input = json_decode(file_get_contents('php://input'), true);
@@ -227,79 +117,43 @@ function handlePost() {
         return;
     }
     
-    // Extract data
-    $request_id = intval($input['request_id']);
-    $repairer_id = intval($input['repairer_id']);
-    $quoteAmount = floatval($input['quoteAmount']);
-    $estimatedDays = intval($input['estimatedDays']);
-    $warrantyPeriod = isset($input['warrantyPeriod']) ? intval($input['warrantyPeriod']) : 0;
-    $validUntil = $input['validUntil'];
-    $materialsIncluded = isset($input['materialsIncluded']) ? (bool)$input['materialsIncluded'] : true;
-    $message = isset($input['message']) ? $input['message'] : null;
-    $status = isset($input['status']) ? $input['status'] : 'pending';
-    
-    // Validate status
-    $valid_statuses = ['pending', 'accepted', 'rejected', 'expired'];
-    if (!in_array($status, $valid_statuses)) {
+    // Validate quote amount
+    if (floatval($input['quoteAmount']) <= 0) {
         http_response_code(400);
         echo json_encode([
             'success' => false,
-            'error' => 'Invalid status. Must be one of: ' . implode(', ', $valid_statuses)
+            'error' => 'Quote amount must be greater than 0'
         ]);
         return;
     }
     
-    // **DUMMY DATA MODE**
-    // For now, we'll return success without actual database insertion
-    // Simulating a successful quote submission
+    // Validate estimated days
+    if (intval($input['estimatedDays']) <= 0) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Estimated days must be greater than 0'
+        ]);
+        return;
+    }
     
-    $dummyQuoteId = rand(1000, 9999);
-    $currentTimestamp = date('Y-m-d H:i:s');
-    
-    // Simulated response data
-    $responseData = [
-        'quote_id' => $dummyQuoteId,
-        'request_id' => $request_id,
-        'repairer_id' => $repairer_id,
-        'quoteAmount' => $quoteAmount,
-        'estimatedDays' => $estimatedDays,
-        'warrantyPeriod' => $warrantyPeriod,
-        'validUntil' => $validUntil,
-        'materialsIncluded' => $materialsIncluded,
-        'message' => $message,
-        'status' => $status,
-        'dateSubmitted' => $currentTimestamp
-    ];
-    
-    // Log the data for debugging (you can check this in PHP error logs)
-    error_log("DUMMY QUOTE SUBMISSION: " . json_encode($responseData));
-    
-    // Return success response
-    http_response_code(201);
-    echo json_encode([
-        'success' => true,
-        'message' => 'Quote submitted successfully (dummy mode)',
-        'data' => $responseData
-    ]);
-    
-    /* UNCOMMENT THIS WHEN READY TO USE REAL DATABASE:
+    // Check if repairer already has a quote for this job
+    if ($quoteModel->hasQuoteForJob($input['request_id'], $input['repairer_id'])) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error' => 'You have already submitted a quote for this job'
+        ]);
+        return;
+    }
     
     try {
-        // Prepare SQL statement
-        $sql = "INSERT INTO RepairerQuote (request_id, repairer_id, quoteAmount, estimatedDays, 
-                warrantyPeriod, validUntil, materialsIncluded, message, status) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // Create the quote
+        $quote_id = $quoteModel->create($input);
         
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iidiisbss", $request_id, $repairer_id, $quoteAmount, $estimatedDays, 
-                         $warrantyPeriod, $validUntil, $materialsIncluded, $message, $status);
-        
-        if ($stmt->execute()) {
-            $quote_id = $conn->insert_id;
-            
+        if ($quote_id) {
             // Retrieve the created quote
-            $result = $conn->query("SELECT * FROM RepairerQuote WHERE quote_id = $quote_id");
-            $quote = $result->fetch_assoc();
+            $quote = $quoteModel->getById($quote_id);
             
             http_response_code(201);
             echo json_encode([
@@ -308,7 +162,7 @@ function handlePost() {
                 'data' => $quote
             ]);
         } else {
-            throw new Exception($stmt->error);
+            throw new Exception('Failed to create quote');
         }
         
     } catch (Exception $e) {
@@ -318,173 +172,83 @@ function handlePost() {
             'error' => 'Failed to create quote: ' . $e->getMessage()
         ]);
     }
-    */
 }
 
 /**
  * Handle PUT requests - Update existing quote
  */
 function handlePut() {
-    global $conn;
+    global $quoteModel;
     
     // Get JSON input
-    $input = json_decode(file_get_contents('php://input'), true);
+    $rawInput = file_get_contents('php://input');
+    $input = json_decode($rawInput, true);
     
-    // Validate quote_id
-    if (!isset($input['quote_id'])) {
+    // Debug logging
+    error_log("PUT Request Raw Input: " . $rawInput);
+    error_log("PUT Request Decoded: " . print_r($input, true));
+    
+    // Validate quote_id and repairer_id
+    if (!isset($input['quote_id']) || !isset($input['repairer_id'])) {
+        error_log("Missing parameters - quote_id: " . (isset($input['quote_id']) ? 'present' : 'missing') . 
+                  ", repairer_id: " . (isset($input['repairer_id']) ? 'present' : 'missing'));
         http_response_code(400);
         echo json_encode([
             'success' => false,
-            'error' => 'Missing quote_id'
+            'error' => 'Missing quote_id or repairer_id',
+            'received' => $input,
+            'debug' => [
+                'has_quote_id' => isset($input['quote_id']),
+                'has_repairer_id' => isset($input['repairer_id']),
+                'quote_id_value' => $input['quote_id'] ?? null,
+                'repairer_id_value' => $input['repairer_id'] ?? null
+            ]
         ]);
         return;
     }
     
     $quote_id = intval($input['quote_id']);
+    $repairer_id = intval($input['repairer_id']);
     
-    // **DUMMY DATA MODE**
-    // Simulate successful update with all fields
-    $responseData = [
-        'quote_id' => $quote_id,
-        'quoteAmount' => isset($input['quoteAmount']) ? floatval($input['quoteAmount']) : null,
-        'estimatedDays' => isset($input['estimatedDays']) ? intval($input['estimatedDays']) : null,
-        'warrantyPeriod' => isset($input['warrantyPeriod']) ? intval($input['warrantyPeriod']) : null,
-        'validUntil' => isset($input['validUntil']) ? $input['validUntil'] : null,
-        'materialsIncluded' => isset($input['materialsIncluded']) ? (bool)$input['materialsIncluded'] : null,
-        'message' => isset($input['message']) ? $input['message'] : null,
-        'status' => isset($input['status']) ? $input['status'] : 'pending',
-        'updated_at' => date('Y-m-d H:i:s')
-    ];
+    // Validate quote amount if provided
+    if (isset($input['quoteAmount']) && floatval($input['quoteAmount']) <= 0) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Quote amount must be greater than 0'
+        ]);
+        return;
+    }
     
-    error_log("DUMMY QUOTE UPDATE: " . json_encode($responseData));
-    
-    echo json_encode([
-        'success' => true,
-        'message' => 'Quote updated successfully (dummy mode)',
-        'data' => $responseData
-    ]);
-    
-    /* UNCOMMENT THIS WHEN READY TO USE REAL DATABASE:
+    // Validate estimated days if provided
+    if (isset($input['estimatedDays']) && intval($input['estimatedDays']) <= 0) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Estimated days must be greater than 0'
+        ]);
+        return;
+    }
     
     try {
-        // First, check if quote exists and is in pending status
-        $checkSql = "SELECT status FROM RepairerQuote WHERE quote_id = ?";
-        $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bind_param("i", $quote_id);
-        $checkStmt->execute();
-        $result = $checkStmt->get_result();
+        // Update the quote
+        $success = $quoteModel->update($quote_id, $repairer_id, $input);
         
-        if ($result->num_rows === 0) {
-            http_response_code(404);
+        if ($success) {
+            // Retrieve updated quote
+            $quote = $quoteModel->getById($quote_id);
+            
             echo json_encode([
-                'success' => false,
-                'error' => 'Quote not found'
+                'success' => true,
+                'message' => 'Quote updated successfully',
+                'data' => $quote
             ]);
-            return;
-        }
-        
-        $quote = $result->fetch_assoc();
-        if ($quote['status'] !== 'pending') {
-            http_response_code(400);
-            echo json_encode([
-                'success' => false,
-                'error' => 'Only pending quotes can be edited'
-            ]);
-            return;
-        }
-        
-        // Build update query dynamically
-        $updates = [];
-        $params = [];
-        $types = "";
-        
-        if (isset($input['quoteAmount'])) {
-            $updates[] = "quoteAmount = ?";
-            $params[] = floatval($input['quoteAmount']);
-            $types .= "d";
-        }
-        
-        if (isset($input['estimatedDays'])) {
-            $updates[] = "estimatedDays = ?";
-            $params[] = intval($input['estimatedDays']);
-            $types .= "i";
-        }
-        
-        if (isset($input['warrantyPeriod'])) {
-            $updates[] = "warrantyPeriod = ?";
-            $params[] = intval($input['warrantyPeriod']);
-            $types .= "i";
-        }
-        
-        if (isset($input['validUntil'])) {
-            $updates[] = "validUntil = ?";
-            $params[] = $input['validUntil'];
-            $types .= "s";
-        }
-        
-        if (isset($input['materialsIncluded'])) {
-            $updates[] = "materialsIncluded = ?";
-            $params[] = (bool)$input['materialsIncluded'];
-            $types .= "i";
-        }
-        
-        if (isset($input['message'])) {
-            $updates[] = "message = ?";
-            $params[] = $input['message'];
-            $types .= "s";
-        }
-        
-        if (isset($input['status'])) {
-            $valid_statuses = ['pending', 'accepted', 'rejected', 'expired'];
-            if (!in_array($input['status'], $valid_statuses)) {
-                http_response_code(400);
-                echo json_encode([
-                    'success' => false,
-                    'error' => 'Invalid status'
-                ]);
-                return;
-            }
-            $updates[] = "status = ?";
-            $params[] = $input['status'];
-            $types .= "s";
-        }
-        
-        if (empty($updates)) {
-            http_response_code(400);
-            echo json_encode([
-                'success' => false,
-                'error' => 'No fields to update'
-            ]);
-            return;
-        }
-        
-        $sql = "UPDATE RepairerQuote SET " . implode(", ", $updates) . " WHERE quote_id = ?";
-        $params[] = $quote_id;
-        $types .= "i";
-        
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param($types, ...$params);
-        
-        if ($stmt->execute()) {
-            if ($stmt->affected_rows > 0) {
-                // Retrieve updated quote
-                $result = $conn->query("SELECT * FROM RepairerQuote WHERE quote_id = $quote_id");
-                $quote = $result->fetch_assoc();
-                
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Quote updated successfully',
-                    'data' => $quote
-                ]);
-            } else {
-                http_response_code(404);
-                echo json_encode([
-                    'success' => false,
-                    'error' => 'Quote not found or no changes made'
-                ]);
-            }
         } else {
-            throw new Exception($stmt->error);
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Failed to update quote. Quote may not exist, not belong to you, or not be in pending status.'
+            ]);
         }
         
     } catch (Exception $e) {
@@ -494,59 +258,53 @@ function handlePut() {
             'error' => 'Failed to update quote: ' . $e->getMessage()
         ]);
     }
-    */
 }
 
 /**
  * Handle DELETE requests - Delete quote
  */
 function handleDelete() {
-    global $conn;
+    global $quoteModel;
     
-    // Get quote_id from query parameter
+    // Get quote_id and repairer_id from query parameters
     $quote_id = isset($_GET['quote_id']) ? intval($_GET['quote_id']) : null;
+    $repairer_id = isset($_GET['repairer_id']) ? intval($_GET['repairer_id']) : null;
     
-    if (!$quote_id) {
+    // Debug logging
+    error_log("DELETE Request - quote_id: " . ($quote_id ?? 'null') . ", repairer_id: " . ($repairer_id ?? 'null'));
+    error_log("DELETE Request - Full GET params: " . print_r($_GET, true));
+    
+    if (!$quote_id || !$repairer_id) {
+        error_log("DELETE Failed - Missing parameters. quote_id: " . ($quote_id ? 'present' : 'missing') . 
+                  ", repairer_id: " . ($repairer_id ? 'present' : 'missing'));
         http_response_code(400);
         echo json_encode([
             'success' => false,
-            'error' => 'Missing quote_id parameter'
+            'error' => 'Missing quote_id or repairer_id parameter',
+            'debug' => [
+                'quote_id' => $quote_id,
+                'repairer_id' => $repairer_id,
+                'get_params' => $_GET
+            ]
         ]);
         return;
     }
     
-    // **DUMMY DATA MODE**
-    // Simulate successful deletion
-    error_log("DUMMY QUOTE DELETION: quote_id = $quote_id");
-    
-    echo json_encode([
-        'success' => true,
-        'message' => 'Quote deleted successfully (dummy mode)',
-        'quote_id' => $quote_id
-    ]);
-    
-    /* UNCOMMENT THIS WHEN READY TO USE REAL DATABASE:
-    
     try {
-        $sql = "DELETE FROM RepairerQuote WHERE quote_id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("i", $quote_id);
+        // Delete the quote
+        $success = $quoteModel->delete($quote_id, $repairer_id);
         
-        if ($stmt->execute()) {
-            if ($stmt->affected_rows > 0) {
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Quote deleted successfully'
-                ]);
-            } else {
-                http_response_code(404);
-                echo json_encode([
-                    'success' => false,
-                    'error' => 'Quote not found'
-                ]);
-            }
+        if ($success) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'Quote deleted successfully'
+            ]);
         } else {
-            throw new Exception($stmt->error);
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Failed to delete quote. Quote may not exist, not belong to you, or not be in pending status.'
+            ]);
         }
         
     } catch (Exception $e) {
@@ -556,5 +314,4 @@ function handleDelete() {
             'error' => 'Failed to delete quote: ' . $e->getMessage()
         ]);
     }
-    */
 }
