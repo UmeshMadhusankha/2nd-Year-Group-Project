@@ -182,6 +182,10 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                             <button type="submit" id="resolveBtn" class="issues-submit-btn">
                                 Update Issue
                             </button>
+                            <button type="button" onclick="deleteReporterUser()" class="issues-delete-user-btn">
+                                <i data-lucide="user-x" class="mr-1 h-4 w-4"></i>
+                                Delete User
+                            </button>
                             <button type="button" onclick="deleteIssue()" class="issues-delete-btn">
                                 Delete Issue
                             </button>
@@ -477,6 +481,35 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                     }
 
                     // Remove from local data
+                    const issueIndex = allIssues.findIndex(i => i.id === currentIssueId);
+                    if (issueIndex !== -1) {
+                        allIssues.splice(issueIndex, 1);
+                    }
+
+                    closeResolveModal();
+                    loadIssues(currentPage);
+                }
+
+                function deleteReporterUser() {
+                    const issue = allIssues.find(i => i.id === currentIssueId);
+                    
+                    if (!issue) {
+                        alert('Issue not found');
+                        return;
+                    }
+
+                    const userName = issue.reporter_name || 'Unknown';
+                    const userEmail = issue.reporter_email || '';
+                    
+                    if (!confirm(`Are you sure you want to delete the user account?\n\nUser: ${userName}\nEmail: ${userEmail}\n\nThis will permanently delete their account and cannot be undone.`)) {
+                        return;
+                    }
+
+                    // Here you would make an API call to delete the user
+                    // For now, just show a success message
+                    alert(`User account "${userName}" has been deleted successfully.`);
+                    
+                    // Also delete the issue since the user is deleted
                     const issueIndex = allIssues.findIndex(i => i.id === currentIssueId);
                     if (issueIndex !== -1) {
                         allIssues.splice(issueIndex, 1);

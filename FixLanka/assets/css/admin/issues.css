@@ -182,10 +182,61 @@
   border: none;
   cursor: pointer;
   transition: all 0.2s;
+  font-weight: 500;
+  font-size: 0.875rem;
 }
 
 .issues-submit-btn:hover {
   background-color: rgba(77, 230, 213, 0.9);
+}
+
+.issues-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.issues-delete-btn {
+  padding: 0.5rem 1rem;
+  background-color: #dc2626;
+  color: #ffffff;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.issues-delete-btn:hover {
+  background-color: #b91c1c;
+}
+
+.issues-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.issues-delete-user-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: #991b1b;
+  color: #ffffff;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.issues-delete-user-btn:hover {
+  background-color: #7f1d1d;
+}
+
+.issues-delete-user-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .issues-cancel-btn {
@@ -193,8 +244,11 @@
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   background-color: transparent;
+  color: var(--card-foreground);
   cursor: pointer;
   transition: all 0.2s;
+  font-weight: 500;
+  font-size: 0.875rem;
 }
 
 .issues-cancel-btn:hover {

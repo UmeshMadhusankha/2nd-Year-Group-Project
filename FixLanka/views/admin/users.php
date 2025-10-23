@@ -181,6 +181,10 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                                 <button type="button" onclick="closeModal('userModal')" class="users-cancel-btn">
                                     Cancel
                                 </button>
+                                <button type="button" id="deleteAccountBtn" onclick="confirmDeleteFromModal()" class="users-delete-btn" style="display: none;">
+                                    <i data-lucide="trash-2" class="mr-2 h-4 w-4"></i>
+                                    Delete Account
+                                </button>
                                 <button type="submit" class="users-save-btn" id="saveButton">
                                     <span id="saveButtonText">Save User</span>
                                     <span id="saveButtonLoader" style="display: none;">Saving...</span>
@@ -364,6 +368,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                     document.getElementById('userId').value = '';
                     document.getElementById('passwordGroup').style.display = 'block';
                     document.getElementById('userPassword').required = true;
+                    document.getElementById('deleteAccountBtn').style.display = 'none';
                     openModal('userModal');
                 }
 
@@ -385,7 +390,21 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                     document.getElementById('userStatus').value = user.status;
                     document.getElementById('passwordGroup').style.display = 'none';
                     document.getElementById('userPassword').required = false;
+                    document.getElementById('deleteAccountBtn').style.display = 'inline-flex';
                     openModal('userModal');
+                }
+
+                function confirmDeleteFromModal() {
+                    const userId = document.getElementById('userId').value;
+                    if (!userId) {
+                        showMessage('No user selected', 'error');
+                        return;
+                    }
+                    
+                    // Close user modal and open delete confirmation modal
+                    closeModal('userModal');
+                    window.deleteUserId = userId;
+                    openModal('deleteModal');
                 }
 
                 document.getElementById('userForm').addEventListener('submit', (e) => {
