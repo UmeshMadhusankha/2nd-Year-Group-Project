@@ -1,6 +1,6 @@
 -- =====================================================
 -- Database Schema for Home Repair Service Platform
--- Version 1.2.0
+-- Version 1.3.0
 -- =====================================================
 
 DROP DATABASE IF EXISTS fix_lanka;
@@ -160,6 +160,34 @@ CREATE TABLE Promotion (
     INDEX idx_repairer (repairer_id),
     INDEX idx_status (status),
     INDEX idx_dates (start_date, end_date)
+);
+
+-- Quotation Table
+CREATE TABLE CompanyQuotation (
+    quotation_id INT PRIMARY KEY AUTO_INCREMENT,
+    request_id INT NOT NULL,
+    user_id INT NOT NULL,
+    title VARCHAR(250) NOT NULL,
+    description VARCHAR(500),
+    labor_cost DECIMAL(10,2) NOT NULL,
+    material_cost DECIMAL(10,2) NOT NULL,
+    transport_cost DECIMAL(10,2) DEFAULT 0.00,
+    other_charges DECIMAL(10,2) DEFAULT 0.00,
+    total_amount DECIMAL(10,2) NOT NULL,
+    start_date DATE NOT NULL,
+    completion_date DATE NOT NULL,
+    estimated_duration INT NOT NULL,
+    payment_terms VARCHAR(100),
+    warranty_period VARCHAR(50),
+    additional_terms TEXT,
+    status ENUM('pending', 'accepted', 'rejected', 'successful') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (request_id) REFERENCES JobRequest(request_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE,
+    INDEX idx_request (request_id),
+    INDEX idx_user (user_id),
+    INDEX idx_status (status)
 );
 
 -- Company Table

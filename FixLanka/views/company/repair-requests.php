@@ -170,8 +170,8 @@
                         <div class="request-details">
                             <div class="detail-row">
                                 <i class="fas fa-map-marker-alt detail-icon"></i>
-                                <span class="detail-label">Location:</span>
-                                <span class="detail-value">Colombo 07</span>
+                                <span class="detail-label">District:</span>
+                                <span class="detail-value">Colombo</span>
                             </div>
                             <div class="detail-row">
                                 <i class="fas fa-calendar detail-icon"></i>
@@ -240,8 +240,8 @@
                         <div class="request-details">
                             <div class="detail-row">
                                 <i class="fas fa-map-marker-alt detail-icon"></i>
-                                <span class="detail-label">Location:</span>
-                                <span class="detail-value">Nugegoda</span>
+                                <span class="detail-label">District:</span>
+                                <span class="detail-value">Gampaha</span>
                             </div>
                             <div class="detail-row">
                                 <i class="fas fa-calendar detail-icon"></i>
@@ -293,7 +293,7 @@
                         <div class="request-details">
                             <div class="detail-row">
                                 <i class="fas fa-map-marker-alt detail-icon"></i>
-                                <span class="detail-label">Location:</span>
+                                <span class="detail-label">District:</span>
                                 <span class="detail-value">Kandy</span>
                             </div>
                             <div class="detail-row">
@@ -564,38 +564,43 @@
                         </div>
                     </div>
 
-                    <!-- Pending Requests -->
+                    <!-- Pending Quotations -->
                     <div class="log-section">
                         <div class="log-section-header">
                             <div class="log-section-icon pending">
-                                <i class="fas fa-clock"></i>
+                                <i class="fas fa-file-invoice-dollar"></i>
                             </div>
                             <div class="log-section-title">
-                                <h3>Pending & In Progress</h3>
-                                <p>Active contracts and pending responses</p>
+                                <h3>Pending Quotations</h3>
+                                <p>Submitted quotations awaiting customer response</p>
                             </div>
-                            <div class="log-count">15</div>
+                            <div class="log-count" id="pending-quotations-count">0</div>
                         </div>
-                        <div class="log-items">
-                            <div class="log-item">
-                                <div class="log-item-icon">
-                                    <i class="fas fa-tools"></i>
-                                </div>
-                                <div class="log-item-content">
-                                    <h4 class="log-item-title">Plumbing Fix - Kandy</h4>
-                                    <p class="log-item-meta">Request #REQ-2025-204 • Waiting for contract approval</p>
-                                </div>
-                                <div class="log-item-date">In Progress</div>
+                        <div class="log-items" id="pending-quotations-list">
+                            <!-- Pending quotations will be dynamically added here -->
+                            <div class="empty-state" style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">
+                                <i class="fas fa-inbox" style="font-size: 2rem; opacity: 0.5; margin-bottom: var(--spacing-sm);"></i>
+                                <p>No pending quotations. Submit a quotation to see it here.</p>
                             </div>
-                            <div class="log-item">
-                                <div class="log-item-icon">
-                                    <i class="fas fa-bolt"></i>
-                                </div>
-                                <div class="log-item-content">
-                                    <h4 class="log-item-title">Electrical Wiring</h4>
-                                    <p class="log-item-meta">Quotation #Q-2025-089 • Awaiting customer response</p>
-                                </div>
-                                <div class="log-item-date">Pending</div>
+                        </div>
+                    </div>
+
+                    <!-- Accepted Quotations -->
+                    <div class="log-section">
+                        <div class="log-section-header">
+                            <div class="log-section-icon success">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="log-section-title">
+                                <h3>Accepted Quotations</h3>
+                                <p>Quotations accepted by customers</p>
+                            </div>
+                            <div class="log-count" id="accepted-quotations-count">0</div>
+                        </div>
+                        <div class="log-items" id="accepted-quotations-list">
+                            <div class="empty-state" style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">
+                                <i class="fas fa-inbox" style="font-size: 2rem; opacity: 0.5; margin-bottom: var(--spacing-sm);"></i>
+                                <p>No accepted quotations yet.</p>
                             </div>
                         </div>
                     </div>
@@ -670,58 +675,200 @@
             </div>
             <div class="modal-body">
                 <form id="quotation-form">
+                    <!-- Hidden field to store request ID -->
+                    <input type="hidden" id="request-id" name="request_id">
+                    
+                    <!-- Request Summary -->
                     <div class="form-group">
-                        <label class="form-label">Request Details</label>
+                        <label class="form-label">Request Summary</label>
                         <div id="quotation-request-details"
                             style="padding: var(--spacing-md); background: var(--bg-secondary); border-radius: var(--border-radius); margin-bottom: var(--spacing-md);">
                             <!-- Request details will be populated here -->
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label" for="quote-price">Price Offer (LKR)</label>
-                            <input type="number" id="quote-price" class="form-input" placeholder="Enter your quote"
-                                required>
+                    <!-- Quotation Details Section -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-file-invoice"></i>
+                            Quotation Details
+                        </h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="quotation-title">
+                                    Quotation Title <span class="required">*</span>
+                                </label>
+                                <input type="text" id="quotation-title" name="title" class="form-input" 
+                                    placeholder="e.g., AC Repair Service Quote" required>
+                            </div>
                         </div>
+
                         <div class="form-group">
-                            <label class="form-label" for="quote-currency">Currency</label>
-                            <select id="quote-currency" class="form-select">
-                                <option value="LKR">Sri Lankan Rupee (LKR)</option>
-                                <option value="USD">US Dollar (USD)</option>
+                            <label class="form-label" for="service-description">
+                                Service Description <span class="required">*</span>
+                            </label>
+                            <textarea id="service-description" name="description" class="form-textarea" rows="4"
+                                placeholder="Describe the services you will provide, work scope, and deliverables..." required></textarea>
+                            <small class="form-hint">Be specific about what's included in this quotation</small>
+                        </div>
+                    </div>
+
+                    <!-- Pricing Section -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-calculator"></i>
+                            Pricing & Cost Breakdown
+                        </h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="labor-cost">
+                                    Labor Cost (LKR) <span class="required">*</span>
+                                </label>
+                                <input type="number" id="labor-cost" name="labor_cost" class="form-input" 
+                                    placeholder="0.00" min="0" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="material-cost">
+                                    Material Cost (LKR) <span class="required">*</span>
+                                </label>
+                                <input type="number" id="material-cost" name="material_cost" class="form-input" 
+                                    placeholder="0.00" min="0" step="0.01" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="transport-cost">
+                                    Transport Cost (LKR)
+                                </label>
+                                <input type="number" id="transport-cost" name="transport_cost" class="form-input" 
+                                    placeholder="0.00" min="0" step="0.01" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="other-cost">
+                                    Other Charges (LKR)
+                                </label>
+                                <input type="number" id="other-cost" name="other_cost" class="form-input" 
+                                    placeholder="0.00" min="0" step="0.01" value="0">
+                            </div>
+                        </div>
+
+                        <div class="cost-summary">
+                            <div class="cost-row">
+                                <span>Subtotal:</span>
+                                <span id="subtotal-amount">LKR 0.00</span>
+                            </div>
+                            <div class="cost-row total">
+                                <span>Total Quotation Amount:</span>
+                                <span id="total-amount">LKR 0.00</span>
+                            </div>
+                        </div>
+                        <input type="hidden" id="total-price" name="total_price" value="0">
+                    </div>
+
+                    <!-- Timeline Section -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-calendar-alt"></i>
+                            Project Timeline
+                        </h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="estimated-start-date">
+                                    Estimated Start Date <span class="required">*</span>
+                                </label>
+                                <input type="date" id="estimated-start-date" name="estimated_start_date" 
+                                    class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="estimated-completion-date">
+                                    Estimated Completion Date <span class="required">*</span>
+                                </label>
+                                <input type="date" id="estimated-completion-date" name="estimated_completion_date" 
+                                    class="form-input" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="estimated-duration">
+                                Estimated Duration (Days) <span class="required">*</span>
+                            </label>
+                            <input type="number" id="estimated-duration" name="estimated_duration" 
+                                class="form-input" placeholder="e.g., 5" min="1" max="365" required>
+                            <small class="form-hint">Number of working days to complete the project</small>
+                        </div>
+                    </div>
+
+                    <!-- Terms & Conditions Section -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-file-contract"></i>
+                            Terms & Conditions
+                        </h3>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                Payment Terms <span class="required">*</span>
+                            </label>
+                            <select id="payment-terms" name="payment_terms" class="form-select" required>
+                                <option value="">Select payment terms</option>
+                                <option value="full_advance">100% Advance Payment</option>
+                                <option value="50_50">50% Advance, 50% on Completion</option>
+                                <option value="30_70">30% Advance, 70% on Completion</option>
+                                <option value="milestone">Milestone-based Payment</option>
+                                <option value="on_completion">Payment on Completion</option>
                             </select>
                         </div>
-                    </div>
 
-                    <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label" for="start-date">Start Date</label>
-                            <input type="date" id="start-date" class="form-input" required>
+                            <label class="form-label">
+                                Warranty Period <span class="required">*</span>
+                            </label>
+                            <select id="warranty-period" name="warranty_period" class="form-select" required>
+                                <option value="">Select warranty period</option>
+                                <option value="no_warranty">No Warranty</option>
+                                <option value="1_month">1 Month</option>
+                                <option value="3_months">3 Months</option>
+                                <option value="6_months">6 Months</option>
+                                <option value="1_year">1 Year</option>
+                                <option value="2_years">2 Years</option>
+                            </select>
                         </div>
+
                         <div class="form-group">
-                            <label class="form-label" for="end-date">Completion Date</label>
-                            <input type="date" id="end-date" class="form-input" required>
+                            <label class="form-label" for="terms-conditions">
+                                Additional Terms & Conditions
+                            </label>
+                            <textarea id="terms-conditions" name="terms_conditions" class="form-textarea" rows="4"
+                                placeholder="Enter any additional terms, conditions, or special requirements..."></textarea>
                         </div>
                     </div>
 
+                    <!-- Validity Section -->
                     <div class="form-group">
-                        <label class="form-label">Materials Supply</label>
-                        <div class="radio-group">
-                            <div class="radio-option">
-                                <input type="radio" id="materials-company" name="materials" value="company" checked>
-                                <label for="materials-company" class="radio-label">Company Provides Materials</label>
-                            </div>
-                            <div class="radio-option">
-                                <input type="radio" id="materials-customer" name="materials" value="customer">
-                                <label for="materials-customer" class="radio-label">Customer Provides Materials</label>
-                            </div>
-                        </div>
+                        <label class="form-label" for="validity-period">
+                            Quotation Validity Period <span class="required">*</span>
+                        </label>
+                        <select id="validity-period" name="validity_period" class="form-select" required>
+                            <option value="7">Valid for 7 days</option>
+                            <option value="14">Valid for 14 days</option>
+                            <option value="30" selected>Valid for 30 days</option>
+                            <option value="60">Valid for 60 days</option>
+                            <option value="90">Valid for 90 days</option>
+                        </select>
                     </div>
 
+                    <!-- Agreement Checkbox -->
                     <div class="form-group">
-                        <label class="form-label" for="additional-notes">Additional Notes & Terms</label>
-                        <textarea id="additional-notes" class="form-textarea"
-                            placeholder="Include any special requirements, terms, or conditions..."></textarea>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="agreement" name="agreement" required>
+                            <label for="agreement" class="checkbox-label">
+                                I confirm that all information provided is accurate and I agree to the terms and conditions
+                            </label>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -730,7 +877,7 @@
                     <i class="fas fa-times"></i>
                     Cancel
                 </button>
-                <button type="submit" form="quotation-form" class="action-btn primary" onclick="submitQuotation()">
+                <button type="button" class="action-btn primary" onclick="submitQuotation()">
                     <i class="fas fa-paper-plane"></i>
                     Submit Quotation
                 </button>
