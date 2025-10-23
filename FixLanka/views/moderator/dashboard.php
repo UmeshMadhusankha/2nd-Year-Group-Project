@@ -86,7 +86,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                         <div class="p-6">
                             <h3 class="text-lg font-medium text-foreground mb-6">Quick Actions</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <a href="ads.php" class="nav-card bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20">
+                                <a href="/2nd-Year-Group-Project/FixLanka/moderator-ads" class="nav-card bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20">
                                     <div class="flex items-center space-x-3">
                                         <div class="p-2 bg-blue-500/20 rounded-lg">
                                             <i data-lucide="megaphone" class="h-6 w-6 text-blue-500"></i>
@@ -98,7 +98,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                                     </div>
                                 </a>
 
-                                <a href="account-moderation.php" class="nav-card bg-red-500/10 border-red-500/20 hover:bg-red-500/20">
+                                <a href="/2nd-Year-Group-Project/FixLanka/moderator-account-moderation" class="nav-card bg-red-500/10 border-red-500/20 hover:bg-red-500/20">
                                     <div class="flex items-center space-x-3">
                                         <div class="p-2 bg-red-500/20 rounded-lg">
                                             <i data-lucide="shield-alert" class="h-6 w-6 text-red-500"></i>
@@ -110,7 +110,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                                     </div>
                                 </a>
 
-                                <a href="ad-reports.php" class="nav-card bg-green-500/10 border-green-500/20 hover:bg-green-500/20">
+                                <a href="/2nd-Year-Group-Project/FixLanka/moderator-ad-reports" class="nav-card bg-green-500/10 border-green-500/20 hover:bg-green-500/20">
                                     <div class="flex items-center space-x-3">
                                         <div class="p-2 bg-green-500/20 rounded-lg">
                                             <i data-lucide="flag" class="h-6 w-6 text-green-500"></i>
@@ -122,7 +122,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                                     </div>
                                 </a>
 
-                                <a href="finance.php" class="nav-card bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20">
+                                <a href="/2nd-Year-Group-Project/FixLanka/moderator-finance" class="nav-card bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20">
                                     <div class="flex items-center space-x-3">
                                         <div class="p-2 bg-purple-500/20 rounded-lg">
                                             <i data-lucide="dollar-sign" class="h-6 w-6 text-purple-500"></i>
@@ -134,7 +134,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                                     </div>
                                 </a>
 
-                                <a href="notifications.php" class="nav-card bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20">
+                                <a href="/2nd-Year-Group-Project/FixLanka/moderator-notifications" class="nav-card bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20">
                                     <div class="flex items-center space-x-3">
                                         <div class="p-2 bg-orange-500/20 rounded-lg">
                                             <i data-lucide="bell" class="h-6 w-6 text-orange-500"></i>
@@ -146,7 +146,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                                     </div>
                                 </a>
 
-                                <a href="static-content.php" class="nav-card bg-teal-500/10 border-teal-500/20 hover:bg-teal-500/20">
+                                <a href="/2nd-Year-Group-Project/FixLanka/moderator-static-content" class="nav-card bg-teal-500/10 border-teal-500/20 hover:bg-teal-500/20">
                                     <div class="flex items-center space-x-3">
                                         <div class="p-2 bg-teal-500/20 rounded-lg">
                                             <i data-lucide="file-text" class="h-6 w-6 text-teal-500"></i>

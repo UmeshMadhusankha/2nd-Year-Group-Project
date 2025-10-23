@@ -292,7 +292,7 @@ class AuthController {
             $_SESSION['user_role'] = 'repairer';
             $_SESSION['success'] = 'Repairer account created successfully!';
             
-            header('Location: /2nd-Year-Group-Project/FixLanka/repairer-dashboard');
+            header('Location: /2nd-Year-Group-Project/FixLanka/repairer-welcome');
             exit;
             
         } catch (PDOException $e) {

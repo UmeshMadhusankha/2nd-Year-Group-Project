@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification API Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { color: #333; }
+        h2 { color: #666; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .info { color: #2196F3; }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Notification API Testing Tool</h1>
+    <p>Use this tool to test your Notification CRUD API endpoints</p>
+
+    <!-- Test 1: Database Check -->
+    <div class="container">
+        <h2>1. Database Connection Test</h2>
+        <button onclick="testDatabase()">Test Database Connection</button>
+        <div id="dbOutput" class="output"></div>
+    </div>
+
+    <!-- Test 2: GET Recent Notifications -->
+    <div class="container">
+        <h2>2. READ - Get Recent Notifications</h2>
+        <label>Limit:</label>
+        <input type="number" id="getLimit" value="5" min="1" max="50">
+        <button onclick="testGetRecent()">Fetch Recent Notifications</button>
+        <div id="getOutput" class="output"></div>
+    </div>
+
+    <!-- Test 3: CREATE Notification -->
+    <div class="container">
+        <h2>3. CREATE - Add New Notification</h2>
+        <label>Recipients:</label>
+        <select id="createRecipients">
+            <option value="all">All Users</option>
+            <option value="providers">Service Providers</option>
+            <option value="customers">Customers</option>
+            <option value="companies">Companies</option>
+        </select>
+
+        <label>Title:</label>
+        <input type="text" id="createTitle" value="Test Notification" placeholder="Enter title">
+
+        <label>Message:</label>
+        <textarea id="createMessage" rows="3" placeholder="Enter message">This is a test notification created from the API tester.</textarea>
+
+        <button onclick="testCreate()">Create Notification</button>
+        <div id="createOutput" class="output"></div>
+    </div>
+
+    <!-- Test 4: UPDATE Notification -->
+    <div class="container">
+        <h2>4. UPDATE - Modify Notification</h2>
+        <label>Notification ID:</label>
+        <input type="number" id="updateId" placeholder="Enter notification ID">
+
+        <label>New Title:</label>
+        <input type="text" id="updateTitle" value="Updated Notification" placeholder="Enter new title">
+
+        <label>New Message:</label>
+        <textarea id="updateMessage" rows="3" placeholder="Enter new message">This notification has been updated via the API tester.</textarea>
+
+        <label>New Recipients:</label>
+        <select id="updateRecipients">
+            <option value="all">All Users</option>
+            <option value="providers">Service Providers</option>
+            <option value="customers">Customers</option>
+            <option value="companies">Companies</option>
+        </select>
+
+        <button onclick="testUpdate()">Update Notification</button>
+        <div id="updateOutput" class="output"></div>
+    </div>
+
+    <!-- Test 5: DELETE Notification -->
+    <div class="container">
+        <h2>5. DELETE - Remove Notification</h2>
+        <label>Notification ID:</label>
+        <input type="number" id="deleteId" placeholder="Enter notification ID to delete">
+
+        <button onclick="testDelete()" style="background: #f44336;">Delete Notification</button>
+        <div id="deleteOutput" class="output"></div>
+    </div>
+
+    <script>
+        const API_URL = '/2nd-Year-Group-Project/FixLanka/api/notifications.php';
+
+        function log(outputId, message, type = 'info') {
+            const output = document.getElementById(outputId);
+            const timestamp = new Date().toLocaleTimeString();
+            const color = {
+                'info': '#2196F3',
+                'success': '#4CAF50',
+                'error': '#f44336',
+                'warning': '#ff9800'
+            }[type] || '#d4d4d4';
+            
+            output.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput(outputId) {
+            document.getElementById(outputId).innerHTML = '';
+        }
+
+        async function testDatabase() {
+            clearOutput('dbOutput');
+            log('dbOutput', '🔍 Testing database connection...', 'info');
+            
+            try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/test_notification_db.php');
+                const text = await response.text();
+                
+                if (response.ok) {
+                    log('dbOutput', '✅ Database test completed!', 'success');
+                    log('dbOutput', '\n' + text, 'info');
+                } else {
+                    log('dbOutput', '❌ Database test failed!', 'error');
+                    log('dbOutput', text, 'error');
+                }
+            } catch (error) {
+                log('dbOutput', '❌ Error: ' + error.message, 'error');
+            }
+        }
+
+        async function testGetRecent() {
+            clearOutput('getOutput');
+            const limit = document.getElementById('getLimit').value;
+            log('getOutput', `🔍 Fetching ${limit} recent notifications...`, 'info');
+            
+            try {
+                const url = `${API_URL}?action=getRecent&limit=${limit}`;
+                log('getOutput', `📡 GET ${url}`, 'info');
+                
+                const response = await fetch(url);
+                log('getOutput', `📥 Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                log('getOutput', `📦 Response: ${JSON.stringify(data, null, 2)}`, data.success ? 'success' : 'error');
+                
+                if (data.success && data.data.length > 0) {
+                    log('getOutput', `\n✅ Found ${data.data.length} notification(s)`, 'success');
+                    data.data.forEach((notif, idx) => {
+                        log('getOutput', `\n--- Notification ${idx + 1} ---`, 'info');
+                        log('getOutput', `ID: ${notif.notification_id}`, 'info');
+                        log('getOutput', `Title: ${notif.title}`, 'info');
+                        log('getOutput', `Message: ${notif.message}`, 'info');
+                        log('getOutput', `Recipient: ${notif.recipient_type}`, 'info');
+                        log('getOutput', `Status: ${notif.status}`, 'info');
+                        log('getOutput', `Date: ${notif.send_date}`, 'info');
+                    });
+                } else if (data.success) {
+                    log('getOutput', '\n⚠️ No notifications found in database', 'warning');
+                }
+            } catch (error) {
+                log('getOutput', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCreate() {
+            clearOutput('createOutput');
+            const recipients = document.getElementById('createRecipients').value;
+            const title = document.getElementById('createTitle').value;
+            const message = document.getElementById('createMessage').value;
+            
+            if (!title || !message) {
+                log('createOutput', '❌ Title and message are required!', 'error');
+                return;
+            }
+            
+            log('createOutput', '🔍 Creating new notification...', 'info');
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'add');
+                formData.append('recipients', recipients);
+                formData.append('title', title);
+                formData.append('message', message);
+                
+                log('createOutput', `📡 POST ${API_URL}`, 'info');
+                log('createOutput', `📤 Data: recipients=${recipients}, title=${title}, message=${message.substring(0, 50)}...`, 'info');
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                log('createOutput', `📥 Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                log('createOutput', `📦 Response: ${JSON.stringify(data, null, 2)}`, data.success ? 'success' : 'error');
+                
+                if (data.success && data.data) {
+                    log('createOutput', `\n✅ Notification created successfully!`, 'success');
+                    log('createOutput', `New ID: ${data.data.notification_id}`, 'success');
+                    
+                    // Auto-fill update/delete IDs
+                    document.getElementById('updateId').value = data.data.notification_id;
+                    document.getElementById('deleteId').value = data.data.notification_id;
+                }
+            } catch (error) {
+                log('createOutput', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUpdate() {
+            clearOutput('updateOutput');
+            const id = document.getElementById('updateId').value;
+            const title = document.getElementById('updateTitle').value;
+            const message = document.getElementById('updateMessage').value;
+            const recipients = document.getElementById('updateRecipients').value;
+            
+            if (!id || !title || !message) {
+                log('updateOutput', '❌ All fields are required!', 'error');
+                return;
+            }
+            
+            log('updateOutput', `🔍 Updating notification ID ${id}...`, 'info');
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'update');
+                formData.append('notification_id', id);
+                formData.append('title', title);
+                formData.append('message', message);
+                formData.append('recipients', recipients);
+                
+                log('updateOutput', `📡 POST ${API_URL}`, 'info');
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                log('updateOutput', `📥 Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                log('updateOutput', `📦 Response: ${JSON.stringify(data, null, 2)}`, data.success ? 'success' : 'error');
+                
+                if (data.success) {
+                    log('updateOutput', `\n✅ Notification updated successfully!`, 'success');
+                }
+            } catch (error) {
+                log('updateOutput', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDelete() {
+            clearOutput('deleteOutput');
+            const id = document.getElementById('deleteId').value;
+            
+            if (!id) {
+                log('deleteOutput', '❌ Notification ID is required!', 'error');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete notification ID ${id}?`)) {
+                log('deleteOutput', '⚠️ Delete cancelled', 'warning');
+                return;
+            }
+            
+            log('deleteOutput', `🔍 Deleting notification ID ${id}...`, 'info');
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'delete');
+                formData.append('notification_id', id);
+                
+                log('deleteOutput', `📡 POST ${API_URL}`, 'info');
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                log('deleteOutput', `📥 Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                log('deleteOutput', `📦 Response: ${JSON.stringify(data, null, 2)}`, data.success ? 'success' : 'error');
+                
+                if (data.success) {
+                    log('deleteOutput', `\n✅ Notification deleted successfully!`, 'success');
+                    document.getElementById('deleteId').value = '';
+                }
+            } catch (error) {
+                log('deleteOutput', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = () => {
+            log('dbOutput', '💡 Tip: Start by testing the database connection', 'info');
+            log('getOutput', '💡 Tip: This will show you if any notifications exist', 'info');
+            log('createOutput', '💡 Tip: Create a notification first, then test update/delete', 'info');
+        };
+    </script>
+</body>
+</html>

@@ -87,8 +87,68 @@ switch ($request) {
         require_once __DIR__ . '/views/admin/dashboard.php';
         break;
     
+    case '/admin-ads':
+        require_once __DIR__ . '/views/admin/ads.php';
+        break;
+    
+    case '/admin-alerts':
+        require_once __DIR__ . '/views/admin/alerts.php';
+        break;
+    
+    case '/admin-analytics':
+        require_once __DIR__ . '/views/admin/analytics.php';
+        break;
+    
+    case '/admin-finance':
+        require_once __DIR__ . '/views/admin/finance.php';
+        break;
+    
+    case '/admin-issues':
+        require_once __DIR__ . '/views/admin/issues.php';
+        break;
+    
+    case '/admin-users':
+        require_once __DIR__ . '/views/admin/users.php';
+        break;
+    
+    case '/admin-moderators':
+        require_once __DIR__ . '/views/admin/moderators.php';
+        break;
+    
     case '/moderator-dashboard':
         require_once __DIR__ . '/views/moderator/dashboard.php';
+        break;
+    
+    case '/moderator-finance':
+        require_once __DIR__ . '/views/moderator/finance.php';
+        break;
+    
+    case '/moderator-ads':
+        require_once __DIR__ . '/views/moderator/ads.php';
+        break;
+    
+    case '/moderator-static-content':
+        require_once __DIR__ . '/views/moderator/static-content.php';
+        break;
+    
+    case '/moderator-ad-schedule':
+        require_once __DIR__ . '/views/moderator/ad-schedule.php';
+        break;
+    
+    case '/moderator-ad-reports':
+        require_once __DIR__ . '/views/moderator/ad-reports.php';
+        break;
+    
+    case '/moderator-notifications':
+        require_once __DIR__ . '/views/moderator/notifications.php';
+        break;
+    
+    case '/moderator-notifications-all':
+        require_once __DIR__ . '/views/moderator/notifications-all.php';
+        break;
+    
+    case '/moderator-account-moderation':
+        require_once __DIR__ . '/views/moderator/account-moderation.php';
         break;
     
     case '/settings':
