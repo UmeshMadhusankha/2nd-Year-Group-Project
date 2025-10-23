@@ -39,15 +39,15 @@
           </div>
         </div>
         <div class="dropdown-divider"></div>
-        <a href="/2nd-Year-Group-Project/FixLanka/company-profile" class="dropdown-item">
+        <a href="/2nd-Year-Group-Project/FixLanka/views/company/profile.php" class="dropdown-item">
           <i class="fas fa-user"></i>
           <span>My Profile</span>
         </a>
-        <a href="/2nd-Year-Group-Project/FixLanka/company-settings" class="dropdown-item">
+        <a href="/2nd-Year-Group-Project/FixLanka/views/company/settings.php" class="dropdown-item">
           <i class="fas fa-cog"></i>
           <span>Settings</span>
         </a>
-        <a href="/2nd-Year-Group-Project/FixLanka/company-support" class="dropdown-item">
+        <a href="/2nd-Year-Group-Project/FixLanka/views/company/support.php" class="dropdown-item">
           <i class="fas fa-question-circle"></i>
           <span>Help & Support</span>
         </a>
