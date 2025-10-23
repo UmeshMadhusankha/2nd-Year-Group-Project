@@ -5,6 +5,90 @@
 /* Import Global Variables */
 @import "../common/variables.css";
 
+/* ===== TABS SECTION ===== */
+.tabs-section {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  margin-bottom: var(--spacing-lg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.tabs-container {
+  display: flex;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.tab-button {
+  flex: 1;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  position: relative;
+}
+
+.tab-button i {
+  font-size: 1.1rem;
+}
+
+.tab-button:hover {
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+}
+
+.tab-button.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  background: var(--bg-secondary);
+}
+
+.tab-badge {
+  background: var(--text-secondary);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.tab-button.active .tab-badge {
+  background: var(--primary-color);
+}
+
+.tab-content {
+  display: none;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ===== MAIN LAYOUT ===== */
 .dashboard-container {
   display: flex;
@@ -1006,5 +1090,338 @@
   
   .detail-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ===== SUBMITTED QUOTATIONS SECTION ===== */
+.submitted-quotes-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.submitted-quotes-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.submitted-quotes-section .section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.submitted-quotes-section .section-title i {
+  color: var(--primary-color);
+}
+
+.quotes-container {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+/* Loading State */
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-xxl);
+  background: var(--bg-primary);
+  border-radius: var(--border-radius);
+  border: 2px dashed var(--border-color);
+}
+
+.loading-state i {
+  font-size: 2rem;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+.empty-state i {
+  font-size: 3rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+.empty-state p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+/* Quote Card */
+.quote-card {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-lg);
+  transition: all var(--transition-normal);
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.quote-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Quote Header */
+.quote-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.quote-job-info {
+  flex: 1;
+}
+
+.quote-job-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.quote-request-id {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+/* Quote Status Badge */
+.quote-status {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.quote-status.pending {
+  background: #FFF3CD;
+  color: #856404;
+  border: 1px solid #FFE69C;
+}
+
+.quote-status.accepted {
+  background: #D4EDDA;
+  color: #155724;
+  border: 1px solid #C3E6CB;
+}
+
+.quote-status.rejected {
+  background: #F8D7DA;
+  color: #721C24;
+  border: 1px solid #F5C6CB;
+}
+
+.quote-status.expired {
+  background: #E2E3E5;
+  color: #383D41;
+  border: 1px solid #D6D8DB;
+}
+
+/* Quote Details Grid */
+.quote-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.quote-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.quote-detail-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.quote-detail-value {
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.quote-detail-value.amount {
+  color: var(--primary-color);
+  font-size: 1.25rem;
+}
+
+.quote-detail-value i {
+  margin-right: var(--spacing-xs);
+  color: var(--primary-color);
+}
+
+/* Quote Message */
+.quote-message {
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  border-left: 3px solid var(--primary-color);
+}
+
+.quote-message-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xs);
+  display: block;
+}
+
+.quote-message-text {
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* Quote Actions */
+.quote-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+  justify-content: flex-end;
+}
+
+.quote-actions .btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  border: none;
+}
+
+.quote-actions .btn-view {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.quote-actions .btn-view:hover {
+  background: var(--bg-primary);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.quote-actions .btn-edit {
+  background: var(--primary-color);
+  color: white;
+}
+
+.quote-actions .btn-edit:hover {
+  background: var(--primary-hover);
+}
+
+.quote-actions .btn-edit:disabled {
+  background: var(--text-secondary);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.quote-actions .btn-delete {
+  background: transparent;
+  color: var(--error-color, #dc3545);
+  border: 1px solid var(--error-color, #dc3545);
+}
+
+.quote-actions .btn-delete:hover {
+  background: var(--error-color, #dc3545);
+  color: white;
+}
+
+/* Quote Metadata */
+.quote-metadata {
+  display: flex;
+  gap: var(--spacing-lg);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  padding-top: var(--spacing-sm);
+}
+
+.quote-metadata-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.quote-metadata-item i {
+  color: var(--primary-color);
+}
+
+/* Responsive Design for Quotes */
+@media (max-width: 1200px) {
+  .quote-details {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  /* Tabs responsive */
+  .tab-button {
+    font-size: 0.875rem;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  .tab-button i {
+    font-size: 1rem;
+  }
+  
+  .tab-badge {
+    font-size: 0.7rem;
+    padding: 1px 6px;
+  }
+  
+  /* Quote cards responsive */
+  .quote-header {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .quote-details {
+    grid-template-columns: 1fr;
+  }
+
+  .quote-actions {
+    flex-direction: column;
+  }
+
+  .quote-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .tabs-container {
+    flex-direction: column;
+  }
+  
+  .tab-button {
+    width: 100%;
+    justify-content: flex-start;
+    border-bottom: 1px solid var(--border-color);
+    border-left: 3px solid transparent;
+  }
+  
+  .tab-button.active {
+    border-left-color: var(--primary-color);
+    border-bottom-color: var(--border-color);
   }
 }

@@ -127,12 +127,30 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                         </div>
                     </section>
 
-                    <!-- Jobs Section -->
-                    <section class="jobs-section">
-                        <div class="section-header">
-                            <h2 class="section-title">Available Jobs</h2>
-                            <span class="section-subtitle">6 jobs match your criteria</span>
+                    <!-- Tabs Navigation -->
+                    <section class="tabs-section">
+                        <div class="tabs-container">
+                            <button class="tab-button active" data-tab="available-jobs">
+                                <i class="fas fa-briefcase"></i>
+                                Available Jobs
+                                <span class="tab-badge">6</span>
+                            </button>
+                            <button class="tab-button" data-tab="submitted-quotes">
+                                <i class="fas fa-file-invoice"></i>
+                                My Quotations
+                                <span class="tab-badge" id="quotes-count-badge">0</span>
+                            </button>
                         </div>
+                    </section>
+
+                    <!-- Tab Content: Available Jobs -->
+                    <div class="tab-content active" id="available-jobs-tab">
+                        <!-- Jobs Section -->
+                        <section class="jobs-section">
+                            <div class="section-header">
+                                <h2 class="section-title">Available Jobs</h2>
+                                <span class="section-subtitle">6 jobs match your criteria</span>
+                            </div>
 
                         <div class="jobs-grid">
                             <!-- Job Card 1 -->
@@ -406,6 +424,30 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                             </div>
                         </div>
                     </section>
+                    </div>
+                    <!-- End Available Jobs Tab -->
+
+                    <!-- Tab Content: Submitted Quotations -->
+                    <div class="tab-content" id="submitted-quotes-tab">
+                        <section class="submitted-quotes-section">
+                            <div class="section-header">
+                                <h2 class="section-title">
+                                    <i class="fas fa-file-invoice"></i>
+                                    My Submitted Quotations
+                                </h2>
+                                <span class="section-subtitle" id="quotes-count">Loading...</span>
+                            </div>
+
+                            <div class="quotes-container" id="submitted-quotes-container">
+                                <!-- Quotations will be loaded dynamically -->
+                                <div class="loading-state">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <p>Loading your quotations...</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                    <!-- End Submitted Quotations Tab -->
                 </div>
             </main>
         </div>

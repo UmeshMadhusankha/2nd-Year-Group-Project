@@ -7,7 +7,48 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeJobsPage();
     initializeFilters();
     initializeInfiniteScroll();
+    initializeTabs();
+    loadSubmittedQuotations();
 });
+
+/**
+ * Initialize tabs functionality
+ */
+function initializeTabs() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            switchTab(tabName);
+        });
+    });
+}
+
+/**
+ * Switch between tabs
+ */
+function switchTab(tabName) {
+    // Remove active class from all buttons and contents
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Add active class to selected tab
+    const selectedButton = document.querySelector(`[data-tab="${tabName}"]`);
+    const selectedContent = document.getElementById(`${tabName}-tab`);
+    
+    if (selectedButton) selectedButton.classList.add('active');
+    if (selectedContent) selectedContent.classList.add('active');
+    
+    // Load quotations when switching to that tab
+    if (tabName === 'submitted-quotes') {
+        loadSubmittedQuotations();
+    }
+}
 
 /**
  * Initialize the jobs page functionality
@@ -245,8 +286,8 @@ function applyForJob(jobId) {
 function submitQuote(jobId) {
     console.log(`Submitting quote for job ID: ${jobId}`);
     
-    // Navigate to submit quote page with job ID
-    window.location.href = `submit-quote.php?jobId=${jobId}`;
+    // Navigate to submit quote page with job ID using absolute path
+    window.location.href = `/2nd-Year-Group-Project/FixLanka/views/repairer/pages/submit-quote.php?jobId=${jobId}`;
 }
 
 /**
@@ -779,9 +820,9 @@ function closeJobDetails() {
  */
 function submitQuoteFromDetails() {
     closeJobDetails();
-    const jobTitle = document.getElementById('detailTitle').textContent;
-    showToast(`Opening quote form for: ${jobTitle}`, 'success');
-    // Here you would typically open a quote submission form
+    const jobId = document.getElementById('jobDetailsDrawer').dataset.jobId || '1';
+    // Navigate to submit quote page with absolute path
+    window.location.href = `/2nd-Year-Group-Project/FixLanka/views/repairer/pages/submit-quote.php?jobId=${jobId}`;
 }
 
 /**
@@ -799,6 +840,298 @@ function getCategoryIcon(category) {
     return icons[category] || 'tools';
 }
 
+// ===== SUBMITTED QUOTATIONS MANAGEMENT =====
+
+/**
+ * Load submitted quotations for the current repairer
+ */
+function loadSubmittedQuotations() {
+    const container = document.getElementById('submitted-quotes-container');
+    const quotesCount = document.getElementById('quotes-count');
+    const quotesCountBadge = document.getElementById('quotes-count-badge');
+    
+    // Get repairer ID (in real app, this would come from session)
+    const repairerId = 1; // Dummy repairer ID
+    
+    // Fetch quotations from API
+    fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-quotes.php?repairer_id=${repairerId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data && data.data.length > 0) {
+                displayQuotations(data.data, container);
+                quotesCount.textContent = `${data.data.length} quotation${data.data.length !== 1 ? 's' : ''} submitted`;
+                if (quotesCountBadge) {
+                    quotesCountBadge.textContent = data.data.length;
+                }
+            } else {
+                displayEmptyState(container);
+                quotesCount.textContent = 'No quotations yet';
+                if (quotesCountBadge) {
+                    quotesCountBadge.textContent = '0';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error loading quotations:', error);
+            displayErrorState(container);
+            quotesCount.textContent = 'Error loading quotations';
+            if (quotesCountBadge) {
+                quotesCountBadge.textContent = '!';
+            }
+        });
+}
+
+/**
+ * Display quotations in the container
+ */
+function displayQuotations(quotations, container) {
+    container.innerHTML = quotations.map(quote => createQuoteCard(quote)).join('');
+}
+
+/**
+ * Create a quotation card HTML
+ */
+function createQuoteCard(quote) {
+    const statusClass = quote.status.toLowerCase();
+    const canEdit = quote.status === 'pending';
+    
+    // Format dates
+    const submittedDate = new Date(quote.dateSubmitted);
+    const validUntilDate = new Date(quote.validUntil);
+    const formattedSubmitted = submittedDate.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+    });
+    const formattedValidUntil = validUntilDate.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+    });
+    
+    // Format warranty
+    let warrantyText = 'No warranty';
+    if (quote.warrantyPeriod > 0) {
+        if (quote.warrantyPeriod === 12) {
+            warrantyText = '1 year';
+        } else if (quote.warrantyPeriod === 24) {
+            warrantyText = '2 years';
+        } else {
+            warrantyText = `${quote.warrantyPeriod} month${quote.warrantyPeriod !== 1 ? 's' : ''}`;
+        }
+    }
+    
+    return `
+        <div class="quote-card" data-quote-id="${quote.quote_id}">
+            <!-- Quote Header -->
+            <div class="quote-header">
+                <div class="quote-job-info">
+                    <h3 class="quote-job-title">Job Request #${quote.request_id}</h3>
+                    <div class="quote-request-id">
+                        <i class="fas fa-hashtag"></i>
+                        Quote ID: ${quote.quote_id}
+                    </div>
+                </div>
+                <span class="quote-status ${statusClass}">${quote.status}</span>
+            </div>
+            
+            <!-- Quote Details -->
+            <div class="quote-details">
+                <div class="quote-detail-item">
+                    <span class="quote-detail-label">Quote Amount</span>
+                    <span class="quote-detail-value amount">
+                        <i class="fas fa-rupee-sign"></i>
+                        Rs. ${parseFloat(quote.quoteAmount).toFixed(2)}
+                    </span>
+                </div>
+                
+                <div class="quote-detail-item">
+                    <span class="quote-detail-label">Estimated Duration</span>
+                    <span class="quote-detail-value">
+                        <i class="fas fa-clock"></i>
+                        ${quote.estimatedDays} day${quote.estimatedDays !== 1 ? 's' : ''}
+                    </span>
+                </div>
+                
+                <div class="quote-detail-item">
+                    <span class="quote-detail-label">Warranty Period</span>
+                    <span class="quote-detail-value">
+                        <i class="fas fa-shield-alt"></i>
+                        ${warrantyText}
+                    </span>
+                </div>
+                
+                <div class="quote-detail-item">
+                    <span class="quote-detail-label">Valid Until</span>
+                    <span class="quote-detail-value">
+                        <i class="fas fa-calendar-check"></i>
+                        ${formattedValidUntil}
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Quote Message -->
+            ${quote.message ? `
+            <div class="quote-message">
+                <span class="quote-message-label">Quote Details</span>
+                <p class="quote-message-text">${quote.message}</p>
+            </div>
+            ` : ''}
+            
+            <!-- Quote Metadata -->
+            <div class="quote-metadata">
+                <div class="quote-metadata-item">
+                    <i class="fas fa-calendar"></i>
+                    Submitted: ${formattedSubmitted}
+                </div>
+                <div class="quote-metadata-item">
+                    <i class="fas fa-box"></i>
+                    Materials: ${quote.materialsIncluded ? 'Included' : 'Not Included'}
+                </div>
+            </div>
+            
+            <!-- Quote Actions -->
+            <div class="quote-actions">
+                <button class="btn btn-view" onclick="viewQuoteDetails(${quote.quote_id})">
+                    <i class="fas fa-eye"></i>
+                    View Details
+                </button>
+                <button class="btn btn-edit" ${!canEdit ? 'disabled' : ''} 
+                        onclick="editQuote(${quote.quote_id})" 
+                        ${!canEdit ? `title="Can only edit pending quotations"` : ''}>
+                    <i class="fas fa-edit"></i>
+                    ${canEdit ? 'Edit' : 'Cannot Edit'}
+                </button>
+                ${canEdit ? `
+                <button class="btn btn-delete" onclick="deleteQuote(${quote.quote_id})">
+                    <i class="fas fa-trash"></i>
+                    Delete
+                </button>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Display empty state when no quotations exist
+ */
+function displayEmptyState(container) {
+    container.innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-file-invoice"></i>
+            <p>You haven't submitted any quotations yet.</p>
+            <p style="font-size: 0.875rem; margin-top: 0.5rem;">
+                Browse available jobs below and submit your first quote!
+            </p>
+        </div>
+    `;
+}
+
+/**
+ * Display error state when loading fails
+ */
+function displayErrorState(container) {
+    container.innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-exclamation-circle" style="color: var(--error-color, #dc3545);"></i>
+            <p>Failed to load quotations.</p>
+            <button class="btn btn-primary" onclick="loadSubmittedQuotations()" style="margin-top: 1rem;">
+                <i class="fas fa-redo"></i>
+                Retry
+            </button>
+        </div>
+    `;
+}
+
+/**
+ * View quotation details
+ */
+function viewQuoteDetails(quoteId) {
+    console.log('Viewing quote details:', quoteId);
+    // Navigate to quote details page or open modal
+    showToast(`Opening details for quote #${quoteId}`, 'info');
+}
+
+/**
+ * Edit quotation (only for pending status)
+ */
+function editQuote(quoteId) {
+    console.log('Editing quote:', quoteId);
+    // Navigate to edit quote page with quote data pre-filled
+    window.location.href = `/2nd-Year-Group-Project/FixLanka/views/repairer/pages/edit-quote.php?quoteId=${quoteId}`;
+}
+
+/**
+ * Delete quotation
+ */
+function deleteQuote(quoteId) {
+    if (!confirm('Are you sure you want to delete this quotation? This action cannot be undone.')) {
+        return;
+    }
+    
+    // Show loading toast
+    showToast('Deleting quotation...', 'info');
+    
+    // Delete via API
+    fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-quotes.php?quote_id=${quoteId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Quotation deleted successfully!', 'success');
+            // Reload quotations
+            loadSubmittedQuotations();
+        } else {
+            showToast('Failed to delete quotation: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting quotation:', error);
+        showToast('Failed to delete quotation', 'error');
+    });
+}
+
+/**
+ * Show toast notification
+ */
+function showToast(message, type = 'info') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    // Style toast
+    toast.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'};
+        color: white;
+        padding: 16px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    // Add to document
+    document.body.appendChild(toast);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 // Export functions for global use
 window.viewJobDetails = viewJobDetails;
 window.closeJobDetails = closeJobDetails;
@@ -807,3 +1140,7 @@ window.submitQuoteFromDetails = submitQuoteFromDetails;
 window.applyForJob = applyForJob;
 window.searchJobs = searchJobs;
 window.refreshJobs = refreshJobs;
+window.loadSubmittedQuotations = loadSubmittedQuotations;
+window.viewQuoteDetails = viewQuoteDetails;
+window.editQuote = editQuote;
+window.deleteQuote = deleteQuote;

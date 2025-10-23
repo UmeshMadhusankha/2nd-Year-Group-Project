@@ -1,8 +1,8 @@
 <?php
 // Page configuration
-$currentPage = 'available-jobs'; // submit-quote is accessed from available-jobs page
-$pageTitle = 'Submit Quote';
-$pageSubtitle = 'Provide your quote for the requested job';
+$currentPage = 'available-jobs';
+$pageTitle = 'Edit Quote';
+$pageSubtitle = 'Update your submitted quotation';
 $searchPlaceholder = 'Search requests, repairers, projects...';
 ?>
 <!DOCTYPE html>
@@ -10,7 +10,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Submit Quote - FixLanka</title>
+    <title>Edit Quote - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
@@ -38,8 +38,8 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                     <section class="page-header">
                         <div class="page-header-content">
                             <div class="page-header-text">
-                                <h2 class="page-title">Submit Quote</h2>
-                                <p class="page-description">Provide your quote for the requested repair job</p>
+                                <h2 class="page-title">Edit Quote</h2>
+                                <p class="page-description">Update your submitted quotation (Only available for pending quotes)</p>
                             </div>
                             <div class="page-header-actions">
                                 <button class="btn btn-secondary" id="back-to-jobs-btn">
@@ -50,8 +50,14 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                         </div>
                     </section>
 
+                    <!-- Loading State -->
+                    <div id="loading-state" class="loading-state-container">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading quote details...</p>
+                    </div>
+
                     <!-- Job Details Section -->
-                    <section class="job-details-section">
+                    <section class="job-details-section" id="job-details-section" style="display: none;">
                         <div class="job-details-header">
                             <h3 class="section-title">
                                 <i class="fas fa-info-circle"></i>
@@ -63,51 +69,37 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                             <div class="job-info-grid">
                                 <div class="job-info-item">
                                     <div class="job-info-label">Job Title</div>
-                                    <div class="job-info-value" id="job-title">Fix Kitchen Faucet Leak</div>
+                                    <div class="job-info-value" id="job-title">-</div>
                                 </div>
                                 <div class="job-info-item">
                                     <div class="job-info-label">Customer</div>
-                                    <div class="job-info-value" id="customer-name">Sarah Johnson</div>
+                                    <div class="job-info-value" id="customer-name">-</div>
                                 </div>
                                 <div class="job-info-item">
                                     <div class="job-info-label">Location</div>
-                                    <div class="job-info-value" id="job-location">Colombo 03, Sri Lanka</div>
+                                    <div class="job-info-value" id="job-location">-</div>
                                 </div>
                                 <div class="job-info-item">
                                     <div class="job-info-label">Category</div>
-                                    <div class="job-info-value" id="job-category">Plumbing</div>
-                                </div>
-                                <div class="job-info-item">
-                                    <div class="job-info-label">Budget Range</div>
-                                    <div class="job-info-value" id="job-budget">LKR 2,500 - 3,500</div>
-                                </div>
-                                <div class="job-info-item">
-                                    <div class="job-info-label">Urgency</div>
-                                    <div class="job-info-value" id="job-urgency">Medium</div>
-                                </div>
-                            </div>
-                            
-                            <div class="job-description">
-                                <div class="job-info-label">Description</div>
-                                <div class="job-info-value" id="job-description-text">
-                                    The kitchen faucet has been leaking for the past week. The leak appears to be coming from the base of the faucet where it connects to the sink. Water is constantly dripping, and the problem seems to be getting worse. I've tried tightening the connections but it hasn't helped. The faucet is about 3 years old and was working fine until recently.
+                                    <div class="job-info-value" id="job-category">-</div>
                                 </div>
                             </div>
                         </div>
                     </section>
 
                     <!-- Quote Form Section -->
-                    <section class="quote-form-section">
+                    <section class="quote-form-section" id="quote-form-section" style="display: none;">
                         <div class="quote-form-header">
                             <h3 class="section-title">
                                 <i class="fas fa-file-invoice-dollar"></i>
-                                Your Quote
+                                Edit Your Quote
                             </h3>
-                            <p class="section-description">Please provide detailed information for your quote</p>
+                            <p class="section-description">Update the details of your quotation</p>
                         </div>
                         
                         <form class="quote-form" id="quote-form">
-                            <!-- Hidden fields for request_id and repairer_id -->
+                            <!-- Hidden fields -->
+                            <input type="hidden" id="quote-id" name="quote_id" value="">
                             <input type="hidden" id="request-id" name="request_id" value="">
                             <input type="hidden" id="repairer-id" name="repairer_id" value="1">
                             
@@ -137,7 +129,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                         <option value="0">No Warranty</option>
                                         <option value="1">1 Month</option>
                                         <option value="3">3 Months</option>
-                                        <option value="6" selected>6 Months</option>
+                                        <option value="6">6 Months</option>
                                         <option value="12">1 Year</option>
                                         <option value="24">2 Years</option>
                                     </select>
@@ -147,7 +139,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                 <div class="form-group">
                                     <label for="valid-until" class="form-label">Quote Valid Until *</label>
                                     <input type="date" id="valid-until" name="validUntil" class="form-input" required>
-                                    <small class="form-help">Quote expiry date (typically 7-14 days)</small>
+                                    <small class="form-help">Quote expiry date</small>
                                 </div>
                             </div>
                             
@@ -159,42 +151,24 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                         Materials cost included in quote
                                     </span>
                                 </label>
-                                <small class="form-help">Check if the quote amount includes all materials needed</small>
                             </div>
                             
                             <div class="form-group">
                                 <label for="quote-message" class="form-label">Quote Details *</label>
                                 <textarea id="quote-message" name="message" class="form-textarea" rows="6" 
-                                          placeholder="Describe your approach, materials to be used, work schedule, and any special considerations..." required></textarea>
-                                <small class="form-help">Provide detailed information about how you'll approach this job</small>
-                            </div>
-                            
-                            <!-- Terms and Conditions -->
-                            <div class="terms-section">
-                                <div class="form-group checkbox-group">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="terms-agreement" required>
-                                        <span class="checkbox-custom"></span>
-                                        <span class="checkbox-text">
-                                            I agree to the <a href="#terms" class="link">terms and conditions</a> and confirm the accuracy of this quote
-                                        </span>
-                                    </label>
-                                </div>
+                                          placeholder="Describe your approach, materials to be used, work schedule..." required></textarea>
+                                <small class="form-help">Provide detailed information about your approach</small>
                             </div>
                             
                             <!-- Form Actions -->
                             <div class="form-actions">
-                                <button type="button" class="btn btn-secondary" id="cancel-quote-btn">
+                                <button type="button" class="btn btn-secondary" id="cancel-edit-btn">
                                     <i class="fas fa-times"></i>
                                     <span>Cancel</span>
                                 </button>
-                                <button type="button" class="btn btn-outline" id="save-draft-btn">
+                                <button type="submit" class="btn btn-primary" id="update-quote-btn">
                                     <i class="fas fa-save"></i>
-                                    <span>Save Draft</span>
-                                </button>
-                                <button type="submit" class="btn btn-primary" id="submit-quote-btn">
-                                    <i class="fas fa-paper-plane"></i>
-                                    <span>Submit Quote</span>
+                                    <span>Update Quote</span>
                                 </button>
                             </div>
                         </form>
@@ -208,7 +182,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <div class="modal-overlay" id="confirmation-modal-overlay">
         <div class="confirmation-modal" id="confirmation-modal">
             <div class="modal-header">
-                <h3 class="modal-title">Confirm Quote Submission</h3>
+                <h3 class="modal-title">Confirm Quote Update</h3>
                 <button class="modal-close" id="close-confirmation-modal">
                     <i class="fas fa-times"></i>
                 </button>
@@ -217,15 +191,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
             <div class="modal-body">
                 <div class="confirmation-content">
                     <div class="confirmation-icon">
-                        <i class="fas fa-file-invoice-dollar"></i>
+                        <i class="fas fa-edit"></i>
                     </div>
                     
                     <div class="confirmation-details">
-                        <h4>Quote Summary</h4>
-                        <div class="summary-item">
-                            <span class="summary-label">Job:</span>
-                            <span class="summary-value" id="confirm-job">Fix Kitchen Faucet Leak</span>
-                        </div>
+                        <h4>Updated Quote Summary</h4>
                         <div class="summary-item">
                             <span class="summary-label">Quote Amount:</span>
                             <span class="summary-value" id="confirm-amount">Rs. 0.00</span>
@@ -242,18 +212,10 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                             <span class="summary-label">Valid Until:</span>
                             <span class="summary-value" id="confirm-valid-until">-</span>
                         </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Materials:</span>
-                            <span class="summary-value" id="confirm-materials">Included</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Status:</span>
-                            <span class="summary-value">Pending</span>
-                        </div>
                     </div>
                     
                     <div class="confirmation-message">
-                        <p>Are you sure you want to submit this quote? Once submitted, the customer will be notified and you'll be committed to this pricing.</p>
+                        <p>Are you sure you want to update this quotation?</p>
                     </div>
                 </div>
             </div>
@@ -263,9 +225,9 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                     <i class="fas fa-times"></i>
                     Cancel
                 </button>
-                <button class="btn btn-primary" id="confirm-submission">
+                <button class="btn btn-primary" id="confirm-update">
                     <i class="fas fa-check"></i>
-                    Confirm & Submit
+                    Confirm Update
                 </button>
             </div>
         </div>
@@ -273,7 +235,6 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
 
     <!-- Include JavaScript -->
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/submit-quote.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/edit-quote.js"></script>
 </body>
 </html>
-
