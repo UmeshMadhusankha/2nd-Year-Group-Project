@@ -381,10 +381,12 @@ $pageDescription = 'Manage system moderators and their assigned sections';
                 }
 
                 function editModerator(moderatorId) {
-                    const moderator = allModerators.find(m => m.moderator_id === moderatorId);
+                    // Convert to number for comparison (handles string/number mismatch)
+                    const moderator = allModerators.find(m => parseInt(m.moderator_id) === parseInt(moderatorId));
                     
                     if (!moderator) {
                         showMessage('Moderator not found', 'error');
+                        console.error('Moderator not found. ID:', moderatorId, 'Available moderators:', allModerators);
                         return;
                     }
 

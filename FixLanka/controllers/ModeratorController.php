@@ -96,6 +96,9 @@ class ModeratorController
         $password = $_POST['password'] ?? '';
         $assigned_section = trim($_POST['assigned_section'] ?? '');
 
+        // Debug logging
+        error_log("UPDATE Request - ID: $moderator_id, Email: $email, Section: $assigned_section, Has Password: " . (!empty($password) ? 'YES' : 'NO'));
+
         // Validation
         if (!$moderator_id || empty($email) || empty($assigned_section)) {
             $this->jsonResponse(['success' => false, 'message' => 'Required fields are missing'], 400);
@@ -125,9 +128,11 @@ class ModeratorController
                 // Hash password and update
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
                 $this->model->updateModeratorWithPassword($moderator_id, $email, $hashedPassword, $assigned_section);
+                error_log("Updated moderator WITH password change");
             } else {
                 // Update without changing password
                 $this->model->updateModerator($moderator_id, $email, $assigned_section);
+                error_log("Updated moderator WITHOUT password change");
             }
 
             // Fetch updated moderator

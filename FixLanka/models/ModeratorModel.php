@@ -88,7 +88,12 @@ class ModeratorModel
     public function updateModerator($moderator_id, $email, $assigned_section)
     {
         $stmt = $this->pdo->prepare("UPDATE Moderator SET email = ?, assigned_section = ? WHERE moderator_id = ?");
-        return $stmt->execute([$email, $assigned_section, $moderator_id]);
+        $result = $stmt->execute([$email, $assigned_section, $moderator_id]);
+        
+        // Debug logging
+        error_log("UPDATE Query - ID: $moderator_id, Email: $email, Section: $assigned_section, Rows affected: " . $stmt->rowCount());
+        
+        return $result;
     }
 
     /**
@@ -102,7 +107,12 @@ class ModeratorModel
     public function updateModeratorWithPassword($moderator_id, $email, $hashedPassword, $assigned_section)
     {
         $stmt = $this->pdo->prepare("UPDATE Moderator SET email = ?, password = ?, assigned_section = ? WHERE moderator_id = ?");
-        return $stmt->execute([$email, $hashedPassword, $assigned_section, $moderator_id]);
+        $result = $stmt->execute([$email, $hashedPassword, $assigned_section, $moderator_id]);
+        
+        // Debug logging
+        error_log("UPDATE with Password Query - ID: $moderator_id, Email: $email, Section: $assigned_section, Rows affected: " . $stmt->rowCount());
+        
+        return $result;
     }
 
     /**
