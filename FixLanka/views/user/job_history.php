@@ -145,8 +145,8 @@ foreach ($jobRequests as $job) {
                                 <div class="job-detail">
                                     <i class="fas fa-map-marker-alt"></i>
                                     <div>
-                                        <span class="detail-label">Location</span>
-                                        <span class="detail-value"><?php echo htmlspecialchars($job['location']); ?></span>
+                                        <span class="detail-label">Address</span>
+                                        <span class="detail-value"><?php echo htmlspecialchars($job['address']); ?></span>
                                     </div>
                                 </div>
                                 <div class="job-detail">
