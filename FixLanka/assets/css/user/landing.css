@@ -885,6 +885,67 @@ body {
   font-size: var(--font-size-base);
 }
 
+/* Company Modal Actions */
+.company-modal-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl) 0 var(--spacing-md) 0;
+  border-top: 1px solid var(--border-color);
+  margin-top: var(--spacing-xl);
+  flex-wrap: wrap;
+}
+
+.company-modal-actions .btn-primary,
+.company-modal-actions .btn-secondary,
+.company-modal-actions .btn-outline {
+  flex: 1;
+  min-width: 150px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.company-modal-actions .btn-primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: white;
+}
+
+.company-modal-actions .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.company-modal-actions .btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+}
+
+.company-modal-actions .btn-secondary:hover {
+  background: var(--bg-card);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.company-modal-actions .btn-outline {
+  background: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.company-modal-actions .btn-outline:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
 /* ===== LOADING INDICATOR ===== */
 .loading-indicator {
   display: none;

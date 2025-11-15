@@ -105,11 +105,15 @@
 
                 <!-- Action Buttons -->
                 <div class="profile-actions">
-                    <button class="btn-primary" onclick="contactRepairer()">
+                    <button class="btn-primary" onclick="sendRepairRequest('repairer')">
+                        <i class="fas fa-tools"></i>
+                        Send Repair Request
+                    </button>
+                    <button class="btn-secondary" onclick="contactRepairer()">
                         <i class="fas fa-comment"></i>
                         Send Message
                     </button>
-                    <button class="btn-secondary" onclick="requestQuote()">
+                    <button class="btn-outline" onclick="requestQuote()">
                         <i class="fas fa-file-invoice"></i>
                         Request Quote
                     </button>

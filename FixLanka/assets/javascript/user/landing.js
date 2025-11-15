@@ -765,6 +765,21 @@ function viewCompanyDetails(companyId) {
                             ).join('')}
                         </div>
                     </div>
+                    
+                    <div class="company-modal-actions">
+                        <button class="btn-primary" onclick="sendRepairRequest('company', ${companyId})">
+                            <i class="fas fa-tools"></i>
+                            Send Repair Request
+                        </button>
+                        <button class="btn-secondary" onclick="contactCompany(${companyId})">
+                            <i class="fas fa-comment"></i>
+                            Contact Company
+                        </button>
+                        <button class="btn-outline" onclick="requestCompanyQuote(${companyId})">
+                            <i class="fas fa-file-invoice"></i>
+                            Request Quote
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -925,6 +940,28 @@ if (searchForm) {
             return false;
         }
     });
+}
+
+// Send Repair Request Function (Placeholder - No functionality yet)
+function sendRepairRequest(type, providerId) {
+    console.log(`Send repair request to ${type}:`, providerId || 'current');
+    alert(`Send Repair Request feature will be implemented soon!\n\nProvider Type: ${type}\nProvider ID: ${providerId || 'Current profile'}`);
+    // TODO: Implement repair request functionality
+    // This will redirect to post-job page or open a request form
+}
+
+// Contact Company Function (Placeholder)
+function contactCompany(companyId) {
+    console.log('Contact company:', companyId);
+    alert('Contact Company feature will be implemented soon!');
+    // TODO: Implement contact company functionality
+}
+
+// Request Company Quote Function (Placeholder)
+function requestCompanyQuote(companyId) {
+    console.log('Request company quote:', companyId);
+    alert('Request Company Quote feature will be implemented soon!');
+    // TODO: Implement company quote request functionality
 }
 
 // Console log for debugging
