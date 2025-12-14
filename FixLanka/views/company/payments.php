@@ -534,7 +534,7 @@
                 document.getElementById('sidebar-container').innerHTML = tempDiv.innerHTML;
             });
 
-        fetch('/2nd-Year-Group-Project/FixLanka/views/company/topbar.php')
+        fetch('/2nd-Year-Group-Project/FixLanka/views/company/topbar.php?page=payments')
             .then(response => response.text())
             .then(data => {
                 document.getElementById('topbar-container').innerHTML = data;

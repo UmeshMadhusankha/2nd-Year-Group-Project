@@ -2019,43 +2019,44 @@ function capitalizeFirst(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// Initialize sidebar toggle functionality
+/**
+ * Initialize sidebar toggle functionality
+ * Uses the checkbox (#sidebar-toggle) and label system for sidebar collapse/expand
+ */
 function initializeSidebarToggle() {
-    // Wait a bit for components to load
+    // Wait for components to load
     setTimeout(() => {
-        const sidebarToggle = document.getElementById('sidebarToggle');
+        // Use the label with class .sidebar-toggle (which controls the checkbox)
+        const sidebarToggle = document.querySelector('.sidebar-toggle');
+        const sidebarCheckbox = document.getElementById('sidebar-toggle');
         
-        if (sidebarToggle) {
-            console.log('Sidebar toggle button found');
+        if (sidebarToggle && sidebarCheckbox) {
+            console.log('Sidebar toggle elements found');
             
-            sidebarToggle.addEventListener('click', function() {
-                console.log('Toggle button clicked');
+            // Listen for checkbox changes
+            sidebarCheckbox.addEventListener('change', function() {
+                console.log('Sidebar toggle changed, checked:', this.checked);
                 
                 const sidebar = document.querySelector('.sidebar');
                 const body = document.body;
                 
                 if (sidebar) {
-                    console.log('Sidebar found, toggling...');
-                    
-                    // Toggle sidebar collapsed class
-                    sidebar.classList.toggle('collapsed');
-                    
-                    // Toggle body class for content responsiveness  
-                    body.classList.toggle('sidebar-collapsed');
+                    // Toggle sidebar collapsed class based on checkbox state
+                    if (this.checked) {
+                        sidebar.classList.add('collapsed');
+                        body.classList.add('sidebar-collapsed');
+                    } else {
+                        sidebar.classList.remove('collapsed');
+                        body.classList.remove('sidebar-collapsed');
+                    }
                     
                     const isCollapsed = sidebar.classList.contains('collapsed');
-                    const bodyHasClass = body.classList.contains('sidebar-collapsed');
-                    
                     console.log('Sidebar collapsed:', isCollapsed);
-                    console.log('Body has sidebar-collapsed class:', bodyHasClass);
-                    console.log('Main content should adjust margin to:', isCollapsed ? '70px' : '280px');
-                } else {
-                    console.error('Sidebar element not found');
                 }
             });
         } else {
-            console.error('Sidebar toggle button not found');
-            // Try again in a bit
+            console.warn('Sidebar toggle elements not found, retrying...');
+            // Try again after a delay
             setTimeout(initializeSidebarToggle, 1000);
         }
     }, 500); // Wait for components to load

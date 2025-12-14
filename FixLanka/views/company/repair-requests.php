@@ -1,3 +1,32 @@
+<?php
+/**
+ * Company Repair Requests Page
+ * 
+ * This page allows companies to:
+ * - View available job requests from customers
+ * - Submit quotations for job requests
+ * - Manage submitted quotations (view, edit, delete)
+ * - Track quotation status (pending, accepted, rejected, successful)
+ * 
+ * Authentication: Requires logged-in company user
+ * 
+ * @package FixLanka\Views\Company
+ * @version 1.0.0
+ */
+
+// Start session and verify authentication
+require_once '../../config/session.php';
+requireRole('company');
+
+// Retrieve logged-in user data from session
+$userData = getUserData();
+$userId = $userData['id'] ?? null;
+
+// Ensure user is authenticated
+if (!$userId) {
+    die('Error: User not authenticated');
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -696,6 +725,10 @@
     </div>
 
     <!-- JavaScript -->
+    <script>
+        // Pass PHP session data to JavaScript
+        window.CURRENT_USER_ID = <?php echo json_encode($userId); ?>;
+    </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/repair-requests-db.js"></script>
 

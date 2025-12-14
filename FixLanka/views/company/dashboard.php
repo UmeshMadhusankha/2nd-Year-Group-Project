@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/sidebar.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/dashboard.js"></script>
 </head>
 
@@ -758,7 +758,7 @@
                         allNavItems.forEach(item => item.classList.remove('active'));
                         
                         // Set dashboard as active immediately
-                        const dashboardLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/company-dashboard"]');
+                        const dashboardLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/views/company/dashboard.php"]');
                         if (dashboardLink) {
                             dashboardLink.parentElement.classList.add('active');
                         }

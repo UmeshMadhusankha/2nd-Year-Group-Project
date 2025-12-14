@@ -4,6 +4,9 @@
 
 // Global State Management
 let contractsData = [];
+let displayedContracts = [];
+let currentPage = 1;
+const contractsPerPage = 9; // Show 9 contracts per page (3x3 grid)
 let currentContract = null;
 let currentStep = 1;
 let editingContract = null;
@@ -30,16 +33,342 @@ function initializeContractsPage() {
 // DATA MANAGEMENT
 // ===================================
 
-function loadContractsData() {
-    // In production, this would fetch from API
-    // For now, read from existing cards
-    const contractCards = document.querySelectorAll('.contract-card');
-    contractsData = Array.from(contractCards).map((card, index) => {
-        return extractContractData(card, index + 1);
+async function loadContractsData() {
+    const container = document.getElementById('contractsContainer');
+    const loading = document.getElementById('contractsLoading');
+    const empty = document.getElementById('contractsEmpty');
+    
+    // Show loading state
+    if (loading) loading.style.display = 'flex';
+    if (empty) empty.style.display = 'none';
+    
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=list');
+        
+        // Handle 401 Unauthorized specifically
+        if (response.status === 401) {
+            if (loading) loading.style.display = 'none';
+            container.innerHTML = `
+                <div class="contracts-loading" id="contractsLoading" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>Loading contracts...</p>
+                </div>
+                <div class="contracts-empty" id="contractsEmpty" style="display: none;">
+                    <i class="fas fa-file-contract fa-3x"></i>
+                    <h3>No Contracts Found</h3>
+                    <p>You don't have any contracts yet. Start by creating a new contract.</p>
+                </div>
+                <div class="contracts-error" style="display: flex; grid-column: 1 / -1; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; background: var(--bg-card); border-radius: var(--border-radius-lg); border: 1px solid rgba(255, 193, 7, 0.3); text-align: center;">
+                    <i class="fas fa-lock fa-3x" style="color: #ffc107; opacity: 0.8; margin-bottom: 24px;"></i>
+                    <h3 style="color: var(--text-primary); font-size: 1.5rem; margin: 0 0 12px 0;">Authentication Required</h3>
+                    <p style="color: var(--text-secondary); font-size: 1rem; margin: 0 0 24px 0; max-width: 400px;">Please log in as a company user to view contracts.</p>
+                    <a href="/2nd-Year-Group-Project/FixLanka/views/auth/login.php" class="action-btn primary" style="text-decoration: none; margin-top: 12px;">
+                        <i class="fas fa-sign-in-alt"></i> Go to Login
+                    </a>
+                </div>
+            `;
+            hideLoadMoreButton();
+            hideEndIndicator();
+            return;
+        }
+        
+        // Check if response is ok
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        
+        // Check if API returned success
+        if (!result.success) {
+            // This is an API error (like database connection failed)
+            throw new Error(result.message || 'Failed to load contracts');
+        }
+        
+        // Hide loading
+        if (loading) loading.style.display = 'none';
+        
+        // Store contracts data
+        contractsData = result.data || [];
+        displayedContracts = [];
+        currentPage = 1;
+        
+        if (contractsData.length === 0) {
+            // Database is empty - this is NOT an error, just no data yet
+            if (empty) empty.style.display = 'flex';
+            hideLoadMoreButton();
+            hideEndIndicator();
+        } else {
+            // Hide empty state and render contracts
+            if (empty) empty.style.display = 'none';
+            renderContractsPage();
+        }
+        
+        // Update stats
+        updateContractStats();
+        
+    } catch (error) {
+        console.error('Error loading contracts:', error);
+        if (loading) loading.style.display = 'none';
+        
+        // Show error message with try again button
+        // This is for real errors like network issues, database connection failures, etc.
+        container.innerHTML = `
+            <div class="contracts-loading" id="contractsLoading" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>Loading contracts...</p>
+            </div>
+            <div class="contracts-empty" id="contractsEmpty" style="display: none;">
+                <i class="fas fa-file-contract fa-3x"></i>
+                <h3>No Contracts Found</h3>
+                <p>You don't have any contracts yet. Start by creating a new contract.</p>
+            </div>
+            <div class="contracts-error" style="display: flex; grid-column: 1 / -1; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; background: var(--bg-card); border-radius: var(--border-radius-lg); border: 1px solid rgba(220, 53, 69, 0.2); text-align: center;">
+                <i class="fas fa-exclamation-triangle fa-3x" style="color: var(--danger-color); opacity: 0.6; margin-bottom: 24px;"></i>
+                <h3 style="color: var(--text-primary); font-size: 1.5rem; margin: 0 0 12px 0;">Connection Error</h3>
+                <p style="color: var(--text-secondary); font-size: 1rem; margin: 0 0 24px 0; max-width: 400px;">${escapeHtml(error.message)}</p>
+                <button class="action-btn primary" onclick="loadContractsData()" style="margin-top: 12px;">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+            </div>
+        `;
+        hideLoadMoreButton();
+        hideEndIndicator();
+    }
+}
+
+function renderContractsPage() {
+    // Calculate which contracts to show
+    const startIndex = 0;
+    const endIndex = currentPage * contractsPerPage;
+    const contractsToShow = contractsData.slice(startIndex, endIndex);
+    
+    // Render contracts
+    renderContracts(contractsToShow);
+    
+    // Show/hide load more button
+    if (endIndex >= contractsData.length) {
+        hideLoadMoreButton();
+        showEndIndicator();
+    } else {
+        showLoadMoreButton();
+        hideEndIndicator();
+    }
+}
+
+function loadMoreContracts() {
+    currentPage++;
+    renderContractsPage();
+}
+
+function renderContracts(contracts) {
+    const container = document.getElementById('contractsContainer');
+    
+    // Clear existing cards (keep loading/empty states hidden)
+    const loading = document.getElementById('contractsLoading');
+    const empty = document.getElementById('contractsEmpty');
+    container.innerHTML = '';
+    
+    // Re-add loading and empty (hidden)
+    if (loading) {
+        loading.style.display = 'none';
+        container.appendChild(loading);
+    }
+    if (empty) {
+        empty.style.display = 'none';
+        container.appendChild(empty);
+    }
+    
+    // Render each contract card
+    contracts.forEach(contract => {
+        const cardHTML = createContractCard(contract);
+        container.insertAdjacentHTML('beforeend', cardHTML);
     });
+    
+    // Re-initialize card actions after rendering
+    initializeContractActions();
+}
+
+function createContractCard(contract) {
+    const statusClass = contract.status.toLowerCase();
+    const statusIcon = getStatusIcon(statusClass);
+    const statusText = contract.status.charAt(0).toUpperCase() + contract.status.slice(1);
+    
+    // Get initials from client name
+    const initials = contract.client_name.split(' ').map(word => word[0]).join('').toUpperCase();
+    
+    // Format currency
+    const formattedValue = formatCurrency(contract.value);
+    
+    // Format dates
+    const startDate = formatDate(contract.start_date);
+    const endDate = formatDate(contract.end_date);
+    
+    // Progress bar (if progress exists)
+    let progressHTML = '';
+    if (contract.progress !== undefined && contract.progress !== null) {
+        progressHTML = `
+            <div class="detail-row">
+                <i class="fas fa-chart-line detail-icon"></i>
+                <span class="detail-label">Progress:</span>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${contract.progress}%"></div>
+                    </div>
+                    <span class="progress-text">${contract.progress}%</span>
+                </div>
+            </div>
+        `;
+    }
+    
+    return `
+        <div class="contract-card" data-status="${statusClass}" data-type="${contract.type || 'general'}" data-contract-id="${contract.contract_id}">
+            <div class="contract-header">
+                <div class="contract-info">
+                    <h3>${escapeHtml(contract.title)}</h3>
+                    <p class="contract-id">${contract.contract_number}</p>
+                </div>
+                <div class="contract-status ${statusClass}">
+                    <i class="${statusIcon}"></i>
+                    ${statusText}
+                </div>
+            </div>
+
+            <div class="client-info">
+                <div class="client-avatar">${initials}</div>
+                <div class="client-details">
+                    <h4>${escapeHtml(contract.client_name)}</h4>
+                    <p>Client</p>
+                    <span class="contract-value">${formattedValue}</span>
+                </div>
+            </div>
+
+            <div class="contract-details">
+                <div class="detail-row">
+                    <i class="fas fa-calendar-alt detail-icon"></i>
+                    <span class="detail-label">Start Date:</span>
+                    <span class="detail-value">${startDate}</span>
+                </div>
+                <div class="detail-row">
+                    <i class="fas fa-calendar-check detail-icon"></i>
+                    <span class="detail-label">End Date:</span>
+                    <span class="detail-value">${endDate}</span>
+                </div>
+                ${progressHTML}
+            </div>
+
+            <div class="contract-description">
+                <p>${escapeHtml(contract.description || 'No description available.')}</p>
+            </div>
+
+            <div class="card-actions">
+                <button class="action-btn primary view-contract-btn" data-contract-id="${contract.contract_id}" title="View Details">
+                    <i class="fas fa-eye"></i>
+                    View Details
+                </button>
+                <button class="action-btn secondary edit-contract-btn" data-contract-id="${contract.contract_id}" title="Edit Contract">
+                    <i class="fas fa-edit"></i>
+                    Edit
+                </button>
+                <button class="action-btn danger delete-contract-btn" data-contract-id="${contract.contract_id}" title="Delete Contract">
+                    <i class="fas fa-trash"></i>
+                    Delete
+                </button>
+                <button class="action-btn secondary download-contract-btn" data-contract-id="${contract.contract_id}" title="Download Contract">
+                    <i class="fas fa-download"></i>
+                    Download
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function getStatusIcon(status) {
+    const icons = {
+        'active': 'fas fa-play-circle',
+        'pending': 'fas fa-clock',
+        'completed': 'fas fa-check-circle',
+        'draft': 'fas fa-file-alt',
+        'terminated': 'fas fa-ban',
+        'rejected': 'fas fa-times-circle'
+    };
+    return icons[status] || 'fas fa-file-contract';
+}
+
+function showLoadMoreButton() {
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const loadMoreContainer = document.querySelector('.load-more-container');
+    if (loadMoreContainer) {
+        loadMoreContainer.style.display = 'flex';
+    }
+    if (loadMoreBtn && !loadMoreBtn.hasAttribute('data-listener')) {
+        loadMoreBtn.setAttribute('data-listener', 'true');
+        loadMoreBtn.addEventListener('click', loadMoreContracts);
+    }
+}
+
+function hideLoadMoreButton() {
+    const loadMoreContainer = document.querySelector('.load-more-container');
+    if (loadMoreContainer) {
+        loadMoreContainer.style.display = 'none';
+    }
+}
+
+function showEndIndicator() {
+    const endIndicator = document.getElementById('contractsEnd');
+    if (endIndicator) {
+        endIndicator.style.display = 'block';
+    }
+}
+
+function hideEndIndicator() {
+    const endIndicator = document.getElementById('contractsEnd');
+    if (endIndicator) {
+        endIndicator.style.display = 'none';
+    }
+}
+
+function formatCurrency(amount) {
+    return `LKR ${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const options = { month: 'short', day: 'numeric', year: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+async function updateContractStats() {
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=stats');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const stats = result.data;
+            const statItems = document.querySelectorAll('.quick-stats .stat-item');
+            
+            if (statItems.length >= 4) {
+                statItems[0].querySelector('.stat-value').textContent = stats.active || 0;
+                statItems[1].querySelector('.stat-value').textContent = stats.draft + stats.draft || 0;
+                statItems[2].querySelector('.stat-value').textContent = stats.completed || 0;
+                statItems[3].querySelector('.stat-value').textContent = formatCurrency(stats.total_value || 0);
+            }
+        }
+    } catch (error) {
+        console.error('Error updating stats:', error);
+    }
 }
 
 function extractContractData(card, id) {
+    // This function is now deprecated as we load from API
+    // Kept for backwards compatibility
     const title = card.querySelector('.contract-info h3')?.textContent || '';
     const contractId = card.querySelector('.contract-id')?.textContent || `CNT-2025-${String(id).padStart(3, '0')}`;
     const clientName = card.querySelector('.client-details h4')?.textContent || '';
@@ -63,6 +392,7 @@ function extractContractData(card, id) {
     };
 }
 
+
 // ===================================
 // FILTER SYSTEM
 // ===================================
@@ -82,30 +412,50 @@ function applyFilters() {
     const typeFilter = document.getElementById('typeFilter').value;
     const dateFilter = document.getElementById('dateFilter').value;
     
-    const contractCards = document.querySelectorAll('.contract-card');
-    let visibleCount = 0;
+    // Filter the original data
+    let filteredData = contractsData;
     
-    contractCards.forEach(card => {
-        const cardStatus = card.getAttribute('data-status');
-        const cardType = card.getAttribute('data-type');
-        
-        const statusMatch = !statusFilter || cardStatus === statusFilter;
-        const typeMatch = !typeFilter || cardType === typeFilter;
-        
-        if (statusMatch && typeMatch) {
-            card.style.display = 'block';
-            visibleCount++;
-        } else {
-            card.style.display = 'none';
+    if (statusFilter) {
+        filteredData = filteredData.filter(contract => contract.status === statusFilter);
+    }
+    
+    if (typeFilter) {
+        filteredData = filteredData.filter(contract => contract.type === typeFilter);
+    }
+    
+    // For date filter, you can add custom logic here
+    // For now, we'll just use the filtered data
+    
+    // Reset pagination
+    currentPage = 1;
+    
+    // Update displayed contracts based on filtered data
+    if (filteredData.length === 0) {
+        const container = document.getElementById('contractsContainer');
+        const empty = document.getElementById('contractsEmpty');
+        container.innerHTML = '';
+        if (empty) {
+            const emptyClone = empty.cloneNode(true);
+            emptyClone.style.display = 'flex';
+            emptyClone.querySelector('h3').textContent = 'No Matching Contracts';
+            emptyClone.querySelector('p').textContent = 'Try adjusting your filters to see more results.';
+            container.appendChild(emptyClone);
         }
-    });
+        hideLoadMoreButton();
+        hideEndIndicator();
+    } else {
+        // Temporarily update contractsData for rendering
+        const originalData = contractsData;
+        contractsData = filteredData;
+        renderContractsPage();
+        contractsData = originalData; // Restore original data
+    }
     
-    updateResultsCount(visibleCount);
+    updateResultsCount(filteredData.length);
 }
 
 function updateResultsCount(count) {
-    const totalContracts = document.querySelectorAll('.contract-card').length;
-    console.log(`Showing ${count} of ${totalContracts} contracts`);
+    console.log(`Showing ${count} contracts after filtering`);
 }
 
 // ===================================
@@ -147,30 +497,36 @@ function initializeViewSwitcher() {
 
 function initializeContractActions() {
     document.addEventListener('click', function(e) {
-        const contractCard = e.target.closest('.contract-card');
-        if (!contractCard) return;
-        
-        const btn = e.target.closest('.action-btn');
-        
-        if (!btn) {
+        // Check for specific button clicks
+        if (e.target.closest('.view-contract-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const btn = e.target.closest('.view-contract-btn');
+            const contractId = btn.getAttribute('data-contract-id');
+            handleViewContractById(contractId);
+        } else if (e.target.closest('.edit-contract-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const btn = e.target.closest('.edit-contract-btn');
+            const contractId = btn.getAttribute('data-contract-id');
+            handleEditContractById(contractId);
+        } else if (e.target.closest('.delete-contract-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const btn = e.target.closest('.delete-contract-btn');
+            const contractId = btn.getAttribute('data-contract-id');
+            handleDeleteContractById(contractId);
+        } else if (e.target.closest('.download-contract-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const btn = e.target.closest('.download-contract-btn');
+            const contractId = btn.getAttribute('data-contract-id');
+            handleDownloadContractById(contractId);
+        } else if (e.target.closest('.contract-card') && !e.target.closest('.action-btn')) {
             // Click on card itself - view details
-            handleViewContract(contractCard);
-            return;
-        }
-        
-        // Handle button clicks
-        const title = btn.getAttribute('title')?.toLowerCase() || '';
-        
-        if (title.includes('view')) {
-            handleViewContract(contractCard);
-        } else if (title.includes('edit')) {
-            handleEditContract(contractCard);
-        } else if (title.includes('download')) {
-            handleDownloadContract(contractCard);
-        } else if (title.includes('send')) {
-            handleSendContract(contractCard);
-        } else if (title.includes('invoice')) {
-            handleGenerateInvoice(contractCard);
+            const card = e.target.closest('.contract-card');
+            const contractId = card.getAttribute('data-contract-id');
+            handleViewContractById(contractId);
         }
     });
     
@@ -181,10 +537,76 @@ function initializeContractActions() {
     }
 }
 
-function handleViewContract(contractCard) {
-    const contractData = extractDetailedContractData(contractCard);
-    openContractDetailsModal(contractData);
+async function handleViewContractById(contractId) {
+    try {
+        // Find contract in local data first
+        let contract = contractsData.find(c => c.contract_id == contractId);
+        
+        if (!contract) {
+            // Fetch from API if not found locally
+            const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=get&id=${contractId}`);
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.message || 'Contract not found');
+            }
+            
+            contract = result.data;
+        }
+        
+        openContractDetailsModal(contract);
+    } catch (error) {
+        console.error('Error viewing contract:', error);
+        alert('Failed to load contract details: ' + error.message);
+    }
 }
+
+async function handleEditContractById(contractId) {
+    try {
+        // Find contract in local data first
+        let contract = contractsData.find(c => c.contract_id == contractId);
+        
+        if (!contract) {
+            // Fetch from API if not found locally
+            const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=get&id=${contractId}`);
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.message || 'Contract not found');
+            }
+            
+            contract = result.data;
+        }
+        
+        openEditContractModal(contract);
+    } catch (error) {
+        console.error('Error editing contract:', error);
+        alert('Failed to load contract for editing: ' + error.message);
+    }
+}
+
+async function handleDownloadContractById(contractId) {
+    try {
+        // In a real implementation, this would download the contract PDF
+        console.log('Downloading contract:', contractId);
+        alert(`Download functionality for contract ${contractId} will be implemented soon.`);
+    } catch (error) {
+        console.error('Error downloading contract:', error);
+        alert('Failed to download contract: ' + error.message);
+    }
+}
+
+// Keep legacy functions for backward compatibility
+function handleViewContract(contractCard) {
+    const contractId = contractCard.getAttribute('data-contract-id');
+    if (contractId) {
+        handleViewContractById(contractId);
+    } else {
+        const contractData = extractDetailedContractData(contractCard);
+        openContractDetailsModal(contractData);
+    }
+}
+
 
 function extractDetailedContractData(card) {
     const title = card.querySelector('.contract-info h3')?.textContent || '';
@@ -436,6 +858,9 @@ function openNewContractModal() {
     document.getElementById('contractForm').reset();
     showFormStep(1);
     
+    // Load accepted projects for contract creation
+    loadAcceptedProjects();
+    
     if (modal) {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -467,6 +892,175 @@ function closeNewContractModal() {
         editingContract = null;
         currentStep = 1;
     }
+}
+
+// Load accepted quotations/projects for contract creation
+async function loadAcceptedProjects() {
+    const loadingContainer = document.getElementById('loadingProjects');
+    const noProjectsContainer = document.getElementById('noProjects');
+    const projectsList = document.getElementById('projectsList');
+    
+    // Show loading state
+    loadingContainer.style.display = 'flex';
+    noProjectsContainer.style.display = 'none';
+    projectsList.style.display = 'none';
+    projectsList.innerHTML = '';
+    
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=getAcceptedProjects');
+        const result = await response.json();
+        
+        console.log('API Response:', result);
+        console.log('Success:', result.success);
+        console.log('Data count:', result.data ? result.data.length : 0);
+        console.log('Full data:', result.data);
+        
+        loadingContainer.style.display = 'none';
+        
+        if (!result.success || result.data.length === 0) {
+            console.log('No projects available or API failed');
+            noProjectsContainer.style.display = 'block';
+            return;
+        }
+        
+        // Display projects
+        console.log('Displaying projects...');
+        projectsList.style.display = 'grid';
+        result.data.forEach(project => {
+            console.log('Creating card for:', project.project_title);
+            const projectCard = createProjectCard(project);
+            projectsList.appendChild(projectCard);
+        });
+        
+    } catch (error) {
+        console.error('Error loading accepted projects:', error);
+        loadingContainer.style.display = 'none';
+        noProjectsContainer.style.display = 'block';
+        noProjectsContainer.innerHTML = `
+            <i class="fas fa-exclamation-triangle"></i>
+            <h4>Error Loading Projects</h4>
+            <p>Failed to load accepted projects. Please try again.</p>
+        `;
+    }
+}
+
+// Create project card element
+function createProjectCard(project) {
+    const card = document.createElement('div');
+    card.className = 'project-card';
+    card.dataset.projectId = project.project_id;
+    
+    card.innerHTML = `
+        <div class="project-card-header">
+            <div class="project-card-title">
+                <h4>${escapeHtml(project.project_title)}</h4>
+                <p>${escapeHtml(project.project_description || 'No description provided')}</p>
+            </div>
+            <span class="project-card-type">${escapeHtml(project.project_type)}</span>
+        </div>
+        
+        <div class="project-card-details">
+            <div class="project-detail-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>${escapeHtml(project.location)}</span>
+            </div>
+            <div class="project-detail-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Start: ${formatDate(project.proposed_start_date)}</span>
+            </div>
+            <div class="project-detail-item">
+                <i class="fas fa-calendar-check"></i>
+                <span>End: ${formatDate(project.proposed_end_date)}</span>
+            </div>
+            <div class="project-detail-item">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Priority: ${escapeHtml(project.urgency || 'Normal')}</span>
+            </div>
+        </div>
+        
+        <div class="project-card-footer">
+            <div class="project-client-info">
+                <i class="fas fa-user"></i>
+                <span>${escapeHtml(project.client_name)}</span>
+            </div>
+            <div class="project-quoted-price">
+                LKR ${formatCurrency(project.quoted_price)}
+            </div>
+        </div>
+    `;
+    
+    // Store full project data in card
+    card.dataset.projectData = JSON.stringify(project);
+    
+    // Add click handler
+    card.addEventListener('click', () => selectProject(card, project));
+    
+    return card;
+}
+
+// Handle project selection
+function selectProject(cardElement, projectData) {
+    // Remove selected class from all cards
+    document.querySelectorAll('.project-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked card
+    cardElement.classList.add('selected');
+    
+    // Auto-fill form with project data
+    autoFillProjectData(projectData);
+}
+
+// Auto-fill form with selected project data
+function autoFillProjectData(project) {
+    // Store project ID
+    document.getElementById('selectedQuotationId').value = project.project_id || '';
+    document.getElementById('selectedRequestId').value = project.project_id || '';
+    
+    // Client Information (Step 2)
+    document.getElementById('clientName').value = project.client_name;
+    document.getElementById('clientEmail').value = project.client_email || '';
+    document.getElementById('clientPhone').value = project.client_phone || '';
+    
+    // Project Details (Step 2)
+    document.getElementById('projectTitle').value = project.project_title;
+    document.getElementById('projectType').value = project.project_type;
+    document.getElementById('projectLocation').value = project.location;
+    document.getElementById('projectDescription').value = project.project_description || '';
+    
+    // Financial & Timeline (Step 3)
+    document.getElementById('contractValue').value = project.quoted_price;
+    document.getElementById('startDate').value = project.proposed_start_date || '';
+    document.getElementById('endDate').value = project.proposed_end_date || '';
+    
+    console.log('Project data auto-filled:', project);
+}
+
+// Helper function to format currency
+function formatCurrency(amount) {
+    return parseFloat(amount || 0).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+// Helper function to format date
+function formatDate(dateString) {
+    if (!dateString) return 'Not set';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function nextFormStep() {
@@ -529,6 +1123,17 @@ function showFormStep(step) {
 }
 
 function validateFormStep(step) {
+    // Step 1: Validate project selection
+    if (step === 1) {
+        const selectedCard = document.querySelector('.project-card.selected');
+        if (!selectedCard) {
+            showNotification('Please select a project to create a contract', 'error');
+            return false;
+        }
+        return true;
+    }
+    
+    // Other steps: Validate required fields
     const stepContent = document.querySelector(`.form-step-content[data-step="${step}"]`);
     const requiredFields = stepContent.querySelectorAll('[required]');
     let isValid = true;
@@ -569,59 +1174,131 @@ function populateFormWithContract(data) {
 }
 
 function populateReviewStep() {
+    // Helper function to safely get element value
+    const getValue = (id, defaultValue = '-') => {
+        const element = document.getElementById(id);
+        return element && element.value ? element.value : defaultValue;
+    };
+    
     // Client Info
-    document.getElementById('reviewClientName').textContent = document.getElementById('clientName').value;
-    document.getElementById('reviewClientType').textContent = document.getElementById('clientType').value;
-    document.getElementById('reviewContactPerson').textContent = document.getElementById('contactPerson').value;
-    document.getElementById('reviewClientEmail').textContent = document.getElementById('clientEmail').value;
-    document.getElementById('reviewClientPhone').textContent = document.getElementById('clientPhone').value;
-    document.getElementById('reviewClientAddress').textContent = document.getElementById('clientAddress').value || 'N/A';
+    const clientNameEl = document.getElementById('reviewClientName');
+    if (clientNameEl) clientNameEl.textContent = getValue('clientName');
+    
+    const clientTypeEl = document.getElementById('reviewClientType');
+    if (clientTypeEl) clientTypeEl.textContent = getValue('clientType', 'N/A');
+    
+    const contactPersonEl = document.getElementById('reviewContactPerson');
+    if (contactPersonEl) contactPersonEl.textContent = getValue('contactPerson', getValue('clientName'));
+    
+    const clientEmailEl = document.getElementById('reviewClientEmail');
+    if (clientEmailEl) clientEmailEl.textContent = getValue('clientEmail');
+    
+    const clientPhoneEl = document.getElementById('reviewClientPhone');
+    if (clientPhoneEl) clientPhoneEl.textContent = getValue('clientPhone', 'N/A');
+    
+    const clientAddressEl = document.getElementById('reviewClientAddress');
+    if (clientAddressEl) clientAddressEl.textContent = getValue('clientAddress', 'N/A');
     
     // Project Details
-    document.getElementById('reviewProjectTitle').textContent = document.getElementById('projectTitle').value;
-    document.getElementById('reviewProjectType').textContent = document.getElementById('projectType').value;
-    document.getElementById('reviewProjectLocation').textContent = document.getElementById('projectLocation').value;
-    document.getElementById('reviewStartDate').textContent = document.getElementById('startDate').value;
-    document.getElementById('reviewEndDate').textContent = document.getElementById('endDate').value;
-    document.getElementById('reviewPriority').textContent = document.getElementById('priority').value;
-    document.getElementById('reviewDescription').textContent = document.getElementById('projectDescription').value;
+    const projectTitleEl = document.getElementById('reviewProjectTitle');
+    if (projectTitleEl) projectTitleEl.textContent = getValue('projectTitle');
+    
+    const projectTypeEl = document.getElementById('reviewProjectType');
+    if (projectTypeEl) projectTypeEl.textContent = getValue('projectType');
+    
+    const projectLocationEl = document.getElementById('reviewProjectLocation');
+    if (projectLocationEl) projectLocationEl.textContent = getValue('projectLocation');
+    
+    const startDateEl = document.getElementById('reviewStartDate');
+    if (startDateEl) startDateEl.textContent = getValue('startDate');
+    
+    const endDateEl = document.getElementById('reviewEndDate');
+    if (endDateEl) endDateEl.textContent = getValue('endDate');
+    
+    const priorityEl = document.getElementById('reviewPriority');
+    if (priorityEl) priorityEl.textContent = getValue('priority', 'N/A');
+    
+    const descriptionEl = document.getElementById('reviewDescription');
+    if (descriptionEl) descriptionEl.textContent = getValue('projectDescription');
     
     // Financial
-    const value = document.getElementById('contractValue').value;
-    document.getElementById('reviewContractValue').textContent = `LKR ${parseInt(value).toLocaleString()}`;
-    document.getElementById('reviewContractType').textContent = document.getElementById('contractType').value;
-    document.getElementById('reviewPaymentTerms').textContent = document.getElementById('paymentTerms').value;
-    const advance = document.getElementById('advancePayment').value;
-    document.getElementById('reviewAdvancePayment').textContent = advance ? `LKR ${parseInt(advance).toLocaleString()}` : 'N/A';
+    const valueEl = document.getElementById('reviewContractValue');
+    if (valueEl) {
+        const value = getValue('contractValue', '0');
+        valueEl.textContent = value !== '-' && value !== '0' ? `LKR ${parseInt(value).toLocaleString()}` : 'N/A';
+    }
+    
+    const contractTypeEl = document.getElementById('reviewContractType');
+    if (contractTypeEl) contractTypeEl.textContent = getValue('contractType');
+    
+    const paymentTermsEl = document.getElementById('reviewPaymentTerms');
+    if (paymentTermsEl) paymentTermsEl.textContent = getValue('paymentTerms');
+    
+    const advancePaymentEl = document.getElementById('reviewAdvancePayment');
+    if (advancePaymentEl) {
+        const advance = getValue('advancePayment', '0');
+        advancePaymentEl.textContent = advance !== '-' && advance !== '0' ? `LKR ${parseInt(advance).toLocaleString()}` : 'N/A';
+    }
 }
 
 function submitContractForm() {
     const form = document.getElementById('contractForm');
     const formData = new FormData(form);
     
+    // Convert FormData to object
     const contractData = {};
     formData.forEach((value, key) => {
         contractData[key] = value;
     });
+    
+    // Add selected project ID
+    contractData.project_id = document.getElementById('selectedQuotationId').value;
     
     const submitBtn = document.getElementById('formSubmitBtn');
     const originalText = submitBtn.innerHTML;
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
     
-    // Simulate API call
-    setTimeout(() => {
-        if (editingContract) {
-            showNotification('Contract updated successfully!', 'success');
-        } else {
-            addNewContractCard(contractData);
-            showNotification('Contract created successfully!', 'success');
-        }
+    // Determine if creating or updating
+    const isEdit = editingContract !== null;
+    const url = isEdit 
+        ? `/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=update&id=${editingContract.contract_id}`
+        : '/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=create';
+    
+    const method = isEdit ? 'PUT' : 'POST';
+    
+    // Call actual API
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(contractData)
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log('Contract save response:', result);
         
+        if (result.success) {
+            showNotification(
+                isEdit ? 'Contract updated successfully!' : 'Contract created successfully!', 
+                'success'
+            );
+            closeNewContractModal();
+            // Reload contracts from database
+            loadContractsData();
+        } else {
+            showNotification(result.message || 'Failed to save contract', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving contract:', error);
+        showNotification('Failed to save contract. Please try again.', 'error');
+    })
+    .finally(() => {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
-        closeNewContractModal();
-    }, 2000);
+    });
 }
 
 function addNewContractCard(data) {
@@ -803,11 +1480,35 @@ function initializeDeleteModal() {
 
 let contractToDelete = null;
 
-function openDeleteModal(contractCard) {
-    contractToDelete = contractCard;
-    const title = contractCard.querySelector('.contract-info h3')?.textContent || 'Contract';
+async function handleDeleteContractById(contractId) {
+    try {
+        // Fetch contract details to show in confirmation
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=get&id=${contractId}`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to fetch contract details');
+        }
+        
+        openDeleteModal(contractId, result.data);
+    } catch (error) {
+        console.error('Error loading contract for deletion:', error);
+        showNotification('Failed to load contract details', 'error');
+    }
+}
+
+function openDeleteModal(contractId, contractData) {
+    contractToDelete = contractId;
+    const title = contractData?.client_name 
+        ? `${contractData.client_name} - ${contractData.project_name}` 
+        : 'Contract';
+    
     const modal = document.getElementById('deleteModal');
-    document.getElementById('deleteContractInfo').textContent = title;
+    const infoElement = document.getElementById('deleteContractInfo');
+    
+    if (infoElement) {
+        infoElement.textContent = title;
+    }
     
     if (modal) {
         modal.classList.add('active');
@@ -824,7 +1525,7 @@ function closeDeleteModal() {
     }
 }
 
-function confirmDeleteContract() {
+async function confirmDeleteContract() {
     if (!contractToDelete) return;
     
     const confirmBtn = document.getElementById('deleteConfirmBtn');
@@ -832,20 +1533,41 @@ function confirmDeleteContract() {
     confirmBtn.disabled = true;
     confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
     
-    setTimeout(() => {
-        contractToDelete.style.transition = 'all 0.3s ease';
-        contractToDelete.style.opacity = '0';
-        contractToDelete.style.transform = 'scale(0.9)';
+    try {
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=delete&id=${contractToDelete}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
         
-        setTimeout(() => {
-            contractToDelete.remove();
-            showNotification('Contract deleted successfully', 'success');
-            closeDeleteModal();
-        }, 300);
+        const result = await response.json();
         
+        if (response.status === 401) {
+            showNotification('Session expired. Please login again.', 'error');
+            setTimeout(() => {
+                window.location.href = '/2nd-Year-Group-Project/FixLanka/views/auth/login.php';
+            }, 2000);
+            return;
+        }
+        
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to delete contract');
+        }
+        
+        showNotification('Contract deleted successfully!', 'success');
+        closeDeleteModal();
+        
+        // Reload contracts from database
+        loadContractsData();
+        
+    } catch (error) {
+        console.error('Error deleting contract:', error);
+        showNotification(error.message || 'Failed to delete contract. Please try again.', 'error');
+    } finally {
         confirmBtn.disabled = false;
         confirmBtn.innerHTML = originalText;
-    }, 1500);
+    }
 }
 
 // ===================================

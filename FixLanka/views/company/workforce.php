@@ -1,3 +1,26 @@
+<?php
+/**
+ * Company Workforce Page
+ * 
+ * Manage company employees and freelance contractors
+ * 
+ * @package FixLanka\Views\Company
+ * @version 1.0.0
+ */
+
+// Start session and verify authentication
+require_once '../../config/session.php';
+requireRole('company');
+
+// Retrieve logged-in user data from session
+$userData = getUserData();
+$companyId = $userData['id'] ?? null;
+
+// Ensure user is authenticated
+if (!$companyId) {
+    die('Error: Company not authenticated');
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -10,7 +33,13 @@
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/workforce.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Pass company ID to JavaScript -->
+    <script>
+        window.CURRENT_COMPANY_ID = <?php echo json_encode($companyId); ?>;
+    </script>
 </head>
 
 <body>
@@ -69,44 +98,29 @@
                         <div class="card-content">
                             <div class="stats-overview">
                                 <div class="main-stat">
-                                    <span class="stat-number">23</span>
+                                    <span class="stat-number">0</span>
                                     <span class="stat-label">Total Staff</span>
                                 </div>
                                 <div class="sub-stats">
                                     <div class="sub-stat">
-                                        <span class="sub-number">18</span>
+                                        <span class="sub-number">0</span>
                                         <span class="sub-label">Active</span>
                                     </div>
                                     <div class="sub-stat">
-                                        <span class="sub-number">4.8</span>
-                                        <span class="sub-label">⭐ Rating</span>
+                                        <span class="sub-number">0.0</span>
+                                        <span class="sub-label">? Rating</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="specialties-preview">
                                 <h4>Specialties Overview</h4>
                                 <div class="specialty-items">
-                                    <div class="specialty-item">
-                                        <span class="specialty-name">Plumbing</span>
-                                        <span class="specialty-count">8 Total, 6 Active</span>
-                                    </div>
-                                    <div class="specialty-item">
-                                        <span class="specialty-name">Electrical</span>
-                                        <span class="specialty-count">5 Total, 4 Active</span>
-                                    </div>
-                                    <div class="specialty-item">
-                                        <span class="specialty-name">Carpentry</span>
-                                        <span class="specialty-count">6 Total, 5 Active</span>
-                                    </div>
-                                    <div class="specialty-item">
-                                        <span class="specialty-name">HVAC</span>
-                                        <span class="specialty-count">4 Total, 3 Active</span>
-                                    </div>
+                                    <!-- Populated dynamically by company-employees-db.js -->
                                 </div>
                             </div>
                         </div>
                         <div class="card-actions">
-                            <button class="action-button primary" onclick="expandSection('employees')">
+                            <button class="action-btn primary" onclick="expandSection('employees')">
                                 <i class="fas fa-users"></i> View All Staff
                             </button>
                         </div>
@@ -124,49 +138,32 @@
                         <div class="card-content">
                             <div class="stats-overview">
                                 <div class="main-stat">
-                                    <span class="stat-number">12</span>
+                                    <span class="stat-number" id="freelancersAvailable">0</span>
                                     <span class="stat-label">Available</span>
                                 </div>
                                 <div class="sub-stats">
                                     <div class="sub-stat">
-                                        <span class="sub-number">8</span>
+                                        <span class="sub-number" id="freelancersActive">0</span>
                                         <span class="sub-label">Active</span>
                                     </div>
                                     <div class="sub-stat">
-                                        <span class="sub-number">4</span>
+                                        <span class="sub-number" id="freelancersFree">0</span>
                                         <span class="sub-label">Free</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="freelancers-preview">
                                 <h4>Top Freelancers</h4>
-                                <div class="freelancer-items">
-                                    <div class="freelancer-item">
-                                        <div class="freelancer-avatar">KP</div>
-                                        <div class="freelancer-info">
-                                            <span class="freelancer-name">Kasun Perera</span>
-                                            <span class="freelancer-details">Mobile Repair • ⭐ 4.9 • LKR 2,500/hr</span>
-                                        </div>
-                                    </div>
-                                    <div class="freelancer-item">
-                                        <div class="freelancer-avatar">NF</div>
-                                        <div class="freelancer-info">
-                                            <span class="freelancer-name">Nimal Fernando</span>
-                                            <span class="freelancer-details">Laptop Repair • ⭐ 4.7 • LKR 2,200/hr</span>
-                                        </div>
-                                    </div>
-                                    <div class="freelancer-item">
-                                        <div class="freelancer-avatar">AS</div>
-                                        <div class="freelancer-info">
-                                            <span class="freelancer-name">Anjali Silva</span>
-                                            <span class="freelancer-details">Device Setup • ⭐ 4.8 • LKR 2,000/hr</span>
-                                        </div>
-                                    </div>
+                                <div class="freelancer-items" id="topFreelancersPreview">
+                                    <p class="empty-preview-message">
+                                        <i class="fas fa-info-circle"></i>
+                                        No freelancers available yet
+                                    </p>
                                 </div>
                             </div>
                         </div>
                         <div class="card-actions">
-                            <button class="action-button primary" onclick="expandSection('freelancers')">
+                            <button class="action-btn primary" onclick="expandSection('freelancers')">
                                 <i class="fas fa-handshake"></i> View Freelancers
                             </button>
                         </div>
@@ -184,52 +181,30 @@
                         <div class="card-content">
                             <div class="stats-overview">
                                 <div class="main-stat">
-                                    <span class="stat-number" id="applicationCount">8</span>
+                                    <span class="stat-number" id="applicationCount">0</span>
                                     <span class="stat-label">Pending</span>
                                 </div>
                                 <div class="sub-stats">
                                     <div class="sub-stat">
-                                        <span class="sub-number">3</span>
+                                        <span class="sub-number" id="newTodayCount">0</span>
                                         <span class="sub-label">New Today</span>
                                     </div>
                                     <div class="sub-stat">
-                                        <span class="sub-number">0</span>
+                                        <span class="sub-number" id="reviewedCount">0</span>
                                         <span class="sub-label">Reviewed</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="applications-preview">
                                 <h4>Recent Applications</h4>
-                                <div class="application-items">
-                                    <div class="application-item">
-                                        <div class="application-avatar">RA</div>
-                                        <div class="application-info">
-                                            <span class="application-name">Ravindu Amarasinghe</span>
-                                            <span class="application-details">HVAC Specialist • 2 days ago</span>
-                                        </div>
-                                        <div class="application-status new">New</div>
-                                    </div>
-                                    <div class="application-item">
-                                        <div class="application-avatar">SP</div>
-                                        <div class="application-info">
-                                            <span class="application-name">Saman Pathirana</span>
-                                            <span class="application-details">Electrical Work • 1 day ago</span>
-                                        </div>
-                                        <div class="application-status new">New</div>
-                                    </div>
-                                    <div class="application-item">
-                                        <div class="application-avatar">MR</div>
-                                        <div class="application-info">
-                                            <span class="application-name">Malini Rajapakse</span>
-                                            <span class="application-details">Plumbing Expert • 3 days ago</span>
-                                        </div>
-                                        <div class="application-status pending">Pending</div>
-                                    </div>
+                                <div class="application-items" id="recentApplicationsList">
+                                    <!-- Applications will be loaded dynamically -->
+                                    <p style="text-align: center; color: #718096; padding: 20px;">No applications yet</p>
                                 </div>
                             </div>
                         </div>
                         <div class="card-actions">
-                            <button class="action-button primary" onclick="expandSection('applications')">
+                            <button class="action-btn primary" onclick="expandSection('applications')">
                                 <i class="fas fa-clipboard-check"></i> Review Applications
                             </button>
                         </div>
@@ -246,49 +221,30 @@
                         <div class="card-content">
                             <div class="stats-overview">
                                 <div class="main-stat">
-                                    <span class="stat-number">5</span>
+                                    <span class="stat-number" id="activeJobPostsCount">0</span>
                                     <span class="stat-label">Active Posts</span>
                                 </div>
                                 <div class="sub-stats">
                                     <div class="sub-stat">
-                                        <span class="sub-number">2</span>
+                                        <span class="sub-number" id="draftPostsCount">0</span>
                                         <span class="sub-label">Drafts</span>
                                     </div>
                                     <div class="sub-stat">
-                                        <span class="sub-number">24</span>
+                                        <span class="sub-number" id="totalJobApplicationsCount">0</span>
                                         <span class="sub-label">Applications</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="job-postings-preview">
                                 <h4>Recent Postings</h4>
-                                <div class="job-posting-items">
-                                    <div class="job-posting-item">
-                                        <div class="job-posting-info">
-                                            <span class="job-title">Senior HVAC Technician</span>
-                                            <span class="job-details">12 applications • 3 days ago</span>
-                                        </div>
-                                        <div class="job-status active">Active</div>
-                                    </div>
-                                    <div class="job-posting-item">
-                                        <div class="job-posting-info">
-                                            <span class="job-title">Electrical Repair Specialist</span>
-                                            <span class="job-details">8 applications • 1 week ago</span>
-                                        </div>
-                                        <div class="job-status active">Active</div>
-                                    </div>
-                                    <div class="job-posting-item">
-                                        <div class="job-posting-info">
-                                            <span class="job-title">Plumbing Contractor</span>
-                                            <span class="job-details">4 applications • 2 days ago</span>
-                                        </div>
-                                        <div class="job-status active">Active</div>
-                                    </div>
+                                <div class="job-posting-items" id="recentJobPostingsList">
+                                    <!-- Job postings will be loaded dynamically -->
+                                    <p style="text-align: center; color: #718096; padding: 20px;">No job postings yet</p>
                                 </div>
                             </div>
                         </div>
                         <div class="card-actions">
-                            <button class="action-button primary" onclick="expandSection('job-postings')">
+                            <button class="action-btn primary" onclick="expandSection('job-postings')">
                                 <i class="fas fa-eye"></i> Manage Postings
                             </button>
                         </div>
@@ -301,7 +257,7 @@
                     <!-- Back to Dashboard Button -->
                     <div class="section-header">
                         <div style="align-items: center;">
-                            <button class="back-button" onclick="backToDashboard()">
+                            <button class="action-btn secondary" onclick="backToDashboard()">
                                 <i class="fas fa-arrow-left"></i> Back
                             </button>
                         </div>
@@ -325,73 +281,7 @@
                         </div>
 
                         <div class="employee-categories">
-                            <div class="category-card">
-                                <div class="category-icon plumbing">
-                                    <i class="fas fa-wrench"></i>
-                                </div>
-                                <div class="category-info">
-                                    <h3>Plumbing</h3>
-                                    <div class="category-stats">
-                                        <span class="total-count">8 Total</span>
-                                        <span class="active-count">6 Active</span>
-                                    </div>
-                                    <div class="category-meta">
-                                        <span class="avg-rating"><i class="fas fa-star"></i> 4.8</span>
-                                        <span class="hourly-range">LKR 2,200-2,800/hr</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="category-card">
-                                <div class="category-icon electrical">
-                                    <i class="fas fa-bolt"></i>
-                                </div>
-                                <div class="category-info">
-                                    <h3>Electrical</h3>
-                                    <div class="category-stats">
-                                        <span class="total-count">5 Total</span>
-                                        <span class="active-count">4 Active</span>
-                                    </div>
-                                    <div class="category-meta">
-                                        <span class="avg-rating"><i class="fas fa-star"></i> 4.7</span>
-                                        <span class="hourly-range">LKR 2,500-3,000/hr</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="category-card">
-                                <div class="category-icon carpentry">
-                                    <i class="fas fa-hammer"></i>
-                                </div>
-                                <div class="category-info">
-                                    <h3>Carpentry</h3>
-                                    <div class="category-stats">
-                                        <span class="total-count">6 Total</span>
-                                        <span class="active-count">5 Active</span>
-                                    </div>
-                                    <div class="category-meta">
-                                        <span class="avg-rating"><i class="fas fa-star"></i> 4.9</span>
-                                        <span class="hourly-range">LKR 2,000-2,600/hr</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="category-card">
-                                <div class="category-icon hvac">
-                                    <i class="fas fa-fan"></i>
-                                </div>
-                                <div class="category-info">
-                                    <h3>HVAC</h3>
-                                    <div class="category-stats">
-                                        <span class="total-count">4 Total</span>
-                                        <span class="active-count">3 Active</span>
-                                    </div>
-                                    <div class="category-meta">
-                                        <span class="avg-rating"><i class="fas fa-star"></i> 4.6</span>
-                                        <span class="hourly-range">LKR 2,800-3,200/hr</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- Populated dynamically by company-employees-db.js -->
                         </div>
                     </div>
 
@@ -403,73 +293,19 @@
                         </div>
 
                         <!-- Freelancer Filters -->
-                        <div class="freelancer-filters">
-                            <!-- Status Filter Tabs -->
-                            <div class="filter-tabs">
-                                <button class="filter-tab active" data-filter-type="status" data-filter-value="all" onclick="applyFreelancerFilter('status', 'all', this)">
-                                    All Freelancers
-                                </button>
-                                <button class="filter-tab" data-filter-type="status" data-filter-value="Available" onclick="applyFreelancerFilter('status', 'Available', this)">
-                                    Available
-                                </button>
-                                <button class="filter-tab" data-filter-type="status" data-filter-value="Busy" onclick="applyFreelancerFilter('status', 'Busy', this)">
-                                    Busy
-                                </button>
-                                <button class="filter-tab" data-filter-type="status" data-filter-value="assigned" onclick="applyFreelancerFilter('status', 'assigned', this)">
-                                    Assigned
-                                </button>
-                            </div>
-
-                            <!-- Specialty Filter -->
-                            <div class="filter-group">
-                                <label><i class="fas fa-tools"></i> Specialty:</label>
-                                <select class="filter-select" id="specialtyFilter" onchange="applyFreelancerFilter('specialty', this.value)">
-                                    <option value="all">All Specialties</option>
-                                    <option value="Mobile Phone Repair">Mobile Phone Repair</option>
-                                    <option value="Laptop Repair">Laptop Repair</option>
-                                    <option value="TV Repair">TV Repair</option>
-                                    <option value="AC Repair">AC Repair</option>
-                                    <option value="Refrigerator Repair">Refrigerator Repair</option>
-                                    <option value="Washing Machine Repair">Washing Machine Repair</option>
-                                    <option value="Electrical">Electrical</option>
-                                    <option value="Plumbing">Plumbing</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-
-                            <!-- Rating Filter -->
-                            <div class="filter-group">
-                                <label><i class="fas fa-star"></i> Rating:</label>
-                                <select class="filter-select" id="ratingFilter" onchange="applyFreelancerFilter('rating', this.value)">
-                                    <option value="all">All Ratings</option>
-                                    <option value="5">5 Stars</option>
-                                    <option value="4">4+ Stars</option>
-                                    <option value="3">3+ Stars</option>
-                                </select>
-                            </div>
-
-                            <!-- Hourly Rate Filter -->
-                            <div class="filter-group">
-                                <label><i class="fas fa-money-bill"></i> Hourly Rate:</label>
-                                <select class="filter-select" id="rateFilter" onchange="applyFreelancerFilter('rate', this.value)">
-                                    <option value="all">All Rates</option>
-                                    <option value="0-2000">Under LKR 2,000</option>
-                                    <option value="2000-2500">LKR 2,000 - 2,500</option>
-                                    <option value="2500-3000">LKR 2,500 - 3,000</option>
-                                    <option value="3000+">Above LKR 3,000</option>
-                                </select>
-                            </div>
-
-                            <!-- Reset Filters -->
-                            <button class="filter-reset-btn" onclick="resetFreelancerFilters()">
-                                <i class="fas fa-redo"></i> Reset
+                        <div class="freelancer-filter-tabs">
+                            <button class="tab-btn active" onclick="applyFreelancerFilter('status', 'all', this)">
+                                <i class="fas fa-list"></i> All Freelancers
                             </button>
-                        </div>
-
-                        <!-- Active Filters Display -->
-                        <div class="active-filters" id="activeFiltersDisplay" style="display: none;">
-                            <span style="font-size: 13px; color: #6b7280; font-weight: 500;">Active Filters:</span>
-                            <!-- Filter tags will be added here dynamically -->
+                            <button class="tab-btn" onclick="applyFreelancerFilter('status', 'Available', this)">
+                                <i class="fas fa-check-circle"></i> Available
+                            </button>
+                            <button class="tab-btn" onclick="applyFreelancerFilter('status', 'Busy', this)">
+                                <i class="fas fa-clock"></i> Busy
+                            </button>
+                            <button class="tab-btn" onclick="applyFreelancerFilter('status', 'assigned', this)">
+                                <i class="fas fa-briefcase"></i> Assigned
+                            </button>
                         </div>
 
                         <div class="freelancer-list">
@@ -480,8 +316,26 @@
                     <!-- Applications Section -->
                     <div class="workforce-section" id="applicationsSection">
                         <div class="section-header">
-                            <h2><i class="fas fa-file-alt"></i> Pending Applications</h2>
-                            <p class="section-subtitle">New applications awaiting review</p>
+                            <div>
+                                <h2><i class="fas fa-user-plus"></i> Pending Applications</h2>
+                                <p class="section-subtitle">Review and manage incoming repairer applications</p>
+                            </div>
+                        </div>
+
+                        <!-- Application Filter Tabs -->
+                        <div class="application-tabs">
+                            <button class="tab-btn active" onclick="filterApplications('all')">
+                                <i class="fas fa-list"></i> All Applications
+                            </button>
+                            <button class="tab-btn" onclick="filterApplications('new')">
+                                <i class="fas fa-star"></i> New
+                            </button>
+                            <button class="tab-btn" onclick="filterApplications('reviewed')">
+                                <i class="fas fa-eye"></i> Reviewed
+                            </button>
+                            <button class="tab-btn" onclick="filterApplications('interview')">
+                                <i class="fas fa-comments"></i> Interview
+                            </button>
                         </div>
 
                         <div class="applications-list">
@@ -539,10 +393,13 @@
 
     <!-- Scripts -->
     <script>
+        // Mock data arrays removed - kept as empty to prevent undefined errors
+        const freelancersData = [];
+        
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
             loadComponent('sidebar-container', '/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php');
-            loadComponent('header-container', '/2nd-Year-Group-Project/FixLanka/views/company/topbar.php');
+            loadComponent('header-container', '/2nd-Year-Group-Project/FixLanka/views/company/topbar.php?page=workforce');
 
             setTimeout(() => {
                 initializePage();
@@ -564,7 +421,7 @@
                         allNavItems.forEach(item => item.classList.remove('active'));
                         
                         // Set workforce as active immediately
-                        const workforceLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/company-workforce"]');
+                        const workforceLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/views/company/workforce.php"]');
                         if (workforceLink) {
                             workforceLink.parentElement.classList.add('active');
                         }
@@ -619,6 +476,8 @@
                     loadFreelancers();
                 } else if (section === 'applications') {
                     loadApplications();
+                } else if (section === 'employees') {
+                    loadEmployeeCategories();
                 }
             }
 
@@ -648,503 +507,6 @@
             }
         }
 
-        // Sample data
-        const employeeCategoriesData = [
-            { category: 'Plumbing', count: 5, description: 'Water pipe and drainage specialists', avgRating: 4.7, hourlyRange: 'LKR 2,200-2,800/hr' },
-            { category: 'Electrical', count: 7, description: 'Electrical system repair experts', avgRating: 4.6, hourlyRange: 'LKR 2,000-2,600/hr' },
-            { category: 'Carpentry', count: 4, description: 'Wood working and furniture repair', avgRating: 4.8, hourlyRange: 'LKR 2,400-3,000/hr' },
-            { category: 'HVAC', count: 3, description: 'Air conditioning and heating specialists', avgRating: 4.6, hourlyRange: 'LKR 2,800-3,200/hr' }
-        ];
-
-        const freelancersData = [
-            {
-                id: 'f1',
-                firstName: 'Kasun',
-                lastName: 'Perera',
-                specialty: 'Mobile Phone Repair',
-                experience: 5,
-                hourlyRate: 2500,
-                rating: 4.8,
-                status: 'Available',
-                email: 'kasun.perera@email.com',
-                phone: '+94 77 123 4501',
-                avatar: 'KP',
-                completedJobs: 156,
-                responseTime: '2 hours',
-                // Assignment tracking
-                currentAssignment: null,
-                assignmentHistory: []
-            },
-            {
-                id: 'f2',
-                firstName: 'Nimali',
-                lastName: 'Fernando',
-                specialty: 'Laptop Repair',
-                experience: 3,
-                hourlyRate: 3000,
-                rating: 4.6,
-                status: 'Assigned',
-                email: 'nimali.fernando@email.com',
-                phone: '+94 71 234 5602',
-                avatar: 'NF',
-                completedJobs: 89,
-                responseTime: '1 hour',
-                // Assignment tracking
-                currentAssignment: {
-                    jobId: 'j102',
-                    jobTitle: 'Office Laptop Screen Replacement',
-                    assignedDate: '2025-10-18',
-                    startDate: '2025-10-19',
-                    deadline: '2025-10-25',
-                    estimatedHours: 8,
-                    agreedRate: 3000,
-                    workStatus: 'in-progress', // pending, in-progress, completed, verified
-                    completedDate: null,
-                    totalAmount: 24000,
-                    paymentStatus: 'pending', // pending, payment-due, processing, paid
-                    workProgress: 60,
-                    notes: 'Replacement parts ordered, work in progress'
-                },
-                assignmentHistory: [
-                    {
-                        jobId: 'j087',
-                        jobTitle: 'Gaming Laptop Overheating Fix',
-                        completedDate: '2025-10-12',
-                        hoursWorked: 5,
-                        amount: 15000,
-                        paymentStatus: 'paid',
-                        paidDate: '2025-10-14'
-                    }
-                ]
-            },
-            {
-                id: 'f3',
-                firstName: 'Rohan',
-                lastName: 'Silva',
-                specialty: 'TV Repair',
-                experience: 7,
-                hourlyRate: 2800,
-                rating: 4.9,
-                status: 'Work Completed',
-                email: 'rohan.silva@email.com',
-                phone: '+94 76 345 6703',
-                avatar: 'RS',
-                completedJobs: 234,
-                responseTime: '30 mins',
-                // Assignment tracking
-                currentAssignment: {
-                    jobId: 'j098',
-                    jobTitle: 'Smart TV Display Repair',
-                    assignedDate: '2025-10-15',
-                    startDate: '2025-10-16',
-                    deadline: '2025-10-22',
-                    estimatedHours: 6,
-                    agreedRate: 2800,
-                    workStatus: 'completed',
-                    completedDate: '2025-10-21',
-                    totalAmount: 16800,
-                    paymentStatus: 'payment-due', // Waiting for company to process payment
-                    workProgress: 100,
-                    completionEvidence: 'Replaced display panel, tested all functions. Customer verified.',
-                    notes: 'Work completed successfully, awaiting payment approval'
-                },
-                assignmentHistory: [
-                    {
-                        jobId: 'j075',
-                        jobTitle: 'LED TV Backlight Repair',
-                        completedDate: '2025-10-08',
-                        hoursWorked: 4,
-                        amount: 11200,
-                        paymentStatus: 'paid',
-                        paidDate: '2025-10-10'
-                    },
-                    {
-                        jobId: 'j062',
-                        jobTitle: 'TV Audio System Fix',
-                        completedDate: '2025-09-28',
-                        hoursWorked: 3,
-                        amount: 8400,
-                        paymentStatus: 'paid',
-                        paidDate: '2025-09-30'
-                    }
-                ]
-            },
-            {
-                id: 'f4',
-                firstName: 'Dilani',
-                lastName: 'Wickramasinghe',
-                specialty: 'Air Conditioner Repair',
-                experience: 6,
-                hourlyRate: 3200,
-                rating: 4.7,
-                status: 'Payment Pending',
-                email: 'dilani.wick@email.com',
-                phone: '+94 77 456 7804',
-                avatar: 'DW',
-                completedJobs: 178,
-                responseTime: '1 hour',
-                // Assignment tracking
-                currentAssignment: {
-                    jobId: 'j095',
-                    jobTitle: 'Central AC Maintenance',
-                    assignedDate: '2025-10-10',
-                    startDate: '2025-10-11',
-                    deadline: '2025-10-20',
-                    estimatedHours: 12,
-                    agreedRate: 3200,
-                    workStatus: 'completed',
-                    completedDate: '2025-10-19',
-                    totalAmount: 38400,
-                    paymentStatus: 'payment-due',
-                    workProgress: 100,
-                    completionEvidence: 'Full system cleaning, refrigerant refill, tested cooling efficiency. All working perfectly.',
-                    notes: 'Payment pending for 4 days'
-                },
-                assignmentHistory: [
-                    {
-                        jobId: 'j081',
-                        jobTitle: 'Split AC Installation',
-                        completedDate: '2025-10-05',
-                        hoursWorked: 10,
-                        amount: 32000,
-                        paymentStatus: 'paid',
-                        paidDate: '2025-10-07'
-                    }
-                ]
-            },
-            {
-                id: 'f5',
-                firstName: 'Tharindu',
-                lastName: 'Jayasuriya',
-                specialty: 'Refrigerator Repair',
-                experience: 4,
-                hourlyRate: 2600,
-                rating: 4.5,
-                status: 'Available',
-                email: 'tharindu.j@email.com',
-                phone: '+94 71 567 8905',
-                avatar: 'TJ',
-                completedJobs: 123,
-                responseTime: '3 hours',
-                // Assignment tracking
-                currentAssignment: null,
-                assignmentHistory: [
-                    {
-                        jobId: 'j072',
-                        jobTitle: 'Refrigerator Compressor Replacement',
-                        completedDate: '2025-10-10',
-                        hoursWorked: 8,
-                        amount: 20800,
-                        paymentStatus: 'paid',
-                        paidDate: '2025-10-12'
-                    }
-                ]
-            },
-            {
-                id: 'f6',
-                firstName: 'Amaya',
-                lastName: 'Dissanayake',
-                specialty: 'Washing Machine Repair',
-                experience: 3,
-                hourlyRate: 2400,
-                rating: 4.8,
-                status: 'Assigned',
-                email: 'amaya.diss@email.com',
-                phone: '+94 76 678 9006',
-                avatar: 'AD',
-                completedJobs: 95,
-                responseTime: '2 hours',
-                // Assignment tracking
-                currentAssignment: {
-                    jobId: 'j103',
-                    jobTitle: 'Front Load Washer Drum Repair',
-                    assignedDate: '2025-10-20',
-                    startDate: '2025-10-21',
-                    deadline: '2025-10-27',
-                    estimatedHours: 7,
-                    agreedRate: 2400,
-                    workStatus: 'in-progress',
-                    completedDate: null,
-                    totalAmount: 16800,
-                    paymentStatus: 'pending',
-                    workProgress: 35,
-                    notes: 'Parts replaced, testing in progress'
-                },
-                assignmentHistory: []
-            },
-            {
-                id: 'f7',
-                firstName: 'Nuwan',
-                lastName: 'Bandara',
-                specialty: 'Microwave Repair',
-                experience: 2,
-                hourlyRate: 2200,
-                rating: 4.4,
-                status: 'Available',
-                email: 'nuwan.band@email.com',
-                phone: '+94 77 789 0107',
-                avatar: 'NB',
-                completedJobs: 67,
-                responseTime: '4 hours',
-                // Assignment tracking
-                currentAssignment: null,
-                assignmentHistory: []
-            },
-            {
-                id: 'f8',
-                firstName: 'Sanduni',
-                lastName: 'Perera',
-                specialty: 'Computer Repair',
-                experience: 5,
-                hourlyRate: 3500,
-                rating: 4.9,
-                status: 'Available',
-                email: 'sanduni.p@email.com',
-                phone: '+94 71 890 1208',
-                avatar: 'SP',
-                completedJobs: 201,
-                responseTime: '1 hour',
-                // Assignment tracking
-                currentAssignment: null,
-                assignmentHistory: [
-                    {
-                        jobId: 'j089',
-                        jobTitle: 'Desktop PC Motherboard Replacement',
-                        completedDate: '2025-10-15',
-                        hoursWorked: 6,
-                        amount: 21000,
-                        paymentStatus: 'paid',
-                        paidDate: '2025-10-17'
-                    }
-                ]
-            },
-            {
-                id: 'f9',
-                firstName: 'Ishara',
-                lastName: 'Gunasekara',
-                specialty: 'Printer Repair',
-                experience: 4,
-                hourlyRate: 2300,
-                rating: 4.6,
-                status: 'Available',
-                email: 'ishara.guna@email.com',
-                phone: '+94 76 901 2309',
-                avatar: 'IG',
-                completedJobs: 134,
-                responseTime: '2 hours',
-                // Assignment tracking
-                currentAssignment: null,
-                assignmentHistory: []
-            },
-            {
-                id: 'f10',
-                firstName: 'Chamath',
-                lastName: 'Silva',
-                specialty: 'Home Theater Setup',
-                experience: 6,
-                hourlyRate: 3000,
-                rating: 4.7,
-                status: 'Assigned',
-                email: 'chamath.silva@email.com',
-                phone: '+94 77 012 3410',
-                avatar: 'CS',
-                completedJobs: 167,
-                responseTime: '1 hour',
-                // Assignment tracking
-                currentAssignment: {
-                    jobId: 'j100',
-                    jobTitle: '5.1 Surround Sound Installation',
-                    assignedDate: '2025-10-17',
-                    startDate: '2025-10-18',
-                    deadline: '2025-10-24',
-                    estimatedHours: 10,
-                    agreedRate: 3000,
-                    workStatus: 'in-progress',
-                    completedDate: null,
-                    totalAmount: 30000,
-                    paymentStatus: 'pending',
-                    workProgress: 75,
-                    notes: 'Speaker installation complete, calibration in progress'
-                },
-                assignmentHistory: []
-            },
-            {
-                id: 'f11',
-                firstName: 'Malsha',
-                lastName: 'Rajapaksha',
-                specialty: 'Dishwasher Repair',
-                experience: 3,
-                hourlyRate: 2500,
-                rating: 4.5,
-                status: 'Available',
-                email: 'malsha.raja@email.com',
-                phone: '+94 71 123 4511',
-                avatar: 'MR',
-                completedJobs: 89,
-                responseTime: '3 hours',
-                // Assignment tracking
-                currentAssignment: null,
-                assignmentHistory: []
-            },
-            {
-                id: 'f12',
-                firstName: 'Dinuka',
-                lastName: 'Wijesinghe',
-                specialty: 'Water Heater Repair',
-                experience: 5,
-                hourlyRate: 2700,
-                rating: 4.8,
-                status: 'Available',
-                email: 'dinuka.wije@email.com',
-                phone: '+94 76 234 5612',
-                avatar: 'DW',
-                completedJobs: 145,
-                responseTime: '2 hours',
-                // Assignment tracking
-                currentAssignment: null,
-                assignmentHistory: []
-            }
-        ];
-
-        const applicationsData = [
-            {
-                id: 'a1',
-                firstName: 'Saman',
-                lastName: 'Jayasinghe',
-                specialty: 'Air Conditioner Repair',
-                experience: 4,
-                expectedRate: 3200,
-                applicationDate: '2025-10-21',
-                email: 'saman.jayasinghe@email.com',
-                phone: '+94 77 123 4567',
-                avatar: 'SJ',
-                status: 'new',
-                coverLetter: 'Experienced HVAC technician with 4 years of hands-on experience in air conditioning repair and maintenance. Specialized in both residential and commercial systems with excellent problem-solving skills and customer service.',
-                skills: ['HVAC Systems', 'Refrigeration', 'Electrical Troubleshooting', 'Customer Service', 'Safety Protocols'],
-                certifications: ['HVAC Certified', 'Refrigeration License'],
-                previousEmployer: 'Cool Air Solutions'
-            },
-            {
-                id: 'a2',
-                firstName: 'Priya',
-                lastName: 'Rathnayake',
-                specialty: 'Washing Machine Repair',
-                experience: 2,
-                expectedRate: 2200,
-                applicationDate: '2025-10-20',
-                email: 'priya.rathnayake@email.com',
-                phone: '+94 71 234 5678',
-                avatar: 'PR',
-                status: 'new',
-                coverLetter: 'Dedicated appliance repair specialist with 2 years of experience in washing machine and dryer repairs. Known for quick diagnostics and efficient repairs with high customer satisfaction ratings.',
-                skills: ['Appliance Repair', 'Mechanical Systems', 'Diagnostic Tools', 'Time Management', 'Technical Documentation'],
-                certifications: ['Appliance Technician Certificate'],
-                previousEmployer: 'Home Appliance Center'
-            },
-            {
-                id: 'a3',
-                firstName: 'Ravindu',
-                lastName: 'Amarasinghe',
-                specialty: 'Plumbing',
-                experience: 6,
-                expectedRate: 2800,
-                applicationDate: '2025-10-20',
-                email: 'ravindu.amar@email.com',
-                phone: '+94 76 345 6789',
-                avatar: 'RA',
-                status: 'new',
-                coverLetter: 'Professional plumber with 6 years of experience in residential and commercial plumbing. Expert in pipe fitting, leak detection, and water system maintenance.',
-                skills: ['Pipe Fitting', 'Leak Detection', 'Water Systems', 'Drainage', 'Emergency Repairs'],
-                certifications: ['Master Plumber License', 'Gas Fitting Certificate'],
-                previousEmployer: 'Lanka Plumbing Services'
-            },
-            {
-                id: 'a4',
-                firstName: 'Sachini',
-                lastName: 'Fernando',
-                specialty: 'Electrical Work',
-                experience: 5,
-                expectedRate: 3000,
-                applicationDate: '2025-10-19',
-                email: 'sachini.fern@email.com',
-                phone: '+94 77 456 7890',
-                avatar: 'SF',
-                status: 'pending',
-                coverLetter: 'Certified electrician with 5 years experience in residential and commercial electrical installations and repairs. Specialized in modern electrical systems and energy-efficient solutions.',
-                skills: ['Electrical Installation', 'Wiring', 'Circuit Design', 'Safety Compliance', 'Troubleshooting'],
-                certifications: ['Licensed Electrician', 'Electrical Safety Certificate'],
-                previousEmployer: 'Power Solutions Lanka'
-            },
-            {
-                id: 'a5',
-                firstName: 'Hasitha',
-                lastName: 'Wijeratne',
-                specialty: 'Carpentry',
-                experience: 7,
-                expectedRate: 2600,
-                applicationDate: '2025-10-19',
-                email: 'hasitha.wije@email.com',
-                phone: '+94 71 567 8901',
-                avatar: 'HW',
-                status: 'pending',
-                coverLetter: 'Master carpenter with 7 years of experience in custom woodwork, furniture repair, and interior finishing. Known for attention to detail and quality craftsmanship.',
-                skills: ['Custom Woodwork', 'Furniture Making', 'Cabinet Installation', 'Wood Finishing', 'Blueprint Reading'],
-                certifications: ['Master Carpenter Certificate'],
-                previousEmployer: 'Fine Wood Crafts'
-            },
-            {
-                id: 'a6',
-                firstName: 'Nadeesha',
-                lastName: 'Bandara',
-                specialty: 'Painting',
-                experience: 3,
-                expectedRate: 2000,
-                applicationDate: '2025-10-18',
-                email: 'nadeesha.band@email.com',
-                phone: '+94 76 678 9012',
-                avatar: 'NB',
-                status: 'pending',
-                coverLetter: 'Professional painter with 3 years of experience in interior and exterior painting. Expertise in color consultation, surface preparation, and finishing techniques.',
-                skills: ['Interior Painting', 'Exterior Painting', 'Surface Prep', 'Color Matching', 'Spray Painting'],
-                certifications: ['Professional Painter Certificate'],
-                previousEmployer: 'Color Masters'
-            },
-            {
-                id: 'a7',
-                firstName: 'Kavinda',
-                lastName: 'Perera',
-                specialty: 'TV & Audio Repair',
-                experience: 4,
-                expectedRate: 2700,
-                applicationDate: '2025-10-17',
-                email: 'kavinda.per@email.com',
-                phone: '+94 77 789 0123',
-                avatar: 'KP',
-                status: 'reviewed',
-                coverLetter: 'Electronics technician specializing in TV and audio equipment repair. 4 years of experience with LED/LCD TVs, home theater systems, and sound equipment.',
-                skills: ['TV Repair', 'Audio Systems', 'Electronics Diagnosis', 'Component Replacement', 'System Calibration'],
-                certifications: ['Electronics Technician Certificate', 'Audio/Video Specialist'],
-                previousEmployer: 'Tech Repair Center'
-            },
-            {
-                id: 'a8',
-                firstName: 'Tharushi',
-                lastName: 'Silva',
-                specialty: 'Refrigeration',
-                experience: 5,
-                expectedRate: 2900,
-                applicationDate: '2025-10-16',
-                email: 'tharushi.silva@email.com',
-                phone: '+94 71 890 1234',
-                avatar: 'TS',
-                status: 'reviewed',
-                coverLetter: 'Refrigeration specialist with 5 years experience in repairing and maintaining refrigerators, freezers, and commercial cooling systems. EPA certified.',
-                skills: ['Refrigeration Systems', 'Coolant Handling', 'Compressor Repair', 'Temperature Control', 'Preventive Maintenance'],
-                certifications: ['EPA Section 608', 'Refrigeration Technician License'],
-                previousEmployer: 'Cool Tech Services'
-            }
-        ];
-
         // Utility functions
         function formatDate(dateString) {
             const date = new Date(dateString);
@@ -1163,6 +525,12 @@
 
         function assignJob(freelancerId) {
             currentFreelancerId = freelancerId;
+            // TODO: Fetch freelancer from API instead of mock data
+            console.warn('assignJob: Mock data removed - implement API call to fetch freelancer details');
+            alert('This feature requires API integration. Mock data has been removed.');
+            return;
+
+            /* Original mock code - to be replaced with API call
             const freelancer = freelancersData.find(f => f.id === freelancerId);
             if (!freelancer) return;
 
@@ -1182,10 +550,17 @@
             // Open assignment drawer
             document.getElementById('assignJobDrawer').classList.add('active');
             updateCostSummary();
+            */
         }
 
         function viewFreelancerDetails(freelancerId) {
             currentFreelancerId = freelancerId;
+            // TODO: Fetch freelancer from API instead of mock data
+            console.warn('viewFreelancerDetails: Mock data removed - implement API call to fetch freelancer details');
+            alert('This feature requires API integration. Mock data has been removed.');
+            return;
+
+            /* Original mock code - to be replaced with API call
             const freelancer = freelancersData.find(f => f.id === freelancerId);
             if (!freelancer) return;
 
@@ -1231,6 +606,7 @@
 
             // Open drawer
             document.getElementById('freelancerDetailsDrawer').classList.add('active');
+            */
         }
 
         function closeFreelancerDetailsDrawer() {
@@ -1253,6 +629,12 @@
         const chatMessagesData = {};
 
         function contactFreelancer() {
+            // TODO: Fetch freelancer from API instead of mock data
+            console.warn('contactFreelancer: Mock data removed - implement API call to fetch freelancer details');
+            alert('This feature requires API integration. Mock data has been removed.');
+            return;
+
+            /* Original mock code - to be replaced with API call
             const freelancer = freelancersData.find(f => f.id === currentFreelancerId);
             if (!freelancer) return;
             
@@ -1270,9 +652,16 @@
             
             // Open chat drawer
             document.getElementById('chatDrawer').classList.add('active');
+            */
         }
 
         function openChatWithFreelancer(freelancerId) {
+            // TODO: Fetch freelancer from API instead of mock data
+            console.warn('openChatWithFreelancer: Mock data removed - implement API call');
+            alert('This feature requires API integration. Mock data has been removed.');
+            return;
+
+            /* Original mock code - to be replaced with API call
             const freelancer = freelancersData.find(f => f.id === freelancerId);
             if (!freelancer) return;
             
@@ -1290,6 +679,7 @@
             
             // Open chat drawer
             document.getElementById('chatDrawer').classList.add('active');
+            */
         }
 
         function closeChatDrawer() {
@@ -1385,7 +775,7 @@
                     <div class="chat-attachment">
                         <i class="fas fa-${getFileIcon(msg.attachment.type)}"></i>
                         <span>${msg.attachment.name}</span>
-                        <button class="attachment-download" onclick="downloadAttachment('${msg.attachment.url}')">
+                        <button class="action-btn-sm info" onclick="downloadAttachment('${msg.attachment.url}')">
                             <i class="fas fa-download"></i>
                         </button>
                     </div>
@@ -1700,13 +1090,9 @@
         }
 
         function updateStats() {
-            // Update total counts
-            const totalEmployees = employeeCategoriesData.reduce((sum, cat) => sum + cat.count, 0);
-            const totalFreelancers = freelancersData.length;
-            const totalApplications = applicationsData.length;
-
-            // You can update any stat displays here if needed
-            console.log(`Total: ${totalEmployees} employees, ${totalFreelancers} freelancers, ${totalApplications} applications`);
+            // TODO: Update stats from real API/database data
+            // Mock data has been removed - implement API calls here
+            console.log('Update stats from database');
         }
 
         // Initialize search functionality
@@ -1748,92 +1134,39 @@
         // FREELANCER FILTERING SYSTEM
         // ================================================
         
-        const activeFilters = {
-            status: 'all',
-            specialty: 'all',
-            rating: 'all',
-            rate: 'all'
-        };
-
-        function applyFreelancerFilter(filterType, filterValue, buttonElement) {
-            // Update active filters
-            activeFilters[filterType] = filterValue;
-
-            // Update active tab styling for status filter
-            if (filterType === 'status' && buttonElement) {
-                document.querySelectorAll('.filter-tab[data-filter-type="status"]').forEach(tab => {
-                    tab.classList.remove('active');
-                });
-                buttonElement.classList.add('active');
-            }
-
-            // Update dropdowns
-            if (filterType !== 'status') {
-                const selectElement = document.getElementById(filterType + 'Filter');
-                if (selectElement) {
-                    selectElement.value = filterValue;
-                }
-            }
-
-            // Apply filters
-            filterFreelancers();
-            updateActiveFiltersDisplay();
-        }
-
-        function filterFreelancers() {
+        function filterFreelancers(status = 'all') {
             const freelancerCards = document.querySelectorAll('.freelancer-card');
             let visibleCount = 0;
 
-            freelancerCards.forEach(card => {
-                const freelancerId = card.getAttribute('data-freelancer-id');
-                const freelancer = freelancersData.find(f => f.id === freelancerId);
-                
-                if (!freelancer) {
-                    card.style.display = 'none';
-                    return;
-                }
+            // Update active tab
+            document.querySelectorAll('.freelancer-filter-tabs .tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
 
+            freelancerCards.forEach(card => {
                 let shouldShow = true;
 
-                // Status filter
-                if (activeFilters.status !== 'all') {
-                    if (activeFilters.status === 'assigned') {
-                        shouldShow = shouldShow && freelancer.currentAssignment !== null;
-                    } else {
-                        shouldShow = shouldShow && freelancer.status === activeFilters.status;
-                    }
-                }
-
-                // Specialty filter
-                if (activeFilters.specialty !== 'all') {
-                    shouldShow = shouldShow && freelancer.specialty === activeFilters.specialty;
-                }
-
-                // Rating filter
-                if (activeFilters.rating !== 'all') {
-                    const ratingThreshold = parseFloat(activeFilters.rating);
-                    shouldShow = shouldShow && freelancer.rating >= ratingThreshold;
-                }
-
-                // Hourly rate filter
-                if (activeFilters.rate !== 'all') {
-                    const rate = freelancer.hourlyRate;
-                    if (activeFilters.rate === '0-2000') {
-                        shouldShow = shouldShow && rate < 2000;
-                    } else if (activeFilters.rate === '2000-2500') {
-                        shouldShow = shouldShow && rate >= 2000 && rate <= 2500;
-                    } else if (activeFilters.rate === '2500-3000') {
-                        shouldShow = shouldShow && rate >= 2500 && rate <= 3000;
-                    } else if (activeFilters.rate === '3000+') {
-                        shouldShow = shouldShow && rate > 3000;
-                    }
+                // Status-based filtering
+                const cardStatus = card.dataset.status.toLowerCase();
+                
+                if (status === 'all') {
+                    shouldShow = true;
+                } else if (status === 'available') {
+                    shouldShow = cardStatus === 'available';
+                } else if (status === 'busy') {
+                    shouldShow = cardStatus === 'busy';
+                } else if (status === 'assigned') {
+                    // Show freelancers with current assignments
+                    const hasAssignment = card.querySelector('.freelancer-assignment') !== null;
+                    shouldShow = hasAssignment;
                 }
 
                 card.style.display = shouldShow ? 'block' : 'none';
                 if (shouldShow) visibleCount++;
             });
 
-            // Show/hide empty state
+            // Update empty state
             const freelancerList = document.querySelector('.freelancer-list');
             let emptyState = freelancerList.querySelector('.empty-state');
             
@@ -1841,105 +1174,19 @@
                 if (!emptyState) {
                     emptyState = document.createElement('div');
                     emptyState.className = 'empty-state';
+                    emptyState.style.gridColumn = '1 / -1';
+                    emptyState.style.textAlign = 'center';
+                    emptyState.style.padding = '60px 20px';
                     emptyState.innerHTML = `
                         <i class="fas fa-filter" style="font-size: 48px; color: #d1d5db; margin-bottom: 15px;"></i>
-                        <h3 style="color: #6b7280; margin-bottom: 8px;">No freelancers match your filters</h3>
-                        <p style="color: #9ca3af;">Try adjusting your filter criteria</p>
+                        <h3 style="color: #6b7280; margin-bottom: 8px;">No freelancers found</h3>
+                        <p style="color: #9ca3af;">No ${status === 'all' ? '' : status} freelancers at the moment</p>
                     `;
                     freelancerList.appendChild(emptyState);
                 }
             } else if (emptyState) {
                 emptyState.remove();
             }
-        }
-
-        function updateActiveFiltersDisplay() {
-            const activeFiltersDisplay = document.getElementById('activeFiltersDisplay');
-            const hasActiveFilters = Object.values(activeFilters).some(value => value !== 'all');
-
-            if (!hasActiveFilters) {
-                activeFiltersDisplay.style.display = 'none';
-                return;
-            }
-
-            activeFiltersDisplay.style.display = 'flex';
-            
-            // Clear existing tags (except the label)
-            const existingTags = activeFiltersDisplay.querySelectorAll('.active-filter-tag');
-            existingTags.forEach(tag => tag.remove());
-
-            // Add filter tags
-            Object.entries(activeFilters).forEach(([type, value]) => {
-                if (value !== 'all') {
-                    const tag = document.createElement('span');
-                    tag.className = 'active-filter-tag';
-                    
-                    let displayText = '';
-                    if (type === 'status') {
-                        displayText = `Status: ${value}`;
-                    } else if (type === 'specialty') {
-                        displayText = value;
-                    } else if (type === 'rating') {
-                        displayText = `${value}+ Stars`;
-                    } else if (type === 'rate') {
-                        displayText = `Rate: ${value.replace('-', ' - ')} LKR`;
-                    }
-                    
-                    tag.innerHTML = `
-                        ${displayText}
-                        <button class="remove-filter" onclick="removeFilter('${type}')" title="Remove filter">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    `;
-                    
-                    activeFiltersDisplay.appendChild(tag);
-                }
-            });
-        }
-
-        function removeFilter(filterType) {
-            applyFreelancerFilter(filterType, 'all');
-            
-            // Reset UI elements
-            if (filterType === 'status') {
-                const allTab = document.querySelector('.filter-tab[data-filter-value="all"]');
-                if (allTab) {
-                    document.querySelectorAll('.filter-tab[data-filter-type="status"]').forEach(tab => {
-                        tab.classList.remove('active');
-                    });
-                    allTab.classList.add('active');
-                }
-            } else {
-                const selectElement = document.getElementById(filterType + 'Filter');
-                if (selectElement) {
-                    selectElement.value = 'all';
-                }
-            }
-        }
-
-        function resetFreelancerFilters() {
-            // Reset all filters
-            activeFilters.status = 'all';
-            activeFilters.specialty = 'all';
-            activeFilters.rating = 'all';
-            activeFilters.rate = 'all';
-
-            // Reset UI
-            document.querySelectorAll('.filter-tab[data-filter-type="status"]').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            const allTab = document.querySelector('.filter-tab[data-filter-value="all"]');
-            if (allTab) allTab.classList.add('active');
-
-            document.getElementById('specialtyFilter').value = 'all';
-            document.getElementById('ratingFilter').value = 'all';
-            document.getElementById('rateFilter').value = 'all';
-
-            // Reapply filters
-            filterFreelancers();
-            updateActiveFiltersDisplay();
-            
-            showNotification('Filters reset successfully', 'success');
         }
 
         // Initialize page when DOM is loaded
@@ -2034,6 +1281,119 @@
             });
         });
 
+        // Load dashboard preview data
+        async function loadDashboardPreviews() {
+            const companyId = <?php echo $_SESSION['user_id'] ?? 0; ?>;
+            if (companyId === 0) return;
+
+            try {
+                // Load applications preview
+                const appResponse = await fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-applications.php?company_id=${companyId}`);
+                if (appResponse.ok) {
+                    const applications = await appResponse.json();
+                    updateApplicationsPreview(applications);
+                }
+
+                // Load job postings preview
+                const jobResponse = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-postings.php?action=list&company_id=${companyId}`);
+                if (jobResponse.ok) {
+                    const jobData = await jobResponse.json();
+                    if (jobData.success && jobData.postings) {
+                        updateJobPostingsPreview(jobData.postings);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading dashboard previews:', error);
+            }
+        }
+
+        // Update applications preview in dashboard
+        function updateApplicationsPreview(applications) {
+            // Update counts
+            const total = applications.length;
+            const today = new Date().toDateString();
+            const newToday = applications.filter(app => new Date(app.application_date).toDateString() === today).length;
+            const reviewed = applications.filter(app => app.status === 'reviewed' || app.status === 'interview').length;
+
+            document.getElementById('applicationCount').textContent = total;
+            document.getElementById('newTodayCount').textContent = newToday;
+            document.getElementById('reviewedCount').textContent = reviewed;
+
+            // Update recent applications list
+            const listContainer = document.getElementById('recentApplicationsList');
+            if (applications.length === 0) {
+                listContainer.innerHTML = '<p style="text-align: center; color: #718096; padding: 20px;">No applications yet</p>';
+                return;
+            }
+
+            // Sort by date and get latest 3
+            const recentApps = applications
+                .sort((a, b) => new Date(b.application_date) - new Date(a.application_date))
+                .slice(0, 3);
+
+            listContainer.innerHTML = recentApps.map(app => {
+                const daysAgo = Math.floor((new Date() - new Date(app.application_date)) / (1000 * 60 * 60 * 24));
+                const timeText = daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`;
+                const initials = (app.first_name?.charAt(0) || '') + (app.last_name?.charAt(0) || '');
+                const statusClass = app.status === 'pending' ? 'pending' : 'new';
+
+                return `
+                    <div class="application-item">
+                        <div class="application-avatar">${initials}</div>
+                        <div class="application-info">
+                            <span class="application-name">${app.first_name} ${app.last_name}</span>
+                            <span class="application-details">${app.specialty || 'General'} • ${timeText}</span>
+                        </div>
+                        <div class="application-status ${statusClass}">${app.status || 'New'}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update job postings preview in dashboard
+        function updateJobPostingsPreview(postings) {
+            // Update counts
+            const activeCount = postings.filter(p => p.status === 'open').length;
+            const draftCount = postings.filter(p => p.status === 'draft').length;
+            const totalApps = postings.reduce((sum, p) => sum + (parseInt(p.application_count) || 0), 0);
+
+            document.getElementById('activeJobPostsCount').textContent = activeCount;
+            document.getElementById('draftPostsCount').textContent = draftCount;
+            document.getElementById('totalJobApplicationsCount').textContent = totalApps;
+
+            // Update recent postings list
+            const listContainer = document.getElementById('recentJobPostingsList');
+            if (postings.length === 0) {
+                listContainer.innerHTML = '<p style="text-align: center; color: #718096; padding: 20px;">No job postings yet</p>';
+                return;
+            }
+
+            // Sort by date and get latest 3 active postings
+            const recentPosts = postings
+                .filter(p => p.status === 'open')
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                .slice(0, 3);
+
+            listContainer.innerHTML = recentPosts.map(post => {
+                const daysAgo = Math.floor((new Date() - new Date(post.created_at)) / (1000 * 60 * 60 * 24));
+                const timeText = daysAgo === 0 ? 'today' : daysAgo === 1 ? '1 day ago' : 
+                               daysAgo < 7 ? `${daysAgo} days ago` : 
+                               daysAgo < 30 ? `${Math.floor(daysAgo / 7)} week${Math.floor(daysAgo / 7) > 1 ? 's' : ''} ago` : 
+                               `${Math.floor(daysAgo / 30)} month${Math.floor(daysAgo / 30) > 1 ? 's' : ''} ago`;
+                const appCount = parseInt(post.application_count) || 0;
+
+                return `
+                    <div class="job-posting-item">
+                        <div class="job-posting-info">
+                            <span class="job-title">${post.title}</span>
+                            <span class="job-details">${appCount} application${appCount !== 1 ? 's' : ''} • ${timeText}</span>
+                        </div>
+                        <div class="job-status active">Active</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         // Initialize page functionality
         function initializePage() {
             initializeFilters();
@@ -2041,6 +1401,13 @@
             loadFreelancers();
             loadApplications();
             updateStats();
+            loadDashboardPreviews(); // Load dashboard preview data
+            
+            // Load job postings on page load
+            const companyId = <?php echo $_SESSION['user_id'] ?? 0; ?>;
+            if (companyId > 0) {
+                loadJobPostings(companyId);
+            }
         }
 
         // Initialize filter functionality
@@ -2077,16 +1444,23 @@
             const container = document.querySelector('.freelancer-list');
             container.innerHTML = '';
 
-            freelancersData.forEach(freelancer => {
-                const item = createFreelancerItem(freelancer);
-                container.appendChild(item);
-            });
+            // TODO: Load freelancers from API/database
+            // The freelancersData mock has been removed
+            // Implement API call here to fetch real freelancer data
+            container.innerHTML = `
+                <div class="empty-state" style="padding: 60px 20px; text-align: center;">
+                    <i class="fas fa-user-tie" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+                    <h3 style="color: #666; margin-bottom: 10px;">No Freelancers Available</h3>
+                    <p style="color: #999;">Freelancers will appear here when they are available in the system.</p>
+                </div>
+            `;
         }
 
         // Create freelancer item
         function createFreelancerItem(freelancer) {
             const item = document.createElement('div');
-            item.className = 'freelancer-item';
+            item.className = 'freelancer-card';
+            item.dataset.status = freelancer.status;
 
             // Determine if freelancer is available for assignment
             const isAvailable = freelancer.status.toLowerCase() === 'available';
@@ -2094,7 +1468,19 @@
                                      freelancer.currentAssignment.workStatus === 'completed' &&
                                      freelancer.currentAssignment.paymentStatus === 'payment-due';
 
-            // Build assignment status HTML
+            // Status badge configuration
+            const statusConfig = {
+                'Available': { class: 'available', icon: 'fas fa-check-circle', label: 'Available' },
+                'Busy': { class: 'busy', icon: 'fas fa-clock', label: 'Busy' },
+                'Unavailable': { class: 'unavailable', icon: 'fas fa-times-circle', label: 'Unavailable' }
+            };
+
+            const status = statusConfig[freelancer.status] || statusConfig['Available'];
+
+            // Get initials for avatar
+            const initials = freelancer.avatar || (freelancer.firstName.charAt(0) + freelancer.lastName.charAt(0)).toUpperCase();
+
+            // Assignment info HTML
             let assignmentHTML = '';
             if (freelancer.currentAssignment) {
                 const assignment = freelancer.currentAssignment;
@@ -2102,74 +1488,108 @@
                 const statusText = getAssignmentStatusText(assignment.workStatus, assignment.paymentStatus);
                 
                 assignmentHTML = `
-                    <div class="current-assignment-info">
-                        <div class="assignment-header">
-                            <i class="fas fa-briefcase"></i>
-                            <span class="assignment-job-title">${assignment.jobTitle}</span>
+                    <div class="freelancer-assignment">
+                        <h6><i class="fas fa-briefcase"></i> Current Assignment</h6>
+                        <p class="assignment-title">${assignment.jobTitle}</p>
+                        <div class="assignment-progress-bar">
+                            <div class="progress-fill" style="width: ${assignment.workProgress}%"></div>
                         </div>
-                        <div class="assignment-details">
-                            <div class="assignment-progress">
-                                <div class="progress-bar-mini">
-                                    <div class="progress-fill-mini" style="width: ${assignment.workProgress}%"></div>
-                                </div>
-                                <span class="progress-text">${assignment.workProgress}% Complete</span>
-                            </div>
-                            <div class="assignment-meta">
-                                <span class="assignment-status ${statusClass}">
-                                    <i class="fas ${getStatusIcon(assignment.workStatus, assignment.paymentStatus)}"></i>
-                                    ${statusText}
+                        <div class="assignment-meta">
+                            <span class="assignment-status ${statusClass}">
+                                <i class="fas ${getStatusIcon(assignment.workStatus, assignment.paymentStatus)}"></i>
+                                ${statusText}
+                            </span>
+                            ${assignment.workStatus === 'completed' ? `
+                                <span class="assignment-amount">
+                                    LKR ${assignment.totalAmount.toLocaleString()}
                                 </span>
-                                ${assignment.workStatus === 'completed' ? `
-                                    <span class="assignment-amount">
-                                        <i class="fas fa-money-bill-wave"></i>
-                                        LKR ${assignment.totalAmount.toLocaleString()}
-                                    </span>
-                                ` : ''}
-                            </div>
+                            ` : `
+                                <span class="assignment-progress-text">${assignment.workProgress}%</span>
+                            `}
                         </div>
                     </div>
                 `;
             }
 
             item.innerHTML = `
-                <div class="freelancer-main">
-                    <div class="freelancer-avatar">${freelancer.avatar}</div>
-                    <div class="freelancer-info">
-                        <h4>${freelancer.firstName} ${freelancer.lastName}</h4>
-                        <span class="freelancer-specialty">${freelancer.specialty}</span>
-                        <div class="freelancer-details">
-                            <span><i class="fas fa-calendar"></i> ${freelancer.experience} years exp</span>
-                            <span><i class="fas fa-money-bill"></i> LKR ${freelancer.hourlyRate.toLocaleString()}/hr</span>
-                            <span><i class="fas fa-star"></i> ${freelancer.rating}</span>
+                <div class="freelancer-header">
+                    <div class="freelancer-profile">
+                        <div class="freelancer-avatar-modern">${initials}</div>
+                        <div class="freelancer-info-modern">
+                            <h4>${freelancer.firstName} ${freelancer.lastName}</h4>
+                            <span class="freelancer-specialty-badge">
+                                <i class="fas fa-wrench"></i> ${freelancer.specialty}
+                            </span>
                         </div>
-                        <div class="freelancer-contact">
-                            <i class="fas fa-envelope"></i> ${freelancer.email}
-                        </div>
-                        ${assignmentHTML}
+                    </div>
+                    <div class="freelancer-badges">
+                        <span class="status-badge-fl ${status.class}">
+                            <i class="${status.icon}"></i> ${status.label}
+                        </span>
                     </div>
                 </div>
-                <div class="freelancer-actions">
-                    <span class="status-badge ${getFreelancerStatusClass(freelancer.status)}">${freelancer.status}</span>
-                    <div class="action-group">
-                        <button class="wf-btn wf-btn-view" onclick="viewFreelancerDetails('${freelancer.id}')" title="View Details">
+
+                <div class="freelancer-body">
+                    <div class="freelancer-details-grid">
+                        <div class="detail-item">
+                            <label>
+                                <span class="detail-icon">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </span>
+                                Experience
+                            </label>
+                            <span>${freelancer.experience} years</span>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <label>
+                                <span class="detail-icon">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </span>
+                                Hourly Rate
+                            </label>
+                            <span>LKR ${freelancer.hourlyRate.toLocaleString()}/hr</span>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <label>
+                                <span class="detail-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                                Email
+                            </label>
+                            <span>${freelancer.email}</span>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <label>
+                                <span class="detail-icon">
+                                    <i class="fas fa-star"></i>
+                                </span>
+                                Rating
+                            </label>
+                            <span>${freelancer.rating} <i class="fas fa-star" style="color: #fbbf24; font-size: 11px;"></i></span>
+                        </div>
+                    </div>
+
+                    ${assignmentHTML}
+
+                    <div class="freelancer-actions-modern">
+                        <button class="action-btn-sm info" onclick="viewFreelancerDetails('${freelancer.id}')" title="View Full Details">
                             <i class="fas fa-eye"></i>
-                            <span>View</span>
                         </button>
                         ${isAvailable ? `
-                        <button class="wf-btn wf-btn-assign" onclick="assignJob('${freelancer.id}')" title="Assign to Job">
+                        <button class="action-btn-sm success" onclick="assignJob('${freelancer.id}')" title="Assign to Job">
                             <i class="fas fa-plus-circle"></i>
-                            <span>Assign</span>
                         </button>
                         ` : ''}
                         ${hasCompletedWork ? `
-                        <button class="wf-btn wf-btn-payment" onclick="processPayment('${freelancer.id}')" title="Process Payment">
+                        <button class="action-btn-sm primary" onclick="processPayment('${freelancer.id}')" title="Process Payment">
                             <i class="fas fa-credit-card"></i>
-                            <span>Pay Now</span>
                         </button>
                         ` : ''}
-                        <button class="wf-btn wf-btn-chat" onclick="openChatWithFreelancer('${freelancer.id}')" title="Chat with Freelancer">
+                        <button class="action-btn-sm secondary" onclick="openChatWithFreelancer('${freelancer.id}')" title="Chat">
                             <i class="fas fa-comments"></i>
-                            <span>Chat</span>
                         </button>
                     </div>
                 </div>
@@ -2192,42 +1612,110 @@
         // Create application item
         function createApplicationItem(application) {
             const item = document.createElement('div');
-            item.className = 'application-item';
+            item.className = 'application-card';
+            item.dataset.status = application.status || 'new';
+
+            // Calculate days since application
+            const appliedDate = new Date(application.applicationDate);
+            const today = new Date();
+            const daysSince = Math.floor((today - appliedDate) / (1000 * 60 * 60 * 24));
+            const timeText = daysSince === 0 ? 'Today' : daysSince === 1 ? 'Yesterday' : `${daysSince} days ago`;
+
+            // Status badge configuration
+            const statusConfig = {
+                'new': { class: 'new', icon: 'fas fa-star', label: 'New' },
+                'reviewed': { class: 'reviewed', icon: 'fas fa-eye', label: 'Reviewed' },
+                'interview': { class: 'interview', icon: 'fas fa-comments', label: 'Interview' },
+                'pending': { class: 'pending', icon: 'fas fa-clock', label: 'Pending' }
+            };
+
+            const status = statusConfig[application.status || 'new'] || statusConfig['pending'];
+
+            // Get initials for avatar
+            const initials = application.avatar || (application.firstName.charAt(0) + application.lastName.charAt(0)).toUpperCase();
 
             item.innerHTML = `
-                <div class="application-main">
-                    <div class="application-avatar">${application.avatar}</div>
-                    <div class="application-info">
-                        <h4>${application.firstName} ${application.lastName}</h4>
-                        <span class="application-specialty">${application.specialty}</span>
-                        <div class="application-details">
-                            <span><i class="fas fa-calendar"></i> ${application.experience} years exp</span>
-                            <span><i class="fas fa-money-bill"></i> Expected: LKR ${application.expectedRate.toLocaleString()}/hr</span>
-                            <span><i class="fas fa-clock"></i> Applied ${formatDate(application.applicationDate)}</span>
+                <div class="application-header">
+                    <div class="applicant-profile">
+                        <div class="applicant-avatar">${initials}</div>
+                        <div class="applicant-info">
+                            <h4>${application.firstName} ${application.lastName}</h4>
+                            <span class="applicant-specialty">
+                                <i class="fas fa-wrench"></i> ${application.specialty} Specialist
+                            </span>
                         </div>
-                        <div class="application-contact">
-                            <i class="fas fa-envelope"></i> ${application.email} • <i class="fas fa-phone"></i> ${application.phone}
-                        </div>
+                    </div>
+                    <div class="application-badges">
+                        <span class="status-badge ${status.class}">
+                            <i class="${status.icon}"></i> ${status.label}
+                        </span>
+                        <span class="time-badge">
+                            <i class="fas fa-clock"></i> ${timeText}
+                        </span>
                     </div>
                 </div>
-                <div class="application-actions">
-                    <span class="status-badge pending-badge">
-                        <i class="fas fa-clock"></i> Pending
-                    </span>
-                    <div class="action-group">
-                        <button class="wf-btn wf-btn-view" onclick="viewApplicationDetails('${application.id}')" title="View Full Application">
-                            <i class="fas fa-file-alt"></i>
-                            <span>View</span>
-                        </button>
-                        <button class="wf-btn wf-btn-success" onclick="approveApplication('${application.id}')" title="Accept Application">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Accept</span>
-                        </button>
-                        <button class="wf-btn wf-btn-danger" onclick="rejectApplication('${application.id}')" title="Decline Application">
-                            <i class="fas fa-times-circle"></i>
-                            <span>Decline</span>
-                        </button>
+
+                <div class="application-details-grid">
+                    <div class="detail-item">
+                        <label>
+                            <span class="detail-icon experience">
+                                <i class="fas fa-briefcase"></i>
+                            </span>
+                            Experience
+                        </label>
+                        <span>${application.experience} years</span>
                     </div>
+                    
+                    <div class="detail-item">
+                        <label>
+                            <span class="detail-icon rate">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </span>
+                            Hourly Rate
+                        </label>
+                        <span>LKR ${application.expectedRate.toLocaleString()}/hr</span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <label>
+                            <span class="detail-icon email">
+                                <i class="fas fa-envelope"></i>
+                            </span>
+                            Email
+                        </label>
+                        <span>${application.email}</span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <label>
+                            <span class="detail-icon phone">
+                                <i class="fas fa-phone"></i>
+                            </span>
+                            Phone
+                        </label>
+                        <span>${application.phone}</span>
+                    </div>
+                </div>
+
+                ${application.coverLetter ? `
+                <div class="application-cover-letter">
+                    <h6>
+                        <i class="fas fa-file-alt"></i> Cover Letter
+                    </h6>
+                    <p>${application.coverLetter.substring(0, 150)}${application.coverLetter.length > 150 ? '... <a href="#" onclick="viewApplicationDetails(\'${application.id}\'); return false;" style="color: var(--primary-color); font-weight: 600;">Read more</a>' : ''}</p>
+                </div>
+                ` : ''}
+
+                <div class="application-actions">
+                    <button class="action-btn-sm primary" onclick="viewApplicationDetails('${application.id}')" title="View Full Details">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
+                    <button class="action-btn-sm success" onclick="approveApplication('${application.id}')" title="Accept Application">
+                        <i class="fas fa-check-circle"></i> Accept
+                    </button>
+                    <button class="action-btn-sm danger" onclick="rejectApplication('${application.id}')" title="Decline Application">
+                        <i class="fas fa-times-circle"></i> Decline
+                    </button>
                 </div>
             `;
 
@@ -2246,8 +1734,13 @@
                             <h4>${employee.firstName} ${employee.lastName}</h4>
                             <p class="employee-title">${employee.specialty} Specialist</p>
                             <p class="employee-contact">
-                                <i class="fas fa-envelope"></i> ${employee.email}
+                                <i class="fas fa-envelope"></i> ${employee.email && employee.email !== 'NULL' ? employee.email : 'No email provided'}
                             </p>
+                            ${employee.phone && employee.phone !== 'NULL' ? `
+                            <p class="employee-contact">
+                                <i class="fas fa-phone"></i> ${employee.phone}
+                            </p>
+                            ` : ''}
                         </div>
                     </div>
                     <div class="employee-badges">
@@ -3391,64 +2884,98 @@
             saveDraftJobPosting();
         }
 
-        function publishJobPosting() {
+        async function publishJobPosting() {
             if (!validateCurrentStep()) return;
             
-            const form = document.getElementById('jobPostingForm');
-            const editingId = form.dataset.editingId;
-            const formData = collectFormData();
-            formData.status = 'active';
-            formData.publishedAt = new Date().toISOString();
-            
-            if (editingId) {
-                // Update existing job posting
-                formData.id = parseInt(editingId);
-                formData.updatedAt = new Date().toISOString();
-                console.log('Updating job posting:', formData);
-                showNotification('Job posting updated and published successfully!', 'success');
-            } else {
-                // Create new job posting
-                console.log('Publishing new job posting:', formData);
-                showNotification('Job posting published successfully!', 'success');
+            try {
+                const form = document.getElementById('jobPostingForm');
+                const editingId = form.dataset.editingId;
+                const formData = collectFormData();
+                formData.status = 'open'; // Published status
+                formData.company_id = window.CURRENT_COMPANY_ID;
+                
+                let response;
+                if (editingId) {
+                    // Update existing job posting
+                    formData.posting_id = parseInt(editingId);
+                    response = await fetch('/2nd-Year-Group-Project/FixLanka/api/job-postings.php', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                } else {
+                    // Create new job posting
+                    response = await fetch('/2nd-Year-Group-Project/FixLanka/api/job-postings.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification(editingId ? 'Job posting updated successfully!' : 'Job posting published successfully!', 'success');
+                    closeJobPostingDrawer();
+                    
+                    // Refresh job postings list
+                    const companyId = <?php echo $_SESSION['user_id'] ?? 0; ?>;
+                    setTimeout(() => {
+                        loadJobPostings(companyId);
+                    }, 300);
+                } else {
+                    throw new Error(result.error || 'Failed to publish job posting');
+                }
+            } catch (error) {
+                console.error('Error publishing job posting:', error);
+                showNotification('Error: ' + error.message, 'error');
             }
-            
-            // Here you would typically send to server
-            // Example: await fetch('/api/job-postings', { method: editingId ? 'PUT' : 'POST', body: JSON.stringify(formData) })
-            
-            closeJobPostingDrawer();
-            
-            // Refresh job postings list
-            setTimeout(() => {
-                loadJobPostings();
-            }, 300);
         }
 
-        function saveDraftJobPosting() {
-            const form = document.getElementById('jobPostingForm');
-            const editingId = form.dataset.editingId;
-            const formData = collectFormData();
-            formData.status = 'draft';
-            
-            if (editingId) {
-                // Update existing draft
-                formData.id = parseInt(editingId);
-                formData.updatedAt = new Date().toISOString();
-                console.log('Updating job posting draft:', formData);
-                showNotification('Job posting draft updated successfully!', 'success');
-            } else {
-                // Create new draft
-                console.log('Saving job posting as draft:', formData);
-                showNotification('Job posting saved as draft!', 'success');
+        async function saveAsDraft() {
+            try {
+                const form = document.getElementById('jobPostingForm');
+                const editingId = form.dataset.editingId;
+                const formData = collectFormData();
+                formData.status = 'draft';
+                formData.company_id = window.CURRENT_COMPANY_ID;
+                
+                let response;
+                if (editingId) {
+                    // Update existing draft
+                    formData.posting_id = parseInt(editingId);
+                    response = await fetch('/2nd-Year-Group-Project/FixLanka/api/job-postings.php', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                } else {
+                    // Create new draft
+                    response = await fetch('/2nd-Year-Group-Project/FixLanka/api/job-postings.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Job posting saved as draft!', 'success');
+                    closeJobPostingDrawer();
+                    
+                    // Refresh job postings list
+                    const companyId = <?php echo $_SESSION['user_id'] ?? 0; ?>;
+                    setTimeout(() => {
+                        loadJobPostings(companyId);
+                    }, 300);
+                } else {
+                    throw new Error(result.error || 'Failed to save draft');
+                }
+            } catch (error) {
+                console.error('Error saving draft:', error);
+                showNotification('Error: ' + error.message, 'error');
             }
-            
-            // Here you would typically send to server
-            
-            closeJobPostingDrawer();
-            
-            // Refresh job postings list
-            setTimeout(() => {
-                loadJobPostings();
-            }, 300);
         }
 
         function collectFormData() {
@@ -3458,115 +2985,450 @@
             return {
                 title: document.getElementById('jobTitle').value,
                 category: document.getElementById('jobCategory').value,
-                employmentType: document.getElementById('employmentType').value,
-                relatedProject: document.getElementById('relatedProject').value,
+                employment_type: document.getElementById('employmentType').value,
+                related_project_id: document.getElementById('relatedProject').value || null,
                 description: document.getElementById('jobDescription').value,
-                minExperience: document.getElementById('minExperience').value,
-                priorityLevel: document.getElementById('priorityLevel').value,
-                minBudget: parseInt(document.getElementById('minBudget').value) || 0,
-                maxBudget: parseInt(document.getElementById('maxBudget').value) || 0,
-                applicationDeadline: document.getElementById('applicationDeadline').value,
-                requiredSkills: document.getElementById('requiredSkills').value,
-                locationRequirements: document.getElementById('locationRequirements').value,
-                notifyRepairers: notifyCheckbox ? notifyCheckbox.checked : false,
-                allowDirectApplications: directAppCheckbox ? directAppCheckbox.checked : false,
-                createdAt: new Date().toISOString()
+                min_experience: document.getElementById('minExperience').value,
+                priority_level: document.getElementById('priorityLevel').value,
+                min_budget: parseFloat(document.getElementById('minBudget').value) || 0,
+                max_budget: parseFloat(document.getElementById('maxBudget').value) || 0,
+                application_deadline: document.getElementById('applicationDeadline').value || null,
+                required_skills: document.getElementById('requiredSkills').value || null,
+                location: document.getElementById('locationRequirements').value || 'Not specified',
+                location_requirements: document.getElementById('locationRequirements').value || null,
+                notify_repairers: notifyCheckbox ? notifyCheckbox.checked : true,
+                allow_direct_applications: directAppCheckbox ? directAppCheckbox.checked : true
             };
+        }
+
+        // Load employee categories from database
+        async function loadEmployeeCategories() {
+            const container = document.querySelector('.employee-categories');
+            
+            if (!container) {
+                console.error('Employee categories container not found');
+                return;
+            }
+
+            // Show loading state
+            container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;"><i class="fas fa-spinner fa-spin"></i> Loading employees...</div>';
+
+            try {
+                const companyId = window.CURRENT_COMPANY_ID;
+                const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-employees.php?action=stats&company_id=${companyId}`);
+                const data = await response.json();
+
+                if (!data.specialties || data.specialties.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state" style="padding: 60px 20px; text-align: center;">
+                            <i class="fas fa-users" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+                            <h3 style="color: #666; margin-bottom: 10px;">No Employees Yet</h3>
+                            <p style="color: #999; margin-bottom: 20px;">Add your first employee to start building your team.</p>
+                            <button class="action-btn primary" onclick="openBulkStaffModal()">
+                                <i class="fas fa-user-plus"></i> Add Staff
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Build category cards
+                let html = '<div class="employee-categories-grid">';
+                
+                data.specialties.forEach(specialty => {
+                    const avgRate = parseFloat(specialty.avg_hourly_rate || 0).toFixed(2);
+                    const minRate = parseFloat(specialty.min_hourly_rate || 0).toFixed(2);
+                    const maxRate = parseFloat(specialty.max_hourly_rate || 0).toFixed(2);
+                    const avgRating = parseFloat(specialty.avg_rating || 0).toFixed(1);
+                    
+                    html += `
+                        <div class="category-card" data-specialty="${specialty.specialty}">
+                            <div class="category-header">
+                                <div class="category-icon">
+                                    <i class="fas fa-${getCategoryIcon(specialty.specialty)}"></i>
+                                </div>
+                                <h3>${specialty.specialty}</h3>
+                            </div>
+                            <div class="category-stats">
+                                <div class="stat-row">
+                                    <span class="stat-label">Total Employees:</span>
+                                    <span class="stat-value">${specialty.total_count || 0}</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Active:</span>
+                                    <span class="stat-value success">${specialty.active_count || 0}</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Inactive:</span>
+                                    <span class="stat-value secondary">${specialty.inactive_count || 0}</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Average Rating:</span>
+                                    <span class="stat-value">
+                                        <i class="fas fa-star" style="color: #fbbf24;"></i> ${avgRating}
+                                    </span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Hourly Rate:</span>
+                                    <span class="stat-value">LKR ${minRate} - ${maxRate}</span>
+                                </div>
+                            </div>
+                            <div class="category-actions">
+                                <button class="action-btn-sm info" onclick="viewEmployeesBySpecialty('${specialty.specialty}')" title="View Employees">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="action-btn-sm primary" onclick="addEmployeeToSpecialty('${specialty.specialty}')" title="Add Employee">
+                                    <i class="fas fa-user-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading employee categories:', error);
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: red;"><i class="fas fa-exclamation-circle"></i> Error loading employees</div>';
+            }
+        }
+
+        // Helper function to get icon for each category
+        function getCategoryIcon(specialty) {
+            const icons = {
+                'Electrician': 'bolt',
+                'Plumber': 'wrench',
+                'Painter': 'paint-roller',
+                'Carpenter': 'hammer',
+                'HVAC': 'fan',
+                'Mason': 'hard-hat',
+                'Welder': 'fire',
+                'Mechanic': 'cog',
+                'Technician': 'tools'
+            };
+            return icons[specialty] || 'user';
+        }
+
+        // View employees by specialty
+        function viewEmployeesBySpecialty(specialty) {
+            // TODO: Implement detailed view of employees by specialty
+            alert(`View all ${specialty} employees - Feature coming soon!`);
+        }
+
+        // Add employee to specialty
+        function addEmployeeToSpecialty(specialty) {
+            openBulkStaffModal();
+            // Pre-select the specialty in the modal
+            setTimeout(() => {
+                const specialtyInputs = document.querySelectorAll('.staff-specialty');
+                if (specialtyInputs.length > 0) {
+                    specialtyInputs[0].value = specialty;
+                }
+            }, 100);
+        }
+
+        // Load job postings from database
+        async function loadJobPostings() {
+            try {
+                const companyId = window.CURRENT_COMPANY_ID;
+                const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-postings.php?action=list&company_id=${companyId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayJobPostings(result.postings);
+                } else {
+                    console.error('Failed to load job postings:', result.error);
+                }
+            } catch (error) {
+                console.error('Error loading job postings:', error);
+            }
+        }
+
+        async function displayJobPostings(postings) {
+            const container = document.querySelector('.job-postings-list');
+            
+            if (!container) {
+                console.error('Job postings container not found');
+                return;
+            }
+
+            // If no postings, show empty state
+            if (!postings || postings.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-briefcase"></i>
+                        <h3>No Job Postings Yet</h3>
+                        <p>Create your first job posting to start recruiting repairers.</p>
+                        <button class="btn-primary" onclick="openJobPostingModal()">
+                            <i class="fas fa-plus"></i> Create Job Posting
+                        </button>
+                    </div>
+                `;
+                
+                // Update preview card stats
+                updateJobPostingsStats({ total: 0, drafts: 0, applications: 0 });
+                return;
+            }
+
+            // Clear container
+            container.innerHTML = '';
+
+            // Get application counts for each posting
+            const companyId = <?php echo $_SESSION['user_id'] ?? 0; ?>;
+            
+            // Calculate stats
+            let stats = {
+                total: postings.length,
+                drafts: postings.filter(p => p.status === 'draft').length,
+                applications: 0,
+                open: postings.filter(p => p.status === 'open').length
+            };
+
+            // Create and append cards
+            for (const posting of postings) {
+                try {
+                    // Get application count for this posting
+                    const appResponse = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-postings.php?action=applications&posting_id=${posting.posting_id}`);
+                    const appData = await appResponse.json();
+                    const applicationCount = appData.success ? appData.count : 0;
+                    
+                    stats.applications += applicationCount;
+                    
+                    const postingCard = createJobPostingCard(posting, applicationCount);
+                    container.appendChild(postingCard);
+                } catch (error) {
+                    console.error(`Error loading applications for posting ${posting.posting_id}:`, error);
+                    const postingCard = createJobPostingCard(posting, 0);
+                    container.appendChild(postingCard);
+                }
+            }
+
+            // Update preview card stats
+            updateJobPostingsStats(stats);
+        }
+
+        function updateJobPostingsStats(stats) {
+            // Update the preview card on dashboard
+            const mainStatNumber = document.querySelector('.job-postings-card .main-stat .stat-number');
+            const draftsNumber = document.querySelector('.job-postings-card .sub-stats .sub-stat:first-child .sub-number');
+            const applicationsNumber = document.querySelector('.job-postings-card .sub-stats .sub-stat:last-child .sub-number');
+            
+            if (mainStatNumber) mainStatNumber.textContent = stats.open || stats.total || 0;
+            if (draftsNumber) draftsNumber.textContent = stats.drafts || 0;
+            if (applicationsNumber) applicationsNumber.textContent = stats.applications || 0;
         }
 
         // Job Postings Management Functions
         function filterJobPostings(filter) {
             // Update active tab
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.job-posting-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
             
             // Filter job postings
             const postings = document.querySelectorAll('.job-posting-card');
+            let visibleCount = 0;
+            
             postings.forEach(posting => {
                 const status = posting.dataset.status;
-                if (filter === 'all' || status === filter) {
+                
+                // Map 'active' filter to 'open' status
+                const targetStatus = filter === 'active' ? 'open' : filter;
+                
+                if (filter === 'all' || status === targetStatus) {
                     posting.style.display = 'block';
+                    visibleCount++;
                 } else {
                     posting.style.display = 'none';
                 }
             });
-        }
 
-        function loadJobPostings() {
-            // Mock data - in real app this would come from server
-            const jobPostings = [
-                {
-                    id: 1,
-                    title: 'Senior HVAC Technician',
-                    category: 'hvac',
-                    status: 'active',
-                    applications: 12,
-                    createdAt: '2024-01-15',
-                    budget: 'LKR 2,500 - 3,200/hr'
-                },
-                {
-                    id: 2,
-                    title: 'Electrical Repair Specialist',
-                    category: 'electrical',
-                    status: 'active',
-                    applications: 8,
-                    createdAt: '2024-01-10',
-                    budget: 'LKR 2,000 - 2,800/hr'
-                },
-                {
-                    id: 3,
-                    title: 'Emergency Plumber',
-                    category: 'plumbing',
-                    status: 'draft',
-                    applications: 0,
-                    createdAt: '2024-01-20',
-                    budget: 'LKR 2,200 - 3,000/hr'
-                }
-            ];
-            
+            // Show empty state if no postings match filter
             const container = document.querySelector('.job-postings-list');
-            container.innerHTML = '';
+            const existingEmpty = container.querySelector('.empty-state');
             
-            jobPostings.forEach(posting => {
-                const postingCard = createJobPostingCard(posting);
-                container.appendChild(postingCard);
-            });
+            if (visibleCount === 0 && !existingEmpty) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'empty-state filter-empty';
+                emptyDiv.innerHTML = `
+                    <i class="fas fa-filter"></i>
+                    <h3>No ${filter === 'all' ? '' : filter.charAt(0).toUpperCase() + filter.slice(1)} Postings</h3>
+                    <p>No job postings match the selected filter.</p>
+                `;
+                container.appendChild(emptyDiv);
+            } else if (visibleCount > 0) {
+                // Remove filter empty state if exists
+                const filterEmpty = container.querySelector('.filter-empty');
+                if (filterEmpty) filterEmpty.remove();
+            }
         }
 
-        function createJobPostingCard(posting) {
+        // Filter applications by status
+        function filterApplications(filter) {
+            // Update active tab
+            document.querySelectorAll('.application-tabs button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Filter applications
+            const applications = document.querySelectorAll('.application-card');
+            let visibleCount = 0;
+            
+            applications.forEach(application => {
+                const status = application.dataset.status;
+                
+                if (filter === 'all' || status === filter) {
+                    application.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    application.style.display = 'none';
+                }
+            });
+
+            // Show empty state if no applications match filter
+            const container = document.querySelector('.applications-list');
+            const existingEmpty = container.querySelector('.applications-empty');
+            
+            if (visibleCount === 0 && !existingEmpty) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'applications-empty filter-empty';
+                
+                const filterLabels = {
+                    'all': 'Applications',
+                    'new': 'New Applications',
+                    'reviewed': 'Reviewed Applications',
+                    'interview': 'Interview Applications'
+                };
+                
+                emptyDiv.innerHTML = `
+                    <i class="fas fa-inbox"></i>
+                    <h3>No ${filterLabels[filter]}</h3>
+                    <p>There are no applications matching the selected filter.</p>
+                `;
+                container.appendChild(emptyDiv);
+            } else if (visibleCount > 0) {
+                // Remove filter empty state if exists
+                const filterEmpty = container.querySelector('.filter-empty');
+                if (filterEmpty) filterEmpty.remove();
+            }
+        }
+
+        // This function is now handled by the loadJobPostings function defined earlier (line ~3444)
+        // which calls the API and then displayJobPostings()
+
+        function createJobPostingCard(posting, applicationCount = 0) {
             const card = document.createElement('div');
             card.className = 'job-posting-card';
             card.dataset.status = posting.status;
             
-            const statusClass = posting.status === 'active' ? 'success' : 
-                               posting.status === 'draft' ? 'warning' : 'secondary';
+            // Status badge styling
+            const statusConfig = {
+                'open': { class: 'success', label: 'Open', icon: 'fas fa-check-circle' },
+                'draft': { class: 'warning', label: 'Draft', icon: 'fas fa-edit' },
+                'closed': { class: 'danger', label: 'Closed', icon: 'fas fa-times-circle' },
+                'filled': { class: 'info', label: 'Filled', icon: 'fas fa-user-check' }
+            };
             
-            // Only show edit button for draft/closed jobs, not active ones
-            const editButton = posting.status !== 'active' 
-                ? `<button class="action-btn-sm secondary" onclick="editJobPosting(${posting.id})">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>`
-                : '';
+            const status = statusConfig[posting.status] || statusConfig['draft'];
+            
+            // Format category display
+            const categoryDisplay = posting.category.charAt(0).toUpperCase() + posting.category.slice(1).replace('-', ' ');
+            
+            // Format employment type
+            const employmentDisplay = posting.employment_type 
+                ? posting.employment_type.charAt(0).toUpperCase() + posting.employment_type.slice(1).replace('-', ' ')
+                : 'Not specified';
+            
+            // Format budget
+            const budget = posting.min_budget && posting.max_budget
+                ? `LKR ${posting.min_budget.toLocaleString()} - ${posting.max_budget.toLocaleString()}/hr`
+                : 'Budget not set';
+            
+            // Format deadline
+            const deadline = posting.application_deadline 
+                ? formatDate(posting.application_deadline)
+                : 'No deadline';
+            
+            // Format priority
+            const priorityConfig = {
+                'urgent': { class: 'danger', icon: 'fas fa-exclamation-circle', label: 'Urgent' },
+                'high': { class: 'warning', icon: 'fas fa-arrow-up', label: 'High' },
+                'medium': { class: 'info', icon: 'fas fa-minus', label: 'Medium' },
+                'normal': { class: 'secondary', icon: 'fas fa-arrow-down', label: 'Normal' }
+            };
+            
+            const priority = priorityConfig[posting.priority_level] || priorityConfig['normal'];
+            
+            // Show edit button for draft, closed, or filled posts
+            const canEdit = ['draft', 'closed', 'filled'].includes(posting.status);
+            
+            // Show status change options based on current status
+            let statusActions = '';
+            if (posting.status === 'draft') {
+                statusActions = `
+                    <button class="action-btn-sm success" onclick="changeJobStatus(${posting.posting_id}, 'open')" title="Publish">
+                        <i class="fas fa-paper-plane"></i> Publish
+                    </button>
+                `;
+            } else if (posting.status === 'open') {
+                statusActions = `
+                    <button class="action-btn-sm warning" onclick="changeJobStatus(${posting.posting_id}, 'closed')" title="Close">
+                        <i class="fas fa-ban"></i> Close
+                    </button>
+                    <button class="action-btn-sm info" onclick="changeJobStatus(${posting.posting_id}, 'filled')" title="Mark as Filled">
+                        <i class="fas fa-check"></i> Filled
+                    </button>
+                `;
+            } else if (posting.status === 'closed') {
+                statusActions = `
+                    <button class="action-btn-sm success" onclick="changeJobStatus(${posting.posting_id}, 'open')" title="Reopen">
+                        <i class="fas fa-redo"></i> Reopen
+                    </button>
+                `;
+            }
             
             card.innerHTML = `
                 <div class="posting-header">
-                    <div class="posting-title">
-                        <h5>${posting.title}</h5>
-                        <span class="posting-category">${posting.category}</span>
+                    <div class="posting-title-section">
+                        <h5>${escapeHtml(posting.title)}</h5>
+                        <div class="posting-badges">
+                            <span class="badge badge-${status.class}">
+                                <i class="${status.icon}"></i> ${status.label}
+                            </span>
+                            <span class="badge badge-secondary">${categoryDisplay}</span>
+                            <span class="badge badge-${priority.class}">
+                                <i class="${priority.icon}"></i> ${priority.label}
+                            </span>
+                        </div>
                     </div>
-                    <div class="posting-status ${statusClass}">${posting.status}</div>
+                </div>
+                <div class="posting-description">
+                    ${escapeHtml(posting.description || '').substring(0, 150)}${posting.description && posting.description.length > 150 ? '...' : ''}
                 </div>
                 <div class="posting-meta">
-                    <span><i class="fas fa-users"></i> ${posting.applications} applications</span>
-                    <span><i class="fas fa-money-bill"></i> ${posting.budget}</span>
-                    <span><i class="fas fa-calendar"></i> ${formatDate(posting.createdAt)}</span>
+                    <div class="meta-row">
+                        <span><i class="fas fa-briefcase"></i> ${employmentDisplay}</span>
+                        <span><i class="fas fa-users"></i> ${applicationCount} application${applicationCount !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="meta-row">
+                        <span><i class="fas fa-money-bill-wave"></i> ${budget}</span>
+                        <span><i class="fas fa-clock"></i> Deadline: ${deadline}</span>
+                    </div>
+                    <div class="meta-row">
+                        <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(posting.location || 'Location not specified')}</span>
+                        <span><i class="fas fa-calendar-plus"></i> Posted: ${formatDate(posting.created_at)}</span>
+                    </div>
                 </div>
                 <div class="posting-actions">
-                    ${editButton}
-                    <button class="action-btn-sm primary" onclick="viewApplications(${posting.id}, '${posting.title}')">
-                        <i class="fas fa-eye"></i> View Applications
+                    ${canEdit ? `
+                        <button class="action-btn-sm secondary" onclick="editJobPosting(${posting.posting_id})" title="Edit">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                    ` : ''}
+                    <button class="action-btn-sm primary" onclick="viewJobDetails(${posting.posting_id})" title="View Details">
+                        <i class="fas fa-eye"></i> Details
                     </button>
-                    <button class="action-btn-sm danger" onclick="deleteJobPosting(${posting.id})">
+                    ${statusActions}
+                    <button class="action-btn-sm danger" onclick="deleteJobPosting(${posting.posting_id})" title="Delete">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>
@@ -3575,105 +3437,72 @@
             return card;
         }
 
-        function editJobPosting(id) {
-            // Find the job posting data
-            const jobPostings = [
-                {
-                    id: 1,
-                    title: 'Senior HVAC Technician',
-                    category: 'hvac',
-                    status: 'active',
-                    applications: 12,
-                    createdAt: '2024-01-15',
-                    budget: 'LKR 2,500 - 3,200/hr',
-                    minBudget: 2500,
-                    maxBudget: 3200,
-                    employmentType: 'freelance',
-                    description: 'Experienced HVAC technician needed for commercial and residential projects. Must have at least 5 years of experience in installation and maintenance.',
-                    minExperience: 'senior',
-                    priorityLevel: 'high',
-                    requiredSkills: 'HVAC Systems, Refrigeration, Electrical Troubleshooting, Customer Service',
-                    locationRequirements: 'Colombo, Must have own transportation',
-                    applicationDeadline: '2024-02-15'
-                },
-                {
-                    id: 2,
-                    title: 'Electrical Repair Specialist',
-                    category: 'electrical',
-                    status: 'active',
-                    applications: 8,
-                    createdAt: '2024-01-10',
-                    budget: 'LKR 2,000 - 2,800/hr',
-                    minBudget: 2000,
-                    maxBudget: 2800,
-                    employmentType: 'contract',
-                    description: 'Looking for skilled electrician for various residential and commercial electrical repairs and installations.',
-                    minExperience: 'mid',
-                    priorityLevel: 'medium',
-                    requiredSkills: 'Electrical Installation, Wiring, Circuit Design, Safety Compliance',
-                    locationRequirements: 'Colombo and suburbs',
-                    applicationDeadline: '2024-02-10'
-                },
-                {
-                    id: 3,
-                    title: 'Emergency Plumber',
-                    category: 'plumbing',
-                    status: 'draft',
-                    applications: 0,
-                    createdAt: '2024-01-20',
-                    budget: 'LKR 2,200 - 3,000/hr',
-                    minBudget: 2200,
-                    maxBudget: 3000,
-                    employmentType: 'project-based',
-                    description: 'Emergency plumber needed for residential plumbing repairs and maintenance work.',
-                    minExperience: 'mid',
-                    priorityLevel: 'urgent',
-                    requiredSkills: 'Pipe Fitting, Leak Detection, Water Systems, Emergency Repairs',
-                    locationRequirements: 'Colombo area, 24/7 availability preferred',
-                    applicationDeadline: '2024-02-20'
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        async function editJobPosting(postingId) {
+            try {
+                // Fetch the posting data from API
+                const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-postings.php?action=get&posting_id=${postingId}`);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    showNotification(result.message || 'Failed to load job posting', 'error');
+                    return;
                 }
-            ];
-            
-            const posting = jobPostings.find(p => p.id === id);
-            
-            if (!posting) {
-                showNotification('Job posting not found', 'error');
-                return;
+                
+                const posting = result.posting;
+                
+                // Update drawer title to indicate editing
+                const drawerHeader = document.querySelector('#jobPostingDrawer .job-posting-header h3');
+                if (drawerHeader) {
+                    drawerHeader.innerHTML = '<i class="fas fa-edit"></i> Edit Job Posting';
+                }
+                
+                // Populate form fields with existing data
+                document.getElementById('jobTitle').value = posting.title || '';
+                document.getElementById('jobCategory').value = posting.category || '';
+                document.getElementById('employmentType').value = posting.employment_type || '';
+                document.getElementById('jobDescription').value = posting.description || '';
+                document.getElementById('minExperience').value = posting.min_experience || '';
+                document.getElementById('priorityLevel').value = posting.priority_level || 'normal';
+                document.getElementById('minBudget').value = posting.min_budget || '';
+                document.getElementById('maxBudget').value = posting.max_budget || '';
+                document.getElementById('requiredSkills').value = posting.required_skills || '';
+                document.getElementById('locationRequirements').value = posting.location || '';
+                
+                if (posting.application_deadline) {
+                    document.getElementById('applicationDeadline').value = posting.application_deadline;
+                }
+                
+                // Set checkboxes
+                if (posting.notify_repairers !== undefined) {
+                    document.getElementById('notifyRepairers').checked = posting.notify_repairers == 1;
+                }
+                if (posting.allow_direct_applications !== undefined) {
+                    document.getElementById('allowDirectApplications').checked = posting.allow_direct_applications == 1;
+                }
+                
+                // Store the job ID for updating
+                document.getElementById('jobPostingForm').dataset.editingId = postingId;
+                
+                // Open the drawer
+                openJobPostingModal();
+                
+            } catch (error) {
+                console.error('Error loading job posting:', error);
+                showNotification('Failed to load job posting for editing', 'error');
             }
-            
-            // Update drawer title to indicate editing
-            const drawerHeader = document.querySelector('#jobPostingDrawer .job-posting-header h3');
-            if (drawerHeader) {
-                drawerHeader.innerHTML = '<i class="fas fa-edit"></i> Edit Job Posting';
-            }
-            
-            // Populate form fields with existing data
-            document.getElementById('jobTitle').value = posting.title;
-            document.getElementById('jobCategory').value = posting.category;
-            document.getElementById('employmentType').value = posting.employmentType;
-            document.getElementById('jobDescription').value = posting.description;
-            document.getElementById('minExperience').value = posting.minExperience;
-            document.getElementById('priorityLevel').value = posting.priorityLevel;
-            document.getElementById('minBudget').value = posting.minBudget;
-            document.getElementById('maxBudget').value = posting.maxBudget;
-            document.getElementById('requiredSkills').value = posting.requiredSkills;
-            document.getElementById('locationRequirements').value = posting.locationRequirements;
-            
-            if (posting.applicationDeadline) {
-                document.getElementById('applicationDeadline').value = posting.applicationDeadline;
-            }
-            
-            // Store the job ID for updating
-            document.getElementById('jobPostingForm').dataset.editingId = id;
-            
-            // Update preview
-            updatePreview();
-            
-            // Open drawer
-            document.getElementById('jobPostingDrawer').classList.add('active');
-            showStep(1);
-            
-            showNotification('You can now edit this job posting', 'info');
         }
 
         function viewApplications(jobId, jobTitle) {
@@ -3817,11 +3646,196 @@
             }, 500);
         }
 
-        function deleteJobPosting(id) {
-            if (confirm('Are you sure you want to delete this job posting?')) {
-                // Here you would delete from server
-                showNotification('Job posting deleted successfully', 'success');
-                loadJobPostings();
+        async function deleteJobPosting(postingId) {
+            if (!confirm('Are you sure you want to delete this job posting? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-postings.php?posting_id=${postingId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Job posting deleted successfully', 'success');
+                    
+                    // Reload job postings
+                    const companyId = <?php echo $_SESSION['user_id'] ?? 0; ?>;
+                    await loadJobPostings(companyId);
+                } else {
+                    showNotification(result.message || 'Failed to delete job posting', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting job posting:', error);
+                showNotification('Failed to delete job posting', 'error');
+            }
+        }
+
+        async function changeJobStatus(postingId, newStatus) {
+            const statusLabels = {
+                'open': 'publish',
+                'closed': 'close',
+                'filled': 'mark as filled'
+            };
+            
+            const action = statusLabels[newStatus] || 'update';
+            
+            if (!confirm(`Are you sure you want to ${action} this job posting?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/job-postings.php', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        posting_id: postingId,
+                        action: 'status',
+                        status: newStatus
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification(`Job posting ${action}ed successfully`, 'success');
+                    
+                    // Reload job postings
+                    const companyId = <?php echo $_SESSION['user_id'] ?? 0; ?>;
+                    await loadJobPostings(companyId);
+                } else {
+                    showNotification(result.message || 'Failed to update job status', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating job status:', error);
+                showNotification('Failed to update job status', 'error');
+            }
+        }
+
+        async function viewJobDetails(postingId) {
+            try {
+                // Fetch the posting data from API
+                const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-postings.php?action=get&posting_id=${postingId}`);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    showNotification(result.message || 'Failed to load job details', 'error');
+                    return;
+                }
+                
+                const posting = result.posting;
+                
+                // Format the details for display
+                const statusConfig = {
+                    'open': { class: 'success', label: 'Open' },
+                    'draft': { class: 'warning', label: 'Draft' },
+                    'closed': { class: 'danger', label: 'Closed' },
+                    'filled': { class: 'info', label: 'Filled' }
+                };
+                
+                const status = statusConfig[posting.status] || statusConfig['draft'];
+                
+                // Show a modal with full details
+                const modalHtml = `
+                    <div class="modal-overlay" id="jobDetailsModal" onclick="if(event.target === this) closeJobDetailsModal()">
+                        <div class="modal-content large">
+                            <div class="modal-header">
+                                <h3><i class="fas fa-info-circle"></i> Job Posting Details</h3>
+                                <button class="close-btn" onclick="closeJobDetailsModal()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="detail-section">
+                                    <div class="detail-header">
+                                        <h4>${escapeHtml(posting.title)}</h4>
+                                        <span class="badge badge-${status.class}">${status.label}</span>
+                                    </div>
+                                    
+                                    <div class="detail-grid">
+                                        <div class="detail-item">
+                                            <label><i class="fas fa-tag"></i> Category</label>
+                                            <span>${escapeHtml(posting.category)}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label><i class="fas fa-briefcase"></i> Employment Type</label>
+                                            <span>${escapeHtml(posting.employment_type || 'Not specified')}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label><i class="fas fa-star"></i> Experience Level</label>
+                                            <span>${escapeHtml(posting.min_experience || 'Not specified')}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label><i class="fas fa-exclamation-circle"></i> Priority</label>
+                                            <span>${escapeHtml(posting.priority_level || 'Normal')}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label><i class="fas fa-money-bill-wave"></i> Budget Range</label>
+                                            <span>LKR ${posting.min_budget?.toLocaleString() || 0} - ${posting.max_budget?.toLocaleString() || 0}/hr</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label><i class="fas fa-clock"></i> Application Deadline</label>
+                                            <span>${posting.application_deadline ? formatDate(posting.application_deadline) : 'No deadline'}</span>
+                                        </div>
+                                        <div class="detail-item full-width">
+                                            <label><i class="fas fa-map-marker-alt"></i> Location</label>
+                                            <span>${escapeHtml(posting.location || 'Not specified')}</span>
+                                        </div>
+                                        <div class="detail-item full-width">
+                                            <label><i class="fas fa-align-left"></i> Description</label>
+                                            <p>${escapeHtml(posting.description || 'No description provided')}</p>
+                                        </div>
+                                        <div class="detail-item full-width">
+                                            <label><i class="fas fa-tools"></i> Required Skills</label>
+                                            <p>${escapeHtml(posting.required_skills || 'No specific skills listed')}</p>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label><i class="fas fa-bell"></i> Notify Repairers</label>
+                                            <span>${posting.notify_repairers == 1 ? 'Yes' : 'No'}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label><i class="fas fa-paper-plane"></i> Direct Applications</label>
+                                            <span>${posting.allow_direct_applications == 1 ? 'Allowed' : 'Not allowed'}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label><i class="fas fa-calendar-plus"></i> Posted</label>
+                                            <span>${formatDate(posting.created_at)}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label><i class="fas fa-calendar-check"></i> Last Updated</label>
+                                            <span>${posting.updated_at ? formatDate(posting.updated_at) : 'Never'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn-secondary" onclick="closeJobDetailsModal()">Close</button>
+                                ${posting.status !== 'open' ? `<button class="btn-primary" onclick="closeJobDetailsModal(); editJobPosting(${postingId})">Edit</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Append modal to body
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+            } catch (error) {
+                console.error('Error loading job details:', error);
+                showNotification('Failed to load job details', 'error');
+            }
+        }
+
+        function closeJobDetailsModal() {
+            const modal = document.getElementById('jobDetailsModal');
+            if (modal) {
+                modal.remove();
             }
         }
 
@@ -3872,18 +3886,9 @@
 
         // Utility functions
         function updateStats() {
-            document.getElementById('totalEmployees').textContent = employeesData.length;
-            document.getElementById('activeEmployees').textContent = employeesData.filter(e => e.status === 'active').length;
-            document.getElementById('freelancers').textContent = freelancersData.length;
-
-            const allRatings = [...employeesData, ...freelancersData].filter(p => p.rating > 0);
-            const avgRating = allRatings.length > 0 ?
-                (allRatings.reduce((sum, p) => sum + p.rating, 0) / allRatings.length).toFixed(1) : '0';
-            document.getElementById('avgRating').textContent = avgRating;
-
-            document.getElementById('employeeCount').textContent = employeesData.length;
-            document.getElementById('freelancerCount').textContent = freelancersData.length;
-            document.getElementById('applicationCount').textContent = applicationsData.length;
+            // TODO: Update stats from real API/database data
+            // Mock data has been removed - implement API calls here
+            console.log('Update stats from database');
         }
 
         function getStatusClass(status) {
@@ -4098,7 +4103,7 @@
                     </div>
                     
                     <div class="row-actions">
-                        <button type="button" class="remove-row-btn" onclick="removeStaffRow(${staffRowCounter})" 
+                        <button type="button" class="action-btn-sm danger" onclick="removeStaffRow(${staffRowCounter})" 
                                 ${staffRowCounter === 1 ? 'style="display: none;"' : ''}>
                             <i class="fas fa-trash"></i>
                         </button>
@@ -4149,10 +4154,14 @@
 
         function updateRemoveButtons() {
             const staffRows = document.querySelectorAll('.staff-row');
-            const removeButtons = document.querySelectorAll('.remove-row-btn');
-
-            removeButtons.forEach(btn => {
-                btn.style.display = staffRows.length > 1 ? 'flex' : 'none';
+            
+            // Update ALL remove buttons in staff rows
+            staffRows.forEach((row, index) => {
+                const removeButton = row.querySelector('.action-btn-sm.danger');
+                if (removeButton) {
+                    // Show button if there's more than one row
+                    removeButton.style.display = staffRows.length > 1 ? 'flex' : 'none';
+                }
             });
         }
 
@@ -4246,39 +4255,72 @@
             saveBtn.classList.add('loading');
             saveBtn.disabled = true;
 
-            // Simulate API call with timeout
-            setTimeout(() => {
-                // Here you would normally send the data to the server
-                console.log('Bulk Staff Data:', staffData);
-                console.log('Verification Documents:', files);
-
-                saveBtn.classList.remove('loading');
-                saveBtn.disabled = false;
-
-                // Simulate success
-                const totalStaff = staffData.reduce((sum, item) => sum + item.quantity, 0);
-                showNotification(`Successfully added ${totalStaff} staff members across ${staffData.length} categories!`, 'success');
-                closeBulkStaffDrawer();
-
-                // Update the workforce display if needed
-                updateStats();
-                updateStaffDataAfterAdd(staffData);
-            }, 1500);
-        }
-
-        function updateStaffDataAfterAdd(staffData) {
-            // Update mock data with new staff
-            staffData.forEach(staff => {
-                if (currentStaffData[staff.skillCategory]) {
-                    currentStaffData[staff.skillCategory].current += staff.quantity;
-                    currentStaffData[staff.skillCategory].active += staff.quantity;
-                } else {
-                    currentStaffData[staff.skillCategory] = {
-                        current: staff.quantity,
-                        active: staff.quantity
-                    };
+            // Transform staffData to employee format for API
+            const employees = [];
+            staffData.forEach(item => {
+                for (let i = 0; i < item.quantity; i++) {
+                    employees.push({
+                        first_name: `Employee`,
+                        last_name: `${item.skillCategory} ${i + 1}`,
+                        specialty: item.skillCategory,
+                        hourly_rate: 2500.00, // Default rate
+                        status: 'active'
+                    });
                 }
             });
+
+            // Add staff via API
+            bulkAddStaffViaAPI(employees)
+                .then(() => {
+                    saveBtn.classList.remove('loading');
+                    saveBtn.disabled = false;
+                    
+                    const totalStaff = staffData.reduce((sum, item) => sum + item.quantity, 0);
+                    showNotification(`Successfully added ${totalStaff} staff members across ${staffData.length} categories!`, 'success');
+                    closeBulkStaffDrawer();
+                    
+                    // Reload page to refresh statistics
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                })
+                .catch(error => {
+                    saveBtn.classList.remove('loading');
+                    saveBtn.disabled = false;
+                    showNotification('Failed to add staff: ' + error, 'error');
+                });
+        }
+
+        // Function to bulk add staff via API
+        async function bulkAddStaffViaAPI(employees) {
+            const companyId = window.CURRENT_COMPANY_ID;
+            const apiUrl = '/2nd-Year-Group-Project/FixLanka/api/company-employees.php';
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bulk: true,
+                        company_id: companyId,
+                        employees: employees
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    return true;
+                } else {
+                    throw new Error(result.message || 'Failed to add employees');
+                }
+                
+            } catch (error) {
+                console.error('Error bulk adding employees:', error);
+                throw error.message || 'Failed to add employees';
+            }
         }
 
         // File upload handling
@@ -4375,17 +4417,8 @@
         // ====================================
 
         // Mock current staff data - in real app this would come from server
-        const currentStaffData = {
-            'Carpenter': { current: 8, active: 6 },
-            'Electrician': { current: 5, active: 5 },
-            'Plumber': { current: 4, active: 3 },
-            'Painter': { current: 3, active: 2 },
-            'HVAC Technician': { current: 2, active: 2 },
-            'Mechanic': { current: 1, active: 1 },
-            'Welder': { current: 2, active: 1 },
-            'Mason': { current: 1, active: 1 },
-            'General Labor': { current: 3, active: 2 }
-        };
+        // Store current staff data from API
+        let currentStaffData = {};
 
         let reductionRowCounter = 0;
 
@@ -4417,29 +4450,75 @@
             updateReductionSummary();
         }
 
-        function loadCurrentStaffOverview() {
+        async function loadCurrentStaffOverview() {
             const container = document.getElementById('currentStaffOverview');
-            let html = '<div class="current-staff-grid">';
+            container.innerHTML = '<p style="text-align: center; padding: 20px;">Loading...</p>';
             
-            Object.entries(currentStaffData).forEach(([category, data]) => {
-                html += `
-                    <div class="current-staff-item">
-                        <div class="staff-category-name">${category}</div>
-                        <div class="staff-counts">
-                            <span class="current-count">${data.current} Total</span>
-                            <span class="active-count">${data.active} Active</span>
+            try {
+                // Get statistics from API
+                const companyId = window.CURRENT_COMPANY_ID;
+                const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-employees.php?action=stats&company_id=${companyId}`);
+                const data = await response.json();
+                
+                if (!data.specialties || data.specialties.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; padding: 20px; color: #999;">No employees found</p>';
+                    currentStaffData = {}; // Clear the data
+                    return;
+                }
+                
+                // Update currentStaffData from API
+                currentStaffData = {};
+                data.specialties.forEach(specialty => {
+                    currentStaffData[specialty.specialty] = {
+                        current: specialty.total_count || 0,
+                        active: specialty.active_count || 0
+                    };
+                });
+                
+                let html = '<div class="current-staff-grid">';
+                
+                data.specialties.forEach(specialty => {
+                    html += `
+                        <div class="current-staff-item">
+                            <div class="staff-category-name">${specialty.specialty}</div>
+                            <div class="staff-counts">
+                                <span class="current-count">${specialty.total_count || 0} Total</span>
+                                <span class="active-count">${specialty.active_count || 0} Active</span>
+                            </div>
                         </div>
-                    </div>
-                `;
-            });
-            
-            html += '</div>';
-            container.innerHTML = html;
+                    `;
+                });
+                
+                html += '</div>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error loading staff overview:', error);
+                container.innerHTML = '<p style="text-align: center; padding: 20px; color: red;">Error loading data</p>';
+                currentStaffData = {}; // Clear the data on error
+            }
         }
 
-        function addReductionRow() {
+        async function addReductionRow() {
             reductionRowCounter++;
             const container = document.getElementById('reductionRowsContainer');
+            
+            // Fetch current staff data from API
+            let staffOptions = '';
+            try {
+                const companyId = window.CURRENT_COMPANY_ID;
+                const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-employees.php?action=stats&company_id=${companyId}`);
+                const data = await response.json();
+                
+                if (data.specialties && data.specialties.length > 0) {
+                    staffOptions = data.specialties.map(specialty => 
+                        `<option value="${specialty.specialty}" data-current="${specialty.total_count}" data-active="${specialty.active_count}">${specialty.specialty} (${specialty.total_count} current)</option>`
+                    ).join('');
+                }
+            } catch (error) {
+                console.error('Error fetching staff data:', error);
+                staffOptions = '<option value="">Error loading categories</option>';
+            }
             
             const reductionRow = document.createElement('div');
             reductionRow.className = 'reduction-row';
@@ -4451,11 +4530,9 @@
                 <div class="reduction-row-content">
                     <div class="skill-category-group">
                         <label>Skill Category</label>
-                        <select class="reduction-category-select" onchange="updateReductionSummary()" data-row-id="${reductionRowCounter}">
+                        <select class="reduction-category-select" onchange="updateReductionMaxAndSummary(${reductionRowCounter})" data-row-id="${reductionRowCounter}">
                             <option value="">Select skill category</option>
-                            ${Object.entries(currentStaffData).map(([category, data]) => 
-                                `<option value="${category}" data-current="${data.current}" data-active="${data.active}">${category} (${data.current} current)</option>`
-                            ).join('')}
+                            ${staffOptions}
                         </select>
                     </div>
                     
@@ -4466,19 +4543,20 @@
                                 <i class="fas fa-minus"></i>
                             </button>
                             <input type="number" class="reduction-quantity-input" value="1" min="1" max="1" 
-                                   id="reductionQuantity${reductionRowCounter}" onchange="updateReductionSummary()">
+                                   id="reductionQuantity${reductionRowCounter}" onchange="updateReductionSummary()" readonly>
                             <button type="button" class="quantity-btn plus" onclick="changeReductionQuantity(${reductionRowCounter}, 1)">
                                 <i class="fas fa-plus"></i>
                             </button>
                         </div>
                         <div class="reduction-info">
-                            <span class="max-reduction" id="maxReduction${reductionRowCounter}"><i class="fas fa-info-circle"></i> Max: 0</span>
+                            <span class="max-reduction" id="maxReduction${reductionRowCounter}">
+                                <i class="fas fa-info-circle"></i> Max: 0
+                            </span>
                         </div>
                     </div>
                     
                     <div class="row-actions">
-                        <button type="button" class="remove-row-btn" onclick="removeReductionRow(${reductionRowCounter})" 
-                                ${reductionRowCounter === 1 ? 'style="display: none;"' : ''}>
+                        <button type="button" class="action-btn-sm danger" onclick="removeReductionRow(${reductionRowCounter})">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -4538,11 +4616,40 @@
 
         function updateReductionRemoveButtons() {
             const reductionRows = document.querySelectorAll('.reduction-row');
-            const removeButtons = document.querySelectorAll('.reduction-row .remove-row-btn');
             
-            removeButtons.forEach(btn => {
-                btn.style.display = reductionRows.length > 1 ? 'flex' : 'none';
+            // Update ALL remove buttons in reduction rows
+            reductionRows.forEach((row, index) => {
+                const removeButton = row.querySelector('.action-btn-sm.danger');
+                if (removeButton) {
+                    // Show button if there's more than one row
+                    removeButton.style.display = reductionRows.length > 1 ? 'flex' : 'none';
+                }
             });
+        }
+
+        function updateReductionMaxAndSummary(rowId) {
+            // Update the max value for the specific row when category changes
+            const row = document.getElementById(`reductionRow${rowId}`);
+            if (row) {
+                const categorySelect = row.querySelector('.reduction-category-select');
+                const quantityInput = row.querySelector('.reduction-quantity-input');
+                const maxReductionSpan = row.querySelector('.max-reduction');
+                
+                if (categorySelect && categorySelect.value) {
+                    const selectedOption = categorySelect.selectedOptions[0];
+                    const currentStaff = parseInt(selectedOption.dataset.current) || 0;
+                    
+                    // Update max display
+                    maxReductionSpan.innerHTML = `<i class="fas fa-info-circle"></i> Max: ${currentStaff}`;
+                    
+                    // Update input constraints
+                    quantityInput.max = currentStaff;
+                    quantityInput.value = 1; // Reset to 1 when category changes
+                }
+            }
+            
+            // Update the overall summary
+            updateReductionSummary();
         }
 
         function updateReductionSummary() {
@@ -4696,39 +4803,72 @@
                 confirmBtn.classList.add('loading');
                 confirmBtn.disabled = true;
                 
-                // Simulate API call with timeout
-                setTimeout(() => {
-                    // Here you would normally send the data to the server
-                    console.log('Staff Reduction Data:', reductionData);
-                    console.log('Reduction Documentation:', files);
-                    
-                    confirmBtn.classList.remove('loading');
-                    confirmBtn.disabled = false;
-                    
-                    // Simulate success
-                    showNotification(`Successfully reduced ${totalReduction} staff members!`, 'success');
-                    closeReduceStaffDrawer();
-                    
-                    // Update the workforce display
-                    updateStatsAfterReduction(reductionData);
-                    updateStats();
-                }, 1500);
+                // Reduce staff via API
+                reduceStaffViaAPI(reductionData)
+                    .then(() => {
+                        confirmBtn.classList.remove('loading');
+                        confirmBtn.disabled = false;
+                        
+                        showNotification(`Successfully reduced ${totalReduction} staff members!`, 'success');
+                        closeReduceStaffDrawer();
+                        
+                        // Reload page to refresh statistics
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    })
+                    .catch(error => {
+                        confirmBtn.classList.remove('loading');
+                        confirmBtn.disabled = false;
+                        showNotification('Failed to reduce staff: ' + error, 'error');
+                    });
             }
         }
 
-        function updateStatsAfterReduction(reductionData) {
-            // Update the mock data to reflect reductions
-            reductionData.forEach(reduction => {
-                if (currentStaffData[reduction.skillCategory]) {
-                    currentStaffData[reduction.skillCategory].current -= reduction.reductionQuantity;
-                    // Also reduce active count proportionally, but not below 0
-                    const activeReduction = Math.min(
-                        currentStaffData[reduction.skillCategory].active,
-                        Math.ceil(reduction.reductionQuantity * 0.8) // Assume 80% of reduced staff were active
-                    );
-                    currentStaffData[reduction.skillCategory].active -= activeReduction;
+        // Function to reduce staff via API
+        async function reduceStaffViaAPI(reductionData) {
+            const companyId = window.CURRENT_COMPANY_ID;
+            const apiUrl = '/2nd-Year-Group-Project/FixLanka/api/company-employees.php';
+            
+            try {
+                // Process each reduction category
+                for (const reduction of reductionData) {
+                    // Get employees by specialty
+                    const response = await fetch(`${apiUrl}?company_id=${companyId}&specialty=${encodeURIComponent(reduction.skillCategory)}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch ${reduction.skillCategory} employees`);
+                    }
+                    
+                    const employees = await response.json();
+                    
+                    if (!employees || employees.length === 0) {
+                        throw new Error(`No ${reduction.skillCategory} employees found`);
+                    }
+                    
+                    if (employees.length < reduction.reductionQuantity) {
+                        throw new Error(`Only ${employees.length} ${reduction.skillCategory} employees available`);
+                    }
+                    
+                    // Delete the first N employees
+                    const employeesToDelete = employees.slice(0, reduction.reductionQuantity);
+                    
+                    for (const emp of employeesToDelete) {
+                        const deleteResponse = await fetch(`${apiUrl}?employee_id=${emp.employee_id}`, {
+                            method: 'DELETE'
+                        });
+                        
+                        if (!deleteResponse.ok) {
+                            throw new Error(`Failed to delete employee ${emp.employee_id}`);
+                        }
+                    }
                 }
-            });
+                
+                return true;
+            } catch (error) {
+                console.error('Error reducing staff:', error);
+                throw error.message || 'Failed to reduce staff';
+            }
         }
 
         // File upload handling for reduction docs (similar to bulk staff)
@@ -4951,8 +5091,8 @@
                                 <div class="preview-header">
                                     <h5 id="previewTitle">Job Title</h5>
                                     <div class="preview-meta">
-                                        <span id="previewCategory">Category</span> • 
-                                        <span id="previewType">Type</span> • 
+                                        <span id="previewCategory">Category</span> � 
+                                        <span id="previewType">Type</span> � 
                                         <span id="previewBudget">Budget</span>
                                     </div>
                                 </div>
@@ -5024,7 +5164,7 @@
             <div class="drawer-content">
                 <!-- Freelancer Header Card -->
                 <div class="freelancer-header-card">
-                    <div class="freelancer-avatar-large" id="freelancerAvatar">👤</div>
+                    <div class="freelancer-avatar-large" id="freelancerAvatar">??</div>
                     <div class="freelancer-header-info">
                         <h2 id="freelancerName">Freelancer Name</h2>
                         <p class="freelancer-specialty-large" id="freelancerSpecialty">Specialty</p>
@@ -5163,10 +5303,10 @@
 
                 <!-- Action Buttons -->
                 <div class="drawer-actions">
-                    <button class="drawer-btn secondary" onclick="closeFreelancerDetailsDrawer()">
+                    <button class="btn-cancel" onclick="closeFreelancerDetailsDrawer()">
                         <i class="fas fa-times"></i> Close
                     </button>
-                    <button class="drawer-btn success assign-freelancer-btn" onclick="assignFromFreelancerDrawer()">
+                    <button class="btn-primary success assign-freelancer-btn" onclick="assignFromFreelancerDrawer()">
                         <i class="fas fa-briefcase"></i> Assign to Job
                     </button>
                 </div>
@@ -5264,13 +5404,13 @@
                 </div>
 
                 <div class="drawer-actions">
-                    <button class="drawer-btn secondary" onclick="closeApplicationDetailsDrawer()">
+                    <button class="btn-cancel" onclick="closeApplicationDetailsDrawer()">
                         <i class="fas fa-times"></i> Close
                     </button>
-                    <button class="drawer-btn danger" onclick="rejectApplicationFromDrawer()">
+                    <button class="btn-primary danger" onclick="rejectApplicationFromDrawer()">
                         <i class="fas fa-times-circle"></i> Decline
                     </button>
-                    <button class="drawer-btn success" onclick="approveApplicationFromDrawer()">
+                    <button class="btn-primary success" onclick="approveApplicationFromDrawer()">
                         <i class="fas fa-check-circle"></i> Accept Application
                     </button>
                 </div>
@@ -5575,13 +5715,13 @@
                     </div>
 
                     <div class="drawer-actions">
-                        <button type="button" class="drawer-btn secondary" onclick="closeContractDrawer()">
+                        <button type="button" class="btn-cancel" onclick="closeContractDrawer()">
                             <i class="fas fa-times"></i> Cancel
                         </button>
-                        <button type="button" class="drawer-btn" onclick="saveContractAsDraft()">
+                        <button type="button" class="btn-secondary" onclick="saveContractAsDraft()">
                             <i class="fas fa-save"></i> Save as Draft
                         </button>
-                        <button type="submit" class="drawer-btn success">
+                        <button type="submit" class="btn-primary success">
                             <i class="fas fa-check-circle"></i> Generate & Send Contract
                         </button>
                     </div>
@@ -5632,7 +5772,7 @@
                             <!-- Initial row will be added by JavaScript -->
                         </div>
 
-                        <button type="button" class="add-row-btn" onclick="addStaffRow()">
+                        <button type="button" class="btn-secondary" onclick="addStaffRow()">
                             <i class="fas fa-plus"></i> Add Another Category
                         </button>
                     </div>
@@ -5669,10 +5809,10 @@
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" class="drawer-btn secondary" onclick="closeBulkStaffDrawer()">
+                        <button type="button" class="btn-cancel" onclick="closeBulkStaffDrawer()">
                             <i class="fas fa-times"></i> Cancel
                         </button>
-                        <button type="button" class="drawer-btn primary" onclick="saveBulkStaff()">
+                        <button type="button" class="btn-primary" onclick="saveBulkStaff()">
                             <i class="fas fa-save"></i> Save Staff Summary
                         </button>
                     </div>
@@ -5710,7 +5850,7 @@
                             <!-- Reduction rows will be added by JavaScript -->
                         </div>
 
-                        <button type="button" class="add-row-btn" onclick="addReductionRow()">
+                        <button type="button" class="btn-secondary" onclick="addReductionRow()">
                             <i class="fas fa-plus"></i> Add Another Category
                         </button>
                     </div>
@@ -5756,10 +5896,10 @@
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" class="drawer-btn secondary" onclick="closeReduceStaffDrawer()">
+                        <button type="button" class="btn-cancel" onclick="closeReduceStaffDrawer()">
                             <i class="fas fa-times"></i> Cancel
                         </button>
-                        <button type="button" class="drawer-btn danger" onclick="confirmStaffReduction()">
+                        <button type="button" class="btn-primary danger" onclick="confirmStaffReduction()">
                             <i class="fas fa-user-minus"></i> Confirm Reduction
                         </button>
                     </div>
@@ -6326,11 +6466,12 @@
         </div>
     </div>
 
+    <!-- Load Company Employees Database Integration -->
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/company-employees-db.js"></script>
 
 </body>
 
 </html>
-
 
 
 

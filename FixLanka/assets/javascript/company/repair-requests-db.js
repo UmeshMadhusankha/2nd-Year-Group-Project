@@ -1,22 +1,71 @@
 /**
  * Company Repair Requests Page JavaScript
- * Handles job requests, quotation CRUD operations, and UI interactions
+ * 
+ * Handles all functionality for the company repair requests page including:
+ * - Loading and displaying job requests
+ * - Managing quotation CRUD operations (Create, Read, Update, Delete)
+ * - UI interactions (tabs, modals, filters)
+ * - Cost calculations
+ * - Form validations
+ * 
+ * @package FixLanka
+ * @version 1.0.0
  */
 
-// Global variables
-const currentCompanyId = 1; // TODO: Get from session
+// ================================================================
+// GLOBAL VARIABLES & CONSTANTS
+// ================================================================
+
+/**
+ * Current company user ID (retrieved from PHP session)
+ * @type {number|null}
+ */
+const currentCompanyId = window.CURRENT_USER_ID || null;
+
+/**
+ * Array of available job requests
+ * @type {Array}
+ */
 let availableRequests = [];
+
+/**
+ * Array of submitted quotations by the company
+ * @type {Array}
+ */
 let submittedQuotations = [];
+
+/**
+ * ID of quotation currently being edited (null if creating new)
+ * @type {number|null}
+ */
 let editingQuotationId = null;
 
-// DOM Elements
+/**
+ * DOM element references (initialized after DOM load)
+ */
 let quotationModal;
 let quotationForm;
 let requestDetailsModal;
 
-// Initialize page
+// ================================================================
+// INITIALIZATION
+// ================================================================
+
+/**
+ * Initialize page when DOM is fully loaded
+ * Sets up event listeners, loads data, and initializes UI components
+ */
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Initializing page...');
+    
+    // Validate user authentication
+    if (!currentCompanyId) {
+        console.error('User ID not found. Please login.');
+        showToast('User not authenticated. Please login.', 'error');
+        return;
+    }
+    
+    console.log('Current Company ID:', currentCompanyId);
     
     // Get DOM elements after DOM is ready
     quotationModal = document.getElementById('quotation-modal');
@@ -32,22 +81,35 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeCostCalculator();
     initializeDateValidation();
     
-    // Load data
+    // Load initial data from API
     console.log('Starting to load data...');
     loadAvailableRequests();
     loadSubmittedQuotations();
 });
 
-// ================================================
+// ================================================================
 // DATA LOADING FUNCTIONS
-// ================================================
+// ================================================================
 
 /**
- * Load available job requests
+ * Load available job requests from the API
+ * Fetches all pending job requests that companies can submit quotations for
+ * 
+ * @async
+ * @returns {Promise<void>}
  */
 async function loadAvailableRequests() {
     try {
         const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/job-requests.php?status=pending');
+        
+        // Check for HTTP errors
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server error:', errorText);
+            showToast(`Server Error (${response.status}): ${errorText.substring(0, 200)}`, 'error');
+            return;
+        }
+        
         const result = await response.json();
         
         if (result.success) {
@@ -55,21 +117,34 @@ async function loadAvailableRequests() {
             renderAvailableRequests();
             updateRequestCounts();
         } else {
-            showToast('Failed to load job requests', 'error');
+            showToast(result.message || result.error || 'Failed to load job requests', 'error');
         }
     } catch (error) {
         console.error('Error loading job requests:', error);
-        showToast('Failed to load job requests', 'error');
+        showToast(`Error: ${error.message}`, 'error');
     }
 }
 
 /**
- * Load submitted quotations
+ * Load submitted quotations by the current company
+ * Fetches all quotations submitted by the logged-in company user
+ * 
+ * @async
+ * @returns {Promise<void>}
  */
 async function loadSubmittedQuotations() {
     try {
         console.log('Loading submitted quotations for user_id:', currentCompanyId);
         const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?user_id=${currentCompanyId}`);
+        
+        // Check for HTTP errors
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server error:', errorText);
+            showToast(`Server Error (${response.status}): ${errorText.substring(0, 200)}`, 'error');
+            return;
+        }
+        
         const result = await response.json();
         
         console.log('Quotations API response:', result);
@@ -81,11 +156,11 @@ async function loadSubmittedQuotations() {
             renderSubmittedQuotations();
             updateQuotationCounts();
         } else {
-            showToast('Failed to load quotations', 'error');
+            showToast(result.message || result.error || 'Failed to load quotations', 'error');
         }
     } catch (error) {
         console.error('Error loading quotations:', error);
-        showToast('Failed to load quotations', 'error');
+        showToast(`Error: ${error.message}`, 'error');
     }
 }
 
@@ -436,28 +511,34 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
     `;
 }
 
-// ================================================
+// ================================================================
 // QUOTATION CRUD OPERATIONS
-// ================================================
+// ================================================================
 
 /**
- * Open quotation modal for new quotation
+ * Open quotation modal for creating a new quotation
+ * 
+ * Displays the quotation form modal pre-populated with job request details.
+ * Resets form to empty state for new quotation creation.
+ * 
+ * @param {number} requestId - The ID of the job request to create a quotation for
+ * @returns {void}
  */
 function openQuotationModal(requestId) {
     editingQuotationId = null;
     quotationForm.reset();
     
-    // Find the request
+    // Find the requested job request
     const request = availableRequests.find(r => r.request_id === requestId);
     if (!request) {
         showToast('Request not found', 'error');
         return;
     }
     
-    // Set request ID
+    // Set the hidden request ID field
     document.getElementById('request-id').value = requestId;
     
-    // Populate request details
+    // Display request details in the modal
     const detailsContainer = document.getElementById('quotation-request-details');
     detailsContainer.innerHTML = `
         <h4 style="margin: 0 0 0.5rem 0;">${escapeHtml(request.title)}</h4>
@@ -480,25 +561,41 @@ function openQuotationModal(requestId) {
         Submit Quotation
     `;
     
-    // Show modal
+    // Show the modal
     quotationModal.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
 
 /**
- * Edit existing quotation
+ * Load and edit an existing quotation
+ * 
+ * Fetches quotation data from API and populates the form for editing.
+ * Only pending quotations can be edited.
+ * 
+ * @async
+ * @param {number} quotationId - The ID of the quotation to edit
+ * @returns {Promise<void>}
  */
 async function editQuotation(quotationId) {
     console.log('Editing quotation:', quotationId);
     
     try {
         const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?quotation_id=${quotationId}`);
+        
+        // Check for HTTP errors
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server error:', errorText);
+            showToast(`Server Error (${response.status}): ${errorText.substring(0, 200)}`, 'error');
+            return;
+        }
+        
         const result = await response.json();
         
         if (result.success && result.data && result.data.length > 0) {
             const quotation = result.data[0];
             
-            // Check if quotation can be edited
+            // Verify quotation is editable (only pending status)
             if (quotation.status !== 'pending') {
                 showToast('Only pending quotations can be edited', 'error');
                 return;
@@ -544,30 +641,37 @@ async function editQuotation(quotationId) {
             quotationModal.classList.add('active');
             document.body.style.overflow = 'hidden';
         } else {
-            showToast('Quotation not found', 'error');
+            showToast(result.message || result.error || 'Quotation not found', 'error');
         }
     } catch (error) {
         console.error('Error loading quotation:', error);
-        showToast('Failed to load quotation', 'error');
+        showToast(`Error: ${error.message}`, 'error');
     }
 }
 
 /**
- * Submit or update quotation
+ * Submit or update a quotation
+ * 
+ * Handles both creating new quotations and updating existing ones.
+ * Determines action based on editingQuotationId (null = create, number = update).
+ * Validates form data and sends appropriate HTTP request (POST or PUT).
+ * 
+ * @async
+ * @returns {Promise<void>}
  */
 async function submitQuotation() {
     console.log('Submit quotation called, editing ID:', editingQuotationId);
     
-    // Validate form
+    // Validate all required form fields
     if (!quotationForm.checkValidity()) {
         quotationForm.reportValidity();
         return;
     }
     
-    // Get form data
+    // Collect form data into object
     const formData = {
         request_id: parseInt(document.getElementById('request-id').value),
-        user_id: currentCompanyId, // TODO: Get from session
+        user_id: currentCompanyId,
         title: document.getElementById('quotation-title').value,
         description: document.getElementById('service-description').value,
         labor_cost: parseFloat(document.getElementById('labor-cost').value),
@@ -613,6 +717,14 @@ async function submitQuotation() {
             });
         }
         
+        // Check if response is ok
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server error:', errorText);
+            showToast(`Server Error (${response.status}): ${errorText.substring(0, 200)}`, 'error');
+            return;
+        }
+        
         const result = await response.json();
         console.log('Response:', result);
         
@@ -642,20 +754,28 @@ async function submitQuotation() {
                 }, 100);
             }
         } else {
-            showToast('Failed to save quotation: ' + (result.error || 'Unknown error'), 'error');
+            showToast(result.message || result.error || 'Unknown error', 'error');
         }
     } catch (error) {
         console.error('Error saving quotation:', error);
-        showToast('Failed to save quotation', 'error');
+        showToast(`Error: ${error.message}`, 'error');
     }
 }
 
 /**
- * Delete quotation
+ * Delete a quotation
+ * 
+ * Sends DELETE request to API to remove a quotation.
+ * Only pending quotations can be deleted. Asks for user confirmation first.
+ * 
+ * @async
+ * @param {number} quotationId - The ID of the quotation to delete
+ * @returns {Promise<void>}
  */
 async function deleteQuotation(quotationId) {
     console.log('Delete quotation called:', quotationId);
     
+    // Confirm deletion with user
     if (!confirm('Are you sure you want to delete this quotation? This action cannot be undone.')) {
         return;
     }
@@ -668,6 +788,14 @@ async function deleteQuotation(quotationId) {
             method: 'DELETE'
         });
         
+        // Check for HTTP errors
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server error:', errorText);
+            showToast(`Server Error (${response.status}): ${errorText.substring(0, 200)}`, 'error');
+            return;
+        }
+        
         const result = await response.json();
         console.log('Delete response:', result);
         
@@ -675,11 +803,11 @@ async function deleteQuotation(quotationId) {
             showToast('Quotation deleted successfully!', 'success');
             loadSubmittedQuotations();
         } else {
-            showToast('Failed to delete quotation: ' + (result.error || 'Unknown error'), 'error');
+            showToast(result.message || result.error || 'Failed to delete quotation', 'error');
         }
     } catch (error) {
         console.error('Error deleting quotation:', error);
-        showToast('Failed to delete quotation', 'error');
+        showToast(`Error: ${error.message}`, 'error');
     }
 }
 
@@ -735,12 +863,15 @@ function closeRequestDetailsModal() {
     document.body.style.overflow = '';
 }
 
-// ================================================
-// HELPER FUNCTIONS
-// ================================================
+// ================================================================
+// HELPER FUNCTIONS & UI UTILITIES
+// ================================================================
 
 /**
- * Initialize tabs
+ * Initialize tab switching functionality
+ * Sets up click handlers for tab buttons to switch between different content sections
+ * 
+ * @returns {void}
  */
 function initializeTabs() {
     const tabButtons = document.querySelectorAll('.tab-button');

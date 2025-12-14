@@ -458,18 +458,22 @@
         fetch('/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php')
             .then(response => response.text())
             .then(data => {
-                document.getElementById('sidebar-container').innerHTML = data;
+                // Set active state immediately in the HTML before inserting
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = data;
                 
-                // Set active state after loading
-                setTimeout(() => {
-                    const navLinks = document.querySelectorAll('.nav-link');
-                    navLinks.forEach(link => {
-                        const linkText = link.querySelector('span')?.textContent;
-                        if (linkText === 'Settings') {
-                            link.closest('.nav-item').classList.add('active');
-                        }
-                    });
-                }, 100);
+                // Remove any existing active classes
+                const allNavItems = tempDiv.querySelectorAll('.nav-item');
+                allNavItems.forEach(item => item.classList.remove('active'));
+                
+                // Set settings as active immediately
+                const settingsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/views/company/settings.php"]');
+                if (settingsLink) {
+                    settingsLink.parentElement.classList.add('active');
+                }
+                
+                // Insert the modified HTML
+                document.getElementById('sidebar-container').innerHTML = tempDiv.innerHTML;
             });
 
         fetch('/2nd-Year-Group-Project/FixLanka/views/company/topbar.php')

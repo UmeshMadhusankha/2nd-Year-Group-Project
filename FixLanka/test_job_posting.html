@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Job Posting API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #0abab5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #089a96;
+        }
+        .result {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Job Posting API Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Create Job Posting</h2>
+        <button onclick="testCreateJobPosting()">Create Test Job Posting</button>
+        <div id="createResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Get All Job Postings</h2>
+        <button onclick="testGetJobPostings()">Get All Postings (Company ID: 1)</button>
+        <div id="getResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Get Statistics</h2>
+        <button onclick="testGetStatistics()">Get Statistics (Company ID: 1)</button>
+        <div id="statsResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Update Job Status</h2>
+        <input type="number" id="postingIdUpdate" placeholder="Posting ID" style="padding: 8px; margin: 5px;">
+        <select id="statusUpdate" style="padding: 8px; margin: 5px;">
+            <option value="draft">Draft</option>
+            <option value="open">Open</option>
+            <option value="closed">Closed</option>
+            <option value="filled">Filled</option>
+        </select>
+        <button onclick="testUpdateStatus()">Update Status</button>
+        <div id="updateResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. Delete Job Posting</h2>
+        <input type="number" id="postingIdDelete" placeholder="Posting ID" style="padding: 8px; margin: 5px;">
+        <button onclick="testDeleteJobPosting()" style="background: #dc3545;">Delete Posting</button>
+        <div id="deleteResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_URL = '/2nd-Year-Group-Project/FixLanka/api/job-postings.php';
+        
+        async function testCreateJobPosting() {
+            const resultDiv = document.getElementById('createResult');
+            resultDiv.textContent = 'Creating job posting...';
+            resultDiv.className = 'result';
+            
+            try {
+                const data = {
+                    company_id: 1,
+                    title: 'Senior HVAC Technician',
+                    category: 'hvac',
+                    employment_type: 'freelance',
+                    description: 'We are looking for an experienced HVAC technician to join our team for ongoing maintenance contracts.',
+                    min_experience: 'senior',
+                    priority_level: 'high',
+                    min_budget: 2000,
+                    max_budget: 3500,
+                    application_deadline: '2025-12-31',
+                    required_skills: 'HVAC certification, 5+ years experience, own tools',
+                    location: 'Colombo',
+                    location_requirements: 'Must have own transportation',
+                    notify_repairers: true,
+                    allow_direct_applications: true
+                };
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = 'SUCCESS!\n\n' + JSON.stringify(result, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = 'FAILED!\n\n' + JSON.stringify(result, null, 2);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'ERROR: ' + error.message;
+            }
+        }
+        
+        async function testGetJobPostings() {
+            const resultDiv = document.getElementById('getResult');
+            resultDiv.textContent = 'Fetching job postings...';
+            resultDiv.className = 'result';
+            
+            try {
+                const response = await fetch(`${API_URL}?action=list&company_id=1`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `SUCCESS! Found ${result.postings.length} postings\n\n` + JSON.stringify(result, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = 'FAILED!\n\n' + JSON.stringify(result, null, 2);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'ERROR: ' + error.message;
+            }
+        }
+        
+        async function testGetStatistics() {
+            const resultDiv = document.getElementById('statsResult');
+            resultDiv.textContent = 'Fetching statistics...';
+            resultDiv.className = 'result';
+            
+            try {
+                const response = await fetch(`${API_URL}?action=stats&company_id=1`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = 'SUCCESS!\n\n' + JSON.stringify(result, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = 'FAILED!\n\n' + JSON.stringify(result, null, 2);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'ERROR: ' + error.message;
+            }
+        }
+        
+        async function testUpdateStatus() {
+            const resultDiv = document.getElementById('updateResult');
+            const postingId = document.getElementById('postingIdUpdate').value;
+            const status = document.getElementById('statusUpdate').value;
+            
+            if (!postingId) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Please enter a Posting ID';
+                return;
+            }
+            
+            resultDiv.textContent = 'Updating status...';
+            resultDiv.className = 'result';
+            
+            try {
+                const response = await fetch(`${API_URL}?action=status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        posting_id: parseInt(postingId),
+                        status: status
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = 'SUCCESS!\n\n' + JSON.stringify(result, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = 'FAILED!\n\n' + JSON.stringify(result, null, 2);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'ERROR: ' + error.message;
+            }
+        }
+        
+        async function testDeleteJobPosting() {
+            const resultDiv = document.getElementById('deleteResult');
+            const postingId = document.getElementById('postingIdDelete').value;
+            
+            if (!postingId) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Please enter a Posting ID';
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to delete this job posting?')) {
+                return;
+            }
+            
+            resultDiv.textContent = 'Deleting job posting...';
+            resultDiv.className = 'result';
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        posting_id: parseInt(postingId)
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = 'SUCCESS!\n\n' + JSON.stringify(result, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = 'FAILED!\n\n' + JSON.stringify(result, null, 2);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'ERROR: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

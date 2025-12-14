@@ -771,24 +771,6 @@
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/sidebar.js"></script>
 
     <script>
-        // Load components when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            loadComponent('sidebar-container', '/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php');
-            loadComponent('header-container', '/2nd-Year-Group-Project/FixLanka/views/company/topbar.php');
-        });
-
-        // Function to load HTML components
-        function loadComponent(containerId, componentFile) {
-            fetch(componentFile)
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById(containerId).innerHTML = html;
-                })
-                .catch(error => {
-                    console.error('Error loading component:', error);
-                });
-        }
-
         // Filter tabs functionality
         const filterTabs = document.querySelectorAll('.filter-tab');
         const adCards = document.querySelectorAll('.ad-card');
@@ -1018,7 +1000,6 @@
 
         // Highlight active sidebar link
         document.addEventListener('DOMContentLoaded', function() {
-            const currentPage = 'advertisements.php';
             const navLinks = document.querySelectorAll('.sidebar .nav-link');
 
             navLinks.forEach(link => {
@@ -1028,8 +1009,8 @@
                 // Remove active class from all items
                 navItem.classList.remove('active');
 
-                // Add active class to current page
-                if (href === currentPage) {
+                // Add active class to current page (check for advertisements.php in href)
+                if (href && href.includes('/views/company/advertisements.php')) {
                     navItem.classList.add('active');
                 }
             });

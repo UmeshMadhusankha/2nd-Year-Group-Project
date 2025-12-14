@@ -66,8 +66,17 @@ function initializeTopbar() {
   // Get current page from URL
   updatePageHeaderFromURL();
   initSearch();
-  initNotifications();
-  initProfileDropdown();
+  
+  // Initialize notifications with retry
+  setTimeout(function() {
+    initNotifications();
+  }, 100);
+  
+  // Initialize profile dropdown with retry
+  setTimeout(function() {
+    initProfileDropdown();
+  }, 200);
+  
   attachSidebarLinkListeners();
 
   // Listen for page changes (for SPA-like navigation)
@@ -240,10 +249,26 @@ function performSearch(searchTerm) {
  */
 function initNotifications() {
   const notificationBell = document.querySelector('.notification-bell');
-  if (!notificationBell) return;
+  if (!notificationBell) {
+    console.error('❌ Notification bell element not found!');
+    // Try to find it after a delay (in case topbar loads late)
+    setTimeout(function() {
+      const bellRetry = document.querySelector('.notification-bell');
+      if (bellRetry) {
+        console.log('✅ Notification bell found on retry, initializing...');
+        initNotifications();
+      } else {
+        console.error('❌ Notification bell still not found after retry');
+      }
+    }, 500);
+    return;
+  }
+  
+  console.log('✅ Notification bell found, attaching click handler');
   
   notificationBell.addEventListener('click', function(e) {
     e.stopPropagation();
+    console.log('🔔 Notification bell clicked!');
     toggleNotificationDropdown();
   });
   
@@ -258,12 +283,21 @@ function initNotifications() {
 /**
  * Toggle notification dropdown
  */
-function toggleNotificationDropdown() {
+async function toggleNotificationDropdown() {
+  console.log('🔄 toggleNotificationDropdown called');
+  
   const existingDropdown = document.querySelector('.notification-dropdown');
   if (existingDropdown) {
+    console.log('🗑️ Closing existing dropdown');
     existingDropdown.remove();
     return;
   }
+  
+  console.log('📦 Creating notification dropdown...');
+  
+  // Get company ID from window or PHP
+  const companyId = window.CURRENT_COMPANY_ID || 0;
+  console.log('👤 Company ID:', companyId);
   
   const dropdown = document.createElement('div');
   dropdown.className = 'notification-dropdown';
@@ -273,64 +307,147 @@ function toggleNotificationDropdown() {
       <button class="mark-all-read">Mark all as read</button>
     </div>
     <div class="notification-list">
-      <div class="notification-item unread">
-        <div class="notification-icon">
-          <i class="fas fa-file-contract"></i>
-        </div>
-        <div class="notification-content">
-          <h5>New Contract Signed</h5>
-          <p>John Perera signed the contract for Air Conditioner Repair</p>
-          <span class="notification-time">5 minutes ago</span>
-        </div>
-      </div>
-      <div class="notification-item unread">
-        <div class="notification-icon">
-          <i class="fas fa-tools"></i>
-        </div>
-        <div class="notification-content">
-          <h5>New Repair Request</h5>
-          <p>Customer submitted a plumbing repair request in Kandy</p>
-          <span class="notification-time">1 hour ago</span>
-        </div>
-      </div>
-      <div class="notification-item">
-        <div class="notification-icon">
-          <i class="fas fa-dollar-sign"></i>
-        </div>
-        <div class="notification-content">
-          <h5>Payment Received</h5>
-          <p>Payment of LKR 125,000 received from ABC Corporation</p>
-          <span class="notification-time">3 hours ago</span>
-        </div>
+      <div class="notification-loading">
+        <i class="fas fa-spinner fa-spin"></i> Loading notifications...
       </div>
     </div>
     <div class="notification-footer">
-      <a href="support.php">View All Notifications</a>
+      <a href="/2nd-Year-Group-Project/FixLanka/views/company/support.php">View All Notifications</a>
     </div>
   `;
   
+  // Get notification bell position for better dropdown placement
+  const notificationBell = document.querySelector('.notification-bell');
+  const bellRect = notificationBell ? notificationBell.getBoundingClientRect() : null;
+  
   dropdown.style.cssText = `
-    position: absolute;
-    top: 60px;
-    right: 80px;
+    position: fixed;
+    top: ${bellRect ? bellRect.bottom + 10 : 60}px;
+    right: ${bellRect ? window.innerWidth - bellRect.right : 80}px;
     width: 360px;
     max-height: 500px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
+    z-index: 10000;
     overflow: hidden;
     animation: slideDown 0.3s ease;
+    border: 1px solid #e0e0e0;
   `;
   
   document.body.appendChild(dropdown);
+  console.log('✅ Dropdown appended to body');
+  
+  // Load notifications from API
+  try {
+    console.log('📡 Fetching notifications from API...');
+    const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/notifications.php?action=list&user_id=${companyId}&user_type=company&limit=5`);
+    const data = await response.json();
+    console.log('📨 API Response:', data);
+    
+    const notificationList = dropdown.querySelector('.notification-list');
+    
+    if (data.success && data.notifications && data.notifications.length > 0) {
+      console.log('✅ Displaying', data.notifications.length, 'notifications');
+      notificationList.innerHTML = data.notifications.map(notif => `
+        <div class="notification-item ${notif.is_read == 0 ? 'unread' : ''}">
+          <div class="notification-icon">
+            <i class="fas ${getNotificationIcon(notif.type)}"></i>
+          </div>
+          <div class="notification-content">
+            <h5>${escapeHtml(notif.title)}</h5>
+            <p>${escapeHtml(notif.message)}</p>
+            <span class="notification-time">${formatTimeAgo(notif.created_at)}</span>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      console.log('📭 No notifications, showing empty state');
+      notificationList.innerHTML = `
+        <div class="notification-empty">
+          <i class="fas fa-bell-slash"></i>
+          <p>No notifications yet</p>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('❌ Error loading notifications:', error);
+    const notificationList = dropdown.querySelector('.notification-list');
+    notificationList.innerHTML = `
+      <div class="notification-empty">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>Failed to load notifications</p>
+      </div>
+    `;
+  }
   
   const markAllBtn = dropdown.querySelector('.mark-all-read');
-  markAllBtn.addEventListener('click', function() {
-    const unreadItems = dropdown.querySelectorAll('.notification-item.unread');
-    unreadItems.forEach(item => item.classList.remove('unread'));
-    updateNotificationBadge(0);
+  markAllBtn.addEventListener('click', async function() {
+    try {
+      const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/notifications.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'mark_all_read',
+          user_id: companyId,
+          user_type: 'company'
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        const unreadItems = dropdown.querySelectorAll('.notification-item.unread');
+        unreadItems.forEach(item => item.classList.remove('unread'));
+        updateNotificationBadge(0);
+      }
+    } catch (error) {
+      console.error('Error marking notifications as read:', error);
+    }
   });
+}
+
+/**
+ * Get notification icon based on type
+ */
+function getNotificationIcon(type) {
+  const icons = {
+    'contract': 'fa-file-contract',
+    'repair_request': 'fa-tools',
+    'payment': 'fa-dollar-sign',
+    'message': 'fa-envelope',
+    'alert': 'fa-exclamation-circle',
+    'info': 'fa-info-circle',
+    'success': 'fa-check-circle'
+  };
+  return icons[type] || 'fa-bell';
+}
+
+/**
+ * Format time ago (e.g., "5 minutes ago")
+ */
+function formatTimeAgo(timestamp) {
+  const now = new Date();
+  const time = new Date(timestamp);
+  const diffMs = now - time;
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffSecs < 60) return 'Just now';
+  if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  return time.toLocaleDateString();
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 /**
@@ -458,10 +575,21 @@ function showToast(message, type = 'info') {
 }
 
 /**
- * Get notification count
+ * Get notification count from API
  */
-function getNotificationCount() {
-  return 3;
+async function getNotificationCount() {
+  try {
+    const companyId = window.CURRENT_COMPANY_ID || 0;
+    if (!companyId) return 0;
+    
+    const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/notifications.php?action=count&user_id=${companyId}&user_type=company`);
+    const data = await response.json();
+    
+    return data.success ? (data.count || 0) : 0;
+  } catch (error) {
+    console.error('Error getting notification count:', error);
+    return 0;
+  }
 }
 
 /**
@@ -469,8 +597,9 @@ function getNotificationCount() {
  */
 async function refreshNotifications() {
   try {
-    console.log('📄 Refreshing notifications...');
-    updateNotificationBadge(getNotificationCount());
+    const count = await getNotificationCount();
+    updateNotificationBadge(count);
+    console.log('📄 Notifications refreshed:', count);
   } catch (error) {
     console.error('❌ Error fetching notifications:', error);
   }

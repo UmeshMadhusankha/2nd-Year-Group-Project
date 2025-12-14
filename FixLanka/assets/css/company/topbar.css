@@ -265,6 +265,19 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Avatar with initials (no image) */
+.profile-avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 .profile-menu:hover .profile-avatar,
 .profile-menu.active .profile-avatar {
   transform: scale(1.08);
@@ -399,6 +412,19 @@
               linear-gradient(135deg, var(--primary-color), var(--secondary-color)) border-box;
   object-fit: cover;
   flex-shrink: 0;
+}
+
+/* Dropdown avatar with initials */
+.dropdown-avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  color: white;
+  font-weight: 700;
+  font-size: 22px;
+  border: 3px solid white;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
 .dropdown-user-info {
@@ -878,6 +904,30 @@
 .notification-footer a:hover {
   color: var(--primary-hover);
   text-decoration: underline;
+}
+
+/* Notification Loading & Empty States */
+.notification-loading,
+.notification-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.notification-loading i,
+.notification-empty i {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.notification-loading i {
+  color: var(--primary-color);
+}
+
+.notification-empty p {
+  margin: 0;
+  font-size: 14px;
 }
 
 /* Search Box Focus State */

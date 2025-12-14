@@ -1,31 +1,37 @@
 <?php
 /**
  * Company Quotations API
- * Handles CRUD operations for company quotations
+ * 
+ * RESTful API endpoint for managing company quotations.
+ * Supports CRUD operations: GET, POST, PUT, DELETE
+ * 
+ * @package FixLanka\API
+ * @version 1.0.0
  */
 
+// Set response headers for JSON API
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
-// Include database configuration
+// Include required dependencies
 require_once '../config/database.php';
 require_once '../models/CompanyQuotationModel.php';
 
-// Initialize model
+// Initialize quotation model with database connection
 $quotationModel = new CompanyQuotation($pdo);
 
-// Get request method
+// Get HTTP request method
 $method = $_SERVER['REQUEST_METHOD'];
 
-// Handle preflight requests
+// Handle preflight OPTIONS requests for CORS
 if ($method === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
-// Route to appropriate handler
+// Route request to appropriate handler based on HTTP method
 switch ($method) {
     case 'GET':
         handleGet();
@@ -47,53 +53,62 @@ switch ($method) {
 
 /**
  * Handle GET requests - Retrieve quotations
+ * 
+ * Supports filtering by:
+ * - quotation_id: Get specific quotation
+ * - request_id: Get quotations for a job request
+ * - user_id: Get all quotations by a company
+ * - status: Filter by quotation status
+ * 
+ * @return void Outputs JSON response
  */
-function handleGet() {
+function handleGet()
+{
     global $quotationModel;
-    
-    // Get query parameters
-    $quotation_id = isset($_GET['quotation_id']) ? intval($_GET['quotation_id']) : null;
-    $request_id = isset($_GET['request_id']) ? intval($_GET['request_id']) : null;
-    $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
+
+    // Get query parameters for filtering
+    $quotationId = isset($_GET['quotation_id']) ? intval($_GET['quotation_id']) : null;
+    $requestId = isset($_GET['request_id']) ? intval($_GET['request_id']) : null;
+    $userId = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
     $status = isset($_GET['status']) ? $_GET['status'] : null;
-    
+
     try {
-        // Build filters array
+        // Build filters array dynamically
         $filters = [];
-        
-        if ($quotation_id) {
-            $filters['quotation_id'] = $quotation_id;
+
+        if ($quotationId) {
+            $filters['quotation_id'] = $quotationId;
         }
-        
-        if ($request_id) {
-            $filters['request_id'] = $request_id;
+
+        if ($requestId) {
+            $filters['request_id'] = $requestId;
         }
-        
-        if ($user_id) {
-            $filters['user_id'] = $user_id;
+
+        if ($userId) {
+            $filters['user_id'] = $userId;
         }
-        
+
         if ($status) {
             $filters['status'] = $status;
         }
-        
+
         error_log("GET request with filters: " . print_r($filters, true));
-        
-        // Get quotations using model
+
+        // Retrieve quotations from database
         $quotations = $quotationModel->getAll($filters);
-        
+
         error_log("Retrieved " . count($quotations) . " quotations");
         if (count($quotations) > 0) {
             error_log("Sample quotation: " . print_r($quotations[0], true));
         }
-        
-        // Return response
+
+        // Return successful response
         echo json_encode([
             'success' => true,
             'data' => $quotations,
             'count' => count($quotations)
         ]);
-        
+
     } catch (Exception $e) {
         error_log("Exception in handleGet: " . $e->getMessage());
         http_response_code(500);
@@ -106,49 +121,38 @@ function handleGet() {
 
 /**
  * Handle POST requests - Create new quotation
+ * 
+ * Creates a new quotation for a job request. Validates all required fields
+ * and business rules before insertion.
+ * 
+ * Required fields: request_id, user_id, title, labor_cost, material_cost,
+ *                  total_amount, start_date, completion_date, estimated_duration
+ * 
+ * @return void Outputs JSON response with created quotation data
  */
-function handlePost() {
+function handlePost()
+{
     global $quotationModel;
-    
-    // Get JSON input
+
+    // Parse JSON input from request body
     $input = json_decode(file_get_contents('php://input'), true);
-    
-    // Validate required fields
-    $required = ['request_id', 'user_id', 'title', 'labor_cost', 'material_cost', 
-                 'total_amount', 'start_date', 'completion_date', 'estimated_duration'];
-    
-    foreach ($required as $field) {
-        if (!isset($input[$field]) || $input[$field] === '') {
-            http_response_code(400);
-            echo json_encode([
-                'success' => false,
-                'error' => "Missing required field: $field"
-            ]);
-            return;
-        }
-    }
-    
-    // Validate numeric fields
-    if (floatval($input['labor_cost']) < 0 || floatval($input['material_cost']) < 0 || floatval($input['total_amount']) <= 0) {
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Invalid cost values'
-        ]);
+
+    // Validate required fields are present
+    if (!validateRequiredFields($input)) {
         return;
     }
-    
-    // Validate estimated duration
-    if (intval($input['estimated_duration']) <= 0) {
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Estimated duration must be greater than 0'
-        ]);
+
+    // Validate cost values are positive
+    if (!validateCostValues($input)) {
         return;
     }
-    
-    // Check if quotation already exists for this request
+
+    // Validate estimated duration is positive
+    if (!validateEstimatedDuration($input)) {
+        return;
+    }
+
+    // Check for duplicate quotations
     if ($quotationModel->hasQuotationForRequest($input['request_id'])) {
         http_response_code(400);
         echo json_encode([
@@ -157,19 +161,19 @@ function handlePost() {
         ]);
         return;
     }
-    
+
     try {
-        // Create the quotation
+        // Create the quotation in database
         error_log("Creating quotation with data: " . print_r($input, true));
-        $quotation_id = $quotationModel->create($input);
-        
-        if ($quotation_id) {
-            error_log("Quotation created successfully with ID: " . $quotation_id);
-            
-            // Retrieve the created quotation
-            $quotation = $quotationModel->getById($quotation_id);
+        $quotationId = $quotationModel->create($input);
+
+        if ($quotationId) {
+            error_log("Quotation created successfully with ID: " . $quotationId);
+
+            // Retrieve the created quotation with all related data
+            $quotation = $quotationModel->getById($quotationId);
             error_log("Retrieved quotation: " . print_r($quotation, true));
-            
+
             http_response_code(201);
             echo json_encode([
                 'success' => true,
@@ -177,35 +181,114 @@ function handlePost() {
                 'data' => $quotation
             ]);
         } else {
-            error_log("Failed to create quotation - quotationModel->create() returned false");
-            throw new Exception('Failed to create quotation');
+            error_log("Failed to create quotation - create() returned false");
+            throw new Exception('Failed to insert quotation into database');
         }
-        
+
     } catch (Exception $e) {
         error_log("Exception in handlePost: " . $e->getMessage());
         http_response_code(500);
         echo json_encode([
             'success' => false,
-            'error' => 'Failed to create quotation: ' . $e->getMessage()
+            'error' => $e->getMessage()
         ]);
     }
 }
 
 /**
- * Handle PUT requests - Update existing quotation
+ * Validate required fields are present in input
+ * 
+ * @param array $input Input data to validate
+ * @return bool True if all required fields present, false otherwise
  */
-function handlePut() {
+function validateRequiredFields($input)
+{
+    $requiredFields = [
+        'request_id', 'user_id', 'title', 'labor_cost', 'material_cost',
+        'total_amount', 'start_date', 'completion_date', 'estimated_duration'
+    ];
+
+    foreach ($requiredFields as $field) {
+        if (!isset($input[$field]) || $input[$field] === '') {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => "Missing required field: $field"
+            ]);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Validate cost values are non-negative
+ * 
+ * @param array $input Input data to validate
+ * @return bool True if cost values are valid, false otherwise
+ */
+function validateCostValues($input)
+{
+    $laborCost = floatval($input['labor_cost']);
+    $materialCost = floatval($input['material_cost']);
+    $totalAmount = floatval($input['total_amount']);
+
+    if ($laborCost < 0 || $materialCost < 0 || $totalAmount <= 0) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Cost values must be positive. Total amount must be greater than zero.'
+        ]);
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Validate estimated duration is positive
+ * 
+ * @param array $input Input data to validate
+ * @return bool True if duration is valid, false otherwise
+ */
+function validateEstimatedDuration($input)
+{
+    $estimatedDuration = intval($input['estimated_duration']);
+
+    if ($estimatedDuration <= 0) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Estimated duration must be greater than 0 days'
+        ]);
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Handle PUT requests - Update existing quotation
+ * 
+ * Updates an existing quotation. Only quotations with 'pending' status can be updated.
+ * Validates all required fields and ensures quotation exists before updating.
+ * 
+ * @return void Outputs JSON response with updated quotation data
+ */
+function handlePut()
+{
     global $quotationModel;
-    
-    // Get JSON input
+
+    // Parse JSON input from request body
     $rawInput = file_get_contents('php://input');
     $input = json_decode($rawInput, true);
-    
+
     // Debug logging
     error_log("PUT Request Raw Input: " . $rawInput);
     error_log("PUT Request Decoded: " . print_r($input, true));
-    
-    // Validate quotation_id
+
+    // Validate quotation_id is present
     if (!isset($input['quotation_id'])) {
         error_log("Missing quotation_id in update request");
         http_response_code(400);
@@ -216,14 +299,16 @@ function handlePut() {
         ]);
         return;
     }
-    
-    $quotation_id = intval($input['quotation_id']);
-    
+
+    $quotationId = intval($input['quotation_id']);
+
     // Validate required update fields
-    $required = ['title', 'labor_cost', 'material_cost', 'total_amount', 
-                 'start_date', 'completion_date', 'estimated_duration'];
-    
-    foreach ($required as $field) {
+    $requiredFields = [
+        'title', 'labor_cost', 'material_cost', 'total_amount',
+        'start_date', 'completion_date', 'estimated_duration'
+    ];
+
+    foreach ($requiredFields as $field) {
         if (!isset($input[$field])) {
             http_response_code(400);
             echo json_encode([
@@ -233,8 +318,8 @@ function handlePut() {
             return;
         }
     }
-    
-    // Validate cost values
+
+    // Validate total amount is positive
     if (floatval($input['total_amount']) <= 0) {
         http_response_code(400);
         echo json_encode([
@@ -243,15 +328,15 @@ function handlePut() {
         ]);
         return;
     }
-    
+
     try {
-        // Update the quotation
-        $success = $quotationModel->update($quotation_id, $input);
-        
+        // Attempt to update the quotation
+        $success = $quotationModel->update($quotationId, $input);
+
         if ($success) {
             // Retrieve updated quotation
-            $quotation = $quotationModel->getById($quotation_id);
-            
+            $quotation = $quotationModel->getById($quotationId);
+
             echo json_encode([
                 'success' => true,
                 'message' => 'Quotation updated successfully',
@@ -261,10 +346,10 @@ function handlePut() {
             http_response_code(400);
             echo json_encode([
                 'success' => false,
-                'error' => 'Failed to update quotation. Quotation may not exist or not be in pending status.'
+                'error' => 'Failed to update quotation. Quotation may not exist or is not in pending status.'
             ]);
         }
-        
+
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode([
@@ -276,35 +361,42 @@ function handlePut() {
 
 /**
  * Handle DELETE requests - Delete quotation
+ * 
+ * Deletes a quotation from the database. Only quotations with 'pending' status
+ * can be deleted to prevent removal of accepted or processed quotations.
+ * 
+ * @return void Outputs JSON response indicating success or failure
  */
-function handleDelete() {
+function handleDelete()
+{
     global $quotationModel;
-    
+
     // Get quotation_id from query parameters
-    $quotation_id = isset($_GET['quotation_id']) ? intval($_GET['quotation_id']) : null;
-    
+    $quotationId = isset($_GET['quotation_id']) ? intval($_GET['quotation_id']) : null;
+
     // Debug logging
-    error_log("DELETE Request - quotation_id: " . ($quotation_id ?? 'null'));
+    error_log("DELETE Request - quotation_id: " . ($quotationId ?? 'null'));
     error_log("DELETE Request - Full GET params: " . print_r($_GET, true));
-    
-    if (!$quotation_id) {
+
+    // Validate quotation_id is present
+    if (!$quotationId) {
         error_log("DELETE Failed - Missing quotation_id");
         http_response_code(400);
         echo json_encode([
             'success' => false,
             'error' => 'Missing quotation_id parameter',
             'debug' => [
-                'quotation_id' => $quotation_id,
+                'quotation_id' => $quotationId,
                 'get_params' => $_GET
             ]
         ]);
         return;
     }
-    
+
     try {
-        // Delete the quotation
-        $success = $quotationModel->delete($quotation_id);
-        
+        // Attempt to delete the quotation
+        $success = $quotationModel->delete($quotationId);
+
         if ($success) {
             echo json_encode([
                 'success' => true,
@@ -314,10 +406,10 @@ function handleDelete() {
             http_response_code(400);
             echo json_encode([
                 'success' => false,
-                'error' => 'Failed to delete quotation. Quotation may not exist or not be in pending status.'
+                'error' => 'Failed to delete quotation. Quotation may not exist or is not in pending status.'
             ]);
         }
-        
+
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode([
