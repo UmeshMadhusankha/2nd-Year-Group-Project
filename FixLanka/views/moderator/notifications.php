@@ -36,7 +36,7 @@ $notificationsData = getEnhancedMockNotifications();
 
 $message = '';
 $basePath = '';
-$currentPath = 'notifications';
+$currentPath = '/2nd-Year-Group-Project/FixLanka/moderator-notifications';
 
 // Get page title and description from variables or use defaults
 $pageTitle = $title ?? 'Advanced PHP Router';
@@ -323,6 +323,117 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
     </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
 
+       <script>
+// Template functionality
+function useTemplate(template) {
+    try {
+        // Populate the notification form with template data
+        const form = document.getElementById('notificationForm');
+        
+        if (!form) {
+            console.error('Notification form not found');
+            return;
+        }
+
+        // Set the recipients
+        const recipientsSelect = form.querySelector('select[name="recipients"]');
+        if (recipientsSelect && template.recipients) {
+            recipientsSelect.value = template.recipients;
+        }
+
+        // Set the title
+        const titleInput = form.querySelector('input[name="title"]');
+        if (titleInput && template.title) {
+            titleInput.value = template.title;
+        }
+
+        // Set the message
+        const messageTextarea = form.querySelector('textarea[name="message"]');
+        if (messageTextarea && template.message) {
+            messageTextarea.value = template.message;
+        }
+
+        // Scroll to the form smoothly
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // Optional: Show a success message
+        showSuccess('Template loaded successfully! You can now edit and send the notification.');
+
+        // Re-initialize Lucide icons
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+
+    } catch (error) {
+        console.error('Error using template:', error);
+        showError('Failed to load template. Please try again.');
+    }
+}
+
+// Helper function to show success message (if not already defined)
+function showSuccess(message) {
+    const successAlert = document.getElementById('successAlert');
+    const successMessage = document.getElementById('successMessage');
+    
+    if (successAlert && successMessage) {
+        successMessage.textContent = message;
+        successAlert.classList.remove('hidden');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            successAlert.classList.add('hidden');
+        }, 5000);
+    }
+}
+
+// Helper function to show error message (if not already defined)
+function showError(message) {
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    if (errorAlert && errorMessage) {
+        errorMessage.textContent = message;
+        errorAlert.classList.remove('hidden');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            errorAlert.classList.add('hidden');
+        }, 5000);
+    }
+}
+
+// Close success alert
+function closeSuccess() {
+    const successAlert = document.getElementById('successAlert');
+    if (successAlert) {
+        successAlert.classList.add('hidden');
+    }
+}
+
+// Close error alert
+function closeError() {
+    const errorAlert = document.getElementById('errorAlert');
+    if (errorAlert) {
+        errorAlert.classList.add('hidden');
+    }
+}
+
+// Close edit modal
+function closeEditModal() {
+    const modal = document.getElementById('editNotificationModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Close delete modal
+function closeDeleteModal() {
+    const modal = document.getElementById('deleteNotificationModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+</script>
 </body>
 
 </html>

@@ -10,24 +10,33 @@ require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
 require_once __DIR__ . '/_components/Common.php';
 require_once __DIR__ . '/../../includes/admin-modarator/auth.php';
-require_once __DIR__ . '/../../includes/admin-modarator/mock-data.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../controllers/AdReportController.php';
 
-// Check if user is logged in and get user info
-// $isLoggedIn = isLoggedIn();
-// $user = $isLoggedIn ? getCurrentUser() : null;
-// requireRole("moderator", $basePath);
-// $user = getCurrentUser();
-
-$message = '';
 $basePath = '';
-$currentPath = 'ad-reports';
+$currentPath = '/2nd-Year-Group-Project/FixLanka/moderator-ad-reports';
 
-// Get mock data
-$reportsData = getAdReports();
+// Initialize controller
+global $pdo;
+$controller = new AdReportController($pdo);
 
-// Get page title and description from variables or use defaults
-$pageTitle = $title ?? 'Advanced PHP Router';
-$pageDescription = $description ?? 'A Next.js-inspired PHP routing system with advanced features';
+// Handle POST requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $controller->handlePostRequest();
+    header('Location: ' . $_SERVER['REQUEST_URI']);
+    exit;
+}
+
+// Get data from database
+$viewData = $controller->getViewData();
+$messages = $controller->getMessages();
+$reportsData = $viewData['reports'];
+$message = $messages['message'] ?? '';
+$messageType = $messages['type'] ?? '';
+
+// Get page title and description
+$pageTitle = $title ?? 'Advertisement Reports';
+$pageDescription = $description ?? 'Review and moderate advertisement-related reports';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -36,176 +45,199 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
     <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/reports.css">
 </head>
 
 <body class="bg-foreground text-background">
-    <!-- Sidebar Toggle Checkbox -->
     <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle-input">
 
     <div class="dashboard-container">
         <?php renderModeratorSidebar($currentPath, $basePath); ?>
         <div class="dashboard-main">
-            <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/reports.css">
-
-            <?php renderPageHeader($basePath, 'Reports Management', 'Review and resolve user-submitted reports'); ?>
+            <?php renderPageHeader($basePath, 'Advertisement Reports', 'Review and moderate advertisement-related reports'); ?>
 
             <main style="margin-top: 5rem;" class="dashboard-content">
                 <div class="space-y-6">
-                    <div>
-                        <h2 class="text-3xl font-bold tracking-tight">Reports Management</h2>
-                        <p class="text-muted-foreground">Review, investigate, and resolve user-submitted reports</p>
+                    <div class="page-header">
+                        <h2 class="page-title">Advertisement Reports</h2>
+                        <p class="page-description">Review, investigate, and resolve advertisement-related reports</p>
                     </div>
 
-                    <div id="statsContainer" class="grid gap-4 grid-cols-4">
-                        Stats will be loaded dynamically
+                    <?php if (!empty($message)): ?>
+                        <div style="
+                            padding: 1rem 1.5rem;
+                            border-radius: 8px;
+                            margin-bottom: 1.5rem;
+                            border: 2px solid <?php echo $messageType === 'success' ? '#10b981' : '#ef4444'; ?>;
+                            background-color: <?php echo $messageType === 'success' ? '#d1fae5' : '#fee2e2'; ?>;
+                            color: <?php echo $messageType === 'success' ? '#065f46' : '#991b1b'; ?>;
+                            font-weight: 500;
+                        ">
+                            <?php echo htmlspecialchars($message); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Statistics Boxes -->
+                    <div id="statsContainer" class="stats-grid"></div>
+
+                    <!-- Filters -->
+                    <div class="filters-section">
+                        <div class="filters-header">
+                            <h3>Advertisement Reports</h3>
+                            <p>View and manage all advertisement-related reports</p>
+                        </div>
+
+                        <div class="filters-controls">
+                            <div class="search-box">
+                                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                </svg>
+                                <input type="text" id="searchInput" placeholder="Search by ad title, company, or reporter...">
+                            </div>
+                            <select id="statusFilter" class="filter-select">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="investigating">Investigating</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="escalated">Escalated</option>
+                                <option value="reject_report">Rejected</option>
+                                <option value="suspend_ad">Suspended</option>
+                                <option value="delete_ad">Deleted</option>
+                            </select>
+                            <select id="typeFilter" class="filter-select">
+                                <option value="">All Issue Types</option>
+                                <option value="misleading_information">Misleading Information</option>
+                                <option value="false_pricing">False Pricing</option>
+                                <option value="inappropriate_content">Inappropriate Content</option>
+                                <option value="duplicate_listing">Duplicate Listing</option>
+                                <option value="spam_content">Spam Content</option>
+                                <option value="expired_advertisement">Expired Advertisement</option>
+                                <option value="policy_violation">Policy Violation</option>
+                                <option value="unverified_claims">Unverified Claims</option>
+                                <option value="inappropriate_images">Inappropriate Images</option>
+                            </select>
+                            <select id="priorityFilter" class="filter-select">
+                                <option value="">All Priorities</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div class="bg-card rounded-lg border">
-                        <div class="p-6 border-b">
-                            <h3 class="text-lg font-semibold">All Reports</h3>
-                            <p class="text-muted-foreground text-sm">View and manage all user reports</p>
+                    <!-- Loading State -->
+                    <div id="loadingState" class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">Loading reports...</p>
+                    </div>
 
-                            <div class="mt-4 flex gap-4 flex-wrap">
-                                <div class="flex-1 min-w-[200px]">
-                                    <div class="relative">
-                                        <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"></i>
-                                        <input
-                                            type="text"
-                                            id="searchInput"
-                                            placeholder="Search reports..."
-                                            class="w-full pl-10 pr-4 py-2 border rounded-md">
-                                    </div>
-                                </div>
-                                <select id="statusFilter" class="border rounded-md px-4 py-2">
-                                    <option value="">All Status</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="investigating">Investigating</option>
-                                    <option value="resolved">Resolved</option>
-                                    <option value="escalated">Escalated</option>
-                                </select>
-                                <select id="typeFilter" class="border rounded-md px-4 py-2">
-                                    <option value="">All Types</option>
-                                    <option value="harassment">Harassment</option>
-                                    <option value="service_issue">Service Issue</option>
-                                    <option value="payment_dispute">Payment Dispute</option>
-                                    <option value="fraud">Fraud</option>
-                                    <option value="spam">Spam</option>
-                                    <option value="other">Other</option>
-                                </select>
-                                <select id="priorityFilter" class="border rounded-md px-4 py-2">
-                                    <option value="">All Priorities</option>
-                                    <option value="high">High</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="low">Low</option>
-                                </select>
-                            </div>
-                        </div>
+                    <!-- Error State -->
+                    <div id="errorState" class="error-container hidden">
+                        <svg class="error-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <p class="error-title">Failed to load reports</p>
+                        <p id="errorMessage" class="error-description"></p>
+                        <button onclick="loadReports()" class="btn-manage">Try Again</button>
+                    </div>
 
-                        <div id="loadingState" class="p-8 text-center">
-                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                            <p class="mt-2 text-muted-foreground">Loading reports...</p>
-                        </div>
+                    <!-- Empty State -->
+                    <div id="emptyState" class="empty-container hidden">
+                        <svg class="empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21.5 12H16l-2-3h-4l-2 3H2.5"></path>
+                            <path d="M5.5 12v7h13v-7"></path>
+                        </svg>
+                        <p class="empty-title">No reports found</p>
+                        <p class="empty-description">No advertisement reports match your current filters</p>
+                    </div>
 
-                        <div id="errorState" class="p-8 text-center hidden">
-                            <i data-lucide="alert-circle" class="h-12 w-12 text-destructive mx-auto mb-2"></i>
-                            <p class="text-destructive font-medium">Failed to load reports</p>
-                            <p class="text-muted-foreground text-sm mt-1" id="errorMessage"></p>
-                            <button onclick="loadReports()" class="mt-4 btn btn-secondary">Try Again</button>
-                        </div>
-
-                        <div id="emptyState" class="p-8 text-center hidden">
-                            <i data-lucide="inbox" class="h-12 w-12 text-muted-foreground mx-auto mb-2"></i>
-                            <p class="font-medium">No reports found</p>
-                            <p class="text-muted-foreground text-sm mt-1">No reports match your current filters</p>
-                        </div>
-
-                        <div id="reportsTable" class="hidden">
-                            <div class="overflow-x-auto">
-                                <table class="w-full">
-                                    <thead class="bg-muted/50">
-                                        <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">ID</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Reporter</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Description</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Priority</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="reportsTableBody" class="bg-card divide-y divide-border">
-                                        Reports will be loaded here
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div id="pagination" class="p-4 border-t flex items-center justify-between">
-                                Pagination will be loaded here
-                            </div>
-                        </div>
+                    <!-- Reports Table -->
+                    <div id="reportsTable" class="reports-table-container hidden">
+                        <table class="reports-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Ad Title</th>
+                                    <th>Company</th>
+                                    <th>Reporter</th>
+                                    <th>Issue Type</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportsTableBody"></tbody>
+                        </table>
+                        <div id="pagination" class="pagination-container"></div>
                     </div>
                 </div>
             </main>
 
-            <div id="manageReportModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
-                <div class="bg-card rounded-lg max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                    <div class="p-6 border-b">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold">Manage Report</h3>
-                            <button onclick="closeManageModal()" class="text-muted-foreground hover:text-foreground">
-                                <i data-lucide="x" class="h-5 w-5"></i>
-                            </button>
-                        </div>
+            <!-- Manage Report Modal -->
+            <div id="manageReportModal" class="modal-overlay">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h3 class="modal-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            Manage Advertisement Report
+                        </h3>
+                        <button onclick="closeManageModal()" class="modal-close">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
                     </div>
-                    <div id="reportDetailsContent" class="p-6">
-                        Report details will be loaded here
-                    </div>
-                    <div class="p-6 border-t bg-muted/20">
-                        <form id="updateReportForm" class="space-y-4">
-                            <input type="hidden" id="currentReportId">
 
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label for="updateStatus" class="block text-sm font-medium mb-2">Status</label>
-                                    <select id="updateStatus" class="w-full border rounded-md px-4 py-2">
+                    <div id="reportDetailsContent" class="modal-body"></div>
+
+                    <div class="modal-footer">
+                        <form id="updateReportForm" method="POST" action="<?php echo $_SERVER['REQUEST_URI']; ?>" class="modal-form">
+                            <input type="hidden" name="action" value="update_report">
+                            <input type="hidden" id="currentReportId" name="report_id">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="updateStatus" class="form-label">Status</label>
+                                    <select id="updateStatus" name="status" class="form-select">
                                         <option value="pending">Pending</option>
                                         <option value="investigating">Investigating</option>
                                         <option value="resolved">Resolved</option>
                                         <option value="escalated">Escalated</option>
+                                        <option value="reject_report">Reject Report</option>
+                                        <option value="suspend_ad">Suspend Advertisement</option>
+                                        <option value="delete_ad">Delete Advertisement</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label for="updatePriority" class="block text-sm font-medium mb-2">Priority</label>
-                                    <select id="updatePriority" class="w-full border rounded-md px-4 py-2">
+                                <div class="form-group">
+                                    <label for="updatePriority" class="form-label">Priority</label>
+                                    <select id="updatePriority" name="priority" class="form-select">
                                         <option value="low">Low</option>
                                         <option value="medium">Medium</option>
                                         <option value="high">High</option>
                                     </select>
                                 </div>
                             </div>
-
-                            <div>
-                                <label for="moderatorNotes" class="block text-sm font-medium mb-2">Moderator Notes</label>
-                                <textarea
-                                    id="moderatorNotes"
-                                    rows="4"
-                                    placeholder="Add notes about your investigation or resolution..."
-                                    class="w-full border rounded-md px-4 py-2"></textarea>
+                            <div class="form-group">
+                                <label for="moderatorNotes" class="form-label">Moderator Notes</label>
+                                <textarea id="moderatorNotes" name="moderator_notes" class="form-textarea" placeholder="Add notes about your investigation or action taken..."></textarea>
                             </div>
-
-                            <div id="updateErrorAlert" class="hidden bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded">
-                                <p id="updateErrorMessage"></p>
-                            </div>
-
-                            <div class="flex gap-4">
-                                <button type="submit" id="updateBtn" class="btn btn-primary flex-1">
-                                    <i data-lucide="save" class="mr-2 h-4 w-4"></i>
+                            <div class="form-buttons">
+                                <button type="submit" id="updateBtn" class="btn-submit">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                        <polyline points="7 3 7 8 15 8"></polyline>
+                                    </svg>
                                     Update Report
                                 </button>
-                                <button type="button" onclick="closeManageModal()" class="btn btn-secondary">
-                                    Cancel
-                                </button>
+                                <button type="button" onclick="closeManageModal()" class="btn-cancel">Cancel</button>
                             </div>
                         </form>
                     </div>
@@ -213,62 +245,63 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
             </div>
 
             <script>
-                // Mock data embedded from PHP
                 const mockReportsData = <?= json_encode($reportsData) ?>;
-                
                 let currentPage = 1;
-                let currentFilters = {};
                 let allReports = [];
 
-                // Initialize reports from mock data
                 function initializeReports() {
                     allReports = mockReportsData.map(report => ({
                         id: report.id,
+                        ad_id: report.ad_id || null,
+                        ad_title: report.ad_title || 'Unknown Advertisement',
+                        company_name: report.company_name || 'Unknown Company',
                         reporter_name: report.user_name || report.user || 'Unknown',
                         reporter_email: report.user_email || '',
-                        ad_id: report.ad_id || null,
-                        ad_title: report.ad_title || '',
                         type: (report.issue_type || 'other').toLowerCase().replace(/ /g, '_'),
                         description: report.description || report.issue || '',
                         priority: (report.priority || 'low').toLowerCase(),
                         status: (report.status || 'pending').toLowerCase().replace(/ /g, '_'),
-                        created_at: report.created_date || report.date || new Date().toISOString()
+                        created_at: report.created_date || report.date || new Date().toISOString(),
+                        moderator_notes: report.moderator_notes || '',
+                        category: report.category || 'advertisement',
+                        evidence: report.evidence || ''
                     }));
+
+                    allReports = allReports.filter(r => r.category === 'advertisement');
                 }
 
                 function loadReports(page = 1) {
                     currentPage = page;
-
-                    const searchInput = document.getElementById('searchInput');
-                    const statusFilter = document.getElementById('statusFilter');
-                    const typeFilter = document.getElementById('typeFilter');
-                    const priorityFilter = document.getElementById('priorityFilter');
-
-                    const search = searchInput ? searchInput.value.toLowerCase() : '';
-                    const status = statusFilter ? statusFilter.value : '';
-                    const type = typeFilter ? typeFilter.value : '';
-                    const priority = priorityFilter ? priorityFilter.value : '';
+                    const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
+                    const status = document.getElementById('statusFilter')?.value || '';
+                    const type = document.getElementById('typeFilter')?.value || '';
+                    const priority = document.getElementById('priorityFilter')?.value || '';
 
                     showLoading();
 
-                    // Filter reports
                     let filtered = allReports.filter(report => {
-                        if (search && !report.description.toLowerCase().includes(search) && 
-                            !report.reporter_name.toLowerCase().includes(search)) return false;
+                        if (search &&
+                            !report.ad_title.toLowerCase().includes(search) &&
+                            !report.company_name.toLowerCase().includes(search) &&
+                            !report.reporter_name.toLowerCase().includes(search) &&
+                            !report.description.toLowerCase().includes(search)) return false;
                         if (status && report.status !== status) return false;
                         if (type && report.type !== type) return false;
                         if (priority && report.priority !== priority) return false;
                         return true;
                     });
 
-                    // Pagination
                     const limit = 20;
                     const total = filtered.length;
                     const pages = Math.ceil(total / limit) || 1;
                     const offset = (page - 1) * limit;
                     const data = filtered.slice(offset, offset + limit);
 
-                    displayReports(data, { page, pages, total });
+                    displayReports(data, {
+                        page,
+                        pages,
+                        total
+                    });
                     updateStats(filtered);
                 }
 
@@ -291,262 +324,316 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
 
                     reportsTable.classList.remove('hidden');
 
-                    const statusColors = {
-                        'pending': 'badge-outline',
-                        'investigating': 'badge-secondary',
-                        'resolved': 'badge-default',
-                        'escalated': 'badge-destructive'
+                    const statusClasses = {
+                        pending: 'badge-pending',
+                        investigating: 'badge-investigating',
+                        resolved: 'badge-resolved',
+                        escalated: 'badge-escalated',
+                        reject_report: 'badge-rejected',
+                        suspend_ad: 'badge-suspended',
+                        delete_ad: 'badge-deleted'
                     };
 
-                    const priorityColors = {
-                        'low': 'badge-secondary',
-                        'medium': 'badge-outline',
-                        'high': 'badge-destructive'
+                    const statusLabels = {
+                        pending: 'PENDING',
+                        investigating: 'INVESTIGATING',
+                        resolved: 'RESOLVED',
+                        escalated: 'ESCALATED',
+                        reject_report: 'REJECTED',
+                        suspend_ad: 'SUSPENDED',
+                        delete_ad: 'DELETED'
+                    };
+
+                    const priorityClasses = {
+                        low: 'badge-low',
+                        medium: 'badge-medium',
+                        high: 'badge-high'
                     };
 
                     const typeLabels = {
-                        'harassment': 'Harassment',
-                        'service_issue': 'Service Issue',
-                        'payment_dispute': 'Payment Dispute',
-                        'fraud': 'Fraud',
-                        'spam': 'Spam',
-                        'other': 'Other'
+                        misleading_information: 'Misleading Information',
+                        false_pricing: 'False Pricing',
+                        inappropriate_content: 'Inappropriate Content',
+                        duplicate_listing: 'Duplicate Listing',
+                        spam_content: 'Spam Content',
+                        expired_advertisement: 'Expired Advertisement',
+                        policy_violation: 'Policy Violation',
+                        unverified_claims: 'Unverified Claims',
+                        inappropriate_images: 'Inappropriate Images'
                     };
 
                     tableBody.innerHTML = reports.map(report => `
-        <tr>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">#${report.id}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <div>
-                    <p class="font-medium">${escapeHtml(report.reporter_name || 'Unknown')}</p>
-                    <p class="text-xs text-muted-foreground">${escapeHtml(report.reporter_email || '')}</p>
-                </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">${typeLabels[report.type] || report.type}</td>
-            <td class="px-6 py-4 text-sm max-w-xs truncate">${escapeHtml(report.description)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <span class="badge ${priorityColors[report.priority]}">${report.priority}</span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <span class="badge ${statusColors[report.status]}">${report.status}</span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                ${new Date(report.created_at).toLocaleDateString()}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <button onclick="manageReport(${report.id})" class="text-primary hover:underline">
-                    Manage
-                </button>
-            </td>
-        </tr>
-    `).join('');
+                        <tr>
+                            <td><span class="report-id">#${report.id}</span></td>
+                            <td>
+                                <div style="font-weight: 500; color: #111827; margin-bottom: 4px;">${escapeHtml(report.ad_title)}</div>
+                                <div style="font-size: 0.75rem; color: #6b7280;">Ad ID: ${report.ad_id || 'N/A'}</div>
+                            </td>
+                            <td style="font-weight: 500; color: #374151;">${escapeHtml(report.company_name)}</td>
+                            <td>
+                                <div class="reporter-info">
+                                    <span class="reporter-name">${escapeHtml(report.reporter_name)}</span>
+                                    ${report.reporter_email ? `<span class="reporter-email">${escapeHtml(report.reporter_email)}</span>` : ''}
+                                </div>
+                            </td>
+                            <td style="font-size: 0.813rem;">${typeLabels[report.type] || report.type}</td>
+                            <td><span class="badge ${priorityClasses[report.priority]}">${report.priority.toUpperCase()}</span></td>
+                            <td><span class="badge ${statusClasses[report.status]}">${statusLabels[report.status] || report.status.replace('_', ' ').toUpperCase()}</span></td>
+                            <td>${new Date(report.created_at).toLocaleDateString()}</td>
+                            <td>
+                                <button onclick="manageReport(${report.id})" class="btn-manage">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                        <path d="M12 1v6m0 6v6"></path>
+                                    </svg>
+                                    Manage
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
 
                     displayPagination(pagination);
-                    lucide.createIcons();
                 }
 
                 function displayPagination(pagination) {
                     const paginationDiv = document.getElementById('pagination');
-
                     if (pagination.pages <= 1) {
                         paginationDiv.innerHTML = '';
+                        paginationDiv.style.display = 'none';
                         return;
                     }
-
-                    let paginationHTML = `
-        <div class="text-sm text-muted-foreground">
-            Showing page ${pagination.page} of ${pagination.pages} (${pagination.total} total)
-        </div>
-        <div class="flex gap-2">
-    `;
-
-                    if (pagination.page > 1) {
-                        paginationHTML += `<button onclick="loadReports(${pagination.page - 1})" class="btn btn-secondary">Previous</button>`;
-                    }
-
-                    if (pagination.page < pagination.pages) {
-                        paginationHTML += `<button onclick="loadReports(${pagination.page + 1})" class="btn btn-secondary">Next</button>`;
-                    }
-
-                    paginationHTML += '</div>';
-                    paginationDiv.innerHTML = paginationHTML;
+                    paginationDiv.style.display = 'flex';
+                    let html = `<div class="pagination-info">Page ${pagination.page} of ${pagination.pages} (${pagination.total} total)</div><div class="pagination-buttons">`;
+                    if (pagination.page > 1) html += `<button onclick="loadReports(${pagination.page - 1})" class="btn-pagination">Previous</button>`;
+                    if (pagination.page < pagination.pages) html += `<button onclick="loadReports(${pagination.page + 1})" class="btn-pagination">Next</button>`;
+                    html += '</div>';
+                    paginationDiv.innerHTML = html;
                 }
 
                 function updateStats(reports) {
-                    const statsContainer = document.getElementById('statsContainer');
-
-                    // Calculate stats from current page data (in production, this should come from API)
                     const pending = reports.filter(r => r.status === 'pending').length;
                     const investigating = reports.filter(r => r.status === 'investigating').length;
                     const escalated = reports.filter(r => r.status === 'escalated').length;
                     const resolved = reports.filter(r => r.status === 'resolved').length;
+                    const rejected = reports.filter(r => r.status === 'reject_report').length;
+                    const suspended = reports.filter(r => r.status === 'suspend_ad').length;
+                    const deleted = reports.filter(r => r.status === 'delete_ad').length;
 
-                    statsContainer.innerHTML = `
-        ${renderStatCard('Pending', pending, 'Awaiting review', 'clock', 'text-yellow-600')}
-        ${renderStatCard('Investigating', investigating, 'Under review', 'search', 'text-blue-600')}
-        ${renderStatCard('Escalated', escalated, 'Needs attention', 'alert-triangle', 'text-red-600')}
-        ${renderStatCard('Resolved', resolved, 'Completed', 'check-circle', 'text-green-600')}
-    `;
-
-                    lucide.createIcons();
-                }
-
-                function renderStatCard(title, value, description, icon, iconColor) {
-                    return `
-        <div class="bg-card rounded-lg border p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-muted-foreground">${title}</p>
-                    <p class="text-2xl font-bold mt-2">${value}</p>
-                    ${description ? `<p class="text-xs text-muted-foreground mt-1">${description}</p>` : ''}
-                </div>
-                <i data-lucide="${icon}" class="h-8 w-8 ${iconColor}"></i>
-            </div>
-        </div>
-    `;
+                    document.getElementById('statsContainer').innerHTML = `
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <div>
+                                    <p class="stat-card-value">${pending}</p>
+                                    <p class="stat-card-title">Pending</p>
+                                    <p class="stat-card-description">Awaiting review</p>
+                                </div>
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <div>
+                                    <p class="stat-card-value">${investigating}</p>
+                                    <p class="stat-card-title">Investigating</p>
+                                    <p class="stat-card-description">Under review</p>
+                                </div>
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <div>
+                                    <p class="stat-card-value">${escalated}</p>
+                                    <p class="stat-card-title">Escalated</p>
+                                    <p class="stat-card-description">Needs attention</p>
+                                </div>
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
+                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <div>
+                                    <p class="stat-card-value">${resolved}</p>
+                                    <p class="stat-card-title">Resolved</p>
+                                    <p class="stat-card-description">Completed</p>
+                                </div>
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <div>
+                                    <p class="stat-card-value">${rejected}</p>
+                                    <p class="stat-card-title">Rejected</p>
+                                    <p class="stat-card-description">Reports rejected</p>
+                                </div>
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <div>
+                                    <p class="stat-card-value">${suspended}</p>
+                                    <p class="stat-card-title">Suspended</p>
+                                    <p class="stat-card-description">Ads suspended</p>
+                                </div>
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <div>
+                                    <p class="stat-card-value">${deleted}</p>
+                                    <p class="stat-card-title">Deleted</p>
+                                    <p class="stat-card-description">Ads removed</p>
+                                </div>
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                            </div>
+                        </div>
+                    `;
                 }
 
                 function manageReport(id) {
                     const report = allReports.find(r => r.id === id);
-                    
                     if (!report) {
                         alert('Report not found');
                         return;
                     }
 
-                    const detailsContent = document.getElementById('reportDetailsContent');
-
                     const typeLabels = {
-                        'harassment': 'Harassment',
-                        'service_issue': 'Service Issue',
-                        'payment_dispute': 'Payment Dispute',
-                        'fraud': 'Fraud',
-                        'spam': 'Spam',
-                        'performance_issue': 'Performance Issue',
-                        'billing_problem': 'Billing Problem',
-                        'technical_error': 'Technical Error',
-                        'content_issue': 'Content Issue',
-                        'other': 'Other'
+                        misleading_information: 'Misleading Information',
+                        false_pricing: 'False Pricing',
+                        inappropriate_content: 'Inappropriate Content',
+                        duplicate_listing: 'Duplicate Listing',
+                        spam_content: 'Spam Content',
+                        expired_advertisement: 'Expired Advertisement',
+                        policy_violation: 'Policy Violation',
+                        unverified_claims: 'Unverified Claims',
+                        inappropriate_images: 'Inappropriate Images'
                     };
 
-                        detailsContent.innerHTML = `
-            <div class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-sm font-medium text-muted-foreground">Report ID</label>
-                        <p class="text-foreground">#${report.id}</p>
-                    </div>
-                    <div>
-                        <label class="text-sm font-medium text-muted-foreground">Submitted</label>
-                        <p class="text-foreground">${new Date(report.created_at).toLocaleString()}</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-sm font-medium text-muted-foreground">Reporter</label>
-                        <p class="text-foreground">${escapeHtml(report.reporter_name || 'Unknown')}</p>
-                        <p class="text-sm text-muted-foreground">${escapeHtml(report.reporter_email || '')}</p>
-                    </div>
-                    <div>
-                        <label class="text-sm font-medium text-muted-foreground">Type</label>
-                        <p class="text-foreground">${typeLabels[report.type] || report.type}</p>
-                    </div>
-                </div>
-                <div>
-                    <label class="text-sm font-medium text-muted-foreground">Description</label>
-                    <p class="text-foreground">${escapeHtml(report.description)}</p>
-                </div>
-                ${report.evidence ? `
-                <div>
-                    <label class="text-sm font-medium text-muted-foreground">Evidence</label>
-                    <p class="text-foreground">${escapeHtml(report.evidence)}</p>
-                </div>
-                ` : ''}
-                ${report.reported_entity_type && report.reported_entity_type !== 'other' ? `
-                <div>
-                    <label class="text-sm font-medium text-muted-foreground">Related To</label>
-                    <p class="text-foreground">${report.reported_entity_type} #${report.reported_entity_id || 'N/A'}</p>
-                </div>
-                ` : ''}
-                ${report.moderator_notes ? `
-                <div>
-                    <label class="text-sm font-medium text-muted-foreground">Previous Notes</label>
-                    <p class="text-foreground">${escapeHtml(report.moderator_notes)}</p>
-                </div>
-                ` : ''}
-                ${report.resolved_at ? `
-                <div>
-                    <label class="text-sm font-medium text-muted-foreground">Resolved</label>
-                    <p class="text-foreground">${new Date(report.resolved_at).toLocaleString()}</p>
-                    ${report.resolver_name ? `<p class="text-sm text-muted-foreground">By: ${report.resolver_name}</p>` : ''}
-                </div>
-                ` : ''}
-            </div>
-        `;
+                    const statusLabels = {
+                        pending: 'PENDING',
+                        investigating: 'INVESTIGATING',
+                        resolved: 'RESOLVED',
+                        escalated: 'ESCALATED',
+                        reject_report: 'REJECTED',
+                        suspend_ad: 'SUSPENDED',
+                        delete_ad: 'DELETED'
+                    };
 
-                        // Set current values in form
-                        document.getElementById('currentReportId').value = report.id;
-                        document.getElementById('updateStatus').value = report.status;
+                    document.getElementById('reportDetailsContent').innerHTML = `
+                        <div class="report-details">
+                            <div class="detail-row">
+                                <div class="detail-field">
+                                    <label class="detail-label">Report ID</label>
+                                    <p class="detail-value detail-value-large">#${report.id}</p>
+                                </div>
+                                <div class="detail-field">
+                                    <label class="detail-label">Date Submitted</label>
+                                    <p class="detail-value">${new Date(report.created_at).toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-field">
+                                    <label class="detail-label">Advertisement Title</label>
+                                    <p class="detail-value">${escapeHtml(report.ad_title)}</p>
+                                    <p class="detail-value-secondary">Ad ID: ${report.ad_id}</p>
+                                </div>
+                                <div class="detail-field">
+                                    <label class="detail-label">Company Name</label>
+                                    <p class="detail-value">${escapeHtml(report.company_name)}</p>
+                                </div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-field">
+                                    <label class="detail-label">Reported By</label>
+                                    <p class="detail-value">${escapeHtml(report.reporter_name)}</p>
+                                    ${report.reporter_email ? `<p class="detail-value-secondary">${escapeHtml(report.reporter_email)}</p>` : ''}
+                                </div>
+                                <div class="detail-field">
+                                    <label class="detail-label">Issue Type</label>
+                                    <p class="detail-value">${typeLabels[report.type] || report.type}</p>
+                                </div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-field">
+                                    <label class="detail-label">Priority Level</label>
+                                    <p class="detail-value"><span class="badge badge-${report.priority}">${report.priority.toUpperCase()}</span></p>
+                                </div>
+                                <div class="detail-field">
+                                    <label class="detail-label">Current Status</label>
+                                    <p class="detail-value"><span class="badge badge-${report.status}">${statusLabels[report.status] || report.status.replace('_', ' ').toUpperCase()}</span></p>
+                                </div>
+                            </div>
+                            <div class="detail-field">
+                                <label class="detail-label">Problem Description</label>
+                                <div class="description-box">
+                                    <p class="detail-value">${escapeHtml(report.description)}</p>
+                                </div>
+                            </div>
+                            ${report.evidence ? `
+                                <div class="detail-field">
+                                    <label class="detail-label">Evidence Provided</label>
+                                    <div class="description-box">
+                                        <p class="detail-value">${escapeHtml(report.evidence)}</p>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${report.moderator_notes ? `
+                                <div class="detail-field">
+                                    <label class="detail-label">Previous Moderator Notes</label>
+                                    <div class="description-box">
+                                        <p class="detail-value">${escapeHtml(report.moderator_notes)}</p>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+
+                    document.getElementById('currentReportId').value = report.id;
+                    document.getElementById('updateStatus').value = report.status;
                     document.getElementById('updatePriority').value = report.priority;
                     document.getElementById('moderatorNotes').value = report.moderator_notes || '';
-
-                    document.getElementById('manageReportModal').classList.remove('hidden');
-                    document.getElementById('manageReportModal').classList.add('flex');
-                    lucide.createIcons();
-                }                function closeManageModal() {
-                    document.getElementById('manageReportModal').classList.add('hidden');
-                    document.getElementById('manageReportModal').classList.remove('flex');
-                    document.getElementById('updateErrorAlert').classList.add('hidden');
+                    document.getElementById('manageReportModal').classList.add('show');
                 }
 
-                // Handle update form submission
-                document.getElementById('updateReportForm').addEventListener('submit', (e) => {
-                    e.preventDefault();
+                function closeManageModal() {
+                    document.getElementById('manageReportModal').classList.remove('show');
+                }
 
-                    const reportId = document.getElementById('currentReportId').value;
-                    const updateBtn = document.getElementById('updateBtn');
-                    const errorAlert = document.getElementById('updateErrorAlert');
-
-                    // Disable button
-                    updateBtn.disabled = true;
-                    updateBtn.innerHTML = '<span class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>Updating...';
-                    errorAlert.classList.add('hidden');
-
-                    const updateData = {
-                        status: document.getElementById('updateStatus').value,
-                        priority: document.getElementById('updatePriority').value,
-                        moderator_notes: document.getElementById('moderatorNotes').value
-                    };
-
-                    // Update local data
-                    const reportIndex = allReports.findIndex(r => r.id === parseInt(reportId));
-                    if (reportIndex !== -1) {
-                        allReports[reportIndex].status = updateData.status;
-                        allReports[reportIndex].priority = updateData.priority;
-                        allReports[reportIndex].moderator_notes = updateData.moderator_notes;
-                    }
-
-                    // Simulate async operation
-                    setTimeout(() => {
-                        updateBtn.disabled = false;
-                        updateBtn.innerHTML = '<i data-lucide="save" class="mr-2 h-4 w-4"></i>Update Report';
-                        lucide.createIcons();
-                        closeManageModal();
-                        loadReports(currentPage);
-                    }, 300);
+                document.getElementById('manageReportModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'manageReportModal') closeManageModal();
                 });
 
                 function showLoading() {
                     document.getElementById('loadingState').classList.remove('hidden');
                     document.getElementById('errorState').classList.add('hidden');
-                    document.getElementById('emptyState').classList.add('hidden');
-                    document.getElementById('reportsTable').classList.add('hidden');
-                }
-
-                function showError(message) {
-                    document.getElementById('loadingState').classList.add('hidden');
-                    document.getElementById('errorState').classList.remove('hidden');
-                    document.getElementById('errorMessage').textContent = message;
                     document.getElementById('emptyState').classList.add('hidden');
                     document.getElementById('reportsTable').classList.add('hidden');
                 }
@@ -557,7 +644,6 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                     return div.innerHTML;
                 }
 
-                // Event listeners
                 document.getElementById('searchInput')?.addEventListener('input', debounce(() => loadReports(1), 500));
                 document.getElementById('statusFilter')?.addEventListener('change', () => loadReports(1));
                 document.getElementById('typeFilter')?.addEventListener('change', () => loadReports(1));
@@ -565,29 +651,21 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
 
                 function debounce(func, wait) {
                     let timeout;
-                    return function executedFunction(...args) {
-                        const later = () => {
-                            clearTimeout(timeout);
-                            func(...args);
-                        };
+                    return function(...args) {
                         clearTimeout(timeout);
-                        timeout = setTimeout(later, wait);
+                        timeout = setTimeout(() => func(...args), wait);
                     };
                 }
 
-                // Load reports on page load
                 initializeReports();
                 loadReports();
-                lucide.createIcons();
             </script>
         </div>
     </div>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
     <script>
         lucide.createIcons();
     </script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
-
 </body>
 
 </html>
-

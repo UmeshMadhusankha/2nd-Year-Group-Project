@@ -14,7 +14,7 @@ function renderModeratorSidebar($currentPath, $basePath)
         ['title' => 'Ad Scheduling', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-ad-schedule', 'icon' => 'calendar'],
         ['title' => 'Ad Reports', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-ad-reports', 'icon' => 'flag'],
         ['title' => 'Notifications', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-notifications', 'icon' => 'bell'],
-        ['title' => 'User Management', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-account-moderation', 'icon' => 'users']
+      //  ['title' => 'User Management', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-account-moderation', 'icon' => 'users']
     ];
 
     echo '<!-- Sidebar Component -->';
@@ -23,7 +23,8 @@ function renderModeratorSidebar($currentPath, $basePath)
     echo '<ul class="nav-list">';
 
     foreach ($menuItems as $item) {
-        $isActive = ($currentPath === trim($item['url'], '/'));
+        $isActive = (trim($currentPath, '/') === trim($item['url'], '/'));
+        echo '<script>console.log("Current Path: ' . addslashes($currentPath) . ' | Item URL: ' . addslashes($item['url']) . ' | Is Active: ' . ($isActive ? 'true' : 'false') . '");</script>';
         $activeClass = $isActive ? 'active' : '';
 
         echo '<li class="nav-item ' . $activeClass . '">';

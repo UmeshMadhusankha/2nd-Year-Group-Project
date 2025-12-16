@@ -1,541 +1,317 @@
 <?php
-// Start session only if not already started
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+// Direct database connection
+$db = new mysqli("localhost", "root", "", "fix_lanka");
+
+if ($db->connect_error) {
+    die("Connection failed: " . $db->connect_error);
+}
+
+// Include the model
+require_once __DIR__ . '/../../models/StaticContentModel.php';
+$model = new StaticContentModel($db);
+
+// Handle status toggle (Publish/Unpublish)
+if (isset($_GET['toggle_status']) && isset($_GET['id'])) {
+    $id = intval($_GET['id']);
+    $content = $model->getContentById($id);
+    
+    if ($content) {
+        if ($content['status'] === 'Published') {
+            $success = $model->unpublishContent($id);
+            $_SESSION['message'] = $success ? 'Content unpublished successfully!' : 'Failed to unpublish content';
+        } else {
+            $success = $model->publishContent($id);
+            $_SESSION['message'] = $success ? 'Content published successfully!' : 'Failed to publish content';
+        }
+        $_SESSION['message_type'] = 'success';
+    }
+    
+    header('Location: /2nd-Year-Group-Project/FixLanka/views/moderator/static-content.php');
+    exit;
+}
+
+// Handle update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_content'])) {
+    $id = intval($_POST['content_id']);
+    $title = trim($_POST['title']);
+    $description = trim($_POST['description']);
+    $body = trim($_POST['body']);
+    $status = $_POST['status'];
+    
+    $success = $model->updateContent($id, $title, $description, $body, $status);
+    
+    if ($success) {
+        $_SESSION['message'] = 'Content updated successfully!';
+        $_SESSION['message_type'] = 'success';
+    } else {
+        $_SESSION['message'] = 'Failed to update content';
+        $_SESSION['message_type'] = 'error';
+    }
+    
+    header('Location: /2nd-Year-Group-Project/FixLanka/views/moderator/static-content.php');
+    exit;
+}
+
+// Get data using model
+$contents = $model->getAllContent();
+$stats = $model->getStatistics();
+
+$message = $_SESSION['message'] ?? '';
+$message_type = $_SESSION['message_type'] ?? '';
+unset($_SESSION['message'], $_SESSION['message_type']);
 
 // Include components
 require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
-require_once __DIR__ . '/_components/Common.php';
-require_once __DIR__ . '/../../includes/admin-modarator/auth.php';
-require_once __DIR__ . '/../../includes/admin-modarator/mock-data.php';
 
-// Check if user is logged in and get user info
-// $isLoggedIn = isLoggedIn();
-// $user = $isLoggedIn ? getCurrentUser() : null;
-// requireRole("moderator", $basePath);
-// $user = getCurrentUser();
-
-$message = '';
-$basePath = '';
-$currentPath = 'static-content';
-
-// Handle form submission
-$message = '';
-if ($_POST) {
-    if (isset($_POST['action']) && $_POST['action'] === 'update_content') {
-        $message = 'Content updated successfully!';
-    }
-}
-
-$contentSections = [
-    [
-        'id' => 'homepage_hero',
-        'title' => 'Homepage Hero Section',
-        'description' => 'Main banner text and call-to-action',
-        'content' => 'Find trusted service providers in Sri Lanka. Get your home repairs done by verified professionals.',
-        'lastUpdated' => '2024-07-20',
-        'status' => 'Published'
-    ],
-    [
-        'id' => 'about_us',
-        'title' => 'About Us Page',
-        'description' => 'Company information and mission statement',
-        'content' => 'FixLanka connects homeowners with reliable service providers across Sri Lanka. Our platform ensures quality service delivery through verified professionals.',
-        'lastUpdated' => '2024-07-18',
-        'status' => 'Published'
-    ],
-    [
-        'id' => 'faq',
-        'title' => 'FAQ Section',
-        'description' => 'Frequently asked questions and answers',
-        'content' => 'Common questions about our services, pricing, and how to get started.',
-        'lastUpdated' => '2024-07-15',
-        'status' => 'Draft'
-    ],
-    [
-        'id' => 'terms',
-        'title' => 'Terms of Service',
-        'description' => 'Legal terms and conditions',
-        'content' => 'Terms and conditions governing the use of FixLanka platform.',
-        'lastUpdated' => '2024-07-10',
-        'status' => 'Published'
-    ],
-    [
-        'id' => 'privacy',
-        'title' => 'Privacy Policy',
-        'description' => 'Data protection and privacy information',
-        'content' => 'How we collect, use, and protect your personal information.',
-        'lastUpdated' => '2024-07-08',
-        'status' => 'Published'
-    ]
-];
-
-// Get page title and description from variables or use defaults
-$pageTitle = $title ?? 'Advanced PHP Router';
-$pageDescription = $description ?? 'A Next.js-inspired PHP routing system with advanced features';
+$basePath = '../..';
+$currentPath = '/2nd-Year-Group-Project/FixLanka/moderator-static-content';
+$pageTitle = 'Static Content Management';
+$pageDescription = 'Edit and manage website content';
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
+    <?php renderMeta($pageTitle, $pageDescription, $basePath); ?>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/static-content.css?v=<?php echo time(); ?>">
 </head>
-
-<body class="bg-foreground text-background">
-    <!-- Sidebar Toggle Checkbox -->
+<body class="bg-background text-foreground">
     <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle-input">
-
+    
     <div class="dashboard-container">
         <?php renderModeratorSidebar($currentPath, $basePath); ?>
         <div class="dashboard-main">
-            <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/static-content.css">
-
             <?php renderPageHeader($basePath, 'Static Content Management', 'Edit and manage website content'); ?>
-
-            <main style="margin-top: 5rem;" class="static-content-content">
+            
+            <main class="dashboard-content">
                 <div class="space-y-6">
+                    <!-- Page Header -->
                     <div>
-                        <h2 class="text-3xl font-bold tracking-tight text-foreground">Static Content Management</h2>
-                        <p class="text-muted-foreground">Edit and manage website content, pages, and information</p>
+                        <h2 class="text-3xl font-bold tracking-tight">Static Content Management</h2>
+                        <p class="text-muted-foreground">Edit and manage website content - Changes are saved to database</p>
                     </div>
 
+                    <!-- Success/Error Message -->
                     <?php if ($message): ?>
-                        <div class="success-message">
-                            <?php echo htmlspecialchars($message); ?>
-                        </div>
+                    <div class="alert alert-<?= $message_type === 'success' ? 'success' : 'error' ?>">
+                        <?= $message_type === 'success' ? '✓' : '✗' ?> <?= htmlspecialchars($message) ?>
+                    </div>
                     <?php endif; ?>
 
+                    <!-- Statistics Cards -->
                     <div class="grid gap-4 md-grid-cols-4">
-                        <?php
-                        $publishedCount = count(array_filter($contentSections, fn($section) => $section['status'] === 'Published'));
-                        $draftCount = count(array_filter($contentSections, fn($section) => $section['status'] === 'Draft'));
-
-                        renderCard('Total Sections', count($contentSections), 'Content sections', 'file-text', 'text-blue-600');
-                        renderCard('Published', $publishedCount, 'Live content', 'check-circle', 'text-green-600');
-                        renderCard('Drafts', $draftCount, 'Unpublished content', 'edit', 'text-yellow-600');
-                        renderCard('Last Updated', '2 days ago', 'Most recent change', 'clock', 'text-purple-600');
-                        ?>
+                        <div class="bg-card rounded-lg border p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-muted-foreground">Total Sections</p>
+                                    <p class="text-2xl font-bold mt-2"><?= $stats['total'] ?></p>
+                                    <p class="text-xs text-muted-foreground mt-1">All content</p>
+                                </div>
+                                <i data-lucide="file-text" class="h-8 w-8 text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div class="bg-card rounded-lg border p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-muted-foreground">Published</p>
+                                    <p class="text-2xl font-bold mt-2"><?= $stats['published'] ?></p>
+                                    <p class="text-xs text-muted-foreground mt-1">Live on website</p>
+                                </div>
+                                <i data-lucide="check-circle" class="h-8 w-8 text-green-600"></i>
+                            </div>
+                        </div>
+                        <div class="bg-card rounded-lg border p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-muted-foreground">Unpublished</p>
+                                    <p class="text-2xl font-bold mt-2"><?= $stats['drafts'] ?></p>
+                                    <p class="text-xs text-muted-foreground mt-1">Not visible</p>
+                                </div>
+                                <i data-lucide="eye-off" class="h-8 w-8 text-orange-600"></i>
+                            </div>
+                        </div>
+                        <div class="bg-card rounded-lg border p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-muted-foreground">Last Updated</p>
+                                    <p class="text-lg font-bold mt-2">
+                                        <?= $stats['last_update'] ? date('M d, Y', strtotime($stats['last_update'])) : 'Never' ?>
+                                    </p>
+                                </div>
+                                <i data-lucide="clock" class="h-8 w-8 text-purple-600"></i>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="content-sections">
-                        <div class="p-6">
+                    <!-- Content Sections -->
+                    <div class="bg-card rounded-lg border" style="margin-bottom: 4rem;">
+                        <div class="p-6 border-b">
                             <h3 class="text-lg font-medium text-foreground">Content Sections</h3>
                             <p class="text-sm text-muted-foreground">Manage all static content sections of the website</p>
                         </div>
 
                         <div class="divide-y divide-border">
-                            <?php foreach ($contentSections as $section): ?>
-                                <div class="content-section" data-section-id="<?php echo $section['id']; ?>">
-                                    <div class="content-section-header">
-                                        <div class="content-section-info">
-                                            <div class="content-section-title">
-                                                <h4><?php echo $section['title']; ?></h4>
-                                                <span class="status-badge <?php echo strtolower($section['status']); ?>" data-status>
-                                                    <?php echo $section['status']; ?>
+                            <?php if (empty($contents)): ?>
+                            <div class="p-8 text-center">
+                                <i data-lucide="inbox" class="h-16 w-16 text-muted-foreground mx-auto mb-4"></i>
+                                <p class="text-muted-foreground">No content sections found. Please run the SQL script to add sample data.</p>
+                            </div>
+                            <?php else: ?>
+                                <?php foreach ($contents as $item): ?>
+                                <div class="p-6">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-3 mb-3">
+                                                <h4 class="text-lg font-semibold"><?= htmlspecialchars($item['title']) ?></h4>
+                                                <span class="badge <?= $item['status'] === 'Published' ? 'badge-default' : 'badge-secondary' ?>">
+                                                    <?= $item['status'] ?>
                                                 </span>
                                             </div>
-                                            <p class="text-sm text-muted-foreground mb-3"><?php echo $section['description']; ?></p>
-                                            <div class="content-preview">
-                                                <p data-content><?php echo htmlspecialchars($section['content']); ?></p>
-                                            </div>
-                                            <p class="text-xs text-muted-foreground">Last updated: <?php echo $section['lastUpdated']; ?></p>
+                                            <?php if (!empty($item['description'])): ?>
+                                            <p class="text-sm text-muted-foreground mb-3"><?= htmlspecialchars($item['description']) ?></p>
+                                            <?php endif; ?>
+                                            <p class="text-sm text-muted-foreground mb-3">
+                                                <?= htmlspecialchars(mb_substr($item['body'], 0, 150)) ?>...
+                                            </p>
+                                            <p class="text-xs text-muted-foreground">
+                                                Last updated: <?= date('M d, Y H:i', strtotime($item['last_update'])) ?>
+                                            </p>
                                         </div>
-                                        <div class="content-actions">
-                                            <button
-                                                onclick="editContent('<?php echo $section['id']; ?>', '<?php echo addslashes($section['title']); ?>', '<?php echo addslashes($section['content']); ?>', '<?php echo $section['status']; ?>')"
-                                                class="btn btn-secondary">
+                                        <div class="flex items-center gap-2">
+                                            <!-- Publish/Unpublish Toggle Button -->
+                                            <?php if ($item['status'] === 'Draft'): ?>
+                                            <a href="?toggle_status=1&id=<?= $item['content_id'] ?>" class="btn btn-primary">
+                                                <i data-lucide="upload" class="h-4 w-4"></i>
+                                                Publish
+                                            </a>
+                                            <?php else: ?>
+                                            <a href="?toggle_status=1&id=<?= $item['content_id'] ?>" class="btn btn-secondary">
+                                                <i data-lucide="archive" class="h-4 w-4"></i>
+                                                Unpublish
+                                            </a>
+                                            <?php endif; ?>
+                                            
+                                            <!-- Edit Button -->
+                                            <button type="button" 
+                                                    onclick='editContent(<?= json_encode([
+                                                        "id" => $item["content_id"],
+                                                        "title" => $item["title"],
+                                                        "description" => $item["description"] ?? "",
+                                                        "body" => $item["body"],
+                                                        "status" => $item["status"]
+                                                    ], JSON_HEX_QUOT | JSON_HEX_APOS) ?>)' 
+                                                    class="btn btn-secondary">
                                                 <i data-lucide="edit" class="h-4 w-4"></i>
                                                 Edit
-                                            </button>
-                                            <?php if ($section['status'] === 'Draft'): ?>
-                                                <button
-                                                    onclick="confirmPublish('<?php echo $section['id']; ?>', '<?php echo addslashes($section['title']); ?>')"
-                                                    class="btn btn-primary">
-                                                    <i data-lucide="upload" class="h-4 w-4"></i>
-                                                    Publish
-                                                </button>
-                                            <?php else: ?>
-                                                <button
-                                                    onclick="confirmUnpublish('<?php echo $section['id']; ?>', '<?php echo addslashes($section['title']); ?>')"
-                                                    class="btn btn-secondary">
-                                                    <i data-lucide="archive" class="h-4 w-4"></i>
-                                                    Unpublish
-                                                </button>
-                                            <?php endif; ?>
-                                            <button
-                                                onclick="confirmDelete('<?php echo $section['id']; ?>', '<?php echo addslashes($section['title']); ?>')"
-                                                class="btn btn-danger">
-                                                <i data-lucide="trash-2" class="h-4 w-4"></i>
-                                                Delete
                                             </button>
                                         </div>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-
-                    <div class="quick-actions">
-                        <div class="p-6">
-                            <h3 class="text-lg font-medium text-foreground">Quick Actions</h3>
-                            <p class="text-sm text-muted-foreground">Common content management tasks</p>
-
-                            <div class="quick-actions-grid">
-                                <button class="quick-action-btn" onclick="addNewSection()">
-                                    <i data-lucide="plus" class="mr-2 h-4 w-4"></i>
-                                    Add New Section
-                                </button>
-                                <button class="quick-action-btn" onclick="bulkPublish()">
-                                    <i data-lucide="upload" class="mr-2 h-4 w-4"></i>
-                                    Bulk Publish
-                                </button>
-                                <button class="quick-action-btn" onclick="exportContent()">
-                                    <i data-lucide="download" class="mr-2 h-4 w-4"></i>
-                                    Export Content
-                                </button>
-                            </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
             </main>
-
-            <!-- Edit Content Modal -->
-            <div id="editModal" class="modal-overlay">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3 class="modal-title">
-                                <i data-lucide="edit" class="h-5 w-5 mr-2"></i>
-                                Edit Content
-                            </h3>
-                            <button type="button" onclick="closeModal('editModal')" class="modal-close">
-                                <i data-lucide="x" class="h-5 w-5"></i>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="editForm" class="space-y-4">
-                                <input type="hidden" id="editSectionId">
-
-                                <div class="form-group">
-                                    <label class="form-label">Section Title</label>
-                                    <input type="text" id="editTitle" readonly class="form-input bg-muted">
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Content</label>
-                                    <textarea id="editContent" rows="8" class="form-textarea"></textarea>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Status</label>
-                                    <select id="editStatus" class="form-select">
-                                        <option value="Draft">Draft</option>
-                                        <option value="Published">Published</option>
-                                    </select>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" onclick="closeModal('editModal')" class="btn btn-secondary">
-                                Cancel
-                            </button>
-                            <button type="button" onclick="saveContent()" class="btn btn-primary">
-                                <i data-lucide="save" class="h-4 w-4 mr-1"></i>
-                                Save Changes
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Confirmation Modal -->
-            <div id="confirmModal" class="modal-overlay">
-                <div class="modal-dialog modal-sm">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3 class="modal-title" id="confirmTitle">Confirm Action</h3>
-                            <button type="button" onclick="closeModal('confirmModal')" class="modal-close">
-                                <i data-lucide="x" class="h-5 w-5"></i>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <div id="confirmIcon" class="confirmation-icon">
-                                <i data-lucide="alert-circle" class="h-6 w-6"></i>
-                            </div>
-                            <p id="confirmMessage" class="confirmation-text"></p>
-                            <div id="confirmDetails" class="confirmation-details" style="display: none;"></div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" onclick="closeModal('confirmModal')" class="btn btn-secondary">
-                                Cancel
-                            </button>
-                            <button type="button" id="confirmButton" class="btn btn-primary">
-                                Confirm
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    lucide.createIcons();
-                });
-
-                function editContent(sectionId, title, content, status) {
-                    document.getElementById('editSectionId').value = sectionId;
-                    document.getElementById('editTitle').value = title;
-                    document.getElementById('editContent').value = content;
-                    document.getElementById('editStatus').value = status;
-
-                    openModal('editModal');
-                }
-
-                function saveContent() {
-                    const sectionId = document.getElementById('editSectionId').value;
-                    const newContent = document.getElementById('editContent').value;
-                    const newStatus = document.getElementById('editStatus').value;
-
-                    // Update the UI with demo data
-                    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
-                    if (section) {
-                        const contentElement = section.querySelector('[data-content]');
-                        const statusBadge = section.querySelector('[data-status]');
-                        const actionsContainer = section.querySelector('.content-actions');
-
-                        if (contentElement) {
-                            contentElement.textContent = newContent;
-                        }
-
-                        if (statusBadge) {
-                            statusBadge.textContent = newStatus;
-                            statusBadge.className = `status-badge ${newStatus.toLowerCase()}`;
-                        }
-
-                        // Update action buttons based on new status
-                        updateActionButtons(actionsContainer, sectionId, newStatus);
-                    }
-
-                    closeModal('editModal');
-                    showSuccessMessage('Content updated successfully!');
-                }
-
-                function updateActionButtons(container, sectionId, status) {
-                    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
-                    const title = section.querySelector('h4').textContent;
-
-                    // Find and update the publish/unpublish button
-                    const buttons = container.querySelectorAll('button');
-                    buttons.forEach(btn => {
-                        if (btn.textContent.includes('Publish') || btn.textContent.includes('Unpublish')) {
-                            btn.remove();
-                        }
-                    });
-
-                    // Add appropriate button
-                    const editButton = container.querySelector('button');
-                    if (status === 'Draft') {
-                        const publishBtn = document.createElement('button');
-                        publishBtn.className = 'btn btn-primary';
-                        publishBtn.onclick = () => confirmPublish(sectionId, title);
-                        publishBtn.innerHTML = '<i data-lucide="upload" class="h-4 w-4"></i> Publish';
-                        editButton.after(publishBtn);
-                    } else {
-                        const unpublishBtn = document.createElement('button');
-                        unpublishBtn.className = 'btn btn-secondary';
-                        unpublishBtn.onclick = () => confirmUnpublish(sectionId, title);
-                        unpublishBtn.innerHTML = '<i data-lucide="archive" class="h-4 w-4"></i> Unpublish';
-                        editButton.after(unpublishBtn);
-                    }
-
-                    lucide.createIcons();
-                }
-
-                function confirmPublish(sectionId, title) {
-                    const confirmIcon = document.getElementById('confirmIcon');
-                    confirmIcon.className = 'confirmation-icon success';
-                    confirmIcon.innerHTML = '<i data-lucide="upload" class="h-6 w-6" style="color: var(--success-color);"></i>';
-
-                    document.getElementById('confirmTitle').textContent = 'Publish Content';
-                    document.getElementById('confirmMessage').textContent = 'Are you sure you want to publish this content section? It will be visible to all users.';
-
-                    const details = document.getElementById('confirmDetails');
-                    details.style.display = 'block';
-                    details.innerHTML = `<strong>Section:</strong> ${title}<br><strong>Action:</strong> Draft → Published`;
-
-                    const confirmBtn = document.getElementById('confirmButton');
-                    confirmBtn.className = 'btn btn-primary';
-                    confirmBtn.innerHTML = '<i data-lucide="check" class="h-4 w-4 mr-1"></i> Publish';
-                    confirmBtn.onclick = () => publishContent(sectionId);
-
-                    openModal('confirmModal');
-                    lucide.createIcons();
-                }
-
-                function confirmUnpublish(sectionId, title) {
-                    const confirmIcon = document.getElementById('confirmIcon');
-                    confirmIcon.className = 'confirmation-icon';
-                    confirmIcon.innerHTML = '<i data-lucide="archive" class="h-6 w-6" style="color: var(--warning-color);"></i>';
-
-                    document.getElementById('confirmTitle').textContent = 'Unpublish Content';
-                    document.getElementById('confirmMessage').textContent = 'Are you sure you want to unpublish this content section? It will no longer be visible to users.';
-
-                    const details = document.getElementById('confirmDetails');
-                    details.style.display = 'block';
-                    details.innerHTML = `<strong>Section:</strong> ${title}<br><strong>Action:</strong> Published → Draft`;
-
-                    const confirmBtn = document.getElementById('confirmButton');
-                    confirmBtn.className = 'btn btn-secondary';
-                    confirmBtn.innerHTML = '<i data-lucide="archive" class="h-4 w-4 mr-1"></i> Unpublish';
-                    confirmBtn.onclick = () => unpublishContent(sectionId);
-
-                    openModal('confirmModal');
-                    lucide.createIcons();
-                }
-
-                function confirmDelete(sectionId, title) {
-                    const confirmIcon = document.getElementById('confirmIcon');
-                    confirmIcon.className = 'confirmation-icon danger';
-                    confirmIcon.innerHTML = '<i data-lucide="trash-2" class="h-6 w-6" style="color: var(--danger-color);"></i>';
-
-                    document.getElementById('confirmTitle').textContent = 'Delete Content';
-                    document.getElementById('confirmMessage').textContent = 'Are you sure you want to delete this content section? This action cannot be undone.';
-
-                    const details = document.getElementById('confirmDetails');
-                    details.style.display = 'block';
-                    details.innerHTML = `<strong>Section:</strong> ${title}<br><strong>Warning:</strong> This is permanent!`;
-
-                    const confirmBtn = document.getElementById('confirmButton');
-                    confirmBtn.className = 'btn btn-danger';
-                    confirmBtn.innerHTML = '<i data-lucide="trash-2" class="h-4 w-4 mr-1"></i> Delete';
-                    confirmBtn.onclick = () => deleteContent(sectionId);
-
-                    openModal('confirmModal');
-                    lucide.createIcons();
-                }
-
-                function publishContent(sectionId) {
-                    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
-                    if (section) {
-                        const statusBadge = section.querySelector('[data-status]');
-                        const actionsContainer = section.querySelector('.content-actions');
-
-                        if (statusBadge) {
-                            statusBadge.textContent = 'Published';
-                            statusBadge.className = 'status-badge published';
-                        }
-
-                        updateActionButtons(actionsContainer, sectionId, 'Published');
-                    }
-
-                    closeModal('confirmModal');
-                    showSuccessMessage('Content published successfully!');
-                }
-
-                function unpublishContent(sectionId) {
-                    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
-                    if (section) {
-                        const statusBadge = section.querySelector('[data-status]');
-                        const actionsContainer = section.querySelector('.content-actions');
-
-                        if (statusBadge) {
-                            statusBadge.textContent = 'Draft';
-                            statusBadge.className = 'status-badge draft';
-                        }
-
-                        updateActionButtons(actionsContainer, sectionId, 'Draft');
-                    }
-
-                    closeModal('confirmModal');
-                    showSuccessMessage('Content unpublished successfully!');
-                }
-
-                function deleteContent(sectionId) {
-                    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
-                    if (section) {
-                        section.style.transition = 'all 0.3s ease';
-                        section.style.opacity = '0';
-                        section.style.transform = 'translateX(-20px)';
-
-                        setTimeout(() => {
-                            section.remove();
-                        }, 300);
-                    }
-
-                    closeModal('confirmModal');
-                    showSuccessMessage('Content deleted successfully!');
-                }
-
-                function addNewSection() {
-                    alert('Add New Section functionality - This would open a form to create a new content section');
-                }
-
-                function bulkPublish() {
-                    alert('Bulk Publish functionality - This would publish all draft sections at once');
-                }
-
-                function exportContent() {
-                    alert('Export Content functionality - This would download all content as JSON or CSV');
-                }
-
-                function openModal(modalId) {
-                    const modal = document.getElementById(modalId);
-                    if (modal) {
-                        modal.classList.add('show');
-                        document.body.style.overflow = 'hidden';
-                    }
-                }
-
-                function closeModal(modalId) {
-                    const modal = document.getElementById(modalId);
-                    if (modal) {
-                        modal.classList.remove('show');
-                        document.body.style.overflow = '';
-                    }
-                }
-
-                document.querySelectorAll('.modal-overlay').forEach(overlay => {
-                    overlay.addEventListener('click', function(e) {
-                        if (e.target === this) {
-                            closeModal(this.id);
-                        }
-                    });
-                });
-
-                function showSuccessMessage(message) {
-                    const existingMessage = document.querySelector('.success-message');
-                    if (existingMessage) {
-                        existingMessage.remove();
-                    }
-
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = 'success-message';
-                    messageDiv.textContent = message;
-
-                    const container = document.querySelector('.space-y-6');
-                    container.insertBefore(messageDiv, container.children[1]);
-
-                    setTimeout(() => {
-                        messageDiv.style.transition = 'all 0.3s ease';
-                        messageDiv.style.opacity = '0';
-                        messageDiv.style.transform = 'translateY(-10px)';
-                        setTimeout(() => messageDiv.remove(), 300);
-                    }, 3000);
-                }
-            </script>
         </div>
     </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        <i data-lucide="edit" class="h-5 w-5"></i>
+                        Edit Content
+                    </h3>
+                    <button type="button" onclick="closeModal()" class="modal-close">
+                        <i data-lucide="x" class="h-5 w-5"></i>
+                    </button>
+                </div>
+                <form method="POST" action="/2nd-Year-Group-Project/FixLanka/views/moderator/static-content.php">
+                    <div class="modal-body">
+                        <input type="hidden" name="content_id" id="editContentId">
+                        <input type="hidden" name="update_content" value="1">
+                        
+                        <div class="form-group">
+                            <label class="form-label">Section Title</label>
+                            <input type="text" name="title" id="editTitle" class="form-input" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Description (Optional)</label>
+                            <input type="text" name="description" id="editDescription" class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Content</label>
+                            <textarea name="body" id="editContent" rows="12" class="form-textarea" required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select name="status" id="editStatus" class="form-select">
+                                <option value="Draft">Draft</option>
+                                <option value="Published">Published</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-lucide="save" class="h-4 w-4"></i>
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
+        function editContent(data) {
+            document.getElementById('editContentId').value = data.id;
+            document.getElementById('editTitle').value = data.title;
+            document.getElementById('editDescription').value = data.description || '';
+            document.getElementById('editContent').value = data.body;
+            document.getElementById('editStatus').value = data.status;
+            
+            const modal = document.getElementById('editModal');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 100);
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('editModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+        
         lucide.createIcons();
     </script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
-
 </body>
-
 </html>
-

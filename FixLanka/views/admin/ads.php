@@ -12,12 +12,6 @@ require_once __DIR__ . '/_components/Common.php';
 require_once __DIR__ . '/../../includes/admin-modarator/auth.php';
 require_once __DIR__ . '/../../includes/admin-modarator/mock-data.php';
 
-// // Check if user is logged in and get user info
-// $isLoggedIn = isLoggedIn();
-// $user = $isLoggedIn ? getCurrentUser() : null;
-// requireRole("admin", $basePath);
-// $user = getCurrentUser();
-
 $basePath = '';
 $currentPath = 'ads';
 $message = '';
@@ -25,17 +19,16 @@ $message = '';
 // Get mock data
 $adsData = $mockAds;
 
-// Get page title and description from variables or use defaults
-$pageTitle = $title ?? 'Advanced PHP Router';
-$pageDescription = $description ?? 'A Next.js-inspired PHP routing system with advanced features';
+$pageTitle = 'Advertisement Review - Admin';
+$pageDescription = 'Review and manage advertisement approvals';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin/ads.css?v=<?php echo time(); ?>">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
 </head>
 
 <body class="bg-background text-foreground">
@@ -43,126 +36,237 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
 
     <div class="dashboard-container">
         <?php renderAdminSidebar($currentPath, $basePath); ?>
+        
         <div class="dashboard-main">
-            <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin/ads.css">
-            <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin/modals.css">
-            <?php renderPageHeader($basePath, 'Advertisement Review', 'Review and manage submitted advertisements from companies'); ?>
+            <?php renderPageHeader($basePath, 'Advertisement Review', 'Review and manage advertisement approvals'); ?>
 
-            <main style="margin-top: 5rem;" class="dashboard-content">
-                <div class="space-y-6">
-                    <div>
-                        <h2 class="text-3xl font-bold tracking-tight">Advertisement Review</h2>
-                        <p class="text-muted-foreground">Review and manage submitted advertisements from companies</p>
-                    </div>
+            <main class="admin-ads-content">
+                <!-- Success/Error Message -->
+                <div id="messageContainer" style="display: none;"></div>
 
-                    <div id="messageContainer" style="display: none;" class="bg-fixlanka-highlight/10 border border-fixlanka-highlight/20 text-fixlanka-primary px-4 py-3 rounded mb-4"></div>
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h2 class="page-title">Advertisement Review</h2>
+                    <p class="page-description">Oversee advertisement approvals and manage ad lifecycle</p>
+                </div>
 
-                    <div class="ads-stats-grid" id="statsContainer">
-                        Stats will be loaded dynamically
-                    </div>
-
-                    <div class="ads-table-container">
-                        <div class="ads-table-header">
-                            <h3 class="text-lg font-semibold">Advertisement Queue</h3>
-                            <p class="text-muted-foreground text-sm">Review submitted advertisements and approve or reject them</p>
-                            <div class="ads-search-container">
-                                <div class="ads-search-input">
-                                    <i data-lucide="search" class="ads-search-icon"></i>
-                                    <input type="text" id="searchInput" placeholder="Search by company or title..." onkeyup="searchAds()">
-                                </div>
-                                <select id="statusFilter" onchange="loadAds()" class="form-select">
-                                    <option value="">All Status</option>
-                                    <option value="Pending">Pending</option>
-                                    <option value="Approved">Approved</option>
-                                    <option value="Rejected">Rejected</option>
-                                    <option value="Active">Active</option>
-                                    <option value="Expired">Expired</option>
-                                </select>
-                                <select id="typeFilter" onchange="loadAds()" class="form-select">
-                                    <option value="">All Types</option>
-                                    <option value="Banner">Banner</option>
-                                    <option value="Sponsored">Sponsored</option>
-                                    <option value="Featured">Featured</option>
-                                </select>
+                <!-- Statistics Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card stat-blue">
+                        <div class="stat-content">
+                            <div class="stat-info">
+                                <h3 class="stat-label">Total Advertisements</h3>
+                                <div class="stat-value" id="totalAds">0</div>
+                            </div>
+                            <div class="stat-icon">
+                                <i data-lucide="monitor"></i>
                             </div>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="ads-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 60px;">ID</th>
-                                        <th style="width: 200px;">Company</th>
-                                        <th style="width: 250px;">Title</th>
-                                        <th style="width: 120px;">Type</th>
-                                        <th style="width: 120px;">Budget</th>
-                                        <th style="width: 100px;">Status</th>
-                                        <th style="width: 120px;">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="adsTableBody">
-                                    <tr>
-                                        <td colspan="7" class="text-center py-4">Loading ads...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                    </div>
 
-                        <div id="paginationContainer" class="flex justify-center mt-4"></div>
+                    <div class="stat-card stat-amber">
+                        <div class="stat-content">
+                            <div class="stat-info">
+                                <h3 class="stat-label">Pending Review</h3>
+                                <div class="stat-value" id="pendingAds">0</div>
+                            </div>
+                            <div class="stat-icon">
+                                <i data-lucide="clock"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card stat-emerald">
+                        <div class="stat-content">
+                            <div class="stat-info">
+                                <h3 class="stat-label">Approved</h3>
+                                <div class="stat-value" id="approvedAds">0</div>
+                            </div>
+                            <div class="stat-icon">
+                                <i data-lucide="check-circle"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card stat-rose">
+                        <div class="stat-content">
+                            <div class="stat-info">
+                                <h3 class="stat-label">Rejected</h3>
+                                <div class="stat-value" id="rejectedAds">0</div>
+                            </div>
+                            <div class="stat-icon">
+                                <i data-lucide="x-circle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advertisement Table Container -->
+                <div class="table-card">
+                    <!-- Table Header with Search & Filters -->
+                    <div class="table-header">
+                        <div>
+                            <h3 class="table-title">Advertisement Queue</h3>
+                            <p class="table-subtitle">Review and manage advertisement approvals and lifecycle</p>
+                        </div>
+                        
+                        <div class="filters-container">
+                            <div class="search-box">
+                                <i data-lucide="search" class="search-icon"></i>
+                                <input 
+                                    type="text" 
+                                    id="searchInput" 
+                                    placeholder="Search by company or title..." 
+                                    class="search-input"
+                                    onkeyup="filterAds()"
+                                >
+                            </div>
+
+                            <select id="statusFilter" class="filter-select" onchange="filterAds()">
+                                <option value="">All Status</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Active">Active</option>
+                                <option value="Rejected">Rejected</option>
+                            </select>
+
+                            <select id="typeFilter" class="filter-select" onchange="filterAds()">
+                                <option value="">All Types</option>
+                                <option value="Banner">Banner</option>
+                                <option value="Sponsored">Sponsored</option>
+                                <option value="Featured">Featured</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="table-wrapper">
+                        <table class="ads-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">ID</th>
+                                    <th style="width: 180px;">Company</th>
+                                    <th>Title</th>
+                                    <th style="width: 120px;">Type</th>
+                                    <th style="width: 140px;">Budget</th>
+                                    <th style="width: 120px;">Status</th>
+                                    <th style="width: 280px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adsTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center">Loading advertisements...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </main>
 
-            <div id="reviewModal" class="modal-overlay">
-                <div class="modal-content">
-                    <div class="p-6">
-                        <h3 class="text-lg font-medium text-foreground mb-4">Review Advertisement</h3>
-
-                        <div class="ad-details" id="adDetailsContent">
-                            Content will be populated by JavaScript
-                        </div>
-
-                        <form id="reviewForm" class="space-y-4 mt-6">
-                            <input type="hidden" id="reviewAdId">
-
-                            <div>
-                                <label class="block text-sm font-medium text-foreground">Decision *</label>
-                                <select id="reviewStatus" required class="form-select mt-1">
-                                    <option value="">Select decision</option>
-                                    <option value="Approved">Approve Advertisement</option>
-                                    <option value="Rejected">Reject Advertisement</option>
-                                    <option value="Active">Set as Active</option>
-                                </select>
-                            </div>
-
-                            <div id="rejectionReasonGroup" style="display: none;">
-                                <label class="block text-sm font-medium text-foreground">Rejection Reason *</label>
-                                <textarea id="rejectionReason" rows="3" placeholder="Provide reason for rejection..." class="form-textarea mt-1"></textarea>
-                            </div>
-
-                            <div class="flex justify-end space-x-3">
-                                <button type="button" onclick="closeModal('reviewModal')" class="btn btn-secondary">
-                                    Cancel
-                                </button>
-                                <button type="submit" class="btn btn-primary">
-                                    Submit Review
-                                </button>
-                            </div>
-                        </form>
+            <!-- View Advertisement Modal -->
+            <div id="viewModal" class="modal-overlay" onclick="handleModalBackdropClick(event, 'viewModal')">
+                <div class="modal-dialog" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Advertisement Details</h3>
+                        <button type="button" onclick="closeModal('viewModal')" class="modal-close" title="Close">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="adDetailsContent">
+                        <!-- Content loaded by JavaScript -->
                     </div>
                 </div>
             </div>
 
-            <div id="deleteModal" class="modal-overlay">
-                <div class="modal-content" style="max-width: 400px;">
-                    <div class="p-6">
-                        <h3 class="text-lg font-medium text-foreground">Confirm Delete</h3>
-                        <p class="text-sm text-muted-foreground mb-4">Are you sure you want to delete this advertisement? This action cannot be undone.</p>
-                        <div class="flex justify-end space-x-3">
-                            <button type="button" onclick="closeModal('deleteModal')" class="btn btn-secondary">
+            <!-- Approve Modal -->
+            <div id="approveModal" class="modal-overlay" onclick="handleModalBackdropClick(event, 'approveModal')">
+                <div class="modal-dialog modal-sm" onclick="event.stopPropagation()">
+                    <div class="modal-header modal-success">
+                        <h3 class="modal-title">Approve Advertisement</h3>
+                        <button type="button" onclick="closeModal('approveModal')" class="modal-close" title="Close">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="modal-message">Are you sure you want to approve this advertisement?</p>
+                        <p class="modal-submessage">The advertisement will be marked as approved and ready for activation.</p>
+                        
+                        <div class="modal-actions">
+                            <button type="button" onclick="closeModal('approveModal')" class="btn btn-secondary">
+                                <i data-lucide="x"></i>
                                 Cancel
                             </button>
-                            <button type="button" onclick="confirmDelete()" class="btn btn-destructive">
-                                Delete Ad
+                            <button type="button" onclick="confirmApprove()" class="btn btn-success">
+                                <i data-lucide="check"></i>
+                                Approve
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reject Modal -->
+            <div id="rejectModal" class="modal-overlay" onclick="handleModalBackdropClick(event, 'rejectModal')">
+                <div class="modal-dialog modal-sm" onclick="event.stopPropagation()">
+                    <div class="modal-header modal-danger">
+                        <h3 class="modal-title">Reject Advertisement</h3>
+                        <button type="button" onclick="closeModal('rejectModal')" class="modal-close" title="Close">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="modal-message">Please provide a reason for rejecting this advertisement:</p>
+                        
+                        <textarea 
+                            id="rejectReason" 
+                            class="form-textarea" 
+                            rows="4" 
+                            placeholder="Enter detailed rejection reason..."
+                            required
+                        ></textarea>
+                        
+                        <div class="modal-actions">
+                            <button type="button" onclick="closeModal('rejectModal')" class="btn btn-secondary">
+                                <i data-lucide="x"></i>
+                                Cancel
+                            </button>
+                            <button type="button" onclick="confirmReject()" class="btn btn-danger">
+                                <i data-lucide="ban"></i>
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suspend Modal -->
+            <div id="suspendModal" class="modal-overlay" onclick="handleModalBackdropClick(event, 'suspendModal')">
+                <div class="modal-dialog modal-sm" onclick="event.stopPropagation()">
+                    <div class="modal-header modal-warning">
+                        <h3 class="modal-title">Suspend Active Advertisement</h3>
+                        <button type="button" onclick="closeModal('suspendModal')" class="modal-close" title="Close">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="modal-message">Please provide a reason for suspending this active advertisement:</p>
+                        
+                        <textarea 
+                            id="suspendReason" 
+                            class="form-textarea" 
+                            rows="4" 
+                            placeholder="Enter suspension reason..."
+                            required
+                        ></textarea>
+                        
+                        <div class="modal-actions">
+                            <button type="button" onclick="closeModal('suspendModal')" class="btn btn-secondary">
+                                <i data-lucide="x"></i>
+                                Cancel
+                            </button>
+                            <button type="button" onclick="confirmSuspend()" class="btn btn-warning">
+                                <i data-lucide="pause-circle"></i>
+                                Suspend
                             </button>
                         </div>
                     </div>
@@ -170,337 +274,332 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
             </div>
 
             <script>
+                // Initialize Lucide icons
                 lucide.createIcons();
 
-                // Mock data embedded from PHP
-                const mockAdsData = <?= json_encode($adsData) ?>;
-                
-                let currentPage = 1;
-                let deleteAdId = null;
-                let allAds = [];
+                // Load mock data
+                const allAds = <?= json_encode($adsData) ?>;
+                let currentAdId = null;
 
-                // Initialize ads from mock data
-                function initializeAds() {
-                    allAds = mockAdsData.map(ad => ({
-                        id: ad.id,
-                        company: ad.company,
-                        title: ad.title,
-                        type: ad.type,
-                        budget: ad.budget,
-                        duration: ad.duration,
-                        status: ad.status,
-                        submittedDate: ad.submittedDate || ad.created_at || new Date().toISOString(),
-                        description: ad.description || 'No description available',
-                        rejection_reason: ad.rejection_reason || null,
-                        impressions: ad.impressions || 0
-                    }));
-                    
-                    console.log('Initialized ads:', allAds);
+                // Load stats and table on page load
+                document.addEventListener('DOMContentLoaded', () => {
+                    loadStats();
+                    loadAdsTable();
+                    setupKeyboardShortcuts();
+                });
+
+                // Setup ESC key to close modals
+                function setupKeyboardShortcuts() {
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape') {
+                            closeAllModals();
+                        }
+                    });
                 }
 
-                document.addEventListener('DOMContentLoaded', () => {
-                    initializeAds();
-                    loadAds();
-                    loadStats();
-                });
+                // Close all modals
+                function closeAllModals() {
+                    ['viewModal', 'approveModal', 'rejectModal', 'suspendModal'].forEach(closeModal);
+                }
 
-                // Show/hide rejection reason based on status
-                document.getElementById('reviewStatus').addEventListener('change', (e) => {
-                    const rejectionGroup = document.getElementById('rejectionReasonGroup');
-                    const rejectionReason = document.getElementById('rejectionReason');
-
-                    if (e.target.value === 'Rejected') {
-                        rejectionGroup.style.display = 'block';
-                        rejectionReason.required = true;
-                    } else {
-                        rejectionGroup.style.display = 'none';
-                        rejectionReason.required = false;
+                // Handle backdrop click
+                function handleModalBackdropClick(event, modalId) {
+                    if (event.target.classList.contains('modal-overlay')) {
+                        closeModal(modalId);
                     }
-                });
+                }
 
+                // Load statistics
                 function loadStats() {
                     const total = allAds.length;
-                    const pending = allAds.filter(a => a.status === 'Pending').length;
-                    const approved = allAds.filter(a => a.status === 'Approved').length;
-                    const rejected = allAds.filter(a => a.status === 'Rejected').length;
+                    const pending = allAds.filter(ad => ad.status === 'Pending').length;
+                    const approved = allAds.filter(ad => ad.status === 'Approved').length;
+                    const rejected = allAds.filter(ad => ad.status === 'Rejected').length;
 
-                    document.getElementById('statsContainer').innerHTML = `
-                ${renderStatCard('Total Ads', total, '', 'monitor', 'blue')}
-                ${renderStatCard('Pending Review', pending, '', 'clock', 'yellow')}
-                ${renderStatCard('Approved', approved, '', 'check-circle', 'green')}
-                ${renderStatCard('Rejected', rejected, '', 'x-circle', 'red')}
-            `;
-                    lucide.createIcons();
+                    document.getElementById('totalAds').textContent = total;
+                    document.getElementById('pendingAds').textContent = pending;
+                    document.getElementById('approvedAds').textContent = approved;
+                    document.getElementById('rejectedAds').textContent = rejected;
                 }
 
-                function renderStatCard(title, value, subtitle, icon, color) {
-                    return `
-            <div class="bg-card rounded-lg border p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground">${title}</p>
-                        <p class="text-2xl font-bold text-foreground mt-2">${value}</p>
-                        ${subtitle ? `<p class="text-xs text-muted-foreground mt-1">${subtitle}</p>` : ''}
-                    </div>
-                    <div class="text-${color}-600">
-                        <i data-lucide="${icon}" class="h-8 w-8"></i>
-                    </div>
-                </div>
-            </div>
-        `;
-                }
-
-                function loadAds(page = 1) {
-                    currentPage = page;
+                // Filter ads based on search and filters
+                function filterAds() {
                     const search = document.getElementById('searchInput').value.toLowerCase();
-                    const status = document.getElementById('statusFilter').value;
-                    const type = document.getElementById('typeFilter').value;
+                    const statusFilter = document.getElementById('statusFilter').value;
+                    const typeFilter = document.getElementById('typeFilter').value;
 
-                    // Filter ads
-                    let filtered = allAds.filter(ad => {
-                        if (search && !ad.title.toLowerCase().includes(search) && 
-                            !ad.company.toLowerCase().includes(search)) return false;
-                        if (status && ad.status !== status) return false;
-                        if (type && ad.type !== type) return false;
-                        return true;
+                    const filtered = allAds.filter(ad => {
+                        const matchSearch = !search || 
+                            ad.company.toLowerCase().includes(search) || 
+                            ad.title.toLowerCase().includes(search);
+                        const matchStatus = !statusFilter || ad.status === statusFilter;
+                        const matchType = !typeFilter || ad.type === typeFilter;
+
+                        return matchSearch && matchStatus && matchType;
                     });
 
-                    // Pagination
-                    const limit = 20;
-                    const total = filtered.length;
-                    const pages = Math.ceil(total / limit) || 1;
-                    const offset = (page - 1) * limit;
-                    const data = filtered.slice(offset, offset + limit);
-
-                    renderAds(data);
-                    renderPagination({ page, pages, total });
+                    renderAdsTable(filtered);
                 }
 
-                function renderAds(ads) {
+                // Load and render ads table
+                function loadAdsTable() {
+                    renderAdsTable(allAds);
+                }
+
+                // Render ads table with STATUS-BASED ACTION BUTTONS
+                function renderAdsTable(ads) {
                     const tbody = document.getElementById('adsTableBody');
 
                     if (ads.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">No ads found</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No advertisements found</td></tr>';
                         return;
                     }
 
                     tbody.innerHTML = ads.map(ad => {
-                        const statusColors = {
-                            'Pending': 'outline',
-                            'Approved': 'default',
-                            'Rejected': 'destructive',
-                            'Active': 'default',
-                            'Expired': 'secondary'
-                        };
+                        // Status badge classes
+                        const statusClass = {
+                            'Pending': 'status-pending',
+                            'Approved': 'status-approved',
+                            'Active': 'status-active',
+                            'Rejected': 'status-rejected'
+                        }[ad.status] || 'status-pending';
 
+                        // Type badge classes
                         const typeClass = {
-                            'Banner': 'ads-type-banner',
-                            'Sponsored': 'ads-type-sponsored',
-                            'Featured': 'ads-type-featured'
-                        }[ad.type] || '';
+                            'Banner': 'type-banner',
+                            'Sponsored': 'type-sponsored',
+                            'Featured': 'type-featured'
+                        }[ad.type] || 'type-banner';
+
+                        // CRITICAL: Action buttons based on status
+                        let actionButtons = '';
+                        
+                        if (ad.status === 'Pending') {
+                            // PENDING: Show View, Approve, Reject
+                            actionButtons = `
+                                <button onclick="viewAd(${ad.id})" class="action-btn btn-view" title="View Details">
+                                    <i data-lucide="eye"></i>
+                                    <span>View</span>
+                                </button>
+                                <button onclick="approveAd(${ad.id})" class="action-btn btn-approve" title="Approve">
+                                    <i data-lucide="check"></i>
+                                    <span>Approve</span>
+                                </button>
+                                <button onclick="rejectAd(${ad.id})" class="action-btn btn-reject" title="Reject">
+                                    <i data-lucide="x"></i>
+                                    <span>Reject</span>
+                                </button>
+                            `;
+                        } else if (ad.status === 'Approved') {
+                            // APPROVED: Show View only + no actions text
+                            actionButtons = `
+                                <button onclick="viewAd(${ad.id})" class="action-btn btn-view" title="View Details">
+                                    <i data-lucide="eye"></i>
+                                    <span>View</span>
+                                </button>
+                                <span class="no-actions-text">No actions available</span>
+                            `;
+                        } else if (ad.status === 'Rejected') {
+                            // REJECTED: Show View only + no actions text
+                            actionButtons = `
+                                <button onclick="viewAd(${ad.id})" class="action-btn btn-view" title="View Details">
+                                    <i data-lucide="eye"></i>
+                                    <span>View</span>
+                                </button>
+                                <span class="no-actions-text">No actions available</span>
+                            `;
+                        } else if (ad.status === 'Active') {
+                            // ACTIVE: Show View and Suspend
+                            actionButtons = `
+                                <button onclick="viewAd(${ad.id})" class="action-btn btn-view" title="View Details">
+                                    <i data-lucide="eye"></i>
+                                    <span>View</span>
+                                </button>
+                                <button onclick="suspendAd(${ad.id})" class="action-btn btn-suspend" title="Suspend">
+                                    <i data-lucide="pause-circle"></i>
+                                    <span>Suspend</span>
+                                </button>
+                            `;
+                        }
 
                         return `
-                <tr>
-                    <td class="text-card-foreground font-medium" style="text-align: center;">#${ad.id}</td>
-                    <td class="text-muted-foreground">${escapeHtml(ad.company)}</td>
-                    <td class="text-muted-foreground ads-title">${escapeHtml(ad.title)}</td>
-                    <td style="text-align: center;">
-                        <span class="ads-type-badge ${typeClass}">${ad.type}</span>
-                    </td>
-                    <td class="text-muted-foreground" style="text-align: right;">LKR ${parseInt(ad.budget || 0).toLocaleString()}</td>
-                    <td style="text-align: center;">
-                        <span class="badge badge-${statusColors[ad.status]}">${ad.status}</span>
-                    </td>
-                    <td style="text-align: center;">
-                        <div class="flex space-x-2 justify-center">
-                            <button onclick="reviewAd(${ad.id})" class="btn btn-sm btn-primary" title="Review">
-                                <i data-lucide="eye" class="h-3 w-3"></i>
-                            </button>
-                            <button onclick="deleteAd(${ad.id})" class="btn btn-sm btn-destructive" title="Delete">
-                                <i data-lucide="trash-2" class="h-3 w-3"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
+                            <tr>
+                                <td class="text-center cell-id">#${ad.id}</td>
+                                <td class="cell-company">${escapeHtml(ad.company)}</td>
+                                <td class="cell-title">${escapeHtml(ad.title)}</td>
+                                <td class="text-center">
+                                    <span class="type-badge ${typeClass}">${ad.type}</span>
+                                </td>
+                                <td class="text-right cell-budget">LKR ${parseInt(ad.budget || 0).toLocaleString()}</td>
+                                <td class="text-center">
+                                    <span class="status-badge ${statusClass}">${ad.status}</span>
+                                </td>
+                                <td class="cell-actions">
+                                    <div class="actions-wrapper">
+                                        ${actionButtons}
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
                     }).join('');
 
                     lucide.createIcons();
                 }
 
-                function renderPagination(pagination) {
-                    const container = document.getElementById('paginationContainer');
-
-                    if (pagination.pages <= 1) {
-                        container.innerHTML = '';
-                        return;
-                    }
-
-                    let html = '<div class="flex space-x-2">';
-
-                    if (pagination.page > 1) {
-                        html += `<button onclick="loadAds(${pagination.page - 1})" class="btn btn-secondary">Previous</button>`;
-                    }
-
-                    for (let i = 1; i <= pagination.pages; i++) {
-                        if (i === pagination.page) {
-                            html += `<button class="btn btn-primary">${i}</button>`;
-                        } else if (i === 1 || i === pagination.pages || Math.abs(i - pagination.page) <= 2) {
-                            html += `<button onclick="loadAds(${i})" class="btn btn-secondary">${i}</button>`;
-                        } else if (i === pagination.page - 3 || i === pagination.page + 3) {
-                            html += `<span class="px-2">...</span>`;
-                        }
-                    }
-
-                    if (pagination.page < pagination.pages) {
-                        html += `<button onclick="loadAds(${pagination.page + 1})" class="btn btn-secondary">Next</button>`;
-                    }
-
-                    html += '</div>';
-                    container.innerHTML = html;
-                }
-
-                function searchAds() {
-                    clearTimeout(window.searchTimeout);
-                    window.searchTimeout = setTimeout(() => {
-                        loadAds(1);
-                    }, 500);
-                }
-
-                function reviewAd(adId) {
+                // View advertisement details
+                function viewAd(adId) {
                     const ad = allAds.find(a => a.id === adId);
-                    
-                    if (!ad) {
-                        showMessage('Ad not found', 'error');
-                        return;
-                    }
+                    if (!ad) return;
 
-                    const submittedDate = new Date(ad.submittedDate).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                    });
-
-                    document.getElementById('adDetailsContent').innerHTML = `
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <h4 class="font-medium mb-3">Advertisement Details</h4>
-                        <div class="space-y-2 text-sm">
-                            <p><strong>Ad ID:</strong> #${ad.id}</p>
-                            <p><strong>Company:</strong> ${escapeHtml(ad.company)}</p>
-                            <p><strong>Title:</strong> ${escapeHtml(ad.title)}</p>
-                            <p><strong>Type:</strong> <span class="badge badge-default">${ad.type}</span></p>
-                            <p><strong>Budget:</strong> LKR ${parseInt(ad.budget || 0).toLocaleString()}</p>
-                            <p><strong>Duration:</strong> ${ad.duration || 'Not specified'}</p>
-                            <p><strong>Status:</strong> <span class="badge badge-${ad.status === 'Pending' ? 'outline' : ad.status === 'Rejected' ? 'destructive' : 'default'}">${ad.status}</span></p>
-                            <p><strong>Submitted Date:</strong> ${submittedDate}</p>
-                            <p><strong>Impressions:</strong> ${parseInt(ad.impressions || 0).toLocaleString()}</p>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="font-medium mb-3">Description</h4>
-                        <div class="bg-muted/50 p-4 rounded-lg text-sm" style="max-height: 150px; overflow-y: auto;">
-                            ${ad.description ? escapeHtml(ad.description) : 'No description provided'}
-                        </div>
-                        ${ad.rejection_reason ? `
-                            <div class="mt-4">
-                                <h4 class="font-medium mb-2 text-red-600">Previous Rejection Reason</h4>
-                                <div class="bg-red-50 p-4 rounded-lg text-sm">
-                                    ${escapeHtml(ad.rejection_reason)}
-                                </div>
+                    const content = `
+                        <div class="ad-details-grid">
+                            <div class="detail-row">
+                                <span class="detail-label">Ad ID:</span>
+                                <span class="detail-value">#${ad.id}</span>
                             </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
+                            <div class="detail-row">
+                                <span class="detail-label">Company:</span>
+                                <span class="detail-value">${escapeHtml(ad.company)}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Title:</span>
+                                <span class="detail-value">${escapeHtml(ad.title)}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Type:</span>
+                                <span class="detail-value">
+                                    <span class="type-badge type-${ad.type.toLowerCase()}">${ad.type}</span>
+                                </span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Budget:</span>
+                                <span class="detail-value">LKR ${parseInt(ad.budget || 0).toLocaleString()}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Duration:</span>
+                                <span class="detail-value">${ad.duration || 'Not specified'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Status:</span>
+                                <span class="detail-value">
+                                    <span class="status-badge status-${ad.status.toLowerCase()}">${ad.status}</span>
+                                </span>
+                            </div>
+                            <div class="detail-row detail-full">
+                                <span class="detail-label">Description:</span>
+                                <span class="detail-value">${ad.description || 'No description provided'}</span>
+                            </div>
+                            ${ad.rejection_reason ? `
+                                <div class="detail-row detail-full rejection-reason">
+                                    <span class="detail-label">Rejection Reason:</span>
+                                    <span class="detail-value">${escapeHtml(ad.rejection_reason)}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
 
-                    document.getElementById('reviewAdId').value = ad.id;
-                    document.getElementById('reviewStatus').value = '';
-                    document.getElementById('rejectionReason').value = '';
-                    document.getElementById('rejectionReasonGroup').style.display = 'none';
-
-                    openModal('reviewModal');
+                    document.getElementById('adDetailsContent').innerHTML = content;
+                    openModal('viewModal');
                 }
 
-                document.getElementById('reviewForm').addEventListener('submit', (e) => {
-                    e.preventDefault();
+                // Approve advertisement
+                function approveAd(adId) {
+                    currentAdId = adId;
+                    openModal('approveModal');
+                }
 
-                    const adId = parseInt(document.getElementById('reviewAdId').value);
-                    const status = document.getElementById('reviewStatus').value;
-                    const rejectionReason = document.getElementById('rejectionReason').value;
-
-                    if (!status) {
-                        showMessage('Please select a decision', 'error');
-                        return;
+                // Confirm approve
+                function confirmApprove() {
+                    const ad = allAds.find(a => a.id === currentAdId);
+                    if (ad) {
+                        ad.status = 'Approved';
+                        showMessage('Advertisement approved successfully!', 'success');
+                        closeModal('approveModal');
+                        loadStats();
+                        filterAds();
                     }
+                }
 
-                    if (status === 'Rejected' && !rejectionReason.trim()) {
+                // Reject advertisement
+                function rejectAd(adId) {
+                    currentAdId = adId;
+                    document.getElementById('rejectReason').value = '';
+                    openModal('rejectModal');
+                }
+
+                // Confirm reject
+                function confirmReject() {
+                    const reason = document.getElementById('rejectReason').value.trim();
+                    
+                    if (!reason) {
                         showMessage('Please provide a rejection reason', 'error');
                         return;
                     }
 
-                    // Update local data
-                    const adIndex = allAds.findIndex(a => a.id === adId);
-                    if (adIndex !== -1) {
-                        allAds[adIndex].status = status;
-                        if (status === 'Rejected' && rejectionReason) {
-                            allAds[adIndex].rejection_reason = rejectionReason;
-                        } else if (status !== 'Rejected') {
-                            allAds[adIndex].rejection_reason = null;
-                        }
-                        
-                        console.log('Updated ad:', allAds[adIndex]);
+                    const ad = allAds.find(a => a.id === currentAdId);
+                    if (ad) {
+                        ad.status = 'Rejected';
+                        ad.rejection_reason = reason;
+                        showMessage('Advertisement rejected successfully!', 'success');
+                        closeModal('rejectModal');
+                        loadStats();
+                        filterAds();
                     }
-
-                    showMessage(`Advertisement ${status.toLowerCase()} successfully`, 'success');
-                    closeModal('reviewModal');
-                    loadAds(currentPage);
-                    loadStats();
-                });
-
-                function deleteAd(adId) {
-                    deleteAdId = adId;
-                    openModal('deleteModal');
                 }
 
-                function confirmDelete() {
-                    if (!deleteAdId) return;
-
-                    // Remove from local data
-                    const adIndex = allAds.findIndex(a => a.id === deleteAdId);
-                    if (adIndex !== -1) {
-                        const deletedAd = allAds.splice(adIndex, 1)[0];
-                        console.log('Deleted ad:', deletedAd);
-                    }
-
-                    showMessage('Advertisement deleted successfully', 'success');
-                    closeModal('deleteModal');
-                    loadAds(currentPage);
-                    loadStats();
-                    deleteAdId = null;
+                // Suspend advertisement
+                function suspendAd(adId) {
+                    currentAdId = adId;
+                    document.getElementById('suspendReason').value = '';
+                    openModal('suspendModal');
                 }
 
+                // Confirm suspend
+                function confirmSuspend() {
+                    const reason = document.getElementById('suspendReason').value.trim();
+                    
+                    if (!reason) {
+                        showMessage('Please provide a suspension reason', 'error');
+                        return;
+                    }
+
+                    const ad = allAds.find(a => a.id === currentAdId);
+                    if (ad) {
+                        ad.status = 'Rejected';
+                        ad.rejection_reason = 'Suspended: ' + reason;
+                        showMessage('Advertisement suspended successfully!', 'success');
+                        closeModal('suspendModal');
+                        loadStats();
+                        filterAds();
+                    }
+                }
+
+                // Open modal
                 function openModal(modalId) {
                     document.getElementById(modalId).classList.add('show');
+                    document.body.style.overflow = 'hidden';
+                    lucide.createIcons();
                 }
 
+                // Close modal
                 function closeModal(modalId) {
                     document.getElementById(modalId).classList.remove('show');
+                    document.body.style.overflow = 'auto';
                 }
 
-                function showMessage(message, type = 'success') {
+                // Show message
+                function showMessage(message, type) {
                     const container = document.getElementById('messageContainer');
                     container.textContent = message;
-                    container.className = type === 'success' ?
-                        'bg-fixlanka-highlight/10 border border-fixlanka-highlight/20 text-fixlanka-primary px-4 py-3 rounded mb-4' :
-                        'bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded mb-4';
+                    container.className = type === 'success' ? 'message-success' : 'message-error';
                     container.style.display = 'block';
 
                     setTimeout(() => {
                         container.style.display = 'none';
-                    }, 5000);
+                    }, 4000);
                 }
 
+                // Escape HTML
                 function escapeHtml(text) {
                     const div = document.createElement('div');
                     div.textContent = text;
@@ -509,11 +608,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
             </script>
         </div>
     </div>
-    <script>
-        lucide.createIcons();
-    </script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
+
+    <script>lucide.createIcons();</script>
 </body>
-
 </html>
-

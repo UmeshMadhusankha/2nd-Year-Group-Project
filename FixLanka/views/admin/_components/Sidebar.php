@@ -8,6 +8,7 @@ function renderAdminSidebar($currentPath, $basePath)
     $menuItems = [
         ['title' => 'Dashboard', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-dashboard', 'icon' => 'home'],
         ['title' => 'Moderator Management', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-moderators', 'icon' => 'users'],
+        ['title' => 'Account Moderation', 'url' => '/2nd-Year-Group-Project/FixLanka/views/admin/account-moderation.php', 'icon' => 'shield-x'],
         ['title' => 'Send Alerts', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-alerts', 'icon' => 'alert-triangle'],
         ['title' => 'Issues & Reports', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-issues', 'icon' => 'message-square'],
         ['title' => 'Analytics', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-analytics', 'icon' => 'bar-chart-3'],

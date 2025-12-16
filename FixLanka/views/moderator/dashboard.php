@@ -9,50 +9,35 @@ require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
 require_once __DIR__ . '/_components/Common.php';
-require_once __DIR__ . '/../../includes/admin-modarator/auth.php';
-require_once __DIR__ . '/../../includes/admin-modarator/mock-data.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../controllers/ModeratorDashboardController.php';
 
-// Check if user is logged in and get user info
-// $isLoggedIn = isLoggedIn();
-// $user = $isLoggedIn ? getCurrentUser() : null;
-// requireRole("moderator", $basePath);
-// $user = getCurrentUser();
+// Initialize Controller
+global $pdo;
+$controller = new ModeratorDashboardController($pdo);
 
-
-$dashboardStats = [
-    'totalUsers' => 1247,
-    'activeAds' => 89,
-    'pendingReviews' => 23,
-    'totalRevenue' => 45670,
-    'newUsersToday' => 12,
-    'adsApprovedToday' => 8,
-    'reportsToday' => 3,
-    'systemAlerts' => 2
-];
-
-$recentActivity = [
-    ['type' => 'user_registered', 'message' => 'New user John Doe registered', 'time' => '2 minutes ago'],
-    ['type' => 'ad_approved', 'message' => 'Advertisement "Plumbing Services" approved', 'time' => '15 minutes ago'],
-    ['type' => 'report_submitted', 'message' => 'User report submitted for review', 'time' => '1 hour ago'],
-    ['type' => 'payment_received', 'message' => 'Payment of $150 received', 'time' => '2 hours ago'],
-    ['type' => 'user_banned', 'message' => 'User account suspended for violations', 'time' => '3 hours ago']
-];
+// Get dashboard data
+$dashboardData = $controller->getDashboardData();
+$dashboardStats = $controller->getFormattedStats();
+$recentActivity = $dashboardData['recentActivity'];
+$activityOverview = $dashboardData['activityOverview'];
+$systemStatus = $dashboardData['systemStatus'];
 
 $message = '';
 $basePath = '';
-$currentPath = 'dashboard';
+$currentPath = '/2nd-Year-Group-Project/FixLanka/moderator-dashboard';
 
 // Get page title and description from variables or use defaults
-$pageTitle = $title ?? 'Advanced PHP Router';
-$pageDescription = $description ?? 'A Next.js-inspired PHP routing system with advanced features';
+$pageTitle = 'Moderator Dashboard - FixLanka';
+$pageDescription = 'Overview of system activity and quick access to management tools';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/dashboard.css?v=<?php echo time(); ?>">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
 </head>
 
 <body class="bg-foreground text-background">
@@ -61,212 +46,260 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
 
     <div class="dashboard-container">
         <?php renderModeratorSidebar($currentPath, $basePath); ?>
+        
         <div class="dashboard-main">
-            <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/dashboard.css">
             <?php renderPageHeader($basePath, 'Moderator Dashboard', 'Overview of system activity and quick access to management tools'); ?>
 
-            <main style="margin-top: 5rem;" class="main-content">
-                <div class="space-y-6">
-                    <?php if ($message): ?>
-                        <div class="bg-fixlanka-highlight/10 border border-fixlanka-highlight/20 text-fixlanka-primary px-4 py-3 rounded">
-                            <?php echo htmlspecialchars($message); ?>
-                        </div>
-                    <?php endif; ?>
-
-                    <div class="dashboard-stats">
-                        <?php
-                        renderCard('Total Users', number_format($dashboardStats['totalUsers']), '+' . $dashboardStats['newUsersToday'] . ' today', 'users', 'text-blue-600');
-                        renderCard('Active Ads', $dashboardStats['activeAds'], $dashboardStats['adsApprovedToday'] . ' approved today', 'megaphone', 'text-green-600');
-                        renderCard('Pending Reviews', $dashboardStats['pendingReviews'], $dashboardStats['reportsToday'] . ' reports today', 'clock', 'text-yellow-600');
-                        renderCard('Revenue', '$' . number_format($dashboardStats['totalRevenue']), 'This month', 'dollar-sign', 'text-purple-600');
-                        ?>
+            <main class="main-content">
+                <?php if ($message): ?>
+                    <div class="alert-message">
+                        <?php echo htmlspecialchars($message); ?>
                     </div>
+                <?php endif; ?>
 
-                    <div class="bg-card rounded-lg border">
-                        <div class="p-6">
-                            <h3 class="text-lg font-medium text-foreground mb-6">Quick Actions</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <a href="/2nd-Year-Group-Project/FixLanka/moderator-ads" class="nav-card bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="p-2 bg-blue-500/20 rounded-lg">
-                                            <i data-lucide="megaphone" class="h-6 w-6 text-blue-500"></i>
-                                        </div>
-                                        <div>
-                                            <h4 class="font-medium text-foreground">Advertisement Review</h4>
-                                            <p class="text-sm text-muted-foreground"><?php echo $dashboardStats['pendingReviews']; ?> pending reviews</p>
-                                        </div>
-                                    </div>
-                                </a>
-
-                                <a href="/2nd-Year-Group-Project/FixLanka/moderator-account-moderation" class="nav-card bg-red-500/10 border-red-500/20 hover:bg-red-500/20">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="p-2 bg-red-500/20 rounded-lg">
-                                            <i data-lucide="shield-alert" class="h-6 w-6 text-red-500"></i>
-                                        </div>
-                                        <div>
-                                            <h4 class="font-medium text-foreground">Account Moderation</h4>
-                                            <p class="text-sm text-muted-foreground">Manage banned accounts</p>
-                                        </div>
-                                    </div>
-                                </a>
-
-                                <a href="/2nd-Year-Group-Project/FixLanka/moderator-ad-reports" class="nav-card bg-green-500/10 border-green-500/20 hover:bg-green-500/20">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="p-2 bg-green-500/20 rounded-lg">
-                                            <i data-lucide="flag" class="h-6 w-6 text-green-500"></i>
-                                        </div>
-                                        <div>
-                                            <h4 class="font-medium text-foreground">Ad Reports</h4>
-                                            <p class="text-sm text-muted-foreground"><?php echo number_format($dashboardStats['reportsToday']); ?> reports today</p>
-                                        </div>
-                                    </div>
-                                </a>
-
-                                <a href="/2nd-Year-Group-Project/FixLanka/moderator-finance" class="nav-card bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="p-2 bg-purple-500/20 rounded-lg">
-                                            <i data-lucide="dollar-sign" class="h-6 w-6 text-purple-500"></i>
-                                        </div>
-                                        <div>
-                                            <h4 class="font-medium text-foreground">Financial Reports</h4>
-                                            <p class="text-sm text-muted-foreground">Revenue & analytics</p>
-                                        </div>
-                                    </div>
-                                </a>
-
-                                <a href="/2nd-Year-Group-Project/FixLanka/moderator-notifications" class="nav-card bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="p-2 bg-orange-500/20 rounded-lg">
-                                            <i data-lucide="bell" class="h-6 w-6 text-orange-500"></i>
-                                        </div>
-                                        <div>
-                                            <h4 class="font-medium text-foreground">Notifications</h4>
-                                            <p class="text-sm text-muted-foreground">System alerts & messages</p>
-                                        </div>
-                                    </div>
-                                </a>
-
-                                <a href="/2nd-Year-Group-Project/FixLanka/moderator-static-content" class="nav-card bg-teal-500/10 border-teal-500/20 hover:bg-teal-500/20">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="p-2 bg-teal-500/20 rounded-lg">
-                                            <i data-lucide="file-text" class="h-6 w-6 text-teal-500"></i>
-                                        </div>
-                                        <div>
-                                            <h4 class="font-medium text-foreground">Content Management</h4>
-                                            <p class="text-sm text-muted-foreground">Manage site content</p>
-                                        </div>
-                                    </div>
-                                </a>
+                <!-- Statistics Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card" data-color="blue">
+                        <div class="stat-card-inner">
+                            <div class="stat-info">
+                                <h4>Total Users</h4>
+                                <div class="stat-value"><?php echo number_format($dashboardStats['totalUsers']); ?></div>
+                                <div class="stat-change">+<?php echo $dashboardStats['newUsersToday']; ?> today</div>
+                            </div>
+                            <div class="stat-icon">
+                                <i data-lucide="users"></i>
                             </div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div>
-                            <div class="bg-card rounded-lg border">
-                                <div class="p-6">
-                                    <h3 class="text-lg font-medium text-foreground mb-4">Activity Overview</h3>
-                                    <div class="space-y-4">
-                                        <div class="flex items-center justify-between w-full">
-                                            <span class="text-sm text-muted-foreground">User Registrations</span>
-                                            <div class="flex items-center space-x-2">
-                                                <div class="w-24 bg-muted rounded-full h-2">
-                                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 75%"></div>
-                                                </div>
-                                                <span class="text-sm font-medium">75%</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center justify-between w-full">
-                                            <span class="text-sm text-muted-foreground">Ad Approvals</span>
-                                            <div class="flex items-center space-x-2">
-                                                <div class="w-24 bg-muted rounded-full h-2">
-                                                    <div class="bg-green-500 h-2 rounded-full" style="width: 60%"></div>
-                                                </div>
-                                                <span class="text-sm font-medium">60%</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center justify-between w-full">
-                                            <span class="text-sm text-muted-foreground">Revenue Growth</span>
-                                            <div class="flex items-center space-x-2">
-                                                <div class="w-24 bg-muted rounded-full h-2">
-                                                    <div class="bg-purple-500 h-2 rounded-full" style="width: 85%"></div>
-                                                </div>
-                                                <span class="text-sm font-medium">85%</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center justify-between w-full">
-                                            <span class="text-sm text-muted-foreground">System Performance</span>
-                                            <div class="flex items-center space-x-2">
-                                                <div class="w-24 bg-muted rounded-full h-2">
-                                                    <div class="bg-fixlanka-primary h-2 rounded-full" style="width: 92%"></div>
-                                                </div>
-                                                <span class="text-sm font-medium">92%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                    <div class="stat-card" data-color="green">
+                        <div class="stat-card-inner">
+                            <div class="stat-info">
+                                <h4>Active Ads</h4>
+                                <div class="stat-value"><?php echo $dashboardStats['activeAds']; ?></div>
+                                <div class="stat-change"><?php echo $dashboardStats['adsApprovedToday']; ?> approved today</div>
+                            </div>
+                            <div class="stat-icon">
+                                <i data-lucide="megaphone"></i>
                             </div>
                         </div>
+                    </div>
 
-                        <div>
-                            <div class="bg-card rounded-lg border">
-                                <div class="p-6">
-                                    <h3 class="text-lg font-medium text-foreground mb-4">Recent Activity</h3>
-                                    <div class="space-y-4">
-                                        <?php foreach ($recentActivity as $activity): ?>
-                                            <div class="flex items-start space-x-3">
-                                                <div class="flex-shrink-0">
-                                                    <?php
-                                                    $iconMap = [
-                                                        'user_registered' => ['user-plus', 'text-blue-500'],
-                                                        'ad_approved' => ['check-circle', 'text-green-500'],
-                                                        'report_submitted' => ['alert-triangle', 'text-yellow-500'],
-                                                        'payment_received' => ['dollar-sign', 'text-purple-500'],
-                                                        'user_banned' => ['shield-alert', 'text-red-500']
-                                                    ];
-                                                    $icon = $iconMap[$activity['type']] ?? ['circle', 'text-gray-500'];
-                                                    ?>
-                                                    <div class="p-1.5 bg-muted/50 rounded-full">
-                                                        <i data-lucide="<?php echo $icon[0]; ?>" class="h-3 w-3 <?php echo $icon[1]; ?>"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="flex-1 min-w-0">
-                                                    <p class="text-sm text-foreground"><?php echo htmlspecialchars($activity['message']); ?></p>
-                                                    <p class="text-xs text-muted-foreground"><?php echo $activity['time']; ?></p>
-                                                </div>
-                                            </div>
-                                        <?php endforeach; ?>
+                    <div class="stat-card" data-color="yellow">
+                        <div class="stat-card-inner">
+                            <div class="stat-info">
+                                <h4>Pending Reviews</h4>
+                                <div class="stat-value"><?php echo $dashboardStats['pendingReviews']; ?></div>
+                                <div class="stat-change"><?php echo $dashboardStats['reportsToday']; ?> reports today</div>
+                            </div>
+                            <div class="stat-icon">
+                                <i data-lucide="clock"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" data-color="purple">
+                        <div class="stat-card-inner">
+                            <div class="stat-info">
+                                <h4>Revenue</h4>
+                                <div class="stat-value">LKR <?php echo number_format($dashboardStats['totalRevenue'], 2); ?></div>
+                                <div class="stat-change">This month</div>
+                            </div>
+                            <div class="stat-icon">
+                                <i data-lucide="dollar-sign"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="section-card">
+                    <h3 class="section-title">Quick Actions</h3>
+                    <div class="quick-actions-grid">
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/ads.php" class="action-card action-blue">
+                            <div class="action-icon">
+                                <i data-lucide="megaphone"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Advertisement Review</h4>
+                                <p><?php echo $dashboardStats['pendingReviews']; ?> pending reviews</p>
+                            </div>
+                        </a>
+
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/ad-reports.php" class="action-card action-green">
+                            <div class="action-icon">
+                                <i data-lucide="flag"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Ad Reports</h4>
+                                <p><?php echo number_format($dashboardStats['reportsToday']); ?> reports today</p>
+                            </div>
+                        </a>
+
+                        <!-- NEW: Ad Scheduling Button -->
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/ad-schedules.php" class="action-card action-red">
+                            <div class="action-icon">
+                                <i data-lucide="calendar-clock"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Ad Scheduling</h4>
+                                <p>Manage ad placements</p>
+                            </div>
+                        </a>
+
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/finance.php" class="action-card action-purple">
+                            <div class="action-icon">
+                                <i data-lucide="dollar-sign"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Financial Reports</h4>
+                                <p>Revenue & analytics</p>
+                            </div>
+                        </a>
+
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/notifications.php" class="action-card action-orange">
+                            <div class="action-icon">
+                                <i data-lucide="bell"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Notifications</h4>
+                                <p>System alerts & messages</p>
+                            </div>
+                        </a>
+
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/static-content.php" class="action-card action-teal">
+                            <div class="action-icon">
+                                <i data-lucide="file-text"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Static Management</h4>
+                                <p>Manage site content</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Two Column Layout -->
+                <div class="two-column-grid">
+                    <!-- Activity Overview -->
+                    <div class="section-card">
+                        <h3 class="section-title">Activity Overview</h3>
+                        <div class="activity-list">
+                            <div class="activity-row">
+                                <span class="activity-label">User Registrations</span>
+                                <div class="activity-progress">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill bg-blue" style="width: <?php echo round($activityOverview['user_registrations']); ?>%"></div>
                                     </div>
+                                    <span class="activity-percent"><?php echo round($activityOverview['user_registrations']); ?>%</span>
+                                </div>
+                            </div>
+
+                            <div class="activity-row">
+                                <span class="activity-label">Ad Approvals</span>
+                                <div class="activity-progress">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill bg-green" style="width: <?php echo $activityOverview['ad_approvals']; ?>%"></div>
+                                    </div>
+                                    <span class="activity-percent"><?php echo $activityOverview['ad_approvals']; ?>%</span>
+                                </div>
+                            </div>
+
+                            <div class="activity-row">
+                                <span class="activity-label">Revenue Growth</span>
+                                <div class="activity-progress">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill bg-purple" style="width: <?php echo $activityOverview['revenue_growth']; ?>%"></div>
+                                    </div>
+                                    <span class="activity-percent"><?php echo $activityOverview['revenue_growth']; ?>%</span>
+                                </div>
+                            </div>
+
+                            <div class="activity-row">
+                                <span class="activity-label">System Performance</span>
+                                <div class="activity-progress">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill bg-teal" style="width: <?php echo $activityOverview['system_performance']; ?>%"></div>
+                                    </div>
+                                    <span class="activity-percent"><?php echo $activityOverview['system_performance']; ?>%</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-card rounded-lg border">
-                        <div class="p-6">
-                            <h3 class="text-lg font-medium text-foreground mb-4">System Status</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="flex items-center space-x-3 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                                    <i data-lucide="server" class="h-5 w-5 text-green-500"></i>
-                                    <div>
-                                        <p class="text-sm font-medium text-foreground">Server Status</p>
-                                        <p class="text-xs text-green-600">Online - 99.9% uptime</p>
+                    <!-- Recent Activity -->
+                    <div class="section-card">
+                        <h3 class="section-title">Recent Activity</h3>
+                        <div class="recent-activity-list">
+                            <?php foreach ($recentActivity as $activity): ?>
+                                <div class="recent-activity-item">
+                                    <?php
+                                    // Map activity type to icon color
+                                    $iconClass = 'activity-icon-gray';
+                                    switch ($activity['type']) {
+                                        case 'ad_approved':
+                                            $iconClass = 'activity-icon-green';
+                                            $iconName = 'check-circle';
+                                            break;
+                                        case 'ad_rejected':
+                                        case 'user_banned':
+                                            $iconClass = 'activity-icon-red';
+                                            $iconName = 'x-circle';
+                                            break;
+                                        case 'payment_received':
+                                            $iconClass = 'activity-icon-purple';
+                                            $iconName = 'dollar-sign';
+                                            break;
+                                        case 'user_registered':
+                                            $iconClass = 'activity-icon-blue';
+                                            $iconName = 'user-plus';
+                                            break;
+                                        case 'report_submitted':
+                                            $iconClass = 'activity-icon-yellow';
+                                            $iconName = 'flag';
+                                            break;
+                                        default:
+                                            $iconName = 'activity';
+                                    }
+                                    ?>
+                                    <div class="activity-icon-wrapper <?php echo $iconClass; ?>">
+                                        <i data-lucide="<?php echo $iconName; ?>"></i>
+                                    </div>
+                                    <div class="activity-details">
+                                        <p class="activity-message"><?php echo htmlspecialchars($activity['message']); ?></p>
+                                        <p class="activity-time"><?php echo htmlspecialchars($activity['time']); ?></p>
                                     </div>
                                 </div>
-                                <div class="flex items-center space-x-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                                    <i data-lucide="database" class="h-5 w-5 text-blue-500"></i>
-                                    <div>
-                                        <p class="text-sm font-medium text-foreground">Database</p>
-                                        <p class="text-xs text-blue-600">Healthy - 2.3ms response</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center space-x-3 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                                    <i data-lucide="alert-triangle" class="h-5 w-5 text-yellow-500"></i>
-                                    <div>
-                                        <p class="text-sm font-medium text-foreground">Alerts</p>
-                                        <p class="text-xs text-yellow-600"><?php echo $dashboardStats['systemAlerts']; ?> pending alerts</p>
-                                    </div>
-                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Status -->
+                <div class="section-card">
+                    <h3 class="section-title">System Status</h3>
+                    <div class="system-status-grid">
+                        <div class="status-item status-<?php echo $systemStatus['server']['color']; ?>">
+                            <i data-lucide="server"></i>
+                            <div class="status-content">
+                                <p class="status-label">Server Status</p>
+                                <p class="status-value"><?php echo $systemStatus['server']['status']; ?> - <?php echo $systemStatus['server']['uptime']; ?> uptime</p>
+                            </div>
+                        </div>
+
+                        <div class="status-item status-<?php echo $systemStatus['database']['color']; ?>">
+                            <i data-lucide="database"></i>
+                            <div class="status-content">
+                                <p class="status-label">Database</p>
+                                <p class="status-value"><?php echo $systemStatus['database']['status']; ?> - <?php echo $systemStatus['database']['response_time']; ?> response</p>
+                            </div>
+                        </div>
+
+                        <div class="status-item status-<?php echo $systemStatus['alerts']['color']; ?>">
+                            <i data-lucide="alert-triangle"></i>
+                            <div class="status-content">
+                                <p class="status-label">Alerts</p>
+                                <p class="status-value"><?php echo $systemStatus['alerts']['message']; ?></p>
                             </div>
                         </div>
                     </div>
@@ -274,12 +307,11 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
             </main>
         </div>
     </div>
+
     <script>
         lucide.createIcons();
     </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
-
 </body>
 
 </html>
-

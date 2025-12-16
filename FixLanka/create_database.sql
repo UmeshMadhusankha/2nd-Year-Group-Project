@@ -21,18 +21,20 @@ CREATE TABLE User (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Issue Report Table
 CREATE TABLE IssueReport (
     issue_id INT PRIMARY KEY AUTO_INCREMENT,
     reportedBy_id INT NOT NULL,
-    target_id INT NOT NULL, -- Can reference User, Repairer, or Company
+    target_id INT NOT NULL,
     target_type ENUM('user', 'repairer', 'company') NOT NULL,
     description TEXT NOT NULL,
-    status ENUM('open', 'investigating', 'resolved', 'closed') DEFAULT 'open',
+    priority ENUM('low', 'medium', 'high') DEFAULT 'medium',  ✅ ADD THIS
+    status ENUM('pending', 'investigating', 'resolved', 'escalated', 'closed') DEFAULT 'pending',  ✅ FIX THIS
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,  ✅ ADD THIS
     FOREIGN KEY (reportedBy_id) REFERENCES User(user_id) ON DELETE CASCADE,
     INDEX idx_reporter (reportedBy_id),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_priority (priority)  ✅ ADD THIS
 );
 
 -- Category Table
@@ -347,27 +349,80 @@ CREATE TABLE Advertisement (
 );
 
 -- Ad Schedule Table
-CREATE TABLE AdSchedule (
+-- =====================================================
+-- NEW TABLES ADDED (Updated Version)
+-- =====================================================
+
+-- Ad Schedules Table (NEW - Added for conflict detection)
+CREATE TABLE ad_schedules (
     schedule_id INT PRIMARY KEY AUTO_INCREMENT,
     ad_id INT NOT NULL,
+    placement VARCHAR(50) NOT NULL DEFAULT 'banner',
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
-    start_time TIME,
-    end_time TIME,
-    FOREIGN KEY (ad_id) REFERENCES Advertisement(ad_id) ON DELETE CASCADE,
-    INDEX idx_ad (ad_id),
-    INDEX idx_dates (start_date, end_date)
-);
+    start_time TIME NOT NULL DEFAULT '00:00:00',
+    end_time TIME NOT NULL DEFAULT '23:59:59',
+    status ENUM('scheduled', 'active', 'expired', 'cancelled') DEFAULT 'scheduled',
+    priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_ad_schedule (ad_id),
+    INDEX idx_placement (placement),
+    INDEX idx_dates (start_date, end_date),
+    INDEX idx_status (status),
+    FOREIGN KEY (ad_id) REFERENCES Advertisement(ad_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Financial Report Table
+-- Moderator Activity Table (NEW - Track moderator actions)
+CREATE TABLE moderator_activity (
+    activity_id INT PRIMARY KEY AUTO_INCREMENT,
+    moderator_id INT NOT NULL DEFAULT 1,
+    activity_type ENUM('ad_approved', 'ad_rejected', 'ad_activated', 'user_banned', 'content_updated') NOT NULL,
+    target_id INT NOT NULL,
+    target_title VARCHAR(255),
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_moderator (moderator_id),
+    INDEX idx_type (activity_type),
+    INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- =====================================================
+-- Financial System Tables (Auto-Calculated)
+-- =====================================================
+
+-- Financial Report Table (Parent - Monthly Summary)
 CREATE TABLE FinancialReport (
     report_id INT PRIMARY KEY AUTO_INCREMENT,
-    month DATE NOT NULL,
-    revenue DECIMAL(12,2) DEFAULT 0.00,
-    pending_withdrawals DECIMAL(12,2) DEFAULT 0.00,
+    month DATE NOT NULL UNIQUE,
+    active_subscriptions INT DEFAULT 0,
+    generated_by INT,
+    notes TEXT,
     generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_month (month)
-);
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_month (month),
+    FOREIGN KEY (generated_by) REFERENCES Moderator(moderator_id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Financial Report Transaction Table (Child - All Transactions)
+CREATE TABLE FinancialReportTransaction (
+    transaction_id INT PRIMARY KEY AUTO_INCREMENT,
+    report_id INT NOT NULL,
+    transaction_type ENUM('Payment', 'Commission', 'Withdrawal', 'Subscription', 'Advertisement', 'Refund') NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    description VARCHAR(500),
+    reference_id INT,
+    reference_type VARCHAR(50),
+    status ENUM('Completed', 'Pending', 'Failed', 'Cancelled') DEFAULT 'Completed',
+    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_report (report_id),
+    INDEX idx_type (transaction_type),
+    INDEX idx_status (status),
+    INDEX idx_date (transaction_date),
+    FOREIGN KEY (report_id) REFERENCES FinancialReport(report_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =====================================================
 -- Company and Project Tables
@@ -504,3 +559,146 @@ INSERT INTO Category (name) VALUES
 ('Drywall'),
 ('Insulation'),
 ('Window Installation');
+
+
+-- Insert Sample Users
+INSERT INTO User (f_name, l_name, email, password, district) VALUES
+('John', 'Doe', 'john@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Colombo'),
+('Jane', 'Smith', 'jane@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Kandy'),
+('Bob', 'Wilson', 'bob@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Galle'),
+('Alice', 'Brown', 'alice@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Colombo');
+
+-- Insert Sample Companies
+INSERT INTO Company (name, registration_no, email, contact_no, address, password, business_type, districts) VALUES
+('BuildPro Solutions', 'REG001', 'info@buildpro.com', '0771234567', '123 Main St, Colombo', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Construction', 'Colombo,Gampaha'),
+('ABC Construction Ltd', 'REG002', 'contact@abc.com', '0779876543', '456 Park Ave, Kandy', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Construction', 'Kandy,Matale');
+
+-- Insert Sample Repairers
+INSERT INTO Repairer (f_name, l_name, email, password, phoneNumber, districts, category_id, ratings, completedJobsCount) VALUES
+('Mike', 'Johnson', 'mike@fixlanka.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '0771112233', 'Colombo,Gampaha', 1, 4.5, 45),
+('Sarah', 'Davis', 'sarah@fixlanka.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '0772223344', 'Kandy,Matale', 2, 4.8, 67);
+
+-- Insert Sample Advertisements
+INSERT INTO Advertisement (provider_id, provider_type, title, type, budget, status) VALUES
+(1, 'company', 'New Year Construction Packages', 'sponsored', 28000.00, 'approved'),
+(1, 'company', 'Premium Home Construction Services', 'banner', 50000.00, 'approved'),
+(2, 'company', 'Special Discount on Renovations - 20% OFF', 'featured', 35000.00, 'approved');
+
+-- Insert Admin
+INSERT INTO Admin (username, password, email) VALUES
+('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@fixlanka.com');
+
+-- Insert Moderators
+INSERT INTO Moderator (username, password, email, assigned_section) VALUES
+('moderator1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'mod1@fixlanka.com', 'Advertisements');
+
+-- Insert Sample Job Requests (REQUIRED before payments)
+INSERT INTO JobRequest (
+    user_id, category_id, title, description, district, address,
+    service_provider_type, finish_date
+) VALUES
+(1, 1, 'Fix Bathroom Leak', 'Leaking pipe issue', 'Colombo', 'No 12, Main Street', 'individual', '2025-01-10'),
+(2, 2, 'Electrical Wiring Repair', 'Short circuit problem', 'Kandy', 'No 45, Lake Road', 'individual', '2025-01-12'),
+(3, 3, 'Roof Repair', 'Roof tiles broken', 'Galle', 'No 78, Beach Road', 'company', '2025-01-15');
+
+-- Insert Sample Payments
+INSERT INTO Payment (job_request_id, paymentType, amount, status) VALUES
+(1, 'credit_card', 15000.00, 'completed'),
+(2, 'bank_transfer', 25000.00, 'completed'),
+(3, 'cash', 8000.00, 'pending');
+
+-- Insert Sample Moderator Activities with RECENT timestamps
+INSERT INTO moderator_activity (moderator_id, activity_type, target_id, target_title, description, created_at) VALUES
+(1, 'ad_approved', 1, 'Door &amp; Window Installation - Modern Designs', 'Advertisement approved for sponsored placement', DATE_SUB(NOW(), INTERVAL 3 MINUTE)),
+(1, 'ad_approved', 2, 'Home Appliance Repair - All Brands', 'Advertisement approved for featured placement', DATE_SUB(NOW(), INTERVAL 3 MINUTE)),
+(1, 'ad_approved', 3, 'Home Appliance Repair - All Brands', 'Advertisement approved for featured placement', DATE_SUB(NOW(), INTERVAL 11 HOUR)),
+(1, 'ad_approved', 1, 'Garden Landscaping &amp; Maintenance Services', 'Advertisement approved for banner placement', DATE_SUB(NOW(), INTERVAL 11 HOUR)),
+(1, 'payment_verified', 1, 'Payment of LKR 15,000', 'Payment verified and processed', DATE_SUB(NOW(), INTERVAL 2 DAY)),
+(1, 'user_registered', 1, 'New user account created', 'User registration approved', DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(1, 'report_resolved', 1, 'User complaint resolved', 'Issue report closed successfully', DATE_SUB(NOW(), INTERVAL 1 WEEK));
+
+-- =====================================================
+-- Insert Sample Financial Reports (Auto-Calculated System)
+-- =====================================================
+
+-- December 2025 Report
+INSERT INTO FinancialReport (month, active_subscriptions, generated_by, notes) VALUES
+('2025-12-01', 145, 1, 'December 2025 Monthly Report');
+
+SET @dec_report_id = LAST_INSERT_ID();
+
+-- December Transactions
+INSERT INTO FinancialReportTransaction (report_id, transaction_type, amount, description, reference_id, reference_type, status, transaction_date) VALUES
+-- Payments
+(@dec_report_id, 'Payment', 15000.00, 'Job completion payment - Plumbing service', 1, 'JobRequest', 'Completed', DATE_SUB(NOW(), INTERVAL 2 DAY)),
+(@dec_report_id, 'Payment', 25000.00, 'Job completion payment - Electrical repair', 2, 'JobRequest', 'Completed', DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(@dec_report_id, 'Payment', 18500.00, 'Job completion payment - HVAC installation', 3, 'JobRequest', 'Completed', DATE_SUB(NOW(), INTERVAL 8 DAY)),
+(@dec_report_id, 'Payment', 32000.00, 'Project milestone payment', 1, 'Project', 'Completed', DATE_SUB(NOW(), INTERVAL 10 DAY)),
+(@dec_report_id, 'Payment', 22500.00, 'Emergency repair service', 4, 'JobRequest', 'Completed', DATE_SUB(NOW(), INTERVAL 12 DAY)),
+
+-- Commissions (15% of payments)
+(@dec_report_id, 'Commission', 2250.00, 'Platform commission - Job #1', 1, 'Payment', 'Completed', DATE_SUB(NOW(), INTERVAL 2 DAY)),
+(@dec_report_id, 'Commission', 3750.00, 'Platform commission - Job #2', 2, 'Payment', 'Completed', DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(@dec_report_id, 'Commission', 2775.00, 'Platform commission - Job #3', 3, 'Payment', 'Completed', DATE_SUB(NOW(), INTERVAL 8 DAY)),
+(@dec_report_id, 'Commission', 4800.00, 'Platform commission - Project milestone', 1, 'Project', 'Completed', DATE_SUB(NOW(), INTERVAL 10 DAY)),
+(@dec_report_id, 'Commission', 3375.00, 'Platform commission - Emergency service', 4, 'Payment', 'Completed', DATE_SUB(NOW(), INTERVAL 12 DAY)),
+
+-- Subscriptions
+(@dec_report_id, 'Subscription', 5000.00, 'Premium repairer subscription - Monthly', 1, 'Repairer', 'Completed', DATE_SUB(NOW(), INTERVAL 1 DAY)),
+(@dec_report_id, 'Subscription', 5000.00, 'Premium repairer subscription - Monthly', 2, 'Repairer', 'Completed', DATE_SUB(NOW(), INTERVAL 3 DAY)),
+(@dec_report_id, 'Subscription', 8000.00, 'Business company subscription - Monthly', 1, 'Company', 'Completed', DATE_SUB(NOW(), INTERVAL 4 DAY)),
+(@dec_report_id, 'Subscription', 8000.00, 'Business company subscription - Monthly', 2, 'Company', 'Completed', DATE_SUB(NOW(), INTERVAL 6 DAY)),
+
+-- Advertisements
+(@dec_report_id, 'Advertisement', 28000.00, 'Sponsored ad placement - 30 days', 1, 'Advertisement', 'Completed', DATE_SUB(NOW(), INTERVAL 7 DAY)),
+(@dec_report_id, 'Advertisement', 50000.00, 'Banner ad placement - Premium location', 2, 'Advertisement', 'Completed', DATE_SUB(NOW(), INTERVAL 9 DAY)),
+(@dec_report_id, 'Advertisement', 35000.00, 'Featured listing - Homepage', 3, 'Advertisement', 'Completed', DATE_SUB(NOW(), INTERVAL 11 DAY)),
+
+-- Withdrawals (Pending)
+(@dec_report_id, 'Withdrawal', 45000.00, 'Repairer earnings withdrawal request', 1, 'Repairer', 'Pending', DATE_SUB(NOW(), INTERVAL 1 DAY)),
+(@dec_report_id, 'Withdrawal', 28000.00, 'Company earnings withdrawal request', 1, 'Company', 'Pending', DATE_SUB(NOW(), INTERVAL 2 DAY)),
+(@dec_report_id, 'Withdrawal', 13000.00, 'Repairer earnings withdrawal request', 2, 'Repairer', 'Pending', DATE_SUB(NOW(), INTERVAL 3 DAY));
+
+-- November 2025 Report (for growth comparison)
+INSERT INTO FinancialReport (month, active_subscriptions, generated_by, notes) VALUES
+('2025-11-01', 132, 1, 'November 2025 Monthly Report');
+
+SET @nov_report_id = LAST_INSERT_ID();
+
+-- November Transactions (slightly less revenue for growth calculation)
+INSERT INTO FinancialReportTransaction (report_id, transaction_type, amount, description, reference_id, reference_type, status, transaction_date) VALUES
+-- Payments
+(@nov_report_id, 'Payment', 12000.00, 'Job completion payment', 5, 'JobRequest', 'Completed', '2025-11-25 10:30:00'),
+(@nov_report_id, 'Payment', 18000.00, 'Job completion payment', 6, 'JobRequest', 'Completed', '2025-11-22 14:15:00'),
+(@nov_report_id, 'Payment', 15500.00, 'Project payment', 2, 'Project', 'Completed', '2025-11-20 09:45:00'),
+(@nov_report_id, 'Payment', 22000.00, 'Job completion payment', 7, 'JobRequest', 'Completed', '2025-11-18 16:20:00'),
+
+-- Commissions
+(@nov_report_id, 'Commission', 1800.00, 'Platform commission', 5, 'Payment', 'Completed', '2025-11-25 10:30:00'),
+(@nov_report_id, 'Commission', 2700.00, 'Platform commission', 6, 'Payment', 'Completed', '2025-11-22 14:15:00'),
+(@nov_report_id, 'Commission', 2325.00, 'Platform commission', 2, 'Project', 'Completed', '2025-11-20 09:45:00'),
+(@nov_report_id, 'Commission', 3300.00, 'Platform commission', 7, 'Payment', 'Completed', '2025-11-18 16:20:00'),
+
+-- Subscriptions
+(@nov_report_id, 'Subscription', 5000.00, 'Premium subscription', 1, 'Repairer', 'Completed', '2025-11-05 08:00:00'),
+(@nov_report_id, 'Subscription', 5000.00, 'Premium subscription', 2, 'Repairer', 'Completed', '2025-11-07 08:00:00'),
+(@nov_report_id, 'Subscription', 8000.00, 'Business subscription', 1, 'Company', 'Completed', '2025-11-10 08:00:00'),
+
+-- Advertisements
+(@nov_report_id, 'Advertisement', 25000.00, 'Sponsored ad placement', 4, 'Advertisement', 'Completed', '2025-11-15 11:00:00'),
+(@nov_report_id, 'Advertisement', 40000.00, 'Banner ad placement', 5, 'Advertisement', 'Completed', '2025-11-12 13:30:00');
+
+-- =====================================================
+-- Insert Sample Issue Reports
+-- =====================================================
+INSERT INTO IssueReport (reportedBy_id, target_id, target_type, description, priority, status, date) VALUES
+(1, 1, 'user', 'This advertisement contains misleading information about certification and qualifications', 'high', 'pending', DATE_SUB(NOW(), INTERVAL 2 DAY)),
+(2, 2, 'company', 'Advertisement displays different prices than what is actually charged during service', 'high', 'investigating', DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(3, 1, 'repairer', 'Advertisement contains inappropriate images and unprofessional language', 'high', 'escalated', DATE_SUB(NOW(), INTERVAL 8 DAY)),
+(4, 2, 'user', 'Same advertisement posted multiple times with different prices', 'medium', 'resolved', DATE_SUB(NOW(), INTERVAL 12 DAY)),
+(1, 3, 'company', 'Advertisement contains spam links and irrelevant promotional content', 'medium', 'pending', DATE_SUB(NOW(), INTERVAL 3 DAY)),
+(2, 1, 'user', 'Service provider not responding to messages after payment was made', 'high', 'investigating', DATE_SUB(NOW(), INTERVAL 1 DAY)),
+(3, 2, 'repairer', 'Repairer demanding extra payment not mentioned in original quote', 'high', 'pending', DATE_SUB(NOW(), INTERVAL 4 DAY)),
+(4, 3, 'company', 'Company failed to complete project within agreed timeline', 'medium', 'resolved', DATE_SUB(NOW(), INTERVAL 15 DAY)),
+(1, 1, 'user', 'Inappropriate behavior and harassment from service provider', 'high', 'escalated', DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(2, 2, 'repairer', 'Poor quality work and refusal to fix issues under warranty', 'medium', 'investigating', DATE_SUB(NOW(), INTERVAL 7 DAY));
