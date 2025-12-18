@@ -82,6 +82,24 @@ switch ($request) {
         require_once __DIR__ . '/views/user/chat.php';
         break;
     
+    case '/get-providers':
+        require_once __DIR__ . '/controllers/ProviderController.php';
+        $controller = new ProviderController();
+        $controller->getProviders();
+        break;
+    
+    case '/get-featured-providers':
+        require_once __DIR__ . '/controllers/ProviderController.php';
+        $controller = new ProviderController();
+        $controller->getFeatured();
+        break;
+    
+    case '/get-provider-details':
+        require_once __DIR__ . '/controllers/ProviderController.php';
+        $controller = new ProviderController();
+        $controller->getProviderDetails();
+        break;
+    
     default:
         http_response_code(404);
         echo "404 - Page Not Found";

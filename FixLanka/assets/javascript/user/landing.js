@@ -1,7 +1,10 @@
 // Fix Lanka Landing Page JavaScript
 // ===================================
 
-// Sample provider data for demonstration
+// API Configuration
+const API_BASE = '/2nd-Year-Group-Project/FixLanka';
+
+// Sample provider data for demonstration (fallback)
 const providerData = [
     {
         id: 1,
@@ -253,34 +256,16 @@ function hideSearchLoading() {
     }
 }
 
-// Filter Providers (simplified for demo)
-function filterProviders(filters) {
-    let filteredData = [...providerData];
-    
-    // Filter by service (simplified matching)
-    if (filters.service) {
-        filteredData = filteredData.filter(provider => 
-            provider.title.toLowerCase().includes(filters.service.toLowerCase()) ||
-            provider.description.toLowerCase().includes(filters.service.toLowerCase())
-        );
-    }
-    
-    // Filter by rating
-    if (filters.rating) {
-        const minRating = parseFloat(filters.rating);
-        filteredData = filteredData.filter(provider => provider.rating >= minRating);
-    }
-    
+// Filter Providers - now uses real API
+async function filterProviders(filters) {
     // Clear current grid and reset pagination
     providersGrid.innerHTML = '';
     currentPage = 0;
     allProvidersLoaded = false;
+    scrollTrigger.style.display = 'block';
     
-    // Update provider data temporarily for this search
-    window.currentFilteredData = filteredData;
-    
-    // Load filtered results
-    loadProviders(true);
+    // Load filtered results from API
+    await loadProviders(true);
 }
 
 // Lazy Loading Functionality
@@ -308,43 +293,95 @@ function loadInitialProviders() {
 }
 
 // Load Providers with Pagination
-function loadProviders(isFiltered = false) {
+async function loadProviders(isFiltered = false) {
     if (isLoading) return;
     
     isLoading = true;
     showLoading();
     
-    // Use filtered data if available, otherwise use original data
-    const dataSource = window.currentFilteredData || providerData;
-    
-    // Calculate start and end indices
-    const startIndex = currentPage * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, dataSource.length);
-    
-    // Get current batch of providers
-    const currentBatch = dataSource.slice(startIndex, endIndex);
-    
-    // Simulate network delay
-    setTimeout(() => {
-        // Render providers
-        currentBatch.forEach((provider, index) => {
-            setTimeout(() => {
-                renderProviderCard(provider);
-            }, index * 100); // Stagger animation
+    try {
+        // Get filter values
+        const service = document.getElementById('serviceSelect')?.value || '';
+        const rating = document.getElementById('ratingSelect')?.value || '';
+        const location = document.getElementById('locationInput')?.value || '';
+        
+        // Build query parameters
+        const params = new URLSearchParams({
+            limit: itemsPerPage,
+            offset: currentPage * itemsPerPage
         });
         
-        // Update pagination state
-        currentPage++;
-        isLoading = false;
-        hideLoading();
+        if (service) params.append('category', service);
+        if (rating) params.append('rating', rating);
+        if (location) params.append('location', location);
         
-        // Check if all providers are loaded
-        if (endIndex >= dataSource.length) {
-            allProvidersLoaded = true;
-            scrollTrigger.style.display = 'none';
+        // Fetch data from API
+        const response = await fetch(`${API_BASE}/get-featured-providers?${params.toString()}`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch providers');
         }
         
-    }, 800); // Simulate loading delay
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const providers = result.data;
+            
+            // Render providers with staggered animation
+            providers.forEach((provider, index) => {
+                setTimeout(() => {
+                    renderProviderCard(provider);
+                }, index * 100);
+            });
+            
+            // Update pagination state
+            currentPage++;
+            
+            // Check if more providers are available
+            if (result.pagination) {
+                allProvidersLoaded = !result.pagination.hasMore;
+            } else if (providers.length < itemsPerPage) {
+                allProvidersLoaded = true;
+            }
+            
+            if (allProvidersLoaded) {
+                scrollTrigger.style.display = 'none';
+            }
+        } else {
+            console.error('No providers found or invalid response');
+            // Fallback to sample data if API fails
+            loadSampleProviders();
+        }
+        
+    } catch (error) {
+        console.error('Error loading providers:', error);
+        // Fallback to sample data
+        loadSampleProviders();
+    } finally {
+        isLoading = false;
+        hideLoading();
+    }
+}
+
+// Fallback function to load sample providers
+function loadSampleProviders() {
+    const dataSource = window.currentFilteredData || providerData;
+    const startIndex = currentPage * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, dataSource.length);
+    const currentBatch = dataSource.slice(startIndex, endIndex);
+    
+    currentBatch.forEach((provider, index) => {
+        setTimeout(() => {
+            renderProviderCard(provider);
+        }, index * 100);
+    });
+    
+    currentPage++;
+    
+    if (endIndex >= dataSource.length) {
+        allProvidersLoaded = true;
+        scrollTrigger.style.display = 'none';
+    }
 }
 
 // Show Loading Indicator
@@ -367,44 +404,85 @@ function renderProviderCard(provider) {
     card.className = 'provider-card';
     card.style.animationDelay = '0s'; // Reset animation delay
     
+    // Generate avatar initials or use profile picture
+    const avatar = provider.profilePicture 
+        ? `<img src="${API_BASE}/${provider.profilePicture}" alt="${provider.full_name || provider.name}" class="avatar-img">`
+        : generateAvatarInitials(provider.full_name || provider.name);
+    
+    // Determine provider type and display info
+    const providerType = provider.provider_type || 'individual';
+    const providerName = provider.full_name || provider.name || 'Unknown';
+    const providerTitle = provider.category_name || (providerType === 'company' ? 'Service Company' : 'Service Provider');
+    const rating = provider.ratings || 0;
+    const completedJobs = provider.completedJobsCount || 0;
+    const about = provider.about || provider.address || 'Professional service provider';
+    const availability = provider.availability || 'available';
+    const serviceAreas = provider.districts || provider.address || 'Available in your area';
+    
+    // Provider ID and type for viewing details
+    const providerId = providerType === 'individual' ? provider.repairer_id : provider.company_id;
+    
     card.innerHTML = `
         <div class="provider-header">
             <div class="provider-avatar">
-                ${provider.avatar}
+                ${avatar}
             </div>
             <div class="provider-info">
-                <h3 class="provider-name">${provider.name}</h3>
-                <p class="provider-title">${provider.title}</p>
+                <h3 class="provider-name">${escapeHtml(providerName)}</h3>
+                <p class="provider-title">${escapeHtml(providerTitle)}</p>
+                ${providerType === 'company' ? '<span class="provider-badge company-badge">Company</span>' : ''}
+                ${availability === 'available' ? '<span class="provider-badge available-badge">Available</span>' : ''}
             </div>
         </div>
         
         <div class="provider-rating">
             <div class="stars">
-                ${generateStars(provider.rating)}
+                ${generateStars(rating)}
             </div>
-            <span class="rating-text">${provider.rating} (${provider.reviews} reviews)</span>
+            <span class="rating-text">${rating.toFixed(1)} ${completedJobs > 0 ? `(${completedJobs} jobs)` : ''}</span>
         </div>
         
         <div class="provider-distance">
             <i class="fas fa-map-marker-alt"></i>
-            ${provider.distance}
+            ${escapeHtml(serviceAreas.substring(0, 50))}${serviceAreas.length > 50 ? '...' : ''}
         </div>
         
         <p class="provider-description">
-            ${provider.description}
+            ${escapeHtml(about.substring(0, 120))}${about.length > 120 ? '...' : ''}
         </p>
         
         <div class="provider-actions">
-            <button class="view-profile-btn" onclick="viewProfile(${provider.id})">
+            <button class="view-profile-btn" onclick="viewProviderProfile(${providerId}, '${providerType}')">
                 <i class="fas fa-user"></i>
                 View Profile
             </button>
+            ${providerType === 'individual' && provider.phoneNumber ? 
+                `<a href="tel:${provider.phoneNumber}" class="contact-btn">
+                    <i class="fas fa-phone"></i>
+                </a>` : ''}
         </div>
     `;
     
     if (providersGrid) {
         providersGrid.appendChild(card);
     }
+}
+
+// Generate avatar initials from name
+function generateAvatarInitials(name) {
+    if (!name) return 'SP';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Generate Star Rating HTML
@@ -433,7 +511,26 @@ function generateStars(rating) {
     return starsHTML;
 }
 
-// View Profile Function (placeholder)
+// View Provider Profile Function
+async function viewProviderProfile(providerId, providerType) {
+    try {
+        const response = await fetch(`${API_BASE}/get-provider-details?id=${providerId}&type=${providerType}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const provider = result.data;
+            // Navigate to provider details page or show modal
+            window.location.href = `${API_BASE}/provider?id=${providerId}&type=${providerType}`;
+        } else {
+            alert('Unable to load provider details. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error fetching provider details:', error);
+        alert('Failed to load provider details');
+    }
+}
+
+// View Profile Function (placeholder - for fallback sample data)
 function viewProfile(providerId) {
     const provider = providerData.find(p => p.id === providerId);
     if (provider) {
