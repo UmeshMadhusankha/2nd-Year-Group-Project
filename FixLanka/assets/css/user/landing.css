@@ -198,6 +198,127 @@ body {
   box-shadow: var(--shadow-md);
 }
 
+.form-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.clear-btn {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  height: 50px;
+  white-space: nowrap;
+  font-size: var(--font-size-base);
+}
+
+.clear-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--text-secondary);
+  transform: translateY(-1px);
+}
+
+/* Active Filters Display */
+.active-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.filter-tags {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: var(--font-size-sm);
+}
+
+.filter-tag-label {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.filter-tag-value {
+  color: var(--text-primary);
+}
+
+.filter-tag-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  line-height: 1;
+  transition: var(--transition-normal);
+}
+
+.filter-tag-remove:hover {
+  color: var(--error-color);
+}
+
+/* No Results Message */
+.no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: var(--spacing-2xl);
+  background: var(--bg-card);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.no-results-icon {
+  font-size: 64px;
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-lg);
+}
+
+.no-results h3 {
+  font-size: var(--font-size-xl);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+  font-weight: 700;
+}
+
+.no-results p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-base);
+}
+
+.no-results button {
+  margin-top: var(--spacing-lg);
+}
+
 /* ===== PROVIDERS SECTION ===== */
 .providers-section {
   padding: var(--spacing-2xl) 0;
@@ -226,6 +347,58 @@ body {
   font-size: var(--font-size-lg);
   color: var(--text-secondary);
   margin: 0;
+}
+
+/* Provider Type Toggle */
+.provider-type-toggle {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+  margin: var(--spacing-2xl) 0;
+  flex-wrap: wrap;
+}
+
+.provider-type-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+}
+
+.provider-type-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.provider-type-btn.active {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border-color: var(--primary-color);
+  color: white;
+  box-shadow: 0 4px 12px rgba(10, 186, 181, 0.3);
+}
+
+.provider-type-btn.active:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(10, 186, 181, 0.4);
+}
+
+.provider-type-btn i {
+  font-size: var(--font-size-lg);
+}
+
+.provider-type-btn span {
+  white-space: nowrap;
 }
 
 .providers-grid {
@@ -621,6 +794,16 @@ body {
   
   .mobile-menu.active {
     display: block;
+  }
+  
+  .provider-type-toggle {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .provider-type-btn {
+    width: 100%;
+    justify-content: center;
   }
   
   .hero-banner {

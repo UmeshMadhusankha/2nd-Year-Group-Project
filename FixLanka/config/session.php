@@ -19,4 +19,3 @@ function getUserData() {
     }
     return null;
 }
-?>

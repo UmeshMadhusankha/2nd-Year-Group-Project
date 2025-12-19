@@ -143,6 +143,7 @@ let currentPage = 0;
 const itemsPerPage = 6;
 let isLoading = false;
 let allProvidersLoaded = false;
+let currentProviderType = 'all'; // Track selected provider type
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -220,23 +221,111 @@ function initializeSearchForm() {
         searchForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const service = document.getElementById('serviceSelect').value;
-            const rating = document.getElementById('ratingSelect').value;
-            const location = document.getElementById('locationInput').value;
-            
-            // Simulate search functionality
-            console.log('Search submitted:', { service, rating, location });
-            
-            // Show loading state
-            showSearchLoading();
-            
-            // Simulate API call delay
-            setTimeout(() => {
-                hideSearchLoading();
-                filterProviders({ service, rating, location });
-            }, 1000);
+            // Apply filters (will reload providers)
+            filterProviders();
+            updateActiveFilters();
         });
+        
+        // Also trigger filter on dropdown change
+        const filterInputs = ['serviceSelect', 'ratingSelect', 'districtSelect'];
+        filterInputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.addEventListener('change', function() {
+                    filterProviders();
+                    updateActiveFilters();
+                });
+            }
+        });
+        
+        // Clear filters button
+        const clearBtn = document.getElementById('clearFiltersBtn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                clearAllFilters();
+            });
+        }
     }
+}
+
+// Update active filters display
+function updateActiveFilters() {
+    const activeFiltersDiv = document.getElementById('activeFilters');
+    const filterTagsDiv = document.getElementById('filterTags');
+    
+    if (!activeFiltersDiv || !filterTagsDiv) return;
+    
+    const service = document.getElementById('serviceSelect');
+    const rating = document.getElementById('ratingSelect');
+    const district = document.getElementById('districtSelect');
+    
+    let hasFilters = false;
+    filterTagsDiv.innerHTML = '';
+    
+    // Add service tag
+    if (service && service.value) {
+        hasFilters = true;
+        const tag = createFilterTag('Service', service.options[service.selectedIndex].text, () => {
+            service.value = '';
+            filterProviders();
+            updateActiveFilters();
+        });
+        filterTagsDiv.appendChild(tag);
+    }
+    
+    // Add district tag
+    if (district && district.value) {
+        hasFilters = true;
+        const tag = createFilterTag('District', district.value, () => {
+            district.value = '';
+            filterProviders();
+            updateActiveFilters();
+        });
+        filterTagsDiv.appendChild(tag);
+    }
+    
+    // Add rating tag
+    if (rating && rating.value) {
+        hasFilters = true;
+        const tag = createFilterTag('Rating', rating.options[rating.selectedIndex].text, () => {
+            rating.value = '';
+            filterProviders();
+            updateActiveFilters();
+        });
+        filterTagsDiv.appendChild(tag);
+    }
+    
+    activeFiltersDiv.style.display = hasFilters ? 'flex' : 'none';
+}
+
+// Create filter tag element
+function createFilterTag(label, value, onRemove) {
+    const tag = document.createElement('span');
+    tag.className = 'filter-tag';
+    tag.innerHTML = `
+        <span class="filter-tag-label">${label}:</span>
+        <span class="filter-tag-value">${value}</span>
+        <button class="filter-tag-remove" aria-label="Remove filter">×</button>
+    `;
+    
+    const removeBtn = tag.querySelector('.filter-tag-remove');
+    removeBtn.addEventListener('click', onRemove);
+    
+    return tag;
+}
+
+// Clear all filters
+function clearAllFilters() {
+    const service = document.getElementById('serviceSelect');
+    const rating = document.getElementById('ratingSelect');
+    const district = document.getElementById('districtSelect');
+    
+    if (service) service.value = '';
+    if (rating) rating.value = '';
+    if (district) district.value = '';
+    
+    filterProviders();
+    updateActiveFilters();
 }
 
 // Search Loading States
@@ -251,21 +340,31 @@ function showSearchLoading() {
 function hideSearchLoading() {
     const searchBtn = document.querySelector('.search-btn');
     if (searchBtn) {
-        searchBtn.innerHTML = '<i class="fas fa-search"></i> Search';
+        searchBtn.innerHTML = '<i class="fas fa-filter"></i> Apply Filters';
         searchBtn.disabled = false;
     }
 }
 
 // Filter Providers - now uses real API
-async function filterProviders(filters) {
+async function filterProviders() {
     // Clear current grid and reset pagination
-    providersGrid.innerHTML = '';
+    if (providersGrid) {
+        providersGrid.innerHTML = '';
+    }
     currentPage = 0;
     allProvidersLoaded = false;
-    scrollTrigger.style.display = 'block';
+    if (scrollTrigger) {
+        scrollTrigger.style.display = 'block';
+    }
+    
+    // Show loading state
+    showSearchLoading();
     
     // Load filtered results from API
     await loadProviders(true);
+    
+    // Hide loading state
+    hideSearchLoading();
 }
 
 // Lazy Loading Functionality
@@ -300,10 +399,10 @@ async function loadProviders(isFiltered = false) {
     showLoading();
     
     try {
-        // Get filter values
+        // Get filter values from form
         const service = document.getElementById('serviceSelect')?.value || '';
         const rating = document.getElementById('ratingSelect')?.value || '';
-        const location = document.getElementById('locationInput')?.value || '';
+        const district = document.getElementById('districtSelect')?.value || '';
         
         // Build query parameters
         const params = new URLSearchParams({
@@ -311,12 +410,35 @@ async function loadProviders(isFiltered = false) {
             offset: currentPage * itemsPerPage
         });
         
+        // Add filters only if they have values
         if (service) params.append('category', service);
         if (rating) params.append('rating', rating);
-        if (location) params.append('location', location);
+        if (district) params.append('location', district);
+        
+        // Add provider type filter
+        if (currentProviderType && currentProviderType !== 'all') {
+            params.append('provider_type', currentProviderType);
+        }
+        
+        // Determine which endpoint to use
+        const endpoint = (service || rating || district || currentProviderType !== 'all') ? 'get-providers' : 'get-featured-providers';
+        
+        const apiUrl = `${API_BASE}/${endpoint}?${params.toString()}`;
+        console.log('========================================');
+        console.log('FETCHING FROM API');
+        console.log('URL:', apiUrl);
+        console.log('Parameters:', {
+            service,
+            rating,
+            district,
+            provider_type: currentProviderType,
+            limit: itemsPerPage,
+            offset: currentPage * itemsPerPage
+        });
+        console.log('========================================');
         
         // Fetch data from API
-        const response = await fetch(`${API_BASE}/get-featured-providers?${params.toString()}`);
+        const response = await fetch(apiUrl);
         
         if (!response.ok) {
             throw new Error('Failed to fetch providers');
@@ -324,33 +446,80 @@ async function loadProviders(isFiltered = false) {
         
         const result = await response.json();
         
+        console.log('========================================');
+        console.log('API RESPONSE RECEIVED');
+        console.log('========================================');
+        console.log('Full API Response:', result);
+        console.log('Success:', result.success);
+        console.log('Provider Type Filter Applied:', currentProviderType);
+        console.log('Total Providers Received:', result.data ? result.data.length : 0);
+        
         if (result.success && result.data) {
             const providers = result.data;
             
-            // Render providers with staggered animation
-            providers.forEach((provider, index) => {
-                setTimeout(() => {
-                    renderProviderCard(provider);
-                }, index * 100);
-            });
+            // Detailed provider type analysis
+            const companies = providers.filter(p => p.provider_type === 'company');
+            const individuals = providers.filter(p => p.provider_type === 'individual');
             
-            // Update pagination state
-            currentPage++;
+            console.log('----------------------------------------');
+            console.log('PROVIDER BREAKDOWN:');
+            console.log('Companies found:', companies.length);
+            console.log('Individuals found:', individuals.length);
+            console.log('----------------------------------------');
             
-            // Check if more providers are available
-            if (result.pagination) {
-                allProvidersLoaded = !result.pagination.hasMore;
-            } else if (providers.length < itemsPerPage) {
-                allProvidersLoaded = true;
+            if (companies.length > 0) {
+                console.log('Company Details:');
+                companies.forEach((c, idx) => {
+                    console.log(`  ${idx + 1}. ${c.full_name || c.name} (ID: ${c.company_id}, Rating: ${c.ratings})`);
+                });
             }
             
-            if (allProvidersLoaded) {
+            if (individuals.length > 0) {
+                console.log('Individual Details:');
+                individuals.forEach((i, idx) => {
+                    console.log(`  ${idx + 1}. ${i.full_name || i.name} (ID: ${i.repairer_id}, Rating: ${i.ratings})`);
+                });
+            }
+            
+            console.log('========================================');
+            
+            // Check if no results
+            if (providers.length === 0 && currentPage === 0) {
+                console.log('No providers found for current filters');
+                showNoResults();
+                allProvidersLoaded = true;
                 scrollTrigger.style.display = 'none';
+            } else {
+                // Hide no results message if it was showing
+                hideNoResults();
+                
+                // Render providers with staggered animation
+                providers.forEach((provider, index) => {
+                    setTimeout(() => {
+                        renderProviderCard(provider);
+                    }, index * 100);
+                });
+                
+                // Update pagination state
+                currentPage++;
+                
+                // Check if more providers are available
+                if (result.pagination) {
+                    allProvidersLoaded = !result.pagination.hasMore;
+                } else if (providers.length < itemsPerPage) {
+                    allProvidersLoaded = true;
+                }
+                
+                if (allProvidersLoaded) {
+                    scrollTrigger.style.display = 'none';
+                }
             }
         } else {
             console.error('No providers found or invalid response');
-            // Fallback to sample data if API fails
-            loadSampleProviders();
+            // Show no results if first page
+            if (currentPage === 0) {
+                showNoResults();
+            }
         }
         
     } catch (error) {
@@ -398,8 +567,43 @@ function hideLoading() {
     }
 }
 
+// Show No Results Message
+function showNoResults() {
+    if (!providersGrid) return;
+    
+    const noResultsDiv = document.createElement('div');
+    noResultsDiv.id = 'noResultsMessage';
+    noResultsDiv.className = 'no-results';
+    noResultsDiv.innerHTML = `
+        <div class="no-results-icon">
+            <i class="fas fa-search"></i>
+        </div>
+        <h3>No Providers Found</h3>
+        <p>We couldn't find any providers matching your criteria.</p>
+        <p>Try adjusting your filters or clearing them to see all providers.</p>
+        <button class="btn-primary" onclick="clearAllFilters()">Clear All Filters</button>
+    `;
+    
+    providersGrid.appendChild(noResultsDiv);
+}
+
+// Hide No Results Message
+function hideNoResults() {
+    const noResultsMsg = document.getElementById('noResultsMessage');
+    if (noResultsMsg) {
+        noResultsMsg.remove();
+    }
+}
+
 // Render Provider Card
 function renderProviderCard(provider) {
+    // Debug logging for each provider
+    console.log('=== Rendering Provider Card ===');
+    console.log('Provider Type:', provider.provider_type);
+    console.log('Provider Name:', provider.full_name || provider.name);
+    console.log('Provider ID:', provider.repairer_id || provider.company_id);
+    console.log('Full Provider Data:', provider);
+    
     const card = document.createElement('div');
     card.className = 'provider-card';
     card.style.animationDelay = '0s'; // Reset animation delay
@@ -599,26 +803,28 @@ window.addEventListener('scroll', function() {
     }
 });
 
-// Form Validation Enhancement
-function validateSearchForm() {
-    const location = document.getElementById('locationInput').value.trim();
+// Provider Type Filter Function
+function filterByProviderType(type, buttonElement) {
+    // Update current provider type
+    currentProviderType = type;
     
-    if (location.length < 3) {
-        alert('Please enter a valid location (at least 3 characters)');
-        return false;
+    // Update button active states
+    const allButtons = document.querySelectorAll('.provider-type-btn');
+    allButtons.forEach(btn => btn.classList.remove('active'));
+    buttonElement.classList.add('active');
+    
+    // Clear current providers and reset pagination
+    if (providersGrid) {
+        providersGrid.innerHTML = '';
+    }
+    currentPage = 0;
+    allProvidersLoaded = false;
+    if (scrollTrigger) {
+        scrollTrigger.style.display = 'block';
     }
     
-    return true;
-}
-
-// Add form validation to search form
-if (searchForm) {
-    searchForm.addEventListener('submit', function(e) {
-        if (!validateSearchForm()) {
-            e.preventDefault();
-            return false;
-        }
-    });
+    // Reload providers with new filter
+    loadProviders(true);
 }
 
 // Console log for debugging

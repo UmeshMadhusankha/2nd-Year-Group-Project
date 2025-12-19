@@ -1,0 +1,76 @@
+/* Finance specific styles */
+.finance-container {
+  display: flex;
+  height: 100vh;
+}
+
+.finance-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.finance-content {
+  flex: 1;
+  overflow: auto;
+  padding: 1.5rem;
+}
+
+.revenue-breakdown {
+  background-color: var(--card);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 (0 0 0 / 0.1);
+  border: 1px solid var(--border);
+}
+
+.revenue-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.revenue-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.progress-bar {
+  width: 100%;
+  background-color: var(--muted);
+  border-radius: 9999px;
+  height: 0.5rem;
+}
+
+.progress-fill {
+  background-color: var(--fixlanka-primary);
+  height: 0.5rem;
+  border-radius: 9999px;
+}
+
+.commission-structure {
+  background-color: var(--card);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 (0 0 0 / 0.1);
+  border: 1px solid var(--border);
+}
+
+.commission-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.transactions-table {
+  background-color: var(--card);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 (0 0 0 / 0.1);
+  border: 1px solid var(--border);
+}
+
+.transaction-type {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}

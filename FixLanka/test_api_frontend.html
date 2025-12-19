@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Job Requests API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Job Requests API Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="testAPI()">Test API</button>
+        <button onclick="testWithFilters()">Test with Filters</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Results</h2>
+        <div id="results"></div>
+    </div>
+    
+    <script>
+        const API_URL = '/2nd-Year-Group-Project/FixLanka/api/job-requests.php';
+        const resultsDiv = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const p = document.createElement('p');
+            p.className = type;
+            p.textContent = message;
+            resultsDiv.appendChild(p);
+        }
+        
+        function logJSON(label, data) {
+            const div = document.createElement('div');
+            div.innerHTML = `<strong>${label}:</strong>`;
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify(data, null, 2);
+            div.appendChild(pre);
+            resultsDiv.appendChild(div);
+        }
+        
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+        
+        async function testAPI() {
+            clearResults();
+            log('Testing API endpoint...', 'info');
+            log('URL: ' + API_URL, 'info');
+            
+            try {
+                log('Sending request...', 'info');
+                const response = await fetch(API_URL);
+                
+                log(`Response status: ${response.status} ${response.statusText}`, 
+                    response.ok ? 'success' : 'error');
+                
+                const contentType = response.headers.get('content-type');
+                log(`Content-Type: ${contentType}`, 'info');
+                
+                const text = await response.text();
+                log(`Response length: ${text.length} characters`, 'info');
+                
+                try {
+                    const data = JSON.parse(text);
+                    logJSON('Parsed Response', data);
+                    
+                    if (data.success) {
+                        log(`✅ SUCCESS! Found ${data.count} jobs`, 'success');
+                        if (data.data && data.data.length > 0) {
+                            logJSON('First Job', data.data[0]);
+                        }
+                    } else {
+                        log(`❌ API returned error: ${data.error}`, 'error');
+                        if (data.details) {
+                            logJSON('Error Details', data.details);
+                        }
+                    }
+                } catch (parseError) {
+                    log('❌ Failed to parse JSON response', 'error');
+                    log('Raw response:', 'info');
+                    const pre = document.createElement('pre');
+                    pre.textContent = text;
+                    resultsDiv.appendChild(pre);
+                }
+                
+            } catch (error) {
+                log(`❌ Fetch error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+        
+        async function testWithFilters() {
+            clearResults();
+            log('Testing API with filters...', 'info');
+            
+            const url = `${API_URL}?service_provider_type=individual&sort=newest`;
+            log('URL: ' + url, 'info');
+            
+            try {
+                const response = await fetch(url);
+                log(`Response status: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                logJSON('Response', data);
+                
+                if (data.success) {
+                    log(`✅ SUCCESS! Found ${data.count} jobs`, 'success');
+                } else {
+                    log(`❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-run test on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log('Running automatic test...', 'info');
+                testAPI();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/databse.php';
+require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/RepairerModel.php';
 require_once __DIR__ . '/../models/CompanyModel.php';
 
@@ -18,6 +18,10 @@ class ProviderController {
      * Returns JSON response
      */
     public function getProviders() {
+        // Ensure no prior output (BOM, debug, accidental echoes) breaks JSON
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         header('Content-Type: application/json');
         
         try {
@@ -47,12 +51,15 @@ class ProviderController {
             // Fetch repairers if needed
             if ($providerType === 'all' || $providerType === 'individual') {
                 $repairers = $this->repairerModel->getAll($filters, $limit, $offset);
+                error_log("Fetched " . count($repairers) . " repairers");
                 $providers = array_merge($providers, $repairers);
             }
             
             // Fetch companies if needed
             if ($providerType === 'all' || $providerType === 'company') {
                 $companies = $this->companyModel->getAll($filters, $limit, $offset);
+                error_log("Fetched " . count($companies) . " companies");
+                error_log("Provider type filter: " . $providerType);
                 $providers = array_merge($providers, $companies);
             }
             
@@ -96,6 +103,10 @@ class ProviderController {
      * Get featured providers for landing page
      */
     public function getFeatured() {
+        // Ensure no prior output (BOM, debug, accidental echoes) breaks JSON
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         header('Content-Type: application/json');
         
         try {
@@ -136,6 +147,10 @@ class ProviderController {
      * Get single provider details
      */
     public function getProviderDetails() {
+        // Ensure no prior output (BOM, debug, accidental echoes) breaks JSON
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         header('Content-Type: application/json');
         
         try {
@@ -181,4 +196,3 @@ class ProviderController {
         exit;
     }
 }
-?>
