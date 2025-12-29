@@ -1,4 +1,4 @@
-const tabButtons = document.querySelectorAll('.tab-button');
+﻿const tabButtons = document.querySelectorAll('.tab-button');
 const tabContents = document.querySelectorAll('.tab-content');
 const viewButtons = document.querySelectorAll('.view-btn');
 const quotationModal = document.getElementById('quotation-modal');
@@ -146,21 +146,21 @@ function loadMockQuotations() {
     if (quotations.length === 0) {
         quotations = mockQuotations;
         localStorage.setItem('quotations', JSON.stringify(quotations));
-        console.log('✅ Mock quotations loaded:', quotations.length, 'quotations');
-        console.log('%c🎯 Quotation Testing Commands', 'color: #667eea; font-size: 14px; font-weight: bold;');
-        console.log('%cView all quotations:', 'color: #888; font-weight: bold;');
-        console.log('  quotations');
-        console.log('%cAccept a quotation:', 'color: #888; font-weight: bold;');
-        console.log('  simulateAcceptQuotation("QUOT-1729670400000")');
-        console.log('%cClear all data:', 'color: #888; font-weight: bold;');
-        console.log('  clearAllQuotations()');
-        console.log('%cReload mock data:', 'color: #888; font-weight: bold;');
-        console.log('  reloadMockData()');
-        console.log('%cView localStorage:', 'color: #888; font-weight: bold;');
-        console.log('  JSON.parse(localStorage.getItem("quotations"))');
+        
+        
+        
+        
+        
+        ');
+        
+        ');
+        
+        ');
+        
+        )');
     } else {
-        console.log('ℹ️ Using existing quotations:', quotations.length, 'quotations');
-        console.log('%cTip: Type "reloadMockData()" to restore default mock data', 'color: #888; font-style: italic;');
+        
+        " to restore default mock data', 'color: #888; font-style: italic;');
     }
 }
 
@@ -367,7 +367,7 @@ function openQuotationModal(requestId) {
             <div>
                 <h4 style="margin: 0 0 var(--spacing-xs) 0; color: var(--text-primary);">${requestInfo.title}</h4>
                 <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
-                    Request #${requestId} • ${requestInfo.customer} • ${requestInfo.category}
+                    Request #${requestId} â€¢ ${requestInfo.customer} â€¢ ${requestInfo.category}
                 </p>
             </div>
             <span class="badge" style="background: var(--primary-color); color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
@@ -536,7 +536,6 @@ function submitQuotation() {
     
     // Simulate API call
     setTimeout(() => {
-        console.log('Quotation Data:', quotationData);
         
         // Save to localStorage (will be replaced with database later)
         if (editingQuotationId) {
@@ -603,7 +602,7 @@ function loadQuotationsToLogs() {
                 <div class="log-item-content">
                     <h4 class="log-item-title">${q.title}</h4>
                     <p class="log-item-meta">
-                        Quotation #${q.quotation_id.split('-')[1]} • ${q.request_id} • LKR ${formatCurrency(q.total_price)}
+                        Quotation #${q.quotation_id.split('-')[1]} â€¢ ${q.request_id} â€¢ LKR ${formatCurrency(q.total_price)}
                     </p>
                     <p class="log-item-meta" style="margin-top: 4px; font-size: 0.85em;">
                         <i class="fas fa-calendar"></i> ${new Date(q.estimated_start_date).toLocaleDateString()} - ${new Date(q.estimated_completion_date).toLocaleDateString()}
@@ -642,7 +641,7 @@ function loadQuotationsToLogs() {
                 <div class="log-item-content">
                     <h4 class="log-item-title">${q.title}</h4>
                     <p class="log-item-meta">
-                        Quotation #${q.quotation_id.split('-')[1]} • ${q.request_id} • LKR ${formatCurrency(q.total_price)}
+                        Quotation #${q.quotation_id.split('-')[1]} â€¢ ${q.request_id} â€¢ LKR ${formatCurrency(q.total_price)}
                     </p>
                     <p class="log-item-meta" style="margin-top: 4px; font-size: 0.85em; color: var(--success-color);">
                         <i class="fas fa-check"></i> Accepted by customer
@@ -691,7 +690,7 @@ function editQuotation(quotationId) {
             <div>
                 <h4 style="margin: 0 0 var(--spacing-xs) 0; color: var(--text-primary);">${quotation.title}</h4>
                 <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
-                    Quotation #${quotation.quotation_id.split('-')[1]} • ${quotation.request_id}
+                    Quotation #${quotation.quotation_id.split('-')[1]} â€¢ ${quotation.request_id}
                 </p>
             </div>
             <span class="badge" style="background: var(--warning-color); color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
@@ -768,32 +767,31 @@ function viewQuotationDetails(quotationId) {
     
     // You can create a view modal or show details in the existing modal
     // For now, log to console and show an alert
-    console.log('Quotation Details:', quotation);
     
     const details = `
 Quotation Details:
-─────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 Title: ${quotation.title}
 Request ID: ${quotation.request_id}
 Status: ${quotation.status.toUpperCase()}
 
 Cost Breakdown:
-• Labor: LKR ${formatCurrency(quotation.labor_cost)}
-• Material: LKR ${formatCurrency(quotation.material_cost)}
-• Transport: LKR ${formatCurrency(quotation.transport_cost)}
-• Other: LKR ${formatCurrency(quotation.other_cost)}
-─────────────────────────────────
+â€¢ Labor: LKR ${formatCurrency(quotation.labor_cost)}
+â€¢ Material: LKR ${formatCurrency(quotation.material_cost)}
+â€¢ Transport: LKR ${formatCurrency(quotation.transport_cost)}
+â€¢ Other: LKR ${formatCurrency(quotation.other_cost)}
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 Total: LKR ${formatCurrency(quotation.total_price)}
 
 Timeline:
-• Start Date: ${new Date(quotation.estimated_start_date).toLocaleDateString()}
-• Completion: ${new Date(quotation.estimated_completion_date).toLocaleDateString()}
-• Duration: ${quotation.estimated_duration} days
+â€¢ Start Date: ${new Date(quotation.estimated_start_date).toLocaleDateString()}
+â€¢ Completion: ${new Date(quotation.estimated_completion_date).toLocaleDateString()}
+â€¢ Duration: ${quotation.estimated_duration} days
 
 Terms:
-• Payment: ${quotation.payment_terms}
-• Warranty: ${quotation.warranty_period}
-• Valid for: ${quotation.validity_period} days
+â€¢ Payment: ${quotation.payment_terms}
+â€¢ Warranty: ${quotation.warranty_period}
+â€¢ Valid for: ${quotation.validity_period} days
 
 Submitted: ${new Date(quotation.submitted_at).toLocaleString()}
     `;
@@ -816,12 +814,12 @@ function simulateAcceptQuotation(quotationId) {
 
 // Clear all quotations from localStorage
 function clearAllQuotations() {
-    if (confirm('⚠️ This will delete ALL quotations (including mock data).\n\nAre you sure you want to continue?\n\nYou can reload the page to restore mock data.')) {
+    if (confirm('âš ï¸ This will delete ALL quotations (including mock data).\n\nAre you sure you want to continue?\n\nYou can reload the page to restore mock data.')) {
         localStorage.removeItem('quotations');
         quotations = [];
         loadQuotationsToLogs();
         showNotification('All quotations cleared! Refresh page to reload mock data.', 'success');
-        console.log('🗑️ All quotations cleared from localStorage');
+        
     }
 }
 
@@ -832,7 +830,7 @@ function reloadMockData() {
     loadMockQuotations();
     loadQuotationsToLogs();
     showNotification('Mock data reloaded successfully!', 'success');
-    console.log('🔄 Mock data reloaded');
+    
 }
 
 function closeAllModals() {

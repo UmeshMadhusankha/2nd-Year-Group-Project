@@ -1,0 +1,85 @@
+﻿SAFE CODE CLEANUP REPORT
+Date: 2025-12-26 21:48:30
+Backup: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\backup_2025-12-26_214830
+
+[OK] common.js - Removed 5 console.log statements
+[OK] common.js - Removed 7 console.log statements
+[SKIP] dropdown.js - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[SKIP] notification-system.js - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[SKIP] advertisements-dynamic.js - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[OK] advertisements-filters.js - Removed 5 console.log statements
+[OK] contracts-enhanced.js - Removed 11 console.log statements
+[SKIP] dashboard-data.js - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[OK] dashboard.js - Removed 7 console.log statements
+[SKIP] export-module.js - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[SKIP] feedback.js - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[SKIP] job-postings-db.js - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[SKIP] job-posts.js - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[SKIP] page-title-manager.js - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[SKIP] payments-export.js - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[OK] payments_layout.js - Removed 3 console.log statements
+[OK] projects-db.js - Removed 3 console.log statements
+[OK] projects.js - Removed 5 console.log statements
+[OK] repair-requests-db.js - Removed 34 console.log statements
+[OK] repair-requests.js - Removed 18 console.log statements
+[OK] settings.js - Removed 1 console.log statements
+[OK] topbar.js - Removed 20 console.log statements
+[SKIP] workforce-db.js - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[OK] crud.js - Removed 30 console.log statements
+[OK] notifications.js - Removed 1 console.log statements
+[SKIP] applications.js - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[OK] available-jobs.js - Removed 17 console.log statements
+[OK] earnings.js - Removed 9 console.log statements
+[OK] edit-quote.js - Removed 15 console.log statements
+[OK] jobs.js - Removed 6 console.log statements
+[OK] my-jobs.js - Removed 9 console.log statements
+[OK] reviews.js - Removed 11 console.log statements
+[OK] settings.js - Removed 3 console.log statements
+[OK] submit-quote.js - Removed 1 console.log statements
+[OK] upgrade.js - Removed 9 console.log statements
+[OK] common.js - Removed 7 console.log statements
+[OK] job-history.js - Removed 3 console.log statements
+[OK] landing.js - Removed 7 console.log statements
+[OK] payment.js - Removed 1 console.log statements
+[OK] post_job.js - Removed 1 console.log statements
+[OK] provider.js - Removed 6 console.log statements
+[OK] support.js - Removed 2 console.log statements
+[SKIP] company-dashboard.php - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[OK] company-quotes.php - Removed 7 error_log statements
+[SKIP] debug-session.php - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+[OK] repairer-quotes.php - Removed 3 error_log statements
+[SKIP] workforce.php - Exception calling "Matches" with "2" argument(s): "Value cannot be null.
+Parameter name: input"
+
+===================================================
+CLEANUP SUMMARY
+===================================================
+
+JavaScript Files Cleaned:     30
+PHP Files Cleaned:            2
+Total console.log removed:    257
+Total error_log removed:      10
+
+PRESERVED:
+- All business logic
+- All meaningful comments
+- All error handling in catch blocks
+- All console.error and console.warn
+- All production error_log statements
+
+BACKUP: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\backup_2025-12-26_214830
+

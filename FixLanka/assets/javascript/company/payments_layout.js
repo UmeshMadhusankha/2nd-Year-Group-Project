@@ -1,4 +1,4 @@
-/* ====================================
+﻿/* ====================================
    Side-by-Side Layout JavaScript
    ==================================== */
 
@@ -672,11 +672,11 @@ function deleteExpense(expenseId) {
 
 // Sorting functions (stubs)
 function sortIncomeTable(field) {
-    console.log('Sorting income by:', field);
+    
 }
 
 function sortExpenseTable(field) {
-    console.log('Sorting expenses by:', field);
+    
 }
 
 // Export functions (stubs)
@@ -693,7 +693,7 @@ function refreshData() {
 
 function updatePeriod() {
     const period = document.getElementById('period-select').value;
-    console.log('Period changed to:', period);
+    
 }
 
 // Utility functions
@@ -835,9 +835,9 @@ function viewInvoice(paymentId) {
                 <div class="footer-grid">
                     <div class="footer-section">
                         <h6>Payment Terms:</h6>
-                        <p>• Payment is due within 14 days of invoice date</p>
-                        <p>• Late payments may incur additional charges</p>
-                        <p>• Please reference invoice number in payment</p>
+                        <p>â€¢ Payment is due within 14 days of invoice date</p>
+                        <p>â€¢ Late payments may incur additional charges</p>
+                        <p>â€¢ Please reference invoice number in payment</p>
                     </div>
                     <div class="footer-section">
                         <h6>Contact Information:</h6>

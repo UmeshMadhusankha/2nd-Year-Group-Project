@@ -1,4 +1,4 @@
-// FixLanka Projects Page JavaScript
+﻿// FixLanka Projects Page JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     
     // View Toggle (Table/Card)
@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
     editableElements.forEach(element => {
         element.addEventListener('blur', function() {
             // Save changes (implement your save logic)
-            console.log('Saving:', this.textContent);
+            
         });
         
         element.addEventListener('keypress', function(e) {
@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <i class="${iconClass} file-icon"></i>
             <div class="file-info">
                 <div class="file-name">${file.name}</div>
-                <div class="file-meta">${fileSize} • Uploaded ${uploadDate}</div>
+                <div class="file-meta">${fileSize} â€¢ Uploaded ${uploadDate}</div>
             </div>
             <button class="download-btn"><i class="fas fa-download"></i></button>
         `;
@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function applyFilters() {
         // Implement your filtering logic here
-        console.log('Applying filters...');
+        
     }
     
     // Initialize smooth transitions
@@ -596,7 +596,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function applyDateFilter(startDate, endDate) {
         // Implement your date filtering logic here
-        console.log('Applying date filter:', startDate, 'to', endDate);
         
         // Example: Filter projects based on date range
         const projects = document.querySelectorAll('.project-row, .project-card');
@@ -609,7 +608,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function clearDateFilter() {
         // Clear date filters and show all projects
-        console.log('Clearing date filter');
         
         const projects = document.querySelectorAll('.project-row, .project-card');
         projects.forEach(project => {
@@ -680,7 +678,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <!-- Milestone Status Updates with Verification -->
                         <div class="form-divider">
                             <h4><i class="fas fa-tasks"></i> Milestone & Payment Tracking</h4>
-                            <p class="helper-text">⚠️ Customer must verify completion before payment release</p>
+                            <p class="helper-text">âš ï¸ Customer must verify completion before payment release</p>
                         </div>
 
                         ${projectData.milestones.map((milestone, index) => `
@@ -700,10 +698,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </div>
                                     <div class="form-group milestone-status-select">
                                         <select name="milestone_${index}_status" onchange="handleMilestoneStatusChange(${index}, this.value)">
-                                            <option value="pending">⏳ Not Started</option>
-                                            <option value="active">🔄 In Progress</option>
-                                            <option value="review">📋 Pending Customer Review</option>
-                                            <option value="completed" disabled>✅ Verified & Complete</option>
+                                            <option value="pending">â³ Not Started</option>
+                                            <option value="active">ðŸ”„ In Progress</option>
+                                            <option value="review">ðŸ“‹ Pending Customer Review</option>
+                                            <option value="completed" disabled>âœ… Verified & Complete</option>
                                         </select>
                                     </div>
                                 </div>
@@ -720,9 +718,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="form-group">
                                         <label>Completion Evidence/Documentation (Required)</label>
                                         <textarea name="milestone_${index}_evidence" rows="3" placeholder="Describe completed work:
-• What was done?
-• Any photos/documentation?
-• Ready for customer inspection?" required></textarea>
+â€¢ What was done?
+â€¢ Any photos/documentation?
+â€¢ Ready for customer inspection?" required></textarea>
                                     </div>
                                     <div class="notification-preview">
                                         <i class="fas fa-bell"></i>
@@ -1001,20 +999,19 @@ document.addEventListener('DOMContentLoaded', function() {
             projectData.milestones.push(milestoneData);
         });
         
-        console.log('Updating project with customer verification workflow:', projectData);
         
         // Show what will happen
-        let notificationMessage = `✅ Project status updated successfully!\n\n`;
-        notificationMessage += `📊 Progress: ${calculatedProgress}%\n`;
-        notificationMessage += `📋 Status: ${projectData.status}\n\n`;
+        let notificationMessage = `âœ… Project status updated successfully!\n\n`;
+        notificationMessage += `ðŸ“Š Progress: ${calculatedProgress}%\n`;
+        notificationMessage += `ðŸ“‹ Status: ${projectData.status}\n\n`;
         
         if (projectData.customerNotifications.length > 0) {
-            notificationMessage += `🔔 Customer Notifications:\n`;
+            notificationMessage += `ðŸ”” Customer Notifications:\n`;
             projectData.customerNotifications.forEach(notif => {
-                notificationMessage += `  • ${notif.milestoneTitle} - Pending customer approval\n`;
+                notificationMessage += `  â€¢ ${notif.milestoneTitle} - Pending customer approval\n`;
             });
-            notificationMessage += `\n📧 Customer will be notified via Email & SMS\n`;
-            notificationMessage += `💰 Payment will auto-release upon approval\n`;
+            notificationMessage += `\nðŸ“§ Customer will be notified via Email & SMS\n`;
+            notificationMessage += `ðŸ’° Payment will auto-release upon approval\n`;
         }
         
         // TODO: Send to backend API
@@ -1438,7 +1435,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </head>
             <body>
                 <div class="header">
-                    <h1>🔧 FixLanka Projects Report</h1>
+                    <h1>ðŸ”§ FixLanka Projects Report</h1>
                     <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
                     <p>Total Projects: ${projectData.length}</p>
                 </div>
@@ -1495,7 +1492,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </table>
                 
                 <div class="footer">
-                    <p>© ${new Date().getFullYear()} FixLanka - Project Management System</p>
+                    <p>Â© ${new Date().getFullYear()} FixLanka - Project Management System</p>
                     <p>This is an automated report. For queries, contact your administrator.</p>
                 </div>
                 

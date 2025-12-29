@@ -1,4 +1,4 @@
-// Settings page functionality
+﻿// Settings page functionality
 document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize all features when page loads
@@ -647,7 +647,7 @@ function enableAutoSave() {
                 localStorage.setItem(`settings_${fieldName}`, value);
                 
                 // In a real application, you would send this to the server
-                console.log(`Auto-saved: ${fieldName} = ${value}`);
+                
             }, 2000);
         });
     });

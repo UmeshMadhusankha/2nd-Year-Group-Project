@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Company Repair Requests Page JavaScript
  * 
  * Handles all functionality for the company repair requests page including:
@@ -35,6 +35,12 @@ let availableRequests = [];
 let submittedQuotations = [];
 
 /**
+ * Company default settings for auto-filling quotations
+ * @type {Object|null}
+ */
+let companyDefaults = null;
+
+/**
  * ID of quotation currently being edited (null if creating new)
  * @type {number|null}
  */
@@ -55,8 +61,7 @@ let requestDetailsModal;
  * Initialize page when DOM is fully loaded
  * Sets up event listeners, loads data, and initializes UI components
  */
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded - Initializing page...');
+document.addEventListener('DOMContentLoaded', function () {
     
     // Validate user authentication
     if (!currentCompanyId) {
@@ -64,15 +69,13 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('User not authenticated. Please login.', 'error');
         return;
     }
-    
-    console.log('Current Company ID:', currentCompanyId);
+
     
     // Get DOM elements after DOM is ready
     quotationModal = document.getElementById('quotation-modal');
     quotationForm = document.getElementById('quotation-form');
     requestDetailsModal = document.getElementById('request-details-modal');
-    
-    console.log('Modal elements:', { quotationModal, quotationForm, requestDetailsModal });
+
     
     initializeTabs();
     initializeViewToggle();
@@ -80,9 +83,12 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeModal();
     initializeCostCalculator();
     initializeDateValidation();
-    
+
+    // Load company defaults for auto-filling
+    loadCompanyDefaults();
+
     // Load initial data from API
-    console.log('Starting to load data...');
+    
     loadAvailableRequests();
     loadSubmittedQuotations();
 });
@@ -101,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadAvailableRequests() {
     try {
         const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/job-requests.php?status=pending');
-        
+
         // Check for HTTP errors
         if (!response.ok) {
             const errorText = await response.text();
@@ -109,9 +115,9 @@ async function loadAvailableRequests() {
             showToast(`Server Error (${response.status}): ${errorText.substring(0, 200)}`, 'error');
             return;
         }
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
             availableRequests = result.data || [];
             renderAvailableRequests();
@@ -134,9 +140,9 @@ async function loadAvailableRequests() {
  */
 async function loadSubmittedQuotations() {
     try {
-        console.log('Loading submitted quotations for user_id:', currentCompanyId);
-        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?user_id=${currentCompanyId}`);
         
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?user_id=${currentCompanyId}`);
+
         // Check for HTTP errors
         if (!response.ok) {
             const errorText = await response.text();
@@ -144,15 +150,14 @@ async function loadSubmittedQuotations() {
             showToast(`Server Error (${response.status}): ${errorText.substring(0, 200)}`, 'error');
             return;
         }
-        
+
         const result = await response.json();
+
         
-        console.log('Quotations API response:', result);
-        console.log('Number of quotations:', result.data?.length || 0);
         
         if (result.success) {
             submittedQuotations = result.data || [];
-            console.log('Submitted quotations loaded:', submittedQuotations);
+            
             renderSubmittedQuotations();
             updateQuotationCounts();
         } else {
@@ -161,6 +166,35 @@ async function loadSubmittedQuotations() {
     } catch (error) {
         console.error('Error loading quotations:', error);
         showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Load company default settings for auto-filling quotations
+ * Fetches default payment terms, warranty, terms template, etc.
+ * 
+ * @async
+ * @returns {Promise<void>}
+ */
+async function loadCompanyDefaults() {
+    try {
+        
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-defaults.php?user_id=${currentCompanyId}`);
+
+        if (!response.ok) {
+            console.warn('Could not load company defaults, will use system defaults');
+            return;
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+            companyDefaults = result.data;
+            
+        }
+    } catch (error) {
+        console.warn('Error loading company defaults:', error);
+        // Continue without defaults - not critical
     }
 }
 
@@ -173,7 +207,7 @@ async function loadSubmittedQuotations() {
  */
 function renderAvailableRequests() {
     const container = document.querySelector('.requests-grid');
-    
+
     if (!availableRequests || availableRequests.length === 0) {
         container.innerHTML = `
             <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 3rem;">
@@ -183,7 +217,7 @@ function renderAvailableRequests() {
         `;
         return;
     }
-    
+
     container.innerHTML = availableRequests.map(request => createRequestCard(request)).join('');
 }
 
@@ -196,9 +230,26 @@ function createRequestCard(request) {
     const initials = getInitials(request.customer_fname, request.customer_lname);
     const datePosted = formatTimeAgo(request.dateCreated);
     const hasAttachments = request.photos && request.photos.length > 0;
+
+    // Calculate days until expiry
+    const deadline = new Date(request.finish_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    deadline.setHours(0, 0, 0, 0);
+    const daysUntilExpiry = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
     
+    // Determine if expiring soon (within 3 days)
+    const isExpiringSoon = daysUntilExpiry > 0 && daysUntilExpiry <= 3;
+    const expiryWarning = isExpiringSoon 
+        ? `<div class="expiry-warning">
+               <i class="fas fa-exclamation-triangle"></i>
+               Expires in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}!
+           </div>`
+        : '';
+
     return `
-        <article class="request-card">
+        <article class="request-card ${isExpiringSoon ? 'expiring-soon' : ''}">
+            ${expiryWarning}
             <div class="card-header">
                 <div>
                     <h3 class="request-title">${escapeHtml(request.title)}</h3>
@@ -264,66 +315,49 @@ function createRequestCard(request) {
  * Render submitted quotations in logs tab
  */
 function renderSubmittedQuotations() {
-    console.log('=== Rendering submitted quotations ===');
-    console.log('Total quotations to render:', submittedQuotations.length);
+    
     
     const pendingList = document.getElementById('pending-quotations-list');
     const acceptedList = document.getElementById('accepted-quotations-list');
     const rejectedList = document.getElementById('rejected-quotations-list');
     const successfulList = document.getElementById('successful-contracts-list');
     const draftList = document.getElementById('draft-quotations-list');
-    
+
     const pendingCount = document.getElementById('pending-quotations-count');
     const acceptedCount = document.getElementById('accepted-quotations-count');
     const rejectedCount = document.getElementById('rejected-quotations-count');
     const successfulCount = document.getElementById('successful-contracts-count');
     const draftCount = document.getElementById('draft-quotations-count');
-    
-    console.log('DOM Elements Check:', {
-        pendingList: !!pendingList,
-        acceptedList: !!acceptedList,
-        rejectedList: !!rejectedList,
-        successfulList: !!successfulList,
-        draftList: !!draftList,
-        pendingCount: !!pendingCount,
-        acceptedCount: !!acceptedCount
-    });
+
     
     if (!pendingList) {
         console.error('CRITICAL: pending-quotations-list element not found!');
         return;
     }
-    
+
     const pending = submittedQuotations.filter(q => q.status === 'pending');
     const accepted = submittedQuotations.filter(q => q.status === 'accepted');
     const rejected = submittedQuotations.filter(q => q.status === 'rejected');
     const successful = submittedQuotations.filter(q => q.status === 'successful');
     const draft = []; // Draft quotations would need separate handling
-    
-    console.log('Quotations by status:', {
-        pending: pending.length,
-        accepted: accepted.length,
-        rejected: rejected.length,
-        successful: successful.length,
-        draft: draft.length
-    });
+
     
     if (pending.length > 0) {
-        console.log('Pending quotations data:', pending);
+        
     }
-    
+
     // Update counts
     if (pendingCount) pendingCount.textContent = pending.length;
     if (acceptedCount) acceptedCount.textContent = accepted.length;
     if (rejectedCount) rejectedCount.textContent = rejected.length;
     if (successfulCount) successfulCount.textContent = successful.length;
     if (draftCount) draftCount.textContent = draft.length;
-    
+
     // Render pending quotations
     if (pendingList) {
-        console.log('Rendering pending list. Count:', pending.length);
+        
         if (pending.length === 0) {
-            console.log('No pending quotations - showing empty state');
+            
             pendingList.innerHTML = `
                 <div class="quotations-empty-state">
                     <div class="empty-state-icon">
@@ -334,16 +368,16 @@ function renderSubmittedQuotations() {
                 </div>
             `;
         } else {
-            console.log('Rendering', pending.length, 'pending quotations');
+            
             const quotationsHTML = pending.map(q => createQuotationLogItem(q)).join('');
-            console.log('Generated HTML length:', quotationsHTML.length);
+            
             pendingList.innerHTML = quotationsHTML;
-            console.log('Pending quotations rendered successfully');
+            
         }
     } else {
         console.error('Cannot render pending quotations - pendingList element not found');
     }
-    
+
     // Render accepted quotations
     if (acceptedList) {
         if (accepted.length === 0) {
@@ -360,7 +394,7 @@ function renderSubmittedQuotations() {
             acceptedList.innerHTML = accepted.map(q => createQuotationLogItem(q, true)).join('');
         }
     }
-    
+
     // Render rejected quotations
     if (rejectedList) {
         if (rejected.length === 0) {
@@ -377,7 +411,7 @@ function renderSubmittedQuotations() {
             rejectedList.innerHTML = rejected.map(q => createQuotationLogItem(q, false, true)).join('');
         }
     }
-    
+
     // Render successful contracts
     if (successfulList) {
         if (successful.length === 0) {
@@ -394,7 +428,7 @@ function renderSubmittedQuotations() {
             successfulList.innerHTML = successful.map(q => createQuotationLogItem(q, false, false, true)).join('');
         }
     }
-    
+
     // Render draft quotations
     if (draftList) {
         draftList.innerHTML = `
@@ -416,12 +450,12 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
     const date = new Date(quotation.created_at);
     const formattedDate = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     const amount = parseFloat(quotation.total_amount).toFixed(2);
-    
+
     // Determine which icon to show and styling
     let iconClass = 'fas fa-file-invoice-dollar';
     let statusBadge = '';
     let cardClass = 'quotation-card';
-    
+
     if (isSuccessful) {
         iconClass = 'fas fa-check-circle';
         statusBadge = '<span class="status-badge success"><i class="fas fa-check"></i> Completed</span>';
@@ -438,10 +472,10 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
         statusBadge = '<span class="status-badge warning"><i class="fas fa-clock"></i> Pending</span>';
         cardClass += ' pending';
     }
-    
+
     // Show edit/delete buttons only for pending quotations
     const showActions = !isAccepted && !isRejected && !isSuccessful && quotation.status === 'pending';
-    
+
     return `
         <div class="${cardClass}">
             <div class="quotation-card-main">
@@ -459,12 +493,12 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
                                 <i class="fas fa-hashtag"></i>
                                 ${isSuccessful ? 'Contract' : 'Request'} ${quotation.request_id}
                             </span>
-                            <span class="meta-separator">•</span>
+                            <span class="meta-separator">â€¢</span>
                             <span class="meta-item">
                                 <i class="fas fa-user"></i>
                                 ${escapeHtml(quotation.customer_fname + ' ' + quotation.customer_lname)}
                             </span>
-                            <span class="meta-separator">•</span>
+                            <span class="meta-separator">â€¢</span>
                             <span class="meta-item">
                                 <i class="fas fa-calendar-alt"></i>
                                 ${formattedDate}
@@ -527,43 +561,153 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
 function openQuotationModal(requestId) {
     editingQuotationId = null;
     quotationForm.reset();
-    
+
     // Find the requested job request
     const request = availableRequests.find(r => r.request_id === requestId);
     if (!request) {
         showToast('Request not found', 'error');
         return;
     }
+
+    // ============================================
+    // CHECK IF REQUEST IS EXPIRED
+    // ============================================
+    const requestDeadline = new Date(request.finish_date);
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0); // Reset time for date-only comparison
+    requestDeadline.setHours(0, 0, 0, 0);
     
+    if (requestDeadline < currentDate) {
+        // Request has expired - cannot submit quotation
+        showToast('Cannot submit quotation - This request has expired', 'error', 5000);
+        
+        // Show detailed error modal
+        const daysExpired = Math.ceil((currentDate - requestDeadline) / (1000 * 60 * 60 * 24));
+        alert(
+            `âŒ Request Expired\n\n` +
+            `This service request expired ${daysExpired} day(s) ago.\n` +
+            `Deadline was: ${formatDate(request.finish_date)}\n\n` +
+            `You cannot submit quotations for expired requests.`
+        );
+        return; // Block quotation submission
+    }
+
     // Set the hidden request ID field
     document.getElementById('request-id').value = requestId;
-    
+
     // Display request details in the modal
     const detailsContainer = document.getElementById('quotation-request-details');
     detailsContainer.innerHTML = `
         <h4 style="margin: 0 0 0.5rem 0;">${escapeHtml(request.title)}</h4>
         <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
-            <i class="fas fa-map-marker-alt"></i> ${escapeHtml(request.district)} • 
+            <i class="fas fa-map-marker-alt"></i> ${escapeHtml(request.district)} â€¢ 
             <i class="fas fa-calendar"></i> Needed by ${formatDate(request.finish_date)}
         </p>
     `;
+
+    // ============================================
+    // AUTO-FILL FIELDS
+    // ============================================
+
+    // 1. Auto-fill Quotation Title from request title
+    if (request.title) {
+        document.getElementById('quotation-title').value = escapeHtml(request.title);
+    }
+
+    // 2. Auto-fill Service Description with request description as template
+    if (request.description) {
+        const serviceDesc = document.getElementById('service-description');
+        serviceDesc.value = `Based on your request:\n\n${escapeHtml(request.description)}\n\nWe will provide the following services:\n`;
+        // Set cursor at the end for easy editing
+        setTimeout(() => serviceDesc.setSelectionRange(serviceDesc.value.length, serviceDesc.value.length), 100);
+    }
+
+    // 3. Auto-fill Estimated Start Date (today + lead time or + 3 days default)
+    const today = new Date();
+    const leadTimeDays = companyDefaults?.standard_lead_time_days || 3;
+    const startDate = new Date(today);
+    startDate.setDate(startDate.getDate() + leadTimeDays);
+    document.getElementById('estimated-start-date').value = startDate.toISOString().split('T')[0];
+
+    // 4. Auto-fill Estimated Completion Date with intelligent logic
+    let completionDate;
     
-    // Set minimum dates
+    if (request.finish_date) {
+        // Customer has a preferred deadline
+        const customerDeadline = new Date(request.finish_date);
+        const minCompletionDate = new Date(startDate);
+        minCompletionDate.setDate(minCompletionDate.getDate() + 1); // At least 1 day after start
+        
+        // If customer deadline is AFTER our start date, use it as a target
+        if (customerDeadline > startDate) {
+            completionDate = customerDeadline;
+        } else {
+            // Customer deadline is in the past or before start date
+            // Use a reasonable default: start date + 7 days
+            completionDate = new Date(startDate);
+            completionDate.setDate(completionDate.getDate() + 7);
+        }
+    } else {
+        // No customer deadline, use default: start date + 7 days
+        completionDate = new Date(startDate);
+        completionDate.setDate(completionDate.getDate() + 7);
+    }
+    
+    document.getElementById('estimated-completion-date').value = completionDate.toISOString().split('T')[0];
+
+    // 5. Auto-calculate and fill Estimated Duration
+    const estStartDate = new Date(document.getElementById('estimated-start-date').value);
+    const estCompletionDate = new Date(document.getElementById('estimated-completion-date').value);
+    const durationDays = Math.ceil((estCompletionDate - estStartDate) / (1000 * 60 * 60 * 24));
+    if (durationDays > 0) {
+        document.getElementById('estimated-duration').value = durationDays;
+    }
+
+    // 6. Auto-fill Payment Terms from company defaults
+    if (companyDefaults?.default_payment_terms) {
+        document.getElementById('payment-terms').value = companyDefaults.default_payment_terms;
+    } else {
+        document.getElementById('payment-terms').value = '50_50'; // Default fallback
+    }
+
+    // 7. Auto-fill Warranty Period from company defaults
+    if (companyDefaults?.default_warranty) {
+        document.getElementById('warranty-period').value = companyDefaults.default_warranty;
+    } else {
+        document.getElementById('warranty-period').value = '6_months'; // Default fallback
+    }
+
+    // 8. Auto-fill Quotation Validity from company defaults
+    if (companyDefaults?.quotation_validity_days) {
+        document.getElementById('validity-period').value = companyDefaults.quotation_validity_days;
+    } else {
+        document.getElementById('validity-period').value = '30'; // Default 30 days
+    }
+
+    // 9. Auto-fill Terms & Conditions from company template
+    if (companyDefaults?.standard_terms_template) {
+        document.getElementById('terms-conditions').value = companyDefaults.standard_terms_template;
+    }
+
+    // 10. Set minimum dates
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const minDate = tomorrow.toISOString().split('T')[0];
     document.getElementById('estimated-start-date').min = minDate;
     document.getElementById('estimated-completion-date').min = minDate;
-    
+
     // Update modal title
     document.querySelector('#quotation-modal .modal-title').innerHTML = `
         <i class="fas fa-file-invoice-dollar"></i>
         Submit Quotation
     `;
-    
+
     // Show the modal
     quotationModal.classList.add('active');
     document.body.style.overflow = 'hidden';
+
+    // Show auto-fill notification
+    showToast('Form auto-filled with available data. Please review and adjust as needed.', 'info', 3000);
 }
 
 /**
@@ -577,11 +721,10 @@ function openQuotationModal(requestId) {
  * @returns {Promise<void>}
  */
 async function editQuotation(quotationId) {
-    console.log('Editing quotation:', quotationId);
     
     try {
         const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?quotation_id=${quotationId}`);
-        
+
         // Check for HTTP errors
         if (!response.ok) {
             const errorText = await response.text();
@@ -589,20 +732,20 @@ async function editQuotation(quotationId) {
             showToast(`Server Error (${response.status}): ${errorText.substring(0, 200)}`, 'error');
             return;
         }
-        
+
         const result = await response.json();
-        
+
         if (result.success && result.data && result.data.length > 0) {
             const quotation = result.data[0];
-            
+
             // Verify quotation is editable (only pending status)
             if (quotation.status !== 'pending') {
                 showToast('Only pending quotations can be edited', 'error');
                 return;
             }
-            
+
             editingQuotationId = quotationId;
-            
+
             // Populate form
             document.getElementById('request-id').value = quotation.request_id;
             document.getElementById('quotation-title').value = quotation.title;
@@ -617,26 +760,26 @@ async function editQuotation(quotationId) {
             document.getElementById('payment-terms').value = quotation.payment_terms || '';
             document.getElementById('warranty-period').value = quotation.warranty_period || '';
             document.getElementById('terms-conditions').value = quotation.additional_terms || '';
-            
+
             // Calculate total
             calculateTotal();
-            
+
             // Populate request details
             const detailsContainer = document.getElementById('quotation-request-details');
             detailsContainer.innerHTML = `
                 <h4 style="margin: 0 0 0.5rem 0;">${escapeHtml(quotation.job_title)}</h4>
                 <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
-                    <i class="fas fa-map-marker-alt"></i> ${escapeHtml(quotation.district)} • 
+                    <i class="fas fa-map-marker-alt"></i> ${escapeHtml(quotation.district)} â€¢ 
                     Request #${quotation.request_id}
                 </p>
             `;
-            
+
             // Update modal title
             document.querySelector('#quotation-modal .modal-title').innerHTML = `
                 <i class="fas fa-edit"></i>
                 Edit Quotation
             `;
-            
+
             // Show modal
             quotationModal.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -660,14 +803,13 @@ async function editQuotation(quotationId) {
  * @returns {Promise<void>}
  */
 async function submitQuotation() {
-    console.log('Submit quotation called, editing ID:', editingQuotationId);
     
     // Validate all required form fields
     if (!quotationForm.checkValidity()) {
         quotationForm.reportValidity();
         return;
     }
-    
+
     // Collect form data into object
     const formData = {
         request_id: parseInt(document.getElementById('request-id').value),
@@ -686,16 +828,14 @@ async function submitQuotation() {
         warranty_period: document.getElementById('warranty-period').value,
         additional_terms: document.getElementById('terms-conditions').value
     };
-    
-    console.log('Form data:', formData);
+
     
     try {
         let response;
-        
+
         if (editingQuotationId) {
             // UPDATE existing quotation
             formData.quotation_id = editingQuotationId;
-            console.log('Updating quotation with data:', formData);
             
             response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-quotes.php', {
                 method: 'PUT',
@@ -706,7 +846,6 @@ async function submitQuotation() {
             });
         } else {
             // CREATE new quotation
-            console.log('Creating new quotation with data:', formData);
             
             response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-quotes.php', {
                 method: 'POST',
@@ -716,7 +855,7 @@ async function submitQuotation() {
                 body: JSON.stringify(formData)
             });
         }
-        
+
         // Check if response is ok
         if (!response.ok) {
             const errorText = await response.text();
@@ -724,21 +863,18 @@ async function submitQuotation() {
             showToast(`Server Error (${response.status}): ${errorText.substring(0, 200)}`, 'error');
             return;
         }
-        
+
         const result = await response.json();
-        console.log('Response:', result);
         
         if (result.success) {
             showToast(editingQuotationId ? 'Quotation updated successfully!' : 'Quotation submitted successfully!', 'success');
             closeQuotationModal();
-            
-            console.log('Quotation saved successfully. Reloading data...');
+
             
             // Reload quotations and wait for it to complete
             await loadSubmittedQuotations();
             await loadAvailableRequests();
-            
-            console.log('Data reloaded. Switching to logs tab...');
+
             
             // Switch to logs tab to show the new quotation
             if (!editingQuotationId) {
@@ -746,7 +882,7 @@ async function submitQuotation() {
                 setTimeout(() => {
                     const logsTab = document.querySelector('[data-tab="logs"]');
                     if (logsTab) {
-                        console.log('Clicking logs tab');
+                        
                         logsTab.click();
                     } else {
                         console.error('Logs tab not found!');
@@ -773,21 +909,19 @@ async function submitQuotation() {
  * @returns {Promise<void>}
  */
 async function deleteQuotation(quotationId) {
-    console.log('Delete quotation called:', quotationId);
     
     // Confirm deletion with user
     if (!confirm('Are you sure you want to delete this quotation? This action cannot be undone.')) {
         return;
     }
-    
+
     try {
         const deleteUrl = `/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?quotation_id=${quotationId}`;
-        console.log('DELETE URL:', deleteUrl);
         
         const response = await fetch(deleteUrl, {
             method: 'DELETE'
         });
-        
+
         // Check for HTTP errors
         if (!response.ok) {
             const errorText = await response.text();
@@ -795,9 +929,8 @@ async function deleteQuotation(quotationId) {
             showToast(`Server Error (${response.status}): ${errorText.substring(0, 200)}`, 'error');
             return;
         }
-        
+
         const result = await response.json();
-        console.log('Delete response:', result);
         
         if (result.success) {
             showToast('Quotation deleted successfully!', 'success');
@@ -830,7 +963,7 @@ function viewRequestDetails(requestId) {
         showToast('Request not found', 'error');
         return;
     }
-    
+
     const detailsContainer = document.getElementById('request-details-content');
     detailsContainer.innerHTML = `
         <div style="padding: var(--spacing-md);">
@@ -844,13 +977,13 @@ function viewRequestDetails(requestId) {
             <p>${escapeHtml(request.description)}</p>
         </div>
     `;
-    
+
     // Set button action
     document.getElementById('submit-quote-from-details').onclick = () => {
         closeRequestDetailsModal();
         openQuotationModal(requestId);
     };
-    
+
     requestDetailsModal.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
@@ -876,15 +1009,15 @@ function closeRequestDetailsModal() {
 function initializeTabs() {
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
-    
+
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
             const targetTab = button.dataset.tab;
-            
+
             // Remove active class from all tabs and contents
             tabButtons.forEach(btn => btn.classList.remove('active'));
             tabContents.forEach(content => content.classList.remove('active'));
-            
+
             // Add active class to clicked tab and corresponding content
             button.classList.add('active');
             document.getElementById(targetTab).classList.add('active');
@@ -898,12 +1031,12 @@ function initializeTabs() {
 function initializeViewToggle() {
     const viewButtons = document.querySelectorAll('.view-btn');
     const requestsGrid = document.querySelector('.requests-grid');
-    
+
     viewButtons.forEach(button => {
         button.addEventListener('click', () => {
             viewButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            
+
             const view = button.dataset.view;
             if (view === 'list') {
                 requestsGrid.classList.add('list-view');
@@ -919,11 +1052,11 @@ function initializeViewToggle() {
  */
 function initializeFilters() {
     const filters = document.querySelectorAll('.filter-select');
-    
+
     filters.forEach(filter => {
         filter.addEventListener('change', () => {
             // TODO: Implement filtering logic
-            console.log('Filter changed:', filter.id, filter.value);
+            
         });
     });
 }
@@ -935,38 +1068,38 @@ function initializeModal() {
     const modalClose = document.querySelector('#quotation-modal .modal-close');
     const cancelBtn = document.querySelector('#quotation-modal .action-btn.secondary');
     const submitBtn = document.querySelector('#quotation-modal .action-btn.primary');
-    
+
     if (modalClose) {
         modalClose.addEventListener('click', closeQuotationModal);
     }
-    
+
     if (cancelBtn) {
         cancelBtn.addEventListener('click', closeQuotationModal);
     }
-    
+
     if (submitBtn) {
         submitBtn.addEventListener('click', submitQuotation);
     }
-    
+
     // Close on overlay click
     quotationModal.addEventListener('click', (e) => {
         if (e.target === quotationModal) {
             closeQuotationModal();
         }
     });
-    
+
     // Request details modal
     const detailsModalClose = document.querySelector('#request-details-modal .modal-close');
     const detailsCloseBtn = document.querySelector('#request-details-modal .action-btn.secondary');
-    
+
     if (detailsModalClose) {
         detailsModalClose.addEventListener('click', closeRequestDetailsModal);
     }
-    
+
     if (detailsCloseBtn) {
         detailsCloseBtn.addEventListener('click', closeRequestDetailsModal);
     }
-    
+
     requestDetailsModal.addEventListener('click', (e) => {
         if (e.target === requestDetailsModal) {
             closeRequestDetailsModal();
@@ -982,7 +1115,7 @@ function initializeCostCalculator() {
     const materialCost = document.getElementById('material-cost');
     const transportCost = document.getElementById('transport-cost');
     const otherCost = document.getElementById('other-cost');
-    
+
     [laborCost, materialCost, transportCost, otherCost].forEach(input => {
         if (input) {
             input.addEventListener('input', calculateTotal);
@@ -998,10 +1131,10 @@ function calculateTotal() {
     const material = parseFloat(document.getElementById('material-cost').value) || 0;
     const transport = parseFloat(document.getElementById('transport-cost').value) || 0;
     const other = parseFloat(document.getElementById('other-cost').value) || 0;
-    
+
     const subtotal = labor + material + transport + other;
     const total = subtotal;
-    
+
     document.getElementById('subtotal-amount').textContent = `LKR ${formatNumber(subtotal.toFixed(2))}`;
     document.getElementById('total-amount').textContent = `LKR ${formatNumber(total.toFixed(2))}`;
     document.getElementById('total-price').value = total.toFixed(2);
@@ -1013,13 +1146,77 @@ function calculateTotal() {
 function initializeDateValidation() {
     const startDate = document.getElementById('estimated-start-date');
     const completionDate = document.getElementById('estimated-completion-date');
-    
+    const duration = document.getElementById('estimated-duration');
+
     if (startDate) {
         startDate.addEventListener('change', () => {
             if (completionDate) {
                 completionDate.min = startDate.value;
             }
+            // Auto-calculate duration when dates change
+            autoCalculateDuration();
         });
+    }
+
+    if (completionDate) {
+        completionDate.addEventListener('change', () => {
+            // Auto-calculate duration when dates change
+            autoCalculateDuration();
+        });
+    }
+}
+
+/**
+ * Auto-calculate duration between start and completion dates
+ */
+function autoCalculateDuration() {
+    const startDateInput = document.getElementById('estimated-start-date');
+    const completionDateInput = document.getElementById('estimated-completion-date');
+    const durationInput = document.getElementById('estimated-duration');
+
+    if (startDateInput && completionDateInput && durationInput) {
+        const startDate = new Date(startDateInput.value);
+        const completionDate = new Date(completionDateInput.value);
+
+        // Validate that both dates are set
+        if (!startDateInput.value || !completionDateInput.value) {
+            durationInput.value = '';
+            return;
+        }
+
+        // Check if completion date is before start date
+        if (completionDate < startDate) {
+            durationInput.value = '';
+            durationInput.classList.add('error');
+            showToast('Completion date cannot be before start date!', 'error', 3000);
+            
+            // Auto-fix: Set completion to start + 7 days
+            const fixedCompletion = new Date(startDate);
+            fixedCompletion.setDate(fixedCompletion.getDate() + 7);
+            completionDateInput.value = fixedCompletion.toISOString().split('T')[0];
+            
+            // Recalculate with fixed date
+            const fixedDuration = Math.ceil((fixedCompletion - startDate) / (1000 * 60 * 60 * 24));
+            durationInput.value = fixedDuration;
+            durationInput.classList.remove('error');
+            return;
+        }
+
+        // Calculate duration (in days)
+        const durationDays = Math.ceil((completionDate - startDate) / (1000 * 60 * 60 * 24));
+        
+        // Warn if duration is 0 (same day completion)
+        if (durationDays === 0) {
+            showToast('Same-day completion selected. Are you sure?', 'warning', 3000);
+        }
+        
+        // Warn if duration is very long (> 90 days)
+        if (durationDays > 90) {
+            showToast(`Duration is ${durationDays} days. Please verify this is correct.`, 'warning', 3000);
+        }
+        
+        durationInput.value = durationDays;
+        durationInput.classList.remove('error');
     }
 }
 
@@ -1030,7 +1227,7 @@ function updateRequestCounts() {
     const publicCount = document.querySelector('[data-tab="public-requests"] .tab-count');
     const headerPublicCount = document.getElementById('public-requests-count');
     const headerPendingCount = document.getElementById('pending-response-count');
-    
+
     if (publicCount) {
         publicCount.textContent = availableRequests.length;
     }
@@ -1049,11 +1246,11 @@ function updateRequestCounts() {
 function updateQuotationCounts() {
     const logsCount = document.querySelector('[data-tab="logs"] .tab-count');
     const headerMonthCount = document.getElementById('this-month-count');
-    
+
     if (logsCount) {
         logsCount.textContent = submittedQuotations.length;
     }
-    
+
     // Count quotations from this month
     if (headerMonthCount) {
         const now = new Date();
@@ -1094,7 +1291,7 @@ function formatTimeAgo(dateString) {
     const date = new Date(dateString);
     const now = new Date();
     const seconds = Math.floor((now - date) / 1000);
-    
+
     const intervals = {
         year: 31536000,
         month: 2592000,
@@ -1103,14 +1300,14 @@ function formatTimeAgo(dateString) {
         hour: 3600,
         minute: 60
     };
-    
+
     for (const [unit, secondsInUnit] of Object.entries(intervals)) {
         const interval = Math.floor(seconds / secondsInUnit);
         if (interval >= 1) {
             return `${interval} ${unit}${interval > 1 ? 's' : ''} ago`;
         }
     }
-    
+
     return 'Just now';
 }
 
@@ -1150,14 +1347,14 @@ function showToast(message, type = 'info') {
         z-index: 10000;
         animation: slideIn 0.3s ease;
     `;
-    
+
     toast.innerHTML = `
         <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
         <span style="margin-left: 0.5rem;">${message}</span>
     `;
-    
+
     document.body.appendChild(toast);
-    
+
     // Remove after 3 seconds
     setTimeout(() => {
         toast.style.animation = 'slideOut 0.3s ease';
@@ -1173,3 +1370,255 @@ window.editQuotation = editQuotation;
 window.deleteQuotation = deleteQuotation;
 window.viewRequestDetails = viewRequestDetails;
 window.closeRequestDetailsModal = closeRequestDetailsModal;
+
+// ================================================================
+// DIRECT REQUESTS FUNCTIONALITY
+// ================================================================
+
+/**
+ * Load and render direct requests (future feature)
+ * Currently shows empty state as direct requests are not yet implemented
+ */
+function loadDirectRequests() {
+    const emptyState = document.getElementById('direct-requests-empty');
+    const table = document.getElementById('direct-requests-table');
+    
+    // For now, always show empty state
+    // Future: Fetch from API when direct requests feature is implemented
+    if (emptyState) {
+        emptyState.style.display = 'block';
+    }
+    if (table) {
+        table.style.display = 'none';
+    }
+    
+    // Set count to 0
+    updateDirectRequestsCount(0);
+    
+    
+}
+
+/**
+ * Update direct requests count in header and tab
+ * @param {number} count - Number of direct requests
+ */
+function updateDirectRequestsCount(count) {
+    const headerCount = document.getElementById('direct-requests-count');
+    const tabCount = document.getElementById('direct-requests-tab-count');
+    
+    if (headerCount) {
+        headerCount.textContent = count;
+    }
+    if (tabCount) {
+        tabCount.textContent = count;
+    }
+}
+
+/**
+ * Render direct requests in table (future implementation)
+ * @param {Array} requests - Array of direct request objects
+ */
+function renderDirectRequests(requests) {
+    const tbody = document.getElementById('direct-requests-tbody');
+    const emptyState = document.getElementById('direct-requests-empty');
+    const table = document.getElementById('direct-requests-table');
+    
+    if (!tbody) return;
+    
+    if (!requests || requests.length === 0) {
+        // Show empty state
+        emptyState.style.display = 'block';
+        table.style.display = 'none';
+        updateDirectRequestsCount(0);
+        return;
+    }
+    
+    // Hide empty state, show table
+    emptyState.style.display = 'none';
+    table.style.display = 'table';
+    
+    // Update counts
+    updateDirectRequestsCount(requests.length);
+    
+    // Render rows
+    tbody.innerHTML = requests.map(request => createDirectRequestRow(request)).join('');
+}
+
+/**
+ * Create HTML for a single direct request table row
+ * @param {Object} request - Direct request object
+ * @returns {string} HTML string
+ */
+function createDirectRequestRow(request) {
+    const initials = getInitials(request.customer_fname, request.customer_lname);
+    const statusClass = request.status === 'accepted' ? 'accepted' : 
+                       request.status === 'rejected' ? 'rejected' : 'pending';
+    const statusIcon = request.status === 'accepted' ? 'check' : 
+                      request.status === 'rejected' ? 'times' : 'clock';
+    
+    // Check if expired
+    const deadline = new Date(request.finish_date);
+    const today = new Date();
+    const isExpired = deadline < today;
+    
+    return `
+        <tr data-request-id="${request.request_id}">
+            <td>
+                <div>
+                    <h5>${escapeHtml(request.title)}</h5>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
+                        #REQ-${request.request_id} â€¢ ${escapeHtml(request.category_name || 'General')}
+                    </p>
+                </div>
+            </td>
+            <td>
+                <div class="table-customer">
+                    <div class="table-customer-avatar">${initials}</div>
+                    <div class="table-customer-info">
+                        <h5>${escapeHtml(request.customer_fname + ' ' + request.customer_lname)}</h5>
+                        <p>${escapeHtml(request.customer_email || 'No email')}</p>
+                    </div>
+                </div>
+            </td>
+            <td>${formatDate(request.dateCreated)}</td>
+            <td>
+                ${isExpired 
+                    ? `<span style="color: var(--danger-color); font-weight: 600;">
+                         <i class="fas fa-exclamation-triangle"></i> Expired
+                       </span>` 
+                    : formatDate(request.finish_date)
+                }
+            </td>
+            <td>
+                <span class="status-badge ${statusClass}">
+                    <i class="fas fa-${statusIcon}"></i>
+                    ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                </span>
+            </td>
+            <td>
+                <div class="table-actions">
+                    ${request.status === 'pending' && !isExpired ? `
+                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                            <i class="fas fa-eye"></i>
+                            <span>View</span>
+                        </button>
+                        <button class="table-action-btn accept" onclick="acceptDirectRequest(${request.request_id})">
+                            <i class="fas fa-check"></i>
+                            <span>Accept</span>
+                        </button>
+                        <button class="table-action-btn reject" onclick="rejectDirectRequest(${request.request_id})">
+                            <i class="fas fa-times"></i>
+                            <span>Decline</span>
+                        </button>
+                    ` : request.status === 'accepted' ? `
+                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                            <i class="fas fa-file-contract"></i>
+                            <span>View Contract</span>
+                        </button>
+                    ` : isExpired ? `
+                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                            <i class="fas fa-eye"></i>
+                            <span>View</span>
+                        </button>
+                        <button class="table-action-btn view" onclick="contactCustomer(${request.user_id})">
+                            <i class="fas fa-phone"></i>
+                            <span>Contact</span>
+                        </button>
+                    ` : `
+                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                            <i class="fas fa-eye"></i>
+                            <span>View</span>
+                        </button>
+                    `}
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+/**
+ * Accept a direct request
+ * @param {number} requestId - ID of the request to accept
+ */
+async function acceptDirectRequest(requestId) {
+    if (!confirm('Accept this direct request? This will create a contract with the customer.')) {
+        return;
+    }
+    
+    try {
+        // Future: API call to accept direct request
+        // For now, show placeholder message
+        showToast('Direct requests feature coming soon! This will create a contract.', 'info', 5000);
+        
+        // Future implementation:
+        // const response = await fetch('/api/direct-requests.php', {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify({ action: 'accept', request_id: requestId })
+        // });
+        // if (response.ok) {
+        //     showToast('Request accepted successfully!', 'success');
+        //     loadDirectRequests(); // Reload
+        // }
+    } catch (error) {
+        console.error('Error accepting request:', error);
+        showToast('Error accepting request: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Reject a direct request
+ * @param {number} requestId - ID of the request to reject
+ */
+async function rejectDirectRequest(requestId) {
+    const reason = prompt('Please provide a reason for declining this request:');
+    if (!reason || reason.trim() === '') {
+        showToast('Decline cancelled - reason is required', 'info');
+        return;
+    }
+    
+    try {
+        // Future: API call to reject direct request
+        showToast('Direct requests feature coming soon! Reason: ' + reason, 'info', 5000);
+        
+        // Future implementation:
+        // const response = await fetch('/api/direct-requests.php', {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify({ 
+        //         action: 'reject', 
+        //         request_id: requestId,
+        //         reason: reason 
+        //     })
+        // });
+        // if (response.ok) {
+        //     showToast('Request declined', 'success');
+        //     loadDirectRequests(); // Reload
+        // }
+    } catch (error) {
+        console.error('Error rejecting request:', error);
+        showToast('Error declining request: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Contact customer about expired direct request
+ * @param {number} customerId - ID of the customer to contact
+ */
+function contactCustomer(customerId) {
+    // Future: Open messaging system or show customer contact details
+    showToast('Customer contact feature coming soon!', 'info', 3000);
+}
+
+// Make direct request functions globally accessible
+window.acceptDirectRequest = acceptDirectRequest;
+window.rejectDirectRequest = rejectDirectRequest;
+window.contactCustomer = contactCustomer;
+
+// Initialize direct requests when page loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadDirectRequests);
+} else {
+    loadDirectRequests();
+}
+

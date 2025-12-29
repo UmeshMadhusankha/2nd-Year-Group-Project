@@ -1,4 +1,4 @@
-// Fix Lanka Landing Page JavaScript
+﻿// Fix Lanka Landing Page JavaScript
 // ===================================
 
 // Sample provider data for demonstration (Individual Repairers)
@@ -415,7 +415,6 @@ function initializeSearchForm() {
             const location = document.getElementById('locationInput').value;
             
             // Simulate search functionality
-            console.log('Search submitted:', { service, rating, location });
             
             // Show loading state
             showSearchLoading();
@@ -856,7 +855,7 @@ function viewProfile(providerId) {
     } else {
         // For other providers, show placeholder message
         alert(`Viewing profile for ${provider.name}\n\nDetailed profile coming soon!`);
-        console.log('View profile for provider:', provider);
+        
     }
 }
 
@@ -944,7 +943,7 @@ if (searchForm) {
 
 // Send Repair Request Function (Placeholder - No functionality yet)
 function sendRepairRequest(type, providerId) {
-    console.log(`Send repair request to ${type}:`, providerId || 'current');
+    
     alert(`Send Repair Request feature will be implemented soon!\n\nProvider Type: ${type}\nProvider ID: ${providerId || 'Current profile'}`);
     // TODO: Implement repair request functionality
     // This will redirect to post-job page or open a request form
@@ -952,18 +951,18 @@ function sendRepairRequest(type, providerId) {
 
 // Contact Company Function (Placeholder)
 function contactCompany(companyId) {
-    console.log('Contact company:', companyId);
+    
     alert('Contact Company feature will be implemented soon!');
     // TODO: Implement contact company functionality
 }
 
 // Request Company Quote Function (Placeholder)
 function requestCompanyQuote(companyId) {
-    console.log('Request company quote:', companyId);
+    
     alert('Request Company Quote feature will be implemented soon!');
     // TODO: Implement company quote request functionality
 }
 
 // Console log for debugging
-console.log('Fix Lanka Landing Page JavaScript loaded successfully');
-console.log('Total providers available:', providerData.length);
+
+

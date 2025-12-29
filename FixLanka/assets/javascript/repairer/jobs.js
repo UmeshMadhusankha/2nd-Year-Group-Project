@@ -1,4 +1,4 @@
-// ================================================
+﻿// ================================================
 // REPAIRER JOBS & APPLICATIONS MANAGEMENT
 // ================================================
 
@@ -532,12 +532,6 @@ function submitApplication() {
     }
     
     // In production, send to server
-    console.log('Submitting application:', {
-        jobId,
-        proposedRate,
-        availability,
-        coverLetter
-    });
     
     showNotification('Application submitted successfully!', 'success');
     closeApplicationFormDrawer();
@@ -735,7 +729,6 @@ function withdrawApplication(applicationId) {
     }
     
     // In production, send to server
-    console.log('Withdrawing application:', applicationId);
     
     showNotification('Application withdrawn successfully', 'success');
     closeApplicationDetailsDrawer();
@@ -892,7 +885,7 @@ function viewContractDetails(contractId) {
                 <span class="status-badge ${assignment.status}">${assignment.status.replace('-', ' ')}</span>
             </div>
             <p style="color: var(--text-secondary); font-size: 14px; margin: 4px 0;">
-                <i class="fas fa-calendar"></i> ${assignment.date} • ${assignment.time}
+                <i class="fas fa-calendar"></i> ${assignment.date} â€¢ ${assignment.time}
             </p>
         `;
         assignmentsTimeline.appendChild(assignmentItem);
@@ -998,7 +991,7 @@ function closeAssignmentDetailsDrawer() {
 
 function updateAssignmentStatus() {
     const status = document.getElementById('jobStatus').value;
-    console.log('Status changed to:', status);
+    
     // Status will be saved when user clicks "Save Update"
 }
 
@@ -1008,7 +1001,6 @@ function saveProgressUpdate() {
     const note = document.getElementById('progressNote').value;
     
     // In production, send to server
-    console.log('Saving progress update:', { assignmentId, status, note });
     
     showNotification('Progress updated successfully!', 'success');
     
@@ -1030,7 +1022,6 @@ function markAssignmentComplete() {
     }
     
     // In production, send to server
-    console.log('Marking assignment complete:', assignmentId);
     
     showNotification('Assignment marked as complete!', 'success');
     closeAssignmentDetailsDrawer();
@@ -1460,7 +1451,7 @@ function toggleAvailabilityStatus() {
     }
     
     // In production, send to server
-    console.log('Status changed to:', currentRepairerStatus);
+    
 }
 
 // ================================================

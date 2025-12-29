@@ -1,4 +1,4 @@
-// ================================================
+﻿// ================================================
 // EARNINGS PAGE JAVASCRIPT
 // ================================================
 
@@ -212,7 +212,7 @@ function applyFilters() {
     // Update count
     updateFilteredCount(visibleCount, statusFilter, periodFilter);
     
-    console.log(`Applied filters: Period=${periodFilter}, Status=${statusFilter}, Visible=${visibleCount}`);
+    
 }
 
 function updateFilteredCount(count, status, period) {
@@ -329,7 +329,7 @@ function sortEarningsTable(sortBy, direction = 'desc') {
     // Re-append sorted rows
     rows.forEach(row => tbody.appendChild(row));
     
-    console.log(`Sorted by: ${sortBy} (${direction})`);
+    `);
 }
 
 function getDateValue(row) {
@@ -396,7 +396,6 @@ function searchEarnings(searchTerm) {
 
 // ===== EARNINGS ACTIONS =====
 function viewEarningDetails(earningId) {
-    console.log(`Viewing details for earning ID: ${earningId}`);
     
     // Find the earning data
     const earning = earningsData.customer.find(e => e.id === earningId);
@@ -518,19 +517,17 @@ function formatDateDisplay(dateString) {
 }
 
 function downloadInvoice(earningId) {
-    console.log(`Downloading invoice for earning ID: ${earningId}`);
     
     showNotification('Generating invoice...', 'info');
     
     // Simulate invoice generation and download
     setTimeout(() => {
         showNotification('Invoice downloaded successfully!', 'success');
-        console.log(`Invoice for earning ${earningId} would be downloaded as PDF`);
+        
     }, 1500);
 }
 
 function sendReminder(earningId) {
-    console.log(`Sending payment reminder for earning ID: ${earningId}`);
     
     if (confirm('Send payment reminder to customer? This will notify them about the pending payment.')) {
         showNotification('Sending payment reminder...', 'info');
@@ -547,7 +544,6 @@ function sendReminder(earningId) {
 }
 
 function checkStatus(earningId) {
-    console.log(`Checking payment status for earning ID: ${earningId}`);
     
     showNotification('Checking payment status...', 'info');
     
@@ -592,7 +588,6 @@ function updatePaymentStatus(row, status) {
 }
 
 function loadMoreEarnings() {
-    console.log('Loading more earnings...');
     
     const loadMoreBtn = document.querySelector('.load-more-btn');
     const originalText = loadMoreBtn.innerHTML;
@@ -780,7 +775,7 @@ function updateEarningsSummary() {
     });
     
     // Update summary cards (simplified)
-    console.log(`Updated summary: Total=${totalEarnings}, Monthly=${monthlyEarnings}, Pending=${pendingAmount}`);
+    
 }
 
 // ===== UTILITY FUNCTIONS =====

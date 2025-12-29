@@ -1,4 +1,4 @@
-// ================================================
+﻿// ================================================
 // EDIT QUOTE PAGE JAVASCRIPT
 // ================================================
 
@@ -71,7 +71,6 @@ function loadQuoteData(quoteId) {
  * Populate form with existing quote data
  */
 function populateForm(quote) {
-    console.log('Populating form with quote data:', quote);
     
     // Set hidden fields
     document.getElementById('quote-id').value = quote.quote_id;
@@ -79,10 +78,10 @@ function populateForm(quote) {
     document.getElementById('repairer-id').value = quote.repairer_id;
     
     // Debug - verify hidden fields were set
-    console.log('Hidden fields set:');
-    console.log('  quote-id:', document.getElementById('quote-id').value);
-    console.log('  request-id:', document.getElementById('request-id').value);
-    console.log('  repairer-id:', document.getElementById('repairer-id').value);
+    
+    .value);
+    .value);
+    .value);
     
     // Set form fields
     document.getElementById('quote-amount').value = quote.quoteAmount;
@@ -274,9 +273,9 @@ function confirmQuoteUpdate() {
     const message = document.getElementById('quote-message').value;
     
     // Debug logging - check what we're getting from form
-    console.log('Form values BEFORE parsing:');
-    console.log('  quoteId (raw):', quoteId, 'type:', typeof quoteId);
-    console.log('  repairerId (raw):', repairerId, 'type:', typeof repairerId);
+    
+    :', quoteId, 'type:', typeof quoteId);
+    :', repairerId, 'type:', typeof repairerId);
     
     // Prepare update data
     const updateData = {
@@ -291,10 +290,10 @@ function confirmQuoteUpdate() {
     };
     
     // Debug logging - check what we're sending
-    console.log('Update data AFTER parsing:');
-    console.log('  quote_id:', updateData.quote_id, 'type:', typeof updateData.quote_id, 'isNaN:', isNaN(updateData.quote_id));
-    console.log('  repairer_id:', updateData.repairer_id, 'type:', typeof updateData.repairer_id, 'isNaN:', isNaN(updateData.repairer_id));
-    console.log('Full updateData object:', JSON.stringify(updateData, null, 2));
+    
+    );
+    );
+    );
     
     // Submit update to API
     fetch('/2nd-Year-Group-Project/FixLanka/api/repairer-quotes.php', {
@@ -305,17 +304,15 @@ function confirmQuoteUpdate() {
         body: JSON.stringify(updateData)
     })
     .then(response => {
-        console.log('Response status:', response.status);
+        
         return response.json();
     })
     .then(data => {
-        console.log('Response data:', data);
         
         if (data.success) {
             hideConfirmationModal();
             showNotification('Quote updated successfully!', 'success');
             
-            console.log('Quote updated:', data.data);
             
             confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirm Update';
             confirmBtn.disabled = false;

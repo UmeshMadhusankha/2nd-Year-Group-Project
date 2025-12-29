@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Projects Database JavaScript
  * 
  * Handles all frontend interactions with the Projects API
@@ -34,7 +34,6 @@ let projectDetailsModal;
  * Initialize page when DOM is fully loaded
  */
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Projects page initializing...');
     
     // Validate company authentication
     if (!currentCompanyId) {
@@ -43,7 +42,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    console.log('Current Company ID:', currentCompanyId);
     
     // Get DOM elements
     projectModal = document.getElementById('project-modal');
@@ -509,7 +507,7 @@ function viewProjectDetails(projectId) {
     
     // TODO: Populate and show project details modal
     
-    console.log('Viewing project:', project);
+    
 }
 
 /**

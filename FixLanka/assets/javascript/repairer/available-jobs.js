@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Available Jobs Page JavaScript
  * Handles job filtering, application, and pagination
  */
@@ -59,7 +59,6 @@ function switchTab(tabName) {
  * Initialize the jobs page functionality
  */
 function initializeJobsPage() {
-    console.log('Available Jobs page loaded');
     
     // Add smooth scroll behavior for better UX
     document.documentElement.style.scrollBehavior = 'smooth';
@@ -88,10 +87,8 @@ async function loadAvailableJobs(filters = {}) {
         params.append('service_provider_type', 'individual'); // Only show jobs for individual repairers
         
         const apiUrl = `/2nd-Year-Group-Project/FixLanka/api/job-requests.php?${params.toString()}`;
-        console.log('Fetching jobs from:', apiUrl);
         
         const response = await fetch(apiUrl);
-        console.log('Response status:', response.status);
         
         // Check if response is ok
         if (!response.ok) {
@@ -99,7 +96,6 @@ async function loadAvailableJobs(filters = {}) {
         }
         
         const result = await response.json();
-        console.log('API Response:', result);
         
         if (result.success) {
             availableJobs = result.data;
@@ -241,7 +237,7 @@ function applyFilters() {
         sort: sortFilter ? sortFilter.value : 'newest'
     };
     
-    console.log('Applying filters:', filters);
+    
     loadAvailableJobs(filters);
 }
 
@@ -257,7 +253,7 @@ function resetFilters() {
     if (locationFilter) locationFilter.value = '';
     if (sortFilter) sortFilter.value = 'newest';
     
-    console.log('Filters reset');
+    
     loadAvailableJobs();
 }
 
@@ -265,7 +261,7 @@ function resetFilters() {
  * View job details
  */
 function viewJobDetails(jobId) {
-    console.log(`Viewing details for job ID: ${jobId}`);
+    
     openJobDetailsDrawer(jobId);
 }
 
@@ -344,7 +340,6 @@ function submitQuoteFromDetails() {
  * Submit quote for a job
  */
 function submitQuote(jobId) {
-    console.log(`Submitting quote for job ID: ${jobId}`);
     
     // Navigate to submit quote page with job ID using absolute path
     window.location.href = `/2nd-Year-Group-Project/FixLanka/views/repairer/pages/submit-quote.php?jobId=${jobId}`;
@@ -449,7 +444,7 @@ function createQuoteCard(quote) {
                     <h4 class="quote-job-title">${escapeHtml(quote.job_title || 'Job Request')}</h4>
                     <p class="quote-job-meta">
                         <i class="fas fa-calendar"></i> ${formatDate(quote.job_posted_date)}
-                        <span class="separator">•</span>
+                        <span class="separator">â€¢</span>
                         <i class="fas fa-map-marker-alt"></i> ${escapeHtml(quote.district || 'N/A')}
                     </p>
                 </div>
@@ -509,7 +504,7 @@ function createQuoteCard(quote) {
  * Edit a quotation
  */
 function editQuote(quoteId) {
-    console.log(`Editing quote ID: ${quoteId}`);
+    
     window.location.href = `/2nd-Year-Group-Project/FixLanka/views/repairer/pages/edit-quote.php?quoteId=${quoteId}`;
 }
 
@@ -689,7 +684,6 @@ function loadMoreJobs() {
         loadingIndicator.style.display = 'flex';
     }
     
-    console.log(`Loading page ${currentPage}...`);
     
     // Simulate API call delay
     setTimeout(() => {
@@ -1406,7 +1400,7 @@ function displayErrorState(container) {
  * View quotation details
  */
 function viewQuoteDetails(quoteId) {
-    console.log('Viewing quote details:', quoteId);
+    
     // Navigate to quote details page or open modal
     showToast(`Opening details for quote #${quoteId}`, 'info');
 }
@@ -1415,7 +1409,7 @@ function viewQuoteDetails(quoteId) {
  * Edit quotation (only for pending status)
  */
 function editQuote(quoteId) {
-    console.log('Editing quote:', quoteId);
+    
     // Navigate to edit quote page with quote data pre-filled
     window.location.href = `/2nd-Year-Group-Project/FixLanka/views/repairer/pages/edit-quote.php?quoteId=${quoteId}`;
 }
@@ -1424,8 +1418,7 @@ function editQuote(quoteId) {
  * Delete quotation
  */
 function deleteQuote(quoteId) {
-    console.log('Delete quote called with quoteId:', quoteId);
-    console.log('currentRepairerId:', currentRepairerId);
+    
     
     if (!confirm('Are you sure you want to delete this quotation? This action cannot be undone.')) {
         return;
@@ -1436,18 +1429,16 @@ function deleteQuote(quoteId) {
     
     // Construct delete URL with both quote_id and repairer_id
     const deleteUrl = `/2nd-Year-Group-Project/FixLanka/api/repairer-quotes.php?quote_id=${quoteId}&repairer_id=${currentRepairerId}`;
-    console.log('DELETE URL:', deleteUrl);
     
     // Delete via API
     fetch(deleteUrl, {
         method: 'DELETE'
     })
     .then(response => {
-        console.log('DELETE Response status:', response.status);
+        
         return response.json();
     })
     .then(data => {
-        console.log('DELETE Response data:', data);
         
         if (data.success) {
             showToast('Quotation deleted successfully!', 'success');

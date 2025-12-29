@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Topbar JavaScript - Dynamic Page Title & Profile Dropdown
  * Handles page title updates, profile dropdown, search, and notifications
  */
@@ -84,7 +84,7 @@ function initializeTopbar() {
     updatePageHeaderFromURL();
   });
 
-  console.log('✅ Topbar initialized successfully');
+  
 }
 
 /**
@@ -137,7 +137,7 @@ function updatePageHeader(pageName) {
   // Update browser tab title
   document.title = `${info.title} - FixLanka Company Dashboard`;
 
-  console.log('📄 Page Updated:', info.title);
+  
 }
 
 /**
@@ -211,7 +211,7 @@ function initSearch() {
       const searchTerm = e.target.value.toLowerCase().trim();
       if (searchTerm.length > 0) {
         performSearch(searchTerm);
-        console.log('🔍 Searching for:', searchTerm);
+        
       }
     }
   });
@@ -238,9 +238,9 @@ function performSearch(searchTerm) {
   }
   
   if (matches.length > 0) {
-    console.log('✅ Search results:', matches);
+    
   } else {
-    console.log('❌ No results found for:', searchTerm);
+    
   }
 }
 
@@ -250,25 +250,24 @@ function performSearch(searchTerm) {
 function initNotifications() {
   const notificationBell = document.querySelector('.notification-bell');
   if (!notificationBell) {
-    console.error('❌ Notification bell element not found!');
+    console.error('âŒ Notification bell element not found!');
     // Try to find it after a delay (in case topbar loads late)
     setTimeout(function() {
       const bellRetry = document.querySelector('.notification-bell');
       if (bellRetry) {
-        console.log('✅ Notification bell found on retry, initializing...');
+        
         initNotifications();
       } else {
-        console.error('❌ Notification bell still not found after retry');
+        console.error('âŒ Notification bell still not found after retry');
       }
     }, 500);
     return;
   }
   
-  console.log('✅ Notification bell found, attaching click handler');
   
   notificationBell.addEventListener('click', function(e) {
     e.stopPropagation();
-    console.log('🔔 Notification bell clicked!');
+    
     toggleNotificationDropdown();
   });
   
@@ -284,20 +283,17 @@ function initNotifications() {
  * Toggle notification dropdown
  */
 async function toggleNotificationDropdown() {
-  console.log('🔄 toggleNotificationDropdown called');
   
   const existingDropdown = document.querySelector('.notification-dropdown');
   if (existingDropdown) {
-    console.log('🗑️ Closing existing dropdown');
+    
     existingDropdown.remove();
     return;
   }
   
-  console.log('📦 Creating notification dropdown...');
   
   // Get company ID from window or PHP
   const companyId = window.CURRENT_COMPANY_ID || 0;
-  console.log('👤 Company ID:', companyId);
   
   const dropdown = document.createElement('div');
   dropdown.className = 'notification-dropdown';
@@ -336,19 +332,17 @@ async function toggleNotificationDropdown() {
   `;
   
   document.body.appendChild(dropdown);
-  console.log('✅ Dropdown appended to body');
   
   // Load notifications from API
   try {
-    console.log('📡 Fetching notifications from API...');
+    
     const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/notifications.php?action=list&user_id=${companyId}&user_type=company&limit=5`);
     const data = await response.json();
-    console.log('📨 API Response:', data);
     
     const notificationList = dropdown.querySelector('.notification-list');
     
     if (data.success && data.notifications && data.notifications.length > 0) {
-      console.log('✅ Displaying', data.notifications.length, 'notifications');
+      
       notificationList.innerHTML = data.notifications.map(notif => `
         <div class="notification-item ${notif.is_read == 0 ? 'unread' : ''}">
           <div class="notification-icon">
@@ -362,7 +356,7 @@ async function toggleNotificationDropdown() {
         </div>
       `).join('');
     } else {
-      console.log('📭 No notifications, showing empty state');
+      
       notificationList.innerHTML = `
         <div class="notification-empty">
           <i class="fas fa-bell-slash"></i>
@@ -371,7 +365,7 @@ async function toggleNotificationDropdown() {
       `;
     }
   } catch (error) {
-    console.error('❌ Error loading notifications:', error);
+    console.error('âŒ Error loading notifications:', error);
     const notificationList = dropdown.querySelector('.notification-list');
     notificationList.innerHTML = `
       <div class="notification-empty">
@@ -480,8 +474,7 @@ function initProfileDropdown() {
     return;
   }
 
-  console.log('✅ Profile dropdown initialized successfully!');
-
+  
   profileMenu.addEventListener('mouseenter', function() {
     if (!isLocked) {
       clearTimeout(hoverTimeout);
@@ -599,9 +592,9 @@ async function refreshNotifications() {
   try {
     const count = await getNotificationCount();
     updateNotificationBadge(count);
-    console.log('📄 Notifications refreshed:', count);
+    
   } catch (error) {
-    console.error('❌ Error fetching notifications:', error);
+    console.error('âŒ Error fetching notifications:', error);
   }
 }
 
@@ -624,4 +617,3 @@ if (document.readyState === 'loading') {
 // Auto-refresh notifications every 30 seconds
 setInterval(refreshNotifications, 30000);
 
-console.log('✅ Topbar fully loaded and functional!');

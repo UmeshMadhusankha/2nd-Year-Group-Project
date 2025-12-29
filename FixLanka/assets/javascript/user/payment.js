@@ -1,4 +1,4 @@
-// ================================================
+﻿// ================================================
 // PAYMENT PAGE - SECURE PAYMENT PROCESSING
 // ================================================
 
@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             updatePriceSummary();
-            showPromoMessage(`✓ ${promo.description} applied!`, 'success');
+            showPromoMessage(`âœ“ ${promo.description} applied!`, 'success');
             
             applyPromoBtn.disabled = true;
             applyPromoBtn.textContent = 'Applied';
@@ -385,7 +385,6 @@ document.addEventListener('DOMContentLoaded', function() {
             promoCode: paymentData.appliedPromo
         };
         
-        console.log('Processing payment:', paymentInfo);
         
         // Show loading overlay
         loadingOverlay.classList.add('show');

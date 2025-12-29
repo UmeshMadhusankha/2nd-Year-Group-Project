@@ -1,4 +1,4 @@
-// FixLanka Dashboard JavaScript - Enhanced Version with Full Calendar Functionality
+﻿// FixLanka Dashboard JavaScript - Enhanced Version with Full Calendar Functionality
 
 // Global calendar state
 const calendarState = {
@@ -495,9 +495,9 @@ function generateStars(rating) {
     const hasHalfStar = rating % 1 >= 0.5;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
     
-    return '★'.repeat(fullStars) + 
-           (hasHalfStar ? '☆' : '') + 
-           '☆'.repeat(emptyStars);
+    return 'â˜…'.repeat(fullStars) + 
+           (hasHalfStar ? 'â˜†' : '') + 
+           'â˜†'.repeat(emptyStars);
 }
 
 // Add required styles
@@ -1675,7 +1675,7 @@ function formatDateString(date) {
     return `${year}-${month}-${day}`;
 }
 
-// ✅ FIX: Same local-safe version for input fields
+// âœ… FIX: Same local-safe version for input fields
 function formatDateForInput(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -2031,11 +2031,9 @@ function initializeSidebarToggle() {
         const sidebarCheckbox = document.getElementById('sidebar-toggle');
         
         if (sidebarToggle && sidebarCheckbox) {
-            console.log('Sidebar toggle elements found');
             
             // Listen for checkbox changes
             sidebarCheckbox.addEventListener('change', function() {
-                console.log('Sidebar toggle changed, checked:', this.checked);
                 
                 const sidebar = document.querySelector('.sidebar');
                 const body = document.body;
@@ -2051,7 +2049,7 @@ function initializeSidebarToggle() {
                     }
                     
                     const isCollapsed = sidebar.classList.contains('collapsed');
-                    console.log('Sidebar collapsed:', isCollapsed);
+                    
                 }
             });
         } else {
@@ -2077,10 +2075,9 @@ window.testSidebarToggle = function() {
         const isCollapsed = sidebar.classList.contains('collapsed');
         const bodyHasClass = body.classList.contains('sidebar-collapsed');
         
-        console.log('Manual toggle results:');
-        console.log('- Sidebar collapsed:', isCollapsed);
-        console.log('- Body has sidebar-collapsed class:', bodyHasClass);
-        console.log('- Expected main content margin:', isCollapsed ? '70px' : '280px');
+        
+        
+        
         
         return true;
     } else {

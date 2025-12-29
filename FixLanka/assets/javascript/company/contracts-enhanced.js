@@ -1,4 +1,4 @@
-// ===================================
+﻿// ===================================
 // CONTRACTS PAGE - COMPLETE IMPLEMENTATION
 // ===================================
 
@@ -455,7 +455,7 @@ function applyFilters() {
 }
 
 function updateResultsCount(count) {
-    console.log(`Showing ${count} contracts after filtering`);
+    
 }
 
 // ===================================
@@ -588,7 +588,7 @@ async function handleEditContractById(contractId) {
 async function handleDownloadContractById(contractId) {
     try {
         // In a real implementation, this would download the contract PDF
-        console.log('Downloading contract:', contractId);
+        
         alert(`Download functionality for contract ${contractId} will be implemented soon.`);
     } catch (error) {
         console.error('Error downloading contract:', error);
@@ -910,24 +910,23 @@ async function loadAcceptedProjects() {
         const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=getAcceptedProjects');
         const result = await response.json();
         
-        console.log('API Response:', result);
-        console.log('Success:', result.success);
-        console.log('Data count:', result.data ? result.data.length : 0);
-        console.log('Full data:', result.data);
+        
+        
+        
         
         loadingContainer.style.display = 'none';
         
         if (!result.success || result.data.length === 0) {
-            console.log('No projects available or API failed');
+            
             noProjectsContainer.style.display = 'block';
             return;
         }
         
         // Display projects
-        console.log('Displaying projects...');
+        
         projectsList.style.display = 'grid';
         result.data.forEach(project => {
-            console.log('Creating card for:', project.project_title);
+            
             const projectCard = createProjectCard(project);
             projectsList.appendChild(projectCard);
         });
@@ -1034,7 +1033,7 @@ function autoFillProjectData(project) {
     document.getElementById('startDate').value = project.proposed_start_date || '';
     document.getElementById('endDate').value = project.proposed_end_date || '';
     
-    console.log('Project data auto-filled:', project);
+    
 }
 
 // Helper function to format currency
@@ -1277,7 +1276,6 @@ function submitContractForm() {
     })
     .then(response => response.json())
     .then(result => {
-        console.log('Contract save response:', result);
         
         if (result.success) {
             showNotification(
