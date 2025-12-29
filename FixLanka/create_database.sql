@@ -441,6 +441,25 @@ CREATE TABLE MilestonePayment (
     INDEX idx_status (status)
 );
 
+-- Company Expense Table (for tracking company expenses by project)
+CREATE TABLE CompanyExpense (
+    expense_id INT PRIMARY KEY AUTO_INCREMENT,
+    company_id INT NOT NULL,
+    project_id INT,
+    category ENUM('materials', 'labor', 'transport', 'equipment', 'permits', 'other') NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    description TEXT,
+    expense_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (company_id) REFERENCES Company(company_id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES Project(project_id) ON DELETE SET NULL,
+    INDEX idx_company (company_id),
+    INDEX idx_project (project_id),
+    INDEX idx_category (category),
+    INDEX idx_expense_date (expense_date)
+);
+
 -- Repairer Assignment Table (for company projects)
 CREATE TABLE RepairerAssignment (
     assignment_id INT PRIMARY KEY AUTO_INCREMENT,
