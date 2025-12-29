@@ -14,6 +14,25 @@ require_once 'helpers.php';
 
 header('Content-Type: application/json');
 
+// Get request method
+$requestMethod = $_SERVER['REQUEST_METHOD'];
+
+// Route to appropriate handler based on method
+if ($requestMethod === 'POST') {
+    handleCreateAdvertisement();
+} elseif ($requestMethod === 'DELETE') {
+    handleDeleteAdvertisement();
+} else {
+    // Default GET request - list advertisements
+    handleListAdvertisements();
+}
+
+/**
+ * Handle GET request - List all advertisements for company
+ */
+function handleListAdvertisements() {
+    global $pdo;
+
 try {
     // Require authentication - will send 401 if not logged in
     requireAuth();
@@ -125,4 +144,153 @@ try {
     // General error handling
     error_log("Error in advertisements API: " . $e->getMessage());
     sendErrorResponse('An error occurred', 500);
+}
+}
+
+/**
+ * Handle POST request - Create new advertisement
+ */
+function handleCreateAdvertisement() {
+    global $pdo;
+    
+    try {
+        // Require authentication
+        requireAuth();
+        
+        $userId = $_SESSION['user_id'];
+        
+        // Get company ID
+        $companyId = $_SESSION['company_id'] ?? null;
+        if (!$companyId) {
+            $companyData = getCompanyByUserId($pdo, $userId);
+            if (!$companyData) {
+                sendErrorResponse('Company profile not found', 404);
+                return;
+            }
+            $companyId = $companyData['company_id'];
+        }
+        
+        // Get form data
+        $title = $_POST['title'] ?? '';
+        $description = $_POST['description'] ?? '';
+        $category = $_POST['category'] ?? '';
+        $type = $_POST['type'] ?? 'banner';
+        $targetUrl = $_POST['target_url'] ?? '';
+        $targetAudience = $_POST['target_audience'] ?? 'all';
+        $linkText = $_POST['link_text'] ?? '';
+        $scheduleType = $_POST['schedule_type'] ?? 'immediate';
+        $startDate = $_POST['start_date'] ?? date('Y-m-d H:i:s');
+        $endDate = $_POST['end_date'] ?? null;
+        $duration = $_POST['duration'] ?? 30;
+        $priorityPlacement = isset($_POST['priority_placement']) ? 1 : 0;
+        $paymentMethod = $_POST['payment_method'] ?? '';
+        
+        // Validate required fields
+        if (empty($title) || empty($description) || empty($category)) {
+            sendErrorResponse('Title, description, and category are required', 400);
+            return;
+        }
+        
+        // Handle file upload
+        $imageUrl = null;
+        if (isset($_FILES['media_file']) && $_FILES['media_file']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = '../uploads/advertisements/';
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            
+            $fileName = time() . '_' . basename($_FILES['media_file']['name']);
+            $targetPath = $uploadDir . $fileName;
+            
+            if (move_uploaded_file($_FILES['media_file']['tmp_name'], $targetPath)) {
+                $imageUrl = '/2nd-Year-Group-Project/FixLanka/uploads/advertisements/' . $fileName;
+            }
+        }
+        
+        // Calculate budget based on duration and pricing
+        $baseRate = 500;
+        $videoRate = ($type === 'video') ? 300 : 0;
+        $priorityRate = $priorityPlacement ? 200 : 0;
+        $budget = ($baseRate + $videoRate + $priorityRate) * intval($duration);
+        
+        // If schedule type is scheduled, use provided dates
+        if ($scheduleType === 'scheduled' && !empty($endDate)) {
+            // Use provided dates
+        } else {
+            // Calculate end date from duration
+            $endDate = date('Y-m-d H:i:s', strtotime("+{$duration} days"));
+        }
+        
+        // Insert into database
+        $query = "INSERT INTO advertisement (
+                    provider_id, provider_type, title, description, category, 
+                    image_url, type, budget, priority, target_url, 
+                    start_date, end_date, status, submission_date
+                  ) VALUES (
+                    :provider_id, 'company', :title, :description, :category,
+                    :image_url, :type, :budget, :priority, :target_url,
+                    :start_date, :end_date, 'pending', NOW()
+                  )";
+        
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([
+            ':provider_id' => $companyId,
+            ':title' => $title,
+            ':description' => $description,
+            ':category' => $category,
+            ':image_url' => $imageUrl,
+            ':type' => $type,
+            ':budget' => $budget,
+            ':priority' => $priorityPlacement,
+            ':target_url' => $targetUrl,
+            ':start_date' => $startDate,
+            ':end_date' => $endDate
+        ]);
+        
+        $adId = $pdo->lastInsertId();
+        
+        // Send success response
+        sendSuccessResponse([
+            'message' => 'Advertisement created successfully and submitted for review',
+            'ad_id' => $adId,
+            'status' => 'pending'
+        ]);
+        
+    } catch (PDOException $e) {
+        error_log("Database error creating advertisement: " . $e->getMessage());
+        sendErrorResponse('Failed to create advertisement', 500);
+    } catch (Exception $e) {
+        error_log("Error creating advertisement: " . $e->getMessage());
+        sendErrorResponse('An error occurred', 500);
+    }
+}
+
+/**
+ * Handle DELETE request - Delete advertisement
+ */
+function handleDeleteAdvertisement() {
+    global $pdo;
+    
+    try {
+        requireAuth();
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        $adId = $data['ad_id'] ?? null;
+        
+        if (!$adId) {
+            sendErrorResponse('Advertisement ID is required', 400);
+            return;
+        }
+        
+        // Delete advertisement
+        $query = "DELETE FROM advertisement WHERE ad_id = :ad_id";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([':ad_id' => $adId]);
+        
+        sendSuccessResponse(['message' => 'Advertisement deleted successfully']);
+        
+    } catch (Exception $e) {
+        error_log("Error deleting advertisement: " . $e->getMessage());
+        sendErrorResponse('Failed to delete advertisement', 500);
+    }
 }

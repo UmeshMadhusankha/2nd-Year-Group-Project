@@ -1980,3 +1980,112 @@
         flex: 1;
     }
 }
+
+/* Centered Empty State - Like Contracts Page */
+.empty-state-centered {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 40px;
+    min-height: 400px;
+}
+
+.empty-icon-centered {
+    width: 80px;
+    height: 80px;
+    background: rgba(10, 186, 181, 0.1);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.empty-icon-centered i {
+    font-size: 36px;
+    color: var(--primary-color);
+    opacity: 0.8;
+}
+
+.empty-heading {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 12px 0;
+}
+
+.empty-message {
+    font-size: 14px;
+    color: #64748b;
+    margin: 0;
+    max-width: 400px;
+    line-height: 1.6;
+}
+
+/* Updated Empty State - Card Design Like Contracts Page */
+.empty-state-card {
+    background: white;
+    border-radius: 16px;
+    padding: 60px 40px;
+    text-align: center;
+    max-width: 500px;
+    margin: 60px auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.empty-icon-circle {
+    width: 100px;
+    height: 100px;
+    background: rgba(10, 186, 181, 0.15);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+}
+
+.empty-icon-circle i {
+    font-size: 48px;
+    color: var(--primary-color);
+}
+
+.empty-heading {
+    font-size: 22px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 12px 0;
+}
+
+.empty-message {
+    font-size: 14px;
+    color: #64748b;
+    margin: 0 0 28px 0;
+    line-height: 1.6;
+}
+
+.btn-create-ad {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #0abad5 0%, #0dd3bb 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(10, 186, 181, 0.25);
+}
+
+.btn-create-ad:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(10, 186, 181, 0.35);
+}
+
+.btn-create-ad i {
+    font-size: 14px;
+}

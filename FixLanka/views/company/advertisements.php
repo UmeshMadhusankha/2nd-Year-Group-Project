@@ -150,36 +150,9 @@ $userData = getUserData();
             </section>
         </main>
     </div>
-
-    <!-- Create/Edit Advertisement Modal -->
-    <div class="modal-overlay" id="adModal">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h2 id="modalTitle"><i class="fas fa-plus-circle"></i> Create New Advertisement</h2>
-                <button class="modal-close" id="closeModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-
-            <div class="modal-content">
-                <form id="adForm">
-                    <!-- Empty State (Hidden by default, shown when no results) -->
-                    <div class="empty-state" style="display: none;">
-                        <div class="empty-state" id="emptyState" style="display: none;">
-                            <div class="empty-icon">
-                                <i class="fas fa-bullhorn"></i>
-                            </div>
-                            <h3>No Advertisements Found</h3>
-                            <p>Try adjusting your filters or create a new advertisement to get started.</p>
-                            <button class="action-btn primary" onclick="document.getElementById('createAdBtn').click()">
-                                <i class="fas fa-plus"></i> Create Advertisement
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
         </main>
     </div>
+
 
     <!-- Create/Edit Advertisement Modal -->
     <div class="modal-overlay" id="adModal">

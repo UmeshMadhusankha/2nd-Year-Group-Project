@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Advertisement Filtering System
  * Handles all filtering, sorting, and search functionality
  */
@@ -13,7 +13,7 @@ class AdvertisementFilters {
             dateRange: 'all',
             sort: 'newest'
         };
-        
+
         this.init();
     }
 
@@ -53,14 +53,14 @@ class AdvertisementFilters {
         // View toggle buttons
         const listViewBtn = document.getElementById('listViewBtn');
         const gridViewBtn = document.getElementById('gridViewBtn');
-        
+
         if (listViewBtn && gridViewBtn) {
             listViewBtn.addEventListener('click', () => {
                 listViewBtn.classList.add('active');
                 gridViewBtn.classList.remove('active');
                 // Add list view logic here
             });
-            
+
             gridViewBtn.addEventListener('click', () => {
                 gridViewBtn.classList.add('active');
                 listViewBtn.classList.remove('active');
@@ -72,23 +72,28 @@ class AdvertisementFilters {
     async loadAdvertisements() {
         try {
             const response = await fetch('../../api/advertisements.php');
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
-                this.advertisements = data.data || [];
+                // Ensure data.data is an array to prevent iteration errors
+                this.advertisements = Array.isArray(data.data) ? data.data : [];
                 this.updateStatusCounts(data.counts || {});
                 this.applyFilters();
             } else {
                 console.error('Failed to load advertisements:', data.message);
+                // Ensure advertisements is an empty array on API errors
+                this.advertisements = [];
                 this.showError(data.message || 'Failed to load advertisements');
             }
         } catch (error) {
             console.error('Error loading advertisements:', error);
+            // Ensure advertisements is an empty array on exceptions
+            this.advertisements = [];
             this.showError('Error loading advertisements: ' + error.message);
         }
     }
@@ -106,7 +111,7 @@ class AdvertisementFilters {
 
     handleSearchInput(value) {
         this.currentFilters.search = value.toLowerCase();
-        
+
         // Show/hide clear button
         const clearBtn = document.getElementById('clearSearch');
         if (clearBtn) {
@@ -114,7 +119,7 @@ class AdvertisementFilters {
         }
 
         this.updateFilterDisplay();
-        
+
         // Real-time search (debounced)
         clearTimeout(this.searchTimeout);
         this.searchTimeout = setTimeout(() => {
@@ -125,7 +130,7 @@ class AdvertisementFilters {
     handleDateRangeChange(range) {
         this.currentFilters.dateRange = range;
         const customDateRange = document.getElementById('customDateRange');
-        
+
         if (range === 'custom') {
             customDateRange.style.display = 'flex';
         } else {
@@ -133,7 +138,7 @@ class AdvertisementFilters {
             this.currentFilters.startDate = null;
             this.currentFilters.endDate = null;
         }
-        
+
         this.updateFilterDisplay();
     }
 
@@ -142,7 +147,7 @@ class AdvertisementFilters {
 
         // Status filter
         if (this.currentFilters.status !== 'all') {
-            filtered = filtered.filter(ad => 
+            filtered = filtered.filter(ad =>
                 ad.computed_status === this.currentFilters.status
             );
         }
@@ -175,7 +180,7 @@ class AdvertisementFilters {
                     const created = new Date(ad.submission_date);
                     return created >= today;
                 });
-            
+
             case 'week':
                 const weekAgo = new Date(today);
                 weekAgo.setDate(weekAgo.getDate() - 7);
@@ -183,7 +188,7 @@ class AdvertisementFilters {
                     const created = new Date(ad.submission_date);
                     return created >= weekAgo;
                 });
-            
+
             case 'month':
                 const monthAgo = new Date(today);
                 monthAgo.setMonth(monthAgo.getMonth() - 1);
@@ -191,7 +196,7 @@ class AdvertisementFilters {
                     const created = new Date(ad.submission_date);
                     return created >= monthAgo;
                 });
-            
+
             case 'quarter':
                 const quarterAgo = new Date(today);
                 quarterAgo.setMonth(quarterAgo.getMonth() - 3);
@@ -199,14 +204,14 @@ class AdvertisementFilters {
                     const created = new Date(ad.submission_date);
                     return created >= quarterAgo;
                 });
-            
+
             case 'year':
                 const yearStart = new Date(now.getFullYear(), 0, 1);
                 return ads.filter(ad => {
                     const created = new Date(ad.submission_date);
                     return created >= yearStart;
                 });
-            
+
             case 'custom':
                 if (this.currentFilters.startDate && this.currentFilters.endDate) {
                     const start = new Date(this.currentFilters.startDate);
@@ -217,7 +222,7 @@ class AdvertisementFilters {
                     });
                 }
                 return ads;
-            
+
             default:
                 return ads;
         }
@@ -225,20 +230,20 @@ class AdvertisementFilters {
 
     sortAdvertisements(ads) {
         const sorted = [...ads];
-        
+
         switch (this.currentFilters.sort) {
             case 'newest':
                 return sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            
+
             case 'oldest':
                 return sorted.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-            
+
             case 'title-asc':
                 return sorted.sort((a, b) => a.title.localeCompare(b.title));
-            
+
             case 'title-desc':
                 return sorted.sort((a, b) => b.title.localeCompare(a.title));
-            
+
             default:
                 return sorted;
         }
@@ -256,24 +261,23 @@ class AdvertisementFilters {
 
         if (this.filteredAds.length === 0) {
             // Check if this is initial load with no data or filtered results
-            const hasFilters = this.currentFilters.status !== 'all' || 
-                              this.currentFilters.type !== 'all' || 
-                              this.currentFilters.dateRange !== 'all';
-            
-            const message = hasFilters 
+            const hasFilters = this.currentFilters.status !== 'all' ||
+                this.currentFilters.type !== 'all' ||
+                this.currentFilters.dateRange !== 'all';
+
+            const heading = hasFilters ? 'No Advertisements Match Your Filters' : 'No Advertisements Found';
+            const message = hasFilters
                 ? 'No advertisements match your current filters. Try adjusting your filters or create a new advertisement.'
                 : 'You haven\'t created any advertisements yet. Create your first advertisement to get started.';
-            
+
             container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">
+                <div class="empty-state-card">
+                    <div class="empty-icon-circle">
                         <i class="fas fa-bullhorn"></i>
                     </div>
-                    <h3>No Advertisements Found</h3>
-                    <p>${message}</p>
-                    <button class="action-btn primary" onclick="document.getElementById('createAdBtn').click()">
-                        <i class="fas fa-plus"></i> Create Advertisement
-                    </button>
+                    <h3 class="empty-heading">${heading}</h3>
+                    <p class="empty-message">${message}</p>
+                    ${hasFilters ? "" : "<button class=\"btn-create-ad\" onclick=\"document.getElementById('createAdBtn').click()\"><i class=\"fas fa-plus\"></i> Create Advertisement</button>"}
                 </div>
             `;
             return;
@@ -286,7 +290,7 @@ class AdvertisementFilters {
         const statusClass = ad.computed_status || ad.status;
         const statusIcon = this.getStatusIcon(statusClass);
         const typeIcon = this.getTypeIcon(ad.type);
-        
+
         return `
             <div class="ad-card" data-ad-id="${ad.id}">
                 <div class="ad-media">
@@ -331,7 +335,7 @@ class AdvertisementFilters {
 
     renderActionButtons(ad, statusClass) {
         let buttons = [];
-        
+
         // View Details button (always available)
         buttons.push(`
             <button class="action-btn-ad view" onclick="advertisementFilters.viewAdDetails(${ad.id})" title="View details">
@@ -340,7 +344,7 @@ class AdvertisementFilters {
         `);
 
         // Status-specific action buttons
-        switch(statusClass) {
+        switch (statusClass) {
             case 'active':
                 // Active ads: Pause, Analytics, Edit, Delete
                 buttons.push(`
@@ -515,10 +519,10 @@ class AdvertisementFilters {
         const resultCount = document.getElementById('resultCount');
         const totalCount = document.getElementById('totalCount');
         const resultsSummary = document.querySelector('.results-summary');
-        
+
         if (resultCount) resultCount.textContent = this.filteredAds.length;
         if (totalCount) totalCount.textContent = this.advertisements.length;
-        
+
         // Show/hide results summary
         if (resultsSummary && this.filteredAds.length > 0) {
             resultsSummary.style.display = 'block';
@@ -534,16 +538,16 @@ class AdvertisementFilters {
             dateRange: 'all',
             sort: 'newest'
         };
-        
+
         // Reset UI
         const statusFilter = document.getElementById('statusFilter');
         const typeFilter = document.getElementById('typeFilter');
         const dateFilter = document.getElementById('dateFilter');
-        
+
         if (statusFilter) statusFilter.value = 'all';
         if (typeFilter) typeFilter.value = 'all';
         if (dateFilter) dateFilter.value = 'all';
-        
+
         this.applyFilters();
     }
 
@@ -555,7 +559,7 @@ class AdvertisementFilters {
             if (loadingState) {
                 loadingState.style.display = 'none';
             }
-            
+
             container.innerHTML = `
                 <div class="error-state">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -637,9 +641,9 @@ class AdvertisementFilters {
         }
 
         // TODO: Populate edit modal with ad data
-        
+
         alert('Edit functionality coming soon!\n\nAdvertisement: ' + ad.title);
-        
+
         // Open the existing create modal and populate with data
         const adModal = document.getElementById('adModal');
         if (adModal) {
@@ -667,7 +671,7 @@ class AdvertisementFilters {
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 alert('Advertisement paused successfully!');
                 this.loadAdvertisements(); // Reload data
@@ -696,7 +700,7 @@ class AdvertisementFilters {
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 alert('Advertisement resumed successfully!');
                 this.loadAdvertisements();
@@ -725,7 +729,7 @@ class AdvertisementFilters {
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 alert('Advertisement started successfully!');
                 this.loadAdvertisements();
@@ -754,7 +758,7 @@ class AdvertisementFilters {
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 alert('Advertisement cancelled successfully!');
                 this.loadAdvertisements();
@@ -782,7 +786,7 @@ class AdvertisementFilters {
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 alert('Advertisement deleted successfully!');
                 this.loadAdvertisements();
@@ -803,9 +807,9 @@ class AdvertisementFilters {
         }
 
         // Show analytics modal
-        const ctr = ad.click_through_rate || 
-                   (ad.clicks > 0 && ad.impressions > 0 ? ((ad.clicks / ad.impressions) * 100).toFixed(2) : 0);
-        
+        const ctr = ad.click_through_rate ||
+            (ad.clicks > 0 && ad.impressions > 0 ? ((ad.clicks / ad.impressions) * 100).toFixed(2) : 0);
+
         const modalHtml = `
             <div class="modal-overlay active" id="analyticsModal">
                 <div class="modal-container" style="max-width: 900px;">
@@ -884,7 +888,7 @@ class AdvertisementFilters {
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 alert('Advertisement renewed successfully!');
                 this.loadAdvertisements();
@@ -919,7 +923,7 @@ class AdvertisementFilters {
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 alert('Advertisement duplicated successfully!');
                 this.loadAdvertisements();
@@ -948,7 +952,7 @@ class AdvertisementFilters {
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 alert('Advertisement archived successfully!');
                 this.loadAdvertisements();
@@ -970,25 +974,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Global functions for ad actions
 function viewAdDetails(adId) {
-    
+
     // TODO: Implement view details modal
 }
 
 function editAdvertisement(adId) {
-    
+
     // TODO: Implement edit functionality
 }
 
 function pauseAdvertisement(adId) {
     if (confirm('Are you sure you want to pause this advertisement?')) {
-        
+
         // TODO: Implement pause functionality via API
     }
 }
 
 function deleteAdvertisement(adId) {
     if (confirm('Are you sure you want to delete this advertisement? This action cannot be undone.')) {
-        
+
         // TODO: Implement delete functionality via API
     }
 }
+
+
