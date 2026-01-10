@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/payments.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/payments-export-modal.css">
 </head>
 
 <body>
@@ -510,6 +511,153 @@
         </div>
     </div>
 
+    <!-- Export Payments Modal -->
+    <div class="export-modal-overlay" id="exportModal">
+        <div class="export-modal-container">
+            <div class="export-modal-header">
+                <h2><i class="fas fa-download"></i> Export Payments</h2>
+                <button class="export-modal-close" onclick="closeExportModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="export-modal-body">
+                <div class="export-options-container">
+                    <!-- Filter By Type Section (Radio - single selection) -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-filter"></i> Filter by Type</h4>
+                        <div class="export-radio-group">
+                            <label class="export-radio-option">
+                                <input type="radio" name="paymentType" value="all" checked>
+                                <span class="radio-indicator"></span>
+                                <span class="option-text">All Payments</span>
+                            </label>
+                            <label class="export-radio-option">
+                                <input type="radio" name="paymentType" value="income">
+                                <span class="radio-indicator"></span>
+                                <span class="option-text">Income Only</span>
+                            </label>
+                            <label class="export-radio-option">
+                                <input type="radio" name="paymentType" value="expense">
+                                <span class="radio-indicator"></span>
+                                <span class="option-text">Expenses Only</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Filter By Status Section -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-flag"></i> Filter by Status</h4>
+                        <div class="export-checkbox-group">
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportCompleted" checked>
+                                <span class="checkbox-indicator"><i class="fas fa-check"></i></span>
+                                <span class="option-text">Completed</span>
+                            </label>
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportPending" checked>
+                                <span class="checkbox-indicator"><i class="fas fa-check"></i></span>
+                                <span class="option-text">Pending</span>
+                            </label>
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportFailed">
+                                <span class="checkbox-indicator"><i class="fas fa-check"></i></span>
+                                <span class="option-text">Failed</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Date Range Section -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-calendar-alt"></i> Date Range</h4>
+                        <div class="export-date-range">
+                            <div class="export-date-presets">
+                                <button class="export-date-preset-btn" onclick="setDatePreset(7)" type="button">Last 7 days</button>
+                                <button class="export-date-preset-btn" onclick="setDatePreset(30)" type="button">Last 30 days</button>
+                                <button class="export-date-preset-btn" onclick="setDatePreset(90)" type="button">Last 3 months</button>
+                                <button class="export-date-preset-btn" onclick="setDatePreset(365)" type="button">Last year</button>
+                            </div>
+                            <div class="export-date-inputs">
+                                <div class="export-date-field">
+                                    <label for="exportStartDate">From</label>
+                                    <input type="date" id="exportStartDate">
+                                </div>
+                                <div class="export-date-field">
+                                    <label for="exportEndDate">To</label>
+                                    <input type="date" id="exportEndDate">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Format Section -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-file-alt"></i> Export Format</h4>
+                        <div class="export-format-group">
+                            <label class="export-format-option">
+                                <input type="radio" name="exportFormat" value="csv" checked>
+                                <div class="export-format-icon csv">
+                                    <i class="fas fa-file-csv"></i>
+                                </div>
+                                <span class="export-format-name">CSV</span>
+                                <span class="export-format-desc">Universal format</span>
+                            </label>
+                            <label class="export-format-option">
+                                <input type="radio" name="exportFormat" value="excel">
+                                <div class="export-format-icon excel">
+                                    <i class="fas fa-file-excel"></i>
+                                </div>
+                                <span class="export-format-name">Excel</span>
+                                <span class="export-format-desc">Spreadsheet</span>
+                            </label>
+                            <label class="export-format-option">
+                                <input type="radio" name="exportFormat" value="pdf">
+                                <div class="export-format-icon pdf">
+                                    <i class="fas fa-file-pdf"></i>
+                                </div>
+                                <span class="export-format-name">PDF</span>
+                                <span class="export-format-desc">Print ready</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Export Summary -->
+                    <div class="export-summary-box" id="exportSummaryBox">
+                        <h4><i class="fas fa-chart-pie"></i> Export Preview</h4>
+                        <div class="export-summary-stats">
+                            <div class="export-summary-stat">
+                                <span class="stat-value" id="exportTotalRecords">--</span>
+                                <span class="stat-label">Records</span>
+                            </div>
+                            <div class="export-summary-stat">
+                                <span class="stat-value" id="exportTotalAmount">--</span>
+                                <span class="stat-label">Total</span>
+                            </div>
+                            <div class="export-summary-stat">
+                                <span class="stat-value" id="exportDateRange">--</span>
+                                <span class="stat-label">Days</span>
+                            </div>
+                        </div>
+                        <div class="export-summary-loading">
+                            <i class="fas fa-spinner"></i>
+                            <span>Calculating...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="export-modal-footer">
+                <button class="export-btn export-btn-cancel" onclick="closeExportModal()" type="button">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="export-btn export-btn-preview" onclick="previewPaymentsExport()" type="button">
+                    <i class="fas fa-eye"></i> Preview
+                </button>
+                <button class="export-btn export-btn-download" onclick="downloadPaymentsExport()" type="button">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script>
         // Load sidebar and topbar
@@ -549,6 +697,7 @@
             });
     </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/payments_layout.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/payments-export.js"></script>
 </body>
 
 </html>

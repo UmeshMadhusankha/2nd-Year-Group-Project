@@ -1,0 +1,646 @@
+/**
+ * Payments Export Modal Styles
+ * Uses unique prefixed class names to avoid conflicts with payments.css
+ * All classes prefixed with 'export-modal-' for uniqueness
+ */
+
+/* =====================================================
+   EXPORT MODAL - OVERLAY
+   ===================================================== */
+.export-modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: var(--bg-overlay, rgba(0, 0, 0, 0.6)) !important;
+    display: none;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 9999 !important;
+    padding: var(--spacing-lg, 24px) !important;
+    box-sizing: border-box !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+}
+
+.export-modal-overlay.active {
+    display: flex !important;
+}
+
+/* =====================================================
+   EXPORT MODAL - CONTAINER
+   ===================================================== */
+.export-modal-container {
+    background: var(--bg-primary, #ffffff) !important;
+    border-radius: var(--border-radius-lg, 16px) !important;
+    box-shadow: var(--shadow-xl, 0 25px 50px -12px rgba(0, 0, 0, 0.25)) !important;
+    width: 100% !important;
+    max-width: 600px !important;
+    max-height: 90vh !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 auto !important;
+    position: relative !important;
+    transform: none !important;
+    animation: exportModalSlideIn 0.3s ease-out !important;
+}
+
+@keyframes exportModalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* =====================================================
+   EXPORT MODAL - HEADER
+   ===================================================== */
+.export-modal-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: var(--spacing-lg, 24px) !important;
+    border-bottom: 1px solid var(--border-color, #e5e7eb) !important;
+    background: var(--bg-primary, #ffffff) !important;
+    flex-shrink: 0 !important;
+}
+
+.export-modal-header h2 {
+    margin: 0 !important;
+    font-size: 1.375rem !important;
+    font-weight: 600 !important;
+    color: var(--text-primary, #1f2937) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--spacing-sm, 8px) !important;
+}
+
+.export-modal-header h2 i {
+    color: var(--primary-color, #3b82f6) !important;
+    font-size: 1.25rem !important;
+}
+
+/* =====================================================
+   EXPORT MODAL - CLOSE BUTTON
+   ===================================================== */
+.export-modal-close {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: var(--border-radius, 8px) !important;
+    border: none !important;
+    background: var(--bg-secondary, #f3f4f6) !important;
+    color: var(--text-muted, #6b7280) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: var(--transition-normal, all 0.2s ease) !important;
+    font-size: 1.125rem !important;
+}
+
+.export-modal-close:hover {
+    background: var(--danger-color, #ef4444) !important;
+    color: var(--text-white, #ffffff) !important;
+    transform: rotate(90deg) !important;
+}
+
+/* =====================================================
+   EXPORT MODAL - BODY/CONTENT
+   ===================================================== */
+.export-modal-body {
+    padding: var(--spacing-lg, 24px) !important;
+    overflow-y: auto !important;
+    flex: 1 !important;
+    background: var(--bg-primary, #ffffff) !important;
+    max-height: calc(90vh - 180px) !important;
+}
+
+/* =====================================================
+   EXPORT OPTIONS CONTAINER
+   ===================================================== */
+.export-options-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--spacing-lg, 24px) !important;
+}
+
+/* =====================================================
+   EXPORT OPTION GROUPS
+   ===================================================== */
+.export-option-group {
+    background: var(--bg-secondary, #f9fafb) !important;
+    border-radius: var(--border-radius, 12px) !important;
+    padding: var(--spacing-md, 16px) !important;
+    border: 1px solid var(--border-color, #e5e7eb) !important;
+}
+
+.export-option-group h4 {
+    margin: 0 0 var(--spacing-sm, 12px) 0 !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    color: var(--text-primary, #374151) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--spacing-sm, 8px) !important;
+}
+
+.export-option-group h4 i {
+    color: var(--primary-color, #3b82f6) !important;
+    font-size: 1rem !important;
+}
+
+/* =====================================================
+   RADIO BUTTONS - Filter by Type (Single Selection)
+   ===================================================== */
+.export-radio-group {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: var(--spacing-sm, 8px) !important;
+}
+
+.export-radio-option {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--spacing-sm, 8px) !important;
+    padding: var(--spacing-sm, 10px) var(--spacing-md, 14px) !important;
+    background: var(--bg-primary, #ffffff) !important;
+    border: 1px solid var(--border-color, #e5e7eb) !important;
+    border-radius: var(--border-radius, 8px) !important;
+    cursor: pointer !important;
+    transition: var(--transition-normal, all 0.2s ease) !important;
+    font-size: 0.875rem !important;
+    color: var(--text-primary, #374151) !important;
+    user-select: none !important;
+}
+
+.export-radio-option:hover {
+    border-color: var(--primary-color, #3b82f6) !important;
+    background: rgba(59, 130, 246, 0.05) !important;
+}
+
+.export-radio-option input[type="radio"] {
+    display: none !important;
+}
+
+.export-radio-option .radio-indicator {
+    width: 18px !important;
+    height: 18px !important;
+    border: 2px solid var(--border-color, #d1d5db) !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: var(--transition-normal, all 0.2s ease) !important;
+    flex-shrink: 0 !important;
+}
+
+.export-radio-option .radio-indicator::after {
+    content: '' !important;
+    width: 8px !important;
+    height: 8px !important;
+    background: transparent !important;
+    border-radius: 50% !important;
+    transition: var(--transition-normal, all 0.2s ease) !important;
+}
+
+.export-radio-option input[type="radio"]:checked + .radio-indicator {
+    border-color: var(--primary-color, #3b82f6) !important;
+}
+
+.export-radio-option input[type="radio"]:checked + .radio-indicator::after {
+    background: var(--primary-color, #3b82f6) !important;
+}
+
+.export-radio-option.selected,
+.export-radio-option:has(input[type="radio"]:checked) {
+    border-color: var(--primary-color, #3b82f6) !important;
+    background: rgba(59, 130, 246, 0.08) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* =====================================================
+   CHECKBOXES - Filter by Status (Multiple Selection)
+   ===================================================== */
+.export-checkbox-group {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: var(--spacing-sm, 8px) !important;
+}
+
+.export-checkbox-option {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--spacing-sm, 8px) !important;
+    padding: var(--spacing-sm, 10px) var(--spacing-md, 14px) !important;
+    background: var(--bg-primary, #ffffff) !important;
+    border: 1px solid var(--border-color, #e5e7eb) !important;
+    border-radius: var(--border-radius, 8px) !important;
+    cursor: pointer !important;
+    transition: var(--transition-normal, all 0.2s ease) !important;
+    font-size: 0.875rem !important;
+    color: var(--text-primary, #374151) !important;
+    user-select: none !important;
+}
+
+.export-checkbox-option:hover {
+    border-color: var(--primary-color, #3b82f6) !important;
+    background: rgba(59, 130, 246, 0.05) !important;
+}
+
+.export-checkbox-option input[type="checkbox"] {
+    display: none !important;
+}
+
+.export-checkbox-option .checkbox-indicator {
+    width: 18px !important;
+    height: 18px !important;
+    border: 2px solid var(--border-color, #d1d5db) !important;
+    border-radius: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: var(--transition-normal, all 0.2s ease) !important;
+    flex-shrink: 0 !important;
+}
+
+.export-checkbox-option .checkbox-indicator i {
+    font-size: 10px !important;
+    color: var(--text-white, #ffffff) !important;
+    opacity: 0 !important;
+    transform: scale(0) !important;
+    transition: var(--transition-normal, all 0.2s ease) !important;
+}
+
+.export-checkbox-option input[type="checkbox"]:checked + .checkbox-indicator {
+    background: var(--primary-color, #3b82f6) !important;
+    border-color: var(--primary-color, #3b82f6) !important;
+}
+
+.export-checkbox-option input[type="checkbox"]:checked + .checkbox-indicator i {
+    opacity: 1 !important;
+    transform: scale(1) !important;
+}
+
+.export-checkbox-option.selected,
+.export-checkbox-option:has(input[type="checkbox"]:checked) {
+    border-color: var(--primary-color, #3b82f6) !important;
+    background: rgba(59, 130, 246, 0.08) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Status color badges */
+.export-status-badge {
+    padding: 2px 8px !important;
+    border-radius: 12px !important;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    margin-left: 4px !important;
+}
+
+.export-status-badge.pending {
+    background: rgba(245, 158, 11, 0.15) !important;
+    color: var(--warning-color, #f59e0b) !important;
+}
+
+.export-status-badge.completed {
+    background: rgba(16, 185, 129, 0.15) !important;
+    color: var(--success-color, #10b981) !important;
+}
+
+.export-status-badge.failed {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: var(--danger-color, #ef4444) !important;
+}
+
+/* =====================================================
+   DATE RANGE SECTION
+   ===================================================== */
+.export-date-range {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--spacing-sm, 12px) !important;
+}
+
+.export-date-presets {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: var(--spacing-sm, 8px) !important;
+    margin-bottom: var(--spacing-sm, 8px) !important;
+}
+
+.export-date-preset-btn {
+    padding: 6px 12px !important;
+    border: 1px solid var(--border-color, #e5e7eb) !important;
+    background: var(--bg-primary, #ffffff) !important;
+    border-radius: var(--border-radius, 6px) !important;
+    font-size: 0.8125rem !important;
+    color: var(--text-muted, #6b7280) !important;
+    cursor: pointer !important;
+    transition: var(--transition-normal, all 0.2s ease) !important;
+}
+
+.export-date-preset-btn:hover {
+    border-color: var(--primary-color, #3b82f6) !important;
+    color: var(--primary-color, #3b82f6) !important;
+}
+
+.export-date-preset-btn.active {
+    background: var(--primary-color, #3b82f6) !important;
+    border-color: var(--primary-color, #3b82f6) !important;
+    color: var(--text-white, #ffffff) !important;
+}
+
+.export-date-inputs {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: var(--spacing-md, 16px) !important;
+}
+
+.export-date-field {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+}
+
+.export-date-field label {
+    font-size: 0.8125rem !important;
+    font-weight: 500 !important;
+    color: var(--text-muted, #6b7280) !important;
+}
+
+.export-date-field input[type="date"] {
+    padding: var(--spacing-sm, 10px) var(--spacing-md, 12px) !important;
+    border: 1px solid var(--border-color, #e5e7eb) !important;
+    border-radius: var(--border-radius, 8px) !important;
+    font-size: 0.875rem !important;
+    color: var(--text-primary, #374151) !important;
+    background: var(--bg-primary, #ffffff) !important;
+    transition: var(--transition-normal, all 0.2s ease) !important;
+}
+
+.export-date-field input[type="date"]:focus {
+    outline: none !important;
+    border-color: var(--primary-color, #3b82f6) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* =====================================================
+   EXPORT FORMAT SECTION
+   ===================================================== */
+.export-format-group {
+    display: flex !important;
+    gap: var(--spacing-sm, 12px) !important;
+}
+
+.export-format-option {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: var(--spacing-sm, 8px) !important;
+    padding: var(--spacing-md, 16px) !important;
+    background: var(--bg-primary, #ffffff) !important;
+    border: 2px solid var(--border-color, #e5e7eb) !important;
+    border-radius: var(--border-radius, 12px) !important;
+    cursor: pointer !important;
+    transition: var(--transition-normal, all 0.2s ease) !important;
+}
+
+.export-format-option:hover {
+    border-color: var(--primary-color, #3b82f6) !important;
+}
+
+.export-format-option input[type="radio"] {
+    display: none !important;
+}
+
+.export-format-option.selected,
+.export-format-option:has(input[type="radio"]:checked) {
+    border-color: var(--primary-color, #3b82f6) !important;
+    background: rgba(59, 130, 246, 0.05) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+.export-format-icon {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: var(--border-radius, 12px) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.5rem !important;
+}
+
+.export-format-icon.csv {
+    background: rgba(16, 185, 129, 0.15) !important;
+    color: var(--success-color, #10b981) !important;
+}
+
+.export-format-icon.pdf {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: var(--danger-color, #ef4444) !important;
+}
+
+.export-format-icon.excel {
+    background: rgba(34, 197, 94, 0.15) !important;
+    color: #22c55e !important;
+}
+
+.export-format-name {
+    font-weight: 600 !important;
+    color: var(--text-primary, #374151) !important;
+    font-size: 0.9375rem !important;
+}
+
+.export-format-desc {
+    font-size: 0.75rem !important;
+    color: var(--text-muted, #9ca3af) !important;
+    text-align: center !important;
+}
+
+/* =====================================================
+   EXPORT SUMMARY / PREVIEW
+   ===================================================== */
+.export-summary-box {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(99, 102, 241, 0.08)) !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+    border-radius: var(--border-radius, 12px) !important;
+    padding: var(--spacing-md, 16px) !important;
+}
+
+.export-summary-box h4 {
+    margin: 0 0 var(--spacing-sm, 12px) 0 !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    color: var(--primary-color, #3b82f6) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--spacing-sm, 8px) !important;
+}
+
+.export-summary-stats {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: var(--spacing-md, 16px) !important;
+}
+
+.export-summary-stat {
+    text-align: center !important;
+}
+
+.export-summary-stat .stat-value {
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    color: var(--text-primary, #1f2937) !important;
+    display: block !important;
+}
+
+.export-summary-stat .stat-label {
+    font-size: 0.75rem !important;
+    color: var(--text-muted, #6b7280) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+}
+
+/* Loading state */
+.export-summary-box.loading .export-summary-stats {
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+}
+
+.export-summary-loading {
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: var(--spacing-sm, 8px) !important;
+    padding: var(--spacing-md, 16px) !important;
+    color: var(--text-muted, #6b7280) !important;
+    font-size: 0.875rem !important;
+}
+
+.export-summary-box.loading .export-summary-loading {
+    display: flex !important;
+}
+
+.export-summary-loading i {
+    animation: spin 1s linear infinite !important;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* =====================================================
+   EXPORT MODAL - FOOTER/ACTIONS
+   ===================================================== */
+.export-modal-footer {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: var(--spacing-sm, 12px) !important;
+    padding: var(--spacing-lg, 24px) !important;
+    border-top: 1px solid var(--border-color, #e5e7eb) !important;
+    background: var(--bg-secondary, #f9fafb) !important;
+    flex-shrink: 0 !important;
+}
+
+.export-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: var(--spacing-sm, 8px) !important;
+    padding: var(--spacing-sm, 12px) var(--spacing-lg, 24px) !important;
+    border-radius: var(--border-radius, 8px) !important;
+    font-size: 0.9375rem !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: var(--transition-normal, all 0.2s ease) !important;
+    border: none !important;
+}
+
+.export-btn-cancel {
+    background: var(--bg-primary, #ffffff) !important;
+    color: var(--text-muted, #6b7280) !important;
+    border: 1px solid var(--border-color, #e5e7eb) !important;
+}
+
+.export-btn-cancel:hover {
+    background: var(--bg-secondary, #f3f4f6) !important;
+    color: var(--text-primary, #374151) !important;
+}
+
+.export-btn-preview {
+    background: var(--bg-primary, #ffffff) !important;
+    color: var(--primary-color, #3b82f6) !important;
+    border: 1px solid var(--primary-color, #3b82f6) !important;
+}
+
+.export-btn-preview:hover {
+    background: rgba(59, 130, 246, 0.1) !important;
+}
+
+.export-btn-download {
+    background: var(--primary-color, #3b82f6) !important;
+    color: var(--text-white, #ffffff) !important;
+}
+
+.export-btn-download:hover {
+    background: var(--primary-hover, #2563eb) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+}
+
+.export-btn-download:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+}
+
+/* =====================================================
+   RESPONSIVE DESIGN
+   ===================================================== */
+@media (max-width: 640px) {
+    .export-modal-overlay {
+        padding: var(--spacing-md, 16px) !important;
+    }
+    
+    .export-modal-container {
+        max-height: 95vh !important;
+    }
+    
+    .export-modal-header,
+    .export-modal-body,
+    .export-modal-footer {
+        padding: var(--spacing-md, 16px) !important;
+    }
+    
+    .export-date-inputs {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .export-format-group {
+        flex-direction: column !important;
+    }
+    
+    .export-summary-stats {
+        grid-template-columns: 1fr !important;
+        gap: var(--spacing-sm, 12px) !important;
+    }
+    
+    .export-modal-footer {
+        flex-direction: column !important;
+    }
+    
+    .export-btn {
+        justify-content: center !important;
+        width: 100% !important;
+    }
+}
