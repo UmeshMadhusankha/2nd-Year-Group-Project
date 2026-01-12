@@ -1,7 +1,7 @@
 
-
 @import "../common/variables.css";
 @import "../common/buttons.css";
+@import "../common/filters.css";
 
 
 *,
@@ -323,52 +323,16 @@ body {
 
 }
 
-.filter-section {
-  display: flex;
-  gap: var(--spacing-md);
-  align-items: center;
-}
+/* Filter styles now imported from common/filters.css */
 
 .filter-select-wrapper {
   position: relative;
   display: inline-block;
 }
 
-.filter-select {
-  padding: var(--spacing-sm);
-  padding-right: 2rem; /* extra space for arrow */
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  font-size: var(--font-size-sm);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  min-width: 120px;
-
-  /* remove default arrow */
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-}
-
+/* Hide Font Awesome icon - using background SVG from common/filters.css for consistency */
 .filter-select-icon {
-  position: absolute;
-  right: 0.75rem;   /* inside select box */
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none; /* so clicks go through */
-  color: var(--text-primary);
-  font-size: 0.75rem;
-}
-
-
-
-
-.filter-select:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(10, 186, 181, 0.1);
+  display: none !important;
 }
 
 .view-options {

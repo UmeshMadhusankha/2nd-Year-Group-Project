@@ -297,7 +297,7 @@
                                     <div class="form-row">
                                         <div class="form-group">
                                             <label for="ticketSteps">
-                                                Steps to Reproduce (Optional)
+                                                What Happened (Optional)
                                             </label>
                                             <textarea 
                                                 id="ticketSteps" 

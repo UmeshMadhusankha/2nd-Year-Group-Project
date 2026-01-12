@@ -1,6 +1,7 @@
 /* FixLanka Projects Page CSS */
 @import "../common/variables.css";
 @import "../common/buttons.css";
+@import "../common/filters.css";
 
 /* Base Styles */
 * {
@@ -608,6 +609,9 @@ body {
   border-radius: var(--border-radius-xl) var(--border-radius-xl) 0 0;
 }
 
+/* Filter styles now imported from common/filters.css */
+/* Keeping filters-bar for layout, using common filter item styles */
+
 .filters-bar {
   margin: 0 auto;
   display: flex;
@@ -677,8 +681,6 @@ body {
   letter-spacing: 0.8px;
 }
 
-.filter-select,
-.filter-date,
 .budget-input {
   padding: var(--spacing-md) var(--spacing-lg);
   border: 2px solid rgba(10, 186, 181, 0.15);
@@ -697,15 +699,6 @@ body {
   cursor: pointer;
 }
 
-.filter-select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='%230abab5' d='M7 10L2 5h10z'/%3E%3C/svg%3E");
-  background-position: right var(--spacing-md) center;
-  background-size: 14px 14px;
-  background-repeat: no-repeat;
-  padding-right: calc(var(--spacing-lg) + 28px);
-}
-
 .filter-date {
   position: relative;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='%230abab5'%3E%3Cpath d='M5 1v2H3a2 2 0 00-2 2v9a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2h-2V1h-1v2H6V1H5zm8 4v2H3V5h10zm0 3v6H3V8h10z'/%3E%3C/svg%3E");
@@ -715,9 +708,8 @@ body {
   padding-right: calc(var(--spacing-lg) + 28px);
 }
 
-.filter-select:hover,
-.filter-date:hover,
-.budget-input:hover {
+.budget-input:hover,
+.filter-date:hover {
   background-color: rgba(255, 255, 255, 1);
   border-color: rgba(10, 186, 181, 0.3);
   transform: translateY(-3px);
@@ -727,9 +719,8 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
-.filter-select:focus,
-.filter-date:focus,
-.budget-input:focus {
+.budget-input:focus,
+.filter-date:focus {
   outline: none;
   border-color: var(--primary-color);
   background-color: rgba(255, 255, 255, 1);
@@ -738,36 +729,6 @@ body {
     0 0 0 4px rgba(10, 186, 181, 0.15),
     0 12px 32px rgba(10, 186, 181, 0.2),
     inset 0 2px 0 rgba(255, 255, 255, 0.7);
-}
-
-/* Modern Select Dropdown Options */
-.filter-select option,
-select option {
-  padding: var(--spacing-md);
-  background: #ffffff;
-  color: var(--text-primary);
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.filter-select option:hover,
-.filter-select option:focus,
-.filter-select option:checked,
-select option:hover,
-select option:focus,
-select option:checked {
-  background: linear-gradient(135deg,
-      rgba(10, 186, 181, 0.12),
-      rgba(10, 186, 181, 0.08));
-  color: var(--primary-color);
-  font-weight: 600;
-}
-
-.filter-select option:disabled,
-select option:disabled {
-  color: var(--text-muted);
-  background: var(--bg-secondary);
-  cursor: not-allowed;
 }
 
 .budget-range {

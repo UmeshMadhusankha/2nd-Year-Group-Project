@@ -260,14 +260,12 @@ body {
 .section-title {
     font-size: 22px;
     font-weight: 700;
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: var(--text-primary);
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
     background-clip: text;
     margin: 0 0 var(--spacing-xl) 0;
     padding-bottom: 16px;
     border-bottom: 3px solid transparent;
-    border-image: linear-gradient(90deg, var(--primary-color), var(--accent-color), transparent) 1;
     position: relative;
     display: flex;
     align-items: center;
@@ -278,7 +276,6 @@ body {
     content: '';
     width: 4px;
     height: 24px;
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
     border-radius: 2px;
 }
 

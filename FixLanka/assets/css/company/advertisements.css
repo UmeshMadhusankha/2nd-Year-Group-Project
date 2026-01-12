@@ -3,6 +3,7 @@
 /* Import global styles */
 @import "../common/variables.css";
 @import "../common/buttons.css";
+@import "../common/filters.css";
 
 /* Page Header - Consistent with Workforce page */
 .page-header {
@@ -103,6 +104,8 @@
 }
 
 /* Single Row Filters Layout */
+/* Filter styles now imported from common/filters.css */
+
 .filters-row {
     display: flex;
     align-items: center;
@@ -111,33 +114,6 @@
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-/* Filter Dropdowns */
-.filter-dropdown {
-    padding: 0.75rem 2.5rem 0.75rem 1rem;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #1e293b;
-    background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 9L1 4h10z'/%3E%3C/svg%3E") no-repeat right 1rem center;
-    background-size: 12px;
-    appearance: none;
-    cursor: pointer;
-    transition: all 0.3s;
-    min-width: 150px;
-}
-
-.filter-dropdown:hover {
-    border-color: #0abad5;
-    background-color: #f8fafc;
-}
-
-.filter-dropdown:focus {
-    outline: none;
-    border-color: #0abad5;
-    box-shadow: 0 0 0 3px rgba(10, 186, 181, 0.1);
 }
 
 /* View Toggle Buttons */
@@ -190,32 +166,10 @@
     align-items: flex-end;
 }
 
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    min-width: 180px;
-}
-
+/* Search Group specific styling */
 .filter-group.search-group {
     flex: 1;
     min-width: 300px;
-}
-
-.filter-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.filter-label i {
-    font-size: 0.875rem;
-    color: #0abad5;
 }
 
 /* Search Box */

@@ -1,6 +1,9 @@
 /* Reviews & Feedback Page Styles */
 /* Premium Modern Design - Matches System Theme */
 
+/* Import Common Filters */
+@import "../common/filters.css";
+
 /* ================================================
    SECTION TITLE & DESCRIPTION
    ================================================ */
@@ -180,6 +183,9 @@
 /* ================================================
    FILTER BAR - Modern Design
    ================================================ */
+/* Filter styles now imported from common/filters.css */
+/* Keeping reviews-filter-bar for backward compatibility but using common filter item styles */
+
 .reviews-filter-bar {
     background: white;
     border-radius: 12px;
@@ -203,43 +209,6 @@
 .filter-right {
     display: flex;
     gap: 12px;
-}
-
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-width: 140px;
-}
-
-.filter-group label {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-primary, #0a2e33);
-    text-transform: capitalize;
-}
-
-.filter-group select {
-    padding: 9px 12px;
-    border: 1px solid rgba(10, 186, 181, 0.25);
-    border-radius: 6px;
-    font-size: 13px;
-    color: var(--text-primary, #0a2e33);
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: inherit;
-}
-
-.filter-group select:hover {
-    border-color: var(--primary-color, #0abab5);
-    background: rgba(10, 186, 181, 0.02);
-}
-
-.filter-group select:focus {
-    outline: none;
-    border-color: var(--primary-color, #0abab5);
-    box-shadow: 0 0 0 3px rgba(10, 186, 181, 0.08);
 }
 
 .search-group {
