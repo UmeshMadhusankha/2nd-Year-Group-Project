@@ -1,3 +1,9 @@
+<?php
+// Start session and verify authentication
+require_once '../../config/session.php';
+requireRole('company');
+$userData = getUserData();
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -23,12 +29,14 @@
 <body>
     <div class="app-container">
         <!-- Include Sidebar -->
-        <div id="sidebar-container"></div>
+        <!-- Include Sidebar -->
+        <?php include 'sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content">
             <!-- Include Topbar -->
-            <div id="topbar-container"></div>
+            <!-- Include Topbar -->
+            <?php include 'topbar.php'; ?>
 
             <!-- Payments Content -->
             <div class="payments-container">
@@ -664,40 +672,228 @@
         fetch('/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php')
             .then(response => response.text())
             .then(data => {
-                // Set active state immediately in the HTML before inserting
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = data;
-
-                // Remove any existing active classes
-                const allNavItems = tempDiv.querySelectorAll('.nav-item');
-                allNavItems.forEach(item => item.classList.remove('active'));
-
-                // Set payments as active immediately
-                const paymentsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/views/company/payments.php"]');
-                if (paymentsLink) {
-                    paymentsLink.parentElement.classList.add('active');
-                }
-
-                // Insert the modified HTML
-                document.getElementById('sidebar-container').innerHTML = tempDiv.innerHTML;
+                document.getElementById('sidebar-container').innerHTML = data;
+                // Add active class
+                setTimeout(() => {
+                    const paymentsLink = document.querySelector('#sidebar-container a[href*="payments"]');
+                    if(paymentsLink) paymentsLink.parentElement.classList.add('active');
+                }, 100);
             });
 
         fetch('/2nd-Year-Group-Project/FixLanka/views/company/topbar.php?page=payments')
             .then(response => response.text())
             .then(data => {
                 document.getElementById('topbar-container').innerHTML = data;
-                
-                // Initialize topbar after loading
-                if (typeof initializeTopbar === 'function') {
-                    setTimeout(initializeTopbar, 100);
-                }
-                if (typeof initProfileDropdown === 'function') {
-                    setTimeout(initProfileDropdown, 200);
-                }
             });
+
+        // Main Payment Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchPaymentsData();
+            
+            // Period change listener
+            document.getElementById('period-select').addEventListener('change', updatePeriod);
+        });
+
+        let currentData = { income: [], expenses: [], projects: [] };
+
+        async function fetchPaymentsData() {
+            const period = document.getElementById('period-select').value;
+            // Handle custom range if implemented in UI, for now just pass period
+            const url = `/2nd-Year-Group-Project/FixLanka/api/payments.php?period=${period}`;
+            
+            try {
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentData = result.data;
+                    updateDashboard(result.data.summary);
+                    populateIncomeTable(result.data.income);
+                    populateExpenseTable(result.data.expenses);
+                    populateProjectDropdowns(result.data.projects);
+                }
+            } catch (error) {
+                console.error('Error fetching payments:', error);
+            }
+        }
+
+        function updateDashboard(summary) {
+            document.getElementById('total-income-display').textContent = formatCurrency(summary.total_income);
+            document.getElementById('total-expenses-display').textContent = formatCurrency(summary.total_expenses);
+            document.getElementById('net-profit-display').textContent = formatCurrency(summary.net_profit);
+            document.getElementById('pending-payments-display').textContent = formatCurrency(summary.pending_payments || 0);
+            
+            document.getElementById('total-transactions-display').textContent = summary.total_transactions;
+            document.getElementById('avg-payment-display').textContent = formatCurrency(summary.avg_payment);
+            document.getElementById('profit-margin-display').textContent = summary.profit_margin + '%';
+            document.getElementById('expense-ratio-display').textContent = summary.expense_ratio + '%';
+        }
+
+        function populateIncomeTable(income) {
+            const tbody = document.getElementById('income-table-body');
+            tbody.innerHTML = '';
+            
+            if (income.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No income records found</td></tr>';
+                return;
+            }
+
+            income.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.date}</td>
+                    <td>${item.project_name}</td>
+                    <td>${item.client_name}</td>
+                    <td>${formatCurrency(item.amount)}</td>
+                    <td><span class="status-badge ${item.status}">${item.status}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function populateExpenseTable(expenses) {
+            const tbody = document.getElementById('expense-table-body');
+            tbody.innerHTML = '';
+
+            if (expenses.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No expense records found</td></tr>';
+                return;
+            }
+
+            expenses.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.date}</td>
+                    <td>${item.project_name}</td>
+                    <td>${item.category}</td>
+                    <td>${item.description}</td>
+                    <td>${formatCurrency(item.amount)}</td>
+                    <td>
+                        <button class="btn-icon" onclick="deleteExpense('${item.id}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        function populateProjectDropdowns(projects) {
+            const selects = ['income-project-filter', 'expense-project-filter', 'expense-project', 'edit-expense-project'];
+            selects.forEach(id => {
+               const select = document.getElementById(id);
+               if (!select) return;
+               
+               // Keep first option (All/Select)
+               const firstOption = select.options[0];
+               select.innerHTML = '';
+               select.appendChild(firstOption);
+               
+               projects.forEach(p => {
+                   const opt = document.createElement('option');
+                   opt.value = p.project_id;
+                   opt.textContent = p.title;
+                   select.appendChild(opt);
+               });
+            });
+        }
+
+        function formatCurrency(amount) {
+            return 'LKR ' + parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function updatePeriod() {
+            fetchPaymentsData();
+        }
+        
+        // Modal Logic
+        function openExpenseModal() {
+            document.getElementById('expense-modal').style.display = 'block';
+             // Set default date to today
+            document.getElementById('expense-date').valueAsDate = new Date();
+        }
+
+        function closeExpenseModal() {
+            document.getElementById('expense-modal').style.display = 'none';
+        }
+        
+        async function saveExpense() {
+            const data = {
+                project_id: document.getElementById('expense-project').value,
+                category: document.getElementById('expense-category').value,
+                amount: document.getElementById('expense-amount').value,
+                date: document.getElementById('expense-date').value,
+                description: document.getElementById('expense-description').value
+            };
+            
+            try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/payments.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Expense saved successfully');
+                    closeExpenseModal();
+                    fetchPaymentsData(); // Refresh
+                } else {
+                    alert(result.message || 'Failed to save expense');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error processing request');
+            }
+        }
+        
+        function deleteExpense(id) {
+            if(!confirm("Are you sure you want to delete this expense?")) return;
+            
+             fetch('/2nd-Year-Group-Project/FixLanka/api/payments.php', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ expense_id: id })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                         alert('Expense deleted');
+                         fetchPaymentsData();
+                    } else {
+                        alert('Failed to delete');
+                    }
+                });
+        }
+        
+        // --- Filter Logic (Client-side for now as API handles basic filters) ---
+        function applyIncomeFilters() {
+             // Basic implementation: Refetch or client-filter.
+             // Given the list size, client-side filter on 'currentData.income' is fast
+             const status = document.getElementById('income-status-filter').value;
+             const project = document.getElementById('income-project-filter').value;
+             // ... amount filter logic ...
+             
+             let filtered = currentData.income.filter(item => {
+                 if (status !== 'all' && item.status !== status) return false;
+                 if (project !== 'all' && item.project_id != project) return false; // Note: project_id might be int/string
+                 return true;
+             });
+             
+             populateIncomeTable(filtered);
+        }
+        
+         function applyExpenseFilters() {
+             const category = document.getElementById('expense-category-filter').value;
+             const project = document.getElementById('expense-project-filter').value;
+             
+             let filtered = currentData.expenses.filter(item => {
+                 if (category !== 'all' && item.category !== category) return false;
+                 if (project !== 'all' && item.project_id != project) return false;
+                 return true;
+             });
+             
+             populateExpenseTable(filtered);
+        }
     </script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/payments_layout.js"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/payments-export.js"></script>
 </body>
 
 </html>

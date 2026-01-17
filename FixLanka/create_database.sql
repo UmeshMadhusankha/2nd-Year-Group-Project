@@ -209,6 +209,35 @@ CREATE TABLE Company (
     INDEX idx_email (email)
 );
 
+-- Company Bank Account Table
+CREATE TABLE CompanyBankAccount (
+    bank_id INT PRIMARY KEY AUTO_INCREMENT,
+    company_id INT NOT NULL,
+    bank_name VARCHAR(100) NOT NULL,
+    branch_name VARCHAR(100) NOT NULL,
+    account_number VARCHAR(50) NOT NULL,
+    account_holder_name VARCHAR(150) NOT NULL,
+    account_type ENUM('savings', 'current', 'business') NOT NULL,
+    swift_code VARCHAR(50),
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (company_id) REFERENCES Company(company_id) ON DELETE CASCADE,
+    INDEX idx_company (company_id)
+);
+
+-- Company Wallet Table (for payment gateways/wallets)
+CREATE TABLE CompanyWallet (
+    wallet_id INT PRIMARY KEY AUTO_INCREMENT,
+    company_id INT NOT NULL,
+    provider_name VARCHAR(100) NOT NULL, -- e.g., 'eZ Cash', 'PayHere'
+    merchant_id VARCHAR(100),
+    wallet_number VARCHAR(50),
+    status ENUM('active', 'inactive', 'pending') DEFAULT 'active',
+    is_connected BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (company_id) REFERENCES Company(company_id) ON DELETE CASCADE,
+    INDEX idx_company (company_id)
+);
+
 -- Company Job Posting Table
 CREATE TABLE CompanyJobPost (
     posting_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -264,6 +293,40 @@ CREATE TABLE ChatMessage (
     FOREIGN KEY (repairer_id) REFERENCES Repairer(repairer_id) ON DELETE CASCADE,
     INDEX idx_user (user_id),
     INDEX idx_repairer (repairer_id)
+);
+
+-- Support Ticket Table
+CREATE TABLE SupportTicket (
+    ticket_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    user_type ENUM('user', 'repairer', 'company') NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    category ENUM('payment', 'technical', 'account', 'feature', 'billing', 'other') NOT NULL,
+    priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+    status ENUM('open', 'in_progress', 'resolved', 'closed') DEFAULT 'open',
+    urgency ENUM('can-wait', 'soon', 'asap') DEFAULT 'soon',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    project_id INT, -- Optional link to a project
+    attachment VARCHAR(500),
+    FOREIGN KEY (project_id) REFERENCES Project(project_id) ON DELETE SET NULL,
+    INDEX idx_user (user_id, user_type),
+    INDEX idx_status (status),
+    INDEX idx_project (project_id)
+);
+
+-- Ticket Message Table (for conversation history within a ticket)
+CREATE TABLE TicketMessage (
+    message_id INT PRIMARY KEY AUTO_INCREMENT,
+    ticket_id INT NOT NULL,
+    sender_id INT NOT NULL,
+    sender_type ENUM('user', 'repairer', 'company', 'admin', 'moderator') NOT NULL,
+    message TEXT NOT NULL,
+    attachment VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (ticket_id) REFERENCES SupportTicket(ticket_id) ON DELETE CASCADE,
+    INDEX idx_ticket (ticket_id)
 );
 
 -- =====================================================
@@ -523,3 +586,21 @@ INSERT INTO Category (name) VALUES
 ('Drywall'),
 ('Insulation'),
 ('Window Installation');
+
+-- =====================================================
+-- Notification Table
+-- =====================================================
+CREATE TABLE Notification (
+    notification_id INT PRIMARY KEY AUTO_INCREMENT,
+    recipient_id INT, -- Nullable for broadcast messages
+    recipient_type ENUM('all', 'user', 'repairer', 'company') NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    status ENUM('sent', 'pending', 'failed') DEFAULT 'sent',
+    is_read BOOLEAN DEFAULT FALSE,
+    date DATE DEFAULT (CURRENT_DATE),
+    time TIME DEFAULT (CURRENT_TIME),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_recipient (recipient_id, recipient_type),
+    INDEX idx_status (status)
+);

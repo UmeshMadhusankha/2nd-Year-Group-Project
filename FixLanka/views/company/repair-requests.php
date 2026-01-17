@@ -58,11 +58,13 @@ if (!$userId) {
 
     <div class="dashboard-container">
         <!-- Sidebar Container -->
-        <div id="sidebar-container"></div>
+        <!-- Sidebar Component -->
+        <?php include 'sidebar.php'; ?>
 
         <main class="main-content">
             <!-- Header Container -->
-            <div id="header-container"></div>
+            <!-- Header Component -->
+            <?php include 'topbar.php'; ?>
 
             <!-- Page Header -->
             <header class="page-header">
@@ -777,52 +779,8 @@ if (!$userId) {
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/repair-requests-db.js"></script>
 
     <script>
-        // Load components when DOM is ready
-        document.addEventListener('DOMContentLoaded', function () {
-            loadComponent('sidebar-container', '/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php');
-            loadComponent('header-container', '/2nd-Year-Group-Project/FixLanka/views/company/topbar.php');
-        });
+        // Additional scripts if needed
 
-        // Function to load HTML components
-        function loadComponent(containerId, componentFile) {
-            fetch(componentFile)
-                .then(response => response.text())
-                .then(html => {
-                    if (containerId === 'sidebar-container') {
-                        // Set active state immediately in the HTML before inserting
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = html;
-
-                        // Remove any existing active classes
-                        const allNavItems = tempDiv.querySelectorAll('.nav-item');
-                        allNavItems.forEach(item => item.classList.remove('active'));
-
-                        // Set repair requests as active immediately
-                        const repairRequestsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/views/company/repair-requests.php"]');
-                        if (repairRequestsLink) {
-                            repairRequestsLink.parentElement.classList.add('active');
-                        }
-
-                        // Insert the modified HTML
-                        document.getElementById(containerId).innerHTML = tempDiv.innerHTML;
-                    } else {
-                        document.getElementById(containerId).innerHTML = html;
-                    }
-
-                    // Initialize topbar after loading
-                    if (containerId === 'header-container') {
-                        if (typeof initializeTopbar === 'function') {
-                            setTimeout(initializeTopbar, 100);
-                        }
-                        if (typeof initProfileDropdown === 'function') {
-                            setTimeout(initProfileDropdown, 200);
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading component:', error);
-                });
-        }
 
         // ========================================
         // ENHANCED PRICING CALCULATION SYSTEM

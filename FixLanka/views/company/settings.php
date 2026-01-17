@@ -1,3 +1,9 @@
+<?php
+// Start session and verify authentication
+require_once '../../config/session.php';
+requireRole('company');
+$userData = getUserData();
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -16,12 +22,14 @@
 <body>
     <div class="app-container">
         <!-- Include Sidebar -->
-        <div id="sidebar-container"></div>
+        <!-- Include Sidebar -->
+        <?php include 'sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content">
             <!-- Include Topbar -->
-            <div id="topbar-container"></div>
+            <!-- Include Topbar -->
+            <?php include 'topbar.php'; ?>
 
             <!-- Settings Header -->
             <div class="settings-header">
@@ -266,6 +274,42 @@
                                 View Full History
                             </button>
                         </div>
+
+                        <!-- Change Password Section -->
+                        <div class="settings-section">
+                            <h2 class="section-title">Change Password</h2>
+                            <form id="changePasswordForm" autocomplete="off" onsubmit="event.preventDefault(); changePassword();">
+                                <!-- Robust Browser Autofill Trick: Inputs must be 'visible' but hidden from view -->
+                                <div style="position: absolute; left: -9999px; top: -9999px;">
+                                    <input type="text" name="fake_username" tabindex="-1">
+                                    <input type="password" name="fake_password" tabindex="-1">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="currentPassword">Current Password</label>
+                                    <input type="password" id="currentPassword" name="current_password_input" class="form-control" 
+                                           autocomplete="new-password" readonly 
+                                           onfocus="this.removeAttribute('readonly');" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newPassword">New Password</label>
+                                    <input type="password" id="newPassword" name="new_password_input" class="form-control" 
+                                           autocomplete="new-password" readonly 
+                                           onfocus="this.removeAttribute('readonly');" required minlength="8">
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirmPassword">Confirm New Password</label>
+                                    <input type="password" id="confirmPassword" name="confirm_password_input" class="form-control" 
+                                           autocomplete="new-password" readonly 
+                                           onfocus="this.removeAttribute('readonly');" required minlength="8">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-primary">
+                                        <i class="fas fa-key"></i> Update Password
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
 
                     <!-- Billing Tab -->
@@ -450,45 +494,105 @@
 
     <!-- Load Components and Scripts -->
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/settings.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
+    <!-- <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/settings.js"></script> -->
 
     <!-- Load Sidebar and Topbar Components -->
     <script>
-        // Load sidebar and topbar
-        fetch('/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php')
-            .then(response => response.text())
-            .then(data => {
-                // Set active state immediately in the HTML before inserting
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = data;
-                
-                // Remove any existing active classes
-                const allNavItems = tempDiv.querySelectorAll('.nav-item');
-                allNavItems.forEach(item => item.classList.remove('active'));
-                
-                // Set settings as active immediately
-                const settingsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/views/company/settings.php"]');
-                if (settingsLink) {
-                    settingsLink.parentElement.classList.add('active');
-                }
-                
-                // Insert the modified HTML
-                document.getElementById('sidebar-container').innerHTML = tempDiv.innerHTML;
+        // Settings Tab Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Remove active from all
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Add active to current
+                    btn.classList.add('active');
+                    const tabId = btn.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
             });
 
-        fetch('/2nd-Year-Group-Project/FixLanka/views/company/topbar.php')
-            .then(response => response.text())
-            .then(data => {
-                document.getElementById('topbar-container').innerHTML = data;
+            // Force clear password fields to prevent stubborn autofill
+            setTimeout(() => {
+                const pwFields = ['currentPassword', 'newPassword', 'confirmPassword'];
+                pwFields.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) {
+                        el.value = ''; 
+                        el.setAttribute('readonly', 'readonly'); // Re-apply readonly just in case
+                    }
+                });
+            }, 500); // Slight delay to override browser fill
+        });
+
+        async function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showToast('New passwords do not match', 'error');
+                return;
+            }
+
+            try {
+                 const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-profile.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'change_password',
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+                const result = await response.json();
                 
-                // Initialize topbar after loading
-                if (typeof initializeTopbar === 'function') {
-                    setTimeout(initializeTopbar, 100);
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    document.getElementById('changePasswordForm').reset();
+                } else {
+                    showToast(result.message || 'Failed to change password', 'error');
                 }
-                if (typeof initProfileDropdown === 'function') {
-                    setTimeout(initProfileDropdown, 200);
-                }
-            });
+            } catch (error) {
+                 console.error('Error changing password:', error);
+                 showToast('An error occurred. Please try again.', 'error');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = toast.querySelector('.toast-icon');
+            const title = toast.querySelector('h4');
+            const text = toast.querySelector('p');
+            
+            toast.style.display = 'flex';
+            text.textContent = message;
+            
+            if (type === 'success') {
+                icon.className = 'toast-icon success';
+                icon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                title.textContent = 'Success!';
+            } else {
+                icon.className = 'toast-icon error';
+                icon.innerHTML = '<i class="fas fa-times-circle"></i>';
+                title.textContent = 'Error';
+                // Add basic error style if not present in CSS
+                icon.style.backgroundColor = '#ffebee';
+                icon.style.color = '#c62828';
+            }
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+            
+        // Close toast button
+        document.querySelector('.toast-close').addEventListener('click', () => {
+            document.getElementById('toast').style.display = 'none';
+        });
     </script>
 
     <!-- Set active sidebar item for Settings page -->

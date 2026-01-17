@@ -35,11 +35,16 @@ switch ($action) {
         break;
     
     case 'getRecent':
+    case 'list': // Alias for getRecent used by frontend
         $controller->getRecentNotifications();
         break;
     
     case 'getStats':
         $controller->getStats();
+        break;
+
+    case 'count':
+        $controller->getNotificationCount();
         break;
     
     case 'add':

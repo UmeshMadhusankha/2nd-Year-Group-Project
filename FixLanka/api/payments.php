@@ -60,7 +60,9 @@ function handleGetPayments() {
         
         // Get period filter
         $period = $_GET['period'] ?? 'month';
-        $dateFilter = getDateFilter($period);
+        $startDate = $_GET['start_date'] ?? null;
+        $endDate = $_GET['end_date'] ?? null;
+        $dateFilter = getDateFilter($period, $startDate, $endDate);
         
         // Fetch income from milestone payments
         $incomeQuery = "SELECT 
@@ -353,7 +355,7 @@ function handleDeleteExpense() {
 /**
  * Helper: Get date filter SQL based on period
  */
-function getDateFilter($period) {
+function getDateFilter($period, $startDate = null, $endDate = null) {
     switch ($period) {
         case 'today':
             return "AND DATE(mp.payment_date) = CURDATE()";
@@ -365,6 +367,11 @@ function getDateFilter($period) {
             return "AND QUARTER(mp.payment_date) = QUARTER(CURDATE()) AND YEAR(mp.payment_date) = YEAR(CURDATE())";
         case 'year':
             return "AND YEAR(mp.payment_date) = YEAR(CURDATE())";
+        case 'custom':
+            if ($startDate && $endDate) {
+                return "AND DATE(mp.payment_date) BETWEEN '$startDate' AND '$endDate'";
+            }
+            return "";
         default:
             return "";
     }

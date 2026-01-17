@@ -348,13 +348,19 @@ body {
     padding: 14px 18px;
     border: 2px solid transparent;
     background: linear-gradient(white, white) padding-box,
-                linear-gradient(135deg, rgba(10, 186, 181, 0.2), rgba(6, 149, 143, 0.2)) border-box;
+        linear-gradient(135deg, rgba(10, 186, 181, 0.2), rgba(6, 149, 143, 0.2)) border-box;
     border-radius: 12px;
     font-size: var(--font-size-base);
     color: var(--text-primary);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     font-family: var(--font-family-primary);
+}
+
+/* Hide default browser password reveal button (Edge/IE) */
+.form-group input[type="password"]::-ms-reveal,
+.form-group input[type="password"]::-ms-clear {
+    display: none;
 }
 
 .form-group input::placeholder,
@@ -370,9 +376,9 @@ body {
     outline: none;
     border: 2px solid transparent;
     background: linear-gradient(white, white) padding-box,
-                linear-gradient(135deg, var(--primary-color), var(--accent-color)) border-box;
+        linear-gradient(135deg, var(--primary-color), var(--accent-color)) border-box;
     box-shadow: 0 0 0 4px rgba(10, 186, 181, 0.1),
-                0 4px 12px rgba(10, 186, 181, 0.15);
+        0 4px 12px rgba(10, 186, 181, 0.15);
     transform: translateY(-1px);
 }
 
@@ -428,7 +434,7 @@ body {
 .form-group.success textarea {
     border-color: var(--success-color);
     background: linear-gradient(white, white) padding-box,
-                linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.3)) border-box;
+        linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.3)) border-box;
 }
 
 /* Error state for inputs */
@@ -437,7 +443,7 @@ body {
 .form-group.error textarea {
     border-color: var(--danger-color);
     background: linear-gradient(white, white) padding-box,
-                linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3)) border-box;
+        linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3)) border-box;
 }
 
 .form-group.error small {
@@ -507,14 +513,14 @@ body {
     object-fit: cover;
     border: 4px solid white;
     box-shadow: 0 0 0 2px var(--primary-color),
-                0 8px 16px rgba(10, 186, 181, 0.2);
+        0 8px 16px rgba(10, 186, 181, 0.2);
     transition: all 0.3s ease;
 }
 
 .profile-picture-upload:hover img {
     transform: scale(1.08);
     box-shadow: 0 0 0 2px var(--primary-color),
-                0 12px 24px rgba(10, 186, 181, 0.3);
+        0 12px 24px rgba(10, 186, 181, 0.3);
 }
 
 .profile-actions,
@@ -635,8 +641,13 @@ body {
 }
 
 @keyframes shimmer {
-    0% { left: -100%; }
-    100% { left: 100%; }
+    0% {
+        left: -100%;
+    }
+
+    100% {
+        left: 100%;
+    }
 }
 
 .strength-fill.weak {
@@ -735,9 +746,17 @@ body {
 }
 
 @keyframes checkPop {
-    0% { transform: scale(0); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(0);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 /* Notification toggle item - Enhanced with glassmorphism */
@@ -826,12 +845,12 @@ body {
 }
 
 /* Active state for toggle switch - Gradient background */
-input:checked + .slider {
+input:checked+.slider {
     background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
     box-shadow: 0 0 12px rgba(10, 186, 181, 0.4);
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
     transform: translateX(26px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
@@ -839,10 +858,10 @@ input:checked + .slider:before {
 /* Hover effect for switch */
 .slider:hover {
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15),
-                0 0 8px rgba(10, 186, 181, 0.2);
+        0 0 8px rgba(10, 186, 181, 0.2);
 }
 
-input:checked + .slider:hover {
+input:checked+.slider:hover {
     box-shadow: 0 0 16px rgba(10, 186, 181, 0.5);
 }
 

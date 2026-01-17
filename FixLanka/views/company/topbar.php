@@ -55,6 +55,7 @@ $pageInfo = [
     'support' => ['title' => 'Help & Support', 'slogan' => 'Get help and manage customer support tickets'],
     'contracts' => ['title' => 'Contracts', 'slogan' => 'Manage agreements and legal documents'],
     'payments' => ['title' => 'Payment Reports', 'slogan' => 'Income payments and expense tracking for your repair services'],
+    'advertisements' => ['title' => 'Advertisement Management', 'slogan' => 'Promote your services to a wider audience'],
     'profile' => ['title' => 'My Profile', 'slogan' => 'Manage your personal and company information'],
     'reviews' => ['title' => 'Reviews & Feedback', 'slogan' => 'Monitor and manage customer feedback for your company'],
     'settings' => ['title' => 'Settings', 'slogan' => 'Configure your account and system preferences']
@@ -82,8 +83,23 @@ $pageSlogan = $currentPageInfo['slogan'];
 
   <div class="header-right">
     <div class="search-box">
-      <i class="fas fa-search"></i>
-      <input type="text" placeholder="Search requests, repairers, projects...">
+      <div class="custom-select-wrapper" id="searchCategoryWrapper">
+        <div class="custom-select-trigger">
+            <span id="selectedCategoryText">All</span>
+            <i class="fas fa-chevron-down category-icon"></i>
+        </div>
+        <div class="custom-options">
+            <span class="custom-option selected" data-value="all">All</span>
+            <span class="custom-option" data-value="projects">Projects</span>
+            <span class="custom-option" data-value="requests">Requests</span>
+            <span class="custom-option" data-value="workforce">Workforce</span>
+            <span class="custom-option" data-value="payments">Payments</span>
+        </div>
+        <input type="hidden" id="searchCategory" value="all">
+      </div>
+      <div class="search-divider"></div>
+      <input type="text" id="globalSearchInput" placeholder="Search...">
+      <div id="searchResults" class="search-results-dropdown"></div>
     </div>
 
     <div class="notification-bell" id="notificationBell">
@@ -145,59 +161,25 @@ $pageSlogan = $currentPageInfo['slogan'];
 <script>
 // Immediately initialize notification bell after topbar loads
 (function() {
+    // Define global company ID for external scripts
+    window.CURRENT_COMPANY_ID = <?php echo json_encode($userData['id'] ?? 0); ?>;
+    
     console.log('🔄 Topbar inline script executing...');
     
-    // Wait for topbar.js to load, then initialize
-    function initializeNotificationBell() {
-        const bell = document.getElementById('notificationBell') || document.querySelector('.notification-bell');
-        
-        if (!bell) {
-            console.error('❌ Notification bell not found in DOM');
-            return;
-        }
-        
-        console.log('✅ Notification bell found, attaching click handler...');
-        
-        // Remove any existing listeners
-        const newBell = bell.cloneNode(true);
-        bell.parentNode.replaceChild(newBell, bell);
-        
-        // Attach click handler
-        newBell.addEventListener('click', function(e) {
-            e.stopPropagation();
-            console.log('🔔 Bell clicked!');
-            
-            if (typeof toggleNotificationDropdown === 'function') {
-                toggleNotificationDropdown();
-            } else {
-                console.error('❌ toggleNotificationDropdown not available yet, retrying...');
-                setTimeout(function() {
-                    if (typeof toggleNotificationDropdown === 'function') {
-                        toggleNotificationDropdown();
-                    } else {
-                        alert('Notification system is still loading. Please try again in a moment.');
-                    }
-                }, 500);
-            }
-        });
-        
-        console.log('✅ Click handler attached successfully');
-    }
-    
-    // Try immediately
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeNotificationBell);
+    // Check if topbar.js has already loaded
+    if (typeof window.initializeTopbar === 'function') {
+        window.initializeTopbar();
     } else {
-        initializeNotificationBell();
+        // If not, wait for DOMContentLoaded which is handled in topbar.js
+        console.log('⏳ Waiting for topbar.js to initialize...');
     }
-    
-    // Also try after a short delay to ensure everything is loaded
-    setTimeout(initializeNotificationBell, 100);
 })();
 
 // Load notification count
 document.addEventListener('DOMContentLoaded', function() {
-    loadNotificationCount();
+    if (typeof loadNotificationCount === 'function') {
+        loadNotificationCount();
+    }
 });
 
 async function loadNotificationCount() {
@@ -205,18 +187,19 @@ async function loadNotificationCount() {
         const companyId = <?php echo json_encode($userData['id'] ?? 0); ?>;
         if (!companyId) return;
         
-        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/notifications.php?action=count&user_id=${companyId}&user_type=company`);
-        const data = await response.json();
-        
-        if (data.success && data.count > 0) {
-            document.getElementById('notificationCount').textContent = data.count;
-            document.getElementById('notificationCount').style.display = 'flex';
-        } else {
-            document.getElementById('notificationCount').style.display = 'none';
+        // Use the global function if available
+        if (typeof window.getNotificationCount === 'function') {
+            const count = await window.getNotificationCount();
+            const badge = document.getElementById('notificationCount');
+            if (count > 0) {
+                badge.textContent = count > 9 ? '9+' : count;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
         }
     } catch (error) {
         console.error('Error loading notification count:', error);
-        document.getElementById('notificationCount').style.display = 'none';
     }
 }
 </script>

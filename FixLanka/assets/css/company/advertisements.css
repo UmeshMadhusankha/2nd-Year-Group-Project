@@ -173,6 +173,7 @@
 }
 
 /* Search Box */
+/* Search Box - Commented out to prevent conflict with Topbar
 .search-box {
     position: relative;
     display: flex;
@@ -213,6 +214,7 @@
     background: rgba(239, 68, 68, 0.1);
     color: #ef4444;
 }
+*/
 
 /* Filter Input */
 .filter-input {
@@ -670,8 +672,13 @@
 }
 
 @keyframes bannerPattern {
-    0% { transform: translate(0, 0); }
-    100% { transform: translate(60px, 60px); }
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(60px, 60px);
+    }
 }
 
 .banner-content {
@@ -1247,7 +1254,7 @@
     position: relative;
 }
 
-.ad-type-card input[type="radio"]:checked + .type-card-content {
+.ad-type-card input[type="radio"]:checked+.type-card-content {
     border-color: var(--primary-color);
     background: rgba(59, 130, 246, 0.05);
 }
@@ -1464,11 +1471,11 @@
     display: none;
 }
 
-.schedule-option input[type="radio"]:checked + .option-content {
+.schedule-option input[type="radio"]:checked+.option-content {
     color: var(--primary-color);
 }
 
-.schedule-option input[type="radio"]:checked ~ .schedule-option {
+.schedule-option input[type="radio"]:checked~.schedule-option {
     border-color: var(--primary-color);
     background: var(--bg-hover);
     box-shadow: 0 4px 12px var(--border-color);
@@ -1717,7 +1724,9 @@
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .loading-state p {
@@ -1799,18 +1808,21 @@
     left: -50%;
     width: 200%;
     height: 200%;
-    background: linear-gradient(
-        45deg,
-        transparent,
-        rgba(10, 186, 181, 0.1),
-        transparent
-    );
+    background: linear-gradient(45deg,
+            transparent,
+            rgba(10, 186, 181, 0.1),
+            transparent);
     animation: shimmer 3s infinite;
 }
 
 @keyframes shimmer {
-    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    0% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+
+    100% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
 }
 
 .empty-icon i {
@@ -1858,77 +1870,77 @@
         flex-direction: column;
         gap: var(--spacing-lg);
     }
-    
+
     .header-actions {
         width: 100%;
     }
-    
+
     .action-buttons {
         width: 100%;
         flex-direction: column;
     }
-    
+
     .action-btn {
         width: 100%;
         justify-content: center;
     }
-    
+
     .search-sort-bar {
         flex-direction: column;
     }
-    
+
     .sort-controls {
         flex-direction: column;
         width: 100%;
     }
-    
+
     .sort-select {
         width: 100%;
     }
-    
+
     .filter-tabs {
         justify-content: flex-start;
     }
-    
+
     .results-summary {
         flex-direction: column;
         gap: 1rem;
         align-items: flex-start;
     }
-    
+
     .ad-card {
         flex-direction: column;
     }
-    
+
     .ad-media {
         width: 100%;
     }
-    
+
     .ad-actions {
         flex-direction: row;
         flex-wrap: wrap;
         min-width: auto;
     }
-    
+
     .action-btn-ad {
         flex: 1;
         min-width: calc(50% - 0.25rem);
     }
-    
+
     .filter-tabs {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
-    
+
     .modal-footer {
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .modal-actions {
         width: 100%;
     }
-    
+
     .btn-primary,
     .btn-secondary {
         flex: 1;

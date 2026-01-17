@@ -48,12 +48,14 @@ if (!$companyId) {
 
     <div class="dashboard-container">
         <!-- Sidebar Component -->
-        <div id="sidebar-container"></div>
+        <!-- Sidebar Component -->
+        <?php include 'sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content">
             <!-- Header Component -->
-            <div id="header-container"></div>
+            <!-- Header Component -->
+            <?php include 'topbar.php'; ?>
 
             <!-- Workforce Container -->
             <div class="workforce-container">
@@ -396,54 +398,11 @@ if (!$companyId) {
         // Mock data arrays removed - kept as empty to prevent undefined errors
         const freelancersData = [];
         
-        // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
-            loadComponent('sidebar-container', '/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php');
-            loadComponent('header-container', '/2nd-Year-Group-Project/FixLanka/views/company/topbar.php?page=workforce');
-
-            setTimeout(() => {
+             setTimeout(() => {
                 initializePage();
             }, 500);
         });
-
-        // Function to load HTML components
-        function loadComponent(containerId, componentFile) {
-            fetch(componentFile)
-                .then(response => response.text())
-                .then(html => {
-                    if (containerId === 'sidebar-container') {
-                        // Set active state immediately in the HTML before inserting
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = html;
-                        
-                        // Remove any existing active classes
-                        const allNavItems = tempDiv.querySelectorAll('.nav-item');
-                        allNavItems.forEach(item => item.classList.remove('active'));
-                        
-                        // Set workforce as active immediately
-                        const workforceLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/views/company/workforce.php"]');
-                        if (workforceLink) {
-                            workforceLink.parentElement.classList.add('active');
-                        }
-                        
-                        // Insert the modified HTML
-                        document.getElementById(containerId).innerHTML = tempDiv.innerHTML;
-                    } else {
-                        document.getElementById(containerId).innerHTML = html;
-                    }
-
-                    // Initialize topbar after loading
-                    if (containerId === 'header-container') {
-                        if (typeof initializeTopbar === 'function') {
-                            setTimeout(initializeTopbar, 100);
-                        }
-                        if (typeof initProfileDropdown === 'function') {
-                            setTimeout(initProfileDropdown, 200);
-                        }
-                    }
-                })
-                .catch(error => console.error('Error loading component:', error));
-        }
 
         // Global variables
         let currentTab = 'employees';
