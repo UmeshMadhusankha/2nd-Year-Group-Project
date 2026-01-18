@@ -138,18 +138,35 @@ class CompanyModel {
             'push_mobile' => $data['pushMobile'] ? 1 : 0,
             'company_id' => $companyId
         ];
+        
+        // Add quiet hours if provided
+        if (isset($data['quietHoursStart'])) {
+            $dbData['quiet_hours_start'] = $data['quietHoursStart'];
+        }
+        if (isset($data['quietHoursEnd'])) {
+            $dbData['quiet_hours_end'] = $data['quietHoursEnd'];
+        }
 
-        // Insert or Update using ON DUPLICATE KEY UPDATE (or simpler check logic)
-        $sql = "INSERT INTO CompanySettings (company_id, email_repair_requests, email_project_updates, email_payments, email_team_activity, email_messages, push_desktop, push_mobile) 
-                VALUES (:company_id, :email_repair_requests, :email_project_updates, :email_payments, :email_team_activity, :email_messages, :push_desktop, :push_mobile)
-                ON DUPLICATE KEY UPDATE 
-                email_repair_requests = VALUES(email_repair_requests),
-                email_project_updates = VALUES(email_project_updates),
-                email_payments = VALUES(email_payments),
-                email_team_activity = VALUES(email_team_activity),
-                email_messages = VALUES(email_messages),
-                push_desktop = VALUES(push_desktop),
-                push_mobile = VALUES(push_mobile)";
+        // Insert or Update using ON DUPLICATE KEY UPDATE
+        $sql = "INSERT INTO CompanySettings (
+            company_id, email_repair_requests, email_project_updates, 
+            email_payments, email_team_activity, email_messages, 
+            push_desktop, push_mobile, quiet_hours_start, quiet_hours_end
+        ) VALUES (
+            :company_id, :email_repair_requests, :email_project_updates,
+            :email_payments, :email_team_activity, :email_messages,
+            :push_desktop, :push_mobile, :quiet_hours_start, :quiet_hours_end
+        )
+        ON DUPLICATE KEY UPDATE 
+            email_repair_requests = VALUES(email_repair_requests),
+            email_project_updates = VALUES(email_project_updates),
+            email_payments = VALUES(email_payments),
+            email_team_activity = VALUES(email_team_activity),
+            email_messages = VALUES(email_messages),
+            push_desktop = VALUES(push_desktop),
+            push_mobile = VALUES(push_mobile),
+            quiet_hours_start = VALUES(quiet_hours_start),
+            quiet_hours_end = VALUES(quiet_hours_end)";
         
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute($dbData);
@@ -161,6 +178,237 @@ class CompanyModel {
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$companyId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // ==================== SESSION MANAGEMENT ====================
+    
+    /**
+     * Get all active sessions for a user
+     */
+    public function getActiveSessions($userId) {
+        $sql = "SELECT session_id, device_type, browser, os, ip_address, location, 
+                       last_activity, is_current, created_at, user_agent
+                FROM user_sessions 
+                WHERE user_id = ? AND user_role = 'company'
+                ORDER BY last_activity DESC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * Revoke a specific session (force logout)
+     */
+    public function revokeSession($userId, $sessionId) {
+        // Can't revoke current session
+        $currentSessionId = session_id();
+        if ($sessionId === $currentSessionId) {
+            return false;
+        }
+        
+        $sql = "DELETE FROM user_sessions 
+                WHERE session_id = ? AND user_id = ? AND user_role = 'company'";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([$sessionId, $userId]);
+    }
+    
+    /**
+     * Revoke all sessions except current one
+     */
+    public function revokeAllOtherSessions($userId) {
+        $currentSessionId = session_id();
+        $sql = "DELETE FROM user_sessions 
+                WHERE user_id = ? AND user_role = 'company' AND session_id != ?";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([$userId, $currentSessionId]);
+    }
+    
+    /**
+     * Get session count for a user
+     */
+    public function getSessionCount($userId) {
+        $sql = "SELECT COUNT(*) as count 
+                FROM user_sessions 
+                WHERE user_id = ? AND user_role = 'company'";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] ?? 0;
+    }
+
+    // ==================== BILLING & SUBSCRIPTION ====================
+    
+    /**
+     * Get subscription details for a company
+     */
+    public function getSubscription($companyId) {
+        $sql = "SELECT * FROM company_subscriptions 
+                WHERE company_id = ? 
+                ORDER BY created_at DESC 
+                LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$companyId]);
+        $subscription = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // If no subscription exists, create a free trial
+        if (!$subscription) {
+            $this->createDefaultSubscription($companyId);
+            $stmt->execute([$companyId]);
+            $subscription = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+        
+        return $subscription;
+    }
+    
+    /**
+     * Create default free subscription for new company
+     */
+    private function createDefaultSubscription($companyId) {
+        $sql = "INSERT INTO company_subscriptions 
+                (company_id, plan_name, plan_price, billing_period, status, start_date, trial_ends_at, next_billing_date)
+                VALUES (?, 'free', 0.00, 'monthly', 'trial', CURDATE(), DATE_ADD(CURDATE(), INTERVAL 14 DAY), DATE_ADD(CURDATE(), INTERVAL 14 DAY))";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([$companyId]);
+    }
+    
+    /**
+     * Update subscription plan
+     */
+    public function updateSubscriptionPlan($companyId, $planName, $billingPeriod) {
+        $prices = [
+            'free' => 0,
+            'basic' => 2500,
+            'professional' => 5000,
+            'enterprise' => 10000
+        ];
+        
+        $price = $prices[$planName] ?? 0;
+        
+        // Update existing subscription
+        $sql = "UPDATE company_subscriptions 
+                SET plan_name = ?, 
+                    plan_price = ?, 
+                    billing_period = ?, 
+                    status = 'active',
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE company_id = ?";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([$planName, $price, $billingPeriod, $companyId]);
+    }
+    
+    /**
+     * Cancel subscription
+     */
+    public function cancelSubscription($companyId) {
+        $sql = "UPDATE company_subscriptions 
+                SET status = 'cancelled',
+                    auto_renew = 0,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE company_id = ?";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([$companyId]);
+    }
+    
+    /**
+     * Get all payment methods for a company
+     */
+    public function getPaymentMethods($companyId) {
+        $sql = "SELECT * FROM payment_methods 
+                WHERE company_id = ? AND is_active = 1
+                ORDER BY is_primary DESC, created_at DESC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$companyId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * Add new payment method
+     */
+    public function addPaymentMethod($companyId, $data) {
+        // If this is the first payment method, make it primary
+        $isFirst = $this->getPaymentMethodCount($companyId) === 0;
+        
+        $sql = "INSERT INTO payment_methods 
+                (company_id, card_type, last_four_digits, card_holder_name, expiry_month, expiry_year, billing_address, is_primary, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([
+            $companyId,
+            $data['card_type'],
+            $data['last_four_digits'],
+            $data['card_holder_name'],
+            $data['expiry_month'],
+            $data['expiry_year'],
+            $data['billing_address'] ?? null,
+            $isFirst ? 1 : 0
+        ]);
+    }
+    
+    /**
+     * Remove payment method
+     */
+    public function removePaymentMethod($paymentMethodId, $companyId) {
+        // Check if it's the primary method
+        $sql = "SELECT is_primary FROM payment_methods WHERE payment_method_id = ? AND company_id = ?";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$paymentMethodId, $companyId]);
+        $method = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$method) {
+            return false;
+        }
+        
+        // Soft delete
+        $sql = "UPDATE payment_methods SET is_active = 0 WHERE payment_method_id = ? AND company_id = ?";
+        $stmt = $this->pdo->prepare($sql);
+        $result = $stmt->execute([$paymentMethodId, $companyId]);
+        
+        // If primary was deleted, set another as primary
+        if ($result && $method['is_primary']) {
+            $this->assignNewPrimary($companyId);
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Set payment method as primary
+     */
+    public function setPrimaryPaymentMethod($paymentMethodId, $companyId) {
+        // Remove primary from all methods
+        $sql = "UPDATE payment_methods SET is_primary = 0 WHERE company_id = ?";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$companyId]);
+        
+        // Set new primary
+        $sql = "UPDATE payment_methods SET is_primary = 1 
+                WHERE payment_method_id = ? AND company_id = ? AND is_active = 1";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([$paymentMethodId, $companyId]);
+    }
+    
+    /**
+     * Get payment method count
+     */
+    private function getPaymentMethodCount($companyId) {
+        $sql = "SELECT COUNT(*) as count FROM payment_methods WHERE company_id = ? AND is_active = 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$companyId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] ?? 0;
+    }
+    
+    /**
+     * Assign new primary if current primary is deleted
+     */
+    private function assignNewPrimary($companyId) {
+        $sql = "UPDATE payment_methods 
+                SET is_primary = 1 
+                WHERE company_id = ? AND is_active = 1
+                ORDER BY created_at ASC
+                LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([$companyId]);
     }
 }
 ?>

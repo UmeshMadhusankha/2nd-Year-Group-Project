@@ -123,6 +123,65 @@ CREATE TABLE `companysettings` (
   CONSTRAINT `companysettings_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- User Sessions (Session Management)
+CREATE TABLE `user_sessions` (
+  `session_id` varchar(255) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `user_role` enum('user','repairer','company','admin','moderator') NOT NULL,
+  `device_type` varchar(100) DEFAULT NULL,
+  `browser` varchar(100) DEFAULT NULL,
+  `os` varchar(100) DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `last_activity` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `is_current` tinyint(1) DEFAULT 0,
+  PRIMARY KEY (`session_id`),
+  KEY `idx_user` (`user_id`,`user_role`),
+  KEY `idx_last_activity` (`last_activity`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Company Subscriptions
+CREATE TABLE `company_subscriptions` (
+  `subscription_id` int(11) NOT NULL AUTO_INCREMENT,
+  `company_id` int(11) NOT NULL,
+  `plan_name` enum('free','basic','professional','enterprise') DEFAULT 'free',
+  `plan_price` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `billing_period` enum('monthly','yearly') DEFAULT 'monthly',
+  `status` enum('active','cancelled','expired','trial') DEFAULT 'trial',
+  `start_date` date NOT NULL,
+  `end_date` date DEFAULT NULL,
+  `next_billing_date` date DEFAULT NULL,
+  `auto_renew` tinyint(1) DEFAULT 1,
+  `trial_ends_at` date DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`subscription_id`),
+  KEY `idx_company` (`company_id`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `company_subscriptions_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Payment Methods
+CREATE TABLE `payment_methods` (
+  `payment_method_id` int(11) NOT NULL AUTO_INCREMENT,
+  `company_id` int(11) NOT NULL,
+  `card_type` enum('visa','mastercard','amex','discover') NOT NULL,
+  `last_four_digits` char(4) NOT NULL,
+  `card_holder_name` varchar(100) NOT NULL,
+  `expiry_month` char(2) NOT NULL,
+  `expiry_year` char(4) NOT NULL,
+  `billing_address` varchar(255) DEFAULT NULL,
+  `is_primary` tinyint(1) DEFAULT 0,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`payment_method_id`),
+  KEY `idx_company` (`company_id`),
+  KEY `idx_primary` (`is_primary`),
+  KEY `idx_active` (`is_active`),
+  CONSTRAINT `payment_methods_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- Billing History
 CREATE TABLE `billinghistory` (
   `invoice_id` varchar(50) NOT NULL,

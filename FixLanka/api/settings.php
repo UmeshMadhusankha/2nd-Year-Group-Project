@@ -61,7 +61,138 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to save settings']);
         }
-    } else {
+    } 
+    elseif ($action === 'get_sessions') {
+        // Get all active sessions for the company
+        $sessions = $companyModel->getActiveSessions($companyId);
+        $sessionCount = $companyModel->getSessionCount($companyId);
+        echo json_encode([
+            'success' => true, 
+            'data' => $sessions,
+            'count' => $sessionCount,
+            'current_session_id' => session_id()
+        ]);
+    }
+    elseif ($action === 'revoke_session') {
+        // Revoke a specific session
+        $sessionId = $input['session_id'] ?? '';
+        if (empty($sessionId)) {
+            echo json_encode(['success' => false, 'message' => 'Session ID required']);
+            exit;
+        }
+        
+        $success = $companyModel->revokeSession($companyId, $sessionId);
+        if ($success) {
+            echo json_encode(['success' => true, 'message' => 'Session revoked successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to revoke session or session is current']);
+        }
+    }
+    elseif ($action === 'revoke_all_sessions') {
+        // Revoke all sessions except current
+        $success = $companyModel->revokeAllOtherSessions($companyId);
+        if ($success) {
+            $remainingCount = $companyModel->getSessionCount($companyId);
+            echo json_encode([
+                'success' => true, 
+                'message' => 'All other sessions revoked successfully',
+                'remaining_sessions' => $remainingCount
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to revoke sessions']);
+        }
+    }
+    elseif ($action === 'get_billing_data') {
+        // Get subscription, payment methods, and billing history
+        $subscription = $companyModel->getSubscription($companyId);
+        $paymentMethods = $companyModel->getPaymentMethods($companyId);
+        $billingHistory = $companyModel->getBillingHistory($companyId);
+        
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'subscription' => $subscription,
+                'payment_methods' => $paymentMethods,
+                'billing_history' => $billingHistory
+            ]
+        ]);
+    }
+    elseif ($action === 'add_payment_method') {
+        // Add new payment method
+        $data = $input['payment_method'] ?? [];
+        
+        if (empty($data['card_type']) || empty($data['last_four_digits']) || 
+            empty($data['card_holder_name']) || empty($data['expiry_month']) || empty($data['expiry_year'])) {
+            echo json_encode(['success' => false, 'message' => 'Missing required fields']);
+            exit;
+        }
+        
+        $success = $companyModel->addPaymentMethod($companyId, $data);
+        if ($success) {
+            echo json_encode(['success' => true, 'message' => 'Payment method added successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to add payment method']);
+        }
+    }
+    elseif ($action === 'remove_payment_method') {
+        // Remove payment method
+        $paymentMethodId = $input['payment_method_id'] ?? 0;
+        
+        if (empty($paymentMethodId)) {
+            echo json_encode(['success' => false, 'message' => 'Payment method ID required']);
+            exit;
+        }
+        
+        $success = $companyModel->removePaymentMethod($paymentMethodId, $companyId);
+        if ($success) {
+            echo json_encode(['success' => true, 'message' => 'Payment method removed successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to remove payment method']);
+        }
+    }
+    elseif ($action === 'set_primary_payment') {
+        // Set primary payment method
+        $paymentMethodId = $input['payment_method_id'] ?? 0;
+        
+        if (empty($paymentMethodId)) {
+            echo json_encode(['success' => false, 'message' => 'Payment method ID required']);
+            exit;
+        }
+        
+        $success = $companyModel->setPrimaryPaymentMethod($paymentMethodId, $companyId);
+        if ($success) {
+            echo json_encode(['success' => true, 'message' => 'Primary payment method updated']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update primary payment method']);
+        }
+    }
+    elseif ($action === 'change_plan') {
+        // Update subscription plan
+        $planName = $input['plan_name'] ?? '';
+        $billingPeriod = $input['billing_period'] ?? 'monthly';
+        
+        if (empty($planName) || !in_array($planName, ['free', 'basic', 'professional', 'enterprise'])) {
+            echo json_encode(['success' => false, 'message' => 'Invalid plan name']);
+            exit;
+        }
+        
+        $success = $companyModel->updateSubscriptionPlan($companyId, $planName, $billingPeriod);
+        if ($success) {
+            echo json_encode(['success' => true, 'message' => 'Subscription plan updated successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update subscription plan']);
+        }
+    }
+    elseif ($action === 'cancel_subscription') {
+        // Cancel subscription
+        $success = $companyModel->cancelSubscription($companyId);
+        if ($success) {
+            echo json_encode(['success' => true, 'message' => 'Subscription cancelled successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to cancel subscription']);
+        }
+    }
+    else {
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
     }
     exit;
