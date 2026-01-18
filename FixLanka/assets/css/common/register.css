@@ -60,9 +60,12 @@
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0) scale(1);
   }
+
   50% {
     transform: translateY(-30px) scale(1.05);
   }
@@ -86,6 +89,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -101,11 +105,7 @@
 .logo {
   display: inline-flex;
   align-items: center;
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 43f9b3f7df35756b085fa19a2aba69e4597f6567
-  justify-content: center;
+  <<<<<<< HEAD=======<<<<<<< HEAD>>>>>>>43f9b3f7df35756b085fa19a2aba69e4597f6567 justify-content: center;
   margin-bottom: var(--spacing-lg);
 }
 
@@ -113,10 +113,7 @@
   height: 80px;
   width: auto;
   object-fit: contain;
-<<<<<<< HEAD
-=======
-=======
-  gap: var(--spacing-sm);
+  <<<<<<< HEAD==============gap: var(--spacing-sm);
   font-size: var(--font-size-2xl);
   font-weight: 700;
   color: var(--primary-color);
@@ -125,8 +122,7 @@
 
 .logo i {
   font-size: var(--font-size-3xl);
->>>>>>> 5cf60e1a4b45d324ae1e648957683d9ac638ab61
->>>>>>> 43f9b3f7df35756b085fa19a2aba69e4597f6567
+  >>>>>>>5cf60e1a4b45d324ae1e648957683d9ac638ab61>>>>>>>43f9b3f7df35756b085fa19a2aba69e4597f6567
 }
 
 .register-title {
@@ -237,6 +233,7 @@
     opacity: 0;
     transform: translateX(20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -495,10 +492,8 @@ select.form-input {
     font-size: var(--font-size-base);
   }
 }
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 43f9b3f7df35756b085fa19a2aba69e4597f6567
+
+<<<<<<< HEAD=======<<<<<<< HEAD>>>>>>>43f9b3f7df35756b085fa19a2aba69e4597f6567
 
 /* ===== CHECKBOX GRID ===== */
 #repairer-service-areas.checkbox-grid,
@@ -551,7 +546,7 @@ select.form-input {
   flex: 1;
 }
 
-.checkbox-item input[type="checkbox"]:checked + span {
+.checkbox-item input[type="checkbox"]:checked+span {
   color: var(--primary-color);
   font-weight: 500;
 }
@@ -578,13 +573,10 @@ select.form-input {
     gap: 4px 6px;
     padding: 10px;
   }
-  
+
   .checkbox-item span {
     font-size: 13px;
   }
 }
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 5cf60e1a4b45d324ae1e648957683d9ac638ab61
->>>>>>> 43f9b3f7df35756b085fa19a2aba69e4597f6567
+
+<<<<<<< HEAD==============>>>>>>>5cf60e1a4b45d324ae1e648957683d9ac638ab61>>>>>>>43f9b3f7df35756b085fa19a2aba69e4597f6567

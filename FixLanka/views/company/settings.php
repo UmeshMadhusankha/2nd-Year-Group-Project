@@ -155,16 +155,6 @@ $userData = getUserData();
                             <h2 class="section-title">Notification Frequency</h2>
 
                             <div class="form-group">
-                                <label for="notificationFrequency">Email Digest</label>
-                                <select id="notificationFrequency">
-                                    <option value="realtime">Real-time (as they happen)</option>
-                                    <option value="hourly">Hourly digest</option>
-                                    <option value="daily">Daily digest</option>
-                                    <option value="weekly">Weekly digest</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
                                 <label for="quietHoursStart">Quiet Hours</label>
                                 <div class="time-range">
                                     <input type="time" id="quietHoursStart" value="22:00">
@@ -275,41 +265,7 @@ $userData = getUserData();
                             </button>
                         </div>
 
-                        <!-- Change Password Section -->
-                        <div class="settings-section">
-                            <h2 class="section-title">Change Password</h2>
-                            <form id="changePasswordForm" autocomplete="off" onsubmit="event.preventDefault(); changePassword();">
-                                <!-- Robust Browser Autofill Trick: Inputs must be 'visible' but hidden from view -->
-                                <div style="position: absolute; left: -9999px; top: -9999px;">
-                                    <input type="text" name="fake_username" tabindex="-1">
-                                    <input type="password" name="fake_password" tabindex="-1">
-                                </div>
 
-                                <div class="form-group">
-                                    <label for="currentPassword">Current Password</label>
-                                    <input type="password" id="currentPassword" name="current_password_input" class="form-control" 
-                                           autocomplete="new-password" readonly 
-                                           onfocus="this.removeAttribute('readonly');" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="newPassword">New Password</label>
-                                    <input type="password" id="newPassword" name="new_password_input" class="form-control" 
-                                           autocomplete="new-password" readonly 
-                                           onfocus="this.removeAttribute('readonly');" required minlength="8">
-                                </div>
-                                <div class="form-group">
-                                    <label for="confirmPassword">Confirm New Password</label>
-                                    <input type="password" id="confirmPassword" name="confirm_password_input" class="form-control" 
-                                           autocomplete="new-password" readonly 
-                                           onfocus="this.removeAttribute('readonly');" required minlength="8">
-                                </div>
-                                <div class="form-actions">
-                                    <button type="submit" class="btn-primary">
-                                        <i class="fas fa-key"></i> Update Password
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
                     </div>
 
                     <!-- Billing Tab -->
@@ -498,71 +454,150 @@ $userData = getUserData();
     <!-- <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/settings.js"></script> -->
 
     <!-- Load Sidebar and Topbar Components -->
+    <!-- Load Sidebar and Topbar Components -->
     <script>
-        // Settings Tab Logic
         document.addEventListener('DOMContentLoaded', () => {
+            // Tab Logic
             const tabBtns = document.querySelectorAll('.tab-btn');
             tabBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    // Remove active from all
                     tabBtns.forEach(b => b.classList.remove('active'));
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                    
-                    // Add active to current
                     btn.classList.add('active');
                     const tabId = btn.getAttribute('data-tab');
                     document.getElementById(tabId).classList.add('active');
                 });
             });
 
-            // Force clear password fields to prevent stubborn autofill
-            setTimeout(() => {
-                const pwFields = ['currentPassword', 'newPassword', 'confirmPassword'];
-                pwFields.forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) {
-                        el.value = ''; 
-                        el.setAttribute('readonly', 'readonly'); // Re-apply readonly just in case
-                    }
-                });
-            }, 500); // Slight delay to override browser fill
+            // Fetch Settings Data
+            fetchSettings();
+            
+            // Save Button Listener
+            document.getElementById('saveNotificationsBtn').addEventListener('click', saveSettings);
+            
+            // Allow top save button to do the same
+            document.getElementById('saveAllBtn').addEventListener('click', saveSettings);
         });
 
-        async function changePassword() {
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
+        async function fetchSettings() {
+            try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/settings.php');
+                const result = await response.json();
 
-            if (newPassword !== confirmPassword) {
-                showToast('New passwords do not match', 'error');
-                return;
+                if (result.success) {
+                    populateSettings(result.data);
+                } else {
+                    console.error('Failed to load settings:', result.message);
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+
+        function populateSettings(data) {
+            // 1. Populate Toggles (Notifications)
+            // Note: DB uses snake_case keys (email_repair_requests) vs camelCase in previous mock
+            if (data.settings) {
+                const n = data.settings;
+                // Helper to check if value is true/1 vs false/0
+                const isTrue = (val) => val == 1 || val === true;
+
+                setSwitch('emailRepairRequests', isTrue(n.email_repair_requests));
+                setSwitch('emailProjectUpdates', isTrue(n.email_project_updates));
+                setSwitch('emailPayments', isTrue(n.email_payments));
+                setSwitch('emailTeamActivity', isTrue(n.email_team_activity));
+                setSwitch('emailMessages', isTrue(n.email_messages));
+                setSwitch('pushDesktop', isTrue(n.push_desktop));
+                setSwitch('pushMobile', isTrue(n.push_mobile));
             }
 
+            // 2. Populate Billing History
+            if (data.billing && Array.isArray(data.billing)) {
+                const tbody = document.querySelector('.billing-history tbody');
+                if(tbody) {
+                    if (data.billing.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No billing history found.</td></tr>';
+                    } else {
+                        tbody.innerHTML = data.billing.map(invoice => `
+                            <tr>
+                                <td>${invoice.invoice_id}</td>
+                                <td>${new Date(invoice.date).toLocaleDateString()}</td>
+                                <td>${invoice.amount}</td>
+                                <td><span class="status-badge ${invoice.status}">${invoice.status}</span></td>
+                                <td>
+                                    <button class="btn-icon" title="Download"><i class="fas fa-download"></i></button>
+                                    <button class="btn-icon" title="View"><i class="fas fa-eye"></i></button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            }
+
+            // 3. Populate Login History
+            if (data.history && Array.isArray(data.history)) {
+                const historyContainer = document.querySelector('.login-history');
+                if(historyContainer) {
+                    if (data.history.length === 0) {
+                        historyContainer.innerHTML = '<p class="text-muted">No recent activity found.</p>';
+                    } else {
+                        historyContainer.innerHTML = data.history.map(log => {
+                            const isSuccess = log.action_type && !log.action_type.includes('fail');
+                            return `
+                            <div class="history-item">
+                                <div class="history-icon ${isSuccess ? 'success' : 'failed'}">
+                                    <i class="fas ${isSuccess ? 'fa-check' : 'fa-times'}"></i>
+                                </div>
+                                <div class="history-info">
+                                    <h4>${log.action_type || 'Activity'}</h4>
+                                    <p>${log.ip_address || 'Unknown IP'} • ${log.description || 'System Action'}</p>
+                                    <small>${new Date(log.timestamp).toLocaleString()}</small>
+                                </div>
+                            </div>
+                            `;
+                        }).join('');
+                    }
+                }
+            }
+        }
+
+        function setSwitch(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.checked = value;
+        }
+
+        async function saveSettings() {
+            const settings = {
+                emailRepairRequests: document.getElementById('emailRepairRequests').checked,
+                emailProjectUpdates: document.getElementById('emailProjectUpdates').checked,
+                emailPayments: document.getElementById('emailPayments').checked,
+                emailTeamActivity: document.getElementById('emailTeamActivity').checked,
+                emailMessages: document.getElementById('emailMessages').checked,
+                pushDesktop: document.getElementById('pushDesktop').checked,
+                pushMobile: document.getElementById('pushMobile').checked
+            };
+
             try {
-                 const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-profile.php', {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/settings.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        action: 'change_password',
-                        current_password: currentPassword,
-                        new_password: newPassword
+                        action: 'update_notifications',
+                        settings: settings
                     })
                 });
                 const result = await response.json();
                 
                 if (result.success) {
-                    showToast(result.message, 'success');
-                    document.getElementById('changePasswordForm').reset();
+                    showToast('Settings saved successfully', 'success');
                 } else {
-                    showToast(result.message || 'Failed to change password', 'error');
+                    showToast('Failed to save settings', 'error');
                 }
             } catch (error) {
-                 console.error('Error changing password:', error);
-                 showToast('An error occurred. Please try again.', 'error');
+                console.error('Error saving settings:', error);
+                showToast('Network error occurred', 'error');
             }
         }
-
-        function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             const icon = toast.querySelector('.toast-icon');
             const title = toast.querySelector('h4');

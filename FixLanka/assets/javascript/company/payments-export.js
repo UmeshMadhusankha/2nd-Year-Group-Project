@@ -33,7 +33,7 @@ function closeExportModal() {
 }
 
 // Close modal when clicking outside
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     const modal = document.getElementById('exportModal');
     if (modal && e.target === modal) {
         closeExportModal();
@@ -41,7 +41,7 @@ document.addEventListener('click', function(e) {
 });
 
 // Close modal with Escape key
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         closeExportModal();
     }
@@ -53,16 +53,16 @@ function setDatePreset(days) {
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
-    
+
     document.getElementById('exportStartDate').value = formatDate(startDate);
     document.getElementById('exportEndDate').value = formatDate(endDate);
-    
+
     // Update active state on preset buttons
     document.querySelectorAll('.export-date-preset-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
-    
+
     updateExportPreview();
 }
 
@@ -74,11 +74,11 @@ function formatDate(date) {
 
 function collectExportFilters() {
     const filters = {};
-    
+
     // Payment Type (radio buttons - single selection)
     const paymentTypeRadio = document.querySelector('input[name="paymentType"]:checked');
     filters.type = paymentTypeRadio ? paymentTypeRadio.value : 'all';
-    
+
     // Status filters (checkboxes - multiple selection)
     const statusFilters = [];
     if (document.getElementById('exportCompleted')?.checked) statusFilters.push('completed');
@@ -87,7 +87,7 @@ function collectExportFilters() {
     if (statusFilters.length > 0) {
         filters.status = statusFilters;
     }
-    
+
     // Date Range
     const dateFrom = document.getElementById('exportStartDate');
     const dateTo = document.getElementById('exportEndDate');
@@ -97,7 +97,7 @@ function collectExportFilters() {
     if (dateTo && dateTo.value) {
         filters.dateTo = dateTo.value;
     }
-    
+
     // Export Format
     const formatRadio = document.querySelector('input[name="exportFormat"]:checked');
     if (formatRadio) {
@@ -105,7 +105,7 @@ function collectExportFilters() {
     } else {
         filters.format = 'csv'; // Default
     }
-    
+
     return filters;
 }
 
@@ -117,21 +117,21 @@ async function updateExportPreview() {
     const recordsElement = document.getElementById('exportTotalRecords');
     const amountElement = document.getElementById('exportTotalAmount');
     const daysElement = document.getElementById('exportDateRange');
-    
+
     if (summaryBox) {
         summaryBox.classList.add('loading');
     }
-    
+
     try {
         const params = new URLSearchParams({
             action: 'preview',
             ...filters,
             status: filters.status ? filters.status.join(',') : ''
         });
-        
+
         const response = await fetch(`${PAYMENTS_EXPORT_API}?${params.toString()}`);
         const data = await response.json();
-        
+
         if (data.success) {
             if (recordsElement) recordsElement.textContent = data.count || 0;
             if (amountElement) amountElement.textContent = data.total || '0';
@@ -159,17 +159,17 @@ async function updateExportPreview() {
 
 async function previewPaymentsExport() {
     const filters = collectExportFilters();
-    
+
     try {
         const params = new URLSearchParams({
             action: 'preview',
             ...filters,
             status: filters.status ? filters.status.join(',') : ''
         });
-        
+
         const response = await fetch(`${PAYMENTS_EXPORT_API}?${params.toString()}`);
         const data = await response.json();
-        
+
         if (data.success) {
             alert(`Preview:\n\nTotal Records: ${data.count}\nFormat: ${filters.format || 'CSV'}\n\nClick "Export Now" to download.`);
         } else {
@@ -183,17 +183,17 @@ async function previewPaymentsExport() {
 
 async function downloadPaymentsExport() {
     const filters = collectExportFilters();
-    
+
     // Build download URL
     const params = new URLSearchParams({
         action: 'download',
         ...filters,
         status: filters.status ? filters.status.join(',') : ''
     });
-    
+
     // Trigger download
     const downloadUrl = `${PAYMENTS_EXPORT_API}?${params.toString()}`;
-    
+
     // Create temporary link and click it
     const link = document.createElement('a');
     link.href = downloadUrl;
@@ -201,14 +201,14 @@ async function downloadPaymentsExport() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     // Close modal after download starts
     setTimeout(closeExportModal, 500);
 }
 
 // ============ Event Listeners ============
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Add change listeners to update preview
     const filterInputs = document.querySelectorAll('#exportModal input');
     filterInputs.forEach(input => {
