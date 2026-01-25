@@ -12,13 +12,13 @@ ini_set('display_errors', 0); // JSON response, so hide HTML errors
 header('Content-Type: application/json');
 
 // Include database connection
-require_once '../../includes/db_connection.php';
+require_once __DIR__ . '/../config/databse.php';
 
 // Start session
 session_start();
 
 // Check authentication
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'company') {
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'company') {
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
@@ -35,14 +35,18 @@ if (strlen($query) < 2) {
     exit;
 }
 
+// Debug logging
+error_log("Search Debug - Query: $query, Category: $category, Company: $companyId");
+
 $results = [];
 
 try {
-    // 1. Projects Search
+    // 1. Projects Search (FIXED: lowercase table name)
     if ($category === 'all' || $category === 'projects') {
+        error_log("Searching projects for: $query");
         $stmt = $pdo->prepare("
             SELECT project_id, title, description 
-            FROM Project 
+            FROM project 
             WHERE company_id = ? 
             AND (title LIKE ? OR description LIKE ?)
             LIMIT 5
@@ -50,7 +54,9 @@ try {
         $searchTerm = "%$query%";
         $stmt->execute([$companyId, $searchTerm, $searchTerm]);
         
+        $projectCount = 0;
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $projectCount++;
             $results[] = [
                 'type' => 'project',
                 'title' => $row['title'],
@@ -59,24 +65,26 @@ try {
                 'icon' => 'fa-project-diagram'
             ];
         }
+        error_log("Found $projectCount projects");
     }
 
-    // 2. Repair Requests (Requests)
+    // 2. Repair Requests (FIXED: lowercase table name, search all requests)
     if ($category === 'all' || $category === 'requests') {
-        // Search in JobRequest where connected to company (via Quotation or Assignment)
-        // This is a simplified query; adjust based on actual schema relations
+        error_log("Searching requests for: $query");
+        // Search ALL repair requests (not just those with quotations)
+        // Company can see all available requests to potentially bid on
         $stmt = $pdo->prepare("
-            SELECT jr.request_id, jr.title, jr.description
-            FROM JobRequest jr
-            JOIN Quotation q ON jr.request_id = q.request_id
-            WHERE q.company_id = ?
-            AND (jr.title LIKE ? OR jr.description LIKE ?)
+            SELECT request_id, title, description
+            FROM jobrequest
+            WHERE (title LIKE ? OR description LIKE ?)
             LIMIT 5
         ");
         $searchTerm = "%$query%";
-        $stmt->execute([$companyId, $searchTerm, $searchTerm]);
+        $stmt->execute([$searchTerm, $searchTerm]);
         
+        $requestCount = 0;
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $requestCount++;
             $results[] = [
                 'type' => 'request',
                 'title' => $row['title'],
@@ -85,6 +93,7 @@ try {
                 'icon' => 'fa-tools'
             ];
         }
+        error_log("Found $requestCount requests");
     }
 
     // 3. Workforce (Placeholder - assuming table Employee or similar exists)
@@ -92,13 +101,15 @@ try {
         // Implement when workforce table is clear
     }
 
-    // 4. Payments
+    // 4. Payments (FIXED: lowercase table names + correct JOIN via contract)
     if ($category === 'all' || $category === 'payments') {
+        error_log("Searching payments for: $query");
         $stmt = $pdo->prepare("
             SELECT mp.payment_id, mp.amount, p.title as project_title
-            FROM MilestonePayment mp
-            JOIN Milestone m ON mp.milestone_id = m.milestone_id
-            JOIN Project p ON m.project_id = p.project_id
+            FROM milestonepayment mp
+            JOIN milestone m ON mp.milestone_id = m.milestone_id
+            JOIN contract c ON m.contract_id = c.contract_id
+            JOIN project p ON c.project_id = p.project_id
             WHERE p.company_id = ?
             AND (p.title LIKE ? OR mp.payment_id LIKE ?)
             LIMIT 5
@@ -106,7 +117,9 @@ try {
         $searchTerm = "%$query%";
         $stmt->execute([$companyId, $searchTerm, $searchTerm]);
         
+        $paymentCount = 0;
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $paymentCount++;
             $results[] = [
                 'type' => 'payment',
                 'title' => 'Payment #' . $row['payment_id'],
@@ -115,11 +128,20 @@ try {
                 'icon' => 'fa-file-invoice-dollar'
             ];
         }
+        error_log("Found $paymentCount payments");
     }
 
+    error_log("Total results found: " . count($results));
     echo json_encode(['success' => true, 'results' => $results]);
 
 } catch (PDOException $e) {
     error_log("Search Error: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Database error']);
+    // Return more detailed error for debugging
+    echo json_encode([
+        'success' => false, 
+        'message' => 'Database error',
+        'error' => $e->getMessage(),
+        'query' => $query,
+        'category' => $category
+    ]);
 }
