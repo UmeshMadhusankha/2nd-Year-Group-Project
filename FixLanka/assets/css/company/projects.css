@@ -820,7 +820,7 @@ body {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  border-bottom: 2px solid #0abad5;
+  border-bottom: 2px solid var(--primary-color);
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
@@ -876,7 +876,7 @@ body {
 
 .project-id {
   font-size: var(--font-size-sm);
-  color: var(--text-muted);
+  color: #0abab5;
 }
 
 .customer-info {
@@ -887,13 +887,13 @@ body {
 
 .customer-info .customer-name {
   font-weight: 600;
-  color: #2c3e50;
+  color: #0a2e33;
   font-size: 14px;
 }
 
 .customer-info .customer-email {
   font-size: 12px;
-  color: #7f8c8d;
+  color: #64748b;
 }
 
 /* Project Title Cell */
@@ -914,8 +914,9 @@ body {
   display: inline-flex;
   align-items: center;
   padding: 4px 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #E0E0E0;
+  color: #424242;
+  border: 1px solid #BDBDBD;
   font-size: 11px;
   font-weight: 600;
   border-radius: 20px;
@@ -930,8 +931,9 @@ body {
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
+  background: #E0F2F1;
+  color: #00796B;
+  border: 1px solid #B2DFDB;
   font-size: 12px;
   font-weight: 500;
   border-radius: 20px;
@@ -961,7 +963,7 @@ body {
 
 .progress-bar-mini .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #0abad5 0%, #0dd3bb 100%);
+  background: var(--primary-color);
   border-radius: 10px;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -989,7 +991,7 @@ body {
 .progress-cell .progress-text {
   font-size: 13px;
   font-weight: 700;
-  color: #0abad5;
+  color: #0abab5;
   min-width: 42px;
   text-align: right;
 }
@@ -1007,7 +1009,7 @@ body {
   border-radius: 8px;
   border: none;
   background: rgba(10, 186, 181, 0.1);
-  color: #0abad5;
+  color: var(--primary-color);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1017,7 +1019,7 @@ body {
 }
 
 .action-icon-btn:hover {
-  background: linear-gradient(135deg, #0abad5 0%, #0dd3bb 100%);
+  background: var(--primary-color);
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(10, 186, 181, 0.3);
@@ -1115,30 +1117,35 @@ body {
 .status-badge.status-active,
 .status-badge.status-in_progress,
 .status-badge.status-ongoing {
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-  color: white;
+  background: #E0F2F1;
+  color: #00796B;
+  border: 1px solid #B2DFDB;
 }
 
 .status-badge.status-pending,
 .status-badge.status-planned {
-  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-  color: white;
+  background: #FFF3E0;
+  color: #F57C00;
+  border: 1px solid #FFCC80;
 }
 
 .status-badge.status-completed {
-  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-  color: white;
+  background: #E0F2F1;
+  color: #00796B;
+  border: 1px solid #B2DFDB;
 }
 
 .status-badge.status-delayed,
 .status-badge.status-cancelled {
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-  color: white;
+  background: #FFE5E5;
+  color: #D32F2F;
+  border: 1px solid #FFCDD2;
 }
 
 .status-badge.status-on_hold {
-  background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
-  color: white;
+  background: #F5F5F5;
+  color: #757575;
+  border: 1px solid #E0E0E0;
 }
 
 /* ================================================
@@ -1253,7 +1260,7 @@ body {
   display: inline-flex;
   align-items: center;
   padding: 4px 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #0abab5;
   color: white;
   font-size: 11px;
   font-weight: 600;
@@ -1324,7 +1331,7 @@ body {
 
 .card-progress .progress-bar .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #0abad5 0%, #0dd3bb 100%);
+  background: var(--primary-color);
   border-radius: 10px;
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -1382,11 +1389,11 @@ body {
 
 .btn-primary-small {
   background: rgba(10, 186, 181, 0.1);
-  color: #0abad5;
+  color: var(--primary-color);
 }
 
 .btn-primary-small:hover {
-  background: linear-gradient(135deg, #0abad5 0%, #0dd3bb 100%);
+  background: var(--primary-color);
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(10, 186, 181, 0.3);
@@ -2132,7 +2139,7 @@ body {
 
 .progress-text {
   font-size: var(--font-size-sm);
-  color: var(--success-color);
+  color: #0abab5;
   font-weight: 600;
   white-space: nowrap;
   overflow: visible;

@@ -184,6 +184,139 @@ if (!$companyId) {
         </div>
     </div>
 
+    <!-- Create/Edit Project Modal -->
+    <div class="modal-overlay" id="project-modal">
+        <div class="modal-container edit-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-project-diagram"></i> <span id="modal-title">Create New Project</span></h3>
+                <button class="close-modal" onclick="closeProjectModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="project-form">
+                    <input type="hidden" id="project-id" name="project_id">
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-heading"></i> Project Title *</label>
+                        <input type="text" id="project-title" name="title" required placeholder="Enter project title">
+                    </div>
+
+                    <div class="form-group-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-tag"></i> Project Type *</label>
+                            <select id="project-type" name="project_type" required>
+                                <option value="">Select type</option>
+                                <option value="Plumbing">Plumbing</option>
+                                <option value="Electrical">Electrical</option>
+                                <option value="Carpentry">Carpentry</option>
+                                <option value="Painting">Painting</option>
+                                <option value="Renovation">Renovation</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label><i class="fas fa-map-marker-alt"></i> Location *</label>
+                            <input type="text" id="project-location" name="location" required placeholder="Project location">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-dollar-sign"></i> Budget (LKR) *</label>
+                        <input type="number" id="project-budget" name="budget" required min="0" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="form-group-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar-alt"></i> Start Date *</label>
+                            <input type="date" id="project-start-date" name="start_date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar-check"></i> End Date *</label>
+                            <input type="date" id="project-end-date" name="end_date" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-tasks"></i> Status *</label>
+                            <select id="project-status" name="status" required>
+                                <option value="planned">Planned</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="on_hold">On Hold</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label><i class="fas fa-percentage"></i> Progress</label>
+                            <input type="number" id="project-progress" name="progress" min="0" max="100" value="0" placeholder="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-align-left"></i> Description</label>
+                        <textarea id="project-description" name="description" rows="4" placeholder="Enter project description..."></textarea>
+                    </div>
+
+                    <div class="form-actions" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                        <button type="button" class="btn-secondary" onclick="closeProjectModal()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Save Project
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Details Drawer -->
+    <div class="drawer-overlay" id="project-details-drawer">
+        <div class="drawer-panel">
+            <div class="drawer-header">
+                <h3><i class="fas fa-info-circle"></i> Project Details</h3>
+                <button class="close-drawer" onclick="closeProjectDrawer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="drawer-tabs">
+                <button class="drawer-tab active" data-tab="overview">
+                    <i class="fas fa-eye"></i> Overview
+                </button>
+                <button class="drawer-tab" data-tab="customer">
+                    <i class="fas fa-user"></i> Customer
+                </button>
+                <button class="drawer-tab" data-tab="timeline">
+                    <i class="fas fa-clock"></i> Timeline
+                </button>
+                <button class="drawer-tab" data-tab="financial">
+                    <i class="fas fa-money-bill-wave"></i> Financial
+                </button>
+            </div>
+
+            <div class="drawer-content">
+                <div class="drawer-tab-content active" id="tab-overview">
+                    <!-- Content will be dynamically populated -->
+                </div>
+                <div class="drawer-tab-content" id="tab-customer">
+                    <!-- Content will be dynamically populated -->
+                </div>
+                <div class="drawer-tab-content" id="tab-timeline">
+                    <!-- Content will be dynamically populated -->
+                </div>
+                <div class="drawer-tab-content" id="tab-financial">
+                    <!-- Content will be dynamically populated -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Load Sidebar JavaScript -->
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
     

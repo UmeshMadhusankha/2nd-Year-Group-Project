@@ -78,7 +78,7 @@
 .progress-text {
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--text-primary);
+  color: #0abab5;
   min-width: 45px;
   text-align: right;
   white-space: nowrap;

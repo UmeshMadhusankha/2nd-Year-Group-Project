@@ -1067,7 +1067,7 @@ function initializeFilters() {
 function initializeModal() {
     const modalClose = document.querySelector('#quotation-modal .modal-close');
     const cancelBtn = document.querySelector('#quotation-modal .action-btn.secondary');
-    const submitBtn = document.querySelector('#quotation-modal .action-btn.primary');
+    // REMOVED: submitBtn event listener - using onclick in HTML to avoid double submission
 
     if (modalClose) {
         modalClose.addEventListener('click', closeQuotationModal);
@@ -1075,10 +1075,6 @@ function initializeModal() {
 
     if (cancelBtn) {
         cancelBtn.addEventListener('click', closeQuotationModal);
-    }
-
-    if (submitBtn) {
-        submitBtn.addEventListener('click', submitQuotation);
     }
 
     // Close on overlay click

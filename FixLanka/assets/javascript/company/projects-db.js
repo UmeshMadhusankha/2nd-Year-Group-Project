@@ -486,6 +486,74 @@ function closeProjectModal() {
 }
 
 /**
+ * Save project (create or update)
+ */
+async function saveProject() {
+    try {
+        showLoader();
+
+        // Get form data
+        const projectId = document.getElementById('project-id').value;
+        const formData = {
+            title: document.getElementById('project-title').value.trim(),
+            project_type: document.getElementById('project-type').value,
+            location: document.getElementById('project-location').value.trim(),
+            budget: parseFloat(document.getElementById('project-budget').value),
+            start_date: document.getElementById('project-start-date').value,
+            end_date: document.getElementById('project-end-date').value,
+            status: document.getElementById('project-status').value,
+            progress: parseInt(document.getElementById('project-progress').value) || 0,
+            description: document.getElementById('project-description').value.trim(),
+            company_id: companyId // From global scope
+        };
+
+        // Validate dates
+        if (new Date(formData.end_date) < new Date(formData.start_date)) {
+            showToast('End date cannot be before start date', 'error');
+            hideLoader();
+            return;
+        }
+
+        // Determine if creating or updating
+        const isUpdate = projectId && projectId !== '';
+        const url = `/2nd-Year-Group-Project/FixLanka/api/projects.php${isUpdate ? '?project_id=' + projectId : ''}`;
+        const method = isUpdate ? 'PUT' : 'POST';
+
+        // Add project_id for updates
+        if (isUpdate) {
+            formData.project_id = parseInt(projectId);
+        }
+
+        // Make API request
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast(isUpdate ? 'Project updated successfully' : 'Project created successfully', 'success');
+            closeProjectModal();
+            
+            // Reload projects and statistics
+            await loadProjects();
+            await loadStatistics();
+        } else {
+            showToast(result.message || 'Failed to save project', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving project:', error);
+        showToast('An error occurred while saving the project', 'error');
+    } finally {
+        hideLoader();
+    }
+}
+
+/**
  * Edit project
  */
 function editProject(projectId) {
@@ -493,7 +561,17 @@ function editProject(projectId) {
     if (!project) return;
     
     // Populate form with project data
-    // TODO: Implement form population
+    document.getElementById('modal-title').textContent = 'Edit Project';
+    document.getElementById('project-id').value = project.project_id;
+    document.getElementById('project-title').value = project.title || '';
+    document.getElementById('project-type').value = project.project_type || '';
+    document.getElementById('project-location').value = project.location || '';
+    document.getElementById('project-budget').value = project.budget || '';
+    document.getElementById('project-start-date').value = project.start_date || '';
+    document.getElementById('project-end-date').value = project.end_date || '';
+    document.getElementById('project-status').value = project.status || 'planned';
+    document.getElementById('project-progress').value = project.progress || 0;
+    document.getElementById('project-description').value = project.description || '';
     
     openProjectModal();
 }
@@ -505,9 +583,205 @@ function viewProjectDetails(projectId) {
     const project = projectsData.find(p => p.project_id === projectId);
     if (!project) return;
     
-    // TODO: Populate and show project details modal
-    
-    
+    // Format currency
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-LK', {
+            style: 'currency',
+            currency: 'LKR',
+            minimumFractionDigits: 2
+        }).format(amount);
+    };
+
+    // Format date
+    const formatDate = (date) => {
+        if (!date) return 'N/A';
+        return new Date(date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
+    // Get status badge HTML
+    const getStatusBadge = (status) => {
+        return `<span class="status-badge status-${status}">${status.replace('_', ' ')}</span>`;
+    };
+
+    // Populate Overview Tab
+    const overviewContent = `
+        <div style="padding: 24px;">
+            <div style="background: linear-gradient(135deg, rgba(10, 186, 181, 0.1), rgba(10, 186, 181, 0.05)); 
+                        border-radius: 12px; padding: 24px; margin-bottom: 24px; border-left: 4px solid var(--primary-color);">
+                <h2 style="margin: 0 0 8px 0; color: var(--text-primary); font-size: 24px;">
+                    ${escapeHtml(project.title)}
+                </h2>
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px;">
+                    <span class="project-type-badge">${escapeHtml(project.project_type || 'N/A')}</span>
+                    ${getStatusBadge(project.status)}
+                    <span class="location-tag">
+                        <i class="fas fa-map-marker-alt"></i> ${escapeHtml(project.location)}
+                    </span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="color: var(--text-secondary); font-size: 12px; margin-bottom: 4px;">Budget</div>
+                    <div style="color: var(--primary-color); font-size: 20px; font-weight: 700;">
+                        ${formatCurrency(project.budget)}
+                    </div>
+                </div>
+                <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="color: var(--text-secondary); font-size: 12px; margin-bottom: 4px;">Progress</div>
+                    <div style="color: var(--primary-color); font-size: 20px; font-weight: 700;">
+                        ${project.progress}%
+                    </div>
+                </div>
+                <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="color: var(--text-secondary); font-size: 12px; margin-bottom: 4px;">Start Date</div>
+                    <div style="color: var(--text-primary); font-size: 16px; font-weight: 600;">
+                        ${formatDate(project.start_date)}
+                    </div>
+                </div>
+                <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="color: var(--text-secondary); font-size: 12px; margin-bottom: 4px;">End Date</div>
+                    <div style="color: var(--text-primary); font-size: 16px; font-weight: 600;">
+                        ${formatDate(project.end_date)}
+                    </div>
+                </div>
+            </div>
+
+            ${project.description ? `
+                <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <h4 style="margin: 0 0 12px 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-align-left" style="color: var(--primary-color);"></i> Description
+                    </h4>
+                    <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">
+                        ${escapeHtml(project.description)}
+                    </p>
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    // Populate Customer Tab
+    const customerContent = `
+        <div style="padding: 24px;">
+            <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid var(--border-color);">
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                    <div style="width: 64px; height: 64px; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); 
+                                border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 700;">
+                        ${(project.customer_name || 'U').charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <h3 style="margin: 0 0 4px 0; color: var(--text-primary);">
+                            ${escapeHtml(project.customer_name || 'Unknown Customer')}
+                        </h3>
+                        <p style="margin: 0; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-envelope"></i> ${escapeHtml(project.customer_email || 'N/A')}
+                        </p>
+                    </div>
+                </div>
+                
+                <div style="padding: 16px; background: rgba(10, 186, 181, 0.05); border-radius: 8px; border-left: 3px solid var(--primary-color);">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                        <i class="fas fa-info-circle" style="color: var(--primary-color);"></i>
+                        This is the customer information associated with this project. Contact details can be used for project-related communication.
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Populate Timeline Tab
+    const timelineContent = `
+        <div style="padding: 24px;">
+            <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid var(--border-color);">
+                <div style="position: relative; padding-left: 32px;">
+                    <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--border-color);"></div>
+                    
+                    <div style="position: relative; margin-bottom: 24px;">
+                        <div style="position: absolute; left: -37px; width: 12px; height: 12px; border-radius: 50%; background: var(--primary-color); border: 3px solid white; box-shadow: 0 0 0 2px var(--primary-color);"></div>
+                        <div style="background: rgba(10, 186, 181, 0.05); padding: 16px; border-radius: 8px;">
+                            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Project Created</div>
+                            <div style="color: var(--text-secondary); font-size: 14px;">${formatDate(project.created_at)}</div>
+                        </div>
+                    </div>
+
+                    <div style="position: relative; margin-bottom: 24px;">
+                        <div style="position: absolute; left: -37px; width: 12px; height: 12px; border-radius: 50%; background: var(--success-color); border: 3px solid white; box-shadow: 0 0 0 2px var(--success-color);"></div>
+                        <div style="background: rgba(34, 197, 94, 0.05); padding: 16px; border-radius: 8px;">
+                            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Start Date</div>
+                            <div style="color: var(--text-secondary); font-size: 14px;">${formatDate(project.start_date)}</div>
+                        </div>
+                    </div>
+
+                    <div style="position: relative;">
+                        <div style="position: absolute; left: -37px; width: 12px; height: 12px; border-radius: 50%; background: var(--warning-color); border: 3px solid white; box-shadow: 0 0 0 2px var(--warning-color);"></div>
+                        <div style="background: rgba(245, 158, 11, 0.05); padding: 16px; border-radius: 8px;">
+                            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Expected End Date</div>
+                            <div style="color: var(--text-secondary); font-size: 14px;">${formatDate(project.end_date)}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Populate Financial Tab
+    const financialContent = `
+        <div style="padding: 24px;">
+            <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                <h4 style="margin: 0 0 16px 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-dollar-sign" style="color: var(--primary-color);"></i> Budget Overview
+                </h4>
+                <div style="font-size: 32px; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;">
+                    ${formatCurrency(project.budget)}
+                </div>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                    Total project budget allocated for all expenses and milestones.
+                </p>
+            </div>
+
+            <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05)); 
+                        padding: 16px; border-radius: 8px; border-left: 3px solid var(--warning-color);">
+                <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                    <i class="fas fa-info-circle" style="color: var(--warning-color);"></i>
+                    Detailed financial breakdown including milestones and payments will be available once contracts are established.
+                </p>
+            </div>
+        </div>
+    `;
+
+    // Update drawer content
+    document.getElementById('tab-overview').innerHTML = overviewContent;
+    document.getElementById('tab-customer').innerHTML = customerContent;
+    document.getElementById('tab-timeline').innerHTML = timelineContent;
+    document.getElementById('tab-financial').innerHTML = financialContent;
+
+    // Reset to overview tab
+    document.querySelectorAll('.drawer-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.drawer-tab-content').forEach(content => content.classList.remove('active'));
+    document.querySelector('[data-tab="overview"]').classList.add('active');
+    document.getElementById('tab-overview').classList.add('active');
+
+    // Show drawer
+    const drawer = document.getElementById('project-details-drawer');
+    if (drawer) {
+        drawer.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+/**
+ * Close project drawer
+ */
+function closeProjectDrawer() {
+    const drawer = document.getElementById('project-details-drawer');
+    if (drawer) {
+        drawer.classList.remove('active');
+        document.body.style.overflow = '';
+    }
 }
 
 /**
@@ -570,8 +844,49 @@ function initializeModal() {
     // Modal close handlers
     const closeButtons = document.querySelectorAll('.modal-close, .modal-overlay');
     closeButtons.forEach(btn => {
-        btn.addEventListener('click', closeProjectModal);
+        btn.addEventListener('click', (e) => {
+            if (e.target === btn) {
+                closeProjectModal();
+            }
+        });
     });
+
+    // Form submit handler
+    const projectForm = document.getElementById('project-form');
+    if (projectForm) {
+        projectForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await saveProject();
+        });
+    }
+
+    // Drawer tab switching
+    const drawerTabs = document.querySelectorAll('.drawer-tab');
+    drawerTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.drawer-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.drawer-tab-content').forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            const tabName = tab.getAttribute('data-tab');
+            const content = document.getElementById(`tab-${tabName}`);
+            if (content) {
+                content.classList.add('active');
+            }
+        });
+    });
+
+    // Drawer close handler
+    const drawerOverlay = document.getElementById('project-details-drawer');
+    if (drawerOverlay) {
+        drawerOverlay.addEventListener('click', (e) => {
+            if (e.target === drawerOverlay) {
+                closeProjectDrawer();
+            }
+        });
+    }
 }
 
 /**
@@ -685,6 +1000,7 @@ window.openProjectModal = openProjectModal;
 window.closeProjectModal = closeProjectModal;
 window.editProject = editProject;
 window.viewProjectDetails = viewProjectDetails;
+window.closeProjectDrawer = closeProjectDrawer;
 window.deleteProject = deleteProject;
 window.updateProgress = updateProgress;
 window.updateStatus = updateStatus;
