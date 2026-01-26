@@ -657,6 +657,99 @@ if (!$userId) {
                         </div>
                     </div>
 
+                    <!-- ============================================================ -->
+                    <!-- BUSINESS LOGIC: Budget Flexibility Section -->
+                    <!-- ============================================================ -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-chart-line"></i>
+                            Budget Flexibility
+                        </h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Budget Type <span class="required">*</span></label>
+                            <div class="radio-group-inline">
+                                <label class="radio-card">
+                                    <input type="radio" name="budget_type" value="fixed" checked onchange="updateBudgetDisplay()">
+                                    <span class="radio-card-content">
+                                        <i class="fas fa-lock"></i>
+                                        <strong>Fixed Budget</strong>
+                                        <small>Exact amount, no flexibility</small>
+                                    </span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="budget_type" value="flexible" onchange="updateBudgetDisplay()">
+                                    <span class="radio-card-content">
+                                        <i class="fas fa-unlock"></i>
+                                        <strong>Flexible Budget (±10%)</strong>
+                                        <small>Allows minor adjustments</small>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Budget Range Display (shown for flexible budget) -->
+                        <div id="budget-range-display" style="display: none;">
+                            <div class="info-box">
+                                <i class="fas fa-info-circle"></i>
+                                <div>
+                                    <strong>Budget Range:</strong>
+                                    <p id="budget-range-text">LKR 0.00 - LKR 0.00</p>
+                                    <small>Final cost may vary within this range based on actual requirements</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================ -->
+                    <!-- BUSINESS LOGIC: Payment Method Section -->
+                    <!-- ============================================================ -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-credit-card"></i>
+                            Payment Method
+                        </h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Select Payment Structure <span class="required">*</span></label>
+                            <select id="payment-method" name="payment_method" class="form-select" required onchange="updatePaymentMethodInfo()">
+                                <option value="">Choose payment method</option>
+                                <option value="milestone">Milestone-Based Payment</option>
+                                <option value="50-50">50% Upfront, 50% on Completion</option>
+                                <option value="30-70">30% Upfront, 70% on Completion</option>
+                                <option value="upfront_final">100% Upfront Payment</option>
+                                <option value="time_material">Time & Material (Hourly Rate)</option>
+                            </select>
+                        </div>
+
+                        <!-- Payment Method Information Box -->
+                        <div id="payment-method-info" style="display: none;">
+                            <!-- Info will be populated by JavaScript -->
+                        </div>
+
+                        <!-- Hourly Rate Field (shown only for Time & Material) -->
+                        <div id="hourly-rate-section" style="display: none;">
+                            <div class="form-group">
+                                <label class="form-label">Hourly Rate (LKR) <span class="required">*</span></label>
+                                <input type="number" id="hourly-rate" name="hourly_rate" class="form-input" 
+                                       placeholder="Enter your hourly rate" min="0" step="0.01">
+                            </div>
+                        </div>
+
+                        <!-- Spending Cap (optional for Time & Material) -->
+                        <div id="spending-cap-section" style="display: none;">
+                            <div class="form-group">
+                                <label class="form-label">Maximum Spending Cap Multiplier (Optional)</label>
+                                <input type="number" id="spending-cap" name="spending_cap_multiplier" class="form-input" 
+                                       value="1.5" min="1" max="2" step="0.1"
+                                       placeholder="Enter multiplier (e.g., 1.5 = 150% of estimate)">
+                                <small class="form-hint">
+                                    Default: 1.5x (Project will stop if costs exceed estimate × multiplier)
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Terms & Conditions Section -->
                     <div class="form-section">
                         <h3 class="form-section-title">
@@ -664,19 +757,7 @@ if (!$userId) {
                             Terms & Conditions
                         </h3>
 
-                        <div class="form-group">
-                            <label class="form-label">
-                                Payment Terms <span class="required">*</span>
-                            </label>
-                            <select id="payment-terms" name="payment_terms" class="form-select" required>
-                                <option value="">Select payment terms</option>
-                                <option value="full_advance">100% Advance Payment</option>
-                                <option value="50_50">50% Advance, 50% on Completion</option>
-                                <option value="30_70">30% Advance, 70% on Completion</option>
-                                <option value="milestone">Milestone-based Payment</option>
-                                <option value="on_completion">Payment on Completion</option>
-                            </select>
-                        </div>
+                        <!-- Payment Terms field REMOVED - now linked to Payment Method section above -->
 
                         <div class="form-group">
                             <label class="form-label">
@@ -1058,7 +1139,178 @@ if (!$userId) {
         document.addEventListener('DOMContentLoaded', function() {
             pricingCalculator = new QuotationPricingCalculator();
         });
+
+        // ========================================================================
+        // BUSINESS LOGIC: Budget Flexibility Functions
+        // ========================================================================
+
+        /**
+         * Update budget range display when budget type or total changes
+         */
+        function updateBudgetDisplay() {
+            const budgetType = document.querySelector('input[name="budget_type"]:checked')?.value;
+            const totalAmount = parseFloat(document.getElementById('total-amount')?.value) || 0;
+            const rangeDisplay = document.getElementById('budget-range-display');
+            const rangeText = document.getElementById('budget-range-text');
+
+            if (budgetType === 'flexible' && totalAmount > 0) {
+                const minBudget = (totalAmount * 0.90).toFixed(2);
+                const maxBudget = (totalAmount * 1.10).toFixed(2);
+                
+                if (rangeText) {
+                    rangeText.textContent = `LKR ${parseFloat(minBudget).toLocaleString()} - LKR ${parseFloat(maxBudget).toLocaleString()}`;
+                }
+                if (rangeDisplay) {
+                    rangeDisplay.style.display = 'block';
+                }
+            } else {
+                if (rangeDisplay) {
+                    rangeDisplay.style.display = 'none';
+                }
+            }
+        }
+
+        // Update budget display when total changes
+        const totalAmountField = document.getElementById('total-amount');
+        if (totalAmountField) {
+            // Use MutationObserver to watch for value changes
+            const observer = new MutationObserver(updateBudgetDisplay);
+            observer.observe(totalAmountField, { attributes: true, attributeFilter: ['value'] });
+            
+            // Also listen to input events
+            totalAmountField.addEventListener('input', updateBudgetDisplay);
+        }
+
+        // ========================================================================
+        // BUSINESS LOGIC: Payment Method Functions
+        // ========================================================================
+
+        /**
+         * Update payment method information box
+         */
+        function updatePaymentMethodInfo() {
+            const paymentMethod = document.getElementById('payment-method')?.value;
+            const infoBox = document.getElementById('payment-method-info');
+            const hourlyRateSection = document.getElementById('hourly-rate-section');
+            const spendingCapSection = document.getElementById('spending-cap-section');
+
+            if (!paymentMethod || !infoBox) return;
+
+            const paymentInfo = {
+                'milestone': {
+                    icon: 'fas fa-tasks',
+                    title: 'Milestone-Based Payment',
+                    description: 'Payment released in stages as project milestones are completed. Provides security for both parties.',
+                    color: '#2196F3'
+                },
+                '50-50': {
+                    icon: 'fas fa-balance-scale',
+                    title: '50-50 Split Payment',
+                    description: '50% paid upfront to start the project, remaining 50% paid upon successful completion.',
+                    color: '#4CAF50'
+                },
+                '30-70': {
+                    icon: 'fas fa-percentage',
+                    title: '30-70 Split Payment',
+                    description: '30% paid upfront, 70% paid upon completion. Lower initial commitment.',
+                    color: '#FF9800'
+                },
+                'upfront_final': {
+                    icon: 'fas fa-dollar-sign',
+                    title: '100% Upfront Payment',
+                    description: 'Full payment made before work begins. Usually for trusted relationships or small projects.',
+                    color: '#9C27B0'
+                },
+                'time_material': {
+                    icon: 'fas fa-clock',
+                    title: 'Time & Material',
+                    description: 'Pay based on actual hours worked and materials used. Hourly rate applies.',
+                    color: '#F44336'
+                }
+            };
+
+            const info = paymentInfo[paymentMethod];
+            if (info) {
+                infoBox.innerHTML = `
+                    <div class="info-box" style="border-left-color: ${info.color}">
+                        <i class="${info.icon}" style="color: ${info.color}"></i>
+                        <div>
+                            <strong>${info.title}</strong>
+                            <p>${info.description}</p>
+                        </div>
+                    </div>
+                `;
+                infoBox.style.display = 'block';
+            } else {
+                infoBox.style.display = 'none';
+            }
+
+            // Show/hide hourly rate and spending cap sections
+            const hourlyRateInput = document.getElementById('hourly-rate');
+            if (paymentMethod === 'time_material') {
+                if (hourlyRateSection) hourlyRateSection.style.display = 'block';
+                if (spendingCapSection) spendingCapSection.style.display = 'block';
+                // Make hourly rate required when Time & Material is selected
+                if (hourlyRateInput) hourlyRateInput.required = true;
+            } else {
+                if (hourlyRateSection) hourlyRateSection.style.display = 'none';
+                if (spendingCapSection) spendingCapSection.style.display = 'none';
+                // Remove required attribute when not Time & Material
+                if (hourlyRateInput) hourlyRateInput.required = false;
+            }
+        }
     </script>
+
+    <!-- ============================================================ -->
+    <!-- BUSINESS LOGIC: Additional Styles -->
+    <!-- ============================================================ -->
+    <style>
+        .info-box {
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+            background: #e8f4f8;
+            border-left: 4px solid #2196F3;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .info-box i {
+            color: #2196F3;
+            font-size: 1.5rem;
+            margin-top: 2px;
+        }
+
+        .info-box div {
+            flex: 1;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+        }
+
+        .info-box p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .radio-group-inline {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .radio-card small {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+    </style>
 </body>
 
 </html>

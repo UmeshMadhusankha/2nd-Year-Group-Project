@@ -663,12 +663,23 @@ function openQuotationModal(requestId) {
         document.getElementById('estimated-duration').value = durationDays;
     }
 
-    // 6. Auto-fill Payment Terms from company defaults
+    // 6. Auto-fill Payment Method from company defaults (linked to payment structure)
     if (companyDefaults?.default_payment_terms) {
-        document.getElementById('payment-terms').value = companyDefaults.default_payment_terms;
+        // Map old payment_terms to new payment_method
+        const paymentTermsMap = {
+            'full_advance': 'upfront_final',
+            '50_50': '50-50',
+            '30_70': '30-70',
+            'milestone': 'milestone',
+            'on_completion': 'milestone'
+        };
+        const mappedMethod = paymentTermsMap[companyDefaults.default_payment_terms] || 'milestone';
+        document.getElementById('payment-method').value = mappedMethod;
     } else {
-        document.getElementById('payment-terms').value = '50_50'; // Default fallback
+        document.getElementById('payment-method').value = '50-50'; // Default fallback
     }
+    // Trigger payment method info update
+    updatePaymentMethodInfo();
 
     // 7. Auto-fill Warranty Period from company defaults
     if (companyDefaults?.default_warranty) {
@@ -757,7 +768,38 @@ async function editQuotation(quotationId) {
             document.getElementById('estimated-start-date').value = quotation.start_date;
             document.getElementById('estimated-completion-date').value = quotation.completion_date;
             document.getElementById('estimated-duration').value = quotation.estimated_duration;
-            document.getElementById('payment-terms').value = quotation.payment_terms || '';
+            
+            // Map payment_method (if available) or derive from payment_terms
+            if (quotation.payment_method) {
+                document.getElementById('payment-method').value = quotation.payment_method;
+            } else if (quotation.payment_terms) {
+                // Try to map old payment_terms to new payment_method
+                const oldTerms = quotation.payment_terms.toLowerCase();
+                if (oldTerms.includes('100%') || oldTerms.includes('advance')) {
+                    document.getElementById('payment-method').value = 'upfront_final';
+                } else if (oldTerms.includes('50')) {
+                    document.getElementById('payment-method').value = '50-50';
+                } else if (oldTerms.includes('30')) {
+                    document.getElementById('payment-method').value = '30-70';
+                } else if (oldTerms.includes('hourly') || oldTerms.includes('time')) {
+                    document.getElementById('payment-method').value = 'time_material';
+                } else {
+                    document.getElementById('payment-method').value = 'milestone';
+                }
+            }
+            updatePaymentMethodInfo();
+            
+            // Populate budget_type if available
+            if (quotation.budget_type) {
+                document.querySelector(`input[name="budget_type"][value="${quotation.budget_type}"]`).checked = true;
+                updateBudgetDisplay();
+            }
+            
+            // Populate hourly_rate if available
+            if (quotation.hourly_rate) {
+                document.getElementById('hourly-rate').value = quotation.hourly_rate;
+            }
+            
             document.getElementById('warranty-period').value = quotation.warranty_period || '';
             document.getElementById('terms-conditions').value = quotation.additional_terms || '';
 
@@ -810,6 +852,57 @@ async function submitQuotation() {
         return;
     }
 
+    // ===== COLLECT BUSINESS LOGIC FIELDS (NEW) =====
+    const budget_type = document.querySelector('input[name="budget_type"]:checked')?.value || 'fixed';
+    const payment_method = document.getElementById('payment-method')?.value || 'milestone';
+    const hourly_rate = document.getElementById('hourly-rate')?.value || null;
+    const spending_cap_multiplier = document.getElementById('spending-cap')?.value || 1.5;
+
+    // Auto-determine pricing_type based on labor pricing method
+    let pricing_type = 'fixed_price';
+    const laborMethod = document.querySelector('input[name="labor_pricing_method"]:checked')?.value;
+    if (laborMethod === 'hourly') {
+        pricing_type = 'time_based';
+    } else if (laborMethod === 'per_sqm' || laborMethod === 'per_unit') {
+        pricing_type = 'hybrid';
+    }
+    
+    // Override if payment method is time_material
+    if (payment_method === 'time_material') {
+        pricing_type = 'time_based';
+    }
+
+    // ===== AUTO-GENERATE payment_terms FROM payment_method =====
+    // Map payment_method to payment_terms for backwards compatibility
+    let payment_terms = '';
+    switch (payment_method) {
+        case 'milestone':
+            payment_terms = 'Milestone-based Payment - Payment released at project milestones';
+            break;
+        case '50-50':
+            payment_terms = '50% Advance, 50% on Completion';
+            break;
+        case '30-70':
+            payment_terms = '30% Advance, 70% on Completion';
+            break;
+        case 'upfront_final':
+            payment_terms = '100% Advance Payment';
+            break;
+        case 'time_material':
+            payment_terms = `Time & Material - Hourly Rate: LKR ${hourly_rate || 0}`;
+            break;
+        default:
+            payment_terms = 'As per payment method selected';
+    }
+    // ===== END BUSINESS LOGIC FIELDS =====
+
+    // Additional validation: Check if hourly rate is required for Time & Material
+    if (payment_method === 'time_material' && (!hourly_rate || parseFloat(hourly_rate) <= 0)) {
+        showToast('Hourly rate is required when using Time & Material payment method', 'error');
+        document.getElementById('hourly-rate')?.focus();
+        return;
+    }
+
     // Collect form data into object
     const formData = {
         request_id: parseInt(document.getElementById('request-id').value),
@@ -824,9 +917,16 @@ async function submitQuotation() {
         start_date: document.getElementById('estimated-start-date').value,
         completion_date: document.getElementById('estimated-completion-date').value,
         estimated_duration: parseInt(document.getElementById('estimated-duration').value),
-        payment_terms: document.getElementById('payment-terms').value,
+        payment_terms: payment_terms, // Auto-generated from payment_method
         warranty_period: document.getElementById('warranty-period').value,
-        additional_terms: document.getElementById('terms-conditions').value
+        additional_terms: document.getElementById('terms-conditions').value,
+        // ===== ADD BUSINESS LOGIC FIELDS TO FORM DATA =====
+        budget_type: budget_type,
+        payment_method: payment_method,
+        pricing_type: pricing_type,
+        hourly_rate: hourly_rate ? parseFloat(hourly_rate) : null,
+        spending_cap_multiplier: parseFloat(spending_cap_multiplier)
+        // ===== END BUSINESS LOGIC FIELDS =====
     };
 
     
@@ -834,10 +934,10 @@ async function submitQuotation() {
         let response;
 
         if (editingQuotationId) {
-            // UPDATE existing quotation
+            // UPDATE existing quotation using ENHANCED endpoint
             formData.quotation_id = editingQuotationId;
             
-            response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-quotes.php', {
+            response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?action=update_enhanced', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -845,9 +945,9 @@ async function submitQuotation() {
                 body: JSON.stringify(formData)
             });
         } else {
-            // CREATE new quotation
+            // CREATE new quotation using ENHANCED endpoint
             
-            response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-quotes.php', {
+            response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?action=create_enhanced', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

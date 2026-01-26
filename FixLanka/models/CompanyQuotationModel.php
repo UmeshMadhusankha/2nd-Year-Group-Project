@@ -385,4 +385,225 @@ class CompanyQuotation
             return false;
         }
     }
+
+    // ========================================================================
+    // BUSINESS LOGIC ENHANCEMENT - New Methods (Added for Phase 1)
+    // These methods extend functionality without modifying existing features
+    // ========================================================================
+
+    /**
+     * Create a new enhanced quotation with business logic fields
+     * 
+     * This method extends the standard create() method by adding support for:
+     * - Budget flexibility (fixed or flexible with min/max range)
+     * - Advanced payment methods (milestone, 50-50, 30-70, upfront, time & material)
+     * - Pricing types (fixed price, time-based, hybrid)
+     * - Hourly rates and spending cap multipliers
+     * 
+     * @param array $data Quotation data including all standard fields PLUS:
+     *                    - budget_type (string): 'fixed' or 'flexible'
+     *                    - payment_method (string): Payment structure
+     *                    - pricing_type (string): Pricing model
+     *                    - hourly_rate (float|null): Rate per hour for time-based pricing
+     *                    - spending_cap_multiplier (float): Default 1.5
+     * @return int|false Quotation ID on success, false on failure
+     */
+    public function createEnhanced($data)
+    {
+        try {
+            // Calculate budget range if flexible
+            $budgetMin = null;
+            $budgetMax = null;
+            
+            if (isset($data['budget_type']) && $data['budget_type'] === 'flexible') {
+                $range = $this->calculateBudgetRange($data['total_amount']);
+                $budgetMin = $range['min'];
+                $budgetMax = $range['max'];
+            }
+
+            $sql = "INSERT INTO CompanyQuotation (
+                        request_id, user_id, title, description,
+                        labor_cost, material_cost, transport_cost, other_charges, total_amount,
+                        budget_type, budget_min, budget_max,
+                        start_date, completion_date, estimated_duration,
+                        payment_terms, payment_method, pricing_type, hourly_rate, spending_cap_multiplier,
+                        warranty_period, additional_terms, status
+                    ) VALUES (
+                        :request_id, :user_id, :title, :description,
+                        :labor_cost, :material_cost, :transport_cost, :other_charges, :total_amount,
+                        :budget_type, :budget_min, :budget_max,
+                        :start_date, :completion_date, :estimated_duration,
+                        :payment_terms, :payment_method, :pricing_type, :hourly_rate, :spending_cap_multiplier,
+                        :warranty_period, :additional_terms, :status
+                    )";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                ':request_id' => $data['request_id'],
+                ':user_id' => $data['user_id'],
+                ':title' => $data['title'],
+                ':description' => $data['description'] ?? null,
+                ':labor_cost' => $data['labor_cost'],
+                ':material_cost' => $data['material_cost'],
+                ':transport_cost' => $data['transport_cost'] ?? 0,
+                ':other_charges' => $data['other_charges'] ?? 0,
+                ':total_amount' => $data['total_amount'],
+                ':budget_type' => $data['budget_type'] ?? 'fixed',
+                ':budget_min' => $budgetMin,
+                ':budget_max' => $budgetMax,
+                ':start_date' => $data['start_date'],
+                ':completion_date' => $data['completion_date'],
+                ':estimated_duration' => $data['estimated_duration'],
+                ':payment_terms' => $data['payment_terms'] ?? null,
+                ':payment_method' => $data['payment_method'] ?? 'milestone',
+                ':pricing_type' => $data['pricing_type'] ?? 'fixed_price',
+                ':hourly_rate' => $data['hourly_rate'] ?? null,
+                ':spending_cap_multiplier' => $data['spending_cap_multiplier'] ?? 1.5,
+                ':warranty_period' => $data['warranty_period'] ?? null,
+                ':additional_terms' => $data['additional_terms'] ?? null,
+                ':status' => $data['status'] ?? self::STATUS_PENDING
+            ]);
+
+            return $this->pdo->lastInsertId();
+
+        } catch (PDOException $e) {
+            error_log("Error creating enhanced quotation: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Calculate budget range for flexible pricing
+     * 
+     * Calculates minimum (-10%) and maximum (+10%) budget bounds
+     * for flexible budget quotations.
+     * 
+     * @param float $baseAmount The base quotation amount
+     * @return array Array with 'min' and 'max' keys
+     */
+    public function calculateBudgetRange($baseAmount)
+    {
+        return [
+            'min' => round($baseAmount * 0.90, 2),
+            'max' => round($baseAmount * 1.10, 2)
+        ];
+    }
+
+    /**
+     * Get enhanced quotation by ID with business logic fields
+     * 
+     * Retrieves a quotation with all standard and business logic fields,
+     * including calculated budget range text for display.
+     * 
+     * @param int $quotationId The quotation ID
+     * @return array|false Quotation data or false if not found
+     */
+    public function getEnhancedById($quotationId)
+    {
+        try {
+            $sql = "SELECT cq.*, jr.title as job_title, jr.district
+                    FROM CompanyQuotation cq
+                    INNER JOIN JobRequest jr ON cq.request_id = jr.request_id
+                    WHERE cq.quotation_id = :quotation_id";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':quotation_id' => $quotationId]);
+            
+            $quotation = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($quotation && $quotation['budget_type'] === 'flexible') {
+                $quotation['budget_range_text'] = 'LKR ' . number_format($quotation['budget_min'], 2) . 
+                                                  ' - LKR ' . number_format($quotation['budget_max'], 2);
+            }
+            
+            return $quotation;
+
+        } catch (PDOException $e) {
+            error_log("Error fetching enhanced quotation: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update enhanced quotation with business logic fields
+     * 
+     * Updates an existing quotation with business logic fields.
+     * Only allows updates to quotations with 'pending' status.
+     * 
+     * @param int $quotationId The quotation ID to update
+     * @param array $data Updated quotation data
+     * @return bool True on success, false on failure
+     */
+    public function updateEnhanced($quotationId, $data)
+    {
+        try {
+            // First check if quotation exists and is pending
+            $current = $this->getById($quotationId);
+            if (!$current || $current['status'] !== self::STATUS_PENDING) {
+                return false;
+            }
+
+            // Calculate budget range if flexible
+            $budgetMin = $data['budget_min'] ?? null;
+            $budgetMax = $data['budget_max'] ?? null;
+            
+            if (isset($data['budget_type']) && $data['budget_type'] === 'flexible' && isset($data['total_amount'])) {
+                $range = $this->calculateBudgetRange($data['total_amount']);
+                $budgetMin = $range['min'];
+                $budgetMax = $range['max'];
+            }
+
+            $sql = "UPDATE CompanyQuotation 
+                    SET title = :title,
+                        description = :description,
+                        labor_cost = :labor_cost,
+                        material_cost = :material_cost,
+                        transport_cost = :transport_cost,
+                        other_charges = :other_charges,
+                        total_amount = :total_amount,
+                        budget_type = :budget_type,
+                        budget_min = :budget_min,
+                        budget_max = :budget_max,
+                        start_date = :start_date,
+                        completion_date = :completion_date,
+                        estimated_duration = :estimated_duration,
+                        payment_terms = :payment_terms,
+                        payment_method = :payment_method,
+                        pricing_type = :pricing_type,
+                        hourly_rate = :hourly_rate,
+                        spending_cap_multiplier = :spending_cap_multiplier,
+                        warranty_period = :warranty_period,
+                        additional_terms = :additional_terms
+                    WHERE quotation_id = :quotation_id";
+
+            $stmt = $this->pdo->prepare($sql);
+            return $stmt->execute([
+                ':quotation_id' => $quotationId,
+                ':title' => $data['title'],
+                ':description' => $data['description'] ?? null,
+                ':labor_cost' => $data['labor_cost'],
+                ':material_cost' => $data['material_cost'],
+                ':transport_cost' => $data['transport_cost'] ?? 0,
+                ':other_charges' => $data['other_charges'] ?? 0,
+                ':total_amount' => $data['total_amount'],
+                ':budget_type' => $data['budget_type'] ?? 'fixed',
+                ':budget_min' => $budgetMin,
+                ':budget_max' => $budgetMax,
+                ':start_date' => $data['start_date'],
+                ':completion_date' => $data['completion_date'],
+                ':estimated_duration' => $data['estimated_duration'],
+                ':payment_terms' => $data['payment_terms'] ?? null,
+                ':payment_method' => $data['payment_method'] ?? 'milestone',
+                ':pricing_type' => $data['pricing_type'] ?? 'fixed_price',
+                ':hourly_rate' => $data['hourly_rate'] ?? null,
+                ':spending_cap_multiplier' => $data['spending_cap_multiplier'] ?? 1.5,
+                ':warranty_period' => $data['warranty_period'] ?? null,
+                ':additional_terms' => $data['additional_terms'] ?? null
+            ]);
+
+        } catch (PDOException $e) {
+            error_log("Error updating enhanced quotation: " . $e->getMessage());
+            return false;
+        }
+    }
 }

@@ -34,13 +34,28 @@ if ($method === 'OPTIONS') {
 // Route request to appropriate handler based on HTTP method
 switch ($method) {
     case 'GET':
-        handleGet();
+        // Check for enhanced endpoint
+        if (isset($_GET['action']) && $_GET['action'] === 'get_enhanced') {
+            handleGetEnhanced();
+        } else {
+            handleGet();
+        }
         break;
     case 'POST':
-        handlePost();
+        // Check for enhanced endpoint
+        if (isset($_GET['action']) && $_GET['action'] === 'create_enhanced') {
+            handlePostEnhanced();
+        } else {
+            handlePost();
+        }
         break;
     case 'PUT':
-        handlePut();
+        // Check for enhanced endpoint
+        if (isset($_GET['action']) && $_GET['action'] === 'update_enhanced') {
+            handlePutEnhanced();
+        } else {
+            handlePut();
+        }
         break;
     case 'DELETE':
         handleDelete();
@@ -410,6 +425,223 @@ function handleDelete()
         echo json_encode([
             'success' => false,
             'error' => 'Failed to delete quotation: ' . $e->getMessage()
+        ]);
+    }
+}
+
+// ============================================================================
+// BUSINESS LOGIC ENHANCEMENT - New Endpoint Handlers (Added for Phase 1)
+// These handlers work with enhanced quotation methods
+// ============================================================================
+
+/**
+ * Handle POST request for creating enhanced quotation
+ * Endpoint: POST /api/company-quotes.php?action=create_enhanced
+ */
+function handlePostEnhanced()
+{
+    global $quotationModel;
+
+    try {
+        // Get JSON input
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        if (!$input) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Invalid JSON input'
+            ]);
+            return;
+        }
+
+        // Validate required fields
+        $required = ['request_id', 'user_id', 'title', 'labor_cost', 'material_cost', 
+                     'total_amount', 'start_date', 'completion_date', 'estimated_duration'];
+        
+        foreach ($required as $field) {
+            if (!isset($input[$field])) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'error' => "Missing required field: $field"
+                ]);
+                return;
+            }
+        }
+
+        // Validate business logic fields
+        if (isset($input['budget_type']) && !in_array($input['budget_type'], ['fixed', 'flexible'])) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Invalid budget_type. Must be "fixed" or "flexible"'
+            ]);
+            return;
+        }
+
+        if (isset($input['payment_method']) && !in_array($input['payment_method'], ['milestone', '50-50', '30-70', 'upfront_final', 'time_material'])) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Invalid payment_method'
+            ]);
+            return;
+        }
+
+        if (isset($input['pricing_type']) && !in_array($input['pricing_type'], ['fixed_price', 'time_based', 'hybrid'])) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Invalid pricing_type'
+            ]);
+            return;
+        }
+
+        // Validate hourly_rate only when payment_method is time_material
+        // (not just pricing_type, as time_based can come from hourly labor without time_material payment)
+        if (isset($input['payment_method']) && $input['payment_method'] === 'time_material') {
+            if (!isset($input['hourly_rate']) || $input['hourly_rate'] <= 0) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Hourly rate is required when using Time & Material payment method'
+                ]);
+                return;
+            }
+        }
+
+        // Create enhanced quotation
+        $quotationId = $quotationModel->createEnhanced($input);
+
+        if ($quotationId) {
+            // Fetch the created quotation
+            $quotation = $quotationModel->getEnhancedById($quotationId);
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Enhanced quotation created successfully',
+                'data' => $quotation
+            ]);
+        } else {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Failed to create enhanced quotation'
+            ]);
+        }
+
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Server error: ' . $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Handle PUT request for updating enhanced quotation
+ * Endpoint: PUT /api/company-quotes.php?action=update_enhanced
+ */
+function handlePutEnhanced()
+{
+    global $quotationModel;
+
+    try {
+        // Get JSON input
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        if (!$input) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Invalid JSON input'
+            ]);
+            return;
+        }
+
+        // Validate quotation_id
+        if (!isset($input['quotation_id'])) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Missing quotation_id'
+            ]);
+            return;
+        }
+
+        // Update enhanced quotation
+        $success = $quotationModel->updateEnhanced($input['quotation_id'], $input);
+
+        if ($success) {
+            // Fetch the updated quotation
+            $quotation = $quotationModel->getEnhancedById($input['quotation_id']);
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Enhanced quotation updated successfully',
+                'data' => $quotation
+            ]);
+        } else {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Failed to update enhanced quotation. Quotation may not exist or is not in pending status.'
+            ]);
+        }
+
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Server error: ' . $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Handle GET request for fetching enhanced quotation
+ * Endpoint: GET /api/company-quotes.php?action=get_enhanced&quotation_id=123
+ */
+function handleGetEnhanced()
+{
+    global $quotationModel;
+
+    try {
+        // Validate quotation_id
+        if (!isset($_GET['quotation_id'])) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Missing quotation_id parameter'
+            ]);
+            return;
+        }
+
+        $quotationId = intval($_GET['quotation_id']);
+
+        // Fetch enhanced quotation
+        $quotation = $quotationModel->getEnhancedById($quotationId);
+
+        if ($quotation) {
+            echo json_encode([
+                'success' => true,
+                'data' => $quotation
+            ]);
+        } else {
+            http_response_code(404);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Quotation not found'
+            ]);
+        }
+
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Server error: ' . $e->getMessage()
         ]);
     }
 }
