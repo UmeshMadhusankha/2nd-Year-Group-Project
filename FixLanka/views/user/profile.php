@@ -16,66 +16,13 @@ $userData = getUserData();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - Fix Lanka</title>
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/profile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/navbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/profile.css">
 </head>
 <body>
     <!-- Navbar -->
     <?php include 'navbar.php'; ?>
-
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-content">
-            <div class="sidebar-header">
-                <div class="user-profile">
-                    <img src="https://via.placeholder.com/60" alt="User" class="user-avatar">
-                    <div class="user-info">
-                        <h3 class="user-name">John Doe</h3>
-                        <p class="user-type">Homeowner</p>
-                    </div>
-                </div>
-            </div>
-
-            <nav class="sidebar-nav">
-                <ul class="nav-list">
-                    <li class="nav-item">
-                        <a href="/2nd-Year-Group-Project/FixLanka/" class="nav-link">
-                            <i class="fas fa-home nav-icon"></i>
-                            <span class="nav-text">Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/2nd-Year-Group-Project/FixLanka/job-history" class="nav-link">
-                            <i class="fas fa-briefcase nav-icon"></i>
-                            <span class="nav-text">My Jobs</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/2nd-Year-Group-Project/FixLanka/chat" class="nav-link">
-                            <i class="fas fa-comments nav-icon"></i>
-                            <span class="nav-text">Messages</span>
-                            <span class="nav-badge">5</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/2nd-Year-Group-Project/FixLanka/profile" class="nav-link active">
-                            <i class="fas fa-user nav-icon"></i>
-                            <span class="nav-text">Profile</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-
-            <div class="sidebar-footer">
-                <form action="/2nd-Year-Group-Project/FixLanka/logout" method="POST">
-                    <button type="submit" class="logout-btn">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Logout</span>
-                    </button>
-                </form>
-            </div>
-        </div>
-    </aside>
 
     <!-- Main Content -->
     <main class="main-content">

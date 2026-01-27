@@ -1,3 +1,9 @@
+<?php
+// Start session and verify authentication
+require_once '../../config/session.php';
+requireRole('company');
+$userData = getUserData();
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -17,17 +23,20 @@
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/payments.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/payments-export-modal.css">
 </head>
 
 <body>
     <div class="app-container">
         <!-- Include Sidebar -->
-        <div id="sidebar-container"></div>
+        <!-- Include Sidebar -->
+        <?php include 'sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content">
             <!-- Include Topbar -->
-            <div id="topbar-container"></div>
+            <!-- Include Topbar -->
+            <?php include 'topbar.php'; ?>
 
             <!-- Payments Content -->
             <div class="payments-container">
@@ -44,7 +53,7 @@
                                     Income payments and expense tracking for your repair services
                                 </p>
                                 <nav class="breadcrumbs">
-                                    <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard">
+                                    <a href="/2nd-Year-Group-Project/FixLanka/views/company/dashboard.php">
                                         <i class="fas fa-home"></i>
                                         Dashboard
                                     </a>
@@ -510,45 +519,381 @@
         </div>
     </div>
 
+    <!-- Export Payments Modal -->
+    <div class="export-modal-overlay" id="exportModal">
+        <div class="export-modal-container">
+            <div class="export-modal-header">
+                <h2><i class="fas fa-download"></i> Export Payments</h2>
+                <button class="export-modal-close" onclick="closeExportModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="export-modal-body">
+                <div class="export-options-container">
+                    <!-- Filter By Type Section (Radio - single selection) -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-filter"></i> Filter by Type</h4>
+                        <div class="export-radio-group">
+                            <label class="export-radio-option">
+                                <input type="radio" name="paymentType" value="all" checked>
+                                <span class="radio-indicator"></span>
+                                <span class="option-text">All Payments</span>
+                            </label>
+                            <label class="export-radio-option">
+                                <input type="radio" name="paymentType" value="income">
+                                <span class="radio-indicator"></span>
+                                <span class="option-text">Income Only</span>
+                            </label>
+                            <label class="export-radio-option">
+                                <input type="radio" name="paymentType" value="expense">
+                                <span class="radio-indicator"></span>
+                                <span class="option-text">Expenses Only</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Filter By Status Section -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-flag"></i> Filter by Status</h4>
+                        <div class="export-checkbox-group">
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportCompleted" checked>
+                                <span class="checkbox-indicator"><i class="fas fa-check"></i></span>
+                                <span class="option-text">Completed</span>
+                            </label>
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportPending" checked>
+                                <span class="checkbox-indicator"><i class="fas fa-check"></i></span>
+                                <span class="option-text">Pending</span>
+                            </label>
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportFailed">
+                                <span class="checkbox-indicator"><i class="fas fa-check"></i></span>
+                                <span class="option-text">Failed</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Date Range Section -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-calendar-alt"></i> Date Range</h4>
+                        <div class="export-date-range">
+                            <div class="export-date-presets">
+                                <button class="export-date-preset-btn" onclick="setDatePreset(7)" type="button">Last 7 days</button>
+                                <button class="export-date-preset-btn" onclick="setDatePreset(30)" type="button">Last 30 days</button>
+                                <button class="export-date-preset-btn" onclick="setDatePreset(90)" type="button">Last 3 months</button>
+                                <button class="export-date-preset-btn" onclick="setDatePreset(365)" type="button">Last year</button>
+                            </div>
+                            <div class="export-date-inputs">
+                                <div class="export-date-field">
+                                    <label for="exportStartDate">From</label>
+                                    <input type="date" id="exportStartDate">
+                                </div>
+                                <div class="export-date-field">
+                                    <label for="exportEndDate">To</label>
+                                    <input type="date" id="exportEndDate">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Format Section -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-file-alt"></i> Export Format</h4>
+                        <div class="export-format-group">
+                            <label class="export-format-option">
+                                <input type="radio" name="exportFormat" value="csv" checked>
+                                <div class="export-format-icon csv">
+                                    <i class="fas fa-file-csv"></i>
+                                </div>
+                                <span class="export-format-name">CSV</span>
+                                <span class="export-format-desc">Universal format</span>
+                            </label>
+                            <label class="export-format-option">
+                                <input type="radio" name="exportFormat" value="excel">
+                                <div class="export-format-icon excel">
+                                    <i class="fas fa-file-excel"></i>
+                                </div>
+                                <span class="export-format-name">Excel</span>
+                                <span class="export-format-desc">Spreadsheet</span>
+                            </label>
+                            <label class="export-format-option">
+                                <input type="radio" name="exportFormat" value="pdf">
+                                <div class="export-format-icon pdf">
+                                    <i class="fas fa-file-pdf"></i>
+                                </div>
+                                <span class="export-format-name">PDF</span>
+                                <span class="export-format-desc">Print ready</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Export Summary -->
+                    <div class="export-summary-box" id="exportSummaryBox">
+                        <h4><i class="fas fa-chart-pie"></i> Export Preview</h4>
+                        <div class="export-summary-stats">
+                            <div class="export-summary-stat">
+                                <span class="stat-value" id="exportTotalRecords">--</span>
+                                <span class="stat-label">Records</span>
+                            </div>
+                            <div class="export-summary-stat">
+                                <span class="stat-value" id="exportTotalAmount">--</span>
+                                <span class="stat-label">Total</span>
+                            </div>
+                            <div class="export-summary-stat">
+                                <span class="stat-value" id="exportDateRange">--</span>
+                                <span class="stat-label">Days</span>
+                            </div>
+                        </div>
+                        <div class="export-summary-loading">
+                            <i class="fas fa-spinner"></i>
+                            <span>Calculating...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="export-modal-footer">
+                <button class="export-btn export-btn-cancel" onclick="closeExportModal()" type="button">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="export-btn export-btn-preview" onclick="previewPaymentsExport()" type="button">
+                    <i class="fas fa-eye"></i> Preview
+                </button>
+                <button class="export-btn export-btn-download" onclick="downloadPaymentsExport()" type="button">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script>
         // Load sidebar and topbar
         fetch('/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php')
             .then(response => response.text())
             .then(data => {
-                // Set active state immediately in the HTML before inserting
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = data;
-
-                // Remove any existing active classes
-                const allNavItems = tempDiv.querySelectorAll('.nav-item');
-                allNavItems.forEach(item => item.classList.remove('active'));
-
-                // Set payments as active immediately
-                const paymentsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/company-payments"]');
-                if (paymentsLink) {
-                    paymentsLink.parentElement.classList.add('active');
-                }
-
-                // Insert the modified HTML
-                document.getElementById('sidebar-container').innerHTML = tempDiv.innerHTML;
+                document.getElementById('sidebar-container').innerHTML = data;
+                // Add active class
+                setTimeout(() => {
+                    const paymentsLink = document.querySelector('#sidebar-container a[href*="payments"]');
+                    if(paymentsLink) paymentsLink.parentElement.classList.add('active');
+                }, 100);
             });
 
-        fetch('/2nd-Year-Group-Project/FixLanka/views/company/topbar.php')
+        fetch('/2nd-Year-Group-Project/FixLanka/views/company/topbar.php?page=payments')
             .then(response => response.text())
             .then(data => {
                 document.getElementById('topbar-container').innerHTML = data;
-                
-                // Initialize topbar after loading
-                if (typeof initializeTopbar === 'function') {
-                    setTimeout(initializeTopbar, 100);
-                }
-                if (typeof initProfileDropdown === 'function') {
-                    setTimeout(initProfileDropdown, 200);
-                }
             });
+
+        // Main Payment Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchPaymentsData();
+            
+            // Period change listener
+            document.getElementById('period-select').addEventListener('change', updatePeriod);
+        });
+
+        let currentData = { income: [], expenses: [], projects: [] };
+
+        async function fetchPaymentsData() {
+            const period = document.getElementById('period-select').value;
+            // Handle custom range if implemented in UI, for now just pass period
+            const url = `/2nd-Year-Group-Project/FixLanka/api/payments.php?period=${period}`;
+            
+            try {
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentData = result.data;
+                    updateDashboard(result.data.summary);
+                    populateIncomeTable(result.data.income);
+                    populateExpenseTable(result.data.expenses);
+                    populateProjectDropdowns(result.data.projects);
+                }
+            } catch (error) {
+                console.error('Error fetching payments:', error);
+            }
+        }
+
+        function updateDashboard(summary) {
+            document.getElementById('total-income-display').textContent = formatCurrency(summary.total_income);
+            document.getElementById('total-expenses-display').textContent = formatCurrency(summary.total_expenses);
+            document.getElementById('net-profit-display').textContent = formatCurrency(summary.net_profit);
+            document.getElementById('pending-payments-display').textContent = formatCurrency(summary.pending_payments || 0);
+            
+            document.getElementById('total-transactions-display').textContent = summary.total_transactions;
+            document.getElementById('avg-payment-display').textContent = formatCurrency(summary.avg_payment);
+            document.getElementById('profit-margin-display').textContent = summary.profit_margin + '%';
+            document.getElementById('expense-ratio-display').textContent = summary.expense_ratio + '%';
+        }
+
+        function populateIncomeTable(income) {
+            const tbody = document.getElementById('income-table-body');
+            tbody.innerHTML = '';
+            
+            if (income.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No income records found</td></tr>';
+                return;
+            }
+
+            income.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.date}</td>
+                    <td>${item.project_name}</td>
+                    <td>${item.client_name}</td>
+                    <td>${formatCurrency(item.amount)}</td>
+                    <td><span class="status-badge ${item.status}">${item.status}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function populateExpenseTable(expenses) {
+            const tbody = document.getElementById('expense-table-body');
+            tbody.innerHTML = '';
+
+            if (expenses.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No expense records found</td></tr>';
+                return;
+            }
+
+            expenses.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.date}</td>
+                    <td>${item.project_name}</td>
+                    <td>${item.category}</td>
+                    <td>${item.description}</td>
+                    <td>${formatCurrency(item.amount)}</td>
+                    <td>
+                        <button class="btn-icon" onclick="deleteExpense('${item.id}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        function populateProjectDropdowns(projects) {
+            const selects = ['income-project-filter', 'expense-project-filter', 'expense-project', 'edit-expense-project'];
+            selects.forEach(id => {
+               const select = document.getElementById(id);
+               if (!select) return;
+               
+               // Keep first option (All/Select)
+               const firstOption = select.options[0];
+               select.innerHTML = '';
+               select.appendChild(firstOption);
+               
+               projects.forEach(p => {
+                   const opt = document.createElement('option');
+                   opt.value = p.project_id;
+                   opt.textContent = p.title;
+                   select.appendChild(opt);
+               });
+            });
+        }
+
+        function formatCurrency(amount) {
+            return 'LKR ' + parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function updatePeriod() {
+            fetchPaymentsData();
+        }
+        
+        // Modal Logic
+        function openExpenseModal() {
+            document.getElementById('expense-modal').style.display = 'block';
+             // Set default date to today
+            document.getElementById('expense-date').valueAsDate = new Date();
+        }
+
+        function closeExpenseModal() {
+            document.getElementById('expense-modal').style.display = 'none';
+        }
+        
+        async function saveExpense() {
+            const data = {
+                project_id: document.getElementById('expense-project').value,
+                category: document.getElementById('expense-category').value,
+                amount: document.getElementById('expense-amount').value,
+                date: document.getElementById('expense-date').value,
+                description: document.getElementById('expense-description').value
+            };
+            
+            try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/payments.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Expense saved successfully');
+                    closeExpenseModal();
+                    fetchPaymentsData(); // Refresh
+                } else {
+                    alert(result.message || 'Failed to save expense');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error processing request');
+            }
+        }
+        
+        function deleteExpense(id) {
+            if(!confirm("Are you sure you want to delete this expense?")) return;
+            
+             fetch('/2nd-Year-Group-Project/FixLanka/api/payments.php', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ expense_id: id })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                         alert('Expense deleted');
+                         fetchPaymentsData();
+                    } else {
+                        alert('Failed to delete');
+                    }
+                });
+        }
+        
+        // --- Filter Logic (Client-side for now as API handles basic filters) ---
+        function applyIncomeFilters() {
+             // Basic implementation: Refetch or client-filter.
+             // Given the list size, client-side filter on 'currentData.income' is fast
+             const status = document.getElementById('income-status-filter').value;
+             const project = document.getElementById('income-project-filter').value;
+             // ... amount filter logic ...
+             
+             let filtered = currentData.income.filter(item => {
+                 if (status !== 'all' && item.status !== status) return false;
+                 if (project !== 'all' && item.project_id != project) return false; // Note: project_id might be int/string
+                 return true;
+             });
+             
+             populateIncomeTable(filtered);
+        }
+        
+         function applyExpenseFilters() {
+             const category = document.getElementById('expense-category-filter').value;
+             const project = document.getElementById('expense-project-filter').value;
+             
+             let filtered = currentData.expenses.filter(item => {
+                 if (category !== 'all' && item.category !== category) return false;
+                 if (project !== 'all' && item.project_id != project) return false;
+                 return true;
+             });
+             
+             populateExpenseTable(filtered);
+        }
     </script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/payments_layout.js"></script>
 </body>
 
 </html>

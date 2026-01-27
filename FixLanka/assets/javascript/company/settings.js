@@ -1,6 +1,6 @@
-// Settings page functionality
-document.addEventListener('DOMContentLoaded', function() {
-    
+﻿// Settings page functionality
+document.addEventListener('DOMContentLoaded', function () {
+
     // Initialize all features when page loads
     initializeTabs();
     initializePasswordStrength();
@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeSaveButtons();
     initializeSessionManagement();
     initializePaymentMethods();
-    
+
 });
 
 /**
@@ -20,39 +20,39 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeTabs() {
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
-    
+
     tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             // Get the tab name from the data attribute
             const targetTab = this.getAttribute('data-tab');
-            
+
             // Remove active class from all tabs and contents
             tabButtons.forEach(btn => btn.classList.remove('active'));
             tabContents.forEach(content => content.classList.remove('active'));
-            
+
             // Add active class to clicked tab and corresponding content
             this.classList.add('active');
             const targetContent = document.getElementById(targetTab);
             if (targetContent) {
                 targetContent.classList.add('active');
             }
-            
+
             // Save the active tab to localStorage so it persists on page reload
             localStorage.setItem('activeSettingsTab', targetTab);
         });
     });
-    
+
     // Restore previously active tab from localStorage
     const savedTab = localStorage.getItem('activeSettingsTab');
     if (savedTab) {
         const savedButton = document.querySelector(`[data-tab="${savedTab}"]`);
         const savedContent = document.getElementById(savedTab);
-        
+
         if (savedButton && savedContent) {
             // Clear all active states
             tabButtons.forEach(btn => btn.classList.remove('active'));
             tabContents.forEach(content => content.classList.remove('active'));
-            
+
             // Activate saved tab
             savedButton.classList.add('active');
             savedContent.classList.add('active');
@@ -75,12 +75,12 @@ function initializePasswordStrength() {
     const confirmPasswordInput = document.getElementById('confirmPassword');
     const strengthContainer = newPasswordInput ? newPasswordInput.closest('.form-group').querySelector('.password-strength') : null;
     const requirementsList = document.querySelectorAll('.password-requirements li');
-    
+
     if (!newPasswordInput || !strengthContainer) return;
-    
-    newPasswordInput.addEventListener('input', function() {
+
+    newPasswordInput.addEventListener('input', function () {
         const password = this.value;
-        
+
         // Check each requirement
         const requirements = {
             length: password.length >= 8,
@@ -89,7 +89,7 @@ function initializePasswordStrength() {
             number: /[0-9]/.test(password),
             special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
         };
-        
+
         // Update visual indicators for each requirement
         requirementsList.forEach((item, index) => {
             const reqKey = Object.keys(requirements)[index];
@@ -101,14 +101,14 @@ function initializePasswordStrength() {
                 item.querySelector('i').className = 'fas fa-circle';
             }
         });
-        
+
         // Calculate overall strength
         const metRequirements = Object.values(requirements).filter(Boolean).length;
         const strengthText = strengthContainer.querySelector('.strength-text');
-        
+
         // Remove existing strength classes
         strengthContainer.classList.remove('weak', 'medium', 'strong');
-        
+
         // Apply new strength class based on how many requirements are met
         if (metRequirements <= 2) {
             strengthContainer.classList.add('weak');
@@ -121,13 +121,13 @@ function initializePasswordStrength() {
             strengthText.textContent = 'Strong password';
         }
     });
-    
+
     // Validate that passwords match when user types in confirm field
     if (confirmPasswordInput) {
-        confirmPasswordInput.addEventListener('input', function() {
+        confirmPasswordInput.addEventListener('input', function () {
             const newPassword = newPasswordInput.value;
             const confirmPassword = this.value;
-            
+
             if (confirmPassword && newPassword !== confirmPassword) {
                 this.style.borderColor = 'var(--danger-color)';
             } else {
@@ -143,12 +143,12 @@ function initializePasswordStrength() {
  */
 function initializePasswordToggles() {
     const passwordToggles = document.querySelectorAll('.toggle-password');
-    
+
     passwordToggles.forEach(toggle => {
-        toggle.addEventListener('click', function() {
+        toggle.addEventListener('click', function () {
             const input = this.previousElementSibling;
             const icon = this.querySelector('i');
-            
+
             // Toggle between password and text input type
             if (input.type === 'password') {
                 input.type = 'text';
@@ -172,15 +172,15 @@ function initializeFileUploads() {
     const logoInput = document.getElementById('companyLogo');
     const logoImage = document.getElementById('logoImage');
     const logoUploadBtn = document.getElementById('uploadLogoBtn');
-    
+
     if (logoUploadBtn) {
-        logoUploadBtn.addEventListener('click', function() {
+        logoUploadBtn.addEventListener('click', function () {
             logoInput.click();
         });
     }
-    
+
     if (logoInput) {
-        logoInput.addEventListener('change', function(e) {
+        logoInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (file) {
                 // Validate file type
@@ -188,16 +188,16 @@ function initializeFileUploads() {
                     showToast('Error', 'Please select an image file', 'error');
                     return;
                 }
-                
+
                 // Validate file size (max 5MB)
                 if (file.size > 5 * 1024 * 1024) {
                     showToast('Error', 'File size must be less than 5MB', 'error');
                     return;
                 }
-                
+
                 // Create preview of the uploaded image
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     logoImage.src = e.target.result;
                     showToast('Success', 'Logo uploaded successfully', 'success');
                 };
@@ -205,20 +205,20 @@ function initializeFileUploads() {
             }
         });
     }
-    
+
     // Profile picture upload
     const profileInput = document.getElementById('profilePicture');
     const profileImage = document.getElementById('profileImage');
     const profileUploadBtn = document.getElementById('uploadProfileBtn');
-    
+
     if (profileUploadBtn) {
-        profileUploadBtn.addEventListener('click', function() {
+        profileUploadBtn.addEventListener('click', function () {
             profileInput.click();
         });
     }
-    
+
     if (profileInput) {
-        profileInput.addEventListener('change', function(e) {
+        profileInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (file) {
                 // Validate file type
@@ -226,16 +226,16 @@ function initializeFileUploads() {
                     showToast('Error', 'Please select an image file', 'error');
                     return;
                 }
-                
+
                 // Validate file size (max 2MB for profile pictures)
                 if (file.size > 2 * 1024 * 1024) {
                     showToast('Error', 'File size must be less than 2MB', 'error');
                     return;
                 }
-                
+
                 // Create preview of the uploaded image
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     profileImage.src = e.target.result;
                     showToast('Success', 'Profile picture updated successfully', 'success');
                 };
@@ -251,20 +251,20 @@ function initializeFileUploads() {
  */
 function initializeToggles() {
     const toggles = document.querySelectorAll('.switch input[type="checkbox"]');
-    
+
     toggles.forEach(toggle => {
         // Load saved state from localStorage
         const toggleId = toggle.id;
         const savedState = localStorage.getItem(`toggle_${toggleId}`);
-        
+
         if (savedState !== null) {
             toggle.checked = savedState === 'true';
         }
-        
+
         // Save state when toggle changes
-        toggle.addEventListener('change', function() {
+        toggle.addEventListener('change', function () {
             localStorage.setItem(`toggle_${toggleId}`, this.checked);
-            
+
             // Show feedback to user
             const label = this.closest('.notification-item, .preference-item')?.querySelector('h3')?.textContent;
             const status = this.checked ? 'enabled' : 'disabled';
@@ -281,11 +281,11 @@ function initializeSaveButtons() {
     // Save all button in header
     const saveAllBtn = document.querySelector('.btn-save-all');
     if (saveAllBtn) {
-        saveAllBtn.addEventListener('click', function() {
+        saveAllBtn.addEventListener('click', function () {
             saveAllSettings();
         });
     }
-    
+
     // Individual section save buttons
     const saveBtns = document.querySelectorAll('.btn-primary');
     saveBtns.forEach(btn => {
@@ -293,8 +293,8 @@ function initializeSaveButtons() {
         if (btn.classList.contains('btn-save-all') || btn.classList.contains('btn-enable')) {
             return;
         }
-        
-        btn.addEventListener('click', function(e) {
+
+        btn.addEventListener('click', function (e) {
             e.preventDefault();
             const form = this.closest('.tab-content');
             if (form) {
@@ -302,19 +302,19 @@ function initializeSaveButtons() {
             }
         });
     });
-    
+
     // Enable 2FA button
     const enable2FABtn = document.querySelector('.btn-enable');
     if (enable2FABtn) {
-        enable2FABtn.addEventListener('click', function() {
+        enable2FABtn.addEventListener('click', function () {
             enable2FA();
         });
     }
-    
+
     // Delete account button
     const deleteAccountBtn = document.querySelector('.btn-danger-outline');
     if (deleteAccountBtn) {
-        deleteAccountBtn.addEventListener('click', function() {
+        deleteAccountBtn.addEventListener('click', function () {
             deleteAccount();
         });
     }
@@ -327,7 +327,7 @@ function saveAllSettings() {
     // Collect all form data from all tabs
     const allInputs = document.querySelectorAll('.settings-content input, .settings-content select, .settings-content textarea');
     const formData = new FormData();
-    
+
     allInputs.forEach(input => {
         if (input.type === 'checkbox') {
             formData.append(input.name || input.id, input.checked);
@@ -335,12 +335,12 @@ function saveAllSettings() {
             formData.append(input.name || input.id, input.value);
         }
     });
-    
+
     // Simulate API call (replace with actual API call)
     setTimeout(() => {
         showToast('Success', 'All settings saved successfully', 'success');
     }, 500);
-    
+
     // In a real application, you would send this data to the server:
     // fetch('/api/settings/save-all', {
     //     method: 'POST',
@@ -362,7 +362,7 @@ function saveTabSettings(tabContent) {
     const tabId = tabContent.id;
     const inputs = tabContent.querySelectorAll('input, select, textarea');
     const formData = new FormData();
-    
+
     // Collect form data
     inputs.forEach(input => {
         if (input.type === 'checkbox') {
@@ -371,29 +371,29 @@ function saveTabSettings(tabContent) {
             formData.append(input.name || input.id, input.value);
         }
     });
-    
+
     // Validate password fields if in account settings
     if (tabId === 'account-tab') {
         const currentPassword = document.getElementById('currentPassword')?.value;
         const newPassword = document.getElementById('newPassword')?.value;
         const confirmPassword = document.getElementById('confirmPassword')?.value;
-        
+
         if (newPassword && newPassword !== confirmPassword) {
             showToast('Error', 'New passwords do not match', 'error');
             return;
         }
-        
+
         if (newPassword && !currentPassword) {
             showToast('Error', 'Please enter your current password', 'error');
             return;
         }
     }
-    
+
     // Simulate API call
     setTimeout(() => {
         const tabName = tabContent.querySelector('.section-title')?.textContent || 'Settings';
         showToast('Success', `${tabName} saved successfully`, 'success');
-        
+
         // Clear password fields after successful save
         if (tabId === 'account-tab') {
             const passwordInputs = tabContent.querySelectorAll('input[type="password"]');
@@ -408,12 +408,12 @@ function saveTabSettings(tabContent) {
  */
 function initializeSessionManagement() {
     const revokeButtons = document.querySelectorAll('.btn-revoke');
-    
+
     revokeButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const sessionItem = this.closest('.session-item');
             const deviceName = sessionItem.querySelector('h3').textContent;
-            
+
             // Show confirmation dialog
             if (confirm(`Are you sure you want to revoke access for "${deviceName}"?`)) {
                 // Simulate API call to revoke session
@@ -421,7 +421,7 @@ function initializeSessionManagement() {
                     sessionItem.style.transition = 'all 0.3s ease';
                     sessionItem.style.opacity = '0';
                     sessionItem.style.transform = 'translateX(-20px)';
-                    
+
                     setTimeout(() => {
                         sessionItem.remove();
                         showToast('Success', 'Session revoked successfully', 'success');
@@ -440,43 +440,43 @@ function initializePaymentMethods() {
     // Set primary payment method
     const setPrimaryButtons = document.querySelectorAll('.btn-set-primary');
     setPrimaryButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             // Remove active state from all cards
             document.querySelectorAll('.payment-method-card').forEach(card => {
                 card.classList.remove('active');
                 card.querySelector('.badge-primary')?.remove();
             });
-            
+
             // Set this card as primary
             const card = this.closest('.payment-method-card');
             card.classList.add('active');
-            
+
             // Add primary badge
             const badge = document.createElement('span');
             badge.className = 'badge-primary';
             badge.textContent = 'Primary';
             card.querySelector('.card-info').appendChild(badge);
-            
+
             // Hide this button
             this.style.display = 'none';
-            
+
             showToast('Success', 'Primary payment method updated', 'success');
         });
     });
-    
+
     // Remove payment method
     const removeButtons = document.querySelectorAll('.btn-icon');
     removeButtons.forEach(btn => {
         if (btn.querySelector('.fa-trash')) {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function () {
                 const card = this.closest('.payment-method-card');
                 const cardNumber = card.querySelector('.card-info p').textContent;
-                
+
                 if (confirm(`Remove payment method ${cardNumber}?`)) {
                     card.style.transition = 'all 0.3s ease';
                     card.style.opacity = '0';
                     card.style.transform = 'translateX(-20px)';
-                    
+
                     setTimeout(() => {
                         card.remove();
                         showToast('Success', 'Payment method removed', 'success');
@@ -485,11 +485,11 @@ function initializePaymentMethods() {
             });
         }
     });
-    
+
     // Add new payment method
     const addCardBtn = document.querySelector('.btn-add-card');
     if (addCardBtn) {
-        addCardBtn.addEventListener('click', function() {
+        addCardBtn.addEventListener('click', function () {
             // In a real application, this would open a modal with a payment form
             showToast('Info', 'Payment form would open here', 'success');
         });
@@ -502,7 +502,7 @@ function initializePaymentMethods() {
 function enable2FA() {
     // In a real application, this would open a modal with QR code and setup instructions
     const confirmed = confirm('Enable Two-Factor Authentication?\n\nYou will need to scan a QR code with your authenticator app.');
-    
+
     if (confirmed) {
         // Simulate API call
         setTimeout(() => {
@@ -510,16 +510,16 @@ function enable2FA() {
             const twoFACard = document.querySelector('.security-card');
             const statusBadge = twoFACard.querySelector('.status-badge');
             const enableBtn = twoFACard.querySelector('.btn-enable');
-            
+
             if (statusBadge && enableBtn) {
                 statusBadge.classList.remove('disabled');
                 statusBadge.classList.add('enabled');
                 statusBadge.textContent = 'Enabled';
-                
+
                 // Change button to disable
                 enableBtn.textContent = 'Disable';
                 enableBtn.classList.add('btn-danger');
-                
+
                 showToast('Success', 'Two-Factor Authentication enabled', 'success');
             }
         }, 500);
@@ -531,14 +531,14 @@ function enable2FA() {
  */
 function deleteAccount() {
     const confirmed = confirm('Are you sure you want to delete your account?\n\nThis action cannot be undone and all your data will be permanently deleted.');
-    
+
     if (confirmed) {
         const doubleConfirm = confirm('This is your last chance. Are you absolutely sure?');
-        
+
         if (doubleConfirm) {
             // In a real application, this would call an API to delete the account
             showToast('Info', 'Account deletion would be processed here', 'success');
-            
+
             // Typically, you would redirect to a confirmation page or logout
             // setTimeout(() => {
             //     window.location.href = '/logout';
@@ -554,16 +554,16 @@ function deleteAccount() {
 function showToast(title, message, type = 'success') {
     const toast = document.getElementById('toast');
     if (!toast) return;
-    
+
     const toastIcon = toast.querySelector('.toast-icon');
     const toastTitle = toast.querySelector('.toast-content h4');
     const toastMessage = toast.querySelector('.toast-content p');
     const closeBtn = toast.querySelector('.toast-close');
-    
+
     // Update content
     toastTitle.textContent = title;
     toastMessage.textContent = message;
-    
+
     // Update icon based on type
     if (type === 'success') {
         toastIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
@@ -572,17 +572,17 @@ function showToast(title, message, type = 'success') {
         toastIcon.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
         toastIcon.className = 'toast-icon error';
     }
-    
+
     // Show toast with animation
     toast.classList.add('show');
-    
+
     // Auto-hide after 3 seconds
     const autoHideTimeout = setTimeout(() => {
         hideToast();
     }, 3000);
-    
+
     // Close button handler
-    closeBtn.onclick = function() {
+    closeBtn.onclick = function () {
         clearTimeout(autoHideTimeout);
         hideToast();
     };
@@ -605,23 +605,23 @@ function hideToast() {
 function validateForm(form) {
     const requiredInputs = form.querySelectorAll('[required]');
     let isValid = true;
-    
+
     requiredInputs.forEach(input => {
         if (!input.value.trim()) {
             isValid = false;
             input.style.borderColor = 'var(--danger-color)';
-            
+
             // Reset border color when user starts typing
-            input.addEventListener('input', function() {
+            input.addEventListener('input', function () {
                 this.style.borderColor = '';
             }, { once: true });
         }
     });
-    
+
     if (!isValid) {
         showToast('Error', 'Please fill in all required fields', 'error');
     }
-    
+
     return isValid;
 }
 
@@ -632,22 +632,22 @@ function validateForm(form) {
 let autoSaveTimeout;
 function enableAutoSave() {
     const inputs = document.querySelectorAll('.settings-content input, .settings-content select, .settings-content textarea');
-    
+
     inputs.forEach(input => {
-        input.addEventListener('input', function() {
+        input.addEventListener('input', function () {
             // Clear existing timeout
             clearTimeout(autoSaveTimeout);
-            
+
             // Set new timeout - saves 2 seconds after user stops typing
             autoSaveTimeout = setTimeout(() => {
                 const value = this.value;
                 const fieldName = this.name || this.id;
-                
+
                 // Save to localStorage for demo purposes
                 localStorage.setItem(`settings_${fieldName}`, value);
-                
+
                 // In a real application, you would send this to the server
-                console.log(`Auto-saved: ${fieldName} = ${value}`);
+
             }, 2000);
         });
     });

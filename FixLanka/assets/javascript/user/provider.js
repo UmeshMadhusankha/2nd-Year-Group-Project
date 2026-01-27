@@ -1,4 +1,4 @@
-// Fix Lanka Provider Profile Page JavaScript
+﻿// Fix Lanka Provider Profile Page JavaScript
 // =============================================
 
 // DOM Elements
@@ -84,7 +84,7 @@ function initializeProfileDropdown() {
                     handleLogout();
                 } else {
                     // For other links, you can add navigation logic here
-                    console.log('Navigating to:', this.getAttribute('href'));
+                    );
                 }
                 
                 // Close dropdown
@@ -104,7 +104,7 @@ function initializeProfileDropdown() {
 // Handle Logout
 function handleLogout() {
     if (confirm('Are you sure you want to logout?')) {
-        console.log('Logging out...');
+        
         alert('You have been logged out successfully!');
         // Optionally redirect to login page
         // window.location.href = 'index.html';
@@ -138,10 +138,10 @@ function initializeMessageButton() {
 
 // Show Message Dialog (placeholder)
 function showMessageDialog(providerName) {
-    alert(`Opening message conversation with ${providerName}...\n\nThis would normally open a messaging interface where you can:\n• Send direct messages\n• Share photos\n• Discuss project details\n• Schedule appointments`);
+    alert(`Opening message conversation with ${providerName}...\n\nThis would normally open a messaging interface where you can:\nâ€¢ Send direct messages\nâ€¢ Share photos\nâ€¢ Discuss project details\nâ€¢ Schedule appointments`);
     
     // In a real application, this would open a modal or redirect to a messaging page
-    console.log(`Messaging ${providerName}`);
+    
 }
 
 // Reviews Toggle Functionality
@@ -216,7 +216,6 @@ function initializeStickyHeader() {
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('service-tag')) {
         const serviceName = e.target.textContent;
-        console.log(`Clicked on service: ${serviceName}`);
         
         // Add a temporary highlight effect
         e.target.style.transform = 'scale(1.05)';
@@ -228,7 +227,7 @@ document.addEventListener('click', function(e) {
         // - Show service details modal
         // - Navigate to booking page for that service
         // - Show pricing information
-        alert(`Learn more about ${serviceName} service?\n\nThis would show detailed information about the service including:\n• Pricing\n• What's included\n• Estimated duration\n• Book now option`);
+        alert(`Learn more about ${serviceName} service?\n\nThis would show detailed information about the service including:\nâ€¢ Pricing\nâ€¢ What's included\nâ€¢ Estimated duration\nâ€¢ Book now option`);
     }
 });
 
@@ -255,7 +254,7 @@ document.addEventListener('click', function(e) {
                 }
             } else if (iconClass.includes('fa-map-marker-alt')) {
                 // Handle location click
-                console.log(`Show location: ${value}`);
+                
                 alert(`Opening map for ${value}...\n\nThis would show the service area on a map.`);
             }
         }
@@ -352,7 +351,6 @@ document.addEventListener('keydown', function(e) {
 });
 
 // Console log for debugging
-console.log('Fix Lanka Provider Profile Page JavaScript loaded successfully');
 
 // Animation observer for elements coming into view
 const observerOptions = {

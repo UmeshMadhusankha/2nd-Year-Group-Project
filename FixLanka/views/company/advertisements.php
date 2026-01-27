@@ -1,3 +1,18 @@
+<?php
+/**
+ * Advertisement Management Page
+ * Displays and manages company advertisements
+ */
+
+// Start session and check authentication
+require_once '../../config/session.php';
+
+// Require company role
+requireRole(['company']);
+
+// Get user data
+$userData = getUserData();
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -9,9 +24,9 @@
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/progress-bars.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/advertisements.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
@@ -32,449 +47,112 @@
             <!-- KPI Cards Section -->
             <section class="kpi-section">
                 <!-- Page Header -->
-                <div class="page-header">
-                    <div class="header-left">
-                        <h1><i class="fas fa-bullhorn"></i> Advertisement Management</h1>
-                        <p class="subtitle">Create, manage, and track your advertising campaigns</p>
+                <header class="page-header">
+                    <div class="header-content">
+                        <div class="header-main">
+                            <div class="title-section">
+                                <h1><i class="fas fa-bullhorn"></i> Advertisement Management</h1>
+                                <p class="subtitle">Manage your company employees and freelance contractors</p>
+                                <nav class="breadcrumbs">
+                                    <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard"><i class="fas fa-home"></i> Dashboard</a>
+                                    <span class="separator">/</span>
+                                    <span class="current">Advertisements</span>
+                                </nav>
+                            </div>
+                            <div class="header-actions">
+                                <div class="action-buttons">
+                                    <button class="action-btn primary" id="createAdBtn">
+                                        <i class="fas fa-plus"></i> Create New Advertisement
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="header-right">
-                        <button class="action-btn primary" id="createAdBtn">
-                            <i class="fas fa-plus"></i> Create New Advertisement
-                        </button>
-                    </div>
-                </div>
+                </header>
 
                 <!-- Filters & Controls -->
                 <div class="controls-section">
-                    <!-- Search and Sort Bar -->
-                    <div class="search-sort-bar">
-                        <div class="search-wrapper">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" id="adSearchInput" class="search-input" placeholder="Search advertisements by title, description, or category...">
-                            <button class="clear-search" id="clearSearch" style="display: none;">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="sort-controls">
-                            <select id="sortBy" class="sort-select">
-                                <option value="newest">Newest First</option>
-                                <option value="oldest">Oldest First</option>
-                                <option value="views">Most Views</option>
-                                <option value="clicks">Most Clicks</option>
-                                <option value="ending-soon">Ending Soon</option>
-                            </select>
-                            <select id="categoryFilter" class="sort-select">
-                                <option value="all">All Categories</option>
-                                <option value="plumbing">Plumbing</option>
-                                <option value="electrical">Electrical</option>
-                                <option value="carpentry">Carpentry</option>
-                                <option value="painting">Painting</option>
-                                <option value="hvac">HVAC</option>
-                                <option value="general">General Repairs</option>
-                            </select>
-                        </div>
-                    </div>
+                    <!-- Single Row: All Filters -->
+                    <div class="filters-row">
+                        <!-- Status Filter -->
+                        <select id="statusFilter" class="filter-dropdown">
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="pending">Pending</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="paused">Paused</option>
+                            <option value="expired">Expired</option>
+                        </select>
 
-                    <!-- Filter Tabs -->
-                    <div class="filter-tabs">
-                        <button class="filter-tab active" data-filter="all">
-                            <i class="fas fa-th-large"></i> 
-                            <span>All Ads</span>
-                            <span class="filter-count">6</span>
-                        </button>
-                        <button class="filter-tab" data-filter="active">
-                            <i class="fas fa-play-circle"></i> 
-                            <span>Active</span>
-                            <span class="filter-count">2</span>
-                        </button>
-                        <button class="filter-tab" data-filter="pending">
-                            <i class="fas fa-clock"></i> 
-                            <span>Pending</span>
-                            <span class="filter-count">1</span>
-                        </button>
-                        <button class="filter-tab" data-filter="scheduled">
-                            <i class="fas fa-calendar-alt"></i> 
-                            <span>Scheduled</span>
-                            <span class="filter-count">1</span>
-                        </button>
-                        <button class="filter-tab" data-filter="paused">
-                            <i class="fas fa-pause-circle"></i> 
-                            <span>Paused</span>
-                            <span class="filter-count">1</span>
-                        </button>
-                        <button class="filter-tab" data-filter="expired">
-                            <i class="fas fa-calendar-times"></i> 
-                            <span>Expired</span>
-                            <span class="filter-count">1</span>
-                        </button>
-                    </div>
+                        <!-- Type Filter -->
+                        <select id="typeFilter" class="filter-dropdown">
+                            <option value="all">All Types</option>
+                            <option value="banner">Banner</option>
+                            <option value="featured">Featured</option>
+                            <option value="sponsored">Sponsored</option>
+                            <option value="video">Video</option>
+                            <option value="carousel">Carousel</option>
+                        </select>
 
-                    <!-- Results Summary -->
-                    <div class="results-summary">
-                        <span class="results-text">Showing <strong id="resultCount">6</strong> advertisements</span>
+                        <!-- Date Filter -->
+                        <select id="dateFilter" class="filter-dropdown">
+                            <option value="all">All Dates</option>
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="quarter">Last 3 Months</option>
+                            <option value="year">This Year</option>
+                        </select>
+
+                        <!-- View Toggle -->
                         <div class="view-toggle">
-                            <button class="view-btn active" data-view="grid" title="Grid View">
-                                <i class="fas fa-th-large"></i>
-                            </button>
-                            <button class="view-btn" data-view="list" title="List View">
+                            <button class="view-btn" id="listViewBtn" title="List View">
                                 <i class="fas fa-list"></i>
                             </button>
+                            <button class="view-btn active" id="gridViewBtn" title="Grid View">
+                                <i class="fas fa-th-large"></i>
+                            </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Results Summary -->
+                <div class="results-summary" style="display: none;">
+                    <div class="results-info">
+                        <span class="results-text">
+                            Showing <strong id="resultCount">0</strong> of <strong id="totalCount">0</strong> advertisements
+                        </span>
                     </div>
                 </div>
 
                 <!-- Advertisements List -->
                 <div class="ads-section">
                     <div class="ads-container">
-                        <!-- Active Ad Example -->
-                        <div class="ad-card" data-status="active" data-id="ad001" data-category="general" data-created="2025-10-15" data-end-date="2025-11-15">
-                            <div class="ad-media">
-                                <div class="ad-banner summer-banner">
-                                    <div class="banner-content">
-                                        <i class="fas fa-sun"></i>
-                                        <h2>Summer Special</h2>
-                                        <p>20% OFF</p>
-                                    </div>
-                                </div>
-                                <span class="media-type"><i class="fas fa-image"></i> Banner</span>
-                            </div>
-                            <div class="ad-content">
-                                <div class="ad-header">
-                                    <h3 class="ad-title">Summer Special - 20% Off All Repairs</h3>
-                                    <span class="status-badge active">
-                                        <i class="fas fa-circle"></i> Active
-                                    </span>
-                                </div>
-                                <p class="ad-description">Get 20% discount on all home repair services this summer. Limited time offer for new customers.</p>
-                                <div class="ad-meta">
-                                    <div class="meta-item">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>Start: Oct 15, 2025</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-calendar-check"></i>
-                                        <span>End: Nov 15, 2025</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-eye"></i>
-                                        <span>4,523 views</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-mouse-pointer"></i>
-                                        <span>234 clicks</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="ad-actions">
-                                <button class="action-btn-ad view" onclick="viewAdReport('ad001')">
-                                    <i class="fas fa-chart-line"></i> Analytics
-                                </button>
-                                <button class="action-btn-ad edit" onclick="editAd('ad001')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button class="action-btn-ad pause" onclick="pauseAd('ad001')">
-                                    <i class="fas fa-pause"></i> Pause
-                                </button>
-                                <button class="action-btn-ad delete" onclick="deleteAd('ad001')">
-                                    <i class="fas fa-trash-alt"></i> Delete
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Pending Approval Ad Example -->
-                        <div class="ad-card" data-status="pending" data-id="ad002" data-category="plumbing" data-created="2025-10-20">
-                            <div class="ad-media">
-                                <div class="ad-banner plumbing-banner">
-                                    <div class="banner-content">
-                                        <i class="fas fa-wrench"></i>
-                                        <h2>Plumbing Services</h2>
-                                        <p>24/7 Available</p>
-                                    </div>
-                                </div>
-                                <span class="media-type"><i class="fas fa-video"></i> Video</span>
-                            </div>
-                            <div class="ad-content">
-                                <div class="ad-header">
-                                    <h3 class="ad-title">Professional Plumbing Services</h3>
-                                    <span class="status-badge pending">
-                                        <i class="fas fa-clock"></i> Pending Approval
-                                    </span>
-                                </div>
-                                <p class="ad-description">Expert plumbing solutions for residential and commercial properties. 24/7 emergency service available.</p>
-                                <div class="ad-meta">
-                                    <div class="meta-item ad-category">
-                                        <i class="fas fa-tag"></i>
-                                        <span>Plumbing</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-calendar-plus"></i>
-                                        <span>Submitted: Oct 20, 2025</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-hourglass-half"></i>
-                                        <span>Waiting for moderator review</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="ad-actions">
-                                <button class="action-btn-ad view" onclick="viewAdDetails('ad002')">
-                                    <i class="fas fa-eye"></i> View
-                                </button>
-                                <button class="action-btn-ad edit" onclick="editAd('ad002')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button class="action-btn-ad warning" onclick="cancelAd('ad002')">
-                                    <i class="fas fa-times"></i> Cancel
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Scheduled Ad Example -->
-                        <div class="ad-card" data-status="scheduled" data-id="ad003" data-category="general" data-created="2025-10-18" data-end-date="2025-12-01">
-                            <div class="ad-media">
-                                <div class="ad-banner blackfriday-banner">
-                                    <div class="banner-content">
-                                        <i class="fas fa-tags"></i>
-                                        <h2>Black Friday</h2>
-                                        <p>50% OFF</p>
-                                    </div>
-                                </div>
-                                <span class="media-type"><i class="fas fa-image"></i> Banner</span>
-                            </div>
-                            <div class="ad-content">
-                                <div class="ad-header">
-                                    <h3 class="ad-title">Black Friday Mega Sale - 50% Off</h3>
-                                    <span class="status-badge scheduled">
-                                        <i class="fas fa-calendar-alt"></i> Scheduled
-                                    </span>
-                                </div>
-                                <p class="ad-description">Massive discounts on all services during Black Friday week. Don't miss out!</p>
-                                <div class="ad-meta">
-                                    <div class="meta-item ad-category">
-                                        <i class="fas fa-tag"></i>
-                                        <span>General</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>Starts: Nov 24, 2025</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-calendar-check"></i>
-                                        <span>Ends: Nov 30, 2025</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-check-circle"></i>
-                                        <span>Approved by moderator</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="ad-actions">
-                                <button class="action-btn-ad view" onclick="viewAdDetails('ad003')">
-                                    <i class="fas fa-eye"></i> View
-                                </button>
-                                <button class="action-btn-ad edit" onclick="editAd('ad003')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button class="action-btn-ad success" onclick="startAdNow('ad003')">
-                                    <i class="fas fa-play"></i> Start Now
-                                </button>
-                                <button class="action-btn-ad warning" onclick="cancelAd('ad003')">
-                                    <i class="fas fa-times"></i> Cancel
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Paused Ad Example -->
-                        <div class="ad-card" data-status="paused" data-id="ad004" data-category="electrical" data-created="2025-09-15" data-end-date="2025-11-30">
-                            <div class="ad-media">
-                                <div class="ad-banner electrical-banner">
-                                    <div class="banner-content">
-                                        <i class="fas fa-bolt"></i>
-                                        <h2>Electrical Services</h2>
-                                        <p>Expert Solutions</p>
-                                    </div>
-                                </div>
-                                <span class="media-type"><i class="fas fa-image"></i> Banner</span>
-                            </div>
-                            <div class="ad-content">
-                                <div class="ad-header">
-                                    <h3 class="ad-title">Professional Electrical Services</h3>
-                                    <span class="status-badge paused">
-                                        <i class="fas fa-pause-circle"></i> Paused
-                                    </span>
-                                </div>
-                                <p class="ad-description">Certified electricians for all your electrical needs. Safety first, quality always.</p>
-                                <div class="ad-meta">
-                                    <div class="meta-item ad-category">
-                                        <i class="fas fa-tag"></i>
-                                        <span>Electrical</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>Paused on: Oct 18, 2025</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-eye"></i>
-                                        <span class="stat-value">1,234</span> <span>views</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-mouse-pointer"></i>
-                                        <span class="stat-value">89</span> <span>clicks</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="ad-actions">
-                                <button class="action-btn-ad success" onclick="resumeAd('ad004')">
-                                    <i class="fas fa-play"></i> Resume
-                                </button>
-                                <button class="action-btn-ad view" onclick="viewAdReport('ad004')">
-                                    <i class="fas fa-chart-line"></i> Analytics
-                                </button>
-                                <button class="action-btn-ad edit" onclick="editAd('ad004')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button class="action-btn-ad delete" onclick="deleteAd('ad004')">
-                                    <i class="fas fa-trash-alt"></i> Delete
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Expired Ad Example -->
-                        <div class="ad-card" data-status="expired" data-id="ad005" data-category="general" data-created="2025-08-01" data-end-date="2025-10-01">
-                            <div class="ad-media">
-                                <div class="ad-banner winter-banner">
-                                    <div class="banner-content">
-                                        <i class="fas fa-snowflake"></i>
-                                        <h2>Winter Sale</h2>
-                                        <p>15% OFF</p>
-                                    </div>
-                                </div>
-                                <span class="media-type"><i class="fas fa-image"></i> Banner</span>
-                            </div>
-                            <div class="ad-content">
-                                <div class="ad-header">
-                                    <h3 class="ad-title">Winter Maintenance Special</h3>
-                                    <span class="status-badge expired">
-                                        <i class="fas fa-calendar-times"></i> Expired
-                                    </span>
-                                </div>
-                                <p class="ad-description">Winter home maintenance packages at discounted rates. Keep your home cozy this winter.</p>
-                                <div class="ad-meta">
-                                    <div class="meta-item ad-category">
-                                        <i class="fas fa-tag"></i>
-                                        <span>General</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-calendar-times"></i>
-                                        <span>Ended: Sep 30, 2025</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-eye"></i>
-                                        <span class="stat-value">8,945</span> <span>views</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-mouse-pointer"></i>
-                                        <span class="stat-value">456</span> <span>clicks</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-chart-line"></i>
-                                        <span>5.1% CTR</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="ad-actions">
-                                <button class="action-btn-ad view" onclick="viewAdReport('ad005')">
-                                    <i class="fas fa-chart-bar"></i> Report
-                                </button>
-                                <button class="action-btn-ad success" onclick="renewAd('ad005')">
-                                    <i class="fas fa-redo"></i> Renew
-                                </button>
-                                <button class="action-btn-ad edit" onclick="duplicateAd('ad005')">
-                                    <i class="fas fa-copy"></i> Duplicate
-                                </button>
-                                <button class="action-btn-ad warning" onclick="archiveAd('ad005')">
-                                    <i class="fas fa-archive"></i> Archive
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Active Ad Example 2 -->
-                        <div class="ad-card" data-status="active" data-id="ad006" data-category="painting" data-created="2025-10-10" data-end-date="2025-11-25">
-                            <div class="ad-media">
-                                <div class="ad-banner painting-banner">
-                                    <div class="banner-content">
-                                        <i class="fas fa-paint-roller"></i>
-                                        <h2>Painting Services</h2>
-                                        <p>Transform Your Space</p>
-                                    </div>
-                                </div>
-                                <span class="media-type"><i class="fas fa-image"></i> Banner</span>
-                            </div>
-                            <div class="ad-content">
-                                <div class="ad-header">
-                                    <h3 class="ad-title">Professional Painting & Finishing</h3>
-                                    <span class="status-badge active">
-                                        <i class="fas fa-circle"></i> Active
-                                    </span>
-                                </div>
-                                <p class="ad-description">Expert painting services for interior and exterior. Quality finish guaranteed.</p>
-                                <div class="ad-meta">
-                                    <div class="meta-item ad-category">
-                                        <i class="fas fa-tag"></i>
-                                        <span>Painting</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>Start: Oct 10, 2025</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-calendar-check"></i>
-                                        <span>End: Nov 30, 2025</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-eye"></i>
-                                        <span class="stat-value">2,789</span> <span>views</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-mouse-pointer"></i>
-                                        <span class="stat-value">167</span> <span>clicks</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="ad-actions">
-                                <button class="action-btn-ad view" onclick="viewAdReport('ad006')">
-                                    <i class="fas fa-chart-line"></i> Analytics
-                                </button>
-                                <button class="action-btn-ad edit" onclick="editAd('ad006')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button class="action-btn-ad pause" onclick="pauseAd('ad006')">
-                                    <i class="fas fa-pause"></i> Pause
-                                </button>
-                                <button class="action-btn-ad delete" onclick="deleteAd('ad006')">
-                                    <i class="fas fa-trash-alt"></i> Delete
-                                </button>
-                            </div>
+                        <!-- Advertisements will be loaded dynamically from API via JavaScript -->
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                            <p>Loading advertisements...</p>
                         </div>
                     </div>
 
-                    <!-- Empty State (Hidden by default, shown when no results) -->
-                    <div class="empty-state" style="display: none;">
-                        <div class="empty-state" id="emptyState" style="display: none;">
-                            <div class="empty-icon">
-                                <i class="fas fa-bullhorn"></i>
-                            </div>
-                            <h3>No Advertisements Found</h3>
-                            <p>Try adjusting your filters or create a new advertisement to get started.</p>
-                            <button class="action-btn primary" onclick="document.getElementById('createAdBtn').click()">
-                                <i class="fas fa-plus"></i> Create Advertisement
-                            </button>
+                    <!-- Empty State (shown when no results) -->
+                    <div class="empty-state" id="emptyState" style="display: none;">
+                        <div class="empty-icon">
+                            <i class="fas fa-bullhorn"></i>
                         </div>
+                        <h3>No Advertisements Found</h3>
+                        <p>You haven't created any advertisements yet. Create your first advertisement to get started.</p>
+                        <button class="action-btn primary" onclick="document.getElementById('createAdBtn').click()">
+                            <i class="fas fa-plus"></i> Create Advertisement
+                        </button>
                     </div>
                 </div>
             </section>
         </main>
     </div>
+        </main>
+    </div>
+
 
     <!-- Create/Edit Advertisement Modal -->
     <div class="modal-overlay" id="adModal">
@@ -771,66 +449,29 @@
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/sidebar.js"></script>
 
     <script>
-        // Load components when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            loadComponent('sidebar-container', '/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php');
-            loadComponent('header-container', '/2nd-Year-Group-Project/FixLanka/views/company/topbar.php');
-        });
-
-        // Function to load HTML components
-        function loadComponent(containerId, componentFile) {
-            fetch(componentFile)
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById(containerId).innerHTML = html;
-                })
-                .catch(error => {
-                    console.error('Error loading component:', error);
-                });
-        }
-
-        // Filter tabs functionality
-        const filterTabs = document.querySelectorAll('.filter-tab');
-        const adCards = document.querySelectorAll('.ad-card');
-
-        filterTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const filter = tab.dataset.filter;
-
-                filterTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-
-                adCards.forEach(card => {
-                    if (filter === 'all' || card.dataset.status === filter) {
-                        card.style.display = 'flex';
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-            });
-        });
-
         // Modal functionality
         const createAdBtn = document.getElementById('createAdBtn');
         const adModal = document.getElementById('adModal');
         const closeModal = document.getElementById('closeModal');
 
-        createAdBtn.addEventListener('click', () => {
-            adModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        });
+        if (createAdBtn && adModal && closeModal) {
+            createAdBtn.addEventListener('click', () => {
+                adModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
 
-        closeModal.addEventListener('click', () => {
-            adModal.classList.remove('active');
-            document.body.style.overflow = 'auto';
-        });
-
-        adModal.addEventListener('click', (e) => {
-            if (e.target === adModal) {
+            closeModal.addEventListener('click', () => {
                 adModal.classList.remove('active');
                 document.body.style.overflow = 'auto';
-            }
-        });
+            });
+
+            adModal.addEventListener('click', (e) => {
+                if (e.target === adModal) {
+                    adModal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        }
 
         // Multi-step form navigation
         let currentStep = 1;
@@ -997,8 +638,6 @@
                 paymentMethod: document.getElementById('paymentMethod').value
             };
 
-            console.log('Advertisement Data:', formData);
-
             // Show success message
             alert('Advertisement submitted successfully! It will be reviewed by our moderation team within 24-48 hours.');
 
@@ -1018,7 +657,6 @@
 
         // Highlight active sidebar link
         document.addEventListener('DOMContentLoaded', function() {
-            const currentPage = 'advertisements.php';
             const navLinks = document.querySelectorAll('.sidebar .nav-link');
 
             navLinks.forEach(link => {
@@ -1028,8 +666,8 @@
                 // Remove active class from all items
                 navItem.classList.remove('active');
 
-                // Add active class to current page
-                if (href === currentPage) {
+                // Add active class to current page (check for advertisements.php in href)
+                if (href && href.includes('/views/company/advertisements.php')) {
                     navItem.classList.add('active');
                 }
             });
@@ -1037,10 +675,9 @@
     </script>
 
     <!-- Advertisement Management JavaScript -->
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/advertisements.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/advertisements-filters.js"></script>
 </body>
 
 </html>
-
 
 

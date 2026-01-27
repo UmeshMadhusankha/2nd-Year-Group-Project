@@ -35,19 +35,55 @@ class NotificationController
     public function getRecentNotifications()
     {
         try {
-            error_log("[CONTROLLER] getRecentNotifications called");
+            // error_log("[CONTROLLER] getRecentNotifications called");
             $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5;
-            error_log("[CONTROLLER] Fetching $limit notifications from model");
-            $notifications = $this->model->getRecentNotifications($limit);
-            error_log("[CONTROLLER] Fetched " . count($notifications) . " notifications");
-            $this->jsonResponse(['success' => true, 'data' => $notifications]);
+            $user_id = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
+            $user_type = isset($_GET['user_type']) ? $_GET['user_type'] : 'all';
+
+            // Map frontend user types to DB enum types if needed
+            // (Assuming frontend sends 'company', 'repairer', 'user' matching DB)
+            
+            $notifications = $this->model->getRecentNotifications($user_id, $user_type, $limit);
+            // error_log("[CONTROLLER] Fetched " . count($notifications) . " notifications");
+            $this->jsonResponse(['success' => true, 'notifications' => $notifications]); // topbar.js expects 'notifications' key
         } catch (PDOException $e) {
-            error_log("[CONTROLLER ERROR] Error fetching recent notifications: " . $e->getMessage());
-            error_log("[CONTROLLER ERROR] Stack trace: " . $e->getTraceAsString());
-            $this->jsonResponse(['success' => false, 'message' => 'Failed to fetch notifications: ' . $e->getMessage()], 500);
+            error_log("[CONTROLLER ERROR] " . $e->getMessage());
+            $this->jsonResponse(['success' => false, 'message' => 'Failed to fetch notifications'], 500);
         } catch (Exception $e) {
-            error_log("[CONTROLLER ERROR] Unexpected error: " . $e->getMessage());
-            $this->jsonResponse(['success' => false, 'message' => 'Unexpected error: ' . $e->getMessage()], 500);
+            error_log("[CONTROLLER ERROR] " . $e->getMessage());
+            $this->jsonResponse(['success' => false, 'message' => 'Unexpected error'], 500);
+        }
+    }
+
+    /**
+     * Get notification count
+     */
+    /**
+     * Get notification count
+     */
+    public function getNotificationCount()
+    {
+        try {
+            $user_id = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
+            $user_type = $_GET['user_type'] ?? 'all';
+            
+            // Map frontend type to DB type if needed (assuming 1:1 for now)
+            // But Controller logic previously mapped 'customer' -> 'user'
+            $recipientTypeMap = [
+                'repairer' => 'repairer',
+                'customer' => 'user', 
+                'company' => 'company',
+                'all' => 'all'
+            ];
+            
+            $recipient_type = $recipientTypeMap[$user_type] ?? $user_type;
+            
+            $count = $this->model->getNotificationCount($user_id, $recipient_type);
+            
+            $this->jsonResponse(['success' => true, 'count' => $count]);
+        } catch (PDOException $e) {
+            error_log("Error counting notifications: " . $e->getMessage());
+            $this->jsonResponse(['success' => false, 'message' => 'Failed to count notifications'], 500);
         }
     }
 

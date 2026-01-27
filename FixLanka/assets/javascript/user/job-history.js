@@ -1,4 +1,4 @@
-// ================================================
+﻿// ================================================
 // JOB HISTORY PAGE - FILTERING, SEARCH, AND REVIEW
 // ================================================
 
@@ -471,8 +471,7 @@ document.addEventListener('DOMContentLoaded', function() {
             provider: currentJobForReview.provider.name
         };
 
-        console.log('Review submitted:', reviewData);
-
+        
         // Update job as reviewed
         const jobIndex = allJobs.findIndex(j => j.id === currentJobForReview.id);
         if (jobIndex !== -1) {
@@ -488,13 +487,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // GLOBAL FUNCTIONS (for onclick handlers)
     // ================================================
     window.editJob = function(jobId) {
-        console.log('Edit job:', jobId);
+        
         // Redirect to edit page or open edit modal
         alert(`Edit functionality for job ${jobId} - Redirect to edit page`);
     };
 
     window.viewJobDetails = function(jobId) {
-        console.log('View job details:', jobId);
+        
         // Redirect to job details page
         alert(`View details for job ${jobId} - Redirect to details page`);
     };

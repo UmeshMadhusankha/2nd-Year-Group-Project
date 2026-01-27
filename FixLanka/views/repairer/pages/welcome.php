@@ -103,7 +103,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                     </div>
 
                     <div class="quick-actions-grid">
-                        <a href="available-jobs.php" class="action-card">
+                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-available-jobs" class="action-card">
                             <div class="action-icon">
                                 <i class="fas fa-briefcase"></i>
                             </div>
@@ -116,7 +116,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                             </div>
                         </a>
 
-                        <a href="my-jobs.php" class="action-card">
+                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-my-jobs" class="action-card">
                             <div class="action-icon">
                                 <i class="fas fa-clipboard-list"></i>
                             </div>
@@ -129,7 +129,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                             </div>
                         </a>
 
-                        <a href="company-jobs.php" class="action-card">
+                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-company-jobs" class="action-card">
                             <div class="action-icon">
                                 <i class="fas fa-building"></i>
                             </div>
@@ -142,7 +142,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                             </div>
                         </a>
 
-                        <a href="upgrade.php" class="action-card">
+                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-subscription" class="action-card">
                             <div class="action-icon">
                                 <i class="fas fa-crown"></i>
                             </div>
@@ -155,7 +155,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                             </div>
                         </a>
 
-                        <a href="earnings.php" class="action-card">
+                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-earnings" class="action-card">
                             <div class="action-icon">
                                 <i class="fas fa-chart-line"></i>
                             </div>
@@ -168,7 +168,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                             </div>
                         </a>
 
-                        <a href="profile.php" class="action-card">
+                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-profile" class="action-card">
                             <div class="action-icon">
                                 <i class="fas fa-user-edit"></i>
                             </div>
@@ -187,7 +187,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                 <section class="activity-section">
                     <div class="section-header">
                         <h2 class="section-title">Recent Activity</h2>
-                        <a href="my-jobs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-my-jobs" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
                     </div>
 
                     <div class="activity-list">

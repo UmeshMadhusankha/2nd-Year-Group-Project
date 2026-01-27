@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Settings Page JavaScript
  */
 
@@ -166,7 +166,7 @@ function saveSettings(panelName, panel) {
     });
 
     localStorage.setItem(`settings_${panelName}`, JSON.stringify(settings));
-    console.log(`Saved ${panelName} settings:`, settings);
+    
 }
 
 /**
@@ -194,7 +194,7 @@ function loadSettings(panelName, panel) {
             }
         });
 
-        console.log(`Loaded ${panelName} settings:`, settings);
+        
     }
 }
 
@@ -318,4 +318,4 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-console.log('Settings page initialized successfully');
+

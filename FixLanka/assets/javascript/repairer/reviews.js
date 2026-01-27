@@ -1,4 +1,4 @@
-// ================================================
+﻿// ================================================
 // REVIEWS PAGE JAVASCRIPT
 // ================================================
 
@@ -386,11 +386,9 @@ function sendResponse() {
 
 // Function to edit existing response
 function editResponse(reviewId) {
-    console.log('=== Edit Response Debug ===');
-    console.log('Review ID passed:', reviewId);
+    
     
     const reviewItems = document.querySelectorAll('.review-item');
-    console.log('Total review items found:', reviewItems.length);
     
     let reviewItem = null;
     let customerName = '';
@@ -398,31 +396,29 @@ function editResponse(reviewId) {
     
     // Find the review item by matching the index (reviewId 1 = index 0, reviewId 2 = index 1, etc.)
     reviewItems.forEach((item, index) => {
-        console.log(`Checking item ${index}, reviewId=${reviewId}, match=${index + 1 === reviewId}`);
+        
         if (index + 1 === reviewId) {
             reviewItem = item;
             const nameElement = item.querySelector('.reviewer-name');
             customerName = nameElement ? nameElement.textContent.trim() : '';
             
             const responseElement = item.querySelector('.response-text');
-            console.log('Response element found:', responseElement);
             
             if (responseElement) {
                 existingResponseText = responseElement.textContent.trim();
-                console.log('Raw response text:', existingResponseText);
+                
                 // Remove quotes if present and clean up whitespace
                 existingResponseText = existingResponseText
                     .replace(/^["']|["']$/g, '')
                     .replace(/\s+/g, ' ')
                     .trim();
-                console.log('Cleaned response text:', existingResponseText);
+                
             }
         }
     });
     
-    console.log('Found review item:', reviewItem);
-    console.log('Customer name:', customerName);
-    console.log('Final response text:', existingResponseText);
+    
+    
     
     if (!reviewItem) {
         console.error('Review item not found for ID:', reviewId);
@@ -438,7 +434,6 @@ function editResponse(reviewId) {
     const modalTitle = modal ? modal.querySelector('.modal-title') : null;
     
     if (modal) {
-        console.log('Modal found, opening...');
         
         // Update modal title
         if (modalTitle) {

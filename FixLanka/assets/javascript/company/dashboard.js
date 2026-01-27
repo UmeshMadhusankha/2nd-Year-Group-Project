@@ -1,4 +1,4 @@
-// FixLanka Dashboard JavaScript - Enhanced Version with Full Calendar Functionality
+﻿// FixLanka Dashboard JavaScript - Enhanced Version with Full Calendar Functionality
 
 // Global calendar state
 const calendarState = {
@@ -8,25 +8,25 @@ const calendarState = {
     viewMode: 'month'
 };
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialize all dashboard components
     initializeUI();
-    
+
     // Initialize tab switching functionality
     initializeTabSwitching();
-    
+
     // Initialize income chart
     initializeIncomeChart();
-    
+
     // Initialize sidebar toggle with multiple attempts
     initializeSidebarToggle();
-    
+
     // Initialize full calendar functionality
     initializeCalendar();
-    
+
     // Initialize dashboard navigation
     initializeDashboardNavigation();
-    
+
     // Also try to initialize after a longer delay
     setTimeout(initializeSidebarToggle, 2000);
 });
@@ -35,13 +35,13 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeDashboardNavigation() {
     // KPI Cards Navigation
     initializeKPINavigation();
-    
+
     // Panel Navigation
     initializePanelNavigation();
-    
+
     // Action Buttons Navigation
     initializeActionButtonsNavigation();
-    
+
     // Workforce Navigation (already connected)
     initializeWorkforceNavigation();
 }
@@ -49,15 +49,15 @@ function initializeDashboardNavigation() {
 function initializeKPINavigation() {
     // Make KPI cards clickable to navigate to relevant pages
     const kpiCards = document.querySelectorAll('.kpi-card');
-    
+
     kpiCards.forEach((card, index) => {
         card.style.cursor = 'pointer';
         card.style.transition = 'all 0.2s ease';
-        
-        card.addEventListener('click', function() {
+
+        card.addEventListener('click', function () {
             const cardContent = this.querySelector('.kpi-content h3').textContent;
-            
-            switch(cardContent) {
+
+            switch (cardContent) {
                 case 'Active Projects':
                     navigateToPage('projects.php', 'Projects');
                     break;
@@ -74,14 +74,14 @@ function initializeKPINavigation() {
                     break;
             }
         });
-        
+
         // Add hover effects
-        card.addEventListener('mouseenter', function() {
+        card.addEventListener('mouseenter', function () {
             this.style.transform = 'translateY(-4px)';
             this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
         });
-        
-        card.addEventListener('mouseleave', function() {
+
+        card.addEventListener('mouseleave', function () {
             this.style.transform = 'translateY(0)';
             this.style.boxShadow = '';
         });
@@ -92,34 +92,34 @@ function initializePanelNavigation() {
     // Repair Requests Panel
     const repairRequestsViewAll = document.querySelector('.requests-panel .view-all-btn');
     if (repairRequestsViewAll) {
-        repairRequestsViewAll.addEventListener('click', function(e) {
+        repairRequestsViewAll.addEventListener('click', function (e) {
             e.preventDefault();
             navigateToPage('repair-requests.php', 'Repair Requests');
         });
     }
-    
+
     // Projects Panel
     const projectsNewBtn = document.querySelector('.projects-panel .view-all-btn');
     if (projectsNewBtn) {
-        projectsNewBtn.addEventListener('click', function(e) {
+        projectsNewBtn.addEventListener('click', function (e) {
             e.preventDefault();
             navigateToPage('projects.php', 'Projects');
         });
     }
-    
+
     // Contracts Panel
     const contractsViewAll = document.querySelector('.contracts-panel .view-all-btn');
     if (contractsViewAll) {
-        contractsViewAll.addEventListener('click', function(e) {
+        contractsViewAll.addEventListener('click', function (e) {
             e.preventDefault();
             navigateToPage('contracts.php', 'Contracts');
         });
     }
-    
+
     // Payments Panel
     const paymentsViewAll = document.querySelector('.payments-list-section .view-all-btn');
     if (paymentsViewAll) {
-        paymentsViewAll.addEventListener('click', function(e) {
+        paymentsViewAll.addEventListener('click', function (e) {
             e.preventDefault();
             navigateToPage('payments.php', 'Payments');
         });
@@ -128,43 +128,43 @@ function initializePanelNavigation() {
 
 function initializeActionButtonsNavigation() {
     // Make request cards clickable
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const requestCard = e.target.closest('.request-card');
         if (requestCard && !e.target.closest('.request-actions')) {
             // Navigate to repair requests page with specific request
             navigateToPage('repair-requests.php', 'Repair Requests');
         }
-        
+
         // Project items clickable
         const projectItem = e.target.closest('.project-item');
         if (projectItem && !e.target.closest('.project-actions')) {
             navigateToPage('projects.php', 'Projects');
         }
-        
+
         // Contract items clickable
         const contractItem = e.target.closest('.contract-item');
         if (contractItem) {
             navigateToPage('contracts.php', 'Contracts');
         }
-        
+
         // Payment items clickable
         const paymentItem = e.target.closest('.payment-item');
         if (paymentItem) {
             navigateToPage('payments.php', 'Payments');
         }
     });
-    
+
     // Action buttons in request cards
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const actionBtn = e.target.closest('.action-btn');
         if (!actionBtn) return;
-        
+
         e.stopPropagation();
-        
+
         const buttonText = actionBtn.textContent.trim();
         const requestCard = actionBtn.closest('.request-card');
-        
-        switch(buttonText) {
+
+        switch (buttonText) {
             case 'Accept':
             case 'Decline':
                 handleRequestAction(requestCard, buttonText);
@@ -190,7 +190,7 @@ function initializeWorkforceNavigation() {
     const workforceButtons = document.querySelectorAll('.workforce-actions .action-btn');
     workforceButtons.forEach(button => {
         if (!button.onclick) {
-            button.addEventListener('click', function(e) {
+            button.addEventListener('click', function (e) {
                 e.preventDefault();
                 const category = this.closest('.workforce-item').dataset.category;
                 const hash = category ? `#${category}s` : '';
@@ -207,7 +207,7 @@ function navigateToPage(url, pageName) {
 
 function showEarningsModal() {
     const modal = createModal('earningsModal');
-    
+
     // Calculate sample earnings data
     const monthlyEarnings = [
         { month: 'Jan', amount: 380000, projects: 12 },
@@ -217,11 +217,11 @@ function showEarningsModal() {
         { month: 'May', amount: 480000, projects: 18 },
         { month: 'Jun', amount: 520000, projects: 20 }
     ];
-    
+
     const totalEarnings = monthlyEarnings.reduce((sum, month) => sum + month.amount, 0);
     const avgMonthly = totalEarnings / monthlyEarnings.length;
     const totalProjects = monthlyEarnings.reduce((sum, month) => sum + month.projects, 0);
-    
+
     modal.innerHTML = `
         <div class="modal-content earnings-modal">
             <div class="modal-header">
@@ -281,24 +281,24 @@ function showEarningsModal() {
             </div>
         </div>
     `;
-    
+
     addEarningsModalStyles();
     showModal('earningsModal');
 }
 
 function showRatingModal() {
     const modal = createModal('ratingModal');
-    
+
     const ratingData = [
         { category: 'Plumbing', rating: 4.9, reviews: 45, trend: '+0.2' },
         { category: 'Electrical', rating: 4.8, reviews: 38, trend: '+0.1' },
         { category: 'Carpentry', rating: 4.7, reviews: 32, trend: '+0.3' },
         { category: 'Painting', rating: 4.6, reviews: 28, trend: '+0.1' }
     ];
-    
+
     const avgRating = ratingData.reduce((sum, cat) => sum + cat.rating, 0) / ratingData.length;
     const totalReviews = ratingData.reduce((sum, cat) => sum + cat.reviews, 0);
-    
+
     modal.innerHTML = `
         <div class="modal-content rating-modal">
             <div class="modal-header">
@@ -363,7 +363,7 @@ function showRatingModal() {
             </div>
         </div>
     `;
-    
+
     addRatingModalStyles();
     showModal('ratingModal');
 }
@@ -373,7 +373,7 @@ function showRatingModal() {
 function showBidModal(requestCard) {
     const title = requestCard.querySelector('.title-text').textContent;
     const client = requestCard.querySelector('.request-meta span:nth-child(2)').textContent;
-    
+
     const modal = createModal('bidModal');
     modal.innerHTML = `
         <div class="modal-content bid-modal">
@@ -413,19 +413,19 @@ function showBidModal(requestCard) {
             </div>
         </div>
     `;
-    
+
     showModal('bidModal');
 }
 
 function handleRequestAction(requestCard, action) {
     const title = requestCard.querySelector('.title-text').textContent;
     const status = action.toLowerCase() === 'accept' ? 'accepted' : 'declined';
-    
+
     // Update the request status in the UI
     const statusElement = requestCard.querySelector('.request-status');
     statusElement.textContent = capitalizeFirst(status);
     statusElement.className = `request-status ${status}`;
-    
+
     // Update action buttons
     const actionsContainer = requestCard.querySelector('.request-actions');
     if (status === 'accepted') {
@@ -433,7 +433,7 @@ function handleRequestAction(requestCard, action) {
     } else {
         actionsContainer.innerHTML = '<button class="action-btn view">View Details</button>';
     }
-    
+
     showNotification(`Request "${title}" has been ${status}`, 'success');
 }
 
@@ -460,7 +460,7 @@ function showModal(id) {
         modal.style.display = 'flex';
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
-        
+
         // Add base modal styles if not present
         if (!document.getElementById('baseModalStyles')) {
             addBaseModalStyles();
@@ -494,10 +494,10 @@ function generateStars(rating) {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-    
-    return '★'.repeat(fullStars) + 
-           (hasHalfStar ? '☆' : '') + 
-           '☆'.repeat(emptyStars);
+
+    return 'â˜…'.repeat(fullStars) +
+        (hasHalfStar ? 'â˜†' : '') +
+        'â˜†'.repeat(emptyStars);
 }
 
 // Add required styles
@@ -614,7 +614,7 @@ function addBaseModalStyles() {
 
 function addEarningsModalStyles() {
     if (document.getElementById('earningsModalStyles')) return;
-    
+
     const styles = document.createElement('style');
     styles.id = 'earningsModalStyles';
     styles.textContent = `
@@ -688,7 +688,7 @@ function addEarningsModalStyles() {
 
 function addRatingModalStyles() {
     if (document.getElementById('ratingModalStyles')) return;
-    
+
     const styles = document.createElement('style');
     styles.id = 'ratingModalStyles';
     styles.textContent = `
@@ -767,27 +767,27 @@ function initializeCalendar() {
     // Initialize calendar navigation
     const prevButton = document.getElementById('prevMonth');
     const nextButton = document.getElementById('nextMonth');
-    
+
     if (prevButton) {
         prevButton.addEventListener('click', () => {
             calendarState.currentDate.setMonth(calendarState.currentDate.getMonth() - 1);
             updateCalendarDisplay();
         });
     }
-    
+
     if (nextButton) {
         nextButton.addEventListener('click', () => {
             calendarState.currentDate.setMonth(calendarState.currentDate.getMonth() + 1);
             updateCalendarDisplay();
         });
     }
-    
+
     // Initialize date clicking
     initializeDateClicking();
-    
+
     // Initialize keyboard navigation
     initializeKeyboardNavigation();
-    
+
     // Load sample events
     loadSampleEvents();
 }
@@ -796,7 +796,7 @@ function loadSampleEvents() {
     const today = new Date();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
-    
+
     calendarState.events = [
         {
             id: 'evt-1',
@@ -844,7 +844,7 @@ function loadSampleEvents() {
             duration: '2 hours'
         }
     ];
-    
+
     saveCalendarEvents();
     updateCalendarDisplay();
     updateUpcomingEvents();
@@ -867,7 +867,7 @@ function loadCalendarEvents() {
                 } else {
                     eventDate = new Date(event.date);
                 }
-                
+
                 return {
                     ...event,
                     date: eventDate
@@ -912,29 +912,29 @@ function updateMonthHeader() {
 function generateInteractiveCalendar() {
     const calendarDates = document.getElementById('calendarDates');
     if (!calendarDates) return;
-    
+
     const currentMonth = calendarState.currentDate.getMonth();
     const currentYear = calendarState.currentDate.getFullYear();
     const today = new Date();
     const todayDate = today.getDate();
     const todayMonth = today.getMonth();
     const todayYear = today.getFullYear();
-    
+
     const firstDay = new Date(currentYear, currentMonth, 1).getDay();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    
+
     let datesHTML = '';
-    
+
     // Previous month's trailing dates
     const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
     const prevMonthDays = new Date(prevYear, prevMonth + 1, 0).getDate();
-    
+
     for (let i = firstDay - 1; i >= 0; i--) {
         const day = prevMonthDays - i;
         const date = new Date(prevYear, prevMonth, day);
         const events = getEventsForDate(date);
-        
+
         datesHTML += `
             <div class="calendar-date other-month" 
                  data-date="${formatDateString(date)}"
@@ -943,20 +943,20 @@ function generateInteractiveCalendar() {
                 ${events.length > 0 ? '<div class="event-indicator"></div>' : ''}
             </div>`;
     }
-    
+
     // Current month dates
     for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(currentYear, currentMonth, day);
         const events = getEventsForDate(date);
         const isToday = day === todayDate && currentMonth === todayMonth && currentYear === todayYear;
-        const isSelected = calendarState.selectedDate && 
-                          formatDateString(date) === formatDateString(calendarState.selectedDate);
-        
+        const isSelected = calendarState.selectedDate &&
+            formatDateString(date) === formatDateString(calendarState.selectedDate);
+
         let classes = 'calendar-date';
         if (isToday) classes += ' today';
         if (isSelected) classes += ' selected';
         if (events.length > 0) classes += ' has-event';
-        
+
         datesHTML += `
             <div class="${classes}" 
                  data-date="${formatDateString(date)}"
@@ -966,17 +966,17 @@ function generateInteractiveCalendar() {
                 ${events.length > 0 ? `<div class="event-indicator">${events.length}</div>` : ''}
             </div>`;
     }
-    
+
     // Next month's leading dates
     const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
     const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
     const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
     const remainingCells = totalCells - (firstDay + daysInMonth);
-    
+
     for (let day = 1; day <= remainingCells; day++) {
         const date = new Date(nextYear, nextMonth, day);
         const events = getEventsForDate(date);
-        
+
         datesHTML += `
             <div class="calendar-date other-month" 
                  data-date="${formatDateString(date)}"
@@ -985,12 +985,12 @@ function generateInteractiveCalendar() {
                 ${events.length > 0 ? '<div class="event-indicator"></div>' : ''}
             </div>`;
     }
-    
+
     calendarDates.innerHTML = datesHTML;
 }
 
 function initializeDateClicking() {
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (e.target.classList.contains('calendar-date')) {
             const dateString = e.target.dataset.date;
             if (dateString) {
@@ -1007,12 +1007,12 @@ function selectDate(dateString) {
     const year = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
     const day = parseInt(parts[2], 10);
-    
+
     calendarState.selectedDate = new Date(year, month, day);
-    
+
     // Update calendar display
     updateCalendarDisplay();
-    
+
     // Show events for selected date
     showEventsForDate(calendarState.selectedDate);
 }
@@ -1020,12 +1020,12 @@ function selectDate(dateString) {
 function showEventsForDate(date) {
     const events = getEventsForDate(date);
     const dateStr = formatDisplayDate(date);
-    
+
     if (events.length === 0) {
         showDateModal(dateStr, 'No events scheduled for this date.', []);
         return;
     }
-    
+
     showDateModal(dateStr, `${events.length} event(s) scheduled:`, events);
 }
 
@@ -1035,11 +1035,11 @@ function showDateModal(dateStr, message, events) {
     if (existingModal) {
         existingModal.remove();
     }
-    
+
     const modal = document.createElement('div');
     modal.id = 'dateModal';
     modal.className = 'modal-overlay active';
-    
+
     const eventsHTML = events.map(event => `
         <div class="event-item ${event.type}">
             <div class="event-header">
@@ -1060,7 +1060,7 @@ function showDateModal(dateStr, message, events) {
             </div>
         </div>
     `).join('');
-    
+
     modal.innerHTML = `
         <div class="modal-content date-modal">
             <div class="modal-header">
@@ -1079,7 +1079,7 @@ function showDateModal(dateStr, message, events) {
             </div>
         </div>
     `;
-    
+
     // Add styles
     if (!document.getElementById('calendarModalStyles')) {
         const styles = document.createElement('style');
@@ -1295,7 +1295,7 @@ function showDateModal(dateStr, message, events) {
         `;
         document.head.appendChild(styles);
     }
-    
+
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
 }
@@ -1324,17 +1324,17 @@ function addEventToDate(dateString) {
 function showEventForm(date = null, event = null) {
     const isEdit = event !== null;
     const targetDate = date || new Date();
-    
+
     // Remove existing modal
     const existingModal = document.getElementById('eventFormModal');
     if (existingModal) {
         existingModal.remove();
     }
-    
+
     const modal = document.createElement('div');
     modal.id = 'eventFormModal';
     modal.className = 'modal-overlay active';
-    
+
     modal.innerHTML = `
         <div class="modal-content event-form-modal">
             <div class="modal-header">
@@ -1397,7 +1397,7 @@ function showEventForm(date = null, event = null) {
             </div>
         </div>
     `;
-    
+
     // Add form styles
     if (!document.getElementById('eventFormStyles')) {
         const styles = document.createElement('style');
@@ -1449,7 +1449,7 @@ function showEventForm(date = null, event = null) {
         `;
         document.head.appendChild(styles);
     }
-    
+
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
 }
@@ -1468,14 +1468,14 @@ function closeEventForm() {
 function saveEvent(isEdit) {
     const form = document.getElementById('eventForm');
     const formData = new FormData(form);
-    
+
     // Parse date string to avoid timezone issues
     const dateStr = document.getElementById('eventDate').value;
     const parts = dateStr.split('-');
     const year = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10) - 1;
     const day = parseInt(parts[2], 10);
-    
+
     const eventData = {
         id: isEdit ? document.getElementById('eventId').value : generateEventId(),
         title: document.getElementById('eventTitle').value,
@@ -1487,13 +1487,13 @@ function saveEvent(isEdit) {
         participants: document.getElementById('eventParticipants').value
             .split(',').map(p => p.trim()).filter(p => p)
     };
-    
+
     // Validate required fields
     if (!eventData.title) {
         showNotification('Event title is required', 'error');
         return;
     }
-    
+
     if (isEdit) {
         // Update existing event
         const index = calendarState.events.findIndex(e => e.id === eventData.id);
@@ -1504,11 +1504,11 @@ function saveEvent(isEdit) {
         // Add new event
         calendarState.events.push(eventData);
     }
-    
+
     saveCalendarEvents();
     updateCalendarDisplay();
     closeEventForm();
-    
+
     showNotification(
         isEdit ? 'Event updated successfully' : 'Event created successfully',
         'success'
@@ -1536,20 +1536,20 @@ function deleteEvent(eventId) {
 function updateUpcomingEvents() {
     const upcomingContainer = document.querySelector('.upcoming-events');
     if (!upcomingContainer) return;
-    
+
     const today = new Date();
     const upcomingEvents = calendarState.events
         .filter(event => event.date >= today)
         .sort((a, b) => a.date - b.date)
         .slice(0, 3);
-    
+
     const headerHTML = '<h4><i class="fas fa-clock"></i> Upcoming Events</h4>';
-    
+
     if (upcomingEvents.length === 0) {
         upcomingContainer.innerHTML = headerHTML + '<p class="no-events">No upcoming events</p>';
         return;
     }
-    
+
     const eventsHTML = upcomingEvents.map(event => `
         <div class="event-item ${event.type}" onclick="selectDate('${formatDateString(event.date)}')">
             <div class="event-date">${formatShortDate(event.date)}</div>
@@ -1557,9 +1557,9 @@ function updateUpcomingEvents() {
             <div class="event-time">${event.time}</div>
         </div>
     `).join('');
-    
+
     upcomingContainer.innerHTML = headerHTML + eventsHTML;
-    
+
     // Add styles for upcoming events
     if (!document.getElementById('upcomingEventsStyles')) {
         const styles = document.createElement('style');
@@ -1610,12 +1610,12 @@ function updateUpcomingEvents() {
 }
 
 function initializeKeyboardNavigation() {
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         if (e.target.closest('.modal-overlay')) return; // Don't interfere with modals
-        
+
         const selectedDate = calendarState.selectedDate || new Date();
-        
-        switch(e.key) {
+
+        switch (e.key) {
             case 'ArrowLeft':
                 e.preventDefault();
                 navigateDate(selectedDate, -1);
@@ -1651,19 +1651,19 @@ function initializeKeyboardNavigation() {
 function navigateDate(currentDate, days) {
     const newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() + days);
-    
+
     // Update current month if necessary
-    if (newDate.getMonth() !== calendarState.currentDate.getMonth() || 
+    if (newDate.getMonth() !== calendarState.currentDate.getMonth() ||
         newDate.getFullYear() !== calendarState.currentDate.getFullYear()) {
         calendarState.currentDate = new Date(newDate);
     }
-    
+
     selectDate(formatDateString(newDate));
 }
 
 // Utility Functions
 function getEventsForDate(date) {
-    return calendarState.events.filter(event => 
+    return calendarState.events.filter(event =>
         event.date.toDateString() === date.toDateString()
     );
 }
@@ -1675,7 +1675,7 @@ function formatDateString(date) {
     return `${year}-${month}-${day}`;
 }
 
-// ✅ FIX: Same local-safe version for input fields
+// âœ… FIX: Same local-safe version for input fields
 function formatDateForInput(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -1702,20 +1702,20 @@ function formatShortDate(date) {
 
 function parseTimeForInput(timeString) {
     if (!timeString) return '';
-    
+
     // Convert "10:00 AM" to "10:00"
     const match = timeString.match(/(\d+):(\d+)\s*(AM|PM)/i);
     if (match) {
         let hours = parseInt(match[1]);
         const minutes = match[2];
         const ampm = match[3].toUpperCase();
-        
+
         if (ampm === 'PM' && hours !== 12) hours += 12;
         if (ampm === 'AM' && hours === 12) hours = 0;
-        
+
         return `${hours.toString().padStart(2, '0')}:${minutes}`;
     }
-    
+
     return timeString;
 }
 
@@ -1729,18 +1729,18 @@ function showNotification(message, type = 'info') {
     if (existingNotification) {
         existingNotification.remove();
     }
-    
+
     const notification = document.createElement('div');
     notification.id = 'calendar-notification';
     notification.className = `notification ${type}`;
-    
+
     const icons = {
         success: 'fas fa-check-circle',
         error: 'fas fa-exclamation-circle',
         warning: 'fas fa-exclamation-triangle',
         info: 'fas fa-info-circle'
     };
-    
+
     notification.innerHTML = `
         <i class="${icons[type] || icons.info}"></i>
         <span>${message}</span>
@@ -1748,7 +1748,7 @@ function showNotification(message, type = 'info') {
             <i class="fas fa-times"></i>
         </button>
     `;
-    
+
     // Add styles
     notification.style.cssText = `
         position: fixed;
@@ -1768,14 +1768,14 @@ function showNotification(message, type = 'info') {
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         max-width: 400px;
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     // Show notification
     setTimeout(() => {
         notification.style.transform = 'translateX(0)';
     }, 100);
-    
+
     // Auto remove after 5 seconds
     setTimeout(() => {
         if (notification.parentElement) {
@@ -1808,7 +1808,7 @@ window.deleteEvent = deleteEvent;
 function loadStaticRequests() {
     const requestsList = document.getElementById('requestsList');
     if (!requestsList) return;
-    
+
     // Load Direct Requests by default
     loadRequestsByType('direct');
 }
@@ -1816,17 +1816,17 @@ function loadStaticRequests() {
 // Initialize tab switching functionality
 function initializeTabSwitching() {
     const tabButtons = document.querySelectorAll('.tab-button');
-    
+
     tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const tabType = this.getAttribute('data-tab');
-            
+
             // Remove active class from all buttons
             tabButtons.forEach(btn => btn.classList.remove('active'));
-            
+
             // Add active class to clicked button
             this.classList.add('active');
-            
+
             // Load requests for the selected tab
             loadRequestsByType(tabType);
         });
@@ -1837,9 +1837,9 @@ function initializeTabSwitching() {
 function loadRequestsByType(type) {
     const requestsList = document.getElementById('requestsList');
     if (!requestsList) return;
-    
+
     let requestsData;
-    
+
     if (type === 'direct') {
         // Direct Requests - Customer-to-company direct requests
         requestsData = [
@@ -1937,7 +1937,7 @@ function loadRequestsByType(type) {
             }
         ];
     }
-    
+
     const requestsHTML = requestsData.map(request => `
         <div class="request-card ${type}-request" data-status="${request.status}">
             <div class="request-info">
@@ -1962,7 +1962,7 @@ function loadRequestsByType(type) {
             </div>
         </div>
     `).join('');
-    
+
     // Add fade animation
     requestsList.style.opacity = '0';
     setTimeout(() => {
@@ -1975,7 +1975,7 @@ function loadRequestsByType(type) {
 function getStaticActionButtons(status, type = 'direct') {
     if (type === 'direct') {
         // Direct request actions
-        switch(status) {
+        switch (status) {
             case 'pending':
                 return `
                     <button class="action-btn accept">Accept</button>
@@ -1994,7 +1994,7 @@ function getStaticActionButtons(status, type = 'direct') {
         }
     } else {
         // Public request actions
-        switch(status) {
+        switch (status) {
             case 'bidding':
                 return `
                     <button class="action-btn bid">Place Bid</button>
@@ -2019,43 +2019,42 @@ function capitalizeFirst(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// Initialize sidebar toggle functionality
+/**
+ * Initialize sidebar toggle functionality
+ * Uses the checkbox (#sidebar-toggle) and label system for sidebar collapse/expand
+ */
 function initializeSidebarToggle() {
-    // Wait a bit for components to load
+    // Wait for components to load
     setTimeout(() => {
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        
-        if (sidebarToggle) {
-            console.log('Sidebar toggle button found');
-            
-            sidebarToggle.addEventListener('click', function() {
-                console.log('Toggle button clicked');
-                
+        // Use the label with class .sidebar-toggle (which controls the checkbox)
+        const sidebarToggle = document.querySelector('.sidebar-toggle');
+        const sidebarCheckbox = document.getElementById('sidebar-toggle');
+
+        if (sidebarToggle && sidebarCheckbox) {
+
+            // Listen for checkbox changes
+            sidebarCheckbox.addEventListener('change', function () {
+
                 const sidebar = document.querySelector('.sidebar');
                 const body = document.body;
-                
+
                 if (sidebar) {
-                    console.log('Sidebar found, toggling...');
-                    
-                    // Toggle sidebar collapsed class
-                    sidebar.classList.toggle('collapsed');
-                    
-                    // Toggle body class for content responsiveness  
-                    body.classList.toggle('sidebar-collapsed');
-                    
+                    // Toggle sidebar collapsed class based on checkbox state
+                    if (this.checked) {
+                        sidebar.classList.add('collapsed');
+                        body.classList.add('sidebar-collapsed');
+                    } else {
+                        sidebar.classList.remove('collapsed');
+                        body.classList.remove('sidebar-collapsed');
+                    }
+
                     const isCollapsed = sidebar.classList.contains('collapsed');
-                    const bodyHasClass = body.classList.contains('sidebar-collapsed');
-                    
-                    console.log('Sidebar collapsed:', isCollapsed);
-                    console.log('Body has sidebar-collapsed class:', bodyHasClass);
-                    console.log('Main content should adjust margin to:', isCollapsed ? '70px' : '280px');
-                } else {
-                    console.error('Sidebar element not found');
+
                 }
             });
         } else {
-            console.error('Sidebar toggle button not found');
-            // Try again in a bit
+            console.warn('Sidebar toggle elements not found, retrying...');
+            // Try again after a delay
             setTimeout(initializeSidebarToggle, 1000);
         }
     }, 500); // Wait for components to load
@@ -2065,22 +2064,21 @@ function initializeSidebarToggle() {
 // This version provides static UI display with responsive sidebar
 
 // Global function to manually test sidebar toggle
-window.testSidebarToggle = function() {
+window.testSidebarToggle = function () {
     const sidebar = document.querySelector('.sidebar');
     const body = document.body;
-    
+
     if (sidebar) {
         sidebar.classList.toggle('collapsed');
         body.classList.toggle('sidebar-collapsed');
-        
+
         const isCollapsed = sidebar.classList.contains('collapsed');
         const bodyHasClass = body.classList.contains('sidebar-collapsed');
-        
-        console.log('Manual toggle results:');
-        console.log('- Sidebar collapsed:', isCollapsed);
-        console.log('- Body has sidebar-collapsed class:', bodyHasClass);
-        console.log('- Expected main content margin:', isCollapsed ? '70px' : '280px');
-        
+
+
+
+
+
         return true;
     } else {
         console.error('Sidebar not found for manual toggle');
@@ -2094,7 +2092,7 @@ function initializeIncomeChart() {
     if (periodSelector) {
         periodSelector.addEventListener('change', updateIncomeChart);
     }
-    
+
     // Add animation on load
     animateChartBars();
 }
@@ -2105,10 +2103,10 @@ function updateIncomeChart() {
     const chartBars = document.querySelectorAll('.chart-bar');
     const chartLabels = document.querySelector('.chart-labels');
     const summaryValues = document.querySelectorAll('.summary-value');
-    
+
     let data, labels, summary;
-    
-    switch(period) {
+
+    switch (period) {
         case 'Last 7 Days':
             data = [45, 62, 38, 75, 52, 68, 41];
             labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -2127,7 +2125,7 @@ function updateIncomeChart() {
         default:
             return;
     }
-    
+
     // Update chart bars
     const maxValue = Math.max(...data);
     chartBars.forEach((bar, index) => {
@@ -2137,7 +2135,7 @@ function updateIncomeChart() {
             bar.setAttribute('data-value', data[index] + 'K');
         }
     });
-    
+
     // Update labels
     const labelElements = chartLabels.querySelectorAll('.chart-label');
     labelElements.forEach((label, index) => {
@@ -2145,14 +2143,14 @@ function updateIncomeChart() {
             label.textContent = labels[index];
         }
     });
-    
+
     // Update summary values
     summaryValues.forEach((value, index) => {
         if (summary[index]) {
             value.textContent = summary[index];
         }
     });
-    
+
     // Re-animate bars
     animateChartBars();
 }
@@ -2164,7 +2162,7 @@ function animateChartBars() {
         const originalHeight = bar.style.height;
         bar.style.height = '0%';
         bar.style.transition = 'height 0.6s ease-out';
-        
+
         setTimeout(() => {
             bar.style.height = originalHeight;
         }, index * 100 + 300);

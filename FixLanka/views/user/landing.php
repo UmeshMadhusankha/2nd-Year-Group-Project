@@ -12,6 +12,7 @@ $isLoggedIn = isLoggedIn();
     <title>Fix Lanka - Your Trusted Service Professionals</title>
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/landing.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/navbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/repairer-profile-popup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -142,24 +143,26 @@ $isLoggedIn = isLoggedIn();
                 <p class="section-subtitle">Discover trusted professionals in your area</p>
             </div>
             
-            <!-- Provider Type Toggle -->
-            <div class="provider-type-toggle">
-                <button class="provider-type-btn active" data-type="all" onclick="filterByProviderType('all', this)">
-                    <i class="fas fa-users"></i>
-                    <span>All Providers</span>
-                </button>
-                <button class="provider-type-btn" data-type="individual" onclick="filterByProviderType('individual', this)">
-                    <i class="fas fa-user"></i>
+            <!-- Provider Type Tabs -->
+            <div class="provider-tabs">
+                <button class="provider-tab active" data-type="repairers">
+                    <i class="fas fa-user-tie"></i>
                     <span>Individual Repairers</span>
                 </button>
-                <button class="provider-type-btn" data-type="company" onclick="filterByProviderType('company', this)">
+                <button class="provider-tab" data-type="companies">
                     <i class="fas fa-building"></i>
                     <span>Companies</span>
                 </button>
             </div>
             
-            <div class="providers-grid" id="providersGrid">
-                <!-- Provider cards will be dynamically loaded here -->
+            <!-- Repairers Grid -->
+            <div class="providers-grid active" id="repairersGrid" data-type="repairers">
+                <!-- Repairer cards will be dynamically loaded here -->
+            </div>
+            
+            <!-- Companies Grid -->
+            <div class="providers-grid" id="companiesGrid" data-type="companies">
+                <!-- Company cards will be dynamically loaded here -->
             </div>
             
             <!-- Loading indicator -->
@@ -180,48 +183,40 @@ $isLoggedIn = isLoggedIn();
                 <div class="footer-logo">
                     <span class="logo-text">Fix Lanka</span>
                 </div>
-                <p class="footer-tagline">Connecting you with trusted local service professionals.</p>
-                <div class="social-links">
-                    <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
-                </div>
+                <p class="footer-tagline">Connecting you with trusted local service professionals across Sri Lanka.</p>
+                <p class="footer-description">Fix Lanka is your one-stop platform for finding reliable and verified service providers for all your home and business needs. We ensure quality service delivery through our network of skilled professionals.</p>
             </div>
             
-            <div class="footer-section footer-services">
-                <h3 class="footer-title">Services</h3>
-                <ul class="footer-links">
-                    <li><a href="#plumbing">Plumbing</a></li>
-                    <li><a href="#electrical">Electrical</a></li>
-                    <li><a href="#hvac">HVAC</a></li>
-                    <li><a href="#cleaning">Cleaning</a></li>
-                </ul>
+            <div class="footer-section footer-about">
+                <h3 class="footer-title">About Us</h3>
+                <p class="footer-text">Fix Lanka was established to bridge the gap between customers and quality service providers in Sri Lanka. Our mission is to make finding trusted professionals simple, fast, and reliable.</p>
             </div>
             
             <div class="footer-section footer-support">
                 <h3 class="footer-title">Support</h3>
                 <ul class="footer-links">
-                    <li><a href="#help">Help Center</a></li>
-                    <li><a href="#contact">Contact Us</a></li>
-                    <li><a href="#safety">Safety</a></li>
-                    <li><a href="#terms">Terms</a></li>
+                    <li><a href="/2nd-Year-Group-Project/FixLanka/views/user/help-center.php">Help Center</a></li>
+                    <li><a href="/2nd-Year-Group-Project/FixLanka/views/user/contact-us.php">Contact Us</a></li>
+                    <li><a href="/2nd-Year-Group-Project/FixLanka/views/user/terms-of-service.php">Terms of Service</a></li>
                 </ul>
+                <div class="footer-contact-info">
+                    <p><i class="fas fa-envelope"></i> support@fixlanka.lk</p>
+                    <p><i class="fas fa-phone"></i> +94 11 234 5678</p>
+                </div>
             </div>
         </div>
         
         <div class="footer-bottom">
             <div class="footer-bottom-container">
                 <p>&copy; 2025 Fix Lanka. All rights reserved.</p>
-                <div class="footer-bottom-links">
-                    <a href="#privacy">Privacy Policy</a>
-                    <span class="separator">|</span>
-                    <a href="#terms">Terms of Service</a>
-                </div>
             </div>
         </div>
     </footer>
 
+    <!-- Repairer Profile Popup -->
+    <?php include 'repairer-profile-popup.php'; ?>
+
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/landing.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/repairer-profile-popup.js"></script>
 </body>
 </html>

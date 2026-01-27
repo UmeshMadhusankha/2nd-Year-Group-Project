@@ -40,3 +40,4 @@ try {
     // Otherwise die with error message
     die("Database connection failed: " . $e->getMessage());
 }
+?>

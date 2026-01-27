@@ -1,4 +1,4 @@
-// Support Page JavaScript
+﻿// Support Page JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     // Add smooth scroll for home button
@@ -67,14 +67,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (emailMethod) {
         emailMethod.addEventListener('click', function() {
             // Could be used for analytics tracking
-            console.log('Email contact method clicked');
+            
         });
     }
 
     if (phoneMethod) {
         phoneMethod.addEventListener('click', function() {
             // Could be used for analytics tracking
-            console.log('Phone contact method clicked');
+            
         });
     }
 });
