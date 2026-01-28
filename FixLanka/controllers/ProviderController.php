@@ -111,12 +111,20 @@ class ProviderController {
         
         try {
             $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 12;
+            $providerType = isset($_GET['provider_type']) ? $_GET['provider_type'] : 'all';
             
+            $repairers = [];
+            $companies = [];
+
             // Get top-rated repairers
-            $repairers = $this->repairerModel->getFeatured($limit, 0);
+            if ($providerType === 'all' || $providerType === 'individual') {
+                $repairers = $this->repairerModel->getFeatured($limit, 0);
+            }
             
             // Get top-rated companies
-            $companies = $this->companyModel->getFeatured($limit, 0);
+            if ($providerType === 'all' || $providerType === 'company') {
+                $companies = $this->companyModel->getFeatured($limit, 0);
+            }
             
             // Combine and sort by rating
             $providers = array_merge($repairers, $companies);

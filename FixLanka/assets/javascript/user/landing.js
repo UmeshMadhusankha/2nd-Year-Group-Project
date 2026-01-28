@@ -291,6 +291,15 @@ const profileAvatar = document.getElementById('profileAvatar');
 const profileDropdown = document.getElementById('profileDropdown');
 const providerTabs = document.querySelectorAll('.provider-tab');
 
+// App + API paths
+const APP_BASE = '/2nd-Year-Group-Project/FixLanka';
+const PROVIDERS_API = `${APP_BASE}/api/providers.php`;
+// Backward-compat alias used in older parts of this file
+const API_BASE = APP_BASE;
+
+// Active grid pointer (used by loader + no-results helpers)
+let providersGrid = repairersGrid;
+
 // State variables
 let currentPage = 0;
 const itemsPerPage = 6;
@@ -387,9 +396,11 @@ function initializeProviderTabs() {
             if (type === 'repairers') {
                 repairersGrid.classList.add('active');
                 currentProviderType = 'repairers';
+                providersGrid = repairersGrid;
             } else {
                 companiesGrid.classList.add('active');
                 currentProviderType = 'companies';
+                providersGrid = companiesGrid;
             }
             
             // Reset and reload data
@@ -409,21 +420,10 @@ function initializeSearchForm() {
     if (searchForm) {
         searchForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            
-            const service = document.getElementById('serviceSelect').value;
-            const rating = document.getElementById('ratingSelect').value;
-            const location = document.getElementById('locationInput').value;
-            
-            // Simulate search functionality
-            
-            // Show loading state
-            showSearchLoading();
-            
-            // Simulate API call delay
-            setTimeout(() => {
-                hideSearchLoading();
-                filterProviders({ service, rating, location });
-            }, 1000);
+
+            // Apply filters via API
+            filterProviders();
+            updateActiveFilters();
         });
         
         // Also trigger filter on dropdown change
@@ -593,152 +593,79 @@ function loadInitialProviders() {
 
 // Load Providers with Pagination
 async function loadProviders(isFiltered = false) {
-    if (isLoading) return;
-    
+    if (isLoading || allProvidersLoaded) return;
+
     isLoading = true;
     showLoading();
-    
-    // Select data source based on current provider type
-    const dataSource = currentProviderType === 'repairers' 
-        ? (window.currentFilteredData || providerData) 
-        : companyData;
-    
-    // Calculate start and end indices
-    const startIndex = currentPage * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, dataSource.length);
-    
-    // Get current batch of providers
-    const currentBatch = dataSource.slice(startIndex, endIndex);
-    
-    // Simulate network delay
-    setTimeout(() => {
-        // Render providers based on type
-        currentBatch.forEach((provider, index) => {
-            setTimeout(() => {
-                if (currentProviderType === 'repairers') {
-                    renderProviderCard(provider);
-                } else {
-                    renderCompanyCard(provider);
-                }
-            }, index * 100); // Stagger animation
+
+    try {
+        const service = document.getElementById('serviceSelect')?.value || '';
+        const rating = document.getElementById('ratingSelect')?.value || '';
+        const district = document.getElementById('districtSelect')?.value || '';
+
+        const providerType = currentProviderType === 'companies' ? 'company' : 'individual';
+        const hasFilters = Boolean(service || rating || district);
+
+        const params = new URLSearchParams();
+        params.set('action', hasFilters ? 'getProviders' : 'getFeatured');
+        params.set('provider_type', providerType);
+        params.set('limit', String(itemsPerPage));
+        params.set('offset', String(currentPage * itemsPerPage));
+
+        if (service) params.set('category', service);
+        if (rating) params.set('rating', rating);
+        if (district) params.set('location', district);
+
+        const apiUrl = `${PROVIDERS_API}?${params.toString()}`;
+        const response = await fetch(apiUrl, {
+            headers: {
+                'Accept': 'application/json'
+            }
         });
-        
-        // Add filters only if they have values
-        if (service) params.append('category', service);
-        if (rating) params.append('rating', rating);
-        if (district) params.append('location', district);
-        
-        // Add provider type filter
-        if (currentProviderType && currentProviderType !== 'all') {
-            params.append('provider_type', currentProviderType);
-        }
-        
-        // Determine which endpoint to use
-        const endpoint = (service || rating || district || currentProviderType !== 'all') ? 'get-providers' : 'get-featured-providers';
-        
-        const apiUrl = `${API_BASE}/${endpoint}?${params.toString()}`;
-        console.log('========================================');
-        console.log('FETCHING FROM API');
-        console.log('URL:', apiUrl);
-        console.log('Parameters:', {
-            service,
-            rating,
-            district,
-            provider_type: currentProviderType,
-            limit: itemsPerPage,
-            offset: currentPage * itemsPerPage
-        });
-        console.log('========================================');
-        
-        // Fetch data from API
-        const response = await fetch(apiUrl);
-        
+
         if (!response.ok) {
-            throw new Error('Failed to fetch providers');
+            throw new Error(`Failed to fetch providers (${response.status})`);
         }
-        
+
         const result = await response.json();
-        
-        console.log('========================================');
-        console.log('API RESPONSE RECEIVED');
-        console.log('========================================');
-        console.log('Full API Response:', result);
-        console.log('Success:', result.success);
-        console.log('Provider Type Filter Applied:', currentProviderType);
-        console.log('Total Providers Received:', result.data ? result.data.length : 0);
-        
-        if (result.success && result.data) {
-            const providers = result.data;
-            
-            // Detailed provider type analysis
-            const companies = providers.filter(p => p.provider_type === 'company');
-            const individuals = providers.filter(p => p.provider_type === 'individual');
-            
-            console.log('----------------------------------------');
-            console.log('PROVIDER BREAKDOWN:');
-            console.log('Companies found:', companies.length);
-            console.log('Individuals found:', individuals.length);
-            console.log('----------------------------------------');
-            
-            if (companies.length > 0) {
-                console.log('Company Details:');
-                companies.forEach((c, idx) => {
-                    console.log(`  ${idx + 1}. ${c.full_name || c.name} (ID: ${c.company_id}, Rating: ${c.ratings})`);
-                });
-            }
-            
-            if (individuals.length > 0) {
-                console.log('Individual Details:');
-                individuals.forEach((i, idx) => {
-                    console.log(`  ${idx + 1}. ${i.full_name || i.name} (ID: ${i.repairer_id}, Rating: ${i.ratings})`);
-                });
-            }
-            
-            console.log('========================================');
-            
-            // Check if no results
-            if (providers.length === 0 && currentPage === 0) {
-                console.log('No providers found for current filters');
-                showNoResults();
-                allProvidersLoaded = true;
-                scrollTrigger.style.display = 'none';
-            } else {
-                // Hide no results message if it was showing
-                hideNoResults();
-                
-                // Render providers with staggered animation
-                providers.forEach((provider, index) => {
-                    setTimeout(() => {
-                        renderProviderCard(provider);
-                    }, index * 100);
-                });
-                
-                // Update pagination state
-                currentPage++;
-                
-                // Check if more providers are available
-                if (result.pagination) {
-                    allProvidersLoaded = !result.pagination.hasMore;
-                } else if (providers.length < itemsPerPage) {
-                    allProvidersLoaded = true;
-                }
-                
-                if (allProvidersLoaded) {
-                    scrollTrigger.style.display = 'none';
-                }
-            }
-        } else {
-            console.error('No providers found or invalid response');
-            // Show no results if first page
-            if (currentPage === 0) {
-                showNoResults();
-            }
+        const providers = (result && result.success && Array.isArray(result.data)) ? result.data : [];
+
+        if (providers.length === 0 && currentPage === 0) {
+            showNoResults();
+            allProvidersLoaded = true;
+            if (scrollTrigger) scrollTrigger.style.display = 'none';
+            return;
         }
-        
+
+        hideNoResults();
+
+        providers.forEach((provider, index) => {
+            setTimeout(() => {
+                if (providerType === 'company') {
+                    renderCompanyCard(provider);
+                } else {
+                    renderProviderCard(provider);
+                }
+            }, index * 80);
+        });
+
+        currentPage++;
+
+        if (result.pagination) {
+            allProvidersLoaded = !result.pagination.hasMore;
+        } else if (providers.length < itemsPerPage) {
+            allProvidersLoaded = true;
+        }
+
+        if (allProvidersLoaded && scrollTrigger) {
+            scrollTrigger.style.display = 'none';
+        }
     } catch (error) {
         console.error('Error loading providers:', error);
-        // Fallback to sample data
-        loadSampleProviders();
+        // Fallback to sample data (keeps UI usable if API fails)
+        if (currentPage === 0) {
+            loadSampleProviders();
+        }
     } finally {
         isLoading = false;
         hideLoading();
@@ -747,14 +674,18 @@ async function loadProviders(isFiltered = false) {
 
 // Fallback function to load sample providers
 function loadSampleProviders() {
-    const dataSource = window.currentFilteredData || providerData;
+    const dataSource = currentProviderType === 'companies' ? companyData : (window.currentFilteredData || providerData);
     const startIndex = currentPage * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, dataSource.length);
     const currentBatch = dataSource.slice(startIndex, endIndex);
     
     currentBatch.forEach((provider, index) => {
         setTimeout(() => {
-            renderProviderCard(provider);
+            if (currentProviderType === 'companies') {
+                renderCompanyCard(provider);
+            } else {
+                renderProviderCard(provider);
+            }
         }, index * 100);
     });
     
@@ -810,20 +741,15 @@ function hideNoResults() {
 
 // Render Provider Card
 function renderProviderCard(provider) {
-    // Debug logging for each provider
-    console.log('=== Rendering Provider Card ===');
-    console.log('Provider Type:', provider.provider_type);
-    console.log('Provider Name:', provider.full_name || provider.name);
-    console.log('Provider ID:', provider.repairer_id || provider.company_id);
-    console.log('Full Provider Data:', provider);
-    
     const card = document.createElement('div');
     card.className = 'provider-card';
     card.style.animationDelay = '0s'; // Reset animation delay
+
+    const pictureUrl = resolveAssetUrl(provider.profilePicture);
     
     // Generate avatar initials or use profile picture
-    const avatar = provider.profilePicture 
-        ? `<img src="${API_BASE}/${provider.profilePicture}" alt="${provider.full_name || provider.name}" class="avatar-img">`
+    const avatar = pictureUrl
+        ? `<img src="${pictureUrl}" alt="${provider.full_name || provider.name}" class="avatar-img">`
         : generateAvatarInitials(provider.full_name || provider.name);
     
     // Determine provider type and display info
@@ -880,82 +806,169 @@ function renderProviderCard(provider) {
         </div>
     `;
     
-    if (repairersGrid) {
-        repairersGrid.appendChild(card);
+    if (providersGrid) {
+        providersGrid.appendChild(card);
     }
 }
 
 // Render Company Card
 function renderCompanyCard(company) {
+    const isApiCompany = company && (company.company_id || company.provider_type === 'company' || company.business_type);
+
+    if (!isApiCompany) {
+        // Render sample company cards (fallback dataset)
+        const card = document.createElement('div');
+        card.className = 'company-card';
+        card.style.animationDelay = '0s';
+
+        const services = Array.isArray(company.services) ? company.services : [];
+        const servicesHTML = services.slice(0, 4).map(service =>
+            `<span class="service-tag">${escapeHtml(service)}</span>`
+        ).join('');
+
+        card.innerHTML = `
+            <div class="company-header">
+                <div class="company-logo">${escapeHtml(company.logo || '')}</div>
+                <div class="company-info">
+                    <h3 class="company-name">${escapeHtml(company.name || 'Company')}</h3>
+                    <span class="company-type">${escapeHtml(company.type || 'Service Company')}</span>
+                </div>
+            </div>
+
+            <div class="company-stats">
+                <div class="company-stat">
+                    <span class="stat-value">${escapeHtml(String(company.employees || 0))}+</span>
+                    <span class="stat-label">Employees</span>
+                </div>
+                <div class="company-stat">
+                    <span class="stat-value">${escapeHtml(String(company.projects || 0))}+</span>
+                    <span class="stat-label">Projects</span>
+                </div>
+                <div class="company-stat">
+                    <span class="stat-value">${escapeHtml(String(company.yearsFounded || '').replace('Est. ', ''))}</span>
+                    <span class="stat-label">Founded</span>
+                </div>
+            </div>
+
+            <div class="company-rating">
+                <div class="stars">${generateStars(company.rating || 0)}</div>
+                <span class="rating-text">${escapeHtml(String(company.rating || 0))} (${escapeHtml(String(company.reviews || 0))} reviews)</span>
+            </div>
+
+            <div class="company-location">
+                <i class="fas fa-map-marker-alt"></i>
+                ${escapeHtml(company.location || '')}
+            </div>
+
+            <div class="company-services">
+                <p class="services-label">Services Offered:</p>
+                <div class="services-tags">
+                    ${servicesHTML}
+                    ${services.length > 4 ? `<span class="service-tag">+${services.length - 4} more</span>` : ''}
+                </div>
+            </div>
+
+            <p class="company-description">${escapeHtml(company.description || '')}</p>
+
+            <div class="company-actions">
+                <button class="view-company-btn" onclick="viewCompanyDetails(${company.id})">
+                    <i class="fas fa-building"></i>
+                    View Company Details
+                </button>
+            </div>
+        `;
+
+        if (providersGrid) {
+            providersGrid.appendChild(card);
+        }
+        return;
+    }
+
+    // Render API company cards
     const card = document.createElement('div');
     card.className = 'company-card';
     card.style.animationDelay = '0s';
-    
-    const servicesHTML = company.services.slice(0, 4).map(service => 
-        `<span class="service-tag">${service}</span>`
-    ).join('');
-    
+
+    const companyName = company.name || 'Company';
+    const companyType = company.business_type || 'Service Company';
+    const rating = Number(company.ratings ?? company.rating ?? 0);
+    const location = company.districts || company.address || '';
+    const description = company.description || 'Professional service company';
+    const founded = company.date_of_joined ? String(company.date_of_joined).slice(0, 4) : '-';
+
     card.innerHTML = `
         <div class="company-header">
-            <div class="company-logo">
-                ${company.logo}
-            </div>
+            <div class="company-logo">${generateAvatarInitials(companyName)}</div>
             <div class="company-info">
-                <h3 class="company-name">${company.name}</h3>
-                <span class="company-type">${company.type}</span>
+                <h3 class="company-name">${escapeHtml(companyName)}</h3>
+                <span class="company-type">${escapeHtml(companyType)}</span>
             </div>
         </div>
-        
+
         <div class="company-stats">
             <div class="company-stat">
-                <span class="stat-value">${company.employees}+</span>
-                <span class="stat-label">Employees</span>
+                <span class="stat-value">${rating.toFixed(1)}</span>
+                <span class="stat-label">Rating</span>
             </div>
             <div class="company-stat">
-                <span class="stat-value">${company.projects}+</span>
-                <span class="stat-label">Projects</span>
+                <span class="stat-value">${escapeHtml(String((company.districts || '').split(',').filter(Boolean).length || 1))}</span>
+                <span class="stat-label">Areas</span>
             </div>
             <div class="company-stat">
-                <span class="stat-value">${company.yearsFounded.split(' ')[1]}</span>
-                <span class="stat-label">Founded</span>
+                <span class="stat-value">${escapeHtml(founded)}</span>
+                <span class="stat-label">Joined</span>
             </div>
         </div>
-        
+
         <div class="company-rating">
-            <div class="stars">
-                ${generateStars(company.rating)}
-            </div>
-            <span class="rating-text">${company.rating} (${company.reviews} reviews)</span>
+            <div class="stars">${generateStars(rating)}</div>
+            <span class="rating-text">${rating.toFixed(1)}</span>
         </div>
-        
+
         <div class="company-location">
             <i class="fas fa-map-marker-alt"></i>
-            ${company.location}
+            ${escapeHtml(String(location).substring(0, 60))}${String(location).length > 60 ? '...' : ''}
         </div>
-        
-        <div class="company-services">
-            <p class="services-label">Services Offered:</p>
-            <div class="services-tags">
-                ${servicesHTML}
-                ${company.services.length > 4 ? `<span class="service-tag">+${company.services.length - 4} more</span>` : ''}
-            </div>
-        </div>
-        
-        <p class="company-description">
-            ${company.description}
-        </p>
-        
+
+        <p class="company-description">${escapeHtml(String(description).substring(0, 140))}${String(description).length > 140 ? '...' : ''}</p>
+
         <div class="company-actions">
-            <button class="view-company-btn" onclick="viewCompanyDetails(${company.id})">
+            <button class="view-company-btn" onclick="viewProviderProfile(${company.company_id}, 'company')">
                 <i class="fas fa-building"></i>
                 View Company Details
             </button>
         </div>
     `;
-    
-    if (companiesGrid) {
-        companiesGrid.appendChild(card);
+
+    if (providersGrid) {
+        providersGrid.appendChild(card);
     }
+}
+
+function resolveAssetUrl(path) {
+    if (!path) return '';
+    const trimmed = String(path).trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+    if (trimmed.startsWith('/')) return trimmed;
+    return `${APP_BASE}/${trimmed}`;
+}
+
+// Unified handler used by cards; repairer popup is mock-based for now
+function viewProviderProfile(providerId, providerType) {
+    if (!providerId) return;
+
+    if (providerType === 'individual') {
+        if (typeof openRepairerProfile === 'function') {
+            openRepairerProfile(providerId);
+        } else {
+            alert('Repairer profile popup is not available.');
+        }
+        return;
+    }
+
+    // Company profile page/modal not implemented yet
+    alert(`Company profile view is not implemented yet.\n\nCompany ID: ${providerId}`);
 }
 
 // View Company Details

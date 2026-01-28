@@ -411,4 +411,189 @@ class CompanyModel {
         return $stmt->execute([$companyId]);
     }
 }
+
+// Provider listing model used by ProviderController (landing page)
+class Company {
+    private $pdo;
+
+    public function __construct($pdo) {
+        $this->pdo = $pdo;
+    }
+
+    /**
+     * Get featured companies (top-rated)
+     */
+    public function getFeatured($limit = 10, $offset = 0) {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT
+                    c.company_id,
+                    c.name,
+                    c.business_type,
+                    c.address,
+                    c.email,
+                    c.website,
+                    c.contact_no,
+                    c.districts,
+                    c.description,
+                    c.rating AS ratings,
+                    c.date_of_joined,
+                    'company' AS provider_type
+                FROM company c
+                ORDER BY c.rating DESC, c.company_id DESC
+                LIMIT ? OFFSET ?
+            ");
+
+            $stmt->execute([$limit, $offset]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('Error getting featured companies: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get all companies with optional filters
+     */
+    public function getAll($filters = [], $limit = 20, $offset = 0) {
+        try {
+            $sql = "
+                SELECT
+                    c.company_id,
+                    c.name,
+                    c.business_type,
+                    c.address,
+                    c.email,
+                    c.website,
+                    c.contact_no,
+                    c.districts,
+                    c.description,
+                    c.rating AS ratings,
+                    c.date_of_joined,
+                    'company' AS provider_type
+                FROM company c
+                WHERE 1=1
+            ";
+
+            $params = [];
+
+            // Apply filters
+            if (!empty($filters['min_rating'])) {
+                $sql .= " AND c.rating >= ?";
+                $params[] = $filters['min_rating'];
+            }
+
+            if (!empty($filters['service_area'])) {
+                $sql .= " AND c.districts LIKE ?";
+                $params[] = '%' . $filters['service_area'] . '%';
+            }
+
+            // Category filtering for companies is based on business_type text
+            if (!empty($filters['category_id'])) {
+                $categoryName = null;
+                try {
+                    $catStmt = $this->pdo->prepare('SELECT name FROM category WHERE category_id = ?');
+                    $catStmt->execute([$filters['category_id']]);
+                    $categoryName = $catStmt->fetchColumn();
+                } catch (PDOException $e) {
+                    // If category table is unavailable or case differs, skip category filter
+                    $categoryName = null;
+                }
+
+                if ($categoryName) {
+                    $sql .= " AND c.business_type LIKE ?";
+                    $params[] = '%' . $categoryName . '%';
+                }
+            }
+
+            $sql .= " ORDER BY c.rating DESC, c.company_id DESC LIMIT ? OFFSET ?";
+            $params[] = $limit;
+            $params[] = $offset;
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('Error getting all companies: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get single company by ID
+     */
+    public function getById($companyId) {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT
+                    c.company_id,
+                    c.name,
+                    c.business_type,
+                    c.registration_no,
+                    c.tax_id,
+                    c.address,
+                    c.email,
+                    c.website,
+                    c.contact_no,
+                    c.districts,
+                    c.description,
+                    c.rating AS ratings,
+                    c.date_of_joined,
+                    'company' AS provider_type
+                FROM company c
+                WHERE c.company_id = ?
+            ");
+
+            $stmt->execute([$companyId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('Error getting company: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get total count of companies
+     */
+    public function getCount($filters = []) {
+        try {
+            $sql = 'SELECT COUNT(*) as total FROM company c WHERE 1=1';
+            $params = [];
+
+            if (!empty($filters['min_rating'])) {
+                $sql .= ' AND c.rating >= ?';
+                $params[] = $filters['min_rating'];
+            }
+
+            if (!empty($filters['service_area'])) {
+                $sql .= ' AND c.districts LIKE ?';
+                $params[] = '%' . $filters['service_area'] . '%';
+            }
+
+            if (!empty($filters['category_id'])) {
+                $categoryName = null;
+                try {
+                    $catStmt = $this->pdo->prepare('SELECT name FROM category WHERE category_id = ?');
+                    $catStmt->execute([$filters['category_id']]);
+                    $categoryName = $catStmt->fetchColumn();
+                } catch (PDOException $e) {
+                    $categoryName = null;
+                }
+
+                if ($categoryName) {
+                    $sql .= ' AND c.business_type LIKE ?';
+                    $params[] = '%' . $categoryName . '%';
+                }
+            }
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['total'] ?? 0;
+        } catch (PDOException $e) {
+            error_log('Error getting company count: ' . $e->getMessage());
+            return 0;
+        }
+    }
+}
 ?>
