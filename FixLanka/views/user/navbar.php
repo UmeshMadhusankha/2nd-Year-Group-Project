@@ -34,9 +34,18 @@ $userData = getUserData();
         <div class="navbar-right">
             <?php if ($isLoggedIn): ?>
                 <!-- Logged In User Section -->
-                <div class="notification-bell">
+                <div class="notification-bell" id="notificationBell">
                     <i class="fas fa-bell"></i>
-                    <span class="notification-badge">3</span>
+                    <span class="notification-badge" id="notificationBadge" style="display:none;">0</span>
+
+                    <div class="notification-dropdown" id="notificationDropdown" style="display:none;">
+                        <div class="notification-dropdown-header">
+                            <span>Notifications</span>
+                        </div>
+                        <div class="notification-dropdown-list" id="notificationList">
+                            <div class="notification-empty">Loading...</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="profile-dropdown-container">
@@ -163,6 +172,129 @@ document.addEventListener('DOMContentLoaded', function() {
     if (mobileMenuToggle && mobileMenu) {
         mobileMenuToggle.addEventListener('click', function() {
             mobileMenu.classList.toggle('show');
+        });
+    }
+
+    // Notifications bell dropdown
+    const notificationBell = document.getElementById('notificationBell');
+    const notificationDropdown = document.getElementById('notificationDropdown');
+    const notificationList = document.getElementById('notificationList');
+    const notificationBadge = document.getElementById('notificationBadge');
+
+    const NOTIFICATIONS_API = '/2nd-Year-Group-Project/FixLanka/api/user-notifications.php';
+
+    function setBadgeCount(count) {
+        if (!notificationBadge) return;
+        const safeCount = Number.isFinite(count) ? count : 0;
+        if (safeCount > 0) {
+            notificationBadge.textContent = String(safeCount);
+            notificationBadge.style.display = 'inline-block';
+        } else {
+            notificationBadge.textContent = '0';
+            notificationBadge.style.display = 'none';
+        }
+    }
+
+    function formatNotificationDate(value) {
+        if (!value) return '';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return String(value);
+        return d.toLocaleString();
+    }
+
+    async function fetchJson(url) {
+        const res = await fetch(url, { credentials: 'same-origin' });
+        const text = await res.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error('Invalid JSON from notifications API');
+        }
+        if (!res.ok || data?.success === false) {
+            const message = data?.message || `Request failed (${res.status})`;
+            throw new Error(message);
+        }
+        return data;
+    }
+
+    async function refreshNotificationCount() {
+        if (!notificationBell) return;
+        try {
+            const data = await fetchJson(`${NOTIFICATIONS_API}?action=count`);
+            setBadgeCount(parseInt(data.count, 10) || 0);
+        } catch (e) {
+            setBadgeCount(0);
+        }
+    }
+
+    function renderNotifications(notifications) {
+        if (!notificationList) return;
+        if (!Array.isArray(notifications) || notifications.length === 0) {
+            notificationList.innerHTML = '<div class="notification-empty">No notifications</div>';
+            return;
+        }
+
+        notificationList.innerHTML = notifications.map(n => {
+            const title = (n?.title ?? 'Notification');
+            const message = (n?.message ?? '');
+            const createdAt = formatNotificationDate(n?.created_at);
+            return `
+                <div class="notification-item">
+                    <div class="notification-title">${escapeHtml(title)}</div>
+                    <div class="notification-message">${escapeHtml(message)}</div>
+                    <div class="notification-meta">${escapeHtml(createdAt)}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    async function loadNotificationsList() {
+        if (!notificationList) return;
+        notificationList.innerHTML = '<div class="notification-empty">Loading...</div>';
+        try {
+            const data = await fetchJson(`${NOTIFICATIONS_API}?action=list&limit=8`);
+            renderNotifications(data.notifications);
+            refreshNotificationCount();
+        } catch (e) {
+            notificationList.innerHTML = '<div class="notification-empty">Failed to load notifications</div>';
+        }
+    }
+
+    if (notificationBell && notificationDropdown) {
+        refreshNotificationCount();
+
+        notificationBell.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (profileDropdown) {
+                profileDropdown.classList.remove('show');
+            }
+            const isOpen = notificationDropdown.style.display !== 'none';
+            notificationDropdown.style.display = isOpen ? 'none' : 'block';
+            if (!isOpen) {
+                loadNotificationsList();
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!notificationBell.contains(e.target)) {
+                notificationDropdown.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                notificationDropdown.style.display = 'none';
+            }
         });
     }
 });
