@@ -3,6 +3,8 @@
 // ================================================
 
 document.addEventListener('DOMContentLoaded', function() {
+    const USER_QUOTES_API = '/2nd-Year-Group-Project/FixLanka/api/user-quotes.php';
+    const DEBUG_QUOTES = true;
     
     // ================================================
     // SAMPLE USER DATA
@@ -139,22 +141,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // INITIALIZE
     // ================================================
     function init() {
-        renderProfileData();
         setupEventListeners();
         loadSidebarState();
-        animateCounters();
-        animateProgressBars();
+
+        try {
+            renderProfileData();
+        } catch (e) {
+            console.error('[Profile] renderProfileData failed:', e);
+        }
+
+        try {
+            animateCounters();
+            animateProgressBars();
+        } catch (e) {
+            console.warn('[Profile] animations failed:', e);
+        }
+
+        loadQuotesPreview();
     }
 
     // ================================================
     // RENDER PROFILE DATA
     // ================================================
+    function setText(selector, value) {
+        const el = document.querySelector(selector);
+        if (el) el.textContent = value;
+    }
+
     function renderProfileData() {
         // User info card
-        document.querySelector('.user-full-name').textContent = userData.fullName;
-        document.querySelector('.user-username').textContent = `@${userData.username}`;
-        document.querySelector('.account-status').textContent = userData.accountStatus;
-        document.querySelector('.member-since').textContent = `Member since ${userData.memberSince}`;
+        setText('.user-full-name', userData.fullName);
+        setText('.user-username', `@${userData.username}`);
+        setText('.account-status', userData.accountStatus);
+        setText('.member-since', `Member since ${userData.memberSince}`);
         
         if (profileAvatarImg) {
             profileAvatarImg.src = userData.avatar;
@@ -174,14 +193,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Profile completion
-        document.querySelector('.completion-percentage').textContent = `${userData.completionPercentage}%`;
-        document.querySelector('.progress-fill').style.width = `${userData.completionPercentage}%`;
+        const completionEl = document.getElementById('completionPercentage');
+        if (completionEl) completionEl.textContent = String(userData.completionPercentage);
+
+        const progressFill = document.querySelector('.progress-fill');
+        if (progressFill) progressFill.style.width = `${userData.completionPercentage}%`;
 
         // Stats
-        document.querySelector('.stat-number[data-stat="total"]').textContent = userData.stats.totalJobs;
-        document.querySelector('.stat-number[data-stat="active"]').textContent = userData.stats.activeJobs;
-        document.querySelector('.stat-number[data-stat="completed"]').textContent = userData.stats.completedJobs;
-        document.querySelector('.stat-number[data-stat="pending"]').textContent = userData.stats.pendingPayments;
+        const statEls = document.querySelectorAll('.stat-number');
+        if (statEls.length >= 4) {
+            statEls[0].textContent = userData.stats.totalJobs;
+            statEls[1].textContent = userData.stats.activeJobs;
+            statEls[2].textContent = userData.stats.completedJobs;
+            statEls[3].textContent = userData.stats.pendingPayments;
+        }
 
         // Recent activity
         const activityList = document.querySelector('.activity-list');
@@ -201,8 +226,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Reviews summary
-        document.querySelector('.average-rating').textContent = userData.rating.average;
-        document.querySelector('.total-reviews').textContent = `${userData.rating.total} reviews`;
+        setText('.average-rating', String(userData.rating.average));
+        setText('.total-reviews', `${userData.rating.total} reviews`);
 
         // Rating breakdown
         const ratingBreakdown = document.querySelector('.rating-breakdown');
@@ -223,40 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }).join('');
         }
 
-        // Quotes
-        const quotesList = document.querySelector('.quotes-list');
-        if (quotesList) {
-            quotesList.innerHTML = userData.quotes.slice(0, 3).map(quote => `
-                <div class="quote-item" data-quote-id="${quote.id}">
-                    <div class="quote-header">
-                        <div class="provider-info">
-                            <img src="${quote.provider.avatar}" alt="${quote.provider.name}" class="provider-avatar">
-                            <div>
-                                <h4 class="provider-name">${quote.provider.name}</h4>
-                                <p class="provider-type">${quote.provider.type}</p>
-                                <div class="provider-rating">
-                                    <i class="fas fa-star"></i>
-                                    <span>${quote.provider.rating}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="quote-amount">
-                            <span class="amount-label">Quote</span>
-                            <span class="amount-value">LKR ${quote.amount.toLocaleString()}</span>
-                        </div>
-                    </div>
-                    <p class="quote-job-title">${quote.jobTitle}</p>
-                    <div class="quote-actions">
-                        <button class="btn-success" onclick="handleQuoteAction('accept', ${quote.id})">
-                            <i class="fas fa-check"></i> Accept
-                        </button>
-                        <button class="btn-outline" onclick="handleQuoteAction('decline', ${quote.id})">
-                            <i class="fas fa-times"></i> Decline
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
+        // Quotes preview is loaded from DB via loadQuotesPreview()
 
         // Pre-fill edit form
         if (editProfileForm) {
@@ -462,7 +454,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================================================
     function navigateToPage(page) {
         const routes = {
-            'quotes': 'quotes.html',
+            'quotes': '/2nd-Year-Group-Project/FixLanka/views/user/quotes_received.php',
             'reviews': 'reviews.html',
             'payments': 'payments.html',
             'jobs': 'job-history.html',
@@ -479,42 +471,137 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ================================================
-    // QUOTE ACTIONS (Global function for onclick)
+    // QUOTES (DB)
     // ================================================
-    window.handleQuoteAction = function(action, quoteId) {
-        const quoteItem = document.querySelector(`[data-quote-id="${quoteId}"]`);
-        const quote = userData.quotes.find(q => q.id === quoteId);
-        
-        if (!quoteItem || !quote) return;
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
 
-        // Animate
-        quoteItem.style.transform = 'scale(0.98)';
-        quoteItem.style.opacity = '0.7';
+    function formatMoney(value) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return 'LKR 0';
+        return `LKR ${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    }
 
-        setTimeout(() => {
-            quote.status = action === 'accept' ? 'accepted' : 'declined';
-            
-            if (action === 'accept') {
-                quoteItem.style.background = 'rgba(16, 185, 129, 0.1)';
-                quoteItem.style.border = '2px solid var(--success-color)';
-                showToast(`Quote from ${quote.provider.name} accepted!`, 'success');
-            } else {
-                quoteItem.style.background = 'rgba(239, 68, 68, 0.1)';
-                quoteItem.style.border = '2px solid var(--danger-color)';
-                showToast(`Quote from ${quote.provider.name} declined.`, 'warning');
+    async function fetchJson(url, options) {
+        if (DEBUG_QUOTES) {
+            console.log('[Quotes] Request:', url, options?.method || 'GET');
+        }
+
+        const res = await fetch(url, { credentials: 'same-origin', ...(options || {}) });
+        const text = await res.text();
+        if (DEBUG_QUOTES) {
+            console.log('[Quotes] Response status:', res.status);
+            console.log('[Quotes] Response body (first 300 chars):', text.slice(0, 300));
+        }
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error('Invalid JSON');
+        }
+        if (!res.ok || data?.success === false) {
+            throw new Error(data?.message || `Request failed (${res.status})`);
+        }
+        return data;
+    }
+
+    function setQuotesBadge(count) {
+        const badge = document.getElementById('quotesBadge');
+        if (!badge) return;
+        const c = Number.isFinite(count) ? count : 0;
+        if (c > 0) {
+            badge.textContent = `${c} new`;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    function renderProfileQuoteItem(q) {
+        const providerName = q.provider_name || (q.source === 'company' ? 'Company' : 'Repairer');
+        const providerTypeLabel = q.source === 'company' ? 'Company' : 'Individual';
+        const jobTitle = q.job_title || 'Job';
+        const amount = formatMoney(q.amount);
+        const canRespond = q.status === 'pending';
+
+        return `
+            <div class="quote-item" data-source="${escapeHtml(q.source)}" data-quote-id="${escapeHtml(q.quote_id)}">
+                <div class="quote-provider">
+                    <img src="${escapeHtml(q.provider_avatar || 'https://via.placeholder.com/40')}" alt="Provider" class="provider-avatar">
+                    <div class="provider-info">
+                        <span class="provider-name">${escapeHtml(providerName)}</span>
+                        <span class="provider-type">${escapeHtml(providerTypeLabel)}</span>
+                    </div>
+                </div>
+                <div class="quote-details">
+                    <span class="quote-amount">${escapeHtml(amount)}</span>
+                    <span class="quote-job">${escapeHtml(jobTitle)}</span>
+                </div>
+                <div class="quote-actions">
+                    <button class="btn-success-sm" ${canRespond ? '' : 'disabled'} onclick="handleQuoteAction('accepted','${escapeHtml(q.source)}',${escapeHtml(q.quote_id)})">Accept</button>
+                    <button class="btn-outline-sm" ${canRespond ? '' : 'disabled'} onclick="handleQuoteAction('rejected','${escapeHtml(q.source)}',${escapeHtml(q.quote_id)})">Decline</button>
+                </div>
+            </div>
+        `;
+    }
+
+    async function loadQuotesPreview() {
+        const list = document.getElementById('quotesList');
+        if (!list) return;
+        try {
+            const data = await fetchJson(`${USER_QUOTES_API}?action=summary&limit=3`);
+            if (DEBUG_QUOTES) {
+                console.log('[Quotes] summary payload:', data);
+            }
+            const quotes = Array.isArray(data.quotes) ? data.quotes : [];
+            setQuotesBadge(parseInt(data.pending_count, 10) || 0);
+
+            if (quotes.length === 0) {
+                list.innerHTML = `
+                    <div class="quote-item">
+                        <div class="quote-details">
+                            <span class="quote-job">No quotes received yet</span>
+                        </div>
+                    </div>
+                `;
+                return;
             }
 
-            quoteItem.style.transform = 'scale(1)';
-            quoteItem.style.opacity = '1';
+            list.innerHTML = quotes.map(renderProfileQuoteItem).join('');
+        } catch (e) {
+            console.error('[Quotes] Failed to load preview:', e);
+            list.innerHTML = `
+                <div class="quote-item">
+                    <div class="quote-details">
+                        <span class="quote-job">Failed to load quotes</span>
+                    </div>
+                </div>
+            `;
+            setQuotesBadge(0);
+        }
+    }
 
-            // Disable buttons
-            const buttons = quoteItem.querySelectorAll('button');
-            buttons.forEach(btn => {
-                btn.disabled = true;
-                btn.style.opacity = '0.5';
-                btn.style.cursor = 'not-allowed';
+    // ================================================
+    // QUOTE ACTIONS (Global function for onclick)
+    // ================================================
+    window.handleQuoteAction = async function(decision, source, quoteId) {
+        try {
+            await fetchJson(`${USER_QUOTES_API}?action=respond`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ source, quote_id: Number(quoteId), decision })
             });
-        }, 300);
+            await loadQuotesPreview();
+        } catch (e) {
+            console.error('[Quotes] respond failed:', e);
+            showToast('Failed to update quote', 'error');
+        }
     };
 
     // ================================================

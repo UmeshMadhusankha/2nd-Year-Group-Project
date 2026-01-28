@@ -367,70 +367,22 @@ $userData = getUserData();
                             <i class="fas fa-file-invoice-dollar"></i>
                             Quotes Received
                         </h3>
-                        <span class="quotes-badge">3 new</span>
+                        <span class="quotes-badge" id="quotesBadge" style="display:none;">0 new</span>
                     </div>
                     <div class="card-content">
-                        <div class="quotes-list">
+                        <div class="quotes-list" id="quotesList">
                             <div class="quote-item">
-                                <div class="quote-provider">
-                                    <img src="https://via.placeholder.com/40" alt="Provider" class="provider-avatar">
-                                    <div class="provider-info">
-                                        <span class="provider-name">Kasun Silva</span>
-                                        <span class="provider-type">Individual</span>
-                                    </div>
-                                </div>
                                 <div class="quote-details">
-                                    <span class="quote-amount">LKR 45,000</span>
-                                    <span class="quote-job">Kitchen Renovation</span>
-                                </div>
-                                <div class="quote-actions">
-                                    <button class="btn-success-sm">Accept</button>
-                                    <button class="btn-outline-sm">Decline</button>
-                                </div>
-                            </div>
-                            
-                            <div class="quote-item">
-                                <div class="quote-provider">
-                                    <img src="https://via.placeholder.com/40" alt="Provider" class="provider-avatar">
-                                    <div class="provider-info">
-                                        <span class="provider-name">Quick Fix Ltd</span>
-                                        <span class="provider-type">Company</span>
-                                    </div>
-                                </div>
-                                <div class="quote-details">
-                                    <span class="quote-amount">LKR 52,000</span>
-                                    <span class="quote-job">Kitchen Renovation</span>
-                                </div>
-                                <div class="quote-actions">
-                                    <button class="btn-success-sm">Accept</button>
-                                    <button class="btn-outline-sm">Decline</button>
-                                </div>
-                            </div>
-                            
-                            <div class="quote-item">
-                                <div class="quote-provider">
-                                    <img src="https://via.placeholder.com/40" alt="Provider" class="provider-avatar">
-                                    <div class="provider-info">
-                                        <span class="provider-name">Nimal Perera</span>
-                                        <span class="provider-type">Individual</span>
-                                    </div>
-                                </div>
-                                <div class="quote-details">
-                                    <span class="quote-amount">LKR 38,500</span>
-                                    <span class="quote-job">Garden Work</span>
-                                </div>
-                                <div class="quote-actions">
-                                    <button class="btn-success-sm">Accept</button>
-                                    <button class="btn-outline-sm">Decline</button>
+                                    <span class="quote-job">Loading...</span>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="quotes-footer">
-                            <button class="btn-secondary" id="viewAllQuotesBtn">
+                            <a class="btn-secondary" id="viewAllQuotesBtn" href="/2nd-Year-Group-Project/FixLanka/views/user/quotes_received.php">
                                 View All Quotes
                                 <i class="fas fa-arrow-right"></i>
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </div>
