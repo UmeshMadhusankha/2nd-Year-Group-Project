@@ -294,6 +294,7 @@ const providerTabs = document.querySelectorAll('.provider-tab');
 // App + API paths
 const APP_BASE = '/2nd-Year-Group-Project/FixLanka';
 const PROVIDERS_API = `${APP_BASE}/api/providers.php`;
+const PROVIDER_SEARCH_API = `${APP_BASE}/api/provider-search.php`;
 const REPAIRERS_API = `${APP_BASE}/api/repairers.php`;
 const COMPANIES_API = `${APP_BASE}/api/companies.php`;
 // Backward-compat alias used in older parts of this file
@@ -609,7 +610,7 @@ async function loadProviders(isFiltered = false) {
         const hasFilters = Boolean(service || rating || district);
 
         const params = new URLSearchParams();
-        params.set('action', hasFilters ? 'getProviders' : 'getFeatured');
+        params.set('mode', hasFilters ? 'search' : 'featured');
         params.set('provider_type', providerType);
         params.set('limit', String(itemsPerPage));
         params.set('offset', String(currentPage * itemsPerPage));
@@ -618,7 +619,7 @@ async function loadProviders(isFiltered = false) {
         if (rating) params.set('rating', rating);
         if (district) params.set('location', district);
 
-        const apiUrl = `${PROVIDERS_API}?${params.toString()}`;
+        const apiUrl = `${PROVIDER_SEARCH_API}?${params.toString()}`;
         const response = await fetch(apiUrl, {
             headers: {
                 'Accept': 'application/json'
