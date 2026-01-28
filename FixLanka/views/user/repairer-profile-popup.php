@@ -15,9 +15,6 @@
                 <div class="profile-header-content">
                     <div class="profile-avatar">
                         <img id="profileImage" src="https://ui-avatars.com/api/?name=John+Doe&size=200&background=17a2b8&color=fff" alt="Profile">
-                        <div class="profile-verified">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
                     </div>
                     <div class="profile-header-info">
                         <h2 id="profileName" class="profile-name">Loading...</h2>
@@ -37,10 +34,6 @@
                                 <i class="fas fa-briefcase"></i>
                                 <span id="completedJobs">0</span>
                                 <span class="stat-label">Jobs Completed</span>
-                            </div>
-                            <div class="stat-item">
-                                <i class="fas fa-map-marker-alt"></i>
-                                <span id="profileDistance">0 km away</span>
                             </div>
                         </div>
                     </div>

@@ -181,6 +181,18 @@ class ProviderController {
             }
             
             if ($provider) {
+                // Attach review data for repairers (review table is repairer-focused)
+                if ($providerType === 'individual') {
+                    $summary = $this->repairerModel->getReviewSummary($providerId);
+                    $provider['reviewCount'] = $summary['count'];
+                    // Prefer computed average if available
+                    $provider['ratings'] = $summary['average'];
+                    $provider['reviews'] = $this->repairerModel->getRecentReviews($providerId, 3);
+                } else {
+                    $provider['reviewCount'] = 0;
+                    $provider['reviews'] = [];
+                }
+
                 echo json_encode([
                     'success' => true,
                     'data' => $provider

@@ -294,6 +294,8 @@ const providerTabs = document.querySelectorAll('.provider-tab');
 // App + API paths
 const APP_BASE = '/2nd-Year-Group-Project/FixLanka';
 const PROVIDERS_API = `${APP_BASE}/api/providers.php`;
+const REPAIRERS_API = `${APP_BASE}/api/repairers.php`;
+const COMPANIES_API = `${APP_BASE}/api/companies.php`;
 // Backward-compat alias used in older parts of this file
 const API_BASE = APP_BASE;
 
@@ -753,17 +755,27 @@ function renderProviderCard(provider) {
         : generateAvatarInitials(provider.full_name || provider.name);
     
     // Determine provider type and display info
-    const providerType = provider.provider_type || 'individual';
+    const providerType = normalizeProviderType(provider.provider_type || 'individual');
     const providerName = provider.full_name || provider.name || 'Unknown';
     const providerTitle = provider.category_name || (providerType === 'company' ? 'Service Company' : 'Service Provider');
-    const rating = provider.ratings || 0;
-    const completedJobs = provider.completedJobsCount || 0;
+    const rating = Number(provider.ratings ?? provider.rating ?? 0);
+    const completedJobs = Number(provider.completedJobsCount ?? 0);
     const about = provider.about || provider.address || 'Professional service provider';
     const availability = provider.availability || 'available';
-    const serviceAreas = provider.districts || provider.address || 'Available in your area';
+    const serviceAreas = String(provider.districts || provider.address || 'Available in your area');
     
     // Provider ID and type for viewing details
     const providerId = providerType === 'individual' ? provider.repairer_id : provider.company_id;
+    const safeProviderId = Number(providerId);
+    if (DEBUG_PROFILE_FLOW) {
+        console.log('[ProfileFlow] renderProviderCard()', {
+            providerTypeRaw: provider.provider_type,
+            providerType,
+            providerId,
+            safeProviderId,
+            providerName
+        });
+    }
     
     card.innerHTML = `
         <div class="provider-header">
@@ -782,7 +794,7 @@ function renderProviderCard(provider) {
             <div class="stars">
                 ${generateStars(rating)}
             </div>
-            <span class="rating-text">${rating.toFixed(1)} ${completedJobs > 0 ? `(${completedJobs} jobs)` : ''}</span>
+            <span class="rating-text">${(Number.isFinite(rating) ? rating : 0).toFixed(1)} ${completedJobs > 0 ? `(${completedJobs} jobs)` : ''}</span>
         </div>
         
         <div class="provider-distance">
@@ -795,7 +807,7 @@ function renderProviderCard(provider) {
         </p>
         
         <div class="provider-actions">
-            <button class="view-profile-btn" onclick="viewProviderProfile(${providerId}, '${providerType}')">
+            <button class="view-profile-btn" data-provider-id="${escapeHtml(String(safeProviderId || ''))}" data-provider-type="${escapeHtml(providerType)}" onclick="viewProviderProfile(${safeProviderId || 'null'}, '${providerType}')">
                 <i class="fas fa-user"></i>
                 View Profile
             </button>
@@ -933,7 +945,7 @@ function renderCompanyCard(company) {
         <p class="company-description">${escapeHtml(String(description).substring(0, 140))}${String(description).length > 140 ? '...' : ''}</p>
 
         <div class="company-actions">
-            <button class="view-company-btn" onclick="viewProviderProfile(${company.company_id}, 'company')">
+            <button class="view-company-btn" data-provider-id="${escapeHtml(String(company.company_id ?? ''))}" data-provider-type="company" onclick="viewProviderProfile(${Number(company.company_id) || 'null'}, 'company')">
                 <i class="fas fa-building"></i>
                 View Company Details
             </button>
@@ -954,21 +966,203 @@ function resolveAssetUrl(path) {
     return `${APP_BASE}/${trimmed}`;
 }
 
+const DEBUG_PROFILE_FLOW = true;
+
+function normalizeProviderType(type) {
+    const value = String(type || '').trim().toLowerCase();
+    if (value === 'individual' || value === 'repairer' || value === 'repairers') return 'individual';
+    if (value === 'company' || value === 'companies') return 'company';
+    return value || 'individual';
+}
+
 // Unified handler used by cards; repairer popup is mock-based for now
 function viewProviderProfile(providerId, providerType) {
-    if (!providerId) return;
+    const normalizedType = normalizeProviderType(providerType);
+    const numericId = Number(providerId);
 
-    if (providerType === 'individual') {
+    if (DEBUG_PROFILE_FLOW) {
+        console.groupCollapsed('[ProfileFlow] viewProviderProfile()');
+        console.log('providerId (raw):', providerId);
+        console.log('providerType (raw):', providerType);
+        console.log('providerType (normalized):', normalizedType);
+        console.log('providerId (number):', numericId);
+        console.log('openRepairerProfile available:', typeof openRepairerProfile);
+        console.groupEnd();
+    }
+
+    if (!Number.isFinite(numericId) || numericId <= 0) {
+        console.error('[ProfileFlow] Invalid providerId, aborting:', providerId, providerType);
+        return;
+    }
+
+    if (normalizedType === 'individual') {
         if (typeof openRepairerProfile === 'function') {
-            openRepairerProfile(providerId);
+            openRepairerProfile(numericId);
         } else {
-            alert('Repairer profile popup is not available.');
+            console.error('[ProfileFlow] openRepairerProfile() is not available. Check script load order for repairer-profile-popup.js');
+            alert('Repairer profile popup is not available right now.');
         }
         return;
     }
 
-    // Company profile page/modal not implemented yet
-    alert(`Company profile view is not implemented yet.\n\nCompany ID: ${providerId}`);
+    openCompanyProfile(numericId);
+}
+
+// Make sure inline onclick can always find it
+window.viewProviderProfile = viewProviderProfile;
+
+// Defensive: handle clicks even if inline handlers break
+document.addEventListener('click', (e) => {
+    const btn = e.target?.closest?.('.view-profile-btn, .view-company-btn');
+    if (!btn) return;
+
+    // Prefer data-* if present
+    const dataId = btn.getAttribute('data-provider-id');
+    const dataType = btn.getAttribute('data-provider-type');
+
+    if (DEBUG_PROFILE_FLOW) {
+        console.log('[ProfileFlow] Click detected on view button', { dataId, dataType, className: btn.className });
+    }
+
+    if (dataId) {
+        e.preventDefault();
+        viewProviderProfile(dataId, dataType || (btn.classList.contains('view-company-btn') ? 'company' : 'individual'));
+    }
+});
+
+async function openCompanyProfile(companyId) {
+    // Remove any existing modal
+    const existing = document.getElementById('companyModal');
+    if (existing) existing.remove();
+
+    try {
+        const apiUrl = `${COMPANIES_API}?action=getDetails&id=${encodeURIComponent(companyId)}`;
+        const response = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json();
+        if (!result || !result.success || !result.data) throw new Error('Invalid response');
+
+        const c = result.data;
+        const name = c.name || 'Company';
+        const businessType = c.business_type || 'Service Company';
+        const rating = Number(c.ratings ?? 0);
+        const districts = c.districts || '';
+        const description = c.description || 'No description available.';
+        const contact = c.contact_no || 'N/A';
+        const email = c.email || 'N/A';
+        const website = c.website || 'N/A';
+        const address = c.address || 'N/A';
+
+        const services = String(businessType)
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean);
+
+        const modalHTML = `
+            <div class="company-modal-overlay" id="companyModal">
+                <div class="company-modal-container">
+                    <div class="company-modal-header">
+                        <div class="company-modal-logo">${generateAvatarInitials(name)}</div>
+                        <div class="company-modal-title-section">
+                            <h2 class="company-modal-title">${escapeHtml(name)}</h2>
+                            <p class="company-modal-type">${escapeHtml(businessType)}</p>
+                        </div>
+                        <button class="company-modal-close" onclick="closeCompanyModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="company-modal-content">
+                        <div class="company-modal-rating">
+                            <div class="stars">${generateStars(Number.isFinite(rating) ? rating : 0)}</div>
+                            <span class="rating-text">${(Number.isFinite(rating) ? rating : 0).toFixed(1)} / 5.0</span>
+                        </div>
+
+                        <div class="company-modal-info-grid">
+                            <div class="company-modal-info-item">
+                                <i class="fas fa-phone"></i>
+                                <div>
+                                    <span class="info-label">Contact</span>
+                                    <span class="info-value">${escapeHtml(contact)}</span>
+                                </div>
+                            </div>
+                            <div class="company-modal-info-item">
+                                <i class="fas fa-envelope"></i>
+                                <div>
+                                    <span class="info-label">Email</span>
+                                    <span class="info-value">${escapeHtml(email)}</span>
+                                </div>
+                            </div>
+                            <div class="company-modal-info-item">
+                                <i class="fas fa-globe"></i>
+                                <div>
+                                    <span class="info-label">Website</span>
+                                    <span class="info-value">${escapeHtml(website)}</span>
+                                </div>
+                            </div>
+                            <div class="company-modal-info-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <div>
+                                    <span class="info-label">Service Areas</span>
+                                    <span class="info-value">${escapeHtml(districts || 'N/A')}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="company-modal-section">
+                            <h3 class="modal-section-title"><i class="fas fa-location-dot"></i> Address</h3>
+                            <p class="company-modal-description">${escapeHtml(address)}</p>
+                        </div>
+
+                        <div class="company-modal-section">
+                            <h3 class="modal-section-title"><i class="fas fa-info-circle"></i> About Company</h3>
+                            <p class="company-modal-description">${escapeHtml(description)}</p>
+                        </div>
+
+                        ${services.length ? `
+                        <div class="company-modal-section">
+                            <h3 class="modal-section-title"><i class="fas fa-tools"></i> Services Offered</h3>
+                            <div class="company-modal-services">
+                                ${services.map(s =>
+                                    `<span class="modal-service-tag"><i class="fas fa-check-circle"></i> ${escapeHtml(s)}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="company-modal-actions">
+                            <button class="btn-primary" onclick="requestCompanyQuote(${companyId})">
+                                <i class="fas fa-file-invoice"></i>
+                                Request Quote
+                            </button>
+                            <button class="btn-secondary" onclick="contactCompany(${companyId})">
+                                <i class="fas fa-comment"></i>
+                                Message
+                            </button>
+                            <button class="btn-outline" onclick="closeCompanyModal()">
+                                <i class="fas fa-times"></i>
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+
+        const modal = document.getElementById('companyModal');
+        setTimeout(() => modal.classList.add('show'), 10);
+
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeCompanyModal();
+            }
+        });
+    } catch (error) {
+        console.error('Failed to load company profile:', error);
+        alert('Failed to load company details. Please try again.');
+    }
 }
 
 // View Company Details
@@ -1101,6 +1295,7 @@ function closeCompanyModal() {
         setTimeout(() => {
             modal.remove();
         }, 300);
+        document.body.style.overflow = '';
     }
 }
 
