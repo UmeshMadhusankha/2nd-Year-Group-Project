@@ -12,6 +12,9 @@ error_log("[API] REQUEST_URI: " . $_SERVER['REQUEST_URI']);
 
 session_start();
 
+error_log("[API] Session user_id: " . ($_SESSION['user_id'] ?? 'NOT SET'));
+error_log("[API] Session user_role: " . ($_SESSION['user_role'] ?? 'NOT SET'));
+
 require_once __DIR__ . '/../controllers/ContractController.php';
 
 header('Content-Type: application/json');
@@ -78,8 +81,44 @@ switch ($action) {
         $controller->getAcceptedProjects();
         break;
     
+    // PHASE 2: Quotation-based contract creation
+    case 'getAcceptedQuotations':
+        $controller->getAcceptedQuotations();
+        break;
+    
+    case 'autoCreateContracts':
+        $controller->autoCreateContracts();
+        break;
+    
+    case 'quotationSummary':
+        $controller->getQuotationSummary();
+        break;
+    
+    // PHASE 2A: Contract with milestones
+    case 'createContractWithMilestones':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->createContractWithMilestones();
+        break;
+    
+    case 'getContractWithMilestones':
+        $controller->getContractWithMilestones();
+        break;
+    
+    case 'sendToCustomer':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->sendToCustomer();
+        break;
+    
     default:
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Invalid action']);
+        echo json_encode(['success' => false, 'message' => 'Invalid action: ' . $action]);
         exit;
 }

@@ -69,6 +69,10 @@ switch ($request) {
     case '/payment':
         require_once __DIR__ . '/views/user/payment.php';
         break;
+
+    case '/my-contracts':
+        require_once __DIR__ . '/views/user/contracts.php';
+        break;
     
     case '/provider':
         require_once __DIR__ . '/views/user/provider.php';

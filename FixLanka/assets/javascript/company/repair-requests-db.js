@@ -717,6 +717,11 @@ function openQuotationModal(requestId) {
     quotationModal.classList.add('active');
     document.body.style.overflow = 'hidden';
 
+    // Initialize work schedule features after modal is shown
+    setTimeout(() => {
+        initializeWorkSchedule();
+    }, 100);
+
     // Show auto-fill notification
     showToast('Form auto-filled with available data. Please review and adjust as needed.', 'info', 3000);
 }
@@ -1718,3 +1723,278 @@ if (document.readyState === 'loading') {
     loadDirectRequests();
 }
 
+// ============================================================
+// ⭐ NEW: Work Schedule Management Functions
+// ============================================================
+
+/**
+ * Initialize work schedule features
+ * Sets up event listeners and default values for work schedule fields
+ */
+function initializeWorkSchedule() {
+    console.log('🔧 Initializing work schedule features...');
+    
+    // Auto-update working days based on schedule type
+    const scheduleTypeSelect = document.getElementById('work-schedule-type');
+    if (scheduleTypeSelect) {
+        scheduleTypeSelect.addEventListener('change', function() {
+            const scheduleType = this.value;
+            const workingDaysInput = document.getElementById('working-days-per-week');
+            const customScheduleRow = document.getElementById('custom-schedule-row');
+            const customScheduleField = document.getElementById('custom-schedule-details');
+            
+            switch(scheduleType) {
+                case 'weekdays_only':
+                    workingDaysInput.value = 5;
+                    customScheduleRow.style.display = 'none';
+                    customScheduleField.required = false;
+                    break;
+                case 'weekends_included':
+                    workingDaysInput.value = 6;
+                    customScheduleRow.style.display = 'none';
+                    customScheduleField.required = false;
+                    break;
+                case 'all_days':
+                    workingDaysInput.value = 7;
+                    customScheduleRow.style.display = 'none';
+                    customScheduleField.required = false;
+                    break;
+                case 'custom':
+                    customScheduleRow.style.display = 'block';
+                    customScheduleField.required = true;
+                    break;
+            }
+            
+            // Recalculate total hours and update preview
+            calculateTotalWorkHours();
+            updateSchedulePreview();
+        });
+    }
+    
+    // Show/hide overtime rate field
+    const overtimeCheckbox = document.getElementById('overtime-available');
+    if (overtimeCheckbox) {
+        overtimeCheckbox.addEventListener('change', function() {
+            const overtimeRateRow = document.getElementById('overtime-rate-row');
+            const overtimeRateField = document.getElementById('overtime-rate');
+            
+            if (this.checked) {
+                overtimeRateRow.style.display = 'block';
+                overtimeRateField.required = true;
+            } else {
+                overtimeRateRow.style.display = 'none';
+                overtimeRateField.required = false;
+                overtimeRateField.value = '';
+            }
+            
+            updateSchedulePreview();
+        });
+    }
+    
+    // Auto-calculate total work hours when relevant fields change
+    const fieldsForCalculation = ['estimated-duration', 'working-days-per-week', 'daily-work-hours'];
+    fieldsForCalculation.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', calculateTotalWorkHours);
+        }
+    });
+    
+    // Update preview when any schedule field changes
+    const fieldsForPreview = [
+        'work-schedule-type', 'working-days-per-week', 'daily-work-hours',
+        'work-start-time', 'work-end-time', 'overtime-available', 'overtime-rate'
+    ];
+    fieldsForPreview.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('change', updateSchedulePreview);
+            field.addEventListener('input', updateSchedulePreview);
+        }
+    });
+    
+    // Initial calculation and preview
+    calculateTotalWorkHours();
+    updateSchedulePreview();
+    
+    console.log('✅ Work schedule features initialized');
+}
+
+/**
+ * Calculate total work hours based on duration, working days, and daily hours
+ * Also auto-populates the hourly labor "Number of Hours" field
+ */
+function calculateTotalWorkHours() {
+    const estimatedDuration = parseFloat(document.getElementById('estimated-duration')?.value) || 0;
+    const workingDaysPerWeek = parseFloat(document.getElementById('working-days-per-week')?.value) || 5;
+    const dailyWorkHours = parseFloat(document.getElementById('daily-work-hours')?.value) || 8;
+    
+    const totalHoursField = document.getElementById('total-work-hours');
+    const laborHoursField = document.getElementById('labor-quantity'); // Hourly labor pricing field
+    
+    if (estimatedDuration > 0 && totalHoursField) {
+        // Convert calendar days to work days
+        // Formula: (calendar_days / 7) * working_days_per_week * hours_per_day
+        const weeksNeeded = Math.ceil(estimatedDuration / 7);
+        const totalWorkDays = weeksNeeded * workingDaysPerWeek;
+        const totalHours = (totalWorkDays * dailyWorkHours).toFixed(2);
+        
+        // Update work schedule total hours
+        totalHoursField.value = totalHours;
+        
+        // 💡 Auto-populate hourly labor "Number of Hours" field
+        if (laborHoursField) {
+            laborHoursField.value = totalHours;
+            // Trigger change event to recalculate labor cost
+            laborHoursField.dispatchEvent(new Event('input', { bubbles: true }));
+            console.log(`� Auto-filled hourly labor hours: ${totalHours}`);
+        }
+        
+        console.log(`�📊 Total work hours calculated: ${totalHours} (${weeksNeeded} weeks × ${workingDaysPerWeek} days × ${dailyWorkHours} hrs)`);
+    } else if (totalHoursField) {
+        totalHoursField.value = '';
+        if (laborHoursField) {
+            laborHoursField.value = '';
+        }
+    }
+}
+
+/**
+ * Update the schedule preview display
+ */
+function updateSchedulePreview() {
+    const scheduleType = document.getElementById('work-schedule-type')?.value;
+    const workingDays = document.getElementById('working-days-per-week')?.value;
+    const dailyHours = document.getElementById('daily-work-hours')?.value;
+    const startTime = document.getElementById('work-start-time')?.value;
+    const endTime = document.getElementById('work-end-time')?.value;
+    const totalHours = document.getElementById('total-work-hours')?.value;
+    const overtimeAvailable = document.getElementById('overtime-available')?.checked;
+    const overtimeRate = document.getElementById('overtime-rate')?.value;
+    
+    const previewContent = document.getElementById('schedule-preview-content');
+    
+    if (!previewContent) return;
+    
+    // If no data yet, show placeholder
+    if (!scheduleType || !workingDays || !dailyHours) {
+        previewContent.innerHTML = `
+            <p class="text-muted">
+                <i class="fas fa-arrow-up"></i> Fill in the fields above to see your work schedule preview
+            </p>
+        `;
+        return;
+    }
+    
+    // Schedule type names
+    const scheduleNames = {
+        'weekdays_only': 'Weekdays Only (Monday - Friday)',
+        'weekends_included': 'Weekends Included (Monday - Saturday)',
+        'all_days': 'All 7 Days per Week',
+        'custom': 'Custom Schedule'
+    };
+    
+    // Build preview HTML
+    let html = `<div class="schedule-summary">`;
+    
+    // Schedule Type
+    html += `
+        <div class="schedule-item">
+            <i class="fas fa-calendar-week"></i>
+            <div>
+                <strong>Schedule:</strong> ${scheduleNames[scheduleType] || scheduleType}
+            </div>
+        </div>
+    `;
+    
+    // Working Days
+    html += `
+        <div class="schedule-item">
+            <i class="fas fa-business-time"></i>
+            <div>
+                <strong>Working Days:</strong> ${workingDays} days per week
+            </div>
+        </div>
+    `;
+    
+    // Daily Hours
+    html += `
+        <div class="schedule-item">
+            <i class="fas fa-clock"></i>
+            <div>
+                <strong>Daily Hours:</strong> ${parseFloat(dailyHours).toFixed(1)} hours/day
+            </div>
+        </div>
+    `;
+    
+    // Work Time
+    if (startTime && endTime) {
+        html += `
+            <div class="schedule-item">
+                <i class="fas fa-stopwatch"></i>
+                <div>
+                    <strong>Work Time:</strong> ${formatTime(startTime)} - ${formatTime(endTime)}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Total Hours
+    if (totalHours) {
+        html += `
+            <div class="schedule-item">
+                <i class="fas fa-calculator"></i>
+                <div>
+                    <strong>Total Project Hours:</strong> <span class="highlight">${parseFloat(totalHours).toFixed(2)} hours</span>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Overtime
+    if (overtimeAvailable) {
+        const rateText = overtimeRate ? `LKR ${parseFloat(overtimeRate).toLocaleString('en-US', {minimumFractionDigits: 2})}` : '(not set)';
+        html += `
+            <div class="schedule-item overtime-info">
+                <i class="fas fa-plus-circle"></i>
+                <div>
+                    <strong>Overtime:</strong> Available at ${rateText}/hour
+                </div>
+            </div>
+        `;
+    }
+    
+    html += `</div>`;
+    
+    previewContent.innerHTML = html;
+}
+
+/**
+ * Format time for display (e.g., 08:00 -> 8:00 AM)
+ * @param {string} timeString - Time in HH:MM format
+ * @returns {string} Formatted time string
+ */
+function formatTime(timeString) {
+    if (!timeString) return '';
+    
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour === 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    
+    return `${displayHour}:${minutes} ${ampm}`;
+}
+
+// ============================================================
+// Initialize Work Schedule on Page Load
+// ============================================================
+
+// Add work schedule initialization to existing DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit to ensure form is fully loaded
+    setTimeout(() => {
+        initializeWorkSchedule();
+    }, 500);
+});
+
+console.log('📅 Work schedule module loaded');

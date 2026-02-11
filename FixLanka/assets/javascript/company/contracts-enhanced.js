@@ -15,7 +15,379 @@ let editingContract = null;
 document.addEventListener('DOMContentLoaded', function() {
     initializeContractsPage();
     loadContractsData();
+    
+    // PHASE 2: Initialize quotation selector when New Contract modal opens
+    setupNewContractModalListener();
 });
+
+/**
+ * PHASE 2: Setup listener for New Contract button
+ */
+function setupNewContractModalListener() {
+    // Wait a bit for the page to fully load
+    setTimeout(() => {
+        const newContractBtn = document.getElementById('newContractBtn') || 
+                               document.querySelector('[onclick*="newContract"]') ||
+                               document.querySelector('.btn-primary');
+        
+        if (newContractBtn) {
+            console.log('✅ Found New Contract button, adding listener');
+            newContractBtn.addEventListener('click', function() {
+                // Small delay to let modal open
+                setTimeout(() => {
+                    initializeQuotationSelectorForContractForm();
+                }, 300);
+            });
+        } else {
+            console.log('⚠️ New Contract button not found yet, will try on modal open');
+        }
+    }, 1000);
+}
+
+/**
+ * PHASE 2: Initialize quotation selector in contract creation form
+ */
+async function initializeQuotationSelectorForContractForm() {
+    // Check if selector exists (modal is open)
+    const selector = document.getElementById('quotationSelector');
+    if (!selector) {
+        console.log('ℹ️ Quotation selector not found - modal not open yet');
+        return;
+    }
+    
+    // Check if already populated
+    if (selector.options.length > 1) {
+        console.log('ℹ️ Quotation selector already populated');
+        return;
+    }
+    
+    try {
+        console.log('🔄 Loading accepted quotations for contract creation...');
+        
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=getAcceptedQuotations');
+        
+        if (!response.ok) {
+            console.log('❌ API returned error:', response.status);
+            return;
+        }
+        
+        const result = await response.json();
+        console.log('📊 Accepted quotations:', result);
+        
+        if (result.success && result.data && result.data.length > 0) {
+            populateQuotationSelector(result.data);
+            updateQuotationBadge(result.data.length);
+        } else {
+            updateQuotationBadge(0);
+        }
+    } catch (error) {
+        console.error('❌ Error loading quotations:', error);
+        updateQuotationBadge(0, true);
+    }
+}
+
+/**
+ * Populate the quotation selector dropdown
+ */
+function populateQuotationSelector(quotations) {
+    const selector = document.getElementById('quotationSelector');
+    if (!selector) return;
+    
+    // Clear existing options (except first one)
+    selector.innerHTML = '<option value="">-- Select Accepted Quotation or Create Manually --</option>';
+    
+    quotations.forEach(q => {
+        const option = document.createElement('option');
+        option.value = q.quotation_id;
+        option.textContent = `${q.title} - LKR ${parseFloat(q.total_amount).toLocaleString()} (${q.customer_fname} ${q.customer_lname})`;
+        option.dataset.quotation = JSON.stringify(q);
+        selector.appendChild(option);
+    });
+    
+    // Add event listeners
+    selector.addEventListener('change', handleQuotationSelectionChange);
+}
+
+/**
+ * Update quotation count badge
+ */
+function updateQuotationBadge(count, isError = false) {
+    const badge = document.getElementById('quotationCountBadge');
+    if (!badge) return;
+    
+    if (isError) {
+        badge.textContent = 'Error';
+        badge.style.background = '#f44336';
+    } else if (count > 0) {
+        badge.textContent = `${count} available`;
+        badge.style.background = '#4caf50';
+    } else {
+        badge.textContent = 'None available';
+        badge.style.background = '#999';
+    }
+}
+
+/**
+ * Handle quotation selection from dropdown
+ */
+function handleQuotationSelectionChange(event) {
+    const selected = event.target.options[event.target.selectedIndex];
+    
+    if (!selected.value) {
+        // Hide preview if nothing selected
+        const preview = document.getElementById('quotationPreviewCard');
+        if (preview) preview.style.display = 'none';
+        return;
+    }
+    
+    try {
+        const quotation = JSON.parse(selected.dataset.quotation);
+        console.log('✅ Quotation selected:', quotation);
+        
+        // Show preview
+        showQuotationPreview(quotation);
+        
+        // Auto-fill form fields
+        autoFillContractForm(quotation);
+        
+    } catch (error) {
+        console.error('Error parsing quotation data:', error);
+    }
+}
+
+/**
+ * Show quotation preview card
+ */
+function showQuotationPreview(q) {
+    const preview = document.getElementById('quotationPreviewCard');
+    if (!preview) return;
+    
+    preview.innerHTML = `
+        <h4 style="margin: 0 0 15px 0; color: #2e7d32; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-check-circle"></i> 
+            <span>Selected: ${escapeHtml(q.title)}</span>
+        </h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; font-size: 13px; margin-bottom: 15px;">
+            <div><strong>Customer:</strong> ${escapeHtml(q.customer_fname)} ${escapeHtml(q.customer_lname)}</div>
+            <div><strong>Amount:</strong> LKR ${parseFloat(q.total_amount).toLocaleString()}</div>
+            <div><strong>Budget Type:</strong> ${q.budget_type ? q.budget_type.toUpperCase() : 'Fixed'}</div>
+            <div><strong>Payment:</strong> ${formatPaymentMethod(q.payment_method)}</div>
+            <div><strong>Pricing:</strong> ${q.pricing_type ? (q.pricing_type === 'time_and_material' ? 'Time & Material' : 'Fixed Price') : 'Fixed Price'}</div>
+            <div><strong>Duration:</strong> ${q.estimated_duration || 'TBD'} days</div>
+        </div>
+        <div style="padding: 12px; background: #fff3cd; border-radius: 6px; font-size: 12px; color: #856404;">
+            <i class="fas fa-info-circle"></i> <strong>Form will be auto-filled.</strong> 
+            Review all fields in the next steps and modify if needed.
+        </div>
+    `;
+    preview.style.display = 'block';
+}
+
+/**
+ * Auto-fill contract form with quotation data
+ */
+function autoFillContractForm(q) {
+    console.log('🔄 Auto-filling form with quotation data...');
+    
+    // Store quotation ID in hidden field
+    setFieldValue('selectedQuotationId', q.quotation_id);
+    setFieldValue('selectedRequestId', q.request_id);
+    setFieldValue('customerId', q.customer_id);
+    
+    // Step 2: Client & Project Information
+    setFieldValue('clientName', `${q.customer_fname} ${q.customer_lname}`);
+    setFieldValue('clientEmail', q.customer_email);
+    setFieldValue('clientPhone', q.customer_phone || '');
+    setFieldValue('projectTitle', q.title);
+    setFieldValue('projectType', q.request_title || 'Service Request');
+    setFieldValue('projectLocation', q.location || '');
+    setFieldValue('projectDescription', q.description || q.request_title || '');
+    
+    // Step 3: Financial Terms (Phase 1 Business Logic)
+    setFieldValue('contractValue', q.total_amount);
+    setFieldValue('budgetType', q.budget_type || 'fixed');
+    setFieldValue('budgetMin', q.budget_min || '');
+    setFieldValue('budgetMax', q.budget_max || '');
+    setFieldValue('paymentMethod', q.payment_method || 'full_upfront');
+    setFieldValue('pricingType', q.pricing_type || 'fixed_price');
+    setFieldValue('hourlyRate', q.hourly_rate || '');
+    
+    // Calculate spending cap for Time & Material
+    if (q.pricing_type === 'time_and_material') {
+        const cap = parseFloat(q.total_amount) * (q.spending_cap_multiplier || 1.10);
+        setFieldValue('spendingCap', cap.toFixed(2));
+    }
+    
+    // Timeline
+    setFieldValue('startDate', q.start_date || '');
+    setFieldValue('endDate', q.completion_date || '');
+    setFieldValue('estimatedDuration', q.estimated_duration || '');
+    
+    // Additional Terms
+    setFieldValue('warrantyPeriod', q.warranty_period || '');
+    setFieldValue('paymentTermsText', q.payment_terms || '');
+    setFieldValue('additionalTerms', q.additional_terms || '');
+    
+    // Trigger change events to update UI
+    triggerFormCalculations();
+    
+    console.log('✅ Form auto-filled successfully');
+}
+
+/**
+ * Helper: Set form field value safely
+ */
+function setFieldValue(fieldId, value) {
+    const field = document.getElementById(fieldId) || document.querySelector(`[name="${fieldId}"]`);
+    if (field && value !== null && value !== undefined && value !== '') {
+        field.value = value;
+        field.dispatchEvent(new Event('change', { bubbles: true }));
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+}
+
+/**
+ * Trigger form calculations for budget ranges, spending cap, etc.
+ */
+function triggerFormCalculations() {
+    // Trigger budget type change to show/hide budget range fields
+    const budgetTypeField = document.getElementById('budgetType');
+    if (budgetTypeField) {
+        handleBudgetTypeChange({ target: budgetTypeField });
+    }
+    
+    // Trigger pricing type change to show/hide hourly rate fields
+    const pricingTypeField = document.getElementById('pricingType');
+    if (pricingTypeField) {
+        handlePricingTypeChange({ target: pricingTypeField });
+    }
+    
+    // Calculate duration
+    calculateDuration();
+}
+
+/**
+ * Format payment method for display
+ */
+function formatPaymentMethod(method) {
+    const methods = {
+        'full_upfront': 'Full Upfront',
+        'milestone_based': 'Milestone Based',
+        '50_50': '50/50 Split',
+        '30_70': '30/70 Split',
+        'completion': 'After Completion'
+    };
+    return methods[method] || method;
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Handle budget type change (show/hide budget range)
+ */
+function handleBudgetTypeChange(event) {
+    const budgetType = event.target.value;
+    const minGroup = document.getElementById('budgetMinGroup');
+    const maxGroup = document.getElementById('budgetMaxGroup');
+    const contractValue = parseFloat(document.getElementById('contractValue')?.value || 0);
+    
+    if (budgetType === 'flexible' && contractValue > 0) {
+        if (minGroup) minGroup.style.display = 'block';
+        if (maxGroup) maxGroup.style.display = 'block';
+        
+        // Calculate and set budget range
+        setFieldValue('budgetMin', (contractValue * 0.9).toFixed(2));
+        setFieldValue('budgetMax', (contractValue * 1.1).toFixed(2));
+    } else {
+        if (minGroup) minGroup.style.display = 'none';
+        if (maxGroup) maxGroup.style.display = 'none';
+        setFieldValue('budgetMin', '');
+        setFieldValue('budgetMax', '');
+    }
+}
+
+/**
+ * Handle pricing type change (show/hide hourly rate)
+ */
+function handlePricingTypeChange(event) {
+    const pricingType = event.target.value;
+    const hourlyGroup = document.getElementById('hourlyRateGroup');
+    const capGroup = document.getElementById('spendingCapGroup');
+    
+    if (pricingType === 'time_and_material') {
+        if (hourlyGroup) hourlyGroup.style.display = 'block';
+        if (capGroup) capGroup.style.display = 'block';
+        
+        // Calculate spending cap
+        const contractValue = parseFloat(document.getElementById('contractValue')?.value || 0);
+        if (contractValue > 0) {
+            setFieldValue('spendingCap', (contractValue * 1.1).toFixed(2));
+        }
+    } else {
+        if (hourlyGroup) hourlyGroup.style.display = 'none';
+        if (capGroup) capGroup.style.display = 'none';
+        setFieldValue('hourlyRate', '');
+        setFieldValue('spendingCap', '');
+    }
+}
+
+/**
+ * Calculate duration between start and end dates
+ */
+function calculateDuration() {
+    const startDate = document.getElementById('startDate')?.value;
+    const endDate = document.getElementById('endDate')?.value;
+    
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        setFieldValue('estimatedDuration', diffDays);
+    }
+}
+
+// Add event listeners for budget and pricing type changes
+document.addEventListener('DOMContentLoaded', function() {
+    const budgetTypeField = document.getElementById('budgetType');
+    if (budgetTypeField) {
+        budgetTypeField.addEventListener('change', handleBudgetTypeChange);
+    }
+    
+    const pricingTypeField = document.getElementById('pricingType');
+    if (pricingTypeField) {
+        pricingTypeField.addEventListener('change', handlePricingTypeChange);
+    }
+    
+    const startDateField = document.getElementById('startDate');
+    const endDateField = document.getElementById('endDate');
+    if (startDateField) startDateField.addEventListener('change', calculateDuration);
+    if (endDateField) endDateField.addEventListener('change', calculateDuration);
+    
+    // Recalculate budget range when contract value changes
+    const contractValueField = document.getElementById('contractValue');
+    if (contractValueField) {
+        contractValueField.addEventListener('input', function() {
+            const budgetTypeField = document.getElementById('budgetType');
+            if (budgetTypeField && budgetTypeField.value === 'flexible') {
+                handleBudgetTypeChange({ target: budgetTypeField });
+            }
+        });
+    }
+});
+
+/**
+ * REMOVED: Auto-create contracts function
+ * Reason: New approach - manual creation with auto-fill
+ */
+// async function autoCreateContractsFromQuotations() { ... } // REMOVED
 
 function initializeContractsPage() {
     initializeFilters();
@@ -190,12 +562,12 @@ function renderContracts(contracts) {
 }
 
 function createContractCard(contract) {
-    const statusClass = contract.status.toLowerCase();
-    const statusIcon = getStatusIcon(statusClass);
-    const statusText = contract.status.charAt(0).toUpperCase() + contract.status.slice(1);
+    const statusClass = contract.status.toLowerCase().replace('_', '-');
+    const statusIcon = getStatusIcon(contract.status.toLowerCase());
+    const statusText = formatStatusText(contract.status);
     
     // Get initials from client name
-    const initials = contract.client_name.split(' ').map(word => word[0]).join('').toUpperCase();
+    const initials = contract.client_name.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2);
     
     // Format currency
     const formattedValue = formatCurrency(contract.value);
@@ -203,96 +575,256 @@ function createContractCard(contract) {
     // Format dates
     const startDate = formatDate(contract.start_date);
     const endDate = formatDate(contract.end_date);
+    const createdDate = formatDate(contract.contract_date);
     
-    // Progress bar (if progress exists)
-    let progressHTML = '';
-    if (contract.progress !== undefined && contract.progress !== null) {
-        progressHTML = `
-            <div class="detail-row">
-                <i class="fas fa-chart-line detail-icon"></i>
-                <span class="detail-label">Progress:</span>
-                <div class="progress-container">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${contract.progress}%"></div>
-                    </div>
-                    <span class="progress-text">${contract.progress}%</span>
-                </div>
-            </div>
-        `;
-    }
+    // Calculate days remaining
+    const daysInfo = getDaysInfo(contract.start_date, contract.end_date, contract.status);
+    
+    // Customer response badge
+    const responseBadge = getCustomerResponseBadge(contract);
+    
+    // Payment method label
+    const paymentLabel = formatPaymentMethod(contract.payment_method);
+    
+    // Progress
+    const progress = contract.progress || 0;
+    
+    // Type badge
+    const typeLabel = contract.type ? contract.type.charAt(0).toUpperCase() + contract.type.slice(1) : 'General';
+    
+    // Build action buttons based on status
+    const actions = buildCardActions(contract);
     
     return `
         <div class="contract-card" data-status="${statusClass}" data-type="${contract.type || 'general'}" data-contract-id="${contract.contract_id}">
-            <div class="contract-header">
-                <div class="contract-info">
-                    <h3>${escapeHtml(contract.title)}</h3>
-                    <p class="contract-id">${contract.contract_number}</p>
-                </div>
-                <div class="contract-status ${statusClass}">
+            <div class="card-top-row">
+                <div class="card-type-badge">${typeLabel}</div>
+                <div class="card-status-badge ${statusClass}">
                     <i class="${statusIcon}"></i>
-                    ${statusText}
+                    <span>${statusText}</span>
+                </div>
+            </div>
+            
+            <div class="card-title-section">
+                <div class="card-title-row">
+                    <h3 class="card-title">${escapeHtml(contract.title)}</h3>
+                    <div class="card-status-inline card-status-badge ${statusClass}">
+                        <i class="${statusIcon}"></i>
+                        <span>${statusText}</span>
+                    </div>
+                </div>
+                <span class="card-contract-number">${contract.contract_number}</span>
+            </div>
+
+            <div class="card-client-row">
+                <div class="card-client-avatar">${initials}</div>
+                <div class="card-client-info">
+                    <span class="card-client-name">${escapeHtml(contract.client_name)}</span>
+                    <span class="card-client-email">${escapeHtml(contract.client_email || '')}</span>
+                </div>
+                <div class="card-value-badge">${formattedValue}</div>
+            </div>
+
+            <div class="card-meta-grid">
+                <div class="card-meta-item">
+                    <i class="fas fa-calendar-plus"></i>
+                    <div>
+                        <span class="meta-label">Start</span>
+                        <span class="meta-value">${startDate}</span>
+                    </div>
+                </div>
+                <div class="card-meta-item">
+                    <i class="fas fa-calendar-check"></i>
+                    <div>
+                        <span class="meta-label">End</span>
+                        <span class="meta-value">${endDate}</span>
+                    </div>
+                </div>
+                <div class="card-meta-item">
+                    <i class="fas fa-credit-card"></i>
+                    <div>
+                        <span class="meta-label">Payment</span>
+                        <span class="meta-value">${paymentLabel}</span>
+                    </div>
+                </div>
+                <div class="card-meta-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <div>
+                        <span class="meta-label">Location</span>
+                        <span class="meta-value">${escapeHtml(contract.location || 'N/A')}</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="client-info">
-                <div class="client-avatar">${initials}</div>
-                <div class="client-details">
-                    <h4>${escapeHtml(contract.client_name)}</h4>
-                    <p>Client</p>
-                    <span class="contract-value">${formattedValue}</span>
+            <div class="card-progress-section">
+                <div class="card-progress-header">
+                    <span class="card-progress-label">Progress</span>
+                    <span class="card-progress-value">${progress}%</span>
+                </div>
+                <div class="card-progress-track">
+                    <div class="card-progress-fill" style="width: ${progress}%"></div>
+                </div>
+                <div class="card-progress-footer">
+                    <span class="card-days-info"><i class="${daysInfo.icon}"></i> ${daysInfo.text}</span>
                 </div>
             </div>
 
-            <div class="contract-details">
-                <div class="detail-row">
-                    <i class="fas fa-calendar-alt detail-icon"></i>
-                    <span class="detail-label">Start Date:</span>
-                    <span class="detail-value">${startDate}</span>
-                </div>
-                <div class="detail-row">
-                    <i class="fas fa-calendar-check detail-icon"></i>
-                    <span class="detail-label">End Date:</span>
-                    <span class="detail-value">${endDate}</span>
-                </div>
-                ${progressHTML}
-            </div>
-
-            <div class="contract-description">
-                <p>${escapeHtml(contract.description || 'No description available.')}</p>
-            </div>
-
-            <div class="card-actions">
-                <button class="action-btn primary view-contract-btn" data-contract-id="${contract.contract_id}" title="View Details">
-                    <i class="fas fa-eye"></i>
-                    View Details
-                </button>
-                <button class="action-btn secondary edit-contract-btn" data-contract-id="${contract.contract_id}" title="Edit Contract">
-                    <i class="fas fa-edit"></i>
-                    Edit
-                </button>
-                <button class="action-btn danger delete-contract-btn" data-contract-id="${contract.contract_id}" title="Delete Contract">
-                    <i class="fas fa-trash"></i>
-                    Delete
-                </button>
-                <button class="action-btn secondary download-contract-btn" data-contract-id="${contract.contract_id}" title="Download Contract">
-                    <i class="fas fa-download"></i>
-                    Download
-                </button>
+            <div class="card-actions-row">
+                ${actions}
             </div>
         </div>
     `;
 }
 
+function formatStatusText(status) {
+    const map = {
+        'draft': 'Draft',
+        'sent': 'Sent',
+        'active': 'Active',
+        'in_progress': 'In Progress',
+        'milestone_pending': 'Milestone Pending',
+        'completed': 'Completed',
+        'terminated': 'Terminated',
+        'disputed': 'Disputed'
+    };
+    return map[status] || status.charAt(0).toUpperCase() + status.slice(1);
+}
+
 function getStatusIcon(status) {
     const icons = {
-        'active': 'fas fa-play-circle',
-        'pending': 'fas fa-clock',
-        'completed': 'fas fa-check-circle',
         'draft': 'fas fa-file-alt',
+        'sent': 'fas fa-paper-plane',
+        'active': 'fas fa-play-circle',
+        'in_progress': 'fas fa-hard-hat',
+        'milestone_pending': 'fas fa-tasks',
+        'completed': 'fas fa-check-circle',
         'terminated': 'fas fa-ban',
-        'rejected': 'fas fa-times-circle'
+        'disputed': 'fas fa-exclamation-triangle'
     };
     return icons[status] || 'fas fa-file-contract';
+}
+
+function getDaysInfo(startDate, endDate, status) {
+    if (!endDate) return { text: 'No deadline', icon: 'fas fa-infinity' };
+    
+    const now = new Date();
+    const end = new Date(endDate);
+    const start = new Date(startDate);
+    const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+    
+    if (status === 'completed') {
+        return { text: 'Completed', icon: 'fas fa-check' };
+    }
+    if (status === 'cancelled' || status === 'terminated') {
+        return { text: 'Closed', icon: 'fas fa-ban' };
+    }
+    if (diffDays < 0) {
+        return { text: `${Math.abs(diffDays)}d overdue`, icon: 'fas fa-exclamation-triangle' };
+    }
+    if (diffDays === 0) {
+        return { text: 'Due today', icon: 'fas fa-bell' };
+    }
+    if (diffDays <= 7) {
+        return { text: `${diffDays}d remaining`, icon: 'fas fa-clock' };
+    }
+    return { text: `${diffDays}d remaining`, icon: 'far fa-clock' };
+}
+
+function getCustomerResponseBadge(contract) {
+    if (!contract.sent_to_customer) return '';
+    
+    const responseMap = {
+        'accepted': '<span class="card-response-badge accepted"><i class="fas fa-check-circle"></i> Accepted</span>',
+        'rejected': '<span class="card-response-badge rejected"><i class="fas fa-times-circle"></i> Rejected</span>',
+        'negotiating': '<span class="card-response-badge negotiating"><i class="fas fa-comments"></i> Negotiating</span>',
+        'pending': '<span class="card-response-badge pending-response"><i class="fas fa-paper-plane"></i> Sent</span>'
+    };
+    
+    return responseMap[contract.customer_response] || responseMap['pending'];
+}
+
+function formatPaymentMethod(method) {
+    const map = {
+        'full_upfront': 'Full Upfront',
+        'milestone_based': 'Milestone',
+        '50_50': '50/50 Split',
+        '30_70': '30/70 Split',
+        'completion': 'On Completion'
+    };
+    return map[method] || 'Standard';
+}
+
+function buildCardActions(contract) {
+    let html = '';
+    const id = contract.contract_id;
+    const status = contract.status || 'draft';
+    const isSent = contract.sent_to_customer == 1;
+    
+    // 1) Send / Chat — primary visible button
+    if (!isSent) {
+        html += `<button class="card-action-btn card-action-send send-contract-btn" data-contract-id="${id}" title="Send to Customer">
+            <i class="fas fa-paper-plane"></i>
+        </button>`;
+    } else {
+        html += `<button class="card-action-btn card-action-chat chat-contract-btn" data-contract-id="${id}" title="Chat / Negotiate">
+            <i class="fas fa-comments"></i>
+        </button>`;
+    }
+    
+    // 2) Edit — visible button (only for draft/sent)
+    if (['draft', 'sent'].includes(status)) {
+        html += `<button class="card-action-btn edit-contract-btn" data-contract-id="${id}" title="Edit Contract">
+            <i class="fas fa-edit"></i>
+        </button>`;
+    }
+    
+    // 3) More menu (⋮) — contains all other actions
+    html += `<button class="card-action-btn card-action-more more-menu-btn" data-contract-id="${id}" title="More Options">
+        <i class="fas fa-ellipsis-v"></i>
+    </button>`;
+    
+    // Dropdown menu items
+    html += `<div class="card-action-menu" id="cardMenu-${id}">`;
+    html += `<a class="card-menu-item view-contract-btn" data-contract-id="${id}"><i class="fas fa-eye"></i> View Details</a>`;
+    html += `<a class="card-menu-item download-contract-btn" data-contract-id="${id}"><i class="fas fa-download"></i> Download PDF</a>`;
+    if (['active', 'sent'].includes(status)) {
+        html += `<a class="card-menu-item terminate-contract-btn" data-contract-id="${id}"><i class="fas fa-times-circle"></i> Cancel Contract</a>`;
+    }
+    if (status === 'draft') {
+        html += `<a class="card-menu-item delete-contract-btn" data-contract-id="${id}"><i class="fas fa-trash-alt"></i> Delete</a>`;
+    }
+    html += `</div>`;
+    
+    return html;
+}
+
+function toggleCardMenu(event, contractId) {
+    event.stopPropagation();
+    event.preventDefault();
+    
+    // Close all other menus first
+    document.querySelectorAll('.card-action-menu.active').forEach(menu => {
+        menu.classList.remove('active');
+    });
+    
+    const menu = document.getElementById(`cardMenu-${contractId}`);
+    if (menu) {
+        menu.classList.toggle('active');
+    }
+}
+
+// Close card menus when clicking anywhere outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.card-action-more') && !e.target.closest('.more-menu-btn') && !e.target.closest('.card-action-menu')) {
+        document.querySelectorAll('.card-action-menu.active').forEach(m => m.classList.remove('active'));
+    }
+});
+
+function handleTerminateContract(contractId) {
+    if (confirm('Are you sure you want to cancel this contract? This action cannot be undone.')) {
+        // TODO: Implement cancel contract API call
+        alert('Cancel Contract — This feature will be available soon.');
+    }
 }
 
 function showLoadMoreButton() {
@@ -347,19 +879,40 @@ function escapeHtml(text) {
 
 async function updateContractStats() {
     try {
+        // Calculate stats from local data if available
+        if (contractsData && contractsData.length > 0) {
+            const active = contractsData.filter(c => c.status === 'active').length;
+            const draft = contractsData.filter(c => ['draft', 'sent'].includes(c.status)).length;
+            const completed = contractsData.filter(c => c.status === 'completed').length;
+            const totalValue = contractsData.reduce((sum, c) => sum + (parseFloat(c.value) || 0), 0);
+            
+            const elActive = document.getElementById('statActive');
+            const elDraft = document.getElementById('statDraft');
+            const elCompleted = document.getElementById('statCompleted');
+            const elTotal = document.getElementById('statTotal');
+            
+            if (elActive) elActive.textContent = active;
+            if (elDraft) elDraft.textContent = draft;
+            if (elCompleted) elCompleted.textContent = completed;
+            if (elTotal) elTotal.textContent = formatCurrency(totalValue);
+            return;
+        }
+        
+        // Fallback: fetch from API
         const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=stats');
         const result = await response.json();
         
         if (result.success && result.data) {
             const stats = result.data;
-            const statItems = document.querySelectorAll('.quick-stats .stat-item');
+            const elActive = document.getElementById('statActive');
+            const elDraft = document.getElementById('statDraft');
+            const elCompleted = document.getElementById('statCompleted');
+            const elTotal = document.getElementById('statTotal');
             
-            if (statItems.length >= 4) {
-                statItems[0].querySelector('.stat-value').textContent = stats.active || 0;
-                statItems[1].querySelector('.stat-value').textContent = stats.draft + stats.draft || 0;
-                statItems[2].querySelector('.stat-value').textContent = stats.completed || 0;
-                statItems[3].querySelector('.stat-value').textContent = formatCurrency(stats.total_value || 0);
-            }
+            if (elActive) elActive.textContent = stats.active || 0;
+            if (elDraft) elDraft.textContent = (stats.draft || 0) + (stats.pending || 0);
+            if (elCompleted) elCompleted.textContent = stats.completed || 0;
+            if (elTotal) elTotal.textContent = formatCurrency(stats.total_value || 0);
         }
     } catch (error) {
         console.error('Error updating stats:', error);
@@ -369,12 +922,13 @@ async function updateContractStats() {
 function extractContractData(card, id) {
     // This function is now deprecated as we load from API
     // Kept for backwards compatibility
-    const title = card.querySelector('.contract-info h3')?.textContent || '';
-    const contractId = card.querySelector('.contract-id')?.textContent || `CNT-2025-${String(id).padStart(3, '0')}`;
-    const clientName = card.querySelector('.client-details h4')?.textContent || '';
-    const status = card.querySelector('.contract-status')?.textContent.trim().toLowerCase() || 'active';
-    const value = card.querySelector('.contract-value')?.textContent || 'LKR 0';
-    const progressElement = card.querySelector('.progress-fill');
+    const title = card.querySelector('.card-title')?.textContent || card.querySelector('.contract-info h3')?.textContent || '';
+    const contractId = card.querySelector('.card-contract-number')?.textContent || card.querySelector('.contract-id')?.textContent || `CNT-2025-${String(id).padStart(3, '0')}`;
+    const clientName = card.querySelector('.card-client-name')?.textContent || card.querySelector('.client-details h4')?.textContent || '';
+    const statusEl = card.querySelector('.card-status-badge span') || card.querySelector('.contract-status');
+    const status = statusEl ? statusEl.textContent.trim().toLowerCase() : 'active';
+    const value = card.querySelector('.card-value-badge')?.textContent || card.querySelector('.contract-value')?.textContent || 'LKR 0';
+    const progressElement = card.querySelector('.card-progress-fill') || card.querySelector('.progress-fill');
     const progress = progressElement ? parseInt(progressElement.style.width) || 0 : 0;
     
     return {
@@ -388,7 +942,7 @@ function extractContractData(card, id) {
         type: card.getAttribute('data-type') || 'general',
         startDate: '2025-01-15',
         endDate: '2025-03-15',
-        description: card.querySelector('.contract-description p')?.textContent || ''
+        description: ''
     };
 }
 
@@ -495,35 +1049,100 @@ function initializeViewSwitcher() {
 // CONTRACT ACTIONS
 // ===================================
 
+let contractActionsInitialized = false;
+
 function initializeContractActions() {
+    // Prevent adding duplicate global listeners
+    if (contractActionsInitialized) return;
+    contractActionsInitialized = true;
+    
     document.addEventListener('click', function(e) {
-        // Check for specific button clicks
+        // --- View ---
         if (e.target.closest('.view-contract-btn')) {
             e.preventDefault();
             e.stopPropagation();
             const btn = e.target.closest('.view-contract-btn');
             const contractId = btn.getAttribute('data-contract-id');
             handleViewContractById(contractId);
-        } else if (e.target.closest('.edit-contract-btn')) {
+            return;
+        }
+        
+        // --- Send to Customer ---
+        if (e.target.closest('.send-contract-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const btn = e.target.closest('.send-contract-btn');
+            const contractId = btn.getAttribute('data-contract-id');
+            handleSendContractById(contractId);
+            return;
+        }
+        
+        // --- Chat / Negotiate ---
+        if (e.target.closest('.chat-contract-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const btn = e.target.closest('.chat-contract-btn');
+            const contractId = btn.getAttribute('data-contract-id');
+            handleChatContractById(contractId);
+            return;
+        }
+        
+        // --- Edit ---
+        if (e.target.closest('.edit-contract-btn')) {
             e.preventDefault();
             e.stopPropagation();
             const btn = e.target.closest('.edit-contract-btn');
             const contractId = btn.getAttribute('data-contract-id');
             handleEditContractById(contractId);
-        } else if (e.target.closest('.delete-contract-btn')) {
+            return;
+        }
+        
+        // --- Delete ---
+        if (e.target.closest('.delete-contract-btn')) {
             e.preventDefault();
             e.stopPropagation();
             const btn = e.target.closest('.delete-contract-btn');
             const contractId = btn.getAttribute('data-contract-id');
             handleDeleteContractById(contractId);
-        } else if (e.target.closest('.download-contract-btn')) {
+            // Close any open menu
+            document.querySelectorAll('.card-action-menu.active').forEach(m => m.classList.remove('active'));
+            return;
+        }
+        
+        // --- Download ---
+        if (e.target.closest('.download-contract-btn')) {
             e.preventDefault();
             e.stopPropagation();
             const btn = e.target.closest('.download-contract-btn');
             const contractId = btn.getAttribute('data-contract-id');
             handleDownloadContractById(contractId);
-        } else if (e.target.closest('.contract-card') && !e.target.closest('.action-btn')) {
-            // Click on card itself - view details
+            document.querySelectorAll('.card-action-menu.active').forEach(m => m.classList.remove('active'));
+            return;
+        }
+        
+        // --- More menu toggle ---
+        if (e.target.closest('.more-menu-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const btn = e.target.closest('.more-menu-btn');
+            const contractId = btn.getAttribute('data-contract-id');
+            toggleCardMenu(e, contractId);
+            return;
+        }
+        
+        // --- Terminate ---
+        if (e.target.closest('.terminate-contract-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const btn = e.target.closest('.terminate-contract-btn');
+            const contractId = btn.getAttribute('data-contract-id');
+            handleTerminateContract(contractId);
+            document.querySelectorAll('.card-action-menu.active').forEach(m => m.classList.remove('active'));
+            return;
+        }
+        
+        // --- Card click (view details) ---
+        if (e.target.closest('.contract-card') && !e.target.closest('.card-action-btn') && !e.target.closest('.card-menu-item') && !e.target.closest('.card-action-menu')) {
             const card = e.target.closest('.contract-card');
             const contractId = card.getAttribute('data-contract-id');
             handleViewContractById(contractId);
@@ -539,22 +1158,15 @@ function initializeContractActions() {
 
 async function handleViewContractById(contractId) {
     try {
-        // Find contract in local data first
-        let contract = contractsData.find(c => c.contract_id == contractId);
+        // Always fetch full data from API for the detail view
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=get&id=${contractId}`);
+        const result = await response.json();
         
-        if (!contract) {
-            // Fetch from API if not found locally
-            const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=get&id=${contractId}`);
-            const result = await response.json();
-            
-            if (!result.success) {
-                throw new Error(result.message || 'Contract not found');
-            }
-            
-            contract = result.data;
+        if (!result.success) {
+            throw new Error(result.message || 'Contract not found');
         }
         
-        openContractDetailsModal(contract);
+        openContractDetailsModal(result.data);
     } catch (error) {
         console.error('Error viewing contract:', error);
         alert('Failed to load contract details: ' + error.message);
@@ -563,22 +1175,15 @@ async function handleViewContractById(contractId) {
 
 async function handleEditContractById(contractId) {
     try {
-        // Find contract in local data first
-        let contract = contractsData.find(c => c.contract_id == contractId);
+        // Always fetch full data from API for editing
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=get&id=${contractId}`);
+        const result = await response.json();
         
-        if (!contract) {
-            // Fetch from API if not found locally
-            const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=get&id=${contractId}`);
-            const result = await response.json();
-            
-            if (!result.success) {
-                throw new Error(result.message || 'Contract not found');
-            }
-            
-            contract = result.data;
+        if (!result.success) {
+            throw new Error(result.message || 'Contract not found');
         }
         
-        openEditContractModal(contract);
+        openEditContractModal(result.data);
     } catch (error) {
         console.error('Error editing contract:', error);
         alert('Failed to load contract for editing: ' + error.message);
@@ -596,6 +1201,61 @@ async function handleDownloadContractById(contractId) {
     }
 }
 
+async function handleSendContractById(contractId) {
+    try {
+        // Find contract in local data
+        let contract = contractsData.find(c => c.contract_id == contractId);
+        
+        if (!contract) {
+            const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=get&id=${contractId}`);
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'Contract not found');
+            contract = result.data;
+        }
+        
+        // Build a data object for the send modal
+        currentContract = {
+            id: contract.contract_number || contract.contract_id,
+            title: contract.title,
+            client: contract.client_name,
+            email: contract.client_email || '',
+            contractId: contract.contract_id
+        };
+        
+        openSendContractModal(currentContract);
+    } catch (error) {
+        console.error('Error preparing send:', error);
+        alert('Failed to prepare contract for sending: ' + error.message);
+    }
+}
+
+async function handleChatContractById(contractId) {
+    try {
+        let contract = contractsData.find(c => c.contract_id == contractId);
+        
+        if (!contract) {
+            const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=get&id=${contractId}`);
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'Contract not found');
+            contract = result.data;
+        }
+        
+        // Open the negotiation/chat modal
+        const chatData = {
+            id: contract.contract_id,
+            title: contract.title || contract.contract_number,
+            client: contract.client_name || (contract.client && contract.client.name) || '',
+            status: contract.status,
+            customer_response: contract.customer_response
+        };
+        
+        openNegotiationModal(chatData);
+    } catch (error) {
+        console.error('Error opening chat:', error);
+        showNotification('Failed to open chat. Please try again.', 'error');
+    }
+}
+
 // Keep legacy functions for backward compatibility
 function handleViewContract(contractCard) {
     const contractId = contractCard.getAttribute('data-contract-id');
@@ -609,15 +1269,15 @@ function handleViewContract(contractCard) {
 
 
 function extractDetailedContractData(card) {
-    const title = card.querySelector('.contract-info h3')?.textContent || '';
-    const contractId = card.querySelector('.contract-id')?.textContent || '';
-    const clientName = card.querySelector('.client-details h4')?.textContent || '';
-    const statusElement = card.querySelector('.contract-status');
+    const title = card.querySelector('.card-title')?.textContent || card.querySelector('.contract-info h3')?.textContent || '';
+    const contractId = card.querySelector('.card-contract-number')?.textContent || card.querySelector('.contract-id')?.textContent || '';
+    const clientName = card.querySelector('.card-client-name')?.textContent || card.querySelector('.client-details h4')?.textContent || '';
+    const statusElement = card.querySelector('.card-status-badge span') || card.querySelector('.contract-status');
     const status = statusElement ? statusElement.textContent.trim() : 'Active';
-    const value = card.querySelector('.contract-value')?.textContent || 'LKR 0';
-    const progressElement = card.querySelector('.progress-fill');
+    const value = card.querySelector('.card-value-badge')?.textContent || card.querySelector('.contract-value')?.textContent || 'LKR 0';
+    const progressElement = card.querySelector('.card-progress-fill') || card.querySelector('.progress-fill');
     const progress = progressElement ? parseInt(progressElement.style.width) || 0 : 0;
-    const description = card.querySelector('.contract-description p')?.textContent || '';
+    const clientEmail = card.querySelector('.card-client-email')?.textContent || '';
     
     return {
         id: contractId,
@@ -626,9 +1286,9 @@ function extractDetailedContractData(card) {
         status: status.toLowerCase(),
         progress,
         value,
-        description,
-        contactPerson: 'John Doe',
-        email: 'john@example.com',
+        description: '',
+        contactPerson: clientName,
+        email: clientEmail || 'N/A',
         phone: '+94 77 123 4567',
         type: card.getAttribute('data-type') || 'General',
         location: 'Colombo, Sri Lanka',
@@ -783,43 +1443,117 @@ function closeContractDetailsModal() {
 }
 
 function populateModalContent(data) {
+    // Helper
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '—'; };
+    const formatDate = (d) => { if (!d) return '—'; const dt = new Date(d); return dt.toLocaleDateString('en-LK', { year: 'numeric', month: 'long', day: 'numeric' }); };
+    
     // Header
-    document.getElementById('modalContractTitle').textContent = data.title;
-    document.getElementById('modalContractId').textContent = data.id;
+    set('viewRef', `Contract Reference: ${data.contract_number || data.id || '—'}`);
+    set('viewDate', formatDate(data.contract_date));
     
-    const statusBadge = document.getElementById('modalContractStatus');
-    statusBadge.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
-    statusBadge.className = `contract-status-badge ${data.status}`;
+    const statusEl = document.getElementById('viewStatus');
+    if (statusEl) {
+        const statusLabel = (data.status || 'draft').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        statusEl.textContent = statusLabel;
+        statusEl.className = `contract-status-badge ${data.status || 'draft'}`;
+    }
     
-    // Client Info
-    document.getElementById('modalClientName').textContent = data.client;
-    document.getElementById('modalContactPerson').textContent = data.contactPerson;
-    document.getElementById('modalClientEmail').textContent = data.email;
-    document.getElementById('modalClientPhone').textContent = data.phone;
+    // Section 1: Parties
+    const client = data.client || {};
+    set('viewClientName', client.name || data.client_name || '—');
+    set('viewClientDetails', [client.email, client.address, client.district].filter(Boolean).join(' | ') || '—');
     
-    // Project Details
-    document.getElementById('modalDescription').textContent = data.description;
-    document.getElementById('modalProjectType').textContent = data.type;
-    document.getElementById('modalLocation').textContent = data.location;
-    document.getElementById('modalStartDate').textContent = data.startDate;
-    document.getElementById('modalEndDate').textContent = data.endDate;
+    const company = data.company || {};
+    set('viewCompanyName', company.name || '—');
+    set('viewCompanyDetails', [company.registration_no, company.address, company.contact].filter(Boolean).join(' | ') || '—');
     
-    // Progress
-    document.getElementById('modalProgressFill').style.width = data.progress + '%';
-    document.getElementById('modalProgressText').textContent = data.progress + '% Complete';
-    document.getElementById('modalProgressStage').textContent = data.stage;
+    // Section 2: Project
+    set('viewTitle', data.title || data.project_title || '—');
+    set('viewProjectRef', data.project_reference || '—');
+    set('viewLocation', data.location || data.project_location || '—');
+    set('viewType', data.type || '—');
+    set('viewDescription', data.description || '—');
     
-    // Financial
-    document.getElementById('modalContractValue').textContent = data.value;
-    document.getElementById('modalPaidAmount').textContent = data.paidAmount;
-    document.getElementById('modalRemainingAmount').textContent = data.remainingAmount;
-    document.getElementById('modalPaymentTerms').textContent = data.paymentTerms;
+    // Section 3: Scope
+    const scopeSection = document.getElementById('viewScopeSection');
+    if (scopeSection) {
+        const hasScope = data.scope_description || data.scope_inclusions || data.scope_exclusions;
+        scopeSection.style.display = hasScope ? 'block' : 'none';
+    }
+    set('viewScopeDesc', data.scope_description || '—');
+    set('viewInclusions', data.scope_inclusions || 'As per quotation');
+    set('viewExclusions', data.scope_exclusions || 'None specified');
     
-    // Contract Info
-    document.getElementById('modalContractType').textContent = data.contractType;
-    document.getElementById('modalDuration').textContent = data.duration;
-    document.getElementById('modalPriority').textContent = data.priority;
-    document.getElementById('modalTeam').textContent = data.team;
+    const matLabels = { 'company': 'All materials supplied by the Contractor', 'client': 'All materials supplied by the Client', 'shared': 'Shared responsibility' };
+    set('viewMaterials', matLabels[data.materials_responsibility] || 'As per agreement');
+    
+    // Section 4: Timeline
+    set('viewStartDate', formatDate(data.start_date));
+    set('viewEndDate', formatDate(data.end_date));
+    set('viewProgress', (data.progress || 0) + '%');
+    
+    // Milestones
+    const msContainer = document.getElementById('viewMilestonesContainer');
+    if (msContainer && data.milestones && data.milestones.length > 0) {
+        const isMilestonePayment = data.payment_method === 'milestone_based';
+        let html = '<table class="preview-milestones-table"><thead><tr><th>#</th><th>Milestone</th><th>Due Date</th><th>Status</th>';
+        if (isMilestonePayment) html += '<th>Amount</th>';
+        html += '</tr></thead><tbody>';
+        data.milestones.forEach((ms, i) => {
+            const msStatus = ms.status || 'pending';
+            const statusIcon = msStatus === 'completed' ? '✅' : msStatus === 'in_progress' ? '🔄' : '⏳';
+            html += `<tr>
+                <td>${i + 1}</td>
+                <td>${escapeHtml(ms.title || ms.milestone_name || 'Milestone ' + (i+1))}</td>
+                <td>${formatDate(ms.due_date)}</td>
+                <td>${statusIcon} ${msStatus.replace(/_/g, ' ')}</td>`;
+            if (isMilestonePayment) {
+                html += `<td>LKR ${parseFloat(ms.payment_amount || 0).toLocaleString()}</td>`;
+            }
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        msContainer.innerHTML = html;
+    } else if (msContainer) {
+        msContainer.innerHTML = '<p style="color:#94a3b8;font-style:italic;">No milestones defined</p>';
+    }
+    
+    // Section 5: Financial
+    const totalVal = parseFloat(data.value || 0);
+    set('viewValue', `LKR ${totalVal.toLocaleString()}`);
+    
+    const budgetTypes = { 'fixed': 'Fixed Price', 'time_based': 'Time-Based', 'flexible': 'Flexible (±10%)' };
+    set('viewBudgetType', budgetTypes[data.budget_type] || 'Fixed Price');
+    
+    const payMethodLabels = { 'full_upfront': 'Full Upfront', 'milestone_based': 'Milestone-Based', '50_50': '50/50 Split', '30_70': '30/70 Split', 'completion': 'On Completion' };
+    set('viewPaymentMethod', payMethodLabels[data.payment_method] || 'Standard');
+    
+    set('viewAmountPaid', `LKR ${parseFloat(data.amount_paid || 0).toLocaleString()}`);
+    set('viewAmountPending', `LKR ${parseFloat(data.amount_pending || totalVal).toLocaleString()}`);
+    set('viewLatePayment', data.late_payment_penalty || 'As per standard terms');
+    
+    // Section 6: Variations
+    set('viewVariation', data.variation_clause 
+        ? 'Any change to scope, pricing, materials, or timeline must be approved in writing by both parties before execution.'
+        : 'Variation control is not enabled for this contract.');
+    
+    // Section 7: Communication
+    const channels = { 'system': 'FixLanka Platform', 'email': 'Email', 'both': 'Platform + Email' };
+    set('viewCommChannel', channels[data.communication_channel] || 'FixLanka Platform');
+    set('viewDisputeRes', data.dispute_resolution || 'Disputes shall be resolved through mediation via the FixLanka platform.');
+    
+    // Section 8: Customer Response
+    const responseSection = document.getElementById('viewCustomerResponseSection');
+    if (responseSection) {
+        if (data.sent_to_customer) {
+            responseSection.style.display = 'block';
+            set('viewSentStatus', `Yes — sent on ${formatDate(data.sent_at)}`);
+            const responseLabels = { 'pending': '⏳ Pending', 'accepted': '✅ Accepted', 'rejected': '❌ Rejected', 'negotiating': '💬 Negotiating' };
+            set('viewCustomerResponse', responseLabels[data.customer_response] || '⏳ Pending');
+        } else {
+            responseSection.style.display = 'none';
+        }
+    }
 }
 
 // ===================================
@@ -852,14 +1586,18 @@ function openNewContractModal() {
     currentStep = 1;
     const modal = document.getElementById('newContractModal');
     document.getElementById('formModalTitle').textContent = 'Create New Contract';
-    document.getElementById('formSubmitBtn').innerHTML = '<i class="fas fa-check"></i> Create Contract';
+    document.getElementById('formSubmitBtn').innerHTML = '<i class="fas fa-paper-plane"></i> Create & Send to Customer';
+    
+    // Clear edit ID
+    const editField = document.getElementById('editContractId');
+    if (editField) editField.value = '';
     
     // Reset form
     document.getElementById('contractForm').reset();
     showFormStep(1);
     
-    // Load accepted projects for contract creation
-    loadAcceptedProjects();
+    // PHASE 2: Load accepted quotations for auto-fill
+    initializeQuotationSelectorForContractForm();
     
     if (modal) {
         modal.classList.add('active');
@@ -869,18 +1607,16 @@ function openNewContractModal() {
 
 function openEditContractModal(contractData) {
     editingContract = contractData;
-    currentStep = 1;
-    const modal = document.getElementById('newContractModal');
-    document.getElementById('formModalTitle').textContent = 'Edit Contract';
-    document.getElementById('formSubmitBtn').innerHTML = '<i class="fas fa-save"></i> Update Contract';
     
-    // Populate form with existing data
-    populateFormWithContract(contractData);
-    showFormStep(1);
-    
-    if (modal) {
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
+    // Use the IIFE-exposed edit function which:
+    // - Resets form, sets editContractId, populates all fields
+    // - Skips Step 1 (quotation/parties — not editable)
+    // - Opens modal at Step 2 (Project Details)
+    if (typeof window.openContractForEdit === 'function') {
+        window.openContractForEdit(contractData);
+    } else {
+        // Fallback if IIFE hasn't loaded yet
+        console.error('openContractForEdit not available — IIFE may not have loaded');
     }
 }
 
@@ -891,6 +1627,9 @@ function closeNewContractModal() {
         document.body.style.overflow = '';
         editingContract = null;
         currentStep = 1;
+        // Clear edit ID
+        const editField = document.getElementById('editContractId');
+        if (editField) editField.value = '';
     }
 }
 
@@ -1122,11 +1861,11 @@ function showFormStep(step) {
 }
 
 function validateFormStep(step) {
-    // Step 1: Validate project selection
+    // Step 1: Validate quotation selection
     if (step === 1) {
-        const selectedCard = document.querySelector('.project-card.selected');
-        if (!selectedCard) {
-            showNotification('Please select a project to create a contract', 'error');
+        const quotationSelector = document.getElementById('quotationSelector');
+        if (!quotationSelector || !quotationSelector.value) {
+            alert('Please select an accepted quotation to create a contract');
             return false;
         }
         return true;
@@ -1154,22 +1893,119 @@ function validateFormStep(step) {
 }
 
 function populateFormWithContract(data) {
-    // Client Info
-    document.getElementById('clientName').value = data.client;
-    document.getElementById('contactPerson').value = data.contactPerson;
-    document.getElementById('clientEmail').value = data.email;
-    document.getElementById('clientPhone').value = data.phone;
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el && val !== null && val !== undefined) el.value = val; };
+    const setCheck = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+    const setRadio = (name, val) => { const el = document.querySelector(`input[name="${name}"][value="${val}"]`); if (el) el.checked = true; };
     
-    // Project Details
-    document.getElementById('projectTitle').value = data.title;
-    document.getElementById('projectLocation').value = data.location;
-    document.getElementById('startDate').value = data.startDate;
-    document.getElementById('endDate').value = data.endDate;
-    document.getElementById('projectDescription').value = data.description;
+    // Store contract_id for update
+    setVal('editContractId', data.contract_id);
     
-    // Financial
-    const numValue = parseInt(data.value.replace(/[^\d]/g, ''));
-    document.getElementById('contractValue').value = numValue;
+    // Step 1: Quotation selection — hide it, show "Editing existing contract" info
+    const client = data.client || {};
+    setVal('selectedQuotationId', data.quotation_id || '');
+    setVal('selectedRequestId', data.job_request_id || '');
+    setVal('customerId', client.id || data.customer_id || '');
+    
+    // Step 1 party info (auto-filled from quotation, now from contract data)
+    const partyClientName = document.getElementById('partyClientName');
+    if (partyClientName) partyClientName.textContent = client.name || '—';
+    const partyClientEmail = document.getElementById('partyClientEmail');
+    if (partyClientEmail) partyClientEmail.textContent = client.email || '—';
+    const partyClientAddress = document.getElementById('partyClientAddress');
+    if (partyClientAddress) partyClientAddress.textContent = client.address || '—';
+    const partyClientDistrict = document.getElementById('partyClientDistrict');
+    if (partyClientDistrict) partyClientDistrict.textContent = client.district || '—';
+    
+    const company = data.company || {};
+    const partyCompanyName = document.getElementById('partyCompanyName');
+    if (partyCompanyName) partyCompanyName.textContent = company.name || '—';
+    const partyCompanyReg = document.getElementById('partyCompanyReg');
+    if (partyCompanyReg) partyCompanyReg.textContent = company.registration_no || '—';
+    const partyCompanyAddress = document.getElementById('partyCompanyAddress');
+    if (partyCompanyAddress) partyCompanyAddress.textContent = company.address || '—';
+    const partyCompanyContact = document.getElementById('partyCompanyContact');
+    if (partyCompanyContact) partyCompanyContact.textContent = company.contact || '—';
+    
+    // Show parties section
+    const partiesSection = document.getElementById('partiesSection');
+    if (partiesSection) partiesSection.style.display = 'block';
+    
+    // Step 2: Project Details
+    setVal('projectTitle', data.title || data.project_title || '');
+    setVal('projectReference', data.project_reference || data.contract_number || '');
+    setVal('projectLocation', data.location || data.project_location || '');
+    setVal('projectType', data.type || '');
+    setVal('projectDescription', data.description || '');
+    
+    // Step 3: Scope of Work
+    setVal('scopeDescription', data.scope_description || '');
+    setVal('scopeInclusions', data.scope_inclusions || '');
+    setVal('scopeExclusions', data.scope_exclusions || '');
+    setVal('scopeStandards', data.scope_standards || '');
+    setRadio('materials_responsibility', data.materials_responsibility || 'company');
+    
+    // Step 4: Milestones
+    if (data.milestones && data.milestones.length > 0) {
+        const msBody = document.getElementById('milestonesBody');
+        if (msBody) {
+            msBody.innerHTML = '';
+            data.milestones.forEach((ms, i) => {
+                const row = document.createElement('tr');
+                row.className = 'milestone-row';
+                row.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td><input type="text" name="ms_name[]" value="${escapeHtml(ms.title || ms.milestone_name || '')}" class="form-input" placeholder="Milestone name"></td>
+                    <td><input type="text" name="ms_desc[]" value="${escapeHtml(ms.description || '')}" class="form-input" placeholder="Description"></td>
+                    <td><input type="date" name="ms_date[]" value="${ms.due_date || ''}" class="form-input"></td>
+                    <td class="ms-pct-col"><input type="number" class="form-input ms-pct-input" value="${ms.payment_percentage || ms.percentage || 0}" min="0" max="100" step="1"></td>
+                    <td class="ms-amount-col"><input type="number" class="form-input ms-amount-input" value="${ms.payment_amount || ms.amount || 0}" min="0" step="0.01" readonly></td>
+                    <td><button type="button" class="btn-icon remove-milestone-btn" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
+                `;
+                msBody.appendChild(row);
+            });
+        }
+    }
+    
+    // Step 5: Payment & Financial
+    setVal('contractValue', data.value || data.total_budget || '');
+    setVal('budgetType', data.budget_type || 'fixed');
+    setVal('budgetMin', data.budget_min || '');
+    setVal('budgetMax', data.budget_max || '');
+    setVal('taxInclusive', data.tax_inclusive);
+    setVal('paymentMethod', data.payment_method || 'milestone_based');
+    setVal('pricingType', data.pricing_type || 'fixed_price');
+    setVal('hourlyRate', data.hourly_rate || '');
+    setVal('spendingCap', data.spending_cap || '');
+    
+    // Step 6: Timeline (dates already set in step 2)
+    setVal('startDate', data.start_date || '');
+    setVal('endDate', data.end_date || '');
+    
+    // Calculate duration
+    if (data.start_date && data.end_date) {
+        const start = new Date(data.start_date);
+        const end = new Date(data.end_date);
+        const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+        setVal('estimatedDuration', diff);
+    }
+    
+    // Delays
+    setVal('latePaymentPenalty', data.late_payment_penalty || '');
+    setCheck('pauseWorkClause', data.pause_work_clause);
+    setCheck('timeExtensionClause', data.time_extension_clause);
+    
+    // Step 7: Terms & Clauses
+    setCheck('variationClause', data.variation_clause);
+    setVal('communicationChannel', data.communication_channel || 'system');
+    setVal('disputeResolution', data.dispute_resolution || '');
+    setVal('additionalTerms', data.terms_conditions || '');
+    
+    // Trigger change events to update UI (payment columns, budget fields, etc.)
+    const paymentMethodEl = document.getElementById('paymentMethod');
+    if (paymentMethodEl) paymentMethodEl.dispatchEvent(new Event('change'));
+    
+    const budgetTypeEl = document.getElementById('budgetType');
+    if (budgetTypeEl) budgetTypeEl.dispatchEvent(new Event('change'));
 }
 
 function populateReviewStep() {
@@ -1411,10 +2247,14 @@ function initializeSendContractModal() {
 function openSendContractModal(contractData) {
     const modal = document.getElementById('sendContractModal');
     
-    // Pre-fill email if available
-    if (contractData && contractData.email) {
-        document.getElementById('sendToEmail').value = contractData.email;
-    }
+    // Fill confirmation details
+    const titleEl = document.getElementById('sendContractTitle');
+    const clientEl = document.getElementById('sendContractClient');
+    const idEl = document.getElementById('sendContractId');
+    
+    if (titleEl) titleEl.textContent = contractData.title || contractData.id || '—';
+    if (clientEl) clientEl.textContent = contractData.client ? `Customer: ${contractData.client}` : '—';
+    if (idEl) idEl.value = contractData.contractId || '';
     
     if (modal) {
         modal.classList.add('active');
@@ -1427,17 +2267,14 @@ function closeSendContractModal() {
     if (modal) {
         modal.classList.remove('active');
         document.body.style.overflow = '';
-        document.getElementById('sendContractForm').reset();
     }
 }
 
-function submitSendContract() {
-    const email = document.getElementById('sendToEmail').value;
-    const subject = document.getElementById('sendSubject').value;
-    const message = document.getElementById('sendMessage').value;
+async function submitSendContract() {
+    const contractId = document.getElementById('sendContractId')?.value;
     
-    if (!email || !subject || !message) {
-        showNotification('Please fill in all required fields', 'error');
+    if (!contractId) {
+        showNotification('No contract selected', 'error');
         return;
     }
     
@@ -1446,13 +2283,53 @@ function submitSendContract() {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
     
-    // Simulate sending
-    setTimeout(() => {
-        showNotification(`Contract sent successfully to ${email}!`, 'success');
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=sendToCustomer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contract_id: contractId })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Contract sent to customer successfully!', 'success');
+            closeSendContractModal();
+            
+            // Update the local data so the card reflects sent + new status
+            const contract = contractsData.find(c => c.contract_id == contractId);
+            if (contract) {
+                contract.sent_to_customer = 1;
+                contract.sent_at = new Date().toISOString();
+                contract.status = 'sent';
+            }
+            
+            // Re-render the entire card (status badge + action buttons)
+            const card = document.querySelector(`.contract-card[data-contract-id="${contractId}"]`);
+            if (card && contract) {
+                // Update all status badges on the card
+                card.querySelectorAll('.card-status-badge').forEach(badge => {
+                    badge.className = 'card-status-badge sent';
+                    badge.innerHTML = '<i class="fas fa-paper-plane"></i> <span>Sent</span>';
+                });
+                // Update the data-status attribute
+                card.setAttribute('data-status', 'sent');
+                // Update action buttons (Send → Chat)
+                const actionsRow = card.querySelector('.card-actions-row');
+                if (actionsRow) {
+                    actionsRow.innerHTML = buildCardActions(contract);
+                }
+            }
+        } else {
+            showNotification(result.message || 'Failed to send contract', 'error');
+        }
+    } catch (error) {
+        console.error('Error sending contract:', error);
+        showNotification('Failed to send contract. Please try again.', 'error');
+    } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
-        closeSendContractModal();
-    }, 2000);
+    }
 }
 
 // ===================================
@@ -2417,3 +3294,310 @@ function withdrawContract() {
 // Enable opening chat for rejected/negotiating contracts
 window.openNegotiationModal = openNegotiationModal;
 window.openStatusUpdateModal = openStatusUpdateModal;
+
+// ============================================
+// PHASE 2A: MILESTONE FEATURES
+// ============================================
+
+/**
+ * Generate milestone preview based on payment method and dates
+ */
+function generateMilestonePreview() {
+    const totalBudget = parseFloat(document.getElementById('contractValue').value) || 0;
+    const paymentMethod = document.getElementById('paymentMethod').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (!totalBudget || !startDate || !endDate) {
+        return [];
+    }
+    
+    // Calculate duration
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const duration = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+    
+    let milestones = [];
+    
+    switch (paymentMethod) {
+        case 'full_upfront':
+            milestones = [{
+                number: 1,
+                title: 'Full Payment',
+                description: 'Complete project payment upfront',
+                dueDate: startDate,
+                amount: totalBudget,
+                percentage: 100
+            }];
+            break;
+            
+        case 'milestone_based':
+            const midDate = new Date(start.getTime() + (duration / 2) * 24 * 60 * 60 * 1000);
+            milestones = [
+                {
+                    number: 1,
+                    title: 'Initial Payment (30%)',
+                    description: 'Project initiation and setup',
+                    dueDate: startDate,
+                    amount: totalBudget * 0.30,
+                    percentage: 30
+                },
+                {
+                    number: 2,
+                    title: 'Mid-Project Payment (40%)',
+                    description: 'Progress payment for ongoing work',
+                    dueDate: midDate.toISOString().split('T')[0],
+                    amount: totalBudget * 0.40,
+                    percentage: 40
+                },
+                {
+                    number: 3,
+                    title: 'Final Payment (30%)',
+                    description: 'Project completion and handover',
+                    dueDate: endDate,
+                    amount: totalBudget * 0.30,
+                    percentage: 30
+                }
+            ];
+            break;
+            
+        case '50_50':
+            milestones = [
+                {
+                    number: 1,
+                    title: 'Initial Payment (50%)',
+                    description: 'First half payment at project start',
+                    dueDate: startDate,
+                    amount: totalBudget * 0.50,
+                    percentage: 50
+                },
+                {
+                    number: 2,
+                    title: 'Final Payment (50%)',
+                    description: 'Second half payment upon completion',
+                    dueDate: endDate,
+                    amount: totalBudget * 0.50,
+                    percentage: 50
+                }
+            ];
+            break;
+            
+        case '30_70':
+            milestones = [
+                {
+                    number: 1,
+                    title: 'Initial Payment (30%)',
+                    description: 'Advance payment at project start',
+                    dueDate: startDate,
+                    amount: totalBudget * 0.30,
+                    percentage: 30
+                },
+                {
+                    number: 2,
+                    title: 'Final Payment (70%)',
+                    description: 'Completion payment upon delivery',
+                    dueDate: endDate,
+                    amount: totalBudget * 0.70,
+                    percentage: 70
+                }
+            ];
+            break;
+            
+        case 'completion':
+            milestones = [{
+                number: 1,
+                title: 'Payment on Completion',
+                description: 'Full payment after project completion',
+                dueDate: endDate,
+                amount: totalBudget,
+                percentage: 100
+            }];
+            break;
+    }
+    
+    return milestones;
+}
+
+/**
+ * Display milestone preview in the review step
+ */
+function displayMilestonePreview() {
+    const milestones = generateMilestonePreview();
+    
+    if (milestones.length === 0) {
+        return '<p class="text-muted">No milestones to display</p>';
+    }
+    
+    let html = `
+        <div class="milestone-preview-section" style="margin-top: 20px;">
+            <h4 style="color: #00897b; margin-bottom: 15px;">
+                <i class="fas fa-flag-checkered"></i> Payment Milestones
+            </h4>
+            <div class="milestone-timeline">
+    `;
+    
+    milestones.forEach((milestone, index) => {
+        const isLast = index === milestones.length - 1;
+        html += `
+            <div class="milestone-item" style="
+                position: relative;
+                padding: 15px 20px;
+                margin-bottom: ${isLast ? '0' : '15px'};
+                background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
+                border-left: 4px solid #00897b;
+                border-radius: 8px;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                            <span style="
+                                display: inline-block;
+                                width: 30px;
+                                height: 30px;
+                                background: #00897b;
+                                color: white;
+                                border-radius: 50%;
+                                text-align: center;
+                                line-height: 30px;
+                                font-weight: bold;
+                                margin-right: 10px;
+                            ">${milestone.number}</span>
+                            <h5 style="margin: 0; color: #00695c;">${milestone.title}</h5>
+                        </div>
+                        <p style="margin: 5px 0 5px 40px; color: #555; font-size: 13px;">
+                            ${milestone.description}
+                        </p>
+                        <div style="margin-left: 40px; font-size: 12px; color: #777;">
+                            <i class="fas fa-calendar"></i> Due: ${new Date(milestone.dueDate).toLocaleDateString()}
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="
+                            font-size: 20px;
+                            font-weight: bold;
+                            color: #00897b;
+                        ">LKR ${milestone.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div style="
+                            display: inline-block;
+                            padding: 3px 10px;
+                            background: #00897b;
+                            color: white;
+                            border-radius: 12px;
+                            font-size: 11px;
+                            margin-top: 5px;
+                        ">${milestone.percentage}%</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `
+            </div>
+            <div style="
+                margin-top: 15px;
+                padding: 12px;
+                background: #fff3e0;
+                border-left: 4px solid #ff9800;
+                border-radius: 6px;
+                font-size: 13px;
+                color: #e65100;
+            ">
+                <i class="fas fa-info-circle"></i> 
+                <strong>${milestones.length} milestone${milestones.length > 1 ? 's' : ''}</strong> will be created automatically when you submit this contract.
+            </div>
+        </div>
+    `;
+    
+    return html;
+}
+
+/**
+ * Update the populateReviewStep function to include milestones
+ */
+const originalPopulateReviewStep = window.populateReviewStep || function() {};
+
+function populateReviewStep() {
+    // Call original function if it exists
+    if (typeof originalPopulateReviewStep === 'function') {
+        originalPopulateReviewStep();
+    }
+    
+    // Add milestone preview
+    const reviewContent = document.querySelector('[data-step="4"] .review-content');
+    if (reviewContent) {
+        // Check if milestone section already exists
+        if (!reviewContent.querySelector('.milestone-preview-section')) {
+            const milestoneHTML = displayMilestonePreview();
+            reviewContent.insertAdjacentHTML('beforeend', milestoneHTML);
+        }
+    }
+}
+
+/**
+ * Update submit function to use new milestone API
+ */
+function submitContractFormWithMilestones() {
+    const form = document.getElementById('contractForm');
+    const formData = new FormData(form);
+    
+    const submitBtn = document.getElementById('formSubmitBtn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Contract...';
+    
+    // Use new API endpoint
+    fetch('/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=createContractWithMilestones', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showNotification('Contract created successfully with ' + result.data.milestones.length + ' milestones!', 'success');
+            closeNewContractModal();
+            loadContractsData();
+        } else {
+            showNotification(result.message || 'Failed to create contract', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating contract:', error);
+        showNotification('Failed to create contract. Please try again.', 'error');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+}
+
+// Override the original submit function
+const originalSubmitContractForm = window.submitContractForm;
+window.submitContractForm = function() {
+    // Check if we should use milestone version
+    const quotationId = document.getElementById('selectedQuotationId')?.value;
+    if (quotationId) {
+        submitContractFormWithMilestones();
+    } else if (typeof originalSubmitContractForm === 'function') {
+        originalSubmitContractForm();
+    }
+};
+
+// Add listeners for milestone preview updates
+document.addEventListener('DOMContentLoaded', function() {
+    // Listen for changes that affect milestones
+    const fields = ['contractValue', 'paymentMethod', 'startDate', 'endDate'];
+    fields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('change', function() {
+                // Update preview if we're on the review step
+                if (currentStep === 4) {
+                    populateReviewStep();
+                }
+            });
+        }
+    });
+});
+
+console.log('✅ Phase 2A: Milestone features loaded');

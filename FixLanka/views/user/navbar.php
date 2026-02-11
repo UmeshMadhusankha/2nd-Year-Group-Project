@@ -65,6 +65,12 @@ $userData = getUserData();
                                 </a>
                             </li>
                             <li class="dropdown-item">
+                                <a href="/2nd-Year-Group-Project/FixLanka/my-contracts" class="dropdown-link">
+                                    <i class="fas fa-file-contract"></i>
+                                    My Contracts
+                                </a>
+                            </li>
+                            <li class="dropdown-item">
                                 <a href="/2nd-Year-Group-Project/FixLanka/chat" class="dropdown-link">
                                     <i class="fas fa-envelope"></i>
                                     Messages
@@ -121,6 +127,7 @@ $userData = getUserData();
             <?php if ($isLoggedIn): ?>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/profile" class="mobile-nav-link">My Profile</a></li>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/job-history" class="mobile-nav-link">My Jobs</a></li>
+                <li><a href="/2nd-Year-Group-Project/FixLanka/my-contracts" class="mobile-nav-link">My Contracts</a></li>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/chat" class="mobile-nav-link">Messages</a></li>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/settings" class="mobile-nav-link">Settings</a></li>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/help-center" class="mobile-nav-link">Help Center</a></li>

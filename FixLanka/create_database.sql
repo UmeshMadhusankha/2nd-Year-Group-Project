@@ -336,6 +336,7 @@ CREATE TABLE `companyquotation` (
   `quotation_id` int(11) NOT NULL AUTO_INCREMENT,
   `request_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
+  `company_id` int(11) DEFAULT NULL,
   `title` varchar(250) NOT NULL,
   `description` varchar(500) DEFAULT NULL,
   `labor_cost` decimal(10,2) NOT NULL,
@@ -349,6 +350,16 @@ CREATE TABLE `companyquotation` (
   `payment_terms` varchar(100) DEFAULT NULL,
   `warranty_period` varchar(50) DEFAULT NULL,
   `additional_terms` text DEFAULT NULL,
+  
+  -- Phase 1: Budget Flexibility & Payment Methods
+  `budget_type` enum('fixed','flexible') DEFAULT 'fixed' COMMENT 'Fixed or Flexible (±10%)',
+  `budget_min` decimal(10,2) DEFAULT NULL COMMENT 'Minimum budget for flexible pricing',
+  `budget_max` decimal(10,2) DEFAULT NULL COMMENT 'Maximum budget for flexible pricing',
+  `payment_method` enum('full_upfront','milestone_based','50_50','30_70','completion') DEFAULT 'full_upfront' COMMENT 'Payment method selected',
+  `pricing_type` enum('fixed_price','time_and_material') DEFAULT 'fixed_price' COMMENT 'Pricing structure type',
+  `hourly_rate` decimal(10,2) DEFAULT NULL COMMENT 'Hourly rate for Time & Material',
+  `spending_cap_multiplier` decimal(3,2) DEFAULT 1.10 COMMENT 'Spending cap multiplier for T&M (default 1.10 = 110%)',
+  
   `status` enum('pending','accepted','rejected','successful') DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -356,6 +367,9 @@ CREATE TABLE `companyquotation` (
   KEY `idx_request` (`request_id`),
   KEY `idx_user` (`user_id`),
   KEY `idx_status` (`status`),
+  KEY `idx_budget_type` (`budget_type`),
+  KEY `idx_payment_method` (`payment_method`),
+  KEY `idx_pricing_type` (`pricing_type`),
   CONSTRAINT `companyquotation_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE,
   CONSTRAINT `companyquotation_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -384,26 +398,256 @@ CREATE TABLE `project` (
   CONSTRAINT `project_ibfk_2` FOREIGN KEY (`customer_id`) REFERENCES `user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Contract
+-- Contract (Enhanced 8-Section Legal Form)
 CREATE TABLE `contract` (
   `contract_id` int(11) NOT NULL AUTO_INCREMENT,
+  `contract_number` varchar(50) DEFAULT NULL,
+  `quotation_id` int(11) DEFAULT NULL,
+  `company_id` int(11) NOT NULL,
+  `customer_id` int(11) NOT NULL,
+  `job_request_id` int(11) DEFAULT NULL,
   `project_id` int(11) NOT NULL,
+  
+  -- Section 2: Project Overview
+  `project_title` varchar(255) DEFAULT NULL,
+  `project_reference` varchar(100) DEFAULT NULL,
+  `project_location` text DEFAULT NULL,
+  `project_description` text DEFAULT NULL,
+  
+  -- Section 3: Scope of Work
+  `scope_description` text DEFAULT NULL,
+  `scope_inclusions` text DEFAULT NULL,
+  `scope_exclusions` text DEFAULT NULL,
+  `scope_standards` text DEFAULT NULL,
+  `materials_responsibility` enum('company','client','shared') DEFAULT 'company',
+  
   `milestone_plan` tinyint(1) NOT NULL DEFAULT 1,
+  `total_milestones` int(11) DEFAULT 0,
+  `completed_milestones` int(11) DEFAULT 0,
+  `progress_percentage` int(11) DEFAULT 0,
+  `auto_generated` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  
+  -- Section 5: Pricing & Payments
   `total_budget` decimal(12,2) NOT NULL,
+  `budget_type` enum('fixed','time_based','flexible') DEFAULT 'fixed',
+  `budget_min` decimal(12,2) DEFAULT NULL,
+  `budget_max` decimal(12,2) DEFAULT NULL,
+  `tax_inclusive` tinyint(1) DEFAULT 1,
+  `payment_method` enum('full_upfront','milestone_based','50_50','30_70','completion') DEFAULT 'milestone_based',
+  `advance_payment_pct` decimal(5,2) DEFAULT 0,
+  `pricing_type` enum('fixed_price','time_and_material') DEFAULT 'fixed_price',
+  `hourly_rate` decimal(10,2) DEFAULT NULL,
+  `spending_cap` decimal(12,2) DEFAULT NULL,
+  
+  -- Section 5: Delay Handling
+  `late_payment_penalty` text DEFAULT NULL,
+  `pause_work_clause` tinyint(1) DEFAULT 1,
+  `time_extension_clause` tinyint(1) DEFAULT 1,
+  
+  -- Section 6: Variations
+  `variation_clause` tinyint(1) DEFAULT 1,
+  
+  -- Section 7: Communication & Disputes
+  `communication_channel` varchar(100) DEFAULT 'system',
+  `dispute_resolution` text DEFAULT NULL,
+  
+  -- Financial Tracking
+  `actual_hours` decimal(10,2) DEFAULT 0.00,
+  `actual_cost` decimal(12,2) DEFAULT 0.00,
+  `amount_paid` decimal(12,2) DEFAULT 0.00,
+  `amount_pending` decimal(12,2) DEFAULT 0.00,
+  `payment_status` enum('pending','partial','completed','overdue') DEFAULT 'pending',
+  
+  -- Timeline
   `start_date` date NOT NULL,
   `end_date` date DEFAULT NULL,
+  `terms_accepted` tinyint(1) DEFAULT 0,
+  `terms_accepted_at` datetime DEFAULT NULL,
   `contract_date` date NOT NULL,
+  
+  -- Signatures
   `user_signature` varchar(255) NOT NULL,
   `company_signature` varchar(255) NOT NULL,
+  `customer_signature` text DEFAULT NULL,
+  `signed_at` datetime DEFAULT NULL,
+  
   `terms_conditions` text DEFAULT NULL,
-  `status` enum('draft','active','completed','terminated') DEFAULT 'draft',
+  `status` enum('draft','pending_signature','active','in_progress','milestone_pending','completed','terminated','disputed') DEFAULT 'draft',
+  
+  -- Customer Response Tracking
+  `sent_to_customer` tinyint(1) DEFAULT 0,
+  `sent_at` timestamp NULL DEFAULT NULL,
+  `customer_response` enum('pending','accepted','rejected','negotiating') DEFAULT 'pending',
+  `customer_response_at` timestamp NULL DEFAULT NULL,
+  `locked` tinyint(1) DEFAULT 0,
+  
   PRIMARY KEY (`contract_id`),
+  UNIQUE KEY `idx_contract_number` (`contract_number`),
   KEY `idx_project` (`project_id`),
+  KEY `idx_company` (`company_id`),
+  KEY `idx_customer` (`customer_id`),
+  KEY `idx_quotation` (`quotation_id`),
+  KEY `idx_job_request` (`job_request_id`),
   KEY `idx_status` (`status`),
-  CONSTRAINT `contract_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE CASCADE
+  KEY `idx_payment_status` (`payment_status`),
+  CONSTRAINT `contract_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE CASCADE,
+  CONSTRAINT `contract_ibfk_2` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE,
+  CONSTRAINT `contract_ibfk_3` FOREIGN KEY (`customer_id`) REFERENCES `user` (`user_id`),
+  CONSTRAINT `contract_ibfk_4` FOREIGN KEY (`quotation_id`) REFERENCES `companyquotation` (`quotation_id`) ON DELETE SET NULL,
+  CONSTRAINT `contract_ibfk_5` FOREIGN KEY (`job_request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Milestones
+-- Contract Milestones (Enhanced - linked to contract)
+CREATE TABLE `contract_milestone` (
+  `milestone_id` int(11) NOT NULL AUTO_INCREMENT,
+  `contract_id` int(11) NOT NULL,
+  `milestone_number` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `due_date` date NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `percentage` decimal(5,2) DEFAULT NULL,
+  `status` enum('pending','in_progress','submitted','under_review','approved','rejected','disputed','paid') DEFAULT 'pending',
+  `escrow_held` decimal(12,2) DEFAULT 0.00,
+  `payment_released` decimal(12,2) DEFAULT 0.00,
+  `payment_released_at` datetime DEFAULT NULL,
+  `proof_of_work` text DEFAULT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `reviewed_by` int(11) DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `review_comments` text DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`milestone_id`),
+  KEY `idx_contract` (`contract_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_due_date` (`due_date`),
+  KEY `idx_reviewed_by` (`reviewed_by`),
+  CONSTRAINT `contract_milestone_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Contract Audit Log (change tracking)
+CREATE TABLE `contract_audit_log` (
+  `log_id` int(11) NOT NULL AUTO_INCREMENT,
+  `contract_id` int(11) NOT NULL,
+  `milestone_id` int(11) DEFAULT NULL,
+  `action` varchar(100) NOT NULL,
+  `performed_by` int(11) NOT NULL,
+  `user_role` varchar(50) DEFAULT NULL,
+  `details` text DEFAULT NULL,
+  `old_value` text DEFAULT NULL,
+  `new_value` text DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`log_id`),
+  KEY `idx_contract` (`contract_id`),
+  KEY `idx_milestone` (`milestone_id`),
+  KEY `idx_action` (`action`),
+  KEY `idx_performed_by` (`performed_by`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `contract_audit_log_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Contract Draft (auto-save for contract creation form)
+CREATE TABLE `contract_draft` (
+  `draft_id` int(11) NOT NULL AUTO_INCREMENT,
+  `company_id` int(11) NOT NULL,
+  `quotation_id` int(11) DEFAULT NULL,
+  `form_data` json NOT NULL,
+  `current_step` int(11) DEFAULT 1,
+  `created_at` timestamp DEFAULT current_timestamp(),
+  `updated_at` timestamp DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`draft_id`),
+  KEY `idx_company` (`company_id`),
+  KEY `idx_quotation` (`quotation_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Contract Dispute
+CREATE TABLE `contract_dispute` (
+  `dispute_id` int(11) NOT NULL AUTO_INCREMENT,
+  `contract_id` int(11) NOT NULL,
+  `milestone_id` int(11) DEFAULT NULL,
+  `raised_by` int(11) NOT NULL,
+  `raised_by_role` enum('company','customer') NOT NULL,
+  `reason` text NOT NULL,
+  `evidence` text DEFAULT NULL COMMENT 'JSON array of evidence files',
+  `status` enum('open','under_review','resolved','closed') DEFAULT 'open',
+  `priority` enum('low','medium','high','critical') DEFAULT 'medium',
+  `resolution` text DEFAULT NULL,
+  `resolved_by` int(11) DEFAULT NULL COMMENT 'Admin user who resolved',
+  `resolved_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`dispute_id`),
+  KEY `raised_by` (`raised_by`),
+  KEY `resolved_by` (`resolved_by`),
+  KEY `idx_contract_id` (`contract_id`),
+  KEY `idx_milestone_id` (`milestone_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `contract_dispute_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE,
+  CONSTRAINT `contract_dispute_ibfk_2` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE CASCADE,
+  CONSTRAINT `contract_dispute_ibfk_3` FOREIGN KEY (`raised_by`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  CONSTRAINT `contract_dispute_ibfk_4` FOREIGN KEY (`resolved_by`) REFERENCES `user` (`user_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Contract Document
+CREATE TABLE `contract_document` (
+  `document_id` int(11) NOT NULL AUTO_INCREMENT,
+  `contract_id` int(11) NOT NULL,
+  `milestone_id` int(11) DEFAULT NULL,
+  `document_type` enum('contract_pdf','sow','invoice','receipt','proof_of_work','other') NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_size` int(11) DEFAULT NULL COMMENT 'Size in bytes',
+  `mime_type` varchar(100) DEFAULT NULL,
+  `uploaded_by` int(11) NOT NULL,
+  `uploaded_by_role` enum('company','customer','admin') NOT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`document_id`),
+  KEY `uploaded_by` (`uploaded_by`),
+  KEY `idx_contract_id` (`contract_id`),
+  KEY `idx_milestone_id` (`milestone_id`),
+  KEY `idx_document_type` (`document_type`),
+  CONSTRAINT `contract_document_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE,
+  CONSTRAINT `contract_document_ibfk_2` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE CASCADE,
+  CONSTRAINT `contract_document_ibfk_3` FOREIGN KEY (`uploaded_by`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Contract Payment History
+CREATE TABLE `contract_payment_history` (
+  `payment_id` int(11) NOT NULL AUTO_INCREMENT,
+  `contract_id` int(11) NOT NULL,
+  `milestone_id` int(11) DEFAULT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `payment_type` enum('escrow_deposit','milestone_release','refund','penalty','bonus') NOT NULL,
+  `payment_method` varchar(50) DEFAULT NULL,
+  `transaction_id` varchar(100) DEFAULT NULL,
+  `status` enum('pending','processing','completed','failed','refunded') DEFAULT 'pending',
+  `paid_by` int(11) DEFAULT NULL COMMENT 'Customer',
+  `paid_to` int(11) DEFAULT NULL COMMENT 'Company',
+  `notes` text DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `completed_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`payment_id`),
+  KEY `paid_by` (`paid_by`),
+  KEY `paid_to` (`paid_to`),
+  KEY `idx_contract_id` (`contract_id`),
+  KEY `idx_milestone_id` (`milestone_id`),
+  KEY `idx_payment_type` (`payment_type`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `contract_payment_history_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE,
+  CONSTRAINT `contract_payment_history_ibfk_2` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE SET NULL,
+  CONSTRAINT `contract_payment_history_ibfk_3` FOREIGN KEY (`paid_by`) REFERENCES `user` (`user_id`) ON DELETE SET NULL,
+  CONSTRAINT `contract_payment_history_ibfk_4` FOREIGN KEY (`paid_to`) REFERENCES `user` (`user_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Legacy Milestones (kept for backward compatibility)
 CREATE TABLE `milestone` (
   `milestone_id` int(11) NOT NULL AUTO_INCREMENT,
   `contract_id` int(11) NOT NULL,
