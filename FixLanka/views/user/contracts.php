@@ -110,5 +110,125 @@ if (!$userId) {
     </div>
 
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/contracts.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/budget-adjustment.js"></script>
+    <script>
+        // Customer-specific budget adjustment functions
+        
+        // Display pending budget adjustment alert
+        async function displayPendingBudgetAdjustment(contractId) {
+            try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'get_budget_adjustments',
+                        contract_id: contractId
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.adjustments) {
+                    const pending = result.adjustments.find(adj => adj.status === 'pending');
+                    
+                    if (pending) {
+                        showBudgetAdjustmentAlert(pending, contractId);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading budget adjustments:', error);
+            }
+        }
+        
+        // Show budget adjustment alert in modal
+        function showBudgetAdjustmentAlert(adjustment, contractId) {
+            const alertHTML = `
+                <div class="budget-adjustment-alert" style="
+                    background: #fff3cd;
+                    border: 2px solid #ffc107;
+                    border-radius: 8px;
+                    padding: 20px;
+                    margin: 20px 0;
+                ">
+                    <h4 style="margin-top: 0; color: #856404; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-exclamation-triangle"></i> Budget Adjustment Request Pending
+                    </h4>
+                    
+                    <table style="width: 100%; margin: 15px 0; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px; color: #666;">Original Budget:</td>
+                            <td style="padding: 10px; font-weight: bold;">LKR ${formatNumber(adjustment.original_amount)}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px; color: #666;">Requested Budget:</td>
+                            <td style="padding: 10px; font-weight: bold;">LKR ${formatNumber(adjustment.requested_amount)}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px; color: #666;">Change:</td>
+                            <td style="padding: 10px; font-weight: bold; color: ${adjustment.adjustment_amount > 0 ? '#e74c3c' : '#27ae60'};">
+                                ${adjustment.adjustment_amount > 0 ? '+' : ''}LKR ${formatNumber(Math.abs(adjustment.adjustment_amount))}
+                                (${adjustment.adjustment_percentage.toFixed(1)}%)
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                        <h5 style="margin-top: 0; color: #2c3e50;">Reason for Adjustment:</h5>
+                        <p style="color: #666; line-height: 1.6;">${escapeHtml(adjustment.reason)}</p>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                        <button onclick="rejectBudgetAdjustment(${adjustment.adjustment_id})" 
+                                class="cd-btn danger" 
+                                style="flex: 1; min-width: 150px;">
+                            <i class="fas fa-times"></i> Reject Adjustment
+                        </button>
+                        <button onclick="approveBudgetAdjustment(${adjustment.adjustment_id})" 
+                                class="cd-btn success" 
+                                style="flex: 1; min-width: 150px;">
+                            <i class="fas fa-check"></i> Approve Adjustment
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Insert alert at the top of contract detail body
+            const detailBody = document.getElementById('contractDetailBody');
+            if (detailBody) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = alertHTML;
+                detailBody.insertBefore(tempDiv.firstElementChild, detailBody.firstChild);
+            }
+        }
+        
+        // Helper functions
+        function formatNumber(num) {
+            return new Intl.NumberFormat('en-LK', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Extend the contract detail view to show budget adjustments
+        const originalShowContractDetail = window.showContractDetail || function() {};
+        
+        window.showContractDetail = function(contractId) {
+            // Call original function
+            if (typeof originalShowContractDetail === 'function') {
+                originalShowContractDetail(contractId);
+            }
+            
+            // Load budget adjustment info
+            setTimeout(() => {
+                displayPendingBudgetAdjustment(contractId);
+            }, 500);
+        };
+    </script>
 </body>
 </html>

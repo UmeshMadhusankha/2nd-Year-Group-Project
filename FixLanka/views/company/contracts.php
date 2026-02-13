@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Company Contracts Page
  * 
@@ -208,8 +208,8 @@ if (!$userId) {
                     <!-- Legal Document Header -->
                     <div class="preview-header">
                         <h2>CONSTRUCTION SERVICE AGREEMENT</h2>
-                        <p class="preview-ref" id="viewRef">Contract Reference: —</p>
-                        <p class="preview-date">Date: <span id="viewDate">—</span></p>
+                        <p class="preview-ref" id="viewRef">Contract Reference: â€”</p>
+                        <p class="preview-date">Date: <span id="viewDate">â€”</span></p>
                         <div class="contract-status-badge" id="viewStatus">Draft</div>
                     </div>
 
@@ -219,13 +219,13 @@ if (!$userId) {
                         <div class="preview-parties">
                             <div>
                                 <strong>First Party (Client):</strong>
-                                <span id="viewClientName">—</span><br>
-                                <small id="viewClientDetails">—</small>
+                                <span id="viewClientName">â€”</span><br>
+                                <small id="viewClientDetails">â€”</small>
                             </div>
                             <div>
                                 <strong>Second Party (Contractor):</strong>
-                                <span id="viewCompanyName">—</span><br>
-                                <small id="viewCompanyDetails">—</small>
+                                <span id="viewCompanyName">â€”</span><br>
+                                <small id="viewCompanyDetails">â€”</small>
                             </div>
                         </div>
                     </div>
@@ -234,37 +234,37 @@ if (!$userId) {
                     <div class="preview-section">
                         <h4>2. PROJECT OVERVIEW</h4>
                         <div class="preview-grid">
-                            <div><strong>Title:</strong> <span id="viewTitle">—</span></div>
-                            <div><strong>Reference:</strong> <span id="viewProjectRef">—</span></div>
-                            <div><strong>Location:</strong> <span id="viewLocation">—</span></div>
-                            <div><strong>Type:</strong> <span id="viewType">—</span></div>
+                            <div><strong>Title:</strong> <span id="viewTitle">â€”</span></div>
+                            <div><strong>Reference:</strong> <span id="viewProjectRef">â€”</span></div>
+                            <div><strong>Location:</strong> <span id="viewLocation">â€”</span></div>
+                            <div><strong>Type:</strong> <span id="viewType">â€”</span></div>
                         </div>
-                        <p id="viewDescription" style="margin-top:8px;color:#4a5568;">—</p>
+                        <p id="viewDescription" style="margin-top:8px;color:#4a5568;">â€”</p>
                     </div>
 
                     <!-- Section 3: Scope -->
                     <div class="preview-section" id="viewScopeSection">
                         <h4>3. SCOPE OF WORK</h4>
-                        <p id="viewScopeDesc">—</p>
+                        <p id="viewScopeDesc">â€”</p>
                         <div class="preview-grid" style="margin-top:10px;">
                             <div>
                                 <strong>Inclusions:</strong>
-                                <pre id="viewInclusions" class="preview-pre">—</pre>
+                                <pre id="viewInclusions" class="preview-pre">â€”</pre>
                             </div>
                             <div>
                                 <strong>Exclusions:</strong>
-                                <pre id="viewExclusions" class="preview-pre">—</pre>
+                                <pre id="viewExclusions" class="preview-pre">â€”</pre>
                             </div>
                         </div>
-                        <p><strong>Materials:</strong> <span id="viewMaterials">—</span></p>
+                        <p><strong>Materials:</strong> <span id="viewMaterials">â€”</span></p>
                     </div>
 
                     <!-- Section 4: Timeline & Milestones -->
                     <div class="preview-section">
                         <h4>4. PROJECT DURATION & MILESTONES</h4>
                         <div class="preview-grid cols-3">
-                            <div><strong>Start:</strong> <span id="viewStartDate">—</span></div>
-                            <div><strong>Completion:</strong> <span id="viewEndDate">—</span></div>
+                            <div><strong>Start:</strong> <span id="viewStartDate">â€”</span></div>
+                            <div><strong>Completion:</strong> <span id="viewEndDate">â€”</span></div>
                             <div><strong>Progress:</strong> <span id="viewProgress">0%</span></div>
                         </div>
                         <div id="viewMilestonesContainer" style="margin-top:10px;"></div>
@@ -274,36 +274,64 @@ if (!$userId) {
                     <div class="preview-section">
                         <h4>5. PRICING, PAYMENTS & DELAYS</h4>
                         <div class="preview-grid cols-3">
-                            <div><strong>Contract Value:</strong> <span id="viewValue" class="preview-value">—</span></div>
-                            <div><strong>Budget Type:</strong> <span id="viewBudgetType">—</span></div>
-                            <div><strong>Payment Method:</strong> <span id="viewPaymentMethod">—</span></div>
+                            <div><strong>Contract Value:</strong> <span id="viewValue" class="preview-value">â€”</span></div>
+                            <div><strong>Budget Type:</strong> <span id="viewBudgetType">â€”</span></div>
+                            <div><strong>Payment Method:</strong> <span id="viewPaymentMethod">â€”</span></div>
                         </div>
                         <div class="preview-grid" style="margin-top:10px;">
                             <div><strong>Amount Paid:</strong> <span id="viewAmountPaid">LKR 0</span></div>
-                            <div><strong>Remaining:</strong> <span id="viewAmountPending">—</span></div>
+                            <div><strong>Remaining:</strong> <span id="viewAmountPending">â€”</span></div>
                         </div>
                         <p style="margin-top:8px;"><strong>Late Payment:</strong> <span id="viewLatePayment">As per standard terms</span></p>
+                    </div>
+
+                    <!-- Section 5.1: Budget Flexibility (Phase 3) -->
+                    <div class="preview-section" id="budgetFlexibilitySection" style="display:none;">
+                        <h4>5.1 BUDGET FLEXIBILITY</h4>
+                        <div class="budget-info-box">
+                            <div class="budget-type-display">
+                                <span class="badge" id="budgetTypeBadge"></span>
+                                <div id="budgetRangeInfo" style="display:none; margin-top: 10px;">
+                                    <p><strong>Allowed Budget Range:</strong></p>
+                                    <div class="preview-grid cols-2" style="margin-top: 5px;">
+                                        <div>Minimum: <span id="viewBudgetMin" class="preview-value">â€”</span></div>
+                                        <div>Maximum: <span id="viewBudgetMax" class="preview-value">â€”</span></div>
+                                    </div>
+                                    <p style="margin-top: 8px; font-size: 13px; color: #666;">
+                                        <em>Final cost may vary within Â±10% range to accommodate material price changes or necessary adjustments. All changes require customer approval.</em>
+                                    </p>
+                                </div>
+                                <div id="budgetFixedInfo" style="display:none; margin-top: 10px;">
+                                    <p style="font-size: 13px; color: #666;">
+                                        <em>Total cost is locked. No adjustments allowed without new quotation.</em>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Budget Adjustment Container -->
+                        <div id="budgetAdjustmentContainer" style="margin-top: 15px;"></div>
                     </div>
 
                     <!-- Section 6: Variations -->
                     <div class="preview-section">
                         <h4>6. VARIATIONS & CHANGES</h4>
-                        <p id="viewVariation">—</p>
+                        <p id="viewVariation">â€”</p>
                     </div>
 
                     <!-- Section 7: Communication & Disputes -->
                     <div class="preview-section">
                         <h4>7. COMMUNICATION & DISPUTE RESOLUTION</h4>
-                        <p><strong>Channel:</strong> <span id="viewCommChannel">—</span></p>
-                        <p id="viewDisputeRes">—</p>
+                        <p><strong>Channel:</strong> <span id="viewCommChannel">â€”</span></p>
+                        <p id="viewDisputeRes">â€”</p>
                     </div>
 
                     <!-- Customer Response Status -->
                     <div class="preview-section" id="viewCustomerResponseSection" style="display:none;">
                         <h4>8. CUSTOMER RESPONSE</h4>
                         <div class="preview-grid">
-                            <div><strong>Sent to Customer:</strong> <span id="viewSentStatus">—</span></div>
-                            <div><strong>Response:</strong> <span id="viewCustomerResponse">—</span></div>
+                            <div><strong>Sent to Customer:</strong> <span id="viewSentStatus">â€”</span></div>
+                            <div><strong>Response:</strong> <span id="viewCustomerResponse">â€”</span></div>
                         </div>
                     </div>
                 </div>
@@ -582,11 +610,11 @@ if (!$userId) {
                             </div>
                             <div class="progress-step" data-step="5">
                                 <div class="progress-dot"></div>
-                                <div class="progress-label">Payments</div>
+                                <div class="progress-label">Timeline</div>
                             </div>
                             <div class="progress-step" data-step="6">
                                 <div class="progress-dot"></div>
-                                <div class="progress-label">Timeline</div>
+                                <div class="progress-label">Payments</div>
                             </div>
                             <div class="progress-step" data-step="7">
                                 <div class="progress-dot"></div>
@@ -643,7 +671,7 @@ if (!$userId) {
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="2">
                         <div class="step-header">
-                            <h3><i class="fas fa-users"></i> Section 1 — Parties to the Contract</h3>
+                            <h3><i class="fas fa-users"></i> Section 1 â€” Parties to the Contract</h3>
                             <p class="step-description">This section defines who is legally bound. All data is auto-filled and <strong>read-only</strong> to prevent legal errors.</p>
                         </div>
 
@@ -657,21 +685,21 @@ if (!$userId) {
                                 <div class="party-card-body">
                                     <div class="party-field">
                                         <label>Full Name</label>
-                                        <div class="party-value" id="partyClientName">—</div>
+                                        <div class="party-value" id="partyClientName">â€”</div>
                                         <input type="hidden" id="clientName" name="client_name">
                                     </div>
                                     <div class="party-field">
                                         <label>Address</label>
-                                        <div class="party-value" id="partyClientAddress">—</div>
+                                        <div class="party-value" id="partyClientAddress">â€”</div>
                                     </div>
                                     <div class="party-field">
                                         <label>Email</label>
-                                        <div class="party-value" id="partyClientEmail">—</div>
+                                        <div class="party-value" id="partyClientEmail">â€”</div>
                                         <input type="hidden" id="clientEmail" name="client_email">
                                     </div>
                                     <div class="party-field">
                                         <label>District</label>
-                                        <div class="party-value" id="partyClientDistrict">—</div>
+                                        <div class="party-value" id="partyClientDistrict">â€”</div>
                                     </div>
                                 </div>
                             </div>
@@ -685,19 +713,19 @@ if (!$userId) {
                                 <div class="party-card-body">
                                     <div class="party-field">
                                         <label>Company Name</label>
-                                        <div class="party-value" id="partyCompanyName">—</div>
+                                        <div class="party-value" id="partyCompanyName">â€”</div>
                                     </div>
                                     <div class="party-field">
                                         <label>Business Registration No.</label>
-                                        <div class="party-value" id="partyCompanyReg">—</div>
+                                        <div class="party-value" id="partyCompanyReg">â€”</div>
                                     </div>
                                     <div class="party-field">
                                         <label>Registered Address</label>
-                                        <div class="party-value" id="partyCompanyAddress">—</div>
+                                        <div class="party-value" id="partyCompanyAddress">â€”</div>
                                     </div>
                                     <div class="party-field">
                                         <label>Contact</label>
-                                        <div class="party-value" id="partyCompanyContact">—</div>
+                                        <div class="party-value" id="partyCompanyContact">â€”</div>
                                     </div>
                                 </div>
                             </div>
@@ -714,7 +742,7 @@ if (!$userId) {
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="3">
                         <div class="step-header">
-                            <h3><i class="fas fa-project-diagram"></i> Section 2 — Project Overview</h3>
+                            <h3><i class="fas fa-project-diagram"></i> Section 2 â€” Project Overview</h3>
                             <p class="step-description">Clearly identify which project this contract applies to. Auto-filled from the quotation; editable while in draft.</p>
                         </div>
 
@@ -722,7 +750,7 @@ if (!$userId) {
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="projectTitle">Project Title <span class="required">*</span></label>
-                                    <input type="text" id="projectTitle" name="project_title" required placeholder="e.g., Roof Repair – Colombo 7">
+                                    <input type="text" id="projectTitle" name="project_title" required placeholder="e.g., Roof Repair â€“ Colombo 7">
                                 </div>
                                 <div class="form-group">
                                     <label for="projectReference">Project Reference ID</label>
@@ -749,7 +777,7 @@ if (!$userId) {
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="4">
                         <div class="step-header">
-                            <h3><i class="fas fa-tasks"></i> Section 3 — Scope of Work</h3>
+                            <h3><i class="fas fa-tasks"></i> Section 3 â€” Scope of Work</h3>
                             <p class="step-description">This is the <strong>most critical section</strong>. Define exactly what work is included and excluded.</p>
                         </div>
 
@@ -763,12 +791,12 @@ if (!$userId) {
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="scopeInclusions">Inclusions</label>
-                                    <textarea id="scopeInclusions" name="scope_inclusions" rows="4" placeholder="List what IS included:&#10;• All labour costs&#10;• Standard materials&#10;• Site cleanup"></textarea>
+                                    <textarea id="scopeInclusions" name="scope_inclusions" rows="4" placeholder="List what IS included:&#10;â€¢ All labour costs&#10;â€¢ Standard materials&#10;â€¢ Site cleanup"></textarea>
                                     <small class="field-hint">What the contract price covers</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="scopeExclusions">Exclusions</label>
-                                    <textarea id="scopeExclusions" name="scope_exclusions" rows="4" placeholder="List what is NOT included:&#10;• Permits & licenses&#10;• Structural changes&#10;• Furniture removal"></textarea>
+                                    <textarea id="scopeExclusions" name="scope_exclusions" rows="4" placeholder="List what is NOT included:&#10;â€¢ Permits & licenses&#10;â€¢ Structural changes&#10;â€¢ Furniture removal"></textarea>
                                     <small class="field-hint">What is explicitly NOT covered</small>
                                 </div>
                             </div>
@@ -811,139 +839,11 @@ if (!$userId) {
                     </div>
 
                     <!-- =============================== -->
-                    <!-- STEP 5: Pricing, Payments & Delays -->
+                    <!-- STEP 5: Timeline & Milestones -->
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="5">
                         <div class="step-header">
-                            <h3><i class="fas fa-dollar-sign"></i> Section 5 — Pricing, Payments & Delays</h3>
                             <p class="step-description">Define the financial terms of the contract including pricing structure, payment schedule, and consequences for delays.</p>
-                        </div>
-
-                        <div class="legal-section">
-                            <!-- Pricing -->
-                            <div class="subsection">
-                                <h4 class="subsection-title"><i class="fas fa-tags"></i> Contract Pricing</h4>
-                                <div class="form-grid cols-3">
-                                    <div class="form-group">
-                                        <label for="contractValue">Total Contract Value (LKR) <span class="required">*</span></label>
-                                        <input type="number" id="contractValue" name="total_budget" required min="0" step="100" placeholder="From quotation">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="budgetType">Contract Type <span class="required">*</span></label>
-                                        <select id="budgetType" name="budget_type" required>
-                                            <option value="fixed">Fixed Price</option>
-                                            <option value="time_based">Time-Based</option>
-                                            <option value="flexible">Flexible (±10%)</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="taxInclusive">Tax Inclusion</label>
-                                        <select id="taxInclusive" name="tax_inclusive">
-                                            <option value="1">All taxes included</option>
-                                            <option value="0">Taxes additional</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-grid" id="budgetRangeRow" style="display:none;">
-                                    <div class="form-group">
-                                        <label for="budgetMin">Minimum (LKR)</label>
-                                        <input type="number" id="budgetMin" name="budget_min" readonly class="readonly-field">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="budgetMax">Maximum (LKR)</label>
-                                        <input type="number" id="budgetMax" name="budget_max" readonly class="readonly-field">
-                                    </div>
-                                </div>
-
-                                <!-- Cost Breakdown (read-only from quotation) -->
-                                <div class="cost-breakdown" id="costBreakdown" style="display:none;">
-                                    <h5>Cost Breakdown (from Quotation)</h5>
-                                    <div class="breakdown-grid">
-                                        <div class="breakdown-item"><span>Labour</span><span id="bdLabour">—</span></div>
-                                        <div class="breakdown-item"><span>Materials</span><span id="bdMaterials">—</span></div>
-                                        <div class="breakdown-item"><span>Transport</span><span id="bdTransport">—</span></div>
-                                        <div class="breakdown-item"><span>Other</span><span id="bdOther">—</span></div>
-                                        <div class="breakdown-item total"><span>Total</span><span id="bdTotal">—</span></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Payment Schedule -->
-                            <div class="subsection">
-                                <h4 class="subsection-title"><i class="fas fa-credit-card"></i> Payment Schedule</h4>
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label for="paymentMethod">Payment Method <span class="required">*</span></label>
-                                        <select id="paymentMethod" name="payment_method" required>
-                                            <option value="full_upfront">Full Payment Upfront (100%)</option>
-                                            <option value="milestone_based">Milestone-Based Payments</option>
-                                            <option value="50_50">50% Upfront + 50% on Completion</option>
-                                            <option value="30_70">30% Upfront + 70% on Completion</option>
-                                            <option value="completion">100% After Completion</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="pricingType">Pricing Structure</label>
-                                        <select id="pricingType" name="pricing_type">
-                                            <option value="fixed_price">Fixed Price</option>
-                                            <option value="time_and_material">Time & Material (Hourly)</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="form-grid" id="hourlyRateRow" style="display:none;">
-                                    <div class="form-group">
-                                        <label for="hourlyRate">Hourly Rate (LKR)</label>
-                                        <input type="number" id="hourlyRate" name="hourly_rate" min="0" step="100" placeholder="e.g., 5000">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="spendingCap">Spending Cap (LKR)</label>
-                                        <input type="number" id="spendingCap" name="spending_cap" readonly class="readonly-field" placeholder="Auto: 110% of budget">
-                                    </div>
-                                </div>
-
-                                <!-- Payment Preview -->
-                                <div class="payment-preview" id="paymentPreview">
-                                    <h5><i class="fas fa-receipt"></i> Payment Schedule Preview</h5>
-                                    <div id="milestonePaymentNotice" class="milestone-payment-notice" style="display:none;">
-                                        <i class="fas fa-link"></i>
-                                        <span>Payments are linked to your project milestones in Step 6. <a href="#" id="goToMilestonesLink">Edit milestones →</a></span>
-                                    </div>
-                                    <div id="paymentScheduleBody"></div>
-                                </div>
-                            </div>
-
-                            <!-- Delay Handling -->
-                            <div class="subsection">
-                                <h4 class="subsection-title"><i class="fas fa-clock"></i> Delay & Late Payment Handling</h4>
-                                <div class="form-group full-width">
-                                    <label for="latePaymentPenalty">Late Payment Consequences</label>
-                                    <textarea id="latePaymentPenalty" name="late_payment_penalty" rows="2" placeholder="e.g., Interest of 2% per month on overdue payments after a 7-day grace period.">Interest of 2% per month on overdue payments after a 7-day grace period.</textarea>
-                                </div>
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" id="pauseWorkClause" name="pause_work_clause" value="1" checked>
-                                            <span>Company may pause work if payment is overdue by 14+ days</span>
-                                        </label>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" id="timeExtensionClause" name="time_extension_clause" value="1" checked>
-                                            <span>Automatic time extension for client-caused delays</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- =============================== -->
-                    <!-- STEP 6: Timeline & Milestones -->
-                    <!-- =============================== -->
-                    <div class="form-step-content" data-step="6">
-                        <div class="step-header">
-                            <h3><i class="fas fa-calendar-alt"></i> Section 4 — Project Duration & Milestones</h3>
                             <p class="step-description">Set the project timeline and define key milestones for tracking and payments.</p>
                         </div>
 
@@ -1046,11 +946,141 @@ if (!$userId) {
                     </div>
 
                     <!-- =============================== -->
+
+                    <!-- STEP 6: Pricing, Payments & Delays -->
+                    <!-- =============================== -->
+                    <div class="form-step-content" data-step="6">
+                        <div class="step-header">
+                            <p class="step-description">Set the project timeline and define key milestones for tracking and payments.</p>
+                            <p class="step-description">Define the financial terms of the contract including pricing structure, payment schedule, and consequences for delays.</p>
+                        </div>
+
+                        <div class="legal-section">
+                            <!-- Pricing -->
+                            <div class="subsection">
+                                <h4 class="subsection-title"><i class="fas fa-tags"></i> Contract Pricing</h4>
+                                <div class="form-grid cols-3">
+                                    <div class="form-group">
+                                        <label for="contractValue">Total Contract Value (LKR) <span class="required">*</span></label>
+                                        <input type="number" id="contractValue" name="total_budget" required min="0" step="100" placeholder="From quotation">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="budgetType">Contract Type <span class="required">*</span></label>
+                                        <select id="budgetType" name="budget_type" required>
+                                            <option value="fixed">Fixed Price</option>
+                                            <option value="time_based">Time-Based</option>
+                                            <option value="flexible">Flexible (Â±10%)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="taxInclusive">Tax Inclusion</label>
+                                        <select id="taxInclusive" name="tax_inclusive">
+                                            <option value="1">All taxes included</option>
+                                            <option value="0">Taxes additional</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-grid" id="budgetRangeRow" style="display:none;">
+                                    <div class="form-group">
+                                        <label for="budgetMin">Minimum (LKR)</label>
+                                        <input type="number" id="budgetMin" name="budget_min" readonly class="readonly-field">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="budgetMax">Maximum (LKR)</label>
+                                        <input type="number" id="budgetMax" name="budget_max" readonly class="readonly-field">
+                                    </div>
+                                </div>
+
+                                <!-- Cost Breakdown (read-only from quotation) -->
+                                <div class="cost-breakdown" id="costBreakdown" style="display:none;">
+                                    <h5>Cost Breakdown (from Quotation)</h5>
+                                    <div class="breakdown-grid">
+                                        <div class="breakdown-item"><span>Labour</span><span id="bdLabour">â€”</span></div>
+                                        <div class="breakdown-item"><span>Materials</span><span id="bdMaterials">â€”</span></div>
+                                        <div class="breakdown-item"><span>Transport</span><span id="bdTransport">â€”</span></div>
+                                        <div class="breakdown-item"><span>Other</span><span id="bdOther">â€”</span></div>
+                                        <div class="breakdown-item total"><span>Total</span><span id="bdTotal">â€”</span></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Schedule -->
+                            <div class="subsection">
+                                <h4 class="subsection-title"><i class="fas fa-credit-card"></i> Payment Schedule</h4>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="paymentMethod">Payment Method <span class="required">*</span></label>
+                                        <select id="paymentMethod" name="payment_method" required>
+                                            <option value="full_upfront">Full Payment Upfront (100%)</option>
+                                            <option value="milestone_based">Milestone-Based Payments</option>
+                                            <option value="50_50">50% Upfront + 50% on Completion</option>
+                                            <option value="30_70">30% Upfront + 70% on Completion</option>
+                                            <option value="completion">100% After Completion</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="pricingType">Pricing Structure</label>
+                                        <select id="pricingType" name="pricing_type">
+                                            <option value="fixed_price">Fixed Price</option>
+                                            <option value="time_and_material">Time & Material (Hourly)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-grid" id="hourlyRateRow" style="display:none;">
+                                    <div class="form-group">
+                                        <label for="hourlyRate">Hourly Rate (LKR)</label>
+                                        <input type="number" id="hourlyRate" name="hourly_rate" min="0" step="100" placeholder="e.g., 5000">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="spendingCap">Spending Cap (LKR)</label>
+                                        <input type="number" id="spendingCap" name="spending_cap" readonly class="readonly-field" placeholder="Auto: 110% of budget">
+                                    </div>
+                                </div>
+
+                                <!-- Payment Preview -->
+                                <div class="payment-preview" id="paymentPreview">
+                                    <h5><i class="fas fa-receipt"></i> Payment Schedule Preview</h5>
+                                    <div id="milestonePaymentNotice" class="milestone-payment-notice" style="display:none;">
+                                        <i class="fas fa-link"></i>
+                                        <span>Payments are linked to your project milestones in Step 6. <a href="#" id="goToMilestonesLink">Edit milestones â†’</a></span>
+                                    </div>
+                                    <div id="paymentScheduleBody"></div>
+                                </div>
+                            </div>
+
+                            <!-- Delay Handling -->
+                            <div class="subsection">
+                                <h4 class="subsection-title"><i class="fas fa-clock"></i> Delay & Late Payment Handling</h4>
+                                <div class="form-group full-width">
+                                    <label for="latePaymentPenalty">Late Payment Consequences</label>
+                                    <textarea id="latePaymentPenalty" name="late_payment_penalty" rows="2" placeholder="e.g., Interest of 2% per month on overdue payments after a 7-day grace period.">Interest of 2% per month on overdue payments after a 7-day grace period.</textarea>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="pauseWorkClause" name="pause_work_clause" value="1" checked>
+                                            <span>Company may pause work if payment is overdue by 14+ days</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="timeExtensionClause" name="time_extension_clause" value="1" checked>
+                                            <span>Automatic time extension for client-caused delays</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- =============================== -->
+
                     <!-- STEP 7: Variations, Communication, Additional Terms -->
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="7">
                         <div class="step-header">
-                            <h3><i class="fas fa-gavel"></i> Sections 6 & 7 — Variations, Communication & Additional Terms</h3>
+                            <h3><i class="fas fa-gavel"></i> Sections 6 & 7 â€” Variations, Communication & Additional Terms</h3>
                             <p class="step-description">Legal clauses for change control, dispute resolution, and any additional terms.</p>
                         </div>
 
@@ -1088,7 +1118,7 @@ if (!$userId) {
                                 </div>
                                 <div class="form-group full-width">
                                     <label for="disputeResolution">Dispute Resolution Process</label>
-                                    <textarea id="disputeResolution" name="dispute_resolution" rows="3" placeholder="Default: Negotiation → Mediation via FixLanka → External arbitration">Both parties agree to attempt resolution through negotiation via the FixLanka platform before seeking external mediation or arbitration. A message log of all communications will be maintained as part of the contract record.</textarea>
+                                    <textarea id="disputeResolution" name="dispute_resolution" rows="3" placeholder="Default: Negotiation â†’ Mediation via FixLanka â†’ External arbitration">Both parties agree to attempt resolution through negotiation via the FixLanka platform before seeking external mediation or arbitration. A message log of all communications will be maintained as part of the contract record.</textarea>
                                 </div>
                             </div>
 
@@ -1118,7 +1148,7 @@ if (!$userId) {
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="8">
                         <div class="step-header">
-                            <h3><i class="fas fa-check-double"></i> Section 8 — Review & Finalize</h3>
+                            <h3><i class="fas fa-check-double"></i> Section 8 â€” Review & Finalize</h3>
                             <p class="step-description">Review the complete contract before sending to customer. This preview mirrors the final legal document.</p>
                         </div>
 
@@ -1126,7 +1156,7 @@ if (!$userId) {
                             <!-- Legal Document Header -->
                             <div class="preview-header">
                                 <h2>CONSTRUCTION SERVICE AGREEMENT</h2>
-                                <p class="preview-ref" id="previewRef">Contract Reference: —</p>
+                                <p class="preview-ref" id="previewRef">Contract Reference: â€”</p>
                                 <p class="preview-date">Date: <span id="previewDate"></span></p>
                             </div>
 
@@ -1136,13 +1166,13 @@ if (!$userId) {
                                 <div class="preview-parties">
                                     <div>
                                         <strong>First Party (Client):</strong>
-                                        <span id="previewClientName">—</span><br>
-                                        <small id="previewClientDetails">—</small>
+                                        <span id="previewClientName">â€”</span><br>
+                                        <small id="previewClientDetails">â€”</small>
                                     </div>
                                     <div>
                                         <strong>Second Party (Contractor):</strong>
-                                        <span id="previewCompanyName">—</span><br>
-                                        <small id="previewCompanyDetails">—</small>
+                                        <span id="previewCompanyName">â€”</span><br>
+                                        <small id="previewCompanyDetails">â€”</small>
                                     </div>
                                 </div>
                             </div>
@@ -1151,38 +1181,38 @@ if (!$userId) {
                             <div class="preview-section">
                                 <h4>2. PROJECT OVERVIEW</h4>
                                 <div class="preview-grid">
-                                    <div><strong>Title:</strong> <span id="previewProjectTitle">—</span></div>
-                                    <div><strong>Reference:</strong> <span id="previewProjectRef">—</span></div>
-                                    <div><strong>Location:</strong> <span id="previewProjectLocation">—</span></div>
-                                    <div><strong>Type:</strong> <span id="previewProjectType">—</span></div>
+                                    <div><strong>Title:</strong> <span id="previewProjectTitle">â€”</span></div>
+                                    <div><strong>Reference:</strong> <span id="previewProjectRef">â€”</span></div>
+                                    <div><strong>Location:</strong> <span id="previewProjectLocation">â€”</span></div>
+                                    <div><strong>Type:</strong> <span id="previewProjectType">â€”</span></div>
                                 </div>
-                                <p id="previewProjectDesc" style="margin-top:8px;color:#4a5568;">—</p>
+                                <p id="previewProjectDesc" style="margin-top:8px;color:#4a5568;">â€”</p>
                             </div>
 
                             <!-- Section 3: Scope -->
                             <div class="preview-section">
                                 <h4>3. SCOPE OF WORK</h4>
-                                <p id="previewScopeDesc">—</p>
+                                <p id="previewScopeDesc">â€”</p>
                                 <div class="preview-grid" style="margin-top:10px;">
                                     <div>
                                         <strong>Inclusions:</strong>
-                                        <pre id="previewInclusions" class="preview-pre">—</pre>
+                                        <pre id="previewInclusions" class="preview-pre">â€”</pre>
                                     </div>
                                     <div>
                                         <strong>Exclusions:</strong>
-                                        <pre id="previewExclusions" class="preview-pre">—</pre>
+                                        <pre id="previewExclusions" class="preview-pre">â€”</pre>
                                     </div>
                                 </div>
-                                <p><strong>Materials:</strong> <span id="previewMaterials">—</span></p>
+                                <p><strong>Materials:</strong> <span id="previewMaterials">â€”</span></p>
                             </div>
 
                             <!-- Section 4: Timeline -->
                             <div class="preview-section">
                                 <h4>4. PROJECT DURATION & MILESTONES</h4>
                                 <div class="preview-grid cols-3">
-                                    <div><strong>Start:</strong> <span id="previewStartDate">—</span></div>
-                                    <div><strong>Completion:</strong> <span id="previewEndDate">—</span></div>
-                                    <div><strong>Duration:</strong> <span id="previewDuration">—</span> days</div>
+                                    <div><strong>Start:</strong> <span id="previewStartDate">â€”</span></div>
+                                    <div><strong>Completion:</strong> <span id="previewEndDate">â€”</span></div>
+                                    <div><strong>Duration:</strong> <span id="previewDuration">â€”</span> days</div>
                                 </div>
                                 <table class="preview-milestones-table" id="previewMilestonesTable" style="margin-top:10px;">
                                     <thead><tr><th>#</th><th>Milestone</th><th>Date</th></tr></thead>
@@ -1194,29 +1224,29 @@ if (!$userId) {
                             <div class="preview-section">
                                 <h4>5. PRICING, PAYMENTS & DELAYS</h4>
                                 <div class="preview-grid cols-3">
-                                    <div><strong>Contract Value:</strong> <span id="previewValue">—</span></div>
-                                    <div><strong>Type:</strong> <span id="previewBudgetType">—</span></div>
-                                    <div><strong>Payment:</strong> <span id="previewPaymentMethod">—</span></div>
+                                    <div><strong>Contract Value:</strong> <span id="previewValue">â€”</span></div>
+                                    <div><strong>Type:</strong> <span id="previewBudgetType">â€”</span></div>
+                                    <div><strong>Payment:</strong> <span id="previewPaymentMethod">â€”</span></div>
                                 </div>
                                 <div id="previewPaymentSchedule" style="margin-top:10px;"></div>
-                                <p style="margin-top:8px;"><strong>Late Payment:</strong> <span id="previewLatePayment">—</span></p>
+                                <p style="margin-top:8px;"><strong>Late Payment:</strong> <span id="previewLatePayment">â€”</span></p>
                             </div>
 
                             <!-- Section 6 & 7: Clauses -->
                             <div class="preview-section">
                                 <h4>6. VARIATIONS & CHANGES</h4>
-                                <p id="previewVariation">—</p>
+                                <p id="previewVariation">â€”</p>
                             </div>
                             <div class="preview-section">
                                 <h4>7. COMMUNICATION & DISPUTE RESOLUTION</h4>
-                                <p><strong>Channel:</strong> <span id="previewCommChannel">—</span></p>
-                                <p id="previewDisputeRes">—</p>
+                                <p><strong>Channel:</strong> <span id="previewCommChannel">â€”</span></p>
+                                <p id="previewDisputeRes">â€”</p>
                             </div>
 
                             <!-- Additional -->
                             <div class="preview-section" id="previewAdditionalSection" style="display:none;">
                                 <h4>ADDITIONAL TERMS</h4>
-                                <p id="previewAdditionalTerms">—</p>
+                                <p id="previewAdditionalTerms">â€”</p>
                             </div>
                         </div>
                     </div>
@@ -1265,8 +1295,8 @@ if (!$userId) {
                     <p style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
                         Send this contract to the customer?
                     </p>
-                    <p id="sendContractTitle" style="font-size: 14px; color: #666; margin-bottom: 5px;">—</p>
-                    <p id="sendContractClient" style="font-size: 14px; color: #666; margin-bottom: 20px;">—</p>
+                    <p id="sendContractTitle" style="font-size: 14px; color: #666; margin-bottom: 5px;">â€”</p>
+                    <p id="sendContractClient" style="font-size: 14px; color: #666; margin-bottom: 20px;">â€”</p>
                     <div style="background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 8px; padding: 12px 16px; text-align: left; font-size: 13px; color: #555;">
                         <i class="fas fa-info-circle" style="color: var(--primary-color, #0abab5); margin-right: 6px;"></i>
                         The customer will be able to <strong>view</strong>, <strong>accept</strong>, or <strong>decline</strong> this contract from their dashboard.
@@ -1521,13 +1551,13 @@ if (!$userId) {
                         <i class="fas fa-info-circle"></i>
                         <p><strong>Status Workflow:</strong></p>
                         <ul>
-                            <li><strong>Draft</strong> → Contract being prepared</li>
-                            <li><strong>Sent</strong> → Awaiting customer response</li>
-                            <li><strong>Under Review</strong> → Customer reviewing</li>
-                            <li><strong>Rejected</strong> → Customer declined</li>
-                            <li><strong>Negotiating</strong> → Changes being discussed</li>
-                            <li><strong>Accepted</strong> → Customer agreed</li>
-                            <li><strong>Active</strong> → Work in progress</li>
+                            <li><strong>Draft</strong> â†’ Contract being prepared</li>
+                            <li><strong>Sent</strong> â†’ Awaiting customer response</li>
+                            <li><strong>Under Review</strong> â†’ Customer reviewing</li>
+                            <li><strong>Rejected</strong> â†’ Customer declined</li>
+                            <li><strong>Negotiating</strong> â†’ Changes being discussed</li>
+                            <li><strong>Accepted</strong> â†’ Customer agreed</li>
+                            <li><strong>Active</strong> â†’ Work in progress</li>
                         </ul>
                     </div>
                 </form>
@@ -1634,15 +1664,202 @@ if (!$userId) {
         </div>
     </div>
 
+    <!-- ========================================
+         MILESTONE PLAN BUILDER MODAL
+         ======================================== -->
+    <div id="milestonePlanModal" class="modal" style="display: none;">
+        <div class="modal-content milestone-modal-large">
+            <button class="modal-close" onclick="closeMilestonePlanModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="modal-header">
+                <h2><i class="fas fa-clipboard-list"></i> Create Milestone Plan</h2>
+                <p>Define the payment milestones for this contract. Percentages must total exactly 100%.</p>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Contract Info Summary -->
+                <div class="milestone-contract-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Contract ID:</span>
+                        <span class="summary-value" id="msPlanContractId">-</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Total Budget:</span>
+                        <span class="summary-value" id="msPlanBudget">-</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Duration:</span>
+                        <span class="summary-value" id="msPlanDuration">-</span>
+                    </div>
+                </div>
+                
+                <!-- Percentage Tracker -->
+                <div class="percentage-tracker">
+                    <div class="percentage-header">
+                        <span class="percentage-label">Total Percentage:</span>
+                        <span class="percentage-value" id="totalPercentage">0.00%</span>
+                    </div>
+                    <div class="percentage-bar">
+                        <div class="percentage-fill" id="percentageFill" style="width: 0%"></div>
+                    </div>
+                    <div class="percentage-warning" id="percentageWarning"></div>
+                </div>
+                
+                <!-- Milestones Container -->
+                <div id="milestonesContainer" class="milestones-container">
+                    <!-- Milestones will be added dynamically -->
+                </div>
+                
+                <button type="button" class="btn-add-milestone" onclick="addMilestone()">
+                    <i class="fas fa-plus"></i> Add Milestone
+                </button>
+                
+                <!-- Action Buttons -->
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="closeMilestonePlanModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button class="btn btn-info" onclick="previewMilestonePlan()">
+                        <i class="fas fa-eye"></i> Preview
+                    </button>
+                    <button class="btn btn-success" id="submitPlanBtn" onclick="submitMilestonePlan()" disabled>
+                        <i class="fas fa-check"></i> Submit Plan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contracts-enhanced.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contract-form-enhanced.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/budget-adjustment.js"></script>
     <script>
-        // Additional scripts if needed
+        // Store current contract for budget adjustment
+        let currentContractData = null;
+        
+        // Override or extend the existing showContractModal function
+        const originalShowContractModal = window.showContractDetails || function() {};
+        
+        window.showContractDetails = function(contractId) {
+            // Call original function if exists
+            if (typeof originalShowContractModal === 'function') {
+                originalShowContractModal(contractId);
+            }
+            
+            // Load budget information
+            loadBudgetInformation(contractId);
+        };
+        
+        // Function to load and display budget information
+        async function loadBudgetInformation(contractId) {
+            try {
+                const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=get&id=${contractId}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    currentContractData = result.data;
+                    displayBudgetFlexibility(result.data);
+                    
+                    // Check if milestone plan is needed
+                    checkMilestonePlanStatus(result.data);
+                    
+                    // Initialize budget adjustment system if flexible
+                    if (result.data.budget_type === 'flexible') {
+                        setTimeout(() => {
+                            initializeBudgetAdjustment(contractId, 'flexible');
+                        }, 500);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading budget information:', error);
+            }
+        }
+        
+        // Check milestone plan status and show appropriate UI
+        function checkMilestonePlanStatus(contract) {
+            const milestonePlanAction = document.getElementById('milestonePlanAction');
+            const milestonePlanStatus = document.getElementById('milestonePlanStatus');
+            
+            // Hide both by default
+            milestonePlanAction.style.display = 'none';
+            milestonePlanStatus.style.display = 'none';
+            
+            // Check if payment method is milestone
+            if (contract.payment_method === 'milestone' || contract.payment_method === 'Milestone-based (Phased)') {
+                // Check if plan is already submitted
+                if (contract.milestone_plan_submitted) {
+                    milestonePlanStatus.style.display = 'block';
+                } else {
+                    milestonePlanAction.style.display = 'block';
+                }
+            }
+        }
+        
+        // Function to display budget flexibility section
+        function displayBudgetFlexibility(contract) {
+            const section = document.getElementById('budgetFlexibilitySection');
+            const budgetTypeBadge = document.getElementById('budgetTypeBadge');
+            const budgetRangeInfo = document.getElementById('budgetRangeInfo');
+            const budgetFixedInfo = document.getElementById('budgetFixedInfo');
+            const budgetMinSpan = document.getElementById('viewBudgetMin');
+            const budgetMaxSpan = document.getElementById('viewBudgetMax');
+            
+            if (!section) return;
+            
+            // Show section
+            section.style.display = 'block';
+            
+            // Format currency
+            const formatCurrency = (amount) => {
+                return 'LKR ' + new Intl.NumberFormat('en-LK', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(amount);
+            };
+            
+            if (contract.budget_type === 'flexible') {
+                // Flexible budget
+                budgetTypeBadge.innerHTML = 'ðŸ”„ Flexible Budget (Â±10%)';
+                budgetTypeBadge.className = 'badge badge-flexible';
+                budgetTypeBadge.style.background = '#3498db';
+                budgetTypeBadge.style.color = 'white';
+                
+                // Calculate range if not provided
+                const budgetValue = parseFloat(contract.value || contract.total_budget || 0);
+                const minBudget = contract.budget_min || (budgetValue * 0.9);
+                const maxBudget = contract.budget_max || (budgetValue * 1.1);
+                
+                // Display range
+                budgetRangeInfo.style.display = 'block';
+                budgetFixedInfo.style.display = 'none';
+                budgetMinSpan.textContent = formatCurrency(minBudget);
+                budgetMaxSpan.textContent = formatCurrency(maxBudget);
+                
+            } else {
+                // Fixed budget
+                budgetTypeBadge.innerHTML = 'ðŸ”’ Fixed Budget';
+                budgetTypeBadge.className = 'badge badge-fixed';
+                budgetTypeBadge.style.background = '#95a5a6';
+                budgetTypeBadge.style.color = 'white';
+                
+                budgetRangeInfo.style.display = 'none';
+                budgetFixedInfo.style.display = 'block';
+            }
+        }
     </script>
 </body>
 
 </html>
+
+
+
 
 
 

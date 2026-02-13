@@ -1,4 +1,4 @@
-Ôªø// ===================================
+// ===================================
 // CONTRACTS PAGE - COMPLETE IMPLEMENTATION
 // ===================================
 
@@ -31,7 +31,7 @@ function setupNewContractModalListener() {
                                document.querySelector('.btn-primary');
         
         if (newContractBtn) {
-            console.log('‚úÖ Found New Contract button, adding listener');
+            console.log('? Found New Contract button, adding listener');
             newContractBtn.addEventListener('click', function() {
                 // Small delay to let modal open
                 setTimeout(() => {
@@ -39,7 +39,7 @@ function setupNewContractModalListener() {
                 }, 300);
             });
         } else {
-            console.log('‚ö†Ô∏è New Contract button not found yet, will try on modal open');
+            console.log('?? New Contract button not found yet, will try on modal open');
         }
     }, 1000);
 }
@@ -51,28 +51,28 @@ async function initializeQuotationSelectorForContractForm() {
     // Check if selector exists (modal is open)
     const selector = document.getElementById('quotationSelector');
     if (!selector) {
-        console.log('‚ÑπÔ∏è Quotation selector not found - modal not open yet');
+        console.log('?? Quotation selector not found - modal not open yet');
         return;
     }
     
     // Check if already populated
     if (selector.options.length > 1) {
-        console.log('‚ÑπÔ∏è Quotation selector already populated');
+        console.log('?? Quotation selector already populated');
         return;
     }
     
     try {
-        console.log('üîÑ Loading accepted quotations for contract creation...');
+        console.log('?? Loading accepted quotations for contract creation...');
         
         const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=getAcceptedQuotations');
         
         if (!response.ok) {
-            console.log('‚ùå API returned error:', response.status);
+            console.log('? API returned error:', response.status);
             return;
         }
         
         const result = await response.json();
-        console.log('üìä Accepted quotations:', result);
+        console.log('?? Accepted quotations:', result);
         
         if (result.success && result.data && result.data.length > 0) {
             populateQuotationSelector(result.data);
@@ -81,7 +81,7 @@ async function initializeQuotationSelectorForContractForm() {
             updateQuotationBadge(0);
         }
     } catch (error) {
-        console.error('‚ùå Error loading quotations:', error);
+        console.error('? Error loading quotations:', error);
         updateQuotationBadge(0, true);
     }
 }
@@ -142,7 +142,7 @@ function handleQuotationSelectionChange(event) {
     
     try {
         const quotation = JSON.parse(selected.dataset.quotation);
-        console.log('‚úÖ Quotation selected:', quotation);
+        console.log('? Quotation selected:', quotation);
         
         // Show preview
         showQuotationPreview(quotation);
@@ -187,7 +187,7 @@ function showQuotationPreview(q) {
  * Auto-fill contract form with quotation data
  */
 function autoFillContractForm(q) {
-    console.log('üîÑ Auto-filling form with quotation data...');
+    console.log('?? Auto-filling form with quotation data...');
     
     // Store quotation ID in hidden field
     setFieldValue('selectedQuotationId', q.quotation_id);
@@ -231,7 +231,7 @@ function autoFillContractForm(q) {
     // Trigger change events to update UI
     triggerFormCalculations();
     
-    console.log('‚úÖ Form auto-filled successfully');
+    console.log('? Form auto-filled successfully');
 }
 
 /**
@@ -760,7 +760,7 @@ function buildCardActions(contract) {
     const status = contract.status || 'draft';
     const isSent = contract.sent_to_customer == 1;
     
-    // 1) Send / Chat ‚Äî primary visible button
+    // 1) Send / Chat ó primary visible button
     if (!isSent) {
         html += `<button class="card-action-btn card-action-send send-contract-btn" data-contract-id="${id}" title="Send to Customer">
             <i class="fas fa-paper-plane"></i>
@@ -771,14 +771,14 @@ function buildCardActions(contract) {
         </button>`;
     }
     
-    // 2) Edit ‚Äî visible button (only for draft/sent)
+    // 2) Edit ó visible button (only for draft/sent)
     if (['draft', 'sent'].includes(status)) {
         html += `<button class="card-action-btn edit-contract-btn" data-contract-id="${id}" title="Edit Contract">
             <i class="fas fa-edit"></i>
         </button>`;
     }
     
-    // 3) More menu (‚ãÆ) ‚Äî contains all other actions
+    // 3) More menu (?) ó contains all other actions
     html += `<button class="card-action-btn card-action-more more-menu-btn" data-contract-id="${id}" title="More Options">
         <i class="fas fa-ellipsis-v"></i>
     </button>`;
@@ -823,7 +823,7 @@ document.addEventListener('click', function(e) {
 function handleTerminateContract(contractId) {
     if (confirm('Are you sure you want to cancel this contract? This action cannot be undone.')) {
         // TODO: Implement cancel contract API call
-        alert('Cancel Contract ‚Äî This feature will be available soon.');
+        alert('Cancel Contract ó This feature will be available soon.');
     }
 }
 
@@ -1192,9 +1192,18 @@ async function handleEditContractById(contractId) {
 
 async function handleDownloadContractById(contractId) {
     try {
-        // In a real implementation, this would download the contract PDF
+        // Open the PDF in a new window for printing
+        const url = `/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=downloadPDF&id=${contractId}`;
         
-        alert(`Download functionality for contract ${contractId} will be implemented soon.`);
+        // Open in new window
+        const printWindow = window.open(url, '_blank', 'width=800,height=600');
+        
+        if (!printWindow) {
+            throw new Error('Please allow pop-ups to download the contract PDF');
+        }
+        
+        console.log(`Opening contract ${contractId} for download/print`);
+        
     } catch (error) {
         console.error('Error downloading contract:', error);
         alert('Failed to download contract: ' + error.message);
@@ -1444,11 +1453,11 @@ function closeContractDetailsModal() {
 
 function populateModalContent(data) {
     // Helper
-    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '‚Äî'; };
-    const formatDate = (d) => { if (!d) return '‚Äî'; const dt = new Date(d); return dt.toLocaleDateString('en-LK', { year: 'numeric', month: 'long', day: 'numeric' }); };
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || 'ó'; };
+    const formatDate = (d) => { if (!d) return 'ó'; const dt = new Date(d); return dt.toLocaleDateString('en-LK', { year: 'numeric', month: 'long', day: 'numeric' }); };
     
     // Header
-    set('viewRef', `Contract Reference: ${data.contract_number || data.id || '‚Äî'}`);
+    set('viewRef', `Contract Reference: ${data.contract_number || data.id || 'ó'}`);
     set('viewDate', formatDate(data.contract_date));
     
     const statusEl = document.getElementById('viewStatus');
@@ -1460,19 +1469,19 @@ function populateModalContent(data) {
     
     // Section 1: Parties
     const client = data.client || {};
-    set('viewClientName', client.name || data.client_name || '‚Äî');
-    set('viewClientDetails', [client.email, client.address, client.district].filter(Boolean).join(' | ') || '‚Äî');
+    set('viewClientName', client.name || data.client_name || 'ó');
+    set('viewClientDetails', [client.email, client.address, client.district].filter(Boolean).join(' | ') || 'ó');
     
     const company = data.company || {};
-    set('viewCompanyName', company.name || '‚Äî');
-    set('viewCompanyDetails', [company.registration_no, company.address, company.contact].filter(Boolean).join(' | ') || '‚Äî');
+    set('viewCompanyName', company.name || 'ó');
+    set('viewCompanyDetails', [company.registration_no, company.address, company.contact].filter(Boolean).join(' | ') || 'ó');
     
     // Section 2: Project
-    set('viewTitle', data.title || data.project_title || '‚Äî');
-    set('viewProjectRef', data.project_reference || '‚Äî');
-    set('viewLocation', data.location || data.project_location || '‚Äî');
-    set('viewType', data.type || '‚Äî');
-    set('viewDescription', data.description || '‚Äî');
+    set('viewTitle', data.title || data.project_title || 'ó');
+    set('viewProjectRef', data.project_reference || 'ó');
+    set('viewLocation', data.location || data.project_location || 'ó');
+    set('viewType', data.type || 'ó');
+    set('viewDescription', data.description || 'ó');
     
     // Section 3: Scope
     const scopeSection = document.getElementById('viewScopeSection');
@@ -1480,7 +1489,7 @@ function populateModalContent(data) {
         const hasScope = data.scope_description || data.scope_inclusions || data.scope_exclusions;
         scopeSection.style.display = hasScope ? 'block' : 'none';
     }
-    set('viewScopeDesc', data.scope_description || '‚Äî');
+    set('viewScopeDesc', data.scope_description || 'ó');
     set('viewInclusions', data.scope_inclusions || 'As per quotation');
     set('viewExclusions', data.scope_exclusions || 'None specified');
     
@@ -1501,7 +1510,7 @@ function populateModalContent(data) {
         html += '</tr></thead><tbody>';
         data.milestones.forEach((ms, i) => {
             const msStatus = ms.status || 'pending';
-            const statusIcon = msStatus === 'completed' ? '‚úÖ' : msStatus === 'in_progress' ? 'üîÑ' : '‚è≥';
+            const statusIcon = msStatus === 'completed' ? '?' : msStatus === 'in_progress' ? '??' : '?';
             html += `<tr>
                 <td>${i + 1}</td>
                 <td>${escapeHtml(ms.title || ms.milestone_name || 'Milestone ' + (i+1))}</td>
@@ -1522,7 +1531,7 @@ function populateModalContent(data) {
     const totalVal = parseFloat(data.value || 0);
     set('viewValue', `LKR ${totalVal.toLocaleString()}`);
     
-    const budgetTypes = { 'fixed': 'Fixed Price', 'time_based': 'Time-Based', 'flexible': 'Flexible (¬±10%)' };
+    const budgetTypes = { 'fixed': 'Fixed Price', 'time_based': 'Time-Based', 'flexible': 'Flexible (±10%)' };
     set('viewBudgetType', budgetTypes[data.budget_type] || 'Fixed Price');
     
     const payMethodLabels = { 'full_upfront': 'Full Upfront', 'milestone_based': 'Milestone-Based', '50_50': '50/50 Split', '30_70': '30/70 Split', 'completion': 'On Completion' };
@@ -1547,9 +1556,9 @@ function populateModalContent(data) {
     if (responseSection) {
         if (data.sent_to_customer) {
             responseSection.style.display = 'block';
-            set('viewSentStatus', `Yes ‚Äî sent on ${formatDate(data.sent_at)}`);
-            const responseLabels = { 'pending': '‚è≥ Pending', 'accepted': '‚úÖ Accepted', 'rejected': '‚ùå Rejected', 'negotiating': 'üí¨ Negotiating' };
-            set('viewCustomerResponse', responseLabels[data.customer_response] || '‚è≥ Pending');
+            set('viewSentStatus', `Yes ó sent on ${formatDate(data.sent_at)}`);
+            const responseLabels = { 'pending': '? Pending', 'accepted': '? Accepted', 'rejected': '? Rejected', 'negotiating': '?? Negotiating' };
+            set('viewCustomerResponse', responseLabels[data.customer_response] || '? Pending');
         } else {
             responseSection.style.display = 'none';
         }
@@ -1610,13 +1619,13 @@ function openEditContractModal(contractData) {
     
     // Use the IIFE-exposed edit function which:
     // - Resets form, sets editContractId, populates all fields
-    // - Skips Step 1 (quotation/parties ‚Äî not editable)
+    // - Skips Step 1 (quotation/parties ó not editable)
     // - Opens modal at Step 2 (Project Details)
     if (typeof window.openContractForEdit === 'function') {
         window.openContractForEdit(contractData);
     } else {
         // Fallback if IIFE hasn't loaded yet
-        console.error('openContractForEdit not available ‚Äî IIFE may not have loaded');
+        console.error('openContractForEdit not available ó IIFE may not have loaded');
     }
 }
 
@@ -1900,7 +1909,7 @@ function populateFormWithContract(data) {
     // Store contract_id for update
     setVal('editContractId', data.contract_id);
     
-    // Step 1: Quotation selection ‚Äî hide it, show "Editing existing contract" info
+    // Step 1: Quotation selection ó hide it, show "Editing existing contract" info
     const client = data.client || {};
     setVal('selectedQuotationId', data.quotation_id || '');
     setVal('selectedRequestId', data.job_request_id || '');
@@ -1908,23 +1917,23 @@ function populateFormWithContract(data) {
     
     // Step 1 party info (auto-filled from quotation, now from contract data)
     const partyClientName = document.getElementById('partyClientName');
-    if (partyClientName) partyClientName.textContent = client.name || '‚Äî';
+    if (partyClientName) partyClientName.textContent = client.name || 'ó';
     const partyClientEmail = document.getElementById('partyClientEmail');
-    if (partyClientEmail) partyClientEmail.textContent = client.email || '‚Äî';
+    if (partyClientEmail) partyClientEmail.textContent = client.email || 'ó';
     const partyClientAddress = document.getElementById('partyClientAddress');
-    if (partyClientAddress) partyClientAddress.textContent = client.address || '‚Äî';
+    if (partyClientAddress) partyClientAddress.textContent = client.address || 'ó';
     const partyClientDistrict = document.getElementById('partyClientDistrict');
-    if (partyClientDistrict) partyClientDistrict.textContent = client.district || '‚Äî';
+    if (partyClientDistrict) partyClientDistrict.textContent = client.district || 'ó';
     
     const company = data.company || {};
     const partyCompanyName = document.getElementById('partyCompanyName');
-    if (partyCompanyName) partyCompanyName.textContent = company.name || '‚Äî';
+    if (partyCompanyName) partyCompanyName.textContent = company.name || 'ó';
     const partyCompanyReg = document.getElementById('partyCompanyReg');
-    if (partyCompanyReg) partyCompanyReg.textContent = company.registration_no || '‚Äî';
+    if (partyCompanyReg) partyCompanyReg.textContent = company.registration_no || 'ó';
     const partyCompanyAddress = document.getElementById('partyCompanyAddress');
-    if (partyCompanyAddress) partyCompanyAddress.textContent = company.address || '‚Äî';
+    if (partyCompanyAddress) partyCompanyAddress.textContent = company.address || 'ó';
     const partyCompanyContact = document.getElementById('partyCompanyContact');
-    if (partyCompanyContact) partyCompanyContact.textContent = company.contact || '‚Äî';
+    if (partyCompanyContact) partyCompanyContact.textContent = company.contact || 'ó';
     
     // Show parties section
     const partiesSection = document.getElementById('partiesSection');
@@ -2252,8 +2261,8 @@ function openSendContractModal(contractData) {
     const clientEl = document.getElementById('sendContractClient');
     const idEl = document.getElementById('sendContractId');
     
-    if (titleEl) titleEl.textContent = contractData.title || contractData.id || '‚Äî';
-    if (clientEl) clientEl.textContent = contractData.client ? `Customer: ${contractData.client}` : '‚Äî';
+    if (titleEl) titleEl.textContent = contractData.title || contractData.id || 'ó';
+    if (clientEl) clientEl.textContent = contractData.client ? `Customer: ${contractData.client}` : 'ó';
     if (idEl) idEl.value = contractData.contractId || '';
     
     if (modal) {
@@ -2314,7 +2323,7 @@ async function submitSendContract() {
                 });
                 // Update the data-status attribute
                 card.setAttribute('data-status', 'sent');
-                // Update action buttons (Send ‚Üí Chat)
+                // Update action buttons (Send ? Chat)
                 const actionsRow = card.querySelector('.card-actions-row');
                 if (actionsRow) {
                     actionsRow.innerHTML = buildCardActions(contract);
@@ -3600,4 +3609,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-console.log('‚úÖ Phase 2A: Milestone features loaded');
+console.log('? Phase 2A: Milestone features loaded');
+

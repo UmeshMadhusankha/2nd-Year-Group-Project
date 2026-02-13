@@ -1016,3 +1016,234 @@ CREATE TABLE `ticketmessage` (
   KEY `idx_ticket` (`ticket_id`),
   CONSTRAINT `ticketmessage_ibfk_1` FOREIGN KEY (`ticket_id`) REFERENCES `supportticket` (`ticket_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- =====================================================================
+-- PHASE 1 ADDITIONS: Work Schedule, Budget, Payment, Chat, Escrow
+-- Added: February 12, 2026
+-- =====================================================================
+
+-- Add work schedule columns to companyquotation
+ALTER TABLE `companyquotation`
+ADD COLUMN `work_schedule_type` ENUM('all_days', 'weekdays_only', 'weekends_included', 'custom') 
+    NOT NULL DEFAULT 'weekdays_only' AFTER `estimated_duration`,
+ADD COLUMN `working_days_per_week` TINYINT(1) NULL AFTER `work_schedule_type`,
+ADD COLUMN `daily_work_hours` DECIMAL(4,2) NULL AFTER `working_days_per_week`,
+ADD COLUMN `work_start_time` TIME NULL AFTER `daily_work_hours`,
+ADD COLUMN `work_end_time` TIME NULL AFTER `work_start_time`,
+ADD COLUMN `break_duration` DECIMAL(3,2) NULL AFTER `work_end_time`,
+ADD COLUMN `custom_schedule_json` TEXT NULL AFTER `break_duration`,
+ADD COLUMN `public_holidays_excluded` BOOLEAN DEFAULT TRUE AFTER `custom_schedule_json`,
+ADD COLUMN `estimated_calendar_days` INT NULL AFTER `public_holidays_excluded`;
+
+-- Add Phase 1 columns to contract table
+ALTER TABLE `contract`
+ADD COLUMN `budget_flexibility_percentage` DECIMAL(5,2) NULL AFTER `budget_type`,
+ADD COLUMN `undo_deadline` DATETIME NULL AFTER `signed_at`,
+ADD COLUMN `undo_requested` BOOLEAN DEFAULT FALSE AFTER `undo_deadline`,
+ADD COLUMN `chat_active` BOOLEAN DEFAULT FALSE AFTER `undo_requested`,
+ADD COLUMN `chat_activated_at` DATETIME NULL AFTER `chat_active`,
+ADD COLUMN `escrow_account_id` INT NULL AFTER `chat_activated_at`,
+ADD COLUMN `upfront_payment_percentage` DECIMAL(5,2) NULL AFTER `escrow_account_id`,
+ADD COLUMN `upfront_payment_amount` DECIMAL(10,2) NULL AFTER `upfront_payment_percentage`,
+ADD COLUMN `upfront_payment_received` BOOLEAN DEFAULT FALSE AFTER `upfront_payment_amount`,
+ADD COLUMN `work_verified_started` BOOLEAN DEFAULT FALSE AFTER `upfront_payment_received`,
+ADD COLUMN `quality_guarantee_end_date` DATE NULL AFTER `work_verified_started`;
+
+-- Add workflow columns to milestone table
+ALTER TABLE `milestone`
+ADD COLUMN `submitted_by_company` BOOLEAN DEFAULT FALSE AFTER `status`,
+ADD COLUMN `submitted_date` DATETIME NULL AFTER `submitted_by_company`,
+ADD COLUMN `customer_approved` BOOLEAN DEFAULT FALSE AFTER `submitted_date`,
+ADD COLUMN `customer_approval_date` DATETIME NULL AFTER `customer_approved`,
+ADD COLUMN `customer_rejection_reason` TEXT NULL AFTER `customer_approval_date`,
+ADD COLUMN `work_started` BOOLEAN DEFAULT FALSE AFTER `customer_rejection_reason`,
+ADD COLUMN `work_start_date` DATETIME NULL AFTER `work_started`,
+ADD COLUMN `work_completed` BOOLEAN DEFAULT FALSE AFTER `work_start_date`,
+ADD COLUMN `work_completion_date` DATETIME NULL AFTER `work_completed`,
+ADD COLUMN `customer_verification_requested` BOOLEAN DEFAULT FALSE AFTER `work_completion_date`,
+ADD COLUMN `customer_verified` BOOLEAN DEFAULT FALSE AFTER `customer_verification_requested`,
+ADD COLUMN `customer_verification_date` DATETIME NULL AFTER `customer_verified`;
+
+-- Contract Chats Table
+CREATE TABLE `contract_chats` (
+    `chat_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `contract_id` INT NOT NULL,
+    `sender_type` ENUM('company', 'customer') NOT NULL,
+    `sender_id` INT NOT NULL,
+    `message` TEXT NOT NULL,
+    `attachment_type` ENUM('text', 'image', 'document', 'pdf') DEFAULT 'text',
+    `attachment_url` VARCHAR(500) NULL,
+    `attachment_filename` VARCHAR(255) NULL,
+    `attachment_size` INT NULL,
+    `is_read` BOOLEAN DEFAULT FALSE,
+    `read_at` DATETIME NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
+    INDEX `idx_contract_sender` (`contract_id`, `sender_type`),
+    INDEX `idx_unread` (`is_read`, `created_at`),
+    INDEX `idx_created` (`created_at` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Contract Notifications Table
+CREATE TABLE `contract_notifications` (
+    `notification_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `contract_id` INT NOT NULL,
+    `recipient_type` ENUM('company', 'customer') NOT NULL,
+    `recipient_id` INT NOT NULL,
+    `notification_type` VARCHAR(50) NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `message` TEXT NOT NULL,
+    `action_url` VARCHAR(500) NULL,
+    `priority` ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+    `is_read` BOOLEAN DEFAULT FALSE,
+    `read_at` DATETIME NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
+    INDEX `idx_recipient` (`recipient_type`, `recipient_id`, `is_read`),
+    INDEX `idx_type` (`notification_type`),
+    INDEX `idx_priority` (`priority`, `is_read`),
+    INDEX `idx_created` (`created_at` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Contract Timeline Table
+CREATE TABLE `contract_timeline` (
+    `timeline_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `contract_id` INT NOT NULL,
+    `event_type` VARCHAR(50) NOT NULL,
+    `event_title` VARCHAR(255) NOT NULL,
+    `event_description` TEXT NULL,
+    `actor_type` ENUM('system', 'company', 'customer') NOT NULL,
+    `actor_id` INT NULL,
+    `actor_name` VARCHAR(255) NULL,
+    `metadata_json` TEXT NULL,
+    `is_milestone` BOOLEAN DEFAULT FALSE,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
+    INDEX `idx_contract_time` (`contract_id`, `created_at` DESC),
+    INDEX `idx_event_type` (`event_type`),
+    INDEX `idx_actor` (`actor_type`, `actor_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Contract Time Logs Table
+CREATE TABLE `contract_time_logs` (
+    `log_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `contract_id` INT NOT NULL,
+    `work_date` DATE NOT NULL,
+    `start_time` TIME NOT NULL,
+    `end_time` TIME NOT NULL,
+    `break_duration` DECIMAL(3,2) DEFAULT 0,
+    `total_hours` DECIMAL(4,2) NOT NULL,
+    `hourly_rate` DECIMAL(10,2) NOT NULL,
+    `total_amount` DECIMAL(10,2) NOT NULL,
+    `work_description` TEXT NOT NULL,
+    `work_location` VARCHAR(255) NULL,
+    `submitted_by` INT NOT NULL,
+    `submitted_at` DATETIME NOT NULL,
+    `customer_approved` BOOLEAN DEFAULT FALSE,
+    `customer_approval_date` DATETIME NULL,
+    `customer_rejection_reason` TEXT NULL,
+    `invoice_id` INT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
+    INDEX `idx_contract_date` (`contract_id`, `work_date` DESC),
+    INDEX `idx_approval` (`customer_approved`),
+    INDEX `idx_invoice` (`invoice_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Contract Invoices Table
+CREATE TABLE `contract_invoices` (
+    `invoice_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `contract_id` INT NOT NULL,
+    `invoice_number` VARCHAR(50) UNIQUE NOT NULL,
+    `invoice_type` ENUM('milestone', 'upfront', 'final', 'time_material', 'adjustment') NOT NULL,
+    `milestone_id` INT NULL,
+    `amount` DECIMAL(10,2) NOT NULL,
+    `tax_percentage` DECIMAL(5,2) DEFAULT 0,
+    `tax_amount` DECIMAL(10,2) DEFAULT 0,
+    `total_amount` DECIMAL(10,2) NOT NULL,
+    `issue_date` DATE NOT NULL,
+    `due_date` DATE NOT NULL,
+    `payment_status` ENUM('pending', 'paid', 'overdue', 'cancelled', 'refunded') DEFAULT 'pending',
+    `paid_date` DATETIME NULL,
+    `payment_method` VARCHAR(50) NULL,
+    `payment_reference` VARCHAR(100) NULL,
+    `payment_receipt_url` VARCHAR(500) NULL,
+    `pdf_path` VARCHAR(500) NULL,
+    `notes` TEXT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
+    FOREIGN KEY (`milestone_id`) REFERENCES `milestone`(`milestone_id`) ON DELETE SET NULL,
+    INDEX `idx_contract_status` (`contract_id`, `payment_status`),
+    INDEX `idx_invoice_number` (`invoice_number`),
+    INDEX `idx_due_date` (`due_date`, `payment_status`),
+    INDEX `idx_type` (`invoice_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Contract Budget Adjustments Table
+CREATE TABLE `contract_budget_adjustments` (
+    `adjustment_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `contract_id` INT NOT NULL,
+    `requested_by` ENUM('company', 'customer') NOT NULL,
+    `requester_id` INT NOT NULL,
+    `requester_name` VARCHAR(255) NULL,
+    `adjustment_type` ENUM('increase', 'decrease') NOT NULL,
+    `original_amount` DECIMAL(10,2) NOT NULL,
+    `requested_amount` DECIMAL(10,2) NOT NULL,
+    `adjustment_amount` DECIMAL(10,2) NOT NULL,
+    `adjustment_percentage` DECIMAL(5,2) NULL,
+    `reason` TEXT NOT NULL,
+    `justification_documents` TEXT NULL,
+    `status` ENUM('pending', 'approved', 'rejected', 'cancelled') DEFAULT 'pending',
+    `approved_by` INT NULL,
+    `approved_by_name` VARCHAR(255) NULL,
+    `approved_at` DATETIME NULL,
+    `rejection_reason` TEXT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
+    INDEX `idx_contract_status` (`contract_id`, `status`),
+    INDEX `idx_requester` (`requested_by`, `requester_id`),
+    INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Escrow Accounts Table
+CREATE TABLE `escrow_accounts` (
+    `escrow_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `contract_id` INT UNIQUE NOT NULL,
+    `account_number` VARCHAR(50) UNIQUE NOT NULL,
+    `total_amount` DECIMAL(10,2) NOT NULL,
+    `held_amount` DECIMAL(10,2) DEFAULT 0,
+    `released_amount` DECIMAL(10,2) DEFAULT 0,
+    `refunded_amount` DECIMAL(10,2) DEFAULT 0,
+    `status` ENUM('active', 'completed', 'refunded', 'disputed') DEFAULT 'active',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
+    INDEX `idx_status` (`status`),
+    INDEX `idx_account_number` (`account_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Add foreign key constraints
+ALTER TABLE `contract`
+ADD CONSTRAINT `fk_contract_escrow`
+FOREIGN KEY (`escrow_account_id`) REFERENCES `escrow_accounts`(`escrow_id`) 
+ON DELETE SET NULL;
+
+ALTER TABLE `contract_time_logs`
+ADD CONSTRAINT `fk_timelog_invoice`
+FOREIGN KEY (`invoice_id`) REFERENCES `contract_invoices`(`invoice_id`) 
+ON DELETE SET NULL;
+
+-- Add indexes for performance
+ALTER TABLE `companyquotation`
+ADD INDEX `idx_work_schedule` (`work_schedule_type`, `working_days_per_week`);
+
+ALTER TABLE `contract`
+ADD INDEX `idx_undo_deadline` (`undo_deadline`),
+ADD INDEX `idx_chat_active` (`chat_active`);
+
+ALTER TABLE `milestone`
+ADD INDEX `idx_workflow` (`customer_approved`, `work_started`, `work_completed`, `customer_verified`);

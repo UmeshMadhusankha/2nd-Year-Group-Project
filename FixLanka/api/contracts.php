@@ -117,6 +117,233 @@ switch ($action) {
         $controller->sendToCustomer();
         break;
     
+    case 'downloadPDF':
+        $controller->downloadContractPDF();
+        break;
+    
+    // ========================================
+    // PHASE 2: UNDO WINDOW (24-hour cancellation)
+    // ========================================
+    case 'check_undo_window':
+        $controller->checkUndoWindow();
+        break;
+    
+    case 'request_undo':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->requestUndo();
+        break;
+    
+    // ========================================
+    // PHASE 2: NOTIFICATIONS SYSTEM
+    // ========================================
+    case 'get_notifications':
+        $controller->getNotifications();
+        break;
+    
+    case 'mark_notification_read':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->markNotificationRead();
+        break;
+    
+    case 'mark_all_notifications_read':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->markAllNotificationsRead();
+        break;
+    
+    // ========================================
+    // PHASE 2: MILESTONE WORKFLOW
+    // ========================================
+    case 'submit_milestone':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->submitMilestone();
+        break;
+    
+    case 'approve_milestone':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->approveMilestone();
+        break;
+    
+    case 'reject_milestone':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->rejectMilestone();
+        break;
+    
+    case 'mark_work_started':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->markWorkStarted();
+        break;
+    
+    case 'mark_work_completed':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->markWorkCompleted();
+        break;
+    
+    // ========================================
+    // PHASE 2: CONTRACT TIMELINE
+    // ========================================
+    case 'get_timeline':
+        $controller->getTimeline();
+        break;
+    
+    // ========================================
+    // PHASE 2: ESCROW MANAGEMENT
+    // ========================================
+    case 'get_escrow_status':
+        $controller->getEscrowStatus();
+        break;
+    
+    case 'approve_escrow_release':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->approveEscrowRelease();
+        break;
+    
+    case 'deny_escrow_release':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->denyEscrowRelease();
+        break;
+    
+    // ========================================
+    // PHASE 2: INVOICE MANAGEMENT
+    // ========================================
+    case 'get_invoices':
+        $controller->getInvoices();
+        break;
+    
+    case 'get_invoice_details':
+        $controller->getInvoiceDetails();
+        break;
+    
+    case 'download_invoice_pdf':
+        $controller->downloadInvoicePDF();
+        break;
+    
+    case 'mark_invoice_paid':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->markInvoicePaid();
+        break;
+    
+    // ========================================
+    // PHASE 2: BUDGET ADJUSTMENT
+    // ========================================
+    case 'get_budget_adjustments':
+        $controller->getBudgetAdjustments();
+        break;
+    
+    case 'submit_budget_adjustment':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->submitBudgetAdjustment();
+        break;
+    
+    case 'approve_budget_adjustment':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->approveBudgetAdjustment();
+        break;
+    
+    case 'reject_budget_adjustment':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->rejectBudgetAdjustment();
+        break;
+    
+    // ========================================
+    // PHASE 2: TIME & MATERIAL TRACKING
+    // ========================================
+    case 'get_time_entries':
+        $contract_id = $_GET['contract_id'] ?? null;
+        $controller->getTimeEntries($contract_id);
+        break;
+    
+    case 'submit_time_entry':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $contract_id = $_POST['contract_id'] ?? null;
+        $data = $_POST;
+        $controller->submitTimeEntry($contract_id, $data);
+        break;
+    
+    case 'approve_time_entry':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $entry_id = $_POST['entry_id'] ?? null;
+        $contract_id = $_POST['contract_id'] ?? null;
+        $user_id = $_SESSION['user_id'] ?? null;
+        $controller->approveTimeEntry($entry_id, $contract_id, $user_id);
+        break;
+    
+    case 'reject_time_entry':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $entry_id = $_POST['entry_id'] ?? null;
+        $contract_id = $_POST['contract_id'] ?? null;
+        $user_id = $_SESSION['user_id'] ?? null;
+        $reason = $_POST['reason'] ?? null;
+        $controller->rejectTimeEntry($entry_id, $contract_id, $user_id, $reason);
+        break;
+    
     default:
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Invalid action: ' . $action]);

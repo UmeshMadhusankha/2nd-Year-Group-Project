@@ -14,6 +14,7 @@ class ContractModel {
         $query = "SELECT 
                     c.contract_id,
                     c.project_id,
+                    c.contract_number,
                     c.total_budget,
                     c.start_date,
                     c.end_date,
@@ -21,28 +22,27 @@ class ContractModel {
                     c.status as contract_status,
                     c.milestone_plan,
                     c.payment_method,
+                    c.budget_type,
                     c.sent_to_customer,
                     c.sent_at,
                     c.customer_response,
                     c.customer_response_at,
-                    p.title as project_title,
-                    p.description as project_description,
-                    p.project_type,
-                    p.location,
-                    p.progress,
-                    p.status as project_status,
+                    c.terms_accepted,
+                    c.project_title,
+                    c.project_description,
+                    c.project_location as location,
+                    c.progress_percentage as progress,
                     u.f_name as customer_fname,
                     u.l_name as customer_lname,
                     u.email as customer_email,
-                    comp.company_id,
+                    c.company_id,
                     comp.name as company_name
-                FROM Contract c
-                INNER JOIN Project p ON c.project_id = p.project_id
-                INNER JOIN User u ON p.customer_id = u.user_id
-                INNER JOIN Company comp ON p.company_id = comp.company_id";
+                FROM contract c
+                LEFT JOIN user u ON c.customer_id = u.user_id
+                LEFT JOIN company comp ON c.company_id = comp.company_id";
         
         if ($companyId !== null) {
-            $query .= " WHERE comp.company_id = :company_id";
+            $query .= " WHERE c.company_id = :company_id";
         }
         
         $query .= " ORDER BY c.contract_date DESC";
@@ -63,16 +63,6 @@ class ContractModel {
     public function getById($contractId, $companyId = null) {
         $query = "SELECT 
                     c.*,
-                    p.title as project_title,
-                    p.description as project_description,
-                    p.project_type,
-                    p.location,
-                    p.budget,
-                    p.final_cost,
-                    p.progress,
-                    p.status as project_status,
-                    p.start_date as project_start_date,
-                    p.end_date as project_end_date,
                     u.user_id as customer_id,
                     u.f_name as customer_fname,
                     u.l_name as customer_lname,
@@ -85,14 +75,13 @@ class ContractModel {
                     comp.address as company_address,
                     comp.contact_no as company_contact,
                     comp.email as company_email
-                FROM Contract c
-                INNER JOIN Project p ON c.project_id = p.project_id
-                INNER JOIN User u ON p.customer_id = u.user_id
-                INNER JOIN Company comp ON p.company_id = comp.company_id
+                FROM contract c
+                LEFT JOIN user u ON c.customer_id = u.user_id
+                LEFT JOIN company comp ON c.company_id = comp.company_id
                 WHERE c.contract_id = :contract_id";
         
         if ($companyId !== null) {
-            $query .= " AND comp.company_id = :company_id";
+            $query .= " AND c.company_id = :company_id";
         }
         
         $stmt = $this->conn->prepare($query);
