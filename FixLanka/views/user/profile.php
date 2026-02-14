@@ -1,6 +1,8 @@
 <?php
 // filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\views\user\profile.php
 require_once __DIR__ . '/../../config/session.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../models/JobRequestModel.php';
 
 // Redirect if not logged in
 if (!isLoggedIn()) {
@@ -9,6 +11,78 @@ if (!isLoggedIn()) {
 }
 
 $userData = getUserData();
+$dbUser = null;
+
+try {
+    global $pdo;
+    $stmt = $pdo->prepare('SELECT user_id, f_name, l_name, email, profilePicture, address, district, created_at FROM User WHERE user_id = ? LIMIT 1');
+    $stmt->execute([(int)$userData['id']]);
+    $dbUser = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+} catch (Throwable $e) {
+    $dbUser = null;
+}
+
+$jobRequests = [];
+$totalJobs = 0;
+$activeJobs = 0;
+$completedJobs = 0;
+$pendingJobs = 0;
+
+try {
+    global $pdo;
+    $jobRequestModel = new JobRequest($pdo);
+    $jobRequests = $jobRequestModel->getAllByUser((int)$userData['id']);
+
+    $totalJobs = count($jobRequests);
+    foreach ($jobRequests as $job) {
+        if (($job['status'] ?? '') === 'completed') {
+            $completedJobs++;
+        }
+        if (($job['status'] ?? '') === 'pending') {
+            $pendingJobs++;
+        }
+        if (in_array(($job['status'] ?? ''), ['in_progress', 'accepted'], true)) {
+            $activeJobs++;
+        }
+    }
+} catch (Throwable $e) {
+    $jobRequests = [];
+}
+
+$displayName = trim((string)(($dbUser['f_name'] ?? '') . ' ' . ($dbUser['l_name'] ?? '')));
+if ($displayName === '') {
+    $displayName = trim((string)($userData['name'] ?? 'User'));
+}
+
+$displayEmail = trim((string)($dbUser['email'] ?? ($userData['email'] ?? '')));
+$rawAddress = trim((string)($dbUser['address'] ?? ''));
+$rawDistrict = trim((string)($dbUser['district'] ?? ''));
+$displayLocation = trim($rawAddress !== '' && $rawDistrict !== '' ? ($rawAddress . ', ' . $rawDistrict) : ($rawAddress ?: ($rawDistrict ?: 'Sri Lanka')));
+$joinedText = !empty($dbUser['created_at']) ? date('F Y', strtotime($dbUser['created_at'])) : 'N/A';
+$profilePicture = trim((string)($dbUser['profilePicture'] ?? ''));
+
+$initial = strtoupper(substr($displayName ?: 'U', 0, 1));
+$isEmailValid = filter_var($displayEmail, FILTER_VALIDATE_EMAIL) ? true : false;
+$hasLocation = $displayLocation !== '';
+
+$profilePayload = [
+    'fullName' => $displayName,
+    'email' => $displayEmail,
+    'location' => $displayLocation,
+    'avatar' => $profilePicture,
+    'jobStats' => [
+        'total' => $totalJobs,
+        'active' => $activeJobs,
+        'completed' => $completedJobs,
+        'pending' => $pendingJobs,
+    ],
+    'rules' => [
+        'hasName' => $displayName !== '',
+        'hasValidEmail' => $isEmailValid,
+        'hasLocation' => $hasLocation,
+        'hasProfilePhoto' => $profilePicture !== '',
+    ]
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -64,25 +138,20 @@ $userData = getUserData();
                         </div>
                         
                         <div class="user-details">
-                            <h2 class="user-full-name">John Doe</h2>
-                            <p class="user-username">@johndoe</p>
+                            <h2 class="user-full-name"><?php echo htmlspecialchars($displayName ?: 'User'); ?></h2>
                             
                             <div class="contact-info">
                                 <div class="contact-item">
                                     <i class="fas fa-envelope"></i>
-                                    <span>john.doe@email.com</span>
-                                </div>
-                                <div class="contact-item">
-                                    <i class="fas fa-phone"></i>
-                                    <span>+94 77 123 4567</span>
+                                    <span><?php echo htmlspecialchars($displayEmail ?: 'N/A'); ?></span>
                                 </div>
                                 <div class="contact-item">
                                     <i class="fas fa-map-marker-alt"></i>
-                                    <span>Colombo, Sri Lanka</span>
+                                    <span><?php echo htmlspecialchars($displayLocation ?: 'N/A'); ?></span>
                                 </div>
                                 <div class="contact-item">
                                     <i class="fas fa-calendar-alt"></i>
-                                    <span>Joined December 2023</span>
+                                    <span>Joined <?php echo htmlspecialchars($joinedText); ?></span>
                                 </div>
                             </div>
                         </div>
@@ -105,29 +174,18 @@ $userData = getUserData();
                                     <circle class="progress-ring-circle" cx="60" cy="60" r="52" id="progressCircle"></circle>
                                 </svg>
                                 <div class="completion-percentage">
-                                    <span class="percentage-value" id="completionPercentage">85</span>
+                                    <span class="percentage-value" id="completionPercentage">0</span>
                                     <span class="percentage-symbol">%</span>
                                 </div>
                             </div>
                             
-                            <div class="completion-tasks">
-                                <div class="task-item completed">
-                                    <i class="fas fa-check-circle"></i>
-                                    <span>Profile picture uploaded</span>
-                                </div>
-                                <div class="task-item completed">
-                                    <i class="fas fa-check-circle"></i>
-                                    <span>Contact information verified</span>
-                                </div>
-                                <div class="task-item completed">
-                                    <i class="fas fa-check-circle"></i>
-                                    <span>First job posted</span>
-                                </div>
+                            <div class="completion-tasks" id="completionTasks">
                                 <div class="task-item pending">
                                     <i class="far fa-circle"></i>
-                                    <span>Payment method added</span>
+                                    <span>Checking profile setup...</span>
                                 </div>
                             </div>
+                            <p class="page-subtitle" id="setupLevelText" style="margin-top:12px;"></p>
                         </div>
                     </div>
                 </div>
@@ -158,28 +216,37 @@ $userData = getUserData();
                                 </div>
                                 <div class="action-text">
                                     <span class="action-title">View Quotes</span>
-                                    <span class="action-subtitle">3 new quotes</span>
+                                    <span class="action-subtitle">Go to quotes received</span>
                                 </div>
-                                <span class="action-badge">3</span>
                             </button>
                             
-                            <button class="action-btn" id="manageReviewsBtn">
+                            <button class="action-btn" id="postJobBtn">
                                 <div class="action-icon">
-                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-plus-circle"></i>
                                 </div>
                                 <div class="action-text">
-                                    <span class="action-title">Manage Reviews</span>
-                                    <span class="action-subtitle">View and respond</span>
+                                    <span class="action-title">Post New Job</span>
+                                    <span class="action-subtitle">Create a request</span>
                                 </div>
                             </button>
                             
                             <button class="action-btn" id="paymentHistoryBtn">
                                 <div class="action-icon">
-                                    <i class="fas fa-credit-card"></i>
+                                    <i class="fas fa-list-check"></i>
                                 </div>
                                 <div class="action-text">
-                                    <span class="action-title">Payment History</span>
-                                    <span class="action-subtitle">View transactions</span>
+                                    <span class="action-title">Job History</span>
+                                    <span class="action-subtitle">View posted jobs</span>
+                                </div>
+                            </button>
+
+                            <button class="action-btn" id="helpCenterBtn">
+                                <div class="action-icon">
+                                    <i class="fas fa-question-circle"></i>
+                                </div>
+                                <div class="action-text">
+                                    <span class="action-title">Help Center</span>
+                                    <span class="action-subtitle">Get support</span>
                                 </div>
                             </button>
                         </div>
@@ -202,7 +269,7 @@ $userData = getUserData();
                                     <i class="fas fa-briefcase"></i>
                                 </div>
                                 <div class="stat-details">
-                                    <span class="stat-number">12</span>
+                                    <span class="stat-number"><?php echo (int)$totalJobs; ?></span>
                                     <span class="stat-label">Total Jobs</span>
                                 </div>
                             </div>
@@ -212,7 +279,7 @@ $userData = getUserData();
                                     <i class="fas fa-clock"></i>
                                 </div>
                                 <div class="stat-details">
-                                    <span class="stat-number">3</span>
+                                    <span class="stat-number"><?php echo (int)$activeJobs; ?></span>
                                     <span class="stat-label">Active Jobs</span>
                                 </div>
                             </div>
@@ -222,7 +289,7 @@ $userData = getUserData();
                                     <i class="fas fa-check-circle"></i>
                                 </div>
                                 <div class="stat-details">
-                                    <span class="stat-number">8</span>
+                                    <span class="stat-number"><?php echo (int)$completedJobs; ?></span>
                                     <span class="stat-label">Completed</span>
                                 </div>
                             </div>
@@ -232,7 +299,7 @@ $userData = getUserData();
                                     <i class="fas fa-hourglass-half"></i>
                                 </div>
                                 <div class="stat-details">
-                                    <span class="stat-number">1</span>
+                                    <span class="stat-number"><?php echo (int)$pendingJobs; ?></span>
                                     <span class="stat-label">Pending</span>
                                 </div>
                             </div>
@@ -240,152 +307,30 @@ $userData = getUserData();
                     </div>
                 </div>
 
-                <!-- Recent Activity Card -->
+                <!-- Setup Tips Card -->
                 <div class="profile-card">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <i class="fas fa-history"></i>
-                            Recent Activity
+                            <i class="fas fa-gamepad"></i>
+                            Profile Setup Game
                         </h3>
-                        <button class="view-all-btn" id="viewAllActivityBtn">View All</button>
+                        <button class="view-all-btn" id="viewAllSetupBtn">Refresh</button>
                     </div>
                     <div class="card-content">
-                        <div class="activity-list">
+                        <div class="activity-list" id="setupHintsList">
                             <div class="activity-item">
                                 <div class="activity-icon job-posted">
-                                    <i class="fas fa-plus-circle"></i>
+                                    <i class="fas fa-lightbulb"></i>
                                 </div>
                                 <div class="activity-details">
-                                    <p class="activity-text">Posted job: <strong>Kitchen Renovation</strong></p>
-                                    <span class="activity-time">2 hours ago</span>
-                                </div>
-                            </div>
-                            
-                            <div class="activity-item">
-                                <div class="activity-icon agreement">
-                                    <i class="fas fa-handshake"></i>
-                                </div>
-                                <div class="activity-details">
-                                    <p class="activity-text">Sent agreement to <strong>Kasun Silva</strong></p>
-                                    <span class="activity-time">5 hours ago</span>
-                                </div>
-                            </div>
-                            
-                            <div class="activity-item">
-                                <div class="activity-icon payment">
-                                    <i class="fas fa-credit-card"></i>
-                                </div>
-                                <div class="activity-details">
-                                    <p class="activity-text">Completed payment for <strong>Plumbing</strong></p>
-                                    <span class="activity-time">1 day ago</span>
-                                </div>
-                            </div>
-                            
-                            <div class="activity-item">
-                                <div class="activity-icon review">
-                                    <i class="fas fa-star"></i>
-                                </div>
-                                <div class="activity-details">
-                                    <p class="activity-text">Received 5-star review</p>
-                                    <span class="activity-time">2 days ago</span>
+                                    <p class="activity-text">Complete your profile fields to level up your setup score.</p>
+                                    <span class="activity-time">Tip</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Reviews Summary Card -->
-                <div class="profile-card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-star"></i>
-                            Reviews Summary
-                        </h3>
-                        <button class="view-all-btn" id="viewAllReviewsBtn">View All</button>
-                    </div>
-                    <div class="card-content">
-                        <div class="reviews-summary">
-                            <div class="rating-overview">
-                                <div class="average-rating">
-                                    <span class="rating-value">4.8</span>
-                                    <div class="rating-stars">
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star-half-alt"></i>
-                                    </div>
-                                    <span class="rating-count">Based on 23 reviews</span>
-                                </div>
-                            </div>
-                            
-                            <div class="rating-breakdown">
-                                <div class="rating-row">
-                                    <span class="star-label">5★</span>
-                                    <div class="rating-bar">
-                                        <div class="rating-fill" style="width: 78%"></div>
-                                    </div>
-                                    <span class="rating-number">18</span>
-                                </div>
-                                <div class="rating-row">
-                                    <span class="star-label">4★</span>
-                                    <div class="rating-bar">
-                                        <div class="rating-fill" style="width: 17%"></div>
-                                    </div>
-                                    <span class="rating-number">4</span>
-                                </div>
-                                <div class="rating-row">
-                                    <span class="star-label">3★</span>
-                                    <div class="rating-bar">
-                                        <div class="rating-fill" style="width: 4%"></div>
-                                    </div>
-                                    <span class="rating-number">1</span>
-                                </div>
-                                <div class="rating-row">
-                                    <span class="star-label">2★</span>
-                                    <div class="rating-bar">
-                                        <div class="rating-fill" style="width: 0%"></div>
-                                    </div>
-                                    <span class="rating-number">0</span>
-                                </div>
-                                <div class="rating-row">
-                                    <span class="star-label">1★</span>
-                                    <div class="rating-bar">
-                                        <div class="rating-fill" style="width: 0%"></div>
-                                    </div>
-                                    <span class="rating-number">0</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quotes Received Card -->
-                <div class="profile-card quotes-card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-file-invoice-dollar"></i>
-                            Quotes Received
-                        </h3>
-                        <span class="quotes-badge" id="quotesBadge" style="display:none;">0 new</span>
-                    </div>
-                    <div class="card-content">
-                        <div class="quotes-list" id="quotesList">
-                            <div class="quote-item">
-                                <div class="quote-details">
-                                    <span class="quote-job">Loading...</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="quotes-footer">
-                            <a class="btn-secondary" id="viewAllQuotesBtn" href="/2nd-Year-Group-Project/FixLanka/views/user/quotes_received.php">
-                                View All Quotes
-                                <i class="fas fa-arrow-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </main>
@@ -404,35 +349,20 @@ $userData = getUserData();
                     <div class="form-row">
                         <div class="form-group">
                             <label for="editFullName">Full Name <span class="required">*</span></label>
-                            <input type="text" id="editFullName" class="form-input" value="John Doe" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="editUsername">Username <span class="required">*</span></label>
-                            <input type="text" id="editUsername" class="form-input" value="johndoe" required>
+                            <input type="text" id="editFullName" class="form-input" value="<?php echo htmlspecialchars($displayName ?: ''); ?>" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
                             <label for="editEmail">Email <span class="required">*</span></label>
-                            <input type="email" id="editEmail" class="form-input" value="john.doe@email.com" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="editPhone">Phone <span class="required">*</span></label>
-                            <input type="tel" id="editPhone" class="form-input" value="+94 77 123 4567" required>
+                            <input type="email" id="editEmail" class="form-input" value="<?php echo htmlspecialchars($displayEmail ?: ''); ?>" required>
                         </div>
                     </div>
                     
                     <div class="form-group">
                         <label for="editLocation">Location <span class="required">*</span></label>
-                        <input type="text" id="editLocation" class="form-input" value="Colombo, Sri Lanka" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="editBio">Bio</label>
-                        <textarea id="editBio" class="form-textarea" rows="4" placeholder="Tell us about yourself..."></textarea>
+                        <input type="text" id="editLocation" class="form-input" value="<?php echo htmlspecialchars($displayLocation ?: ''); ?>" required>
                     </div>
                     
                     <div class="modal-actions">
@@ -455,6 +385,9 @@ $userData = getUserData();
         </div>
     </div>
 
+    <script>
+        window.profilePageData = <?php echo json_encode($profilePayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/profile.js"></script>
 </body>
 </html>
