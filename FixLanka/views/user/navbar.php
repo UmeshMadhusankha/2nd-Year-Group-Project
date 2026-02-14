@@ -36,13 +36,12 @@ $userData = getUserData();
                 <!-- Logged In User Section -->
                 <div class="notification-bell" id="notificationBell">
                     <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="notificationBadge" style="display:none;">0</span>
 
                     <div class="notification-dropdown" id="notificationDropdown" style="display:none;">
                         <div class="notification-dropdown-header">
                             <span>Notifications</span>
                         </div>
-                        <div class="notification-dropdown-list" id="notificationList">
+                        <div class="notification-dropdown-list" id="notificationList" style="max-height: 270px; overflow-y: auto;">
                             <div class="notification-empty">Loading...</div>
                         </div>
                     </div>
