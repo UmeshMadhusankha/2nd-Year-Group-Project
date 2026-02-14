@@ -1,18 +1,18 @@
 // Repairer Profile Popup JavaScript (loads real DB data)
 
 const DEFAULT_APP_BASE = '/2nd-Year-Group-Project/FixLanka';
-const REPAIRERS_API_URL = `${DEFAULT_APP_BASE}/api/repairers.php`;
 const DEBUG_REPAIRER_POPUP = true;
 
 if (DEBUG_REPAIRER_POPUP) {
-    console.log('[RepairerPopup] Script loaded', { REPAIRERS_API_URL });
+    console.log('[RepairerPopup] Script loaded');
 }
 
 /**
  * Open repairer profile popup
  * @param {number} repairerId - The ID of the repairer
+ * @param {object|null} repairerData - Optional repairer data from landing cache
  */
-function openRepairerProfile(repairerId) {
+function openRepairerProfile(repairerId, repairerData = null) {
     if (DEBUG_REPAIRER_POPUP) {
         console.groupCollapsed('[RepairerPopup] openRepairerProfile()');
         console.log('repairerId (raw):', repairerId);
@@ -37,7 +37,7 @@ function openRepairerProfile(repairerId) {
     }
 
     // Load profile data
-    loadRepairerProfile(repairerId);
+    loadRepairerProfile(repairerId, repairerData);
 }
 
 /**
@@ -57,8 +57,9 @@ function closeRepairerProfile() {
 /**
  * Load repairer profile data
  * @param {number} repairerId - The ID of the repairer
+ * @param {object|null} repairerData - Optional repairer data from landing cache
  */
-function loadRepairerProfile(repairerId) {
+function loadRepairerProfile(repairerId, repairerData = null) {
     const modal = document.getElementById('repairerProfileModal');
     if (!modal) return;
 
@@ -83,61 +84,50 @@ function loadRepairerProfile(repairerId) {
     document.getElementById('profileEmail').textContent = 'N/A';
     document.getElementById('profileDistricts').textContent = 'N/A';
     document.getElementById('completedJobs').textContent = '0';
+    displayRating(0);
     displayReviews([]);
 
-    const url = `${REPAIRERS_API_URL}?action=getDetails&id=${encodeURIComponent(numericId)}`;
-    if (DEBUG_REPAIRER_POPUP) console.log('Fetching:', url);
+    try {
+        const cachedRepairer = repairerData ||
+            (typeof window.getLandingRepairerById === 'function' ? window.getLandingRepairerById(numericId) : null);
 
-    fetch(url, {
-        headers: { 'Accept': 'application/json' }
-    })
-        .then(res => {
-            if (DEBUG_REPAIRER_POPUP) console.log('Response:', { status: res.status, ok: res.ok });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return res.json();
-        })
-        .then(result => {
-            if (DEBUG_REPAIRER_POPUP) console.log('JSON:', result);
-            if (!result || !result.success || !result.data) {
-                throw new Error('Invalid provider response');
-            }
+        if (!cachedRepairer) {
+            throw new Error('Repairer data not found in landing cache');
+        }
 
-            const p = result.data;
-            const name = p.full_name || [p.f_name, p.l_name].filter(Boolean).join(' ') || p.name || 'Repairer';
-            const category = p.category_name || 'Service Professional';
-            const rating = Number(p.ratings ?? 0);
-            const reviewCount = Number(p.reviewCount ?? 0);
+        const p = cachedRepairer;
+        const name = p.full_name || [p.f_name, p.l_name].filter(Boolean).join(' ') || p.name || 'Repairer';
+        const category = p.category_name || 'Service Professional';
+        const rating = Number(p.ratings ?? 0);
 
-            const imageUrl = resolveProfileImageUrl(p.profilePicture, name);
+        const imageUrl = resolveProfileImageUrl(p.profilePicture, name);
 
-            const data = {
-                id: p.repairer_id || repairerId,
-                name,
-                category,
-                rating: Number.isFinite(rating) ? rating : 0,
-                reviewCount: Number.isFinite(reviewCount) ? reviewCount : 0,
-                completedJobs: Number(p.completedJobsCount ?? 0) || 0,
-                distance: 'N/A',
-                about: p.about || 'No description available.',
-                phone: p.phoneNumber || 'N/A',
-                email: p.email || 'N/A',
-                districts: p.districts || 'N/A',
-                availability: p.availability || 'available',
-                image: imageUrl,
-                reviews: Array.isArray(p.reviews) ? p.reviews : []
-            };
+        const data = {
+            id: p.repairer_id || repairerId,
+            name,
+            category,
+            rating: Number.isFinite(rating) ? rating : 0,
+            completedJobs: Number(p.completedJobsCount ?? 0) || 0,
+            distance: 'N/A',
+            about: p.about || 'No description available.',
+            phone: p.phoneNumber || 'N/A',
+            email: p.email || 'N/A',
+            districts: p.districts || 'N/A',
+            availability: p.availability || 'available',
+            image: imageUrl,
+            reviews: []
+        };
 
-            if (DEBUG_REPAIRER_POPUP) console.log('Mapped profile data:', data);
-            displayProfile(data);
-            if (DEBUG_REPAIRER_POPUP) console.groupEnd();
-        })
-        .catch(err => {
-            console.error('Failed to load repairer profile:', err);
-            document.getElementById('profileName').textContent = 'Failed to load';
-            document.getElementById('profileAbout').textContent = 'Could not load profile details. Please try again.';
-            displayReviews([]);
-            if (DEBUG_REPAIRER_POPUP) console.groupEnd();
-        });
+        if (DEBUG_REPAIRER_POPUP) console.log('Mapped profile data from landing cache:', data);
+        displayProfile(data);
+        if (DEBUG_REPAIRER_POPUP) console.groupEnd();
+    } catch (err) {
+        console.error('Failed to load repairer profile:', err);
+        document.getElementById('profileName').textContent = 'Failed to load';
+        document.getElementById('profileAbout').textContent = 'Could not load profile details. Please try again.';
+        displayReviews([]);
+        if (DEBUG_REPAIRER_POPUP) console.groupEnd();
+    }
 }
 
 // Export functions for inline onclick + other scripts
@@ -172,7 +162,7 @@ function displayProfile(data) {
     document.getElementById('profileCategory').textContent = data.category;
 
     // Rating
-    displayRating(data.rating, data.reviewCount);
+    displayRating(data.rating);
 
     // Stats
     document.getElementById('completedJobs').textContent = data.completedJobs;
@@ -195,9 +185,8 @@ function displayProfile(data) {
 /**
  * Display rating stars
  * @param {number} rating - Rating value (0-5)
- * @param {number} count - Number of reviews
  */
-function displayRating(rating, count) {
+function displayRating(rating) {
     const starsContainer = document.getElementById('profileStars');
     const ratingText = document.getElementById('profileRatingText');
 
@@ -223,7 +212,7 @@ function displayRating(rating, count) {
     }
 
     starsContainer.innerHTML = starsHTML;
-    ratingText.textContent = `${rating.toFixed(1)} (${count} reviews)`;
+    ratingText.textContent = `${rating.toFixed(1)}`;
 }
 
 /**

@@ -68,6 +68,29 @@ const itemsPerPage = 6;
 let isLoading = false;
 let allProvidersLoaded = false;
 let currentProviderType = 'repairers';
+const landingRepairersById = new Map();
+
+function cacheLandingRepairers(providers) {
+    if (!Array.isArray(providers)) return;
+
+    providers.forEach((provider) => {
+        const type = normalizeProviderType(provider?.provider_type || currentProviderType);
+        if (type !== 'individual') return;
+
+        const repairerId = Number(provider?.repairer_id);
+        if (!Number.isFinite(repairerId) || repairerId <= 0) return;
+
+        landingRepairersById.set(repairerId, provider);
+    });
+}
+
+function getLandingRepairerById(repairerId) {
+    const numericId = Number(repairerId);
+    if (!Number.isFinite(numericId) || numericId <= 0) return null;
+    return landingRepairersById.get(numericId) || null;
+}
+
+window.getLandingRepairerById = getLandingRepairerById;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -395,6 +418,7 @@ async function loadProviders() {
         // Store API payload before rendering (useful for filter/debug decisions)
         lastLandingProvidersResponse = result;
         lastLandingProvidersBatch = providers;
+        cacheLandingRepairers(providers);
 
         if (providers.length === 0 && currentPage === 0) {
             showNoResults();
@@ -668,7 +692,8 @@ function viewProviderProfile(providerId, providerType) {
 
     if (normalizedType === 'individual') {
         if (typeof openRepairerProfile === 'function') {
-            openRepairerProfile(numericId);
+            const repairer = getLandingRepairerById(numericId);
+            openRepairerProfile(numericId, repairer);
         } else {
             console.error('[ProfileFlow] openRepairerProfile() is not available. Check script load order for repairer-profile-popup.js');
             alert('Repairer profile popup is not available right now.');
