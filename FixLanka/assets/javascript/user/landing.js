@@ -830,10 +830,6 @@ async function openCompanyProfile(companyId) {
                                 <i class="fas fa-file-invoice"></i>
                                 Request Quote
                             </button>
-                            <button class="btn-secondary" onclick="contactCompany(${companyId})">
-                                <i class="fas fa-comment"></i>
-                                Message
-                            </button>
                             <button class="btn-outline" onclick="closeCompanyModal()">
                                 <i class="fas fa-times"></i>
                                 Close
@@ -1006,13 +1002,6 @@ function sendRepairRequest(type, providerId) {
     alert(`Send Repair Request feature will be implemented soon!\n\nProvider Type: ${type}\nProvider ID: ${providerId || 'Current profile'}`);
     // TODO: Implement repair request functionality
     // This will redirect to post-job page or open a request form
-}
-
-// Contact Company Function (Placeholder)
-function contactCompany(companyId) {
-    
-    alert('Contact Company feature will be implemented soon!');
-    // TODO: Implement contact company functionality
 }
 
 // Request Company Quote Function (Placeholder)
