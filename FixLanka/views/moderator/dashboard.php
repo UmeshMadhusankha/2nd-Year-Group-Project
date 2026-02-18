@@ -37,7 +37,6 @@ $pageDescription = 'Overview of system activity and quick access to management t
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/dashboard.css?v=<?php echo time(); ?>">
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 
 <body class="bg-foreground text-background">
@@ -67,7 +66,7 @@ $pageDescription = 'Overview of system activity and quick access to management t
                                 <div class="stat-change">+<?php echo $dashboardStats['newUsersToday']; ?> today</div>
                             </div>
                             <div class="stat-icon">
-                                <i data-lucide="users"></i>
+                                <i class="fa-solid fa-users"></i>
                             </div>
                         </div>
                     </div>
@@ -80,7 +79,7 @@ $pageDescription = 'Overview of system activity and quick access to management t
                                 <div class="stat-change"><?php echo $dashboardStats['adsApprovedToday']; ?> approved today</div>
                             </div>
                             <div class="stat-icon">
-                                <i data-lucide="megaphone"></i>
+                                <i class="fa-solid fa-bullhorn"></i>
                             </div>
                         </div>
                     </div>
@@ -93,7 +92,7 @@ $pageDescription = 'Overview of system activity and quick access to management t
                                 <div class="stat-change"><?php echo $dashboardStats['reportsToday']; ?> reports today</div>
                             </div>
                             <div class="stat-icon">
-                                <i data-lucide="clock"></i>
+                                <i class="fa-solid fa-clock"></i>
                             </div>
                         </div>
                     </div>
@@ -106,7 +105,7 @@ $pageDescription = 'Overview of system activity and quick access to management t
                                 <div class="stat-change">This month</div>
                             </div>
                             <div class="stat-icon">
-                                <i data-lucide="dollar-sign"></i>
+                                <i class="fa-solid fa-dollar-sign"></i>
                             </div>
                         </div>
                     </div>
@@ -118,7 +117,7 @@ $pageDescription = 'Overview of system activity and quick access to management t
                     <div class="quick-actions-grid">
                         <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/ads.php" class="action-card action-blue">
                             <div class="action-icon">
-                                <i data-lucide="megaphone"></i>
+                                <i class="fa-solid fa-bullhorn"></i>
                             </div>
                             <div class="action-content">
                                 <h4>Advertisement Review</h4>
@@ -128,18 +127,17 @@ $pageDescription = 'Overview of system activity and quick access to management t
 
                         <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/ad-reports.php" class="action-card action-green">
                             <div class="action-icon">
-                                <i data-lucide="flag"></i>
+                                <i class="fa-solid fa-flag"></i>
                             </div>
                             <div class="action-content">
                                 <h4>Ad Reports</h4>
-                                <p><?php echo number_format($dashboardStats['reportsToday']); ?> reports today</p>
+                                <p><?php echo $dashboardStats['reportsToday']; ?> reports today</p>
                             </div>
                         </a>
 
-                        <!-- NEW: Ad Scheduling Button -->
-                        <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/ad-schedules.php" class="action-card action-red">
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/ad-schedule.php" class="action-card action-red">
                             <div class="action-icon">
-                                <i data-lucide="calendar-clock"></i>
+                                <i class="fa-solid fa-calendar"></i>
                             </div>
                             <div class="action-content">
                                 <h4>Ad Scheduling</h4>
@@ -149,7 +147,7 @@ $pageDescription = 'Overview of system activity and quick access to management t
 
                         <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/finance.php" class="action-card action-purple">
                             <div class="action-icon">
-                                <i data-lucide="dollar-sign"></i>
+                                <i class="fa-solid fa-dollar-sign"></i>
                             </div>
                             <div class="action-content">
                                 <h4>Financial Reports</h4>
@@ -159,7 +157,7 @@ $pageDescription = 'Overview of system activity and quick access to management t
 
                         <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/notifications.php" class="action-card action-orange">
                             <div class="action-icon">
-                                <i data-lucide="bell"></i>
+                                <i class="fa-solid fa-bell"></i>
                             </div>
                             <div class="action-content">
                                 <h4>Notifications</h4>
@@ -169,7 +167,7 @@ $pageDescription = 'Overview of system activity and quick access to management t
 
                         <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/static-content.php" class="action-card action-teal">
                             <div class="action-icon">
-                                <i data-lucide="file-text"></i>
+                                <i class="fa-solid fa-file-lines"></i>
                             </div>
                             <div class="action-content">
                                 <h4>Static Management</h4>
@@ -183,45 +181,48 @@ $pageDescription = 'Overview of system activity and quick access to management t
                 <div class="two-column-grid">
                     <!-- Activity Overview -->
                     <div class="section-card">
-                        <h3 class="section-title">Activity Overview</h3>
-                        <div class="activity-list">
-                            <div class="activity-row">
-                                <span class="activity-label">User Registrations</span>
-                                <div class="activity-progress">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill bg-blue" style="width: <?php echo round($activityOverview['user_registrations']); ?>%"></div>
-                                    </div>
-                                    <span class="activity-percent"><?php echo round($activityOverview['user_registrations']); ?>%</span>
+                        <h3 class="section-title">
+                            <i class="fa-solid fa-chart-line"></i>
+                            Activity Overview
+                        </h3>
+                        <div class="activity-overview-list">
+                            <div class="activity-overview-item" data-color="blue">
+                                <div class="activity-overview-header">
+                                    <span class="activity-overview-label">User Registrations</span>
+                                    <span class="activity-overview-value"><?php echo $activityOverview['user_registrations']; ?>%</span>
+                                </div>
+                                <div class="activity-overview-bar">
+                                    <div class="activity-overview-fill" style="width: <?php echo $activityOverview['user_registrations']; ?>%;"></div>
                                 </div>
                             </div>
 
-                            <div class="activity-row">
-                                <span class="activity-label">Ad Approvals</span>
-                                <div class="activity-progress">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill bg-green" style="width: <?php echo $activityOverview['ad_approvals']; ?>%"></div>
-                                    </div>
-                                    <span class="activity-percent"><?php echo $activityOverview['ad_approvals']; ?>%</span>
+                            <div class="activity-overview-item" data-color="green">
+                                <div class="activity-overview-header">
+                                    <span class="activity-overview-label">Ad Approvals</span>
+                                    <span class="activity-overview-value"><?php echo $activityOverview['ad_approvals']; ?>%</span>
+                                </div>
+                                <div class="activity-overview-bar">
+                                    <div class="activity-overview-fill" style="width: <?php echo $activityOverview['ad_approvals']; ?>%;"></div>
                                 </div>
                             </div>
 
-                            <div class="activity-row">
-                                <span class="activity-label">Revenue Growth</span>
-                                <div class="activity-progress">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill bg-purple" style="width: <?php echo $activityOverview['revenue_growth']; ?>%"></div>
-                                    </div>
-                                    <span class="activity-percent"><?php echo $activityOverview['revenue_growth']; ?>%</span>
+                            <div class="activity-overview-item" data-color="orange">
+                                <div class="activity-overview-header">
+                                    <span class="activity-overview-label">Revenue Growth</span>
+                                    <span class="activity-overview-value"><?php echo $activityOverview['revenue_growth']; ?>%</span>
+                                </div>
+                                <div class="activity-overview-bar">
+                                    <div class="activity-overview-fill" style="width: <?php echo $activityOverview['revenue_growth']; ?>%;"></div>
                                 </div>
                             </div>
 
-                            <div class="activity-row">
-                                <span class="activity-label">System Performance</span>
-                                <div class="activity-progress">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill bg-teal" style="width: <?php echo $activityOverview['system_performance']; ?>%"></div>
-                                    </div>
-                                    <span class="activity-percent"><?php echo $activityOverview['system_performance']; ?>%</span>
+                            <div class="activity-overview-item" data-color="purple">
+                                <div class="activity-overview-header">
+                                    <span class="activity-overview-label">System Performance</span>
+                                    <span class="activity-overview-value"><?php echo $activityOverview['system_performance']; ?>%</span>
+                                </div>
+                                <div class="activity-overview-bar">
+                                    <div class="activity-overview-fill" style="width: <?php echo $activityOverview['system_performance']; ?>%;"></div>
                                 </div>
                             </div>
                         </div>
@@ -229,45 +230,36 @@ $pageDescription = 'Overview of system activity and quick access to management t
 
                     <!-- Recent Activity -->
                     <div class="section-card">
-                        <h3 class="section-title">Recent Activity</h3>
+                        <h3 class="section-title">
+                            <i class="fa-solid fa-clock"></i>
+                            Recent Activity
+                        </h3>
                         <div class="recent-activity-list">
-                            <?php foreach ($recentActivity as $activity): ?>
-                                <div class="recent-activity-item">
-                                    <?php
-                                    // Map activity type to icon color
-                                    $iconClass = 'activity-icon-gray';
-                                    switch ($activity['type']) {
-                                        case 'ad_approved':
-                                            $iconClass = 'activity-icon-green';
-                                            $iconName = 'check-circle';
-                                            break;
-                                        case 'ad_rejected':
-                                        case 'user_banned':
-                                            $iconClass = 'activity-icon-red';
-                                            $iconName = 'x-circle';
-                                            break;
-                                        case 'payment_received':
-                                            $iconClass = 'activity-icon-purple';
-                                            $iconName = 'dollar-sign';
-                                            break;
-                                        case 'user_registered':
-                                            $iconClass = 'activity-icon-blue';
-                                            $iconName = 'user-plus';
-                                            break;
-                                        case 'report_submitted':
-                                            $iconClass = 'activity-icon-yellow';
-                                            $iconName = 'flag';
-                                            break;
-                                        default:
-                                            $iconName = 'activity';
-                                    }
-                                    ?>
-                                    <div class="activity-icon-wrapper <?php echo $iconClass; ?>">
-                                        <i data-lucide="<?php echo $iconName; ?>"></i>
+                            <?php 
+                            // Icon mapping for dynamic activity icons
+                            $iconMap = [
+                                'user' => 'fa-user',
+                                'users' => 'fa-users',
+                                'megaphone' => 'fa-bullhorn',
+                                'check-circle' => 'fa-circle-check',
+                                'flag' => 'fa-flag',
+                                'dollar-sign' => 'fa-dollar-sign',
+                                'alert-triangle' => 'fa-triangle-exclamation',
+                                'file' => 'fa-file',
+                                'calendar' => 'fa-calendar',
+                                'bell' => 'fa-bell'
+                            ];
+                            
+                            foreach ($recentActivity as $activity): 
+                                $faIcon = $iconMap[$activity['icon']] ?? 'fa-circle';
+                            ?>
+                                <div class="activity-item">
+                                    <div class="activity-icon activity-icon-<?php echo $activity['type']; ?>">
+                                        <i class="fa-solid <?php echo $faIcon; ?>"></i>
                                     </div>
                                     <div class="activity-details">
-                                        <p class="activity-message"><?php echo htmlspecialchars($activity['message']); ?></p>
-                                        <p class="activity-time"><?php echo htmlspecialchars($activity['time']); ?></p>
+                                        <div class="activity-text"><?php echo htmlspecialchars($activity['message']); ?></div>
+                                        <div class="activity-time"><?php echo $activity['time']; ?></div>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -277,29 +269,41 @@ $pageDescription = 'Overview of system activity and quick access to management t
 
                 <!-- System Status -->
                 <div class="section-card">
-                    <h3 class="section-title">System Status</h3>
+                    <h3 class="section-title">
+                        <i class="fa-solid fa-shield"></i>
+                        System Status
+                    </h3>
                     <div class="system-status-grid">
                         <div class="status-item status-<?php echo $systemStatus['server']['color']; ?>">
-                            <i data-lucide="server"></i>
+                            <div class="status-icon">
+                                <i class="fa-solid fa-server"></i>
+                            </div>
                             <div class="status-content">
-                                <p class="status-label">Server Status</p>
-                                <p class="status-value"><?php echo $systemStatus['server']['status']; ?> - <?php echo $systemStatus['server']['uptime']; ?> uptime</p>
+                                <span class="status-label">Server Status</span>
+                                <span class="status-value"><?php echo $systemStatus['server']['status']; ?></span>
+                                <span class="status-detail"><?php echo $systemStatus['server']['uptime']; ?> uptime</span>
                             </div>
                         </div>
 
                         <div class="status-item status-<?php echo $systemStatus['database']['color']; ?>">
-                            <i data-lucide="database"></i>
+                            <div class="status-icon">
+                                <i class="fa-solid fa-database"></i>
+                            </div>
                             <div class="status-content">
-                                <p class="status-label">Database</p>
-                                <p class="status-value"><?php echo $systemStatus['database']['status']; ?> - <?php echo $systemStatus['database']['response_time']; ?> response</p>
+                                <span class="status-label">Database</span>
+                                <span class="status-value"><?php echo $systemStatus['database']['status']; ?></span>
+                                <span class="status-detail"><?php echo $systemStatus['database']['response_time']; ?> response</span>
                             </div>
                         </div>
 
                         <div class="status-item status-<?php echo $systemStatus['alerts']['color']; ?>">
-                            <i data-lucide="alert-triangle"></i>
+                            <div class="status-icon">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
                             <div class="status-content">
-                                <p class="status-label">Alerts</p>
-                                <p class="status-value"><?php echo $systemStatus['alerts']['message']; ?></p>
+                                <span class="status-label">System Alerts</span>
+                                <span class="status-value"><?php echo $systemStatus['alerts']['count']; ?> notifications</span>
+                                <span class="status-detail">Pending review</span>
                             </div>
                         </div>
                     </div>
@@ -308,9 +312,6 @@ $pageDescription = 'Overview of system activity and quick access to management t
         </div>
     </div>
 
-    <script>
-        lucide.createIcons();
-    </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
 </body>
 

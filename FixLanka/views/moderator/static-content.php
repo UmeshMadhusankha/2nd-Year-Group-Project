@@ -79,7 +79,6 @@ $pageDescription = 'Edit and manage website content';
 <html lang="en">
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath); ?>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/static-content.css?v=<?php echo time(); ?>">
 </head>
 <body class="bg-background text-foreground">
@@ -114,7 +113,7 @@ $pageDescription = 'Edit and manage website content';
                                     <p class="text-2xl font-bold mt-2"><?= $stats['total'] ?></p>
                                     <p class="text-xs text-muted-foreground mt-1">All content</p>
                                 </div>
-                                <i data-lucide="file-text" class="h-8 w-8 text-blue-600"></i>
+                                <i class="fa-solid fa-file-lines h-8 w-8 text-blue-600"></i>
                             </div>
                         </div>
                         <div class="bg-card rounded-lg border p-6">
@@ -124,7 +123,7 @@ $pageDescription = 'Edit and manage website content';
                                     <p class="text-2xl font-bold mt-2"><?= $stats['published'] ?></p>
                                     <p class="text-xs text-muted-foreground mt-1">Live on website</p>
                                 </div>
-                                <i data-lucide="check-circle" class="h-8 w-8 text-green-600"></i>
+                                <i class="fa-solid fa-circle-check h-8 w-8 text-green-600"></i>
                             </div>
                         </div>
                         <div class="bg-card rounded-lg border p-6">
@@ -134,7 +133,7 @@ $pageDescription = 'Edit and manage website content';
                                     <p class="text-2xl font-bold mt-2"><?= $stats['drafts'] ?></p>
                                     <p class="text-xs text-muted-foreground mt-1">Not visible</p>
                                 </div>
-                                <i data-lucide="eye-off" class="h-8 w-8 text-orange-600"></i>
+                                <i class="fa-solid fa-eye-slash h-8 w-8 text-orange-600"></i>
                             </div>
                         </div>
                         <div class="bg-card rounded-lg border p-6">
@@ -145,7 +144,7 @@ $pageDescription = 'Edit and manage website content';
                                         <?= $stats['last_update'] ? date('M d, Y', strtotime($stats['last_update'])) : 'Never' ?>
                                     </p>
                                 </div>
-                                <i data-lucide="clock" class="h-8 w-8 text-purple-600"></i>
+                                <i class="fa-solid fa-clock h-8 w-8 text-purple-600"></i>
                             </div>
                         </div>
                     </div>
@@ -160,7 +159,7 @@ $pageDescription = 'Edit and manage website content';
                         <div class="divide-y divide-border">
                             <?php if (empty($contents)): ?>
                             <div class="p-8 text-center">
-                                <i data-lucide="inbox" class="h-16 w-16 text-muted-foreground mx-auto mb-4"></i>
+                                <i class="fa-solid fa-inbox h-16 w-16 text-muted-foreground mx-auto mb-4"></i>
                                 <p class="text-muted-foreground">No content sections found. Please run the SQL script to add sample data.</p>
                             </div>
                             <?php else: ?>
@@ -188,12 +187,12 @@ $pageDescription = 'Edit and manage website content';
                                             <!-- Publish/Unpublish Toggle Button -->
                                             <?php if ($item['status'] === 'Draft'): ?>
                                             <a href="?toggle_status=1&id=<?= $item['content_id'] ?>" class="btn btn-primary">
-                                                <i data-lucide="upload" class="h-4 w-4"></i>
+                                                <i class="fa-solid fa-upload h-4 w-4"></i>
                                                 Publish
                                             </a>
                                             <?php else: ?>
                                             <a href="?toggle_status=1&id=<?= $item['content_id'] ?>" class="btn btn-secondary">
-                                                <i data-lucide="archive" class="h-4 w-4"></i>
+                                                <i class="fa-solid fa-box-archive h-4 w-4"></i>
                                                 Unpublish
                                             </a>
                                             <?php endif; ?>
@@ -208,7 +207,7 @@ $pageDescription = 'Edit and manage website content';
                                                         "status" => $item["status"]
                                                     ], JSON_HEX_QUOT | JSON_HEX_APOS) ?>)' 
                                                     class="btn btn-secondary">
-                                                <i data-lucide="edit" class="h-4 w-4"></i>
+                                                <i class="fa-solid fa-pen-to-square h-4 w-4"></i>
                                                 Edit
                                             </button>
                                         </div>
@@ -229,11 +228,11 @@ $pageDescription = 'Edit and manage website content';
             <div class="modal-content">
                 <div class="modal-header">
                     <h3 class="modal-title">
-                        <i data-lucide="edit" class="h-5 w-5"></i>
+                        <i class="fa-solid fa-pen-to-square h-5 w-5"></i>
                         Edit Content
                     </h3>
                     <button type="button" onclick="closeModal()" class="modal-close">
-                        <i data-lucide="x" class="h-5 w-5"></i>
+                        <i class="fa-solid fa-xmark h-5 w-5"></i>
                     </button>
                 </div>
                 <form method="POST" action="/2nd-Year-Group-Project/FixLanka/views/moderator/static-content.php">
@@ -267,7 +266,7 @@ $pageDescription = 'Edit and manage website content';
                     <div class="modal-footer">
                         <button type="button" onclick="closeModal()" class="btn btn-secondary">Cancel</button>
                         <button type="submit" class="btn btn-primary">
-                            <i data-lucide="save" class="h-4 w-4"></i>
+                            <i class="fa-solid fa-floppy-disk h-4 w-4"></i>
                             Save Changes
                         </button>
                     </div>
@@ -287,10 +286,6 @@ $pageDescription = 'Edit and manage website content';
             const modal = document.getElementById('editModal');
             modal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
-            
-            setTimeout(() => {
-                lucide.createIcons();
-            }, 100);
         }
         
         function closeModal() {
@@ -310,8 +305,6 @@ $pageDescription = 'Edit and manage website content';
                 closeModal();
             }
         });
-        
-        lucide.createIcons();
     </script>
 </body>
 </html>

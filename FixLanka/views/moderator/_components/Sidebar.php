@@ -5,6 +5,18 @@ function renderModeratorSidebar($currentPath, $basePath)
     // Normalize current path (remove trailing slashes)
     $currentPath = trim($currentPath, '/');
 
+    // Icon mapping: Lucide → Font Awesome
+    $iconMap = [
+        'home' => 'fa-home',
+        'dollar-sign' => 'fa-dollar-sign',
+        'monitor' => 'fa-desktop',
+        'file-text' => 'fa-file-lines',
+        'calendar' => 'fa-calendar',
+        'flag' => 'fa-flag',
+        'bell' => 'fa-bell',
+        'users' => 'fa-users'
+    ];
+
     // Menu items for the new UI
     $menuItems = [
         ['title' => 'Dashboard', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-dashboard', 'icon' => 'home'],
@@ -24,12 +36,14 @@ function renderModeratorSidebar($currentPath, $basePath)
 
     foreach ($menuItems as $item) {
         $isActive = (trim($currentPath, '/') === trim($item['url'], '/'));
-        echo '<script>console.log("Current Path: ' . addslashes($currentPath) . ' | Item URL: ' . addslashes($item['url']) . ' | Is Active: ' . ($isActive ? 'true' : 'false') . '");</script>';
         $activeClass = $isActive ? 'active' : '';
+        
+        // Get Font Awesome icon class
+        $faIcon = $iconMap[$item['icon']] ?? 'fa-circle';
 
         echo '<li class="nav-item ' . $activeClass . '">';
         echo '<a href="' . htmlspecialchars($item['url']) . '" class="nav-link" data-tooltip="' . htmlspecialchars($item['title']) . '">';
-        echo '<i data-lucide="' . htmlspecialchars($item['icon']) . '" class=""></i>';
+        echo '<i class="fa-solid ' . $faIcon . '"></i>';
         echo '<span>' . htmlspecialchars($item['title']) . '</span>';
         echo '</a>';
         echo '</li>';

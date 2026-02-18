@@ -25,7 +25,11 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
 
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
 </head>
 
 <body class="bg-background text-foreground">
@@ -71,7 +75,7 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                                         <h3 class="text-lg font-semibold">Revenue Breakdown</h3>
                                         <p class="text-muted-foreground text-sm">Monthly revenue by source</p>
                                     </div>
-                                    <i data-lucide="info" class="h-5 w-5" style="color: #14b8a6;"></i>
+                                    <i class="fa-solid fa-circle-info h-5 w-5" style="color: #14b8a6;"></i>
                                 </div>
                             </div>
                             <div class="finance-breakdown-content">
@@ -106,7 +110,7 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                                         <h3 class="text-lg font-semibold">Commission Structure</h3>
                                         <p class="text-muted-foreground text-sm">Current commission rates by service type</p>
                                     </div>
-                                    <i data-lucide="info" class="h-5 w-5" style="color: #14b8a6;"></i>
+                                    <i class="fa-solid fa-circle-info h-5 w-5" style="color: #14b8a6;"></i>
                                 </div>
                             </div>
                             <div class="finance-breakdown-content">
@@ -141,7 +145,7 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                                     <h3 class="text-lg font-semibold">Recent Transactions</h3>
                                     <p class="text-muted-foreground text-sm">Latest financial activities and transactions</p>
                                 </div>
-                                <i data-lucide="info" class="h-5 w-5" style="color: #14b8a6; cursor: pointer;" onclick="showTransactionHelpPopup()"></i>
+                                <i class="fa-solid fa-circle-info h-5 w-5" style="color: #14b8a6; cursor: pointer;" onclick="showTransactionHelpPopup()"></i>
                             </div>
                         </div>
                         <div class="overflow-x-auto">
@@ -158,11 +162,12 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                                 <tbody>
                                     <?php foreach ($mockFinancials['recentTransactions'] as $transaction): ?>
                                         <?php
-                                        $typeIcons = [
-                                            'Commission' => 'arrow-up-right',
-                                            'Ad Payment' => 'arrow-up-right',
-                                            'Subscription' => 'arrow-up-right',
-                                            'Withdrawal' => 'arrow-down-right'
+                                        // Font Awesome icon mapping for transaction types
+                                        $typeIconsFA = [
+                                            'Commission' => 'fa-arrow-up-right',
+                                            'Ad Payment' => 'fa-arrow-up-right',
+                                            'Subscription' => 'fa-arrow-up-right',
+                                            'Withdrawal' => 'fa-arrow-down-right'
                                         ];
 
                                         $typeColors = [
@@ -178,14 +183,14 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                                             'Failed' => 'destructive'
                                         ];
 
-                                        $icon = $typeIcons[$transaction['type']] ?? 'dollar-sign';
+                                        $iconFA = $typeIconsFA[$transaction['type']] ?? 'fa-dollar-sign';
                                         $color = $typeColors[$transaction['type']] ?? 'text-muted-foreground';
                                         ?>
                                         <tr class="clickable-row" onclick='showTransactionDetailsPopup(<?php echo json_encode($transaction); ?>)'>
                                             <td class="text-card-foreground font-medium"><?php echo $transaction['id']; ?></td>
                                             <td class="text-muted-foreground">
                                                 <div class="finance-transaction-type">
-                                                    <i data-lucide="<?php echo $icon; ?>" class="h-4 w-4 <?php echo $color; ?>"></i>
+                                                    <i class="fa-solid <?php echo $iconFA; ?> h-4 w-4 <?php echo $color; ?>"></i>
                                                     <?php echo $transaction['type']; ?>
                                                 </div>
                                             </td>
@@ -211,7 +216,7 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                                         <h3 class="text-lg font-semibold">Payment Methods</h3>
                                         <p class="text-muted-foreground text-sm">Accepted payment options</p>
                                     </div>
-                                    <i data-lucide="info" class="h-5 w-5" style="color: #14b8a6;"></i>
+                                    <i class="fa-solid fa-circle-info h-5 w-5" style="color: #14b8a6;"></i>
                                 </div>
                             </div>
                             <div class="finance-sidebar-content">
@@ -243,7 +248,7 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                                         <h3 class="text-lg font-semibold">Financial Health</h3>
                                         <p class="text-muted-foreground text-sm">Key financial indicators</p>
                                     </div>
-                                    <i data-lucide="info" class="h-5 w-5" style="color: #14b8a6;"></i>
+                                    <i class="fa-solid fa-circle-info h-5 w-5" style="color: #14b8a6;"></i>
                                 </div>
                             </div>
                             <div class="finance-sidebar-content">
@@ -275,19 +280,19 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                             <div class="finance-sidebar-content">
                                 <div class="finance-quick-actions">
                                     <button class="finance-action-btn" onclick="showProcessWithdrawalsPopup()">
-                                        <i data-lucide="wallet" class="h-4 w-4" style="display: inline; margin-right: 0.5rem;"></i>
+                                        <i class="fa-solid fa-wallet"></i>
                                         Process Withdrawals
                                     </button>
                                     <button class="finance-action-btn" onclick="showGenerateReportPopup()">
-                                        <i data-lucide="file-text" class="h-4 w-4" style="display: inline; margin-right: 0.5rem;"></i>
+                                        <i class="fa-solid fa-file-lines"></i>
                                         Generate Report
                                     </button>
                                     <button class="finance-action-btn" onclick="showUpdateRatesPopup()">
-                                        <i data-lucide="percent" class="h-4 w-4" style="display: inline; margin-right: 0.5rem;"></i>
+                                        <i class="fa-solid fa-percent"></i>
                                         Update Rates
                                     </button>
                                     <button class="finance-action-btn" onclick="showViewAnalyticsPopup()">
-                                        <i data-lucide="bar-chart-3" class="h-4 w-4" style="display: inline; margin-right: 0.5rem;"></i>
+                                        <i class="fa-solid fa-chart-line"></i>
                                         View Analytics
                                     </button>
                                 </div>
@@ -297,17 +302,17 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                 </div>
             </main>
 
-            <!-- ========== MODAL POPUPS (All 9 Modals) ========== -->
+            <!-- ========== MODAL POPUPS (All 10 Modals) ========== -->
             
             <!-- 1. Revenue Details Popup -->
-            <div id="revenueDetailsModal" class="finance-modal">
-                <div class="finance-modal-content">
+            <div id="revenueDetailsModal" class="finance-modal" onclick="handleBackdropClick(event, 'revenueDetailsModal')">
+                <div class="finance-modal-content" onclick="event.stopPropagation()">
                     <div class="finance-modal-header">
                         <h3 class="finance-modal-title">
-                            <i data-lucide="pie-chart" class="h-5 w-5"></i>
+                            <i class="fa-solid fa-chart-pie"></i>
                             Revenue Breakdown Details
                         </h3>
-                        <button class="finance-modal-close" onclick="closeModal('revenueDetailsModal')">&times;</button>
+                        <button class="finance-modal-close" onclick="closeModalDirectly('revenueDetailsModal')" type="button">&times;</button>
                     </div>
                     <div class="finance-modal-body">
                         <div class="info-grid">
@@ -338,14 +343,14 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
             </div>
 
             <!-- 2. Commission Details Popup -->
-            <div id="commissionDetailsModal" class="finance-modal">
-                <div class="finance-modal-content">
+            <div id="commissionDetailsModal" class="finance-modal" onclick="handleBackdropClick(event, 'commissionDetailsModal')">
+                <div class="finance-modal-content" onclick="event.stopPropagation()">
                     <div class="finance-modal-header">
                         <h3 class="finance-modal-title">
-                            <i data-lucide="percent" class="h-5 w-5"></i>
+                            <i class="fa-solid fa-percent"></i>
                             Commission Structure Details
                         </h3>
-                        <button class="finance-modal-close" onclick="closeModal('commissionDetailsModal')">&times;</button>
+                        <button class="finance-modal-close" onclick="closeModalDirectly('commissionDetailsModal')" type="button">&times;</button>
                     </div>
                     <div class="finance-modal-body">
                         <div class="info-grid">
@@ -376,14 +381,14 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
             </div>
 
             <!-- 3. Transaction Details Popup -->
-            <div id="transactionDetailsModal" class="finance-modal">
-                <div class="finance-modal-content">
+            <div id="transactionDetailsModal" class="finance-modal" onclick="handleBackdropClick(event, 'transactionDetailsModal')">
+                <div class="finance-modal-content" onclick="event.stopPropagation()">
                     <div class="finance-modal-header">
                         <h3 class="finance-modal-title">
-                            <i data-lucide="receipt" class="h-5 w-5"></i>
+                            <i class="fa-solid fa-receipt"></i>
                             Transaction Details
                         </h3>
-                        <button class="finance-modal-close" onclick="closeModal('transactionDetailsModal')">&times;</button>
+                        <button class="finance-modal-close" onclick="closeModalDirectly('transactionDetailsModal')" type="button">&times;</button>
                     </div>
                     <div class="finance-modal-body">
                         <div class="info-grid" id="transactionDetailsContent">
@@ -394,14 +399,14 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
             </div>
 
             <!-- 4. Transaction Help Popup -->
-            <div id="transactionHelpModal" class="finance-modal">
-                <div class="finance-modal-content">
+            <div id="transactionHelpModal" class="finance-modal" onclick="handleBackdropClick(event, 'transactionHelpModal')">
+                <div class="finance-modal-content" onclick="event.stopPropagation()">
                     <div class="finance-modal-header">
                         <h3 class="finance-modal-title">
-                            <i data-lucide="help-circle" class="h-5 w-5"></i>
+                            <i class="fa-solid fa-circle-question"></i>
                             Transaction Types Guide
                         </h3>
-                        <button class="finance-modal-close" onclick="closeModal('transactionHelpModal')">&times;</button>
+                        <button class="finance-modal-close" onclick="closeModalDirectly('transactionHelpModal')" type="button">&times;</button>
                     </div>
                     <div class="finance-modal-body">
                         <div class="info-grid">
@@ -428,14 +433,14 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
             </div>
 
             <!-- 5. Payment Methods Popup -->
-            <div id="paymentMethodsModal" class="finance-modal">
-                <div class="finance-modal-content">
+            <div id="paymentMethodsModal" class="finance-modal" onclick="handleBackdropClick(event, 'paymentMethodsModal')">
+                <div class="finance-modal-content" onclick="event.stopPropagation()">
                     <div class="finance-modal-header">
                         <h3 class="finance-modal-title">
-                            <i data-lucide="credit-card" class="h-5 w-5"></i>
+                            <i class="fa-solid fa-credit-card"></i>
                             Payment Methods Details
                         </h3>
-                        <button class="finance-modal-close" onclick="closeModal('paymentMethodsModal')">&times;</button>
+                        <button class="finance-modal-close" onclick="closeModalDirectly('paymentMethodsModal')" type="button">&times;</button>
                     </div>
                     <div class="finance-modal-body">
                         <div class="info-grid">
@@ -462,14 +467,14 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
             </div>
 
             <!-- 6. Financial Health Popup -->
-            <div id="financialHealthModal" class="finance-modal">
-                <div class="finance-modal-content">
+            <div id="financialHealthModal" class="finance-modal" onclick="handleBackdropClick(event, 'financialHealthModal')">
+                <div class="finance-modal-content" onclick="event.stopPropagation()">
                     <div class="finance-modal-header">
                         <h3 class="finance-modal-title">
-                            <i data-lucide="activity" class="h-5 w-5"></i>
+                            <i class="fa-solid fa-chart-line"></i>
                             Financial Health Report
                         </h3>
-                        <button class="finance-modal-close" onclick="closeModal('financialHealthModal')">&times;</button>
+                        <button class="finance-modal-close" onclick="closeModalDirectly('financialHealthModal')" type="button">&times;</button>
                     </div>
                     <div class="finance-modal-body">
                         <div class="info-grid">
@@ -500,14 +505,14 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
             </div>
 
             <!-- 7. Process Withdrawals Popup -->
-            <div id="processWithdrawalsModal" class="finance-modal">
-                <div class="finance-modal-content">
+            <div id="processWithdrawalsModal" class="finance-modal" onclick="handleBackdropClick(event, 'processWithdrawalsModal')">
+                <div class="finance-modal-content" onclick="event.stopPropagation()">
                     <div class="finance-modal-header">
                         <h3 class="finance-modal-title">
-                            <i data-lucide="wallet" class="h-5 w-5"></i>
+                            <i class="fa-solid fa-wallet"></i>
                             Process Withdrawals
                         </h3>
-                        <button class="finance-modal-close" onclick="closeModal('processWithdrawalsModal')">&times;</button>
+                        <button class="finance-modal-close" onclick="closeModalDirectly('processWithdrawalsModal')" type="button">&times;</button>
                     </div>
                     <div class="finance-modal-body">
                         <div class="info-grid">
@@ -529,20 +534,20 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                             </div>
                         </div>
                         <p class="info-note">⚠️ This feature is currently in development. Full withdrawal processing system coming soon!</p>
-                        <button class="finance-modal-btn" onclick="closeModal('processWithdrawalsModal')">Close</button>
+                        <button class="finance-modal-btn" onclick="closeModalDirectly('processWithdrawalsModal')" type="button">Close</button>
                     </div>
                 </div>
             </div>
 
             <!-- 8. Generate Report Popup -->
-            <div id="generateReportModal" class="finance-modal">
-                <div class="finance-modal-content">
+            <div id="generateReportModal" class="finance-modal" onclick="handleBackdropClick(event, 'generateReportModal')">
+                <div class="finance-modal-content" onclick="event.stopPropagation()">
                     <div class="finance-modal-header">
                         <h3 class="finance-modal-title">
-                            <i data-lucide="file-text" class="h-5 w-5"></i>
+                            <i class="fa-solid fa-file-lines"></i>
                             Generate Financial Report
                         </h3>
-                        <button class="finance-modal-close" onclick="closeModal('generateReportModal')">&times;</button>
+                        <button class="finance-modal-close" onclick="closeModalDirectly('generateReportModal')" type="button">&times;</button>
                     </div>
                     <div class="finance-modal-body">
                         <div class="info-grid">
@@ -564,20 +569,20 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                             </div>
                         </div>
                         <p class="info-note">📊 Report generation feature is under development. You'll be able to export comprehensive financial reports soon!</p>
-                        <button class="finance-modal-btn" onclick="closeModal('generateReportModal')">Close</button>
+                        <button class="finance-modal-btn" onclick="closeModalDirectly('generateReportModal')" type="button">Close</button>
                     </div>
                 </div>
             </div>
 
             <!-- 9. Update Rates Popup -->
-            <div id="updateRatesModal" class="finance-modal">
-                <div class="finance-modal-content">
+            <div id="updateRatesModal" class="finance-modal" onclick="handleBackdropClick(event, 'updateRatesModal')">
+                <div class="finance-modal-content" onclick="event.stopPropagation()">
                     <div class="finance-modal-header">
                         <h3 class="finance-modal-title">
-                            <i data-lucide="percent" class="h-5 w-5"></i>
+                            <i class="fa-solid fa-percent"></i>
                             Update Commission Rates
                         </h3>
-                        <button class="finance-modal-close" onclick="closeModal('updateRatesModal')">&times;</button>
+                        <button class="finance-modal-close" onclick="closeModalDirectly('updateRatesModal')" type="button">&times;</button>
                     </div>
                     <div class="finance-modal-body">
                         <div class="info-grid">
@@ -599,20 +604,20 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                             </div>
                         </div>
                         <p class="info-note">⚙️ Commission rate management system is coming soon. This will allow dynamic rate adjustments!</p>
-                        <button class="finance-modal-btn" onclick="closeModal('updateRatesModal')">Close</button>
+                        <button class="finance-modal-btn" onclick="closeModalDirectly('updateRatesModal')" type="button">Close</button>
                     </div>
                 </div>
             </div>
 
             <!-- 10. View Analytics Popup -->
-            <div id="viewAnalyticsModal" class="finance-modal">
-                <div class="finance-modal-content">
+            <div id="viewAnalyticsModal" class="finance-modal" onclick="handleBackdropClick(event, 'viewAnalyticsModal')">
+                <div class="finance-modal-content" onclick="event.stopPropagation()">
                     <div class="finance-modal-header">
                         <h3 class="finance-modal-title">
-                            <i data-lucide="bar-chart-3" class="h-5 w-5"></i>
+                            <i class="fa-solid fa-chart-column"></i>
                             Financial Analytics
                         </h3>
-                        <button class="finance-modal-close" onclick="closeModal('viewAnalyticsModal')">&times;</button>
+                        <button class="finance-modal-close" onclick="closeModalDirectly('viewAnalyticsModal')" type="button">&times;</button>
                     </div>
                     <div class="finance-modal-body">
                         <div class="info-grid">
@@ -638,35 +643,43 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                             </div>
                         </div>
                         <p class="info-note">📈 Advanced analytics dashboard with charts and insights is under development!</p>
-                        <button class="finance-modal-btn" onclick="closeModal('viewAnalyticsModal')">Close</button>
+                        <button class="finance-modal-btn" onclick="closeModalDirectly('viewAnalyticsModal')" type="button">Close</button>
                     </div>
                 </div>
             </div>
 
             <!-- ========== JAVASCRIPT FOR ALL POPUPS ========== -->
             <script>
-                // Initialize Lucide Icons
-                lucide.createIcons();
+                // Direct close function - GUARANTEED TO WORK
+                function closeModalDirectly(modalId) {
+                    const modal = document.getElementById(modalId);
+                    if (modal) {
+                        modal.classList.remove('active');
+                        modal.style.display = 'none';
+                    }
+                    return false;
+                }
 
-                // 1. Show Revenue Details Popup
+                // Handle backdrop click (click outside modal)
+                function handleBackdropClick(event, modalId) {
+                    if (event.target.classList.contains('finance-modal')) {
+                        closeModalDirectly(modalId);
+                    }
+                }
+
+                // Show modal functions
                 function showRevenueDetailsPopup() {
-                    document.getElementById('revenueDetailsModal').style.display = 'flex';
-                    setTimeout(() => {
-                        document.getElementById('revenueDetailsModal').classList.add('active');
-                    }, 10);
-                    lucide.createIcons();
+                    const modal = document.getElementById('revenueDetailsModal');
+                    modal.style.display = 'flex';
+                    setTimeout(() => modal.classList.add('active'), 10);
                 }
 
-                // 2. Show Commission Details Popup
                 function showCommissionDetailsPopup() {
-                    document.getElementById('commissionDetailsModal').style.display = 'flex';
-                    setTimeout(() => {
-                        document.getElementById('commissionDetailsModal').classList.add('active');
-                    }, 10);
-                    lucide.createIcons();
+                    const modal = document.getElementById('commissionDetailsModal');
+                    modal.style.display = 'flex';
+                    setTimeout(() => modal.classList.add('active'), 10);
                 }
 
-                // 3. Show Transaction Details Popup (Dynamic)
                 function showTransactionDetailsPopup(transaction) {
                     const content = document.getElementById('transactionDetailsContent');
                     content.innerHTML = `
@@ -692,118 +705,79 @@ $pageDescription = $description ?? 'Monitor revenue, commissions, and financial 
                         </div>
                     `;
                     
-                    document.getElementById('transactionDetailsModal').style.display = 'flex';
-                    setTimeout(() => {
-                        document.getElementById('transactionDetailsModal').classList.add('active');
-                    }, 10);
+                    const modal = document.getElementById('transactionDetailsModal');
+                    modal.style.display = 'flex';
+                    setTimeout(() => modal.classList.add('active'), 10);
                 }
 
-                // 4. Show Transaction Help Popup
                 function showTransactionHelpPopup() {
-                    document.getElementById('transactionHelpModal').style.display = 'flex';
-                    setTimeout(() => {
-                        document.getElementById('transactionHelpModal').classList.add('active');
-                    }, 10);
-                    lucide.createIcons();
+                    const modal = document.getElementById('transactionHelpModal');
+                    modal.style.display = 'flex';
+                    setTimeout(() => modal.classList.add('active'), 10);
                 }
 
-                // 5. Show Payment Methods Popup
                 function showPaymentMethodsPopup() {
-                    document.getElementById('paymentMethodsModal').style.display = 'flex';
-                    setTimeout(() => {
-                        document.getElementById('paymentMethodsModal').classList.add('active');
-                    }, 10);
-                    lucide.createIcons();
+                    const modal = document.getElementById('paymentMethodsModal');
+                    modal.style.display = 'flex';
+                    setTimeout(() => modal.classList.add('active'), 10);
                 }
 
-                // 6. Show Financial Health Popup
                 function showFinancialHealthPopup() {
-                    document.getElementById('financialHealthModal').style.display = 'flex';
-                    setTimeout(() => {
-                        document.getElementById('financialHealthModal').classList.add('active');
-                    }, 10);
-                    lucide.createIcons();
+                    const modal = document.getElementById('financialHealthModal');
+                    modal.style.display = 'flex';
+                    setTimeout(() => modal.classList.add('active'), 10);
                 }
 
-                // 7. Show Process Withdrawals Popup
                 function showProcessWithdrawalsPopup() {
-                    document.getElementById('processWithdrawalsModal').style.display = 'flex';
-                    setTimeout(() => {
-                        document.getElementById('processWithdrawalsModal').classList.add('active');
-                    }, 10);
-                    lucide.createIcons();
+                    const modal = document.getElementById('processWithdrawalsModal');
+                    modal.style.display = 'flex';
+                    setTimeout(() => modal.classList.add('active'), 10);
                 }
 
-                // 8. Show Generate Report Popup
                 function showGenerateReportPopup() {
-                    document.getElementById('generateReportModal').style.display = 'flex';
-                    setTimeout(() => {
-                        document.getElementById('generateReportModal').classList.add('active');
-                    }, 10);
-                    lucide.createIcons();
+                    const modal = document.getElementById('generateReportModal');
+                    modal.style.display = 'flex';
+                    setTimeout(() => modal.classList.add('active'), 10);
                 }
 
-                // 9. Show Update Rates Popup
                 function showUpdateRatesPopup() {
-                    document.getElementById('updateRatesModal').style.display = 'flex';
-                    setTimeout(() => {
-                        document.getElementById('updateRatesModal').classList.add('active');
-                    }, 10);
-                    lucide.createIcons();
+                    const modal = document.getElementById('updateRatesModal');
+                    modal.style.display = 'flex';
+                    setTimeout(() => modal.classList.add('active'), 10);
                 }
 
-                // 10. Show View Analytics Popup
                 function showViewAnalyticsPopup() {
-                    document.getElementById('viewAnalyticsModal').style.display = 'flex';
-                    setTimeout(() => {
-                        document.getElementById('viewAnalyticsModal').classList.add('active');
-                    }, 10);
-                    lucide.createIcons();
+                    const modal = document.getElementById('viewAnalyticsModal');
+                    modal.style.display = 'flex';
+                    setTimeout(() => modal.classList.add('active'), 10);
                 }
 
-                // Close Modal Function
-                function closeModal(modalId) {
-                    const modal = document.getElementById(modalId);
-                    modal.classList.remove('active');
-                    setTimeout(() => {
-                        modal.style.display = 'none';
-                    }, 300);
-                }
-
-                // Close modal when clicking outside
-                window.onclick = function(event) {
-                    if (event.target.classList.contains('finance-modal')) {
-                        event.target.classList.remove('active');
-                        setTimeout(() => {
-                            event.target.style.display = 'none';
-                        }, 300);
-                    }
-                }
-
-                // ESC key to close modal
+                // ESC key to close ALL modals
                 document.addEventListener('keydown', function(event) {
-                    if (event.key === 'Escape') {
-                        const modals = document.querySelectorAll('.finance-modal.active');
-                        modals.forEach(modal => {
-                            modal.classList.remove('active');
-                            setTimeout(() => {
-                                modal.style.display = 'none';
-                            }, 300);
+                    if (event.key === 'Escape' || event.key === 'Esc') {
+                        const allModalIds = [
+                            'revenueDetailsModal',
+                            'commissionDetailsModal',
+                            'transactionDetailsModal',
+                            'transactionHelpModal',
+                            'paymentMethodsModal',
+                            'financialHealthModal',
+                            'processWithdrawalsModal',
+                            'generateReportModal',
+                            'updateRatesModal',
+                            'viewAnalyticsModal'
+                        ];
+                        
+                        allModalIds.forEach(modalId => {
+                            closeModalDirectly(modalId);
                         });
                     }
-                });
-
-                // Re-initialize icons after DOM changes
-                document.addEventListener('DOMContentLoaded', function() {
-                    lucide.createIcons();
                 });
             </script>
 
         </div>
     </div>
-    <script>
-        lucide.createIcons();
-    </script>
+    
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
 </body>
 

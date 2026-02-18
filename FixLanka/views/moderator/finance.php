@@ -1,8 +1,7 @@
 <?php
 /**
- * Financial Reports View
- * Displays financial data using MVC pattern
- * Pure MVC - No inline CSS, proper separation of concerns
+ * Financial Reports View - Clean Minimal Design
+ * Matches Advertisement Review Page Style
  */
 
 // Start session
@@ -56,7 +55,6 @@ $pageDescription = 'Monitor revenue and financial transactions';
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath); ?>
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/finance.css?v=<?php echo time(); ?>">
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 
 <body class="bg-foreground text-background">
@@ -72,84 +70,149 @@ $pageDescription = 'Monitor revenue and financial transactions';
                 <div class="space-y-6">
                     <!-- Page Title -->
                     <div>
-                        <h2 class="text-3xl font-bold tracking-tight text-foreground">Financial Reports</h2>
+                        <h2 class="text-3xl">Financial Reports</h2>
                         <p class="text-muted-foreground">Monitor revenue, commissions, and financial transactions</p>
                     </div>
 
-                    <!-- KPI Cards -->
-                    <div class="grid gap-4 grid-cols-2">
-                        <?php
-                        $growthText = ($revenueGrowth > 0 ? '+' : '') . $revenueGrowth . '% from last month';
-                        renderCard('Monthly Revenue', $controller->formatCurrency($monthlyRevenue), $growthText, 'dollar-sign', 'text-green-600');
-                        renderCard('Pending Withdrawals', $controller->formatCurrency($pendingWithdrawals), 'Awaiting processing', 'wallet', 'text-orange-600');
-                        renderCard('Total Commissions', $controller->formatCurrency($totalCommissions), 'This month', 'trending-up', 'text-blue-600');
-                        renderCard('Active Subscriptions', $activeSubscriptions, 'Premium accounts', 'credit-card', 'text-purple-600');
-                        ?>
+                    <!-- Clean Stat Cards (Like Advertisement Review) -->
+                    <div class="grid gap-4 grid-cols-4">
+                        <!-- Monthly Revenue Card -->
+                        <div class="stat-card" data-color="primary">
+                            <div class="stat-card-inner">
+                                <div class="stat-info">
+                                    <h4>Monthly Revenue</h4>
+                                    <div class="stat-value"><?php echo $controller->formatCurrency($monthlyRevenue); ?></div>
+                                    <div class="stat-change">
+                                        <span class="stat-badge">
+                                            <?php echo ($revenueGrowth > 0 ? '↑ ' : '↓ '); ?>
+                                            <?php echo abs($revenueGrowth); ?>%
+                                        </span>
+                                        from last month
+                                    </div>
+                                </div>
+                                <div class="stat-icon">
+                                    <i class="fa-solid fa-arrow-trend-up"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pending Withdrawals Card -->
+                        <div class="stat-card" data-color="warning">
+                            <div class="stat-card-inner">
+                                <div class="stat-info">
+                                    <h4>Pending Withdrawals</h4>
+                                    <div class="stat-value"><?php echo $controller->formatCurrency($pendingWithdrawals); ?></div>
+                                    <div class="stat-change">Awaiting processing</div>
+                                </div>
+                                <div class="stat-icon">
+                                    <i class="fa-solid fa-wallet"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Commissions Card -->
+                        <div class="stat-card" data-color="info">
+                            <div class="stat-card-inner">
+                                <div class="stat-info">
+                                    <h4>Total Commissions</h4>
+                                    <div class="stat-value"><?php echo $controller->formatCurrency($totalCommissions); ?></div>
+                                    <div class="stat-change">This month</div>
+                                </div>
+                                <div class="stat-icon">
+                                    <i class="fa-solid fa-dollar-sign"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Active Subscriptions Card -->
+                        <div class="stat-card" data-color="purple">
+                            <div class="stat-card-inner">
+                                <div class="stat-info">
+                                    <h4>Active Subscriptions</h4>
+                                    <div class="stat-value"><?php echo number_format($activeSubscriptions); ?></div>
+                                    <div class="stat-change">Premium accounts</div>
+                                </div>
+                                <div class="stat-icon">
+                                    <i class="fa-solid fa-users"></i>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Revenue & Commission Section -->
                     <div class="grid gap-6 md:grid-cols-2">
                         <!-- Revenue Breakdown -->
                         <div class="revenue-breakdown">
-                            <div class="p-6">
-                                <h3 class="text-lg font-medium text-foreground">Revenue Breakdown</h3>
-                                <p class="text-sm text-muted-foreground">Monthly revenue by source</p>
+                            <div class="section-header">
+                                <h3 class="section-title">
+                                    <i class="fa-solid fa-chart-bar" style="width: 20px; height: 20px;"></i>
+                                    Revenue Breakdown
+                                </h3>
+                                <p class="section-subtitle">Monthly revenue by source</p>
+                            </div>
 
-                                <div class="mt-6 space-y-4">
-                                    <?php foreach ($revenueBreakdown as $item): ?>
-                                        <div class="revenue-item">
-                                            <div class="revenue-item-header">
-                                                <span class="text-sm font-medium text-foreground"><?php echo htmlspecialchars($item['source']); ?></span>
-                                                <span class="text-sm text-muted-foreground">
-                                                    <?php 
-                                                    if ($item['amount'] >= 1000) {
-                                                        echo 'LKR ' . number_format($item['amount'] / 1000) . 'K';
-                                                    } else {
-                                                        echo 'LKR ' . number_format($item['amount']);
-                                                    }
-                                                    ?>
-                                                    (<?php echo $item['percentage']; ?>%)
-                                                </span>
-                                            </div>
-                                            <div class="progress-bar">
-                                                <div class="progress-fill" style="width: <?php echo $item['percentage']; ?>%"></div>
-                                            </div>
+                            <div class="section-body">
+                                <?php foreach ($revenueBreakdown as $item): ?>
+                                    <div class="revenue-item">
+                                        <div class="revenue-item-header">
+                                            <span class="revenue-item-label"><?php echo htmlspecialchars($item['source']); ?></span>
+                                            <span class="revenue-item-value">
+                                                <?php 
+                                                if ($item['amount'] >= 1000) {
+                                                    echo 'LKR ' . number_format($item['amount'] / 1000) . 'K';
+                                                } else {
+                                                    echo 'LKR ' . number_format($item['amount']);
+                                                }
+                                                ?>
+                                                (<?php echo $item['percentage']; ?>%)
+                                            </span>
                                         </div>
-                                    <?php endforeach; ?>
-                                </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: <?php echo $item['percentage']; ?>%"></div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
                         </div>
 
                         <!-- Commission Structure -->
                         <div class="commission-structure">
-                            <div class="p-6">
-                                <h3 class="text-lg font-medium text-foreground">Commission Structure</h3>
-                                <p class="text-sm text-muted-foreground">Current commission rates by service type</p>
+                            <div class="section-header">
+                                <h3 class="section-title">
+                                    <i class="fa-solid fa-gear" style="width: 20px; height: 20px;"></i>
+                                    Commission Structure
+                                </h3>
+                                <p class="section-subtitle">Current commission rates by service type</p>
+                            </div>
 
-                                <div class="mt-6 space-y-4">
-                                    <?php if (empty($commissionStructure)): ?>
-                                        <p class="text-sm text-muted-foreground">No commission data available</p>
-                                    <?php else: ?>
+                            <div class="section-body">
+                                <?php if (empty($commissionStructure)): ?>
+                                    <p style="text-align: center; color: var(--text-muted); padding: 2rem;">No commission data available</p>
+                                <?php else: ?>
+                                    <div class="commission-list">
                                         <?php foreach ($commissionStructure as $item): ?>
                                             <div class="commission-item">
-                                                <div>
-                                                    <p class="text-sm font-medium text-foreground"><?php echo htmlspecialchars($item['service']); ?></p>
-                                                    <p class="text-xs text-muted-foreground"><?php echo $item['volume']; ?> active providers</p>
+                                                <div class="commission-info">
+                                                    <p class="commission-name"><?php echo htmlspecialchars($item['service']); ?></p>
+                                                    <p class="commission-volume"><?php echo $item['volume']; ?> active providers</p>
                                                 </div>
-                                                <?php renderBadge($item['rate'] . '%', 'outline'); ?>
+                                                <span class="commission-rate"><?php echo $item['rate']; ?>%</span>
                                             </div>
                                         <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </div>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Transactions Table -->
+                    <!-- Clean Transactions Table -->
                     <div class="transactions-table">
-                        <div class="p-6">
-                            <h3 class="text-lg font-medium text-foreground">Recent Transactions</h3>
-                            <p class="text-sm text-muted-foreground">Latest financial activities and transactions</p>
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fa-solid fa-list" style="width: 20px; height: 20px;"></i>
+                                Recent Transactions
+                            </h3>
+                            <p class="section-subtitle">Latest financial activities and transactions</p>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="table">
@@ -165,7 +228,9 @@ $pageDescription = 'Monitor revenue and financial transactions';
                                 <tbody>
                                     <?php if (empty($recentTransactions)): ?>
                                         <tr>
-                                            <td colspan="5" class="text-center py-4">No transactions found</td>
+                                            <td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                                                No transactions found
+                                            </td>
                                         </tr>
                                     <?php else: ?>
                                         <?php 
@@ -173,17 +238,17 @@ $pageDescription = 'Monitor revenue and financial transactions';
                                         foreach ($recentTransactions as $transaction): 
                                         ?>
                                             <tr>
-                                                <td class="font-medium text-foreground">
+                                                <td class="font-medium">
                                                     <?php echo htmlspecialchars($transaction['id']); ?>
                                                 </td>
-                                                <td class="text-muted-foreground">
+                                                <td>
                                                     <div class="transaction-type">
                                                         <?php
                                                         $typeIcons = [
-                                                            'Commission' => 'arrow-up-right',
-                                                            'Ad Payment' => 'arrow-up-right',
-                                                            'Payment' => 'arrow-up-right',
-                                                            'Withdrawal' => 'arrow-down-right'
+                                                            'Commission' => 'fa-arrow-up-right',
+                                                            'Ad Payment' => 'fa-arrow-up-right',
+                                                            'Payment' => 'fa-arrow-up-right',
+                                                            'Withdrawal' => 'fa-arrow-down-right'
                                                         ];
                                                         $typeColors = [
                                                             'Commission' => 'text-fixlanka-primary',
@@ -191,17 +256,17 @@ $pageDescription = 'Monitor revenue and financial transactions';
                                                             'Payment' => 'text-fixlanka-primary',
                                                             'Withdrawal' => 'text-fixlanka-error'
                                                         ];
-                                                        $icon = $typeIcons[$transaction['type']] ?? 'dollar-sign';
-                                                        $color = $typeColors[$transaction['type']] ?? 'text-muted-foreground';
+                                                        $icon = $typeIcons[$transaction['type']] ?? 'fa-dollar-sign';
+                                                        $color = $typeColors[$transaction['type']] ?? '';
                                                         ?>
-                                                        <i data-lucide="<?php echo $icon; ?>" class="h-4 w-4 <?php echo $color; ?>"></i>
+                                                        <i class="fa-solid <?php echo $icon; ?> <?php echo $color; ?>"></i>
                                                         <?php echo htmlspecialchars($transaction['type']); ?>
                                                     </div>
                                                 </td>
-                                                <td class="text-muted-foreground">
+                                                <td>
                                                     LKR <?php echo number_format($transaction['amount']); ?>
                                                 </td>
-                                                <td class="text-muted-foreground">
+                                                <td>
                                                     <?php echo htmlspecialchars($transaction['date']); ?>
                                                 </td>
                                                 <td>
@@ -236,13 +301,13 @@ $pageDescription = 'Monitor revenue and financial transactions';
                 </div>
             </main>
 
-            <!-- Transaction Details Modal -->
+            <!-- Clean Transaction Details Modal -->
             <div id="transactionModal" class="modal-overlay">
                 <div class="modal-container">
                     <div class="modal-header">
                         <h3 class="modal-title">Transaction Details</h3>
                         <button class="modal-close" onclick="closeModal()">
-                            <i data-lucide="x"></i>
+                            <i class="fa-solid fa-xmark"></i>
                         </button>
                     </div>
                     <div class="modal-body">
@@ -259,13 +324,9 @@ $pageDescription = 'Monitor revenue and financial transactions';
     <script>
         // Transaction data from PHP
         const transactions = <?php echo json_encode($recentTransactions); ?>;
-        
-        console.log('Transactions loaded:', transactions);
 
         // Show transaction details
         function showTransactionDetails(index) {
-            console.log('Opening modal for transaction index:', index);
-            
             const transaction = transactions[index];
             if (!transaction) {
                 console.error('Transaction not found at index:', index);
@@ -280,45 +341,41 @@ $pageDescription = 'Monitor revenue and financial transactions';
 
             const content = `
                 <div class="detail-row">
-                    <span class="detail-label">Transaction ID:</span>
+                    <span class="detail-label">Transaction ID</span>
                     <span class="detail-value">${transaction.id}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Type:</span>
+                    <span class="detail-label">Type</span>
                     <span class="detail-value">${transaction.type}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Amount:</span>
+                    <span class="detail-label">Amount</span>
                     <span class="detail-value">LKR ${transaction.amount.toLocaleString()}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Date:</span>
+                    <span class="detail-label">Date</span>
                     <span class="detail-value">${transaction.date}</span>
                 </div>
                 <div class="detail-row ${statusClass[transaction.status] || ''}">
-                    <span class="detail-label">Status:</span>
+                    <span class="detail-label">Status</span>
                     <span class="detail-value">${transaction.status}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Payment Method:</span>
+                    <span class="detail-label">Payment Method</span>
                     <span class="detail-value">${transaction.type === 'Withdrawal' ? 'Bank Transfer' : 'Platform Credit'}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Reference Number:</span>
+                    <span class="detail-label">Reference Number</span>
                     <span class="detail-value">REF-${transaction.id.replace('TXN-P', '').replace('TXN-A', '')}</span>
                 </div>
             `;
 
             document.getElementById('modalContent').innerHTML = content;
             document.getElementById('transactionModal').classList.add('show');
-            lucide.createIcons();
-            
-            console.log('Modal opened successfully');
         }
 
         // Close modal
         function closeModal() {
-            console.log('Closing modal');
             document.getElementById('transactionModal').classList.remove('show');
         }
 
@@ -337,12 +394,6 @@ $pageDescription = 'Monitor revenue and financial transactions';
                     closeModal();
                 }
             }
-        });
-
-        // Initialize lucide icons
-        document.addEventListener('DOMContentLoaded', function() {
-            lucide.createIcons();
-            console.log('Page loaded, icons initialized');
         });
     </script>
 </body>

@@ -1,5 +1,10 @@
 <?php
-// Start session only if not already started
+/**
+ * Moderator Management Page - Pure MVC (NO Handler Files)
+ * Forms submit to index.php route
+ */
+
+// Start session
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -10,19 +15,54 @@ require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
 require_once __DIR__ . '/_components/Common.php';
 
+// Include model
+require_once __DIR__ . '/../../config/databse.php';
+require_once __DIR__ . '/../../models/ModeratorModel.php';
+
 $basePath = '';
 $currentPath = 'moderators';
-
-// Get page title and description
 $pageTitle = 'Moderator Management - FixLanka Admin';
-$pageDescription = 'Manage system moderators and their assigned sections';
+$pageDescription = 'Manage system moderators, assign sections, and control access';
+
+// Initialize model
+$model = new ModeratorModel($pdo);
+
+// Get data
+$allModerators = $model->getAllModerators();
+$moderatorStats = $model->getModeratorStats();
+
+// Apply filters
+$search = $_GET['search'] ?? '';
+$sectionFilter = $_GET['section'] ?? '';
+$page = (int)($_GET['page'] ?? 1);
+$limit = 20;
+
+// Filter moderators
+$filteredModerators = array_filter($allModerators, function($mod) use ($search, $sectionFilter) {
+    $matchesSearch = empty($search) || 
+                     stripos($mod['username'], $search) !== false || 
+                     stripos($mod['email'], $search) !== false;
+    $matchesSection = empty($sectionFilter) || $mod['assigned_section'] === $sectionFilter;
+    return $matchesSearch && $matchesSection;
+});
+
+// Pagination
+$totalModerators = count($filteredModerators);
+$totalPages = max(1, ceil($totalModerators / $limit));
+$page = max(1, min($page, $totalPages));
+$offset = ($page - 1) * $limit;
+$moderators = array_slice($filteredModerators, $offset, $limit);
+
+// Get flash messages
+$successMessage = $_SESSION['success_message'] ?? '';
+$errorMessage = $_SESSION['error_message'] ?? '';
+unset($_SESSION['success_message'], $_SESSION['error_message']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 
 <body class="bg-background text-foreground">
@@ -30,6 +70,7 @@ $pageDescription = 'Manage system moderators and their assigned sections';
 
     <div class="dashboard-container">
         <?php renderAdminSidebar($currentPath, $basePath); ?>
+        
         <div class="dashboard-main">
             <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin/moderators.css">
 
@@ -37,111 +78,254 @@ $pageDescription = 'Manage system moderators and their assigned sections';
 
             <main style="margin-top: 5rem;" class="dashboard-content">
                 <div class="space-y-6">
+                    
+                    <!-- Header with Add Button -->
                     <div class="moderators-header">
                         <div>
-                            <h2 class="text-3xl font-bold tracking-tight text-foreground">Moderator Management</h2>
-                            <p class="text-muted-foreground">Add, edit, and remove system moderators</p>
+                            <h2>System Moderators</h2>
+                            <p>Manage moderator accounts and permissions</p>
                         </div>
                         <button onclick="openAddModeratorModal()" class="moderators-add-btn">
-                            <i data-lucide="plus" class="mr-2 h-4 w-4"></i>
+                            <i class="fa-solid fa-user-plus"></i>
                             Add Moderator
                         </button>
                     </div>
 
-                    <div id="messageContainer" style="display: none;" class="bg-fixlanka-highlight/10 border border-fixlanka-highlight/20 text-fixlanka-primary px-4 py-3 rounded"></div>
+                    <!-- Success/Error Messages -->
+                    <?php if ($successMessage): ?>
+                        <div class="alert alert-success">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <?php echo htmlspecialchars($successMessage); ?>
+                        </div>
+                    <?php endif; ?>
 
+                    <?php if ($errorMessage): ?>
+                        <div class="alert alert-error">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <?php echo htmlspecialchars($errorMessage); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Moderators Table Card -->
                     <div class="moderators-table-container">
                         <div class="moderators-table-header">
-                            <h3 class="text-lg font-medium text-card-foreground">All Moderators</h3>
-                            <p class="text-sm text-muted-foreground">View and manage all registered moderators</p>
-
-                            <div class="moderators-search-container">
+                            <h3>All Moderators</h3>
+                            <p>Total: <?php echo count($allModerators); ?> moderators (<?php echo $moderatorStats['active'] ?? 0; ?> active)</p>
+                            
+                            <!-- Search & Filter -->
+                            <form method="GET" action="" class="moderators-search-container">
                                 <div class="moderators-search-input">
-                                    <i data-lucide="search" class="moderators-search-icon"></i>
-                                    <input
-                                        type="text"
-                                        id="searchInput"
-                                        placeholder="Search moderators..."
-                                        onkeyup="searchModerators()">
+                                    <i class="fa-solid fa-magnifying-glass moderators-search-icon"></i>
+                                    <input 
+                                        type="text" 
+                                        name="search" 
+                                        placeholder="Search by username or email..." 
+                                        value="<?php echo htmlspecialchars($search); ?>">
                                 </div>
-                                <select id="sectionFilter" onchange="loadModerators()" class="form-select">
+                                <select name="section" class="form-select" onchange="this.form.submit()">
                                     <option value="">All Sections</option>
-                                    <option value="Advertisement Review">Advertisement Review</option>
-                                    <option value="Content Management">Content Management</option>
-                                    <option value="User Reports">User Reports</option>
-                                    <option value="Financial">Financial</option>
-                                    <option value="General">General</option>
+                                    <option value="Advertisements" <?php echo $sectionFilter === 'Advertisements' ? 'selected' : ''; ?>>Advertisements</option>
+                                    <option value="User Reports" <?php echo $sectionFilter === 'User Reports' ? 'selected' : ''; ?>>User Reports</option>
+                                    <option value="Content Moderation" <?php echo $sectionFilter === 'Content Moderation' ? 'selected' : ''; ?>>Content Moderation</option>
+                                    <option value="Financial Reports" <?php echo $sectionFilter === 'Financial Reports' ? 'selected' : ''; ?>>Financial Reports</option>
+                                    <option value="System Monitoring" <?php echo $sectionFilter === 'System Monitoring' ? 'selected' : ''; ?>>System Monitoring</option>
                                 </select>
-                            </div>
+                            </form>
                         </div>
 
+                        <!-- Data Table -->
                         <div class="overflow-x-auto">
                             <table class="moderators-table">
                                 <thead>
                                     <tr>
+                                        <th>ID</th>
                                         <th>Username</th>
                                         <th>Email</th>
                                         <th>Assigned Section</th>
+                                        <th>Status</th>
+                                        <th>Last Login</th>
                                         <th>Created Date</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="moderatorsTableBody">
-                                    <!-- Data will be loaded here -->
+                                <tbody>
+                                    <?php if (empty($moderators)): ?>
+                                        <tr>
+                                            <td colspan="8" class="text-center py-4" style="color: #9ca3af;">
+                                                <i class="fa-solid fa-inbox" style="width: 48px; height: 48px; margin: 0 auto; display: block; margin-bottom: 0.5rem; font-size: 48px;"></i>
+                                                No moderators found
+                                            </td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($moderators as $mod): ?>
+                                            <tr>
+                                                <td class="font-medium">#<?php echo $mod['moderator_id']; ?></td>
+                                                <td class="text-card-foreground font-medium"><?php echo htmlspecialchars($mod['username']); ?></td>
+                                                <td class="text-muted-foreground"><?php echo htmlspecialchars($mod['email']); ?></td>
+                                                <td>
+                                                    <span class="moderators-section-badge">
+                                                        <?php echo htmlspecialchars($mod['assigned_section']); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <?php if ($mod['status'] === 'active'): ?>
+                                                        <span class="status-badge status-active">● ACTIVE</span>
+                                                    <?php else: ?>
+                                                        <span class="status-badge status-inactive">○ INACTIVE</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="text-muted-foreground">
+                                                    <?php echo $mod['last_login'] ? date('M d, Y', strtotime($mod['last_login'])) : 'Never'; ?>
+                                                </td>
+                                                <td class="text-muted-foreground"><?php echo date('M d, Y', strtotime($mod['created_at'])); ?></td>
+                                                <td>
+                                                    <div class="flex space-x-2">
+                                                        <!-- Edit Button -->
+                                                        <button 
+                                                            onclick='editModerator(<?php echo json_encode($mod); ?>)' 
+                                                            class="moderators-edit-btn"
+                                                            title="Edit moderator">
+                                                            <i class="fa-solid fa-pen-to-square w-4 h-4"></i>
+                                                        </button>
+                                                        
+                                                        <!-- Toggle Status Button -->
+                                                        <form method="POST" action="/2nd-Year-Group-Project/FixLanka/admin-moderators-action" style="display: inline;">
+                                                            <input type="hidden" name="action" value="toggle_status">
+                                                            <input type="hidden" name="moderator_id" value="<?php echo $mod['moderator_id']; ?>">
+                                                            <input type="hidden" name="status" value="<?php echo $mod['status'] === 'active' ? 'inactive' : 'active'; ?>">
+                                                            <button 
+                                                                type="submit" 
+                                                                class="moderators-edit-btn"
+                                                                title="<?php echo $mod['status'] === 'active' ? 'Deactivate' : 'Activate'; ?>"
+                                                                style="color: <?php echo $mod['status'] === 'active' ? '#f59e0b' : '#10b981'; ?>;"
+                                                                onclick="return confirm('Are you sure you want to <?php echo $mod['status'] === 'active' ? 'deactivate' : 'activate'; ?> this moderator?')">
+                                                                <i class="fa-solid <?php echo $mod['status'] === 'active' ? 'fa-circle-pause' : 'fa-circle-play'; ?> w-4 h-4"></i>
+                                                            </button>
+                                                        </form>
+                                                        
+                                                        <!-- Delete Button -->
+                                                        <button 
+                                                            onclick="deleteModerator(<?php echo $mod['moderator_id']; ?>, '<?php echo htmlspecialchars($mod['username'], ENT_QUOTES); ?>')" 
+                                                            class="moderators-edit-btn"
+                                                            title="Delete moderator"
+                                                            style="color: #dc2626;">
+                                                            <i class="fa-solid fa-trash w-4 h-4"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
 
-                        <div id="paginationContainer" class="flex justify-center mt-4"></div>
+                        <!-- Pagination -->
+                        <?php if ($totalPages > 1): ?>
+                            <div id="paginationContainer">
+                                <div class="flex space-x-2 justify-center">
+                                    <?php if ($page > 1): ?>
+                                        <a href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&section=<?php echo urlencode($sectionFilter); ?>" class="btn btn-secondary">Previous</a>
+                                    <?php endif; ?>
+                                    
+                                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                                        <a href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&section=<?php echo urlencode($sectionFilter); ?>" 
+                                           class="btn <?php echo $i === $page ? 'btn-primary' : 'btn-secondary'; ?>">
+                                            <?php echo $i; ?>
+                                        </a>
+                                    <?php endfor; ?>
+                                    
+                                    <?php if ($page < $totalPages): ?>
+                                        <a href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&section=<?php echo urlencode($sectionFilter); ?>" class="btn btn-secondary">Next</a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </main>
 
-            <!-- Add/Edit Moderator Modal -->
+            <!-- ============================================ -->
+            <!-- ADD/EDIT MODERATOR MODAL -->
+            <!-- ============================================ -->
             <div id="moderatorModal" class="moderators-modal">
                 <div class="moderators-modal-content">
                     <div class="moderators-modal-header">
-                        <h3 id="modalTitle" class="text-lg font-medium text-card-foreground">Add New Moderator</h3>
-                        <div id="modalMessageContainer" style="display: none;" class="bg-fixlanka-highlight/10 border border-fixlanka-highlight/20 text-fixlanka-primary px-4 py-3 rounded mb-3"></div>
-                        <form id="moderatorForm" class="moderators-modal-form">
-                            <input type="hidden" id="moderatorId" name="moderator_id">
-                            <input type="hidden" id="formAction" name="action" value="add">
+                        <h3 id="modalTitle">Add New Moderator</h3>
+                        
+                        <!-- Form submits to MVC route -->
+                        <form id="moderatorForm" method="POST" action="/2nd-Year-Group-Project/FixLanka/admin-moderators-action" class="moderators-modal-form">
+                            <input type="hidden" name="action" id="formAction" value="add">
+                            <input type="hidden" name="moderator_id" id="moderatorId">
 
-                            <div class="moderators-form-group">
-                                <label class="moderators-form-label">Username *</label>
-                                <input type="text" id="moderatorUsername" name="username" required>
+                            <!-- Username -->
+                            <div class="moderators-form-group" id="usernameGroup">
+                                <label class="moderators-form-label" for="moderatorUsername">
+                                    Username <span style="color: red;">*</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="moderatorUsername" 
+                                    name="username" 
+                                    placeholder="Enter username"
+                                    pattern="[a-zA-Z0-9_]+"
+                                    title="Only letters, numbers, and underscores"
+                                    maxlength="50"
+                                    required>
+                                <small>3-50 characters. Only letters, numbers, and underscores.</small>
                             </div>
 
+                            <!-- Email -->
                             <div class="moderators-form-group">
-                                <label class="moderators-form-label">Email *</label>
-                                <input type="email" id="moderatorEmail" name="email" required>
+                                <label class="moderators-form-label" for="moderatorEmail">
+                                    Email <span style="color: red;">*</span>
+                                </label>
+                                <input 
+                                    type="email" 
+                                    id="moderatorEmail" 
+                                    name="email" 
+                                    placeholder="moderator@fixlanka.com"
+                                    maxlength="100"
+                                    required>
                             </div>
 
+                            <!-- Password -->
                             <div class="moderators-form-group" id="passwordGroup">
-                                <label class="moderators-form-label">Password *</label>
-                                <input type="password" id="moderatorPassword" name="password" minlength="6">
-                                <small class="text-muted-foreground">Minimum 6 characters</small>
+                                <label class="moderators-form-label" for="moderatorPassword">
+                                    Password <span style="color: red;">*</span>
+                                </label>
+                                <input 
+                                    type="password" 
+                                    id="moderatorPassword" 
+                                    name="password" 
+                                    placeholder="Enter password"
+                                    minlength="6"
+                                    maxlength="255">
+                                <small id="passwordHint">Minimum 6 characters</small>
                             </div>
 
+                            <!-- Assigned Section -->
                             <div class="moderators-form-group">
-                                <label class="moderators-form-label">Assigned Section *</label>
+                                <label class="moderators-form-label" for="moderatorSection">
+                                    Assigned Section <span style="color: red;">*</span>
+                                </label>
                                 <select id="moderatorSection" name="assigned_section" required>
-                                    <option value="">Select Section</option>
-                                    <option value="Advertisement Review">Advertisement Review</option>
-                                    <option value="Content Management">Content Management</option>
+                                    <option value="">-- Select Section --</option>
+                                    <option value="Advertisements">Advertisements</option>
                                     <option value="User Reports">User Reports</option>
-                                    <option value="Financial">Financial</option>
-                                    <option value="General">General</option>
+                                    <option value="Content Moderation">Content Moderation</option>
+                                    <option value="Financial Reports">Financial Reports</option>
+                                    <option value="System Monitoring">System Monitoring</option>
                                 </select>
                             </div>
-
+                            
+                            <!-- Modal Actions Inside Form -->
                             <div class="moderators-form-actions">
                                 <button type="button" onclick="closeModal('moderatorModal')" class="moderators-cancel-btn">
                                     Cancel
                                 </button>
-                                <button type="submit" class="moderators-save-btn" id="saveButton">
-                                    <span id="saveButtonText">Save Moderator</span>
-                                    <span id="saveButtonLoader" style="display: none;">Saving...</span>
+                                <button type="submit" class="moderators-save-btn" id="saveBtn">
+                                    Save Moderator
                                 </button>
                             </div>
                         </form>
@@ -149,21 +333,36 @@ $pageDescription = 'Manage system moderators and their assigned sections';
                 </div>
             </div>
 
-            <!-- Delete Confirmation Modal -->
+            <!-- ============================================ -->
+            <!-- DELETE CONFIRMATION MODAL -->
+            <!-- ============================================ -->
             <div id="deleteModal" class="moderators-modal">
-                <div class="moderators-modal-content" style="max-width: 400px;">
+                <div class="moderators-modal-content" style="max-width: 450px;">
                     <div class="moderators-modal-header">
-                        <h3 class="text-lg font-medium text-card-foreground">Confirm Delete</h3>
-                        <p class="text-sm text-muted-foreground mb-4">Are you sure you want to delete this moderator? This action cannot be undone.</p>
-                        <form id="deleteForm">
-                            <input type="hidden" id="deleteModeratorId" name="moderator_id">
+                        <h3 style="color: #dc2626;">
+                            <i class="fa-solid fa-triangle-exclamation w-4 h-4"></i>
+                            ⚠️ Confirm Deletion
+                        </h3>
+                        
+                        <!-- Form submits to MVC route -->
+                        <form method="POST" action="/2nd-Year-Group-Project/FixLanka/admin-moderators-action">
                             <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="moderator_id" id="deleteModeratorId">
+                            
+                            <p class="text-muted-foreground mb-4">
+                                Are you sure you want to <strong>permanently delete</strong> this moderator?
+                            </p>
+                            <p id="deleteWarningText" style="color: #dc2626; font-weight: 600; margin-bottom: 1.5rem;">
+                                ⚠️ This action cannot be undone!
+                            </p>
+                            
                             <div class="moderators-form-actions">
                                 <button type="button" onclick="closeModal('deleteModal')" class="moderators-cancel-btn">
                                     Cancel
                                 </button>
                                 <button type="submit" class="moderators-save-btn" style="background-color: #dc2626;">
-                                    Delete
+                                    <i class="fa-solid fa-trash w-4 h-4 mr-2"></i>
+                                    Delete Permanently
                                 </button>
                             </div>
                         </form>
@@ -171,290 +370,92 @@ $pageDescription = 'Manage system moderators and their assigned sections';
                 </div>
             </div>
 
+            <!-- ============================================ -->
+            <!-- JAVASCRIPT -->
+            <!-- ============================================ -->
             <script>
-                lucide.createIcons();
-
-                const API_URL = '/2nd-Year-Group-Project/FixLanka/api/moderators.php';
-                
-                let currentPage = 1;
-                let allModerators = [];
-
-                // Load moderators on page load
-                document.addEventListener('DOMContentLoaded', () => {
-                    loadModeratorsFromAPI();
-                    setupFormSubmission();
-                });
-
-                // Fetch moderators from API
-                async function loadModeratorsFromAPI() {
-                    try {
-                        const response = await fetch(`${API_URL}?action=getAll`);
-                        const result = await response.json();
-                        
-                        if (result.success) {
-                            allModerators = result.data;
-                            loadModerators();
-                        } else {
-                            showMessage(result.message || 'Failed to load moderators', 'error');
-                        }
-                    } catch (error) {
-                        console.error('Error fetching moderators:', error);
-                        showMessage('Failed to load moderators', 'error');
-                    }
-                }
-
-                // Setup form submission handlers
-                function setupFormSubmission() {
-                    // Add/Edit form submission
-                    document.getElementById('moderatorForm').addEventListener('submit', async function(e) {
-                        e.preventDefault();
-                        
-                        const formData = new FormData(this);
-                        const saveBtn = document.getElementById('saveButton');
-                        const saveBtnText = document.getElementById('saveButtonText');
-                        const saveBtnLoader = document.getElementById('saveButtonLoader');
-                        
-                        // Disable button and show loader
-                        saveBtn.disabled = true;
-                        saveBtnText.style.display = 'none';
-                        saveBtnLoader.style.display = 'inline';
-                        
-                        try {
-                            const response = await fetch(API_URL, {
-                                method: 'POST',
-                                body: formData
-                            });
-                            
-                            const result = await response.json();
-                            
-                            if (result.success) {
-                                showMessage(result.message, 'success');
-                                closeModal('moderatorModal');
-                                await loadModeratorsFromAPI();
-                            } else {
-                                showMessage(result.message, 'error');
-                            }
-                        } catch (error) {
-                            console.error('Error submitting form:', error);
-                            showMessage('Failed to save moderator', 'error');
-                        } finally {
-                            // Re-enable button and hide loader
-                            saveBtn.disabled = false;
-                            saveBtnText.style.display = 'inline';
-                            saveBtnLoader.style.display = 'none';
-                        }
+                // Auto-hide success/error messages
+                setTimeout(function() {
+                    const alerts = document.querySelectorAll('.alert');
+                    alerts.forEach(alert => {
+                        alert.style.opacity = '0';
+                        alert.style.transition = 'opacity 0.5s';
+                        setTimeout(() => alert.remove(), 500);
                     });
-                    
-                    // Delete form submission
-                    document.getElementById('deleteForm').addEventListener('submit', async function(e) {
-                        e.preventDefault();
-                        
-                        const formData = new FormData(this);
-                        
-                        try {
-                            const response = await fetch(API_URL, {
-                                method: 'POST',
-                                body: formData
-                            });
-                            
-                            const result = await response.json();
-                            
-                            if (result.success) {
-                                showMessage(result.message, 'success');
-                                closeModal('deleteModal');
-                                await loadModeratorsFromAPI();
-                            } else {
-                                showMessage(result.message, 'error');
-                            }
-                        } catch (error) {
-                            console.error('Error deleting moderator:', error);
-                            showMessage('Failed to delete moderator', 'error');
-                        }
-                    });
-                }
+                }, 5000);
 
-                function loadModerators(page = 1) {
-                    currentPage = page;
-                    const search = document.getElementById('searchInput').value.toLowerCase();
-                    const section = document.getElementById('sectionFilter').value;
-
-                    // Filter moderators
-                    let filtered = allModerators.filter(moderator => {
-                        if (search && !moderator.username.toLowerCase().includes(search) && 
-                            !moderator.email.toLowerCase().includes(search)) return false;
-                        if (section && moderator.assigned_section !== section) return false;
-                        return true;
-                    });
-
-                    // Pagination
-                    const limit = 20;
-                    const total = filtered.length;
-                    const pages = Math.ceil(total / limit) || 1;
-                    const offset = (page - 1) * limit;
-                    const data = filtered.slice(offset, offset + limit);
-
-                    renderModerators(data);
-                    renderPagination({ page, pages, total });
-                }
-
-                function renderModerators(moderators) {
-                    const tbody = document.getElementById('moderatorsTableBody');
-
-                    if (moderators.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4">No moderators found</td></tr>';
-                        return;
-                    }
-
-                    tbody.innerHTML = moderators.map(moderator => `
-                <tr>
-                    <td class="text-card-foreground font-medium">${escapeHtml(moderator.username)}</td>
-                    <td class="text-muted-foreground">${escapeHtml(moderator.email || '-')}</td>
-                    <td>
-                        <span class="moderators-section-badge">${escapeHtml(moderator.assigned_section)}</span>
-                    </td>
-                    <td class="text-muted-foreground">${formatDate(moderator.created_at)}</td>
-                    <td>
-                        <div class="flex space-x-2">
-                            <button onclick="editModerator(${moderator.moderator_id})" class="moderators-edit-btn" title="Edit">
-                                <i data-lucide="pencil" class="h-4 w-4"></i>
-                            </button>
-                            <button onclick="deleteModerator(${moderator.moderator_id})" class="moderators-edit-btn" style="color: #dc2626;" title="Delete">
-                                <i data-lucide="trash-2" class="h-4 w-4"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-
-                    lucide.createIcons();
-                }
-
-                function renderPagination(pagination) {
-                    const container = document.getElementById('paginationContainer');
-
-                    if (pagination.pages <= 1) {
-                        container.innerHTML = '';
-                        return;
-                    }
-
-                    let html = '<div class="flex space-x-2">';
-
-                    if (pagination.page > 1) {
-                        html += `<button onclick="loadModerators(${pagination.page - 1})" class="btn btn-secondary">Previous</button>`;
-                    }
-
-                    for (let i = 1; i <= pagination.pages; i++) {
-                        if (i === pagination.page) {
-                            html += `<button class="btn btn-primary">${i}</button>`;
-                        } else if (i === 1 || i === pagination.pages || Math.abs(i - pagination.page) <= 2) {
-                            html += `<button onclick="loadModerators(${i})" class="btn btn-secondary">${i}</button>`;
-                        } else if (i === pagination.page - 3 || i === pagination.page + 3) {
-                            html += `<span class="px-2">...</span>`;
-                        }
-                    }
-
-                    if (pagination.page < pagination.pages) {
-                        html += `<button onclick="loadModerators(${pagination.page + 1})" class="btn btn-secondary">Next</button>`;
-                    }
-
-                    html += '</div>';
-                    container.innerHTML = html;
-                }
-
-                function searchModerators() {
-                    clearTimeout(window.searchTimeout);
-                    window.searchTimeout = setTimeout(() => {
-                        loadModerators(1);
-                    }, 500);
-                }
-
+                // Open Add Moderator Modal
                 function openAddModeratorModal() {
                     document.getElementById('modalTitle').textContent = 'Add New Moderator';
                     document.getElementById('moderatorForm').reset();
                     document.getElementById('moderatorId').value = '';
                     document.getElementById('formAction').value = 'add';
                     document.getElementById('moderatorUsername').disabled = false;
+                    document.getElementById('usernameGroup').style.display = 'block';
                     document.getElementById('passwordGroup').style.display = 'block';
                     document.getElementById('moderatorPassword').required = true;
-                    document.querySelector('#passwordGroup small').textContent = 'Minimum 6 characters';
+                    document.getElementById('passwordHint').textContent = 'Minimum 6 characters';
+                    document.getElementById('saveBtn').textContent = 'Save Moderator';
                     openModal('moderatorModal');
                 }
 
-                function editModerator(moderatorId) {
-                    // Convert to number for comparison (handles string/number mismatch)
-                    const moderator = allModerators.find(m => parseInt(m.moderator_id) === parseInt(moderatorId));
-                    
-                    if (!moderator) {
-                        showMessage('Moderator not found', 'error');
-                        console.error('Moderator not found. ID:', moderatorId, 'Available moderators:', allModerators);
-                        return;
-                    }
-
+                // Edit Moderator
+                function editModerator(moderator) {
                     document.getElementById('modalTitle').textContent = 'Edit Moderator';
+                    document.getElementById('moderatorForm').reset();
                     document.getElementById('moderatorId').value = moderator.moderator_id;
                     document.getElementById('formAction').value = 'update';
-                    document.getElementById('moderatorUsername').value = moderator.username;
-                    document.getElementById('moderatorUsername').disabled = true;
                     document.getElementById('moderatorEmail').value = moderator.email;
                     document.getElementById('moderatorSection').value = moderator.assigned_section;
-                    document.getElementById('moderatorPassword').value = '';
+                    document.getElementById('moderatorUsername').disabled = true;
+                    document.getElementById('usernameGroup').style.display = 'none';
+                    document.getElementById('passwordGroup').style.display = 'block';
                     document.getElementById('moderatorPassword').required = false;
-                    document.querySelector('#passwordGroup small').textContent = 'Leave blank to keep current password';
+                    document.getElementById('passwordHint').textContent = 'Leave blank to keep current password';
+                    document.getElementById('saveBtn').textContent = 'Update Moderator';
                     openModal('moderatorModal');
                 }
 
-                function deleteModerator(moderatorId) {
+                // Delete Moderator
+                function deleteModerator(moderatorId, username) {
                     document.getElementById('deleteModeratorId').value = moderatorId;
+                    document.getElementById('deleteWarningText').innerHTML = 
+                        '⚠️ This will permanently delete moderator: <strong>' + username + '</strong>!';
                     openModal('deleteModal');
                 }
 
+                // Open Modal
                 function openModal(modalId) {
                     document.getElementById(modalId).classList.add('show');
-                    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+                    document.body.style.overflow = 'hidden';
                 }
 
+                // Close Modal
                 function closeModal(modalId) {
                     document.getElementById(modalId).classList.remove('show');
-                    document.body.style.overflow = ''; // Restore scrolling
-                    document.getElementById('modalMessageContainer').style.display = 'none';
+                    document.body.style.overflow = '';
                 }
 
-                function showMessage(message, type = 'success') {
-                    const container = document.getElementById('messageContainer');
-                    container.textContent = message;
-                    container.className = type === 'success' ?
-                        'bg-fixlanka-highlight/10 border border-fixlanka-highlight/20 text-fixlanka-primary px-4 py-3 rounded mb-3' :
-                        'bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded mb-3';
-                    container.style.display = 'block';
-
-                    // Scroll to message
-                    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-                    setTimeout(() => {
-                        container.style.display = 'none';
-                    }, 5000);
-                }
-
-                function escapeHtml(text) {
-                    const div = document.createElement('div');
-                    div.textContent = text;
-                    return div.innerHTML;
-                }
-
-                function formatDate(dateString) {
-                    const date = new Date(dateString);
-                    return date.toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
+                // Close modal on clicking overlay
+                document.querySelectorAll('.moderators-modal').forEach(modal => {
+                    modal.addEventListener('click', function(e) {
+                        if (e.target === this) {
+                            closeModal(this.id);
+                        }
                     });
-                }
+                });
+
+                // Close modal on Escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        closeModal('moderatorModal');
+                        closeModal('deleteModal');
+                    }
+                });
             </script>
         </div>
     </div>
-    <script>
-        lucide.createIcons();
-    </script>
+    
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
 </body>
 

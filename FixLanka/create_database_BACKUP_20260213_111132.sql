@@ -164,61 +164,36 @@ CREATE TABLE Repairer (
 );
 
 -- =====================================================
--- Advertisement Table (ADMIN OVERSIGHT ENABLED)
--- ✅ 8-STATUS SYSTEM: pending, approved, rejected, scheduled, active, paused, inactive, suspended
--- ✅ MODERATOR + ADMIN TRACKING with Override Capability
+-- Advertisement Table (FIXED FOREIGN KEY)
 -- =====================================================
 CREATE TABLE Advertisement (
     ad_id INT PRIMARY KEY AUTO_INCREMENT,
     provider_id INT NOT NULL,
     provider_type ENUM('company', 'repairer') NOT NULL,
-    title VARCHAR(200) NOT NULL,
-    description TEXT,
-    type ENUM('banner', 'featured', 'sponsored') NOT NULL DEFAULT 'banner',
-    budget DECIMAL(10,2) DEFAULT 0.00,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    type ENUM('banner', 'sponsored', 'featured') NOT NULL,
+    budget DECIMAL(10, 2) NOT NULL,
     image_url VARCHAR(255),
     target_audience TEXT,
     start_date DATE,
     end_date DATE,
-    status ENUM('pending', 'approved', 'rejected', 'scheduled', 'active', 'paused', 'inactive', 'suspended') 
-        NOT NULL DEFAULT 'pending',
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',  -- ✅ UPDATED: 3-status system only
     submission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reviewed_by INT DEFAULT NULL,
+    reviewed_at TIMESTAMP NULL,
     clicks INT DEFAULT 0,
     impressions INT DEFAULT 0,
-    reviewed_by INT DEFAULT NULL,
-    reviewed_at TIMESTAMP NULL DEFAULT NULL,
-    moderator_notes TEXT,
-    admin_reviewed_by VARCHAR(50) DEFAULT NULL,
-    admin_reviewed_at TIMESTAMP NULL DEFAULT NULL,
-    admin_notes TEXT,
-    override_reason TEXT,
-    FOREIGN KEY (reviewed_by) REFERENCES Moderator(moderator_id) ON DELETE SET NULL,
-    FOREIGN KEY (admin_reviewed_by) REFERENCES Admin(username) ON DELETE SET NULL,
+    INDEX idx_provider (provider_id, provider_type),
     INDEX idx_status (status),
+    INDEX idx_dates (start_date, end_date),
     INDEX idx_type (type),
-    INDEX idx_provider (provider_type, provider_id),
-    INDEX idx_submission (submission_date)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- =====================================================
--- Ad Status History Table (AUDIT TRAIL)
--- ✅ Tracks every status change with full context
--- =====================================================
-CREATE TABLE IF NOT EXISTS ad_status_history (
-    history_id INT PRIMARY KEY AUTO_INCREMENT,
-    ad_id INT NOT NULL,
-    old_status VARCHAR(20),
-    new_status VARCHAR(20) NOT NULL,
-    changed_by_role ENUM('moderator', 'admin', 'system') NOT NULL,
-    changed_by_id VARCHAR(50) NOT NULL,
-    reason TEXT,
-    is_override BOOLEAN DEFAULT FALSE,
-    ip_address VARCHAR(45),
-    user_agent TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (ad_id) REFERENCES Advertisement(ad_id) ON DELETE CASCADE,
-    INDEX idx_ad_id (ad_id),
-    INDEX idx_date (created_at)
+    -- ✅ FIXED: Foreign key with proper constraint
+    CONSTRAINT fk_advertisement_moderator 
+        FOREIGN KEY (reviewed_by) 
+        REFERENCES Moderator(moderator_id) 
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 -- Job Table
 CREATE TABLE Job (
@@ -796,28 +771,6 @@ CREATE TABLE IF NOT EXISTS account_moderation_cases (
     INDEX idx_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- =====================================================
---  ADDED: Admin Notifications Table (MISSING TABLE FIXED)
--- =====================================================
-CREATE TABLE IF NOT EXISTS admin_notifications (
-    notification_id INT PRIMARY KEY AUTO_INCREMENT,
-    admin_username VARCHAR(100) NOT NULL,
-    notification_type ENUM('BAN', 'SUSPEND', 'RESTORE', 'WARNING', 'INFO', 'ALERT') NOT NULL DEFAULT 'INFO',
-    title VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    account_id INT NOT NULL,
-    account_type ENUM('User', 'Repairer', 'Company') NOT NULL,
-    is_read TINYINT(1) DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_admin (admin_username),
-    INDEX idx_type (notification_type),
-    INDEX idx_account (account_id, account_type),
-    INDEX idx_read (is_read),
-    INDEX idx_created (created_at),
-    FOREIGN KEY (admin_username) REFERENCES Admin(username) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 -- =====================================================
 -- Insert Default Categories
 -- =====================================================
@@ -964,7 +917,7 @@ VALUES (
 );
 
 -- =====================================================
--- ✅ UPDATED: Sample Advertisements with 8-Status System
+-- ✅ Insert Sample Advertisements (AFTER Moderators exist)
 -- =====================================================
 INSERT INTO Advertisement (
     provider_id,
@@ -973,130 +926,54 @@ INSERT INTO Advertisement (
     description,
     type,
     budget,
-    status,
-    reviewed_by,
-    reviewed_at
+    status
 )
-VALUES 
--- Pending ads (waiting for moderator review)
-(
-    1,
-    'company',
-    'Leel Plumbers',
-    'Professional plumbing services available 24/7',
-    'banner',
-    50000.00,
-    'pending',
-    NULL,
-    NULL
-),
-(
-    2,
-    'company',
-    'Wall Painters',
-    'Expert wall painting services for homes and offices',
-    'banner',
-    50000.00,
-    'pending',
-    NULL,
-    NULL
-),
-(
+VALUES (
     1,
     'company',
     'Nimal Constructions',
-    'Complete construction services with quality guarantee',
+    'Expert home renovation services',
     'sponsored',
     50000.00,
-    'pending',
-    NULL,
-    NULL
-),
-
--- Approved ads (ready for admin scheduling)
-(
-    1,
-    'company',
-    'High Quality Plumbing Services',
-    'Premium plumbing solutions for residential and commercial',
-    'featured',
-    50000.00,
-    'approved',
-    1,
-    '2026-01-03 10:30:00'
+    'pending'
 ),
 (
     2,
-    'company',
-    'Happy Customer Constructions',
-    'Building your dreams with satisfaction guarantee',
-    'banner',
-    50000.00,
-    'approved',
-    1,
-    '2026-01-03 14:20:00'
-),
-(
-    1,
-    'company',
-    'H&Q Constructions',
-    'High-quality construction and renovation services',
-    'featured',
-    265000.00,
-    'approved',
-    1,
-    '2026-02-03 09:15:00'
-),
-
--- Rejected ads (need admin override to change)
-(
-    1,
     'company',
     'Expert Cleaning Services',
     'Professional cleaning for homes and offices',
-    'sponsored',
-    28000.00,
-    'rejected',
-    2,
-    '2026-01-03 16:45:00'
+    'banner',
+    30000.00,
+    'pending'
 ),
 (
-    2,
+    1,
     'company',
-    'best quality plumbing',
-    'Top quality plumbing repair and installation',
-    'sponsored',
-    65000.00,
-    'rejected',
-    2,
-    '2026-02-07 11:30:00'
+    'Happy Customer Constructions',
+    'Building your dreams',
+    'banner',
+    40000.00,
+    'approved'
 ),
-
--- Active ads (currently running)
 (
     1,
     'repairer',
     'Mike Wilson Plumbing',
-    '24/7 emergency plumbing services with certified technicians',
+    '24/7 emergency plumbing services',
     'sponsored',
     25000.00,
-    'active',
-    1,
-    '2026-01-15 08:00:00'
+    'active'
 ),
-
--- Scheduled ads (waiting to go live)
 (
     2,
     'repairer',
-    'Sarah Electrical Services',
-    'Licensed electrician for all your electrical needs',
+    'Sarah Davis Electrical',
+    'Certified electrical repairs and installations',
     'featured',
     35000.00,
-    'scheduled',
-    1,
-    '2026-02-10 10:00:00'
+    'rejected'
 );
+
 
 -- =====================================================
 -- ✅ Insert Placement Slot Limits (NEW)
@@ -1235,28 +1112,6 @@ VALUES (1, 'credit_card', 15000.00, 'completed'),
     (3, 'cash', 8000.00, 'pending');
 
 -- Insert Sample Moderator Activities
--- =====================================================
---  DUMMY DATA: Sample Account Moderation Data for Testing
--- =====================================================
--- Suspend user 1 for 7 days
-INSERT INTO account_moderation_status (account_id, account_type, account_status, banned_permanent, suspended_until, moderation_reason, updated_by)
-VALUES (1, 'User', 'SUSPENDED', 0, DATE_ADD(NOW(), INTERVAL 7 DAY), 'Inappropriate behavior reported by multiple users', 'admin');
-
--- Ban repairer 2 permanently  
-INSERT INTO account_moderation_status (account_id, account_type, account_status, banned_permanent, moderation_reason, updated_by)
-VALUES (2, 'Repairer', 'BANNED', 1, 'Fraudulent activity confirmed - fake credentials', 'admin');
-
--- Log cases
-INSERT INTO account_moderation_cases (target_id, target_type, admin_username, action_type, reason, duration_days, start_date, end_date, status_before, status_after, is_permanent)
-VALUES 
-(1, 'User', 'admin', 'SUSPEND', 'Inappropriate behavior', 7, NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY), 'ACTIVE', 'SUSPENDED', 0),
-(2, 'Repairer', 'admin', 'BAN', 'Fraudulent activity', NULL, NOW(), NULL, 'ACTIVE', 'BANNED', 1);
-
--- Admin notifications
-INSERT INTO admin_notifications (admin_username, notification_type, title, message, account_id, account_type)
-VALUES
-('admin', 'SUSPEND', 'User Suspended', 'User John Doe (ID: 1) has been suspended for 7 days', 1, 'User'),
-('admin', 'BAN', 'Repairer Banned', 'Repairer Sarah Davis (ID: 2) has been permanently banned', 2, 'Repairer');
 INSERT INTO moderator_activity (
     moderator_id,
     activity_type,

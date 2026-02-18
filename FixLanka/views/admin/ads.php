@@ -1,4 +1,12 @@
 <?php
+/**
+ * Admin Advertisement Review Page
+ * ✅ UI Redesigned to match Moderator page style
+ * ✅ UPDATED: Mock data now matches Moderator database data
+ * ✅ XAMPP-SAFE (No heavy queries)
+ * Version: 2.2.0
+ */
+
 // Start session only if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -9,18 +17,183 @@ require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
 require_once __DIR__ . '/_components/Common.php';
-require_once __DIR__ . '/../../includes/admin-modarator/auth.php';
-require_once __DIR__ . '/../../includes/admin-modarator/mock-data.php';
 
 $basePath = '';
 $currentPath = 'ads';
 $message = '';
 
-// Get mock data
-$adsData = $mockAds;
+// ✅ UPDATED MOCK DATA - Matches Moderator's database data exactly
+$mockAdsData = [
+    [
+        'id' => 1,
+        'title' => 'Leel Plumbers',
+        'company' => 'Unknown',
+        'type' => 'Banner',
+        'status' => 'Pending',
+        'submitted' => '2026-02-10',
+        'budget' => 50000,
+        'description' => 'Professional plumbing services available 24/7.',
+        'reviewed_by' => null,
+        'reviewed_date' => null,
+        'moderator_email' => null
+    ],
+    [
+        'id' => 2,
+        'title' => 'Wall Painters',
+        'company' => 'Unknown',
+        'type' => 'Banner',
+        'status' => 'Pending',
+        'submitted' => '2026-02-10',
+        'budget' => 50000,
+        'description' => 'Expert wall painting services.',
+        'reviewed_by' => null,
+        'reviewed_date' => null,
+        'moderator_email' => null
+    ],
+    [
+        'id' => 3,
+        'title' => 'Nimal Constructions',
+        'company' => 'Unknown',
+        'type' => 'Banner',
+        'status' => 'Pending',
+        'submitted' => '2026-02-10',
+        'budget' => 50000,
+        'description' => 'Complete construction services.',
+        'reviewed_by' => null,
+        'reviewed_date' => null,
+        'moderator_email' => null
+    ],
+    [
+        'id' => 4,
+        'title' => 'High Quality Plumbing Services',
+        'company' => 'Unknown',
+        'type' => 'Featured',
+        'status' => 'Approved',
+        'submitted' => '2026-01-03',
+        'budget' => 50000,
+        'description' => 'High-quality plumbing solutions.',
+        'reviewed_by' => 'Mike Wilson',
+        'reviewed_date' => '2026-01-03',
+        'moderator_email' => 'mike@fixlanka.lk'
+    ],
+    [
+        'id' => 5,
+        'title' => 'Happy Customer Constructions',
+        'company' => 'Mike Wilson',
+        'type' => 'Banner',
+        'status' => 'Approved',
+        'submitted' => '2026-01-03',
+        'budget' => 50000,
+        'description' => 'Construction services with customer satisfaction guarantee.',
+        'reviewed_by' => 'Mike Wilson',
+        'reviewed_date' => '2026-01-03',
+        'moderator_email' => 'mike@fixlanka.lk'
+    ],
+    [
+        'id' => 6,
+        'title' => 'Expert Cleaning Services',
+        'company' => 'Sarah Brown',
+        'type' => 'Sponsored',
+        'status' => 'Rejected',
+        'submitted' => '2026-01-03',
+        'budget' => 28000,
+        'description' => 'Professional cleaning services for homes and offices.',
+        'reviewed_by' => 'Sarah Brown',
+        'reviewed_date' => '2026-01-03',
+        'moderator_email' => 'sarah@fixlanka.lk',
+        'rejection_reason' => 'Service area not covered.'
+    ],
+    [
+        'id' => 7,
+        'title' => 'Nimal Constructions',
+        'company' => 'Mike Wilson',
+        'type' => 'Sponsored',
+        'status' => 'Rejected',
+        'submitted' => '2026-01-04',
+        'budget' => 65000,
+        'description' => 'Complete building construction and renovation.',
+        'reviewed_by' => 'Mike Wilson',
+        'reviewed_date' => '2026-01-04',
+        'moderator_email' => 'mike@fixlanka.lk',
+        'rejection_reason' => 'Duplicate submission.'
+    ],
+    [
+        'id' => 8,
+        'title' => 'H&Q Constructions',
+        'company' => 'Mike Wilson',
+        'type' => 'Featured',
+        'status' => 'Approved',
+        'submitted' => '2026-02-03',
+        'budget' => 265000,
+        'description' => 'Premium construction services with quality guarantee.',
+        'reviewed_by' => 'Mike Wilson',
+        'reviewed_date' => '2026-02-03',
+        'moderator_email' => 'mike@fixlanka.lk'
+    ],
+    [
+        'id' => 9,
+        'title' => 'Good Plumbing',
+        'company' => 'Unknown',
+        'type' => 'Banner',
+        'status' => 'Approved',
+        'submitted' => '2026-02-03',
+        'budget' => 50000,
+        'description' => 'Reliable plumbing services at affordable rates.',
+        'reviewed_by' => 'Sarah Brown',
+        'reviewed_date' => '2026-02-03',
+        'moderator_email' => 'sarah@fixlanka.lk'
+    ],
+    [
+        'id' => 10,
+        'title' => 'S&S Korean Constructions',
+        'company' => 'Unknown',
+        'type' => 'Featured',
+        'status' => 'Approved',
+        'submitted' => '2026-02-07',
+        'budget' => 28000,
+        'description' => 'Korean-style construction and design services.',
+        'reviewed_by' => 'Mike Wilson',
+        'reviewed_date' => '2026-02-07',
+        'moderator_email' => 'mike@fixlanka.lk'
+    ],
+    [
+        'id' => 11,
+        'title' => 'best quality plumbing',
+        'company' => 'Unknown',
+        'type' => 'Sponsored',
+        'status' => 'Rejected',
+        'submitted' => '2026-02-07',
+        'budget' => 65000,
+        'description' => 'Top quality plumbing repair and installation.',
+        'reviewed_by' => 'Sarah Brown',
+        'reviewed_date' => '2026-02-07',
+        'moderator_email' => 'sarah@fixlanka.lk',
+        'rejection_reason' => 'Unprofessional title format.'
+    ],
+    [
+        'id' => 12,
+        'title' => 'Quality ABC Constructions',
+        'company' => 'Sarah Brown',
+        'type' => 'Featured',
+        'status' => 'Approved',
+        'submitted' => '2026-02-10',
+        'budget' => 45000,
+        'description' => 'ABC quality construction services for all building types.',
+        'reviewed_by' => 'Sarah Brown',
+        'reviewed_date' => '2026-02-10',
+        'moderator_email' => 'sarah@fixlanka.lk'
+    ]
+];
+
+// Calculate stats
+$totalAds = count($mockAdsData);
+$pendingAds = count(array_filter($mockAdsData, fn($ad) => $ad['status'] === 'Pending'));
+$approvedAds = count(array_filter($mockAdsData, fn($ad) => $ad['status'] === 'Approved'));
+$rejectedAds = count(array_filter($mockAdsData, fn($ad) => $ad['status'] === 'Rejected'));
+$activeAds = count(array_filter($mockAdsData, fn($ad) => $ad['status'] === 'Active'));
 
 $pageTitle = 'Advertisement Review - Admin';
-$pageDescription = 'Review and manage advertisement approvals';
+$pageDescription = 'Monitor and manage submitted advertisements (Admin Oversight)';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -28,587 +201,424 @@ $pageDescription = 'Review and manage advertisement approvals';
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin/ads.css?v=<?php echo time(); ?>">
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 
-<body class="bg-background text-foreground">
+<body class="bg-foreground text-background">
     <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle-input">
 
     <div class="dashboard-container">
         <?php renderAdminSidebar($currentPath, $basePath); ?>
         
         <div class="dashboard-main">
-            <?php renderPageHeader($basePath, 'Advertisement Review', 'Review and manage advertisement approvals'); ?>
+            <?php renderPageHeader($basePath, 'Advertisement Review', 'Monitor and manage submitted advertisements'); ?>
 
-            <main class="admin-ads-content">
-                <!-- Success/Error Message -->
-                <div id="messageContainer" style="display: none;"></div>
-
-                <!-- Page Header -->
-                <div class="page-header">
-                    <h2 class="page-title">Advertisement Review</h2>
-                    <p class="page-description">Oversee advertisement approvals and manage ad lifecycle</p>
-                </div>
-
-                <!-- Statistics Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card stat-blue">
-                        <div class="stat-content">
-                            <div class="stat-info">
-                                <h3 class="stat-label">Total Advertisements</h3>
-                                <div class="stat-value" id="totalAds">0</div>
-                            </div>
-                            <div class="stat-icon">
-                                <i data-lucide="monitor"></i>
-                            </div>
-                        </div>
+            <main class="ads-content">
+                <div class="content-wrapper">
+                    <!-- Page Title -->
+                    <div>
+                        <h2 class="text-3xl font-bold tracking-tight">Advertisement Review</h2>
+                        <p class="text-muted-foreground">Monitor and manage submitted advertisements (Admin Oversight)</p>
                     </div>
 
-                    <div class="stat-card stat-amber">
-                        <div class="stat-content">
-                            <div class="stat-info">
-                                <h3 class="stat-label">Pending Review</h3>
-                                <div class="stat-value" id="pendingAds">0</div>
-                            </div>
-                            <div class="stat-icon">
-                                <i data-lucide="clock"></i>
-                            </div>
+                    <?php if ($message): ?>
+                        <div class="message-alert">
+                            <?php echo htmlspecialchars($message); ?>
                         </div>
-                    </div>
+                    <?php endif; ?>
 
-                    <div class="stat-card stat-emerald">
-                        <div class="stat-content">
-                            <div class="stat-info">
-                                <h3 class="stat-label">Approved</h3>
-                                <div class="stat-value" id="approvedAds">0</div>
+                    <!-- Statistics Cards (5 Cards) -->
+                    <div class="grid gap-4 grid-cols-5">
+                        <?php
+                        function renderAdminCard($title, $value, $subtitle, $icon, $color) {
+                            $iconMap = [
+                                'monitor' => 'fa-desktop',
+                                'clock' => 'fa-clock',
+                                'check-circle' => 'fa-circle-check',
+                                'x-circle' => 'fa-circle-xmark',
+                                'chart-line' => 'fa-chart-line'
+                            ];
+                            $iconClass = $iconMap[$icon] ?? 'fa-desktop';
+                            ?>
+                            <div class="stat-card" data-color="<?php echo $color; ?>">
+                                <div class="stat-card-inner">
+                                    <div class="stat-info">
+                                        <h4><?php echo $title; ?></h4>
+                                        <div class="stat-value"><?php echo $value; ?></div>
+                                        <p class="stat-change"><?php echo $subtitle; ?></p>
+                                    </div>
+                                    <div class="stat-icon">
+                                        <i class="fa-solid <?php echo $iconClass; ?>"></i>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="stat-icon">
-                                <i data-lucide="check-circle"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card stat-rose">
-                        <div class="stat-content">
-                            <div class="stat-info">
-                                <h3 class="stat-label">Rejected</h3>
-                                <div class="stat-value" id="rejectedAds">0</div>
-                            </div>
-                            <div class="stat-icon">
-                                <i data-lucide="x-circle"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Advertisement Table Container -->
-                <div class="table-card">
-                    <!-- Table Header with Search & Filters -->
-                    <div class="table-header">
-                        <div>
-                            <h3 class="table-title">Advertisement Queue</h3>
-                            <p class="table-subtitle">Review and manage advertisement approvals and lifecycle</p>
-                        </div>
+                            <?php
+                        }
                         
-                        <div class="filters-container">
-                            <div class="search-box">
-                                <i data-lucide="search" class="search-icon"></i>
-                                <input 
-                                    type="text" 
-                                    id="searchInput" 
-                                    placeholder="Search by company or title..." 
-                                    class="search-input"
-                                    onkeyup="filterAds()"
-                                >
-                            </div>
-
-                            <select id="statusFilter" class="filter-select" onchange="filterAds()">
-                                <option value="">All Status</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Approved">Approved</option>
-                                <option value="Active">Active</option>
-                                <option value="Rejected">Rejected</option>
-                            </select>
-
-                            <select id="typeFilter" class="filter-select" onchange="filterAds()">
-                                <option value="">All Types</option>
-                                <option value="Banner">Banner</option>
-                                <option value="Sponsored">Sponsored</option>
-                                <option value="Featured">Featured</option>
-                            </select>
-                        </div>
+                        renderAdminCard('Total Ads', $totalAds, 'All submissions', 'monitor', 'blue');
+                        renderAdminCard('Pending Review', $pendingAds, 'Awaiting approval', 'clock', 'yellow');
+                        renderAdminCard('Approved', $approvedAds, 'Ready for scheduling', 'check-circle', 'green');
+                        renderAdminCard('Rejected', $rejectedAds, 'Not approved', 'x-circle', 'red');
+                        renderAdminCard('Active Ads', $activeAds, 'Currently live', 'chart-line', 'purple');
+                        ?>
                     </div>
 
-                    <!-- Table -->
-                    <div class="table-wrapper">
-                        <table class="ads-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 80px;">ID</th>
-                                    <th style="width: 180px;">Company</th>
-                                    <th>Title</th>
-                                    <th style="width: 120px;">Type</th>
-                                    <th style="width: 140px;">Budget</th>
-                                    <th style="width: 120px;">Status</th>
-                                    <th style="width: 280px;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adsTableBody">
-                                <tr>
-                                    <td colspan="7" class="text-center">Loading advertisements...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <!-- Main Table Card -->
+                    <div class="bg-card rounded-lg shadow border">
+                        <!-- Filter Section -->
+                        <div class="p-6 border-b">
+                            <div class="mb-6">
+                                <h3 class="table-title">Advertisement Queue</h3>
+                                <p class="table-subtitle">Review and manage advertisement approvals and lifecycle</p>
+                            </div>
+
+                            <form method="GET" action="" id="filterForm" class="space-y-4">
+                                <div class="grid gap-4 grid-cols-6">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Search</label>
+                                        <input 
+                                            type="text" 
+                                            id="searchInput" 
+                                            placeholder="Search ads..." 
+                                            class="form-input w-full"
+                                        >
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Status</label>
+                                        <select id="statusFilter" class="form-select w-full">
+                                            <option value="">All Status</option>
+                                            <option value="Pending">Pending</option>
+                                            <option value="Approved">Approved</option>
+                                            <option value="Active">Active</option>
+                                            <option value="Rejected">Rejected</option>
+                                            <option value="Suspended">Suspended</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Type</label>
+                                        <select id="typeFilter" class="form-select w-full">
+                                            <option value="">All Types</option>
+                                            <option value="Banner">Banner</option>
+                                            <option value="Sponsored">Sponsored</option>
+                                            <option value="Featured">Featured</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Moderator</label>
+                                        <select id="moderatorFilter" class="form-select w-full">
+                                            <option value="">All Moderators</option>
+                                            <option value="Mike Wilson">Mike Wilson</option>
+                                            <option value="Sarah Brown">Sarah Brown</option>
+                                            <option value="Not Reviewed">Not Reviewed</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Sort By</label>
+                                        <select id="sortFilter" class="form-select w-full">
+                                            <option value="newest">Newest First</option>
+                                            <option value="oldest">Oldest First</option>
+                                            <option value="budget-high">Budget: High to Low</option>
+                                            <option value="budget-low">Budget: Low to High</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="flex items-end">
+                                        <button type="button" id="clearFilters" class="filter-button">
+                                            <i class="fa-solid fa-xmark w-4 h-4"></i>
+                                            <span>Clear Filters</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Table Section -->
+                        <div class="table-wrapper">
+                            <table class="table w-full">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60px;">ID</th>
+                                        <th style="width: 200px;">TITLE</th>
+                                        <th style="width: 150px;">PROVIDER</th>
+                                        <th style="width: 100px;">TYPE</th>
+                                        <th style="width: 130px;">BUDGET</th>
+                                        <th style="width: 110px;">STATUS</th>
+                                        <th style="width: 130px;">SUBMITTED</th>
+                                        <th style="width: 200px;">ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adsTableBody">
+                                    <?php foreach ($mockAdsData as $ad): ?>
+                                    <tr data-ad-id="<?= $ad['id'] ?>">
+                                        <td class="font-mono text-sm">#<?= $ad['id'] ?></td>
+                                        <td class="font-medium"><?= htmlspecialchars($ad['title']) ?></td>
+                                        <td><?= htmlspecialchars($ad['company']) ?></td>
+                                        <td>
+                                            <span class="type-badge">
+                                                <?= $ad['type'] ?>
+                                            </span>
+                                        </td>
+                                        <td class="font-mono">LKR <?= number_format($ad['budget'], 2) ?></td>
+                                        <td>
+                                            <span class="badge status-<?= strtolower($ad['status']) ?>">
+                                                <?= strtoupper($ad['status']) ?>
+                                            </span>
+                                        </td>
+                                        <td class="text-sm">
+                                            <?= date('M d, Y', strtotime($ad['submitted'])) ?>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons-group">
+                                                <button class="btn-action btn-view" onclick='viewAd(<?= json_encode($ad) ?>)' title="View Details">
+                                                    <i class="fa-solid fa-eye"></i>
+                                                    <span>View</span>
+                                                </button>
+                                                <button class="btn-action btn-history" onclick="viewHistory(<?= $ad['id'] ?>)" title="View History">
+                                                    <i class="fa-solid fa-history"></i>
+                                                    <span>History</span>
+                                                </button>
+                                                <button class="btn-action btn-override" onclick='openOverride(<?= json_encode($ad) ?>)' title="Admin Override">
+                                                    <i class="fa-solid fa-user-shield"></i>
+                                                    <span>Override</span>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </main>
 
             <!-- View Advertisement Modal -->
-            <div id="viewModal" class="modal-overlay" onclick="handleModalBackdropClick(event, 'viewModal')">
-                <div class="modal-dialog" onclick="event.stopPropagation()">
-                    <div class="modal-header">
-                        <h3 class="modal-title">Advertisement Details</h3>
-                        <button type="button" onclick="closeModal('viewModal')" class="modal-close" title="Close">
-                            <i data-lucide="x"></i>
-                        </button>
+            <div id="viewModal" class="modal-bg" style="display: none;">
+                <div class="modal-box">
+                    <button class="close-btn" onclick="closeModal('viewModal')">×</button>
+                    <h2 style="margin-bottom: 20px;">Advertisement Details</h2>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Advertisement ID:</span>
+                        <span class="detail-value" id="viewId">-</span>
                     </div>
-                    <div class="modal-body" id="adDetailsContent">
-                        <!-- Content loaded by JavaScript -->
+                    <div class="detail-row">
+                        <span class="detail-label">Advertisement Title:</span>
+                        <span class="detail-value" id="viewTitle">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Provider/Company:</span>
+                        <span class="detail-value" id="viewCompany">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Ad Type:</span>
+                        <span class="detail-value" id="viewType">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Budget:</span>
+                        <span class="detail-value" id="viewBudget">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Submitted Date:</span>
+                        <span class="detail-value" id="viewSubmitted">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Current Status:</span>
+                        <span class="detail-value" id="viewStatus">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Reviewed By:</span>
+                        <span class="detail-value" id="viewReviewedBy">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Reviewed Date:</span>
+                        <span class="detail-value" id="viewReviewedDate">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Description:</span>
+                        <span class="detail-value" id="viewDescription">-</span>
+                    </div>
+                    <div class="detail-row" id="rejectionReasonRow" style="display: none;">
+                        <span class="detail-label" style="color: #ef4444;">Rejection Reason:</span>
+                        <span class="detail-value" id="viewRejectionReason" style="color: #ef4444;">-</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Approve Modal -->
-            <div id="approveModal" class="modal-overlay" onclick="handleModalBackdropClick(event, 'approveModal')">
-                <div class="modal-dialog modal-sm" onclick="event.stopPropagation()">
-                    <div class="modal-header modal-success">
-                        <h3 class="modal-title">Approve Advertisement</h3>
-                        <button type="button" onclick="closeModal('approveModal')" class="modal-close" title="Close">
-                            <i data-lucide="x"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="modal-message">Are you sure you want to approve this advertisement?</p>
-                        <p class="modal-submessage">The advertisement will be marked as approved and ready for activation.</p>
-                        
-                        <div class="modal-actions">
-                            <button type="button" onclick="closeModal('approveModal')" class="btn btn-secondary">
-                                <i data-lucide="x"></i>
-                                Cancel
-                            </button>
-                            <button type="button" onclick="confirmApprove()" class="btn btn-success">
-                                <i data-lucide="check"></i>
-                                Approve
-                            </button>
+            <!-- Review History Modal -->
+            <div id="historyModal" class="modal-bg" style="display: none;">
+                <div class="modal-box">
+                    <button class="close-btn" onclick="closeModal('historyModal')">×</button>
+                    <h2 style="margin-bottom: 20px;">Review History</h2>
+                    
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker" style="background: #3b82f6;"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Advertisement Submitted</div>
+                                <div class="timeline-date">Feb 10, 2026 - 10:30 AM</div>
+                                <div class="timeline-description">Submitted by provider</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker" style="background: #f59e0b;"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Under Review</div>
+                                <div class="timeline-date">Feb 10, 2026 - 11:00 AM</div>
+                                <div class="timeline-description">Assigned to moderator for review</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker" style="background: #10b981;"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Approved</div>
+                                <div class="timeline-date">Feb 11, 2026 - 09:15 AM</div>
+                                <div class="timeline-description">Reviewed and approved by moderator</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Reject Modal -->
-            <div id="rejectModal" class="modal-overlay" onclick="handleModalBackdropClick(event, 'rejectModal')">
-                <div class="modal-dialog modal-sm" onclick="event.stopPropagation()">
-                    <div class="modal-header modal-danger">
-                        <h3 class="modal-title">Reject Advertisement</h3>
-                        <button type="button" onclick="closeModal('rejectModal')" class="modal-close" title="Close">
-                            <i data-lucide="x"></i>
-                        </button>
+            <!-- Admin Override Modal -->
+            <div id="overrideModal" class="modal-bg" style="display: none;">
+                <div class="modal-box">
+                    <button class="close-btn" onclick="closeModal('overrideModal')">×</button>
+                    <h2 style="margin-bottom: 20px; color: #f59e0b;">
+                        <i class="fa-solid fa-user-shield"></i> Admin Override
+                    </h2>
+                    
+                    <div class="override-warning">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <p>Admin override will be recorded in audit logs.</p>
                     </div>
-                    <div class="modal-body">
-                        <p class="modal-message">Please provide a reason for rejecting this advertisement:</p>
-                        
+
+                    <div class="override-current-info">
+                        <h4>Current Advertisement:</h4>
+                        <p id="overrideAdTitle">-</p>
+                        <p class="override-current-status">Current Status: <span id="overrideCurrentStatus">-</span></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="overrideStatus">New Status:</label>
+                        <select id="overrideStatus" class="form-select w-full">
+                            <option value="">-- Select New Status --</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Suspended">Suspended</option>
+                            <option value="Active">Active</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="overrideReason">Reason for Override:</label>
                         <textarea 
-                            id="rejectReason" 
-                            class="form-textarea" 
+                            id="overrideReason" 
+                            class="form-textarea w-full" 
                             rows="4" 
-                            placeholder="Enter detailed rejection reason..."
+                            placeholder="Explain why you are overriding this decision..."
                             required
                         ></textarea>
-                        
-                        <div class="modal-actions">
-                            <button type="button" onclick="closeModal('rejectModal')" class="btn btn-secondary">
-                                <i data-lucide="x"></i>
-                                Cancel
-                            </button>
-                            <button type="button" onclick="confirmReject()" class="btn btn-danger">
-                                <i data-lucide="ban"></i>
-                                Reject
-                            </button>
-                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Suspend Modal -->
-            <div id="suspendModal" class="modal-overlay" onclick="handleModalBackdropClick(event, 'suspendModal')">
-                <div class="modal-dialog modal-sm" onclick="event.stopPropagation()">
-                    <div class="modal-header modal-warning">
-                        <h3 class="modal-title">Suspend Active Advertisement</h3>
-                        <button type="button" onclick="closeModal('suspendModal')" class="modal-close" title="Close">
-                            <i data-lucide="x"></i>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="closeModal('overrideModal')">
+                            <i class="fa-solid fa-xmark"></i> Cancel
+                        </button>
+                        <button class="btn btn-warning" onclick="confirmOverride()">
+                            <i class="fa-solid fa-check"></i> Confirm Override
                         </button>
                     </div>
-                    <div class="modal-body">
-                        <p class="modal-message">Please provide a reason for suspending this active advertisement:</p>
-                        
-                        <textarea 
-                            id="suspendReason" 
-                            class="form-textarea" 
-                            rows="4" 
-                            placeholder="Enter suspension reason..."
-                            required
-                        ></textarea>
-                        
-                        <div class="modal-actions">
-                            <button type="button" onclick="closeModal('suspendModal')" class="btn btn-secondary">
-                                <i data-lucide="x"></i>
-                                Cancel
-                            </button>
-                            <button type="button" onclick="confirmSuspend()" class="btn btn-warning">
-                                <i data-lucide="pause-circle"></i>
-                                Suspend
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <script>
-                // Initialize Lucide icons
-                lucide.createIcons();
-
-                // Load mock data
-                const allAds = <?= json_encode($adsData) ?>;
-                let currentAdId = null;
-
-                // Load stats and table on page load
-                document.addEventListener('DOMContentLoaded', () => {
-                    loadStats();
-                    loadAdsTable();
-                    setupKeyboardShortcuts();
-                });
-
-                // Setup ESC key to close modals
-                function setupKeyboardShortcuts() {
-                    document.addEventListener('keydown', (e) => {
-                        if (e.key === 'Escape') {
-                            closeAllModals();
-                        }
-                    });
-                }
-
-                // Close all modals
-                function closeAllModals() {
-                    ['viewModal', 'approveModal', 'rejectModal', 'suspendModal'].forEach(closeModal);
-                }
-
-                // Handle backdrop click
-                function handleModalBackdropClick(event, modalId) {
-                    if (event.target.classList.contains('modal-overlay')) {
-                        closeModal(modalId);
-                    }
-                }
-
-                // Load statistics
-                function loadStats() {
-                    const total = allAds.length;
-                    const pending = allAds.filter(ad => ad.status === 'Pending').length;
-                    const approved = allAds.filter(ad => ad.status === 'Approved').length;
-                    const rejected = allAds.filter(ad => ad.status === 'Rejected').length;
-
-                    document.getElementById('totalAds').textContent = total;
-                    document.getElementById('pendingAds').textContent = pending;
-                    document.getElementById('approvedAds').textContent = approved;
-                    document.getElementById('rejectedAds').textContent = rejected;
-                }
-
-                // Filter ads based on search and filters
-                function filterAds() {
-                    const search = document.getElementById('searchInput').value.toLowerCase();
-                    const statusFilter = document.getElementById('statusFilter').value;
-                    const typeFilter = document.getElementById('typeFilter').value;
-
-                    const filtered = allAds.filter(ad => {
-                        const matchSearch = !search || 
-                            ad.company.toLowerCase().includes(search) || 
-                            ad.title.toLowerCase().includes(search);
-                        const matchStatus = !statusFilter || ad.status === statusFilter;
-                        const matchType = !typeFilter || ad.type === typeFilter;
-
-                        return matchSearch && matchStatus && matchType;
-                    });
-
-                    renderAdsTable(filtered);
-                }
-
-                // Load and render ads table
-                function loadAdsTable() {
-                    renderAdsTable(allAds);
-                }
-
-                // Render ads table with STATUS-BASED ACTION BUTTONS
-                function renderAdsTable(ads) {
-                    const tbody = document.getElementById('adsTableBody');
-
-                    if (ads.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No advertisements found</td></tr>';
-                        return;
-                    }
-
-                    tbody.innerHTML = ads.map(ad => {
-                        // Status badge classes
-                        const statusClass = {
-                            'Pending': 'status-pending',
-                            'Approved': 'status-approved',
-                            'Active': 'status-active',
-                            'Rejected': 'status-rejected'
-                        }[ad.status] || 'status-pending';
-
-                        // Type badge classes
-                        const typeClass = {
-                            'Banner': 'type-banner',
-                            'Sponsored': 'type-sponsored',
-                            'Featured': 'type-featured'
-                        }[ad.type] || 'type-banner';
-
-                        // CRITICAL: Action buttons based on status
-                        let actionButtons = '';
-                        
-                        if (ad.status === 'Pending') {
-                            // PENDING: Show View, Approve, Reject
-                            actionButtons = `
-                                <button onclick="viewAd(${ad.id})" class="action-btn btn-view" title="View Details">
-                                    <i data-lucide="eye"></i>
-                                    <span>View</span>
-                                </button>
-                                <button onclick="approveAd(${ad.id})" class="action-btn btn-approve" title="Approve">
-                                    <i data-lucide="check"></i>
-                                    <span>Approve</span>
-                                </button>
-                                <button onclick="rejectAd(${ad.id})" class="action-btn btn-reject" title="Reject">
-                                    <i data-lucide="x"></i>
-                                    <span>Reject</span>
-                                </button>
-                            `;
-                        } else if (ad.status === 'Approved') {
-                            // APPROVED: Show View only + no actions text
-                            actionButtons = `
-                                <button onclick="viewAd(${ad.id})" class="action-btn btn-view" title="View Details">
-                                    <i data-lucide="eye"></i>
-                                    <span>View</span>
-                                </button>
-                                <span class="no-actions-text">No actions available</span>
-                            `;
-                        } else if (ad.status === 'Rejected') {
-                            // REJECTED: Show View only + no actions text
-                            actionButtons = `
-                                <button onclick="viewAd(${ad.id})" class="action-btn btn-view" title="View Details">
-                                    <i data-lucide="eye"></i>
-                                    <span>View</span>
-                                </button>
-                                <span class="no-actions-text">No actions available</span>
-                            `;
-                        } else if (ad.status === 'Active') {
-                            // ACTIVE: Show View and Suspend
-                            actionButtons = `
-                                <button onclick="viewAd(${ad.id})" class="action-btn btn-view" title="View Details">
-                                    <i data-lucide="eye"></i>
-                                    <span>View</span>
-                                </button>
-                                <button onclick="suspendAd(${ad.id})" class="action-btn btn-suspend" title="Suspend">
-                                    <i data-lucide="pause-circle"></i>
-                                    <span>Suspend</span>
-                                </button>
-                            `;
-                        }
-
-                        return `
-                            <tr>
-                                <td class="text-center cell-id">#${ad.id}</td>
-                                <td class="cell-company">${escapeHtml(ad.company)}</td>
-                                <td class="cell-title">${escapeHtml(ad.title)}</td>
-                                <td class="text-center">
-                                    <span class="type-badge ${typeClass}">${ad.type}</span>
-                                </td>
-                                <td class="text-right cell-budget">LKR ${parseInt(ad.budget || 0).toLocaleString()}</td>
-                                <td class="text-center">
-                                    <span class="status-badge ${statusClass}">${ad.status}</span>
-                                </td>
-                                <td class="cell-actions">
-                                    <div class="actions-wrapper">
-                                        ${actionButtons}
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                    }).join('');
-
-                    lucide.createIcons();
-                }
-
-                // View advertisement details
-                function viewAd(adId) {
-                    const ad = allAds.find(a => a.id === adId);
-                    if (!ad) return;
-
-                    const content = `
-                        <div class="ad-details-grid">
-                            <div class="detail-row">
-                                <span class="detail-label">Ad ID:</span>
-                                <span class="detail-value">#${ad.id}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Company:</span>
-                                <span class="detail-value">${escapeHtml(ad.company)}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Title:</span>
-                                <span class="detail-value">${escapeHtml(ad.title)}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Type:</span>
-                                <span class="detail-value">
-                                    <span class="type-badge type-${ad.type.toLowerCase()}">${ad.type}</span>
-                                </span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Budget:</span>
-                                <span class="detail-value">LKR ${parseInt(ad.budget || 0).toLocaleString()}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Duration:</span>
-                                <span class="detail-value">${ad.duration || 'Not specified'}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Status:</span>
-                                <span class="detail-value">
-                                    <span class="status-badge status-${ad.status.toLowerCase()}">${ad.status}</span>
-                                </span>
-                            </div>
-                            <div class="detail-row detail-full">
-                                <span class="detail-label">Description:</span>
-                                <span class="detail-value">${ad.description || 'No description provided'}</span>
-                            </div>
-                            ${ad.rejection_reason ? `
-                                <div class="detail-row detail-full rejection-reason">
-                                    <span class="detail-label">Rejection Reason:</span>
-                                    <span class="detail-value">${escapeHtml(ad.rejection_reason)}</span>
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-
-                    document.getElementById('adDetailsContent').innerHTML = content;
-                    openModal('viewModal');
-                }
-
-                // Approve advertisement
-                function approveAd(adId) {
-                    currentAdId = adId;
-                    openModal('approveModal');
-                }
-
-                // Confirm approve
-                function confirmApprove() {
-                    const ad = allAds.find(a => a.id === currentAdId);
-                    if (ad) {
-                        ad.status = 'Approved';
-                        showMessage('Advertisement approved successfully!', 'success');
-                        closeModal('approveModal');
-                        loadStats();
-                        filterAds();
-                    }
-                }
-
-                // Reject advertisement
-                function rejectAd(adId) {
-                    currentAdId = adId;
-                    document.getElementById('rejectReason').value = '';
-                    openModal('rejectModal');
-                }
-
-                // Confirm reject
-                function confirmReject() {
-                    const reason = document.getElementById('rejectReason').value.trim();
-                    
-                    if (!reason) {
-                        showMessage('Please provide a rejection reason', 'error');
-                        return;
-                    }
-
-                    const ad = allAds.find(a => a.id === currentAdId);
-                    if (ad) {
-                        ad.status = 'Rejected';
-                        ad.rejection_reason = reason;
-                        showMessage('Advertisement rejected successfully!', 'success');
-                        closeModal('rejectModal');
-                        loadStats();
-                        filterAds();
-                    }
-                }
-
-                // Suspend advertisement
-                function suspendAd(adId) {
-                    currentAdId = adId;
-                    document.getElementById('suspendReason').value = '';
-                    openModal('suspendModal');
-                }
-
-                // Confirm suspend
-                function confirmSuspend() {
-                    const reason = document.getElementById('suspendReason').value.trim();
-                    
-                    if (!reason) {
-                        showMessage('Please provide a suspension reason', 'error');
-                        return;
-                    }
-
-                    const ad = allAds.find(a => a.id === currentAdId);
-                    if (ad) {
-                        ad.status = 'Rejected';
-                        ad.rejection_reason = 'Suspended: ' + reason;
-                        showMessage('Advertisement suspended successfully!', 'success');
-                        closeModal('suspendModal');
-                        loadStats();
-                        filterAds();
-                    }
-                }
-
-                // Open modal
-                function openModal(modalId) {
-                    document.getElementById(modalId).classList.add('show');
-                    document.body.style.overflow = 'hidden';
-                    lucide.createIcons();
-                }
-
-                // Close modal
-                function closeModal(modalId) {
-                    document.getElementById(modalId).classList.remove('show');
-                    document.body.style.overflow = 'auto';
-                }
-
-                // Show message
-                function showMessage(message, type) {
-                    const container = document.getElementById('messageContainer');
-                    container.textContent = message;
-                    container.className = type === 'success' ? 'message-success' : 'message-error';
-                    container.style.display = 'block';
-
-                    setTimeout(() => {
-                        container.style.display = 'none';
-                    }, 4000);
-                }
-
-                // Escape HTML
-                function escapeHtml(text) {
-                    const div = document.createElement('div');
-                    div.textContent = text;
-                    return div.innerHTML;
-                }
-            </script>
         </div>
     </div>
 
-    <script>lucide.createIcons();</script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js?v=<?php echo time(); ?>"></script>
+    <script>
+        let currentAdData = null;
+
+        function viewAd(ad) {
+            currentAdData = ad;
+            document.getElementById('viewId').textContent = '#' + ad.id;
+            document.getElementById('viewTitle').textContent = ad.title;
+            document.getElementById('viewCompany').textContent = ad.company;
+            document.getElementById('viewType').textContent = ad.type;
+            document.getElementById('viewBudget').textContent = 'LKR ' + Number(ad.budget).toLocaleString();
+            document.getElementById('viewSubmitted').textContent = new Date(ad.submitted).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('viewStatus').innerHTML = '<span class="badge status-' + ad.status.toLowerCase() + '">' + ad.status.toUpperCase() + '</span>';
+            document.getElementById('viewReviewedBy').textContent = ad.reviewed_by || 'Not reviewed yet';
+            document.getElementById('viewReviewedDate').textContent = ad.reviewed_date ? new Date(ad.reviewed_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+            document.getElementById('viewDescription').textContent = ad.description;
+            
+            if (ad.rejection_reason) {
+                document.getElementById('rejectionReasonRow').style.display = 'flex';
+                document.getElementById('viewRejectionReason').textContent = ad.rejection_reason;
+            } else {
+                document.getElementById('rejectionReasonRow').style.display = 'none';
+            }
+            
+            document.getElementById('viewModal').style.display = 'flex';
+        }
+
+        function viewHistory(adId) {
+            document.getElementById('historyModal').style.display = 'flex';
+        }
+
+        function openOverride(ad) {
+            currentAdData = ad;
+            document.getElementById('overrideAdTitle').textContent = ad.title + ' (' + ad.company + ')';
+            document.getElementById('overrideCurrentStatus').textContent = ad.status;
+            document.getElementById('overrideStatus').value = '';
+            document.getElementById('overrideReason').value = '';
+            document.getElementById('overrideModal').style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function confirmOverride() {
+            const newStatus = document.getElementById('overrideStatus').value;
+            const reason = document.getElementById('overrideReason').value;
+            
+            if (!newStatus) {
+                alert('Please select a new status');
+                return;
+            }
+            
+            if (!reason.trim()) {
+                alert('Please provide a reason for override');
+                return;
+            }
+            
+            alert('Override successful!\n\nAd: ' + currentAdData.title + '\nNew Status: ' + newStatus + '\nReason: ' + reason);
+            closeModal('overrideModal');
+        }
+
+        // Filter functionality
+        document.getElementById('clearFilters').addEventListener('click', function() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('typeFilter').value = '';
+            document.getElementById('moderatorFilter').value = '';
+            document.getElementById('sortFilter').value = 'newest';
+        });
+
+        // Close modal on overlay click
+        document.querySelectorAll('.modal-bg').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
 </html>

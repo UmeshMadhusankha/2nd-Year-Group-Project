@@ -1,6 +1,28 @@
 <?php
 function renderCard($title, $value, $changeText, $icon, $color = "blue")
 {
+    // Icon mapping: Lucide → Font Awesome
+    $iconMap = [
+        'monitor' => 'fa-desktop',
+        'clock' => 'fa-clock',
+        'check-circle' => 'fa-circle-check',
+        'x-circle' => 'fa-circle-xmark',
+        'calendar' => 'fa-calendar',
+        'play-circle' => 'fa-circle-play',
+        'layers' => 'fa-layer-group',
+        'dollar-sign' => 'fa-dollar-sign',
+        'users' => 'fa-users',
+        'megaphone' => 'fa-bullhorn',
+        'file-text' => 'fa-file-lines',
+        'alert-circle' => 'fa-circle-exclamation',
+        'shield' => 'fa-shield',
+        'percent' => 'fa-percent',
+        'credit-card' => 'fa-credit-card',
+        'trending-up' => 'fa-arrow-trend-up',
+        'activity' => 'fa-chart-line'
+    ];
+    
+    $faIcon = $iconMap[$icon] ?? 'fa-circle';
 ?>
     <div class="stat-card" data-color="<?php echo $color; ?>">
         <div class="stat-card-inner">
@@ -10,7 +32,7 @@ function renderCard($title, $value, $changeText, $icon, $color = "blue")
                 <div class="stat-change"><?php echo $changeText; ?></div>
             </div>
             <div class="stat-icon">
-                <i data-lucide="<?php echo $icon; ?>"></i>
+                <i class="fa-solid <?php echo $faIcon; ?>"></i>
             </div>
         </div>
     </div>

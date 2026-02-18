@@ -112,10 +112,17 @@ class StaticContentModel {
      * Publish content
      */
     public function publishContent($id) {
-        $stmt = $this->db->prepare("UPDATE StaticContent SET status = 'Published' WHERE content_id = ?");
+        $stmt = $this->db->prepare("UPDATE StaticContent SET status = 'Published', last_update = CURRENT_TIMESTAMP WHERE content_id = ?");
         $stmt->bind_param("i", $id);
         $success = $stmt->execute();
         $stmt->close();
+        
+        if ($success) {
+            $content = $this->getContentById($id);
+            if ($content) {
+                $this->logActivity('content_published', $id, $content['title']);
+            }
+        }
         
         return $success;
     }
@@ -124,10 +131,17 @@ class StaticContentModel {
      * Unpublish content (set to draft)
      */
     public function unpublishContent($id) {
-        $stmt = $this->db->prepare("UPDATE StaticContent SET status = 'Draft' WHERE content_id = ?");
+        $stmt = $this->db->prepare("UPDATE StaticContent SET status = 'Draft', last_update = CURRENT_TIMESTAMP WHERE content_id = ?");
         $stmt->bind_param("i", $id);
         $success = $stmt->execute();
         $stmt->close();
+        
+        if ($success) {
+            $content = $this->getContentById($id);
+            if ($content) {
+                $this->logActivity('content_unpublished', $id, $content['title']);
+            }
+        }
         
         return $success;
     }
@@ -144,27 +158,30 @@ class StaticContentModel {
      */
     private function logActivity($action, $target_id, $target_title) {
         try {
-            $pdo = new PDO(
-                "mysql:host=localhost;dbname=fix_lanka;charset=utf8mb4",
-                "root",
-                "",
-                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-            );
+            // Check if moderator_activity table exists
+            $result = $this->db->query("SHOW TABLES LIKE 'moderator_activity'");
+            if ($result->num_rows === 0) {
+                // Table doesn't exist, skip logging
+                return;
+            }
             
-            $stmt = $pdo->prepare("
+            $stmt = $this->db->prepare("
                 INSERT INTO moderator_activity (moderator_id, activity_type, target_id, target_title, description, created_at)
-                VALUES (1, :activity_type, :target_id, :target_title, :description, NOW())
+                VALUES (1, ?, ?, ?, ?, NOW())
             ");
             
-            $description = "Static content '{$target_title}' was updated";
+            $actionDescriptions = [
+                'content_updated' => "Static content '{$target_title}' was updated",
+                'content_published' => "Static content '{$target_title}' was published",
+                'content_unpublished' => "Static content '{$target_title}' was unpublished"
+            ];
             
-            $stmt->execute([
-                'activity_type' => 'content_updated',
-                'target_id' => $target_id,
-                'target_title' => $target_title,
-                'description' => $description
-            ]);
-        } catch (PDOException $e) {
+            $description = isset($actionDescriptions[$action]) ? $actionDescriptions[$action] : "Static content action: {$action}";
+            
+            $stmt->bind_param("siss", $action, $target_id, $target_title, $description);
+            $stmt->execute();
+            $stmt->close();
+        } catch (Exception $e) {
             error_log("Failed to log activity: " . $e->getMessage());
         }
     }
