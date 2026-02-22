@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Company Contracts Page
  * 
@@ -40,6 +40,7 @@ if (!$userId) {
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/contracts.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/chat.css">
 </head>
 
 <body>
@@ -282,6 +283,8 @@ if (!$userId) {
                             <div><strong>Amount Paid:</strong> <span id="viewAmountPaid">LKR 0</span></div>
                             <div><strong>Remaining:</strong> <span id="viewAmountPending">â€”</span></div>
                         </div>
+                        <!-- Payment Schedule Breakdown -->
+                        <div id="viewPaymentSchedule" style="margin-top:12px; border-top: 1px solid #e2e8f0; padding-top: 10px;"></div>
                         <p style="margin-top:8px;"><strong>Late Payment:</strong> <span id="viewLatePayment">As per standard terms</span></p>
                     </div>
 
@@ -610,11 +613,11 @@ if (!$userId) {
                             </div>
                             <div class="progress-step" data-step="5">
                                 <div class="progress-dot"></div>
-                                <div class="progress-label">Timeline</div>
+                                <div class="progress-label">Payments</div>
                             </div>
                             <div class="progress-step" data-step="6">
                                 <div class="progress-dot"></div>
-                                <div class="progress-label">Payments</div>
+                                <div class="progress-label">Timeline</div>
                             </div>
                             <div class="progress-step" data-step="7">
                                 <div class="progress-dot"></div>
@@ -791,12 +794,12 @@ if (!$userId) {
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="scopeInclusions">Inclusions</label>
-                                    <textarea id="scopeInclusions" name="scope_inclusions" rows="4" placeholder="List what IS included:&#10;â€¢ All labour costs&#10;â€¢ Standard materials&#10;â€¢ Site cleanup"></textarea>
+                                    <textarea id="scopeInclusions" name="scope_inclusions" rows="4" placeholder="List what IS included:&#10;&bull; All labour costs&#10;&bull; Standard materials&#10;&bull; Site cleanup"></textarea>
                                     <small class="field-hint">What the contract price covers</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="scopeExclusions">Exclusions</label>
-                                    <textarea id="scopeExclusions" name="scope_exclusions" rows="4" placeholder="List what is NOT included:&#10;â€¢ Permits & licenses&#10;â€¢ Structural changes&#10;â€¢ Furniture removal"></textarea>
+                                    <textarea id="scopeExclusions" name="scope_exclusions" rows="4" placeholder="List what is NOT included:&#10;&bull; Permits & licenses&#10;&bull; Structural changes&#10;&bull; Furniture removal"></textarea>
                                     <small class="field-hint">What is explicitly NOT covered</small>
                                 </div>
                             </div>
@@ -843,115 +846,7 @@ if (!$userId) {
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="5">
                         <div class="step-header">
-                            <p class="step-description">Define the financial terms of the contract including pricing structure, payment schedule, and consequences for delays.</p>
-                            <p class="step-description">Set the project timeline and define key milestones for tracking and payments.</p>
-                        </div>
-
-                        <div class="legal-section">
-                            <div class="form-grid cols-3">
-                                <div class="form-group">
-                                    <label for="startDate">Start Date <span class="required">*</span></label>
-                                    <input type="date" id="startDate" name="start_date" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="endDate">Expected Completion <span class="required">*</span></label>
-                                    <input type="date" id="endDate" name="end_date" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="estimatedDuration">Working Days</label>
-                                    <input type="number" id="estimatedDuration" name="estimated_duration" min="1" readonly class="readonly-field" placeholder="Auto">
-                                </div>
-                            </div>
-
-                            <div class="milestones-section">
-                                <div class="milestones-header">
-                                    <h4><i class="fas fa-flag-checkered"></i> Project Milestones</h4>
-                                    <button type="button" class="btn-sm btn-add" id="addMilestoneBtn">
-                                        <i class="fas fa-plus"></i> Add Milestone
-                                    </button>
-                                </div>
-
-                                <!-- Info banner that changes based on payment method -->
-                                <div class="milestone-payment-link-info" id="milestonePaymentInfo">
-                                    <div class="mpli-tracking" id="mpliTracking">
-                                        <i class="fas fa-chart-line"></i>
-                                        <span>These milestones are used to <strong>track project progress</strong>. Define key checkpoints for the project.</span>
-                                    </div>
-                                    <div class="mpli-payment" id="mpliPayment" style="display:none;">
-                                        <i class="fas fa-link"></i>
-                                        <span><strong>Milestone-based payment is active.</strong> Each milestone below is linked to a payment. Amounts must total the contract value.</span>
-                                    </div>
-                                </div>
-
-                                <div class="milestones-table-wrapper">
-                                    <table class="milestones-table" id="milestonesTable">
-                                        <thead>
-                                            <tr>
-                                                <th>#</th>
-                                                <th>Milestone Name</th>
-                                                <th>Description</th>
-                                                <th>Target Date</th>
-                                                <th class="ms-payment-col" style="display:none;">% of Total</th>
-                                                <th class="ms-payment-col" style="display:none;">Amount (LKR)</th>
-                                                <th></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="milestonesBody">
-                                            <tr class="milestone-row">
-                                                <td>1</td>
-                                                <td><input type="text" name="ms_name[]" placeholder="Project Start" value="Project Commencement"></td>
-                                                <td><input type="text" name="ms_desc[]" placeholder="Description" value="Site preparation and initial setup"></td>
-                                                <td><input type="date" name="ms_date[]"></td>
-                                                <td class="ms-payment-col" style="display:none;"><input type="number" name="ms_pct[]" class="ms-pct-input" min="0" max="100" step="1" placeholder="%" value="30"></td>
-                                                <td class="ms-payment-col" style="display:none;"><input type="number" name="ms_amount[]" class="ms-amount-input" min="0" step="100" placeholder="Amount" readonly></td>
-                                                <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
-                                            </tr>
-                                            <tr class="milestone-row">
-                                                <td>2</td>
-                                                <td><input type="text" name="ms_name[]" placeholder="Midpoint" value="Mid-Project Review"></td>
-                                                <td><input type="text" name="ms_desc[]" placeholder="Description" value="Progress inspection and quality check"></td>
-                                                <td><input type="date" name="ms_date[]"></td>
-                                                <td class="ms-payment-col" style="display:none;"><input type="number" name="ms_pct[]" class="ms-pct-input" min="0" max="100" step="1" placeholder="%" value="40"></td>
-                                                <td class="ms-payment-col" style="display:none;"><input type="number" name="ms_amount[]" class="ms-amount-input" min="0" step="100" placeholder="Amount" readonly></td>
-                                                <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
-                                            </tr>
-                                            <tr class="milestone-row">
-                                                <td>3</td>
-                                                <td><input type="text" name="ms_name[]" placeholder="Completion" value="Project Handover"></td>
-                                                <td><input type="text" name="ms_desc[]" placeholder="Description" value="Final inspection, cleanup, and handover"></td>
-                                                <td><input type="date" name="ms_date[]"></td>
-                                                <td class="ms-payment-col" style="display:none;"><input type="number" name="ms_pct[]" class="ms-pct-input" min="0" max="100" step="1" placeholder="%" value="30"></td>
-                                                <td class="ms-payment-col" style="display:none;"><input type="number" name="ms_amount[]" class="ms-amount-input" min="0" step="100" placeholder="Amount" readonly></td>
-                                                <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
-                                            </tr>
-                                        </tbody>
-                                        <tfoot id="milestonesTotalRow" style="display:none;">
-                                            <tr>
-                                                <td colspan="4" style="text-align:right; font-weight:600;">Total:</td>
-                                                <td><strong id="msTotalPct">100</strong>%</td>
-                                                <td><strong>LKR <span id="msTotalAmount">0</span></strong></td>
-                                                <td></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                                <!-- Milestone total validation message -->
-                                <div class="milestone-total-warning" id="msTotalWarning" style="display:none;">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <span id="msTotalWarningText">Milestone percentages must total 100%</span>
-                                </div>
-                                <p class="milestone-hint"><i class="fas fa-lightbulb"></i> Milestones are always used for project progress tracking. When milestone-based payment is selected in Step 5, payments will be linked to these milestones.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- =============================== -->
-
-                    <!-- STEP 6: Pricing, Payments & Delays -->
-                    <!-- =============================== -->
-                    <div class="form-step-content" data-step="6">
-                        <div class="step-header">
-                            <p class="step-description">Set the project timeline and define key milestones for tracking and payments.</p>
+                            <h3><i class="fas fa-file-invoice-dollar"></i> Section 4 â€” Payment Terms</h3>
                             <p class="step-description">Define the financial terms of the contract including pricing structure, payment schedule, and consequences for delays.</p>
                         </div>
 
@@ -1038,15 +933,7 @@ if (!$userId) {
                                     </div>
                                 </div>
 
-                                <!-- Payment Preview -->
-                                <div class="payment-preview" id="paymentPreview">
-                                    <h5><i class="fas fa-receipt"></i> Payment Schedule Preview</h5>
-                                    <div id="milestonePaymentNotice" class="milestone-payment-notice" style="display:none;">
-                                        <i class="fas fa-link"></i>
-                                        <span>Payments are linked to your project milestones in Step 6. <a href="#" id="goToMilestonesLink">Edit milestones â†’</a></span>
-                                    </div>
-                                    <div id="paymentScheduleBody"></div>
-                                </div>
+
                             </div>
 
                             <!-- Delay Handling -->
@@ -1070,6 +957,113 @@ if (!$userId) {
                                         </label>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- =============================== -->
+
+                    <!-- STEP 6: Pricing, Payments & Delays -->
+                    <!-- =============================== -->
+                    <div class="form-step-content" data-step="6">
+                        <div class="step-header">
+                            <h3><i class="fas fa-calendar-alt"></i> Section 5 â€” Project Duration & Milestones</h3>
+                            <p class="step-description">Set the project timeline and define key milestones for tracking contract progress.</p>
+                        </div>
+
+                        <div class="legal-section">
+                            <div class="form-grid cols-3">
+                                <div class="form-group">
+                                    <label for="startDate">Start Date <span class="required">*</span></label>
+                                    <input type="date" id="startDate" name="start_date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="endDate">Expected Completion <span class="required">*</span></label>
+                                    <input type="date" id="endDate" name="end_date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="estimatedDuration">Working Days</label>
+                                    <input type="number" id="estimatedDuration" name="estimated_duration" min="1" readonly class="readonly-field" placeholder="Auto">
+                                </div>
+                            </div>
+
+                            <div class="milestones-section">
+                                <div class="milestones-header">
+                                    <div style="display: flex; align-items: center;">
+                                        <h4 style="margin: 0;">
+                                            <i class="fas fa-flag-checkered"></i> Project Timeline
+                                        </h4>
+                                        <div class="tooltip-container" style="position: relative; display: inline-block; margin-left: 8px;">
+                                            <i class="fas fa-info-circle ms-info-icon" style="font-size: 0.8em; color: #6c757d; cursor: help;"></i>
+                                            <div class="custom-tooltip" style="visibility: hidden; width: 250px; background-color: #1e293b; color: #f8fafc; text-align: center; border-radius: 8px; padding: 12px; position: absolute; z-index: 100; bottom: 150%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s, visibility 0.2s; font-size: 12px; font-weight: normal; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); line-height: 1.5; text-transform: none;">
+                                                Define key checkpoints (phases) for the project. These are used to track progress and schedule payments.
+                                                <div style="position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #1e293b transparent transparent transparent;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn-sm btn-add" id="addMilestoneBtn">
+                                        <i class="fas fa-plus"></i> Add Phase
+                                    </button>
+                                </div>
+
+                                <div class="milestones-table-wrapper">
+                                    <table class="milestones-table" id="milestonesTable">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Phase Name</th>
+                                                <th>Description</th>
+                                                <th>Target Date</th>
+                                                <th class="ms-payment-col">% of Total</th>
+                                                <th class="ms-payment-col">Amount (LKR)</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="milestonesBody">
+                                            <tr class="milestone-row">
+                                                <td>1</td>
+                                                <td><input type="text" name="ms_name[]" placeholder="Project Start" value="Project Commencement"></td>
+                                                <td><input type="text" name="ms_desc[]" placeholder="Description" value="Site preparation and initial setup"></td>
+                                                <td><input type="date" name="ms_date[]"></td>
+                                                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" min="0" max="100" step="1" placeholder="%" value="30"></td>
+                                                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" min="0" step="100" placeholder="Amount" readonly></td>
+                                                <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
+                                            </tr>
+                                            <tr class="milestone-row">
+                                                <td>2</td>
+                                                <td><input type="text" name="ms_name[]" placeholder="Midpoint" value="Mid-Project Review"></td>
+                                                <td><input type="text" name="ms_desc[]" placeholder="Description" value="Progress inspection and quality check"></td>
+                                                <td><input type="date" name="ms_date[]"></td>
+                                                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" min="0" max="100" step="1" placeholder="%" value="40"></td>
+                                                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" min="0" step="100" placeholder="Amount" readonly></td>
+                                                <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
+                                            </tr>
+                                            <tr class="milestone-row">
+                                                <td>3</td>
+                                                <td><input type="text" name="ms_name[]" placeholder="Completion" value="Project Handover"></td>
+                                                <td><input type="text" name="ms_desc[]" placeholder="Description" value="Final inspection, cleanup, and handover"></td>
+                                                <td><input type="date" name="ms_date[]"></td>
+                                                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" min="0" max="100" step="1" placeholder="%" value="30"></td>
+                                                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" min="0" step="100" placeholder="Amount" readonly></td>
+                                                <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot id="milestonesTotalRow">
+                                            <tr>
+                                                <td colspan="4" style="text-align:right; font-weight:600;">Total:</td>
+                                                <td><strong id="msTotalPct">100</strong>%</td>
+                                                <td><strong>LKR <span id="msTotalAmount">0</span></strong></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <!-- Milestone total validation message -->
+                                <div class="milestone-total-warning" id="msTotalWarning" style="display:none;">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span id="msTotalWarningText">Phase percentages must total 100%</span>
+                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -1340,238 +1334,7 @@ if (!$userId) {
         </div>
     </div>
 
-    <!-- Contract Negotiation/Chat Modal -->
-    <div class="modal-overlay" id="negotiationModal">
-        <div class="modal-container chat-modal">
-            <div class="modal-header">
-                <div class="chat-header-info">
-                    <h2><i class="fas fa-comments"></i> Contract Negotiation</h2>
-                    <p class="chat-contract-title" id="chatContractTitle">Contract Title</p>
-                    <div class="contract-status-badge rejected" id="chatContractStatus">
-                        <i class="fas fa-times-circle"></i> Rejected by Customer
-                    </div>
-                </div>
-                <button class="modal-close" id="negotiationModalClose">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div class="chat-container">
-                <!-- Rejection Reason Banner (if rejected) -->
-                <div class="rejection-banner" id="rejectionBanner" style="display: none;">
-                    <div class="rejection-icon">
-                        <i class="fas fa-exclamation-circle"></i>
-                    </div>
-                    <div class="rejection-details">
-                        <h4>Customer Rejected Contract</h4>
-                        <p class="rejection-reason" id="rejectionReason">Reason: Budget concerns and timeline too tight</p>
-                        <p class="rejection-date" id="rejectionDate">Rejected on: October 20, 2025 at 2:45 PM</p>
-                        <button class="rejection-cta-btn" id="editContractFromBanner">
-                            <i class="fas fa-edit"></i>
-                            Edit Contract Now
-                        </button>
-                    </div>
-                </div>
 
-                <!-- Quick Actions Bar -->
-                <div class="chat-quick-actions">
-                    <button class="quick-action-btn primary-action" id="reviseContractBtn" title="Open contract editor to make changes">
-                        <i class="fas fa-edit"></i>
-                        <span>Edit Contract</span>
-                    </button>
-                    <button class="quick-action-btn" id="viewOriginalBtn" title="View full contract details">
-                        <i class="fas fa-file-alt"></i>
-                        <span>View Original</span>
-                    </button>
-                    <button class="quick-action-btn" id="sendRevisedBtn" title="Send updated contract to customer">
-                        <i class="fas fa-paper-plane"></i>
-                        <span>Send Revised</span>
-                    </button>
-                    <button class="quick-action-btn danger" id="withdrawContractBtn" title="Cancel this contract permanently">
-                        <i class="fas fa-ban"></i>
-                        <span>Withdraw</span>
-                    </button>
-                </div>
-
-                <!-- Chat Messages -->
-                <div class="chat-messages" id="chatMessages">
-                    <!-- System Message -->
-                    <div class="chat-message system-message">
-                        <div class="message-icon">
-                            <i class="fas fa-info-circle"></i>
-                        </div>
-                        <div class="message-content">
-                            <p><strong>Contract Sent</strong></p>
-                            <p>You sent this contract to the customer for review.</p>
-                            <span class="message-time">October 18, 2025 at 10:30 AM</span>
-                        </div>
-                    </div>
-
-                    <!-- Customer Message -->
-                    <div class="chat-message customer-message">
-                        <div class="message-avatar">JD</div>
-                        <div class="message-content">
-                            <div class="message-header">
-                                <span class="message-sender">John Doe</span>
-                                <span class="message-role">Customer</span>
-                            </div>
-                            <p>Thank you for sending the contract. I've reviewed it carefully, but I have some concerns about the timeline and budget.</p>
-                            <span class="message-time">October 19, 2025 at 3:15 PM</span>
-                        </div>
-                    </div>
-
-                    <!-- Company Response -->
-                    <div class="chat-message company-message">
-                        <div class="message-avatar company">FL</div>
-                        <div class="message-content">
-                            <div class="message-header">
-                                <span class="message-sender">FixLanka Team</span>
-                                <span class="message-role">Company</span>
-                            </div>
-                            <p>We understand your concerns. What specific aspects would you like us to adjust?</p>
-                            <span class="message-time">October 19, 2025 at 4:00 PM</span>
-                        </div>
-                    </div>
-
-                    <!-- System Message - Rejection -->
-                    <div class="chat-message system-message rejection-message">
-                        <div class="message-icon">
-                            <i class="fas fa-times-circle"></i>
-                        </div>
-                        <div class="message-content">
-                            <p><strong>Contract Rejected</strong></p>
-                            <p>The customer has declined the current contract terms.</p>
-                            <p class="rejection-details"><strong>Reason:</strong> Budget concerns and timeline too tight</p>
-                            <span class="message-time">October 20, 2025 at 2:45 PM</span>
-                        </div>
-                    </div>
-
-                    <!-- Customer Explanation -->
-                    <div class="chat-message customer-message">
-                        <div class="message-avatar">JD</div>
-                        <div class="message-content">
-                            <div class="message-header">
-                                <span class="message-sender">John Doe</span>
-                                <span class="message-role">Customer</span>
-                            </div>
-                            <p>The proposed budget of LKR 250,000 is above our limit. We can go up to LKR 180,000. Also, can we extend the timeline from 60 days to 90 days?</p>
-                            <span class="message-time">October 20, 2025 at 2:50 PM</span>
-                        </div>
-                    </div>
-
-                    <!-- Typing Indicator (hidden by default) -->
-                    <div class="typing-indicator" id="typingIndicator" style="display: none;">
-                        <div class="typing-dots">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                        <span class="typing-text">Customer is typing...</span>
-                    </div>
-                </div>
-
-                <!-- Chat Input -->
-                <div class="chat-input-container">
-                    <div class="chat-input-wrapper">
-                        <textarea 
-                            id="chatInput" 
-                            class="chat-input" 
-                            placeholder="Type your message to the customer..."
-                            rows="1"
-                        ></textarea>
-                        <div class="chat-input-actions">
-                            <button class="input-action-btn" id="attachFileBtn" title="Attach File">
-                                <i class="fas fa-paperclip"></i>
-                            </button>
-                            <button class="input-action-btn" id="sendMessageBtn" title="Send Message">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="message-tips">
-                        <i class="fas fa-lightbulb"></i>
-                        <span>Tip: Be professional and address customer concerns clearly. Use "Revise Contract" to update terms.</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-footer chat-footer">
-                <div class="footer-left">
-                    <span class="chat-status">
-                        <i class="fas fa-circle online"></i>
-                        Customer active 5 minutes ago
-                    </span>
-                </div>
-                <div class="footer-right">
-                    <button type="button" class="btn btn-outline" id="closeNegotiationBtn">
-                        <i class="fas fa-times"></i> Close Chat
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Contract Status Update Modal -->
-    <div class="modal-overlay" id="statusUpdateModal">
-        <div class="modal-container small-modal">
-            <div class="modal-header">
-                <h2><i class="fas fa-sync-alt"></i> Update Contract Status</h2>
-                <button class="modal-close" id="statusUpdateClose">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-content">
-                <form id="statusUpdateForm">
-                    <div class="status-current">
-                        <label>Current Status:</label>
-                        <div class="status-badge" id="currentStatusBadge">Rejected</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="newStatus">Change Status To: <span class="required">*</span></label>
-                        <select id="newStatus" name="newStatus" required>
-                            <option value="">Select new status</option>
-                            <option value="draft">Draft</option>
-                            <option value="sent">Sent to Customer</option>
-                            <option value="under-review">Under Review</option>
-                            <option value="negotiating">Negotiating</option>
-                            <option value="accepted">Accepted by Customer</option>
-                            <option value="active">Active (Work Started)</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="withdrawn">Withdrawn</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="statusNotes">Notes (Optional):</label>
-                        <textarea id="statusNotes" name="statusNotes" rows="3" placeholder="Add any notes about this status change..."></textarea>
-                    </div>
-
-                    <div class="status-info-box">
-                        <i class="fas fa-info-circle"></i>
-                        <p><strong>Status Workflow:</strong></p>
-                        <ul>
-                            <li><strong>Draft</strong> â†’ Contract being prepared</li>
-                            <li><strong>Sent</strong> â†’ Awaiting customer response</li>
-                            <li><strong>Under Review</strong> â†’ Customer reviewing</li>
-                            <li><strong>Rejected</strong> â†’ Customer declined</li>
-                            <li><strong>Negotiating</strong> â†’ Changes being discussed</li>
-                            <li><strong>Accepted</strong> â†’ Customer agreed</li>
-                            <li><strong>Active</strong> â†’ Work in progress</li>
-                        </ul>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline" id="statusUpdateCancel">
-                    <i class="fas fa-times"></i> Cancel
-                </button>
-                <button type="button" class="btn btn-primary" id="statusUpdateSubmit">
-                    <i class="fas fa-check"></i> Update Status
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- Rejection Reason Modal (Customer View Simulation) -->
     <div class="modal-overlay" id="rejectionModal">
@@ -1733,9 +1496,10 @@ if (!$userId) {
     </div>
 
     <!-- Scripts -->
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contracts-enhanced.js"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contract-form-enhanced.js"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/budget-adjustment.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/chat.js?v=6.4"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contracts-enhanced.js?v=6.4"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contract-form-enhanced.js?v=6.4"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/budget-adjustment.js?v=6.4"></script>
     <script>
         // Store current contract for budget adjustment
         let currentContractData = null;
@@ -1744,15 +1508,14 @@ if (!$userId) {
         const originalShowContractModal = window.showContractDetails || function() {};
         
         window.showContractDetails = function(contractId) {
-            // Call original function if exists
-            if (typeof originalShowContractModal === 'function') {
-                originalShowContractModal(contractId);
-            }
+            window.currentContractId = contractId; 
+            if (typeof originalShowContractModal === 'function') originalShowContractModal(contractId);
             
-            // Load budget information
-            loadBudgetInformation(contractId);
+            // Chat loading removed (Phase 6 0%)
+            
+            if(typeof loadBudgetInformation === 'function') loadBudgetInformation(contractId);
         };
-        
+
         // Function to load and display budget information
         async function loadBudgetInformation(contractId) {
             try {

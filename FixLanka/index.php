@@ -259,6 +259,31 @@ switch ($request) {
     case '/company-feedback':
         require_once __DIR__ . '/views/company/feedback.php';
         break;
+
+    // API Routes for Quotations
+    case '/company-submit-quotation':
+        require_once __DIR__ . '/controllers/CompanyQuotationController.php';
+        $controller = new CompanyQuotationController();
+        $controller->create();
+        break;
+
+    case '/company-get-quotations':
+        require_once __DIR__ . '/controllers/CompanyQuotationController.php';
+        $controller = new CompanyQuotationController();
+        $controller->getMyQuotations();
+        break;
+
+    case '/api/job-requests/open':
+        require_once __DIR__ . '/controllers/JobRequestController.php';
+        $controller = new JobRequestController();
+        $controller->getOpenRequests();
+        break;
+
+    case '/api/contracts/undo':
+        require_once __DIR__ . '/controllers/ContractController.php';
+        $controller = new ContractController();
+        $controller->undoContract();
+        break;
     
     default:
         http_response_code(404);

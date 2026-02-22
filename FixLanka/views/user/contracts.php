@@ -109,6 +109,32 @@ if (!$userId) {
         </div>
     </div>
 
+    <!-- Proof Review Modal -->
+    <div class="cd-overlay" id="proofReviewOverlay" style="z-index: 1001;">
+        <div class="cd-modal" style="max-width: 600px;">
+            <div class="cd-header">
+                <div class="cd-header-left">
+                    <div class="cd-header-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="cd-header-text">
+                        <h2>Review Phase</h2>
+                        <span id="proofPhaseTitle"></span>
+                    </div>
+                </div>
+                <button class="cd-close" onclick="closeProofModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="cd-body" id="proofReviewBody">
+                <!-- Populated by JS -->
+            </div>
+            <div class="cd-footer">
+                <button class="cd-btn danger" onclick="verifyMilestoneCurrent('reject')"><i class="fas fa-times"></i> Reject</button>
+                <button class="cd-btn success" onclick="verifyMilestoneCurrent('approve')"><i class="fas fa-check"></i> Approve & Pay</button>
+            </div>
+        </div>
+    </div>
+
+
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/contracts.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/budget-adjustment.js"></script>
     <script>

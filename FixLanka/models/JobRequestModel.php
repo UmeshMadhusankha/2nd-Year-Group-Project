@@ -11,9 +11,14 @@ class JobRequest {
      */
     public function create($data) {
         try {
+            // 1. Insert Location
+            $locStmt = $this->pdo->prepare("INSERT INTO location (address, district) VALUES (?, ?)");
+            $locStmt->execute([$data['address'], $data['district']]);
+            $locationId = $this->pdo->lastInsertId();
+
             $stmt = $this->pdo->prepare("
-                INSERT INTO JobRequest (user_id, category_id, title, description, district, address, service_provider_type, urgency, finish_date, photos) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO JobRequest (user_id, category_id, title, description, location_id, service_provider_type, urgency, finish_date, photos) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmt->execute([
@@ -21,8 +26,7 @@ class JobRequest {
                 $data['category_id'],
                 $data['title'],
                 $data['description'],
-                $data['district'],
-                $data['address'],
+                $locationId,
                 $data['service_provider_type'],
                 $data['urgency'],
                 $data['finish_date'],
@@ -42,11 +46,12 @@ class JobRequest {
     public function getAllByUser($userId) {
         try {
             $stmt = $this->pdo->prepare("
-                SELECT jr.*, c.name as category_name 
+                SELECT jr.*, c.name as category_name, l.address, l.district 
                 FROM JobRequest jr
                 LEFT JOIN Category c ON jr.category_id = c.category_id
+                LEFT JOIN location l ON jr.location_id = l.location_id
                 WHERE jr.user_id = ?
-                ORDER BY jr.dateCreated DESC
+                ORDER BY jr.created_at DESC
             ");
             $stmt->execute([$userId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -62,9 +67,10 @@ class JobRequest {
     public function getById($requestId) {
         try {
             $stmt = $this->pdo->prepare("
-                SELECT jr.*, c.name as category_name 
+                SELECT jr.*, c.name as category_name, l.address, l.district 
                 FROM JobRequest jr
                 LEFT JOIN Category c ON jr.category_id = c.category_id
+                LEFT JOIN location l ON jr.location_id = l.location_id
                 WHERE jr.request_id = ?
             ");
             $stmt->execute([$requestId]);
@@ -100,14 +106,34 @@ class JobRequest {
                 $params[] = $data['description'];
             }
             
-            if (isset($data['district'])) {
-                $updateFields[] = "district = ?";
-                $params[] = $data['district'];
-            }
-            
-            if (isset($data['address'])) {
-                $updateFields[] = "address = ?";
-                $params[] = $data['address'];
+            // 1. Handle location updates separately
+            if (isset($data['address']) || isset($data['district'])) {
+                $locFields = [];
+                $locValues = [];
+                if (isset($data['address'])) {
+                    $locFields[] = "address = ?";
+                    $locValues[] = $data['address'];
+                    unset($data['address']);
+                }
+                if (isset($data['district'])) {
+                    $locFields[] = "district = ?";
+                    $locValues[] = $data['district'];
+                    unset($data['district']);
+                }
+                
+                if (!empty($locFields)) {
+                    // Get location_id for job request
+                    $stmt = $this->pdo->prepare("SELECT location_id FROM JobRequest WHERE request_id = ?");
+                    $stmt->execute([$requestId]);
+                    $locId = $stmt->fetchColumn();
+                    
+                    if ($locId) {
+                        $locSql = "UPDATE location SET " . implode(', ', $locFields) . " WHERE location_id = ?";
+                        $locValues[] = $locId;
+                        $locUpdateStmt = $this->pdo->prepare($locSql);
+                        $locUpdateStmt->execute($locValues);
+                    }
+                }
             }
             
             if (isset($data['service_provider_type'])) {
@@ -133,7 +159,7 @@ class JobRequest {
             
             // If no fields to update, return true
             if (empty($updateFields)) {
-                return true;
+                return true; 
             }
             
             // Add WHERE clause parameters
@@ -165,6 +191,43 @@ class JobRequest {
         } catch (PDOException $e) {
             error_log("Error deleting job request: " . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * READ - Get all open job requests (for companies)
+     */
+    public function getAllOpen($filters = []) {
+        try {
+            $sql = "SELECT jr.*, c.name as category_name, CONCAT(u.f_name, ' ', u.l_name) as user_name, l.address, l.district 
+                    FROM JobRequest jr
+                    LEFT JOIN Category c ON jr.category_id = c.category_id
+                    LEFT JOIN User u ON jr.user_id = u.user_id
+                    LEFT JOIN location l ON jr.location_id = l.location_id
+                    WHERE jr.status = 'Open'";
+            
+            $params = [];
+            
+            // Filter by district if provided
+            if (!empty($filters['district'])) {
+                $sql .= " AND l.district = ?";
+                $params[] = $filters['district'];
+            }
+            
+            // Filter by category if provided
+            if (!empty($filters['category_id'])) {
+                $sql .= " AND jr.category_id = ?";
+                $params[] = $filters['category_id'];
+            }
+            
+            $sql .= " ORDER BY jr.created_at DESC";
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error getting open job requests: " . $e->getMessage());
+            return [];
         }
     }
 }

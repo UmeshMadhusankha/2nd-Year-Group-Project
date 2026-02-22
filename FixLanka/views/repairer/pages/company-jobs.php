@@ -228,7 +228,7 @@ $searchPlaceholder = 'Search company jobs...';
                                         <i class="fas fa-calendar-check"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="completedJobsCount">27</span>
+                                        <span class="stat-number" id="completed_jobs_count">27</span>
                                         <span class="stat-label">Completed Jobs</span>
                                     </div>
                                 </div>

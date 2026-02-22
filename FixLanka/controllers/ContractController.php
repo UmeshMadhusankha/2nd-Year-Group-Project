@@ -79,7 +79,8 @@ class ContractController {
                     'sent_at' => $contract['sent_at'] ?? null,
                     'customer_response' => $contract['customer_response'] ?? 'pending',
                     'customer_response_at' => $contract['customer_response_at'] ?? null,
-                    'terms_accepted' => (bool)($contract['terms_accepted'] ?? 0)
+                    'terms_accepted' => (bool)($contract['terms_accepted'] ?? 0),
+                    'chat_active' => (int)($contract['chat_active'] ?? 0)
                 ];
             }, $contracts);
 
@@ -127,6 +128,11 @@ class ContractController {
 
             // Get milestones
             $milestones = $this->model->getMilestones($contractId);
+
+            // Check and update undo status
+            $this->model->checkUndoStatus($contractId);
+            // Refresh contract data after status update
+            $contract = $this->model->getById($contractId, $companyId);
 
             // Determine actual status based on business logic
             $actualStatus = $contract['status'] ?? 'draft';
@@ -195,7 +201,9 @@ class ContractController {
                 'sent_at' => $contract['sent_at'],
                 'customer_response' => $contract['customer_response'],
                 'customer_response_at' => $contract['customer_response_at'],
-                'terms_accepted' => (bool)($contract['terms_accepted'] ?? 0)
+                'terms_accepted' => (bool)($contract['terms_accepted'] ?? 0),
+                'undo_available' => (bool)($contract['undo_available'] ?? 0),
+                'undo_deadline' => $contract['undo_deadline'] ?? null
             ];
 
             echo json_encode([
@@ -768,8 +776,8 @@ class ContractController {
                     q.warranty_period,
                     q.payment_terms,
                     q.additional_terms,
-                    r.address as location,
-                    r.district,
+                    r_loc.address as location,
+                    r_loc.district,
                     r.title as request_title,
                     u.user_id as customer_id,
                     u.f_name as customer_fname,
@@ -777,6 +785,7 @@ class ContractController {
                     u.email as customer_email
                 FROM companyquotation q
                 INNER JOIN jobrequest r ON q.request_id = r.request_id
+                LEFT JOIN location r_loc ON r.location_id = r_loc.location_id
                 INNER JOIN user u ON r.user_id = u.user_id
                 LEFT JOIN contract c ON c.quotation_id = q.quotation_id
                 WHERE q.status = 'accepted'
@@ -791,24 +800,96 @@ class ContractController {
             
             $quotations = $stmt->fetchAll(PDO::FETCH_ASSOC);
             error_log("[ContractController] Found " . count($quotations) . " quotations");
-
-            if (count($quotations) > 0) {
-                error_log("[ContractController] First quotation: " . json_encode($quotations[0]));
-            }
-
+            
             echo json_encode([
                 'success' => true,
-                'data' => $quotations,
-                'count' => count($quotations)
+                'data' => $quotations
             ]);
 
         } catch (Exception $e) {
-            error_log("[ContractController] ERROR in getAcceptedQuotations: " . $e->getMessage());
-            error_log("[ContractController] Stack trace: " . $e->getTraceAsString());
+            error_log("[ContractController] Error in getAcceptedQuotations: " . $e->getMessage());
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * Customer accepts a quotation
+     * - Validates ownership
+     * - Updates quotation status
+     * - Creates contract
+     */
+    public function acceptQuotation($quotationId, $customerId) {
+        try {
+            global $pdo;
+
+            // 1. Validate quotation exists and belongs to a job request owned by the customer
+            $stmt = $pdo->prepare("
+                SELECT q.*, r.user_id as request_owner_id, r.request_id
+                FROM companyquotation q
+                JOIN jobrequest r ON q.request_id = r.request_id
+                WHERE q.quotation_id = ?
+            ");
+            $stmt->execute([$quotationId]);
+            $quotation = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$quotation) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Quotation not found']);
+                return;
+            }
+
+            if ($quotation['request_owner_id'] != $customerId) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized: You do not own this job request']);
+                return;
+            }
+
+            if ($quotation['status'] !== 'pending') {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Quotation is not in pending status']);
+                return;
+            }
+
+            // 2. Begin Transaction
+            $pdo->beginTransaction();
+
+            // 3. Update Quotation Status to 'accepted'
+            $updateStmt = $pdo->prepare("UPDATE companyquotation SET status = 'accepted' WHERE quotation_id = ?");
+            $updateStmt->execute([$quotationId]);
+
+            // 4. Reject all other quotations for this request? 
+            // Usually valid, but multiple quotes might be accepted for different parts? 
+            // For now, let's assume one quote per job.
+            // OPTIONAL: Mark others as rejected. logic omitted for flexibility.
+
+            // 5. Create Contract
+            $result = $this->model->createFromQuotation($quotationId);
+
+            if ($result['success']) {
+                $pdo->commit();
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Quotation accepted and contract created successfully',
+                    'contract_id' => $result['contract_id']
+                ]);
+            } else {
+                $pdo->rollBack();
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Failed to create contract: ' . ($result['message'] ?? 'Unknown error')]);
+            }
+
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log("[ContractController] Error in acceptQuotation: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+
 
     /**
      * ============================================
@@ -1760,6 +1841,97 @@ class ContractController {
     // ========================================
     // PHASE 2: UNDO WINDOW (24-hour cancellation)
     // ========================================
+
+    /**
+     * Customer responds to contract (Accept/Decline)
+     */
+    public function respondToContract() {
+        try {
+            // Validate session
+            if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'customer') {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!$data) $data = $_POST;
+
+            $contractId = $data['contract_id'] ?? null;
+            $response = $data['response'] ?? null;
+
+            if (!$contractId || !$response) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Missing contract ID or response']);
+                return;
+            }
+
+            $this->pdo->beginTransaction();
+
+            if ($response === 'accepted') {
+                // Update contract to active
+                $stmt = $this->pdo->prepare("
+                    UPDATE contract 
+                    SET status = 'active', 
+                        terms_accepted = 1, 
+                        customer_response = 'accepted', 
+                        customer_response_at = NOW() 
+                    WHERE contract_id = ? AND customer_id = ?
+                ");
+                $stmt->execute([$contractId, $_SESSION['user_id']]);
+
+                if ($stmt->rowCount() === 0) {
+                    throw new Exception("Contract not found or not authorized to accept.");
+                }
+
+                // Make the associated project active (in_progress)
+                $stmtProj = $this->pdo->prepare("
+                    UPDATE project p
+                    INNER JOIN contract c ON p.project_id = c.project_id
+                    SET p.status = 'in_progress',
+                        p.progress_percentage = 0
+                    WHERE c.contract_id = ?
+                ");
+                $stmtProj->execute([$contractId]);
+
+                $this->addTimelineEvent($contractId, 'contract_accepted', 'Contract accepted by customer');
+
+            } else if ($response === 'rejected') {
+                // Reject contract
+                $stmt = $this->pdo->prepare("
+                    UPDATE contract 
+                    SET status = 'terminated', 
+                        customer_response = 'rejected', 
+                        customer_response_at = NOW() 
+                    WHERE contract_id = ? AND customer_id = ?
+                ");
+                $stmt->execute([$contractId, $_SESSION['user_id']]);
+                
+                if ($stmt->rowCount() === 0) {
+                    throw new Exception("Contract not found or not authorized to reject.");
+                }
+
+                $this->addTimelineEvent($contractId, 'contract_rejected', 'Contract rejected by customer');
+            } else {
+                throw new Exception("Invalid response value: " . $response);
+            }
+
+            $this->pdo->commit();
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Contract ' . $response . ' successfully.'
+            ]);
+
+        } catch (Exception $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log("[ContractController] respondToContract error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
 
     /**
      * Check if contract has active undo window
@@ -3293,16 +3465,18 @@ class ContractController {
                     u.f_name as customer_fname,
                     u.l_name as customer_lname,
                     u.email as customer_email,
-                    u.address as customer_address,
+                    u_loc.address as customer_address,
                     comp.name as company_name,
-                    comp.address as company_address,
+                    c_loc.address as company_address,
                     comp.contact_no as company_contact,
                     comp.email as company_email,
                     comp.registration_no as company_registration
                 FROM contract_invoices ci
                 INNER JOIN contract c ON ci.contract_id = c.contract_id
                 LEFT JOIN user u ON c.customer_id = u.user_id
+                LEFT JOIN location u_loc ON u.location_id = u_loc.location_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id
+                LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
                 WHERE ci.invoice_id = ?
             ");
             $stmt->execute([$invoiceId]);
@@ -3889,5 +4063,62 @@ class ContractController {
             'user_id' => $user_id,
             'reason' => $reason
         ]);
+    }
+
+    /**
+     * Cancel/Undo a contract
+     */
+    public function undoContract() {
+        try {
+            $userId = $_SESSION['user_id'] ?? null;
+            
+            if (!$userId) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            $contractId = $data['contract_id'] ?? $_POST['contract_id'] ?? null;
+            $reason = $data['reason'] ?? $_POST['reason'] ?? 'User requested cancellation';
+
+            if (!$contractId) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Contract ID required']);
+                return;
+            }
+
+            // Check if user is involved
+            global $pdo;
+            $stmt = $pdo->prepare("SELECT customer_id, company_id FROM contract WHERE contract_id = ?");
+            $stmt->execute([$contractId]);
+            $contract = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$contract) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Contract not found']);
+                return;
+            }
+
+            if ($contract['customer_id'] != $userId && $contract['company_id'] != $userId) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized access to contract']);
+                return;
+            }
+
+            // Attempt undo
+            $result = $this->model->cancelContract($contractId, $reason);
+
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'Contract cancelled successfully']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to cancel contract']);
+            }
+
+        } catch (Exception $e) {
+            error_log("[ContractController] Error in undoContract: " . $e->getMessage());
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
     }
 }

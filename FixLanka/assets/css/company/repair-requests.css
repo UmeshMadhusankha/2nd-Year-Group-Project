@@ -769,14 +769,6 @@ body {
   box-sizing: border-box;
 }
 
-.action-btn:first-child {
-  border-bottom-left-radius: var(--border-radius-xl);
-}
-
-.action-btn:last-child {
-  border-bottom-right-radius: var(--border-radius-xl);
-}
-
 .action-btn.primary {
   background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
   color: white;

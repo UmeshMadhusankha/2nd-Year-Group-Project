@@ -36,6 +36,7 @@ class ContractModel {
                     u.l_name as customer_lname,
                     u.email as customer_email,
                     c.company_id,
+                    c.chat_active,
                     comp.name as company_name
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
@@ -67,17 +68,19 @@ class ContractModel {
                     u.f_name as customer_fname,
                     u.l_name as customer_lname,
                     u.email as customer_email,
-                    u.address as customer_address,
-                    u.district as customer_district,
+                    u_loc.address as customer_address,
+                    u_loc.district as customer_district,
                     comp.company_id,
                     comp.name as company_name,
                     comp.registration_no as company_registration_no,
-                    comp.address as company_address,
+                    c_loc.address as company_address,
                     comp.contact_no as company_contact,
                     comp.email as company_email
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
+                LEFT JOIN location u_loc ON u.location_id = u_loc.location_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id
+                LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
                 WHERE c.contract_id = :contract_id";
         
         if ($companyId !== null) {
@@ -187,7 +190,8 @@ class ContractModel {
         $query = "UPDATE Contract 
                   SET sent_to_customer = 1, 
                       sent_at = NOW(),
-                      status = 'sent'
+                      status = 'sent',
+                      chat_active = 1
                   WHERE contract_id = :contract_id
                   AND company_id = :company_id
                   AND sent_to_customer = 0";
@@ -325,13 +329,14 @@ class ContractModel {
                 jr.user_id,
                 jr.title as request_title,
                 jr.description as request_description,
-                jr.address,
-                jr.district,
+                jr_loc.address,
+                jr_loc.district,
                 jr.category_id,
                 c.company_id,
                 c.name as company_name
             FROM companyquotation q
             INNER JOIN jobrequest jr ON q.request_id = jr.request_id
+            LEFT JOIN location jr_loc ON jr.location_id = jr_loc.location_id
             INNER JOIN company c ON q.company_id = c.company_id
             WHERE q.quotation_id = :quotation_id
             AND q.status = 'accepted'";
@@ -391,8 +396,17 @@ class ContractModel {
                 $spendingCap = $quotation['total_amount'] * $multiplier;
             }
             
-            // 6. Determine payment method
-            $paymentMethod = $quotation['payment_method'] ?? 'milestone_based';
+            // 6. Determine payment method (map quotation values to contract ENUM)
+            $paymentMethodMap = [
+                'milestone' => 'milestone_based',
+                'milestone_based' => 'milestone_based',
+                'full_upfront' => 'full_upfront',
+                '50_50' => '50_50',
+                '30_70' => '30_70',
+                'completion' => 'completion'
+            ];
+            $rawMethod = $quotation['payment_method'] ?? 'milestone_based';
+            $paymentMethod = $paymentMethodMap[$rawMethod] ?? 'milestone_based';
             $milestoneplan = ($paymentMethod === 'milestone_based') ? 1 : 0;
             
             // 7. Create contract with Phase 1 + Phase 2 fields
@@ -402,14 +416,16 @@ class ContractModel {
                  payment_method, pricing_type, hourly_rate, spending_cap,
                  start_date, end_date, contract_date, 
                  user_signature, company_signature, status,
-                 auto_generated, amount_pending, payment_status, progress_percentage)
+                 auto_generated, amount_pending, payment_status, progress_percentage,
+                 undo_deadline, undo_requested, chat_active, escrow_enabled)
                 VALUES 
                 (:quotation_id, :company_id, :customer_id, :job_request_id, :project_id,
                  :milestone_plan, :total_budget, :budget_type, :budget_min, :budget_max,
                  :payment_method, :pricing_type, :hourly_rate, :spending_cap,
                  :start_date, :end_date, :contract_date,
                  :user_signature, :company_signature, :status,
-                 1, :amount_pending, 'pending', 0)";
+                 1, :amount_pending, 'pending', 0,
+                 :undo_deadline, :undo_requested, :chat_active, :escrow_enabled)";
             
             $contractStmt = $this->conn->prepare($contractQuery);
             $contractStmt->execute([
@@ -433,7 +449,13 @@ class ContractModel {
                 ':user_signature' => 'PENDING',
                 ':company_signature' => 'AUTO_GENERATED',
                 ':status' => 'draft',
-                ':amount_pending' => $totalBudget
+                ':amount_pending' => $totalBudget,
+                
+                // Phase 2 Fields
+                ':undo_deadline' => date('Y-m-d H:i:s', strtotime('+24 hours')),
+                ':undo_requested' => 0,  // FALSE = undo NOT requested yet = undo IS available
+                ':chat_active' => 0,
+                ':escrow_enabled' => 1
             ]);
             
             $contractId = $this->conn->lastInsertId();
@@ -442,6 +464,11 @@ class ContractModel {
             $updateQuotQuery = "UPDATE companyquotation SET status = 'successful' WHERE quotation_id = :quotation_id";
             $updateStmt = $this->conn->prepare($updateQuotQuery);
             $updateStmt->execute([':quotation_id' => $quotationId]);
+
+            // 9. Update Job Request status to 'in_progress'
+            $updateJobQuery = "UPDATE jobrequest SET status = 'in_progress' WHERE request_id = :request_id";
+            $updateJobStmt = $this->conn->prepare($updateJobQuery);
+            $updateJobStmt->execute([':request_id' => $quotation['request_id']]);
             
             return [
                 'success' => true,
@@ -526,5 +553,239 @@ class ContractModel {
         
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Check if undo is available and update status
+     */
+    public function checkUndoStatus($contractId) {
+        try {
+            $query = "SELECT undo_deadline, undo_requested, status FROM contract WHERE contract_id = :contract_id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([':contract_id' => $contractId]);
+            $contract = $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // Fallback if undo_requested column doesn't exist
+            $query = "SELECT undo_deadline, status FROM contract WHERE contract_id = :contract_id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([':contract_id' => $contractId]);
+            $contract = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+
+        if (!$contract) return false;
+        
+        // Can't undo if already terminated
+        if ($contract['status'] === 'terminated') return false;
+        
+        // Check deadline
+        if (!$contract['undo_deadline'] || strtotime($contract['undo_deadline']) <= time()) {
+            return false;
+        }
+
+        // Check if already requested (if column exists)
+        if (isset($contract['undo_requested']) && $contract['undo_requested']) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Activate chat for a contract
+     */
+    public function activateChat($contractId) {
+        $query = "UPDATE contract SET chat_active = 1 WHERE contract_id = :contract_id";
+        return $this->conn->prepare($query)->execute([':contract_id' => $contractId]);
+    }
+
+    /**
+     * Cancel a contract (Undo functionality)
+     * Reverts Contract, Quotation, and JobRequest statuses
+     */
+    public function cancelContract($contractId, $reason = '') {
+        try {
+            // 1. Check undo status
+            if (!$this->checkUndoStatus($contractId)) {
+                throw new Exception("Cancellation window has expired or is not available.");
+            }
+
+            // 2. Get contract details to find quotation and job request
+            $contractQuery = "SELECT quotation_id, job_request_id FROM contract WHERE contract_id = :contract_id";
+            $stmt = $this->conn->prepare($contractQuery);
+            $stmt->execute([':contract_id' => $contractId]);
+            $contract = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$contract) {
+                throw new Exception("Contract not found.");
+            }
+
+            // 3. Begin transaction
+            $this->conn->beginTransaction();
+
+            // 4. Update contract status to 'terminated'
+            // setting undo_requested to 1 
+            $updateContract = "UPDATE contract SET status = 'terminated', undo_requested = 1, terms_conditions = CONCAT(IFNULL(terms_conditions,''), '\n\n[CANCELLED]: ', :reason) WHERE contract_id = :contract_id";
+            $stmtContract = $this->conn->prepare($updateContract);
+            $stmtContract->execute([':reason' => $reason, ':contract_id' => $contractId]);
+
+            // 5. Revert company quotation status to 'pending' (so it can be accepted again or rejected)
+            $updateQuote = "UPDATE companyquotation SET status = 'pending' WHERE quotation_id = :quotation_id";
+            $this->conn->prepare($updateQuote)->execute([':quotation_id' => $contract['quotation_id']]);
+
+            // 6. Revert job request status to 'pending'
+            $updateJob = "UPDATE jobrequest SET status = 'pending' WHERE request_id = :request_id";
+            $this->conn->prepare($updateJob)->execute([':request_id' => $contract['job_request_id']]);
+
+            // 7. Commit
+            $this->conn->commit();
+            return true;
+
+        } catch (Exception $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            error_log("Error cancelling contract: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    /**
+     * Mark milestone as submitted by company (waiting for approval)
+     */
+    public function markMilestoneCompleted($milestoneId, $proofFiles = null, $comments = null) {
+        $query = "UPDATE contract_milestone 
+                  SET status = 'submitted', 
+                      completed_at = NOW(), 
+                      proof_files = :proof, 
+                      comments = :comments
+                  WHERE milestone_id = :id AND status IN ('pending', 'rejected', 'in_progress')";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':proof', $proofFiles);
+        $stmt->bindValue(':comments', $comments);
+        $stmt->bindValue(':id', $milestoneId);
+        
+        return $stmt->execute();
+    }
+
+    /**
+     * Approve milestone by customer
+     * Triggers payment release if escrow is enabled
+     */
+    public function approveMilestone($milestoneId) {
+        try {
+            $this->conn->beginTransaction();
+
+            // 1. Update milestone status
+            $query = "UPDATE contract_milestone 
+                      SET status = 'approved', 
+                          approved_at = NOW() 
+                      WHERE milestone_id = :id AND status = 'submitted'";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(':id', $milestoneId);
+            $stmt->execute();
+
+            if ($stmt->rowCount() === 0) {
+                // Check if already approved to be idempotent
+                $chk = $this->conn->prepare("SELECT status FROM contract_milestone WHERE milestone_id = ?");
+                $chk->execute([$milestoneId]);
+                if ($chk->fetchColumn() === 'approved') {
+                    $this->conn->commit();
+                    return true;
+                }
+                throw new Exception("Milestone not found or not in submitted status.");
+            }
+
+            // 2. Trigger Escrow Release if enabled
+            // Check Contract for escrow_enabled
+            $cCheck = $this->conn->prepare("SELECT contract_id, company_id, escrow_enabled FROM contract WHERE contract_id = (SELECT contract_id FROM contract_milestone WHERE milestone_id = ?)");
+            $cCheck->execute([$milestoneId]);
+            $contractData = $cCheck->fetch(PDO::FETCH_ASSOC);
+
+            if ($contractData && $contractData['escrow_enabled']) {
+                require_once __DIR__ . '/EscrowModel.php';
+                $escrowModel = new EscrowModel($this->conn);
+                
+                // Get Amount to release
+                $mCheck = $this->conn->prepare("SELECT amount, escrow_held FROM contract_milestone WHERE milestone_id = ?");
+                $mCheck->execute([$milestoneId]);
+                $mData = $mCheck->fetch(PDO::FETCH_ASSOC);
+                
+                if ($mData && $mData['escrow_held'] > 0) {
+                     // Release the held amount (or milestone amount, theoretically they match if fully funded)
+                     // Use held amount to be safe against partial funding
+                     $amountToRelease = $mData['escrow_held'];
+                     
+                     // Company ID is in contractData. The EscrowModel now supports company_id.
+                     $companyId = $contractData['company_id'];
+                     
+                     if ($companyId) {
+                         // Pass company_id and type 'company' is handled inside EscrowModel if we pass plain ID?
+                         // The signature is releaseFundsToCompany($companyId, $milestoneId, $amount)
+                         // EscrowModel::releaseFundsToCompany calls getWallet($companyId, 'company').
+                         
+                         if (!$escrowModel->releaseFundsToCompany($companyId, $milestoneId, $amountToRelease)) {
+                             throw new Exception("Failed to release escrow funds.");
+                         }
+                     }
+                }
+            }
+
+            // 3. Update Contract Progress
+            // Get contract ID
+            $cStmt = $this->conn->prepare("SELECT contract_id FROM contract_milestone WHERE milestone_id = ?");
+            $cStmt->execute([$milestoneId]);
+            $contractId = $cStmt->fetchColumn();
+
+            if ($contractId) {
+                // Recalculate progress
+                $progStmt = $this->conn->prepare("
+                    SELECT 
+                        COUNT(*) as total, 
+                        SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved 
+                    FROM contract_milestone 
+                    WHERE contract_id = ?
+                ");
+                $progStmt->execute([$contractId]);
+                $stats = $progStmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($stats['total'] > 0) {
+                    $newProgress = round(($stats['approved'] / $stats['total']) * 100);
+                    $updProg = $this->conn->prepare("UPDATE contract SET progress_percentage = ? WHERE contract_id = ?");
+                    $updProg->execute([$newProgress, $contractId]);
+
+                    // If all approved, mark contract completed?
+                    if ($newProgress == 100) {
+                         $this->conn->prepare("UPDATE contract SET status = 'completed' WHERE contract_id = ?")->execute([$contractId]);
+                    }
+                }
+            }
+
+            $this->conn->commit();
+            return true;
+
+        } catch (Exception $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            error_log("Error approving milestone: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Reject milestone by customer
+     */
+    public function rejectMilestone($milestoneId, $reason) {
+        $query = "UPDATE contract_milestone 
+                  SET status = 'rejected', 
+                      comments = CONCAT(IFNULL(comments, ''), '\n[REJECTION]: ', :reason)
+                  WHERE milestone_id = :id AND status = 'submitted'";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':reason', $reason);
+        $stmt->bindValue(':id', $milestoneId);
+        
+        return $stmt->execute();
     }
 }

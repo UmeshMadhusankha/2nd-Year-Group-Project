@@ -346,7 +346,7 @@ async function displayJobQuotes(requestId, containerId) {
                             <h5 class="card-title">${quote.repairer_fname} ${quote.repairer_lname}</h5>
                             <p class="card-text">
                                 <strong>Rating:</strong> ${quote.repairer_rating} ⭐ | 
-                                <strong>Completed Jobs:</strong> ${quote.completedJobsCount}
+                                <strong>Completed Jobs:</strong> ${quote.completed_jobs_count}
                             </p>
                             <p class="card-text">${quote.message}</p>
                             <p class="text-muted">

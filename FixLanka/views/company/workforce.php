@@ -398,11 +398,20 @@ if (!$companyId) {
         // Mock data arrays removed - kept as empty to prevent undefined errors
         const freelancersData = [];
         
+        // Ensure company ID is globally available
+        const currentCompanyId = window.CURRENT_COMPANY_ID;
+        
         document.addEventListener('DOMContentLoaded', function () {
              setTimeout(() => {
                 initializePage();
             }, 500);
         });
+
+        function initializePage() {
+            // Preload data if available
+            if (window.freelancersDb) window.freelancersDb.load();
+            if (window.applicationsDb) window.applicationsDb.load();
+        }
 
         // Global variables
         let currentTab = 'employees';
@@ -430,13 +439,13 @@ if (!$companyId) {
                 
                 // Load data for specific sections
                 if (section === 'job-postings') {
-                    loadJobPostings();
+                    // loadJobPostings();
                 } else if (section === 'freelancers') {
-                    loadFreelancers();
+                    if (window.freelancersDb) window.freelancersDb.load();
                 } else if (section === 'applications') {
-                    loadApplications();
+                    if (window.applicationsDb) window.applicationsDb.load();
                 } else if (section === 'employees') {
-                    loadEmployeeCategories();
+                    // loadEmployeeCategories();
                 }
             }
 
@@ -958,25 +967,37 @@ if (!$companyId) {
 
         // Update cost summary in real-time
         function updateCostSummary() {
-            const hours = parseFloat(document.getElementById('estimatedHours').value) || 0;
-            const rate = parseFloat(document.getElementById('agreedRate').value) || 0;
-            const total = hours * rate;
+            const pricingModelSelect = document.querySelector('input[name="pricingModel"]:checked');
+            const pricingModel = pricingModelSelect ? pricingModelSelect.value : 'hourly';
 
-            document.getElementById('summaryHours').textContent = hours > 0 ? `${hours} hrs` : '0 hrs';
-            document.getElementById('summaryRate').textContent = `LKR ${rate.toLocaleString()}`;
-            document.getElementById('summaryTotal').textContent = `LKR ${total.toLocaleString()}`;
+            if (pricingModel === 'hourly') {
+                const hours = parseFloat(document.getElementById('estimatedHours').value) || 0;
+                const rate = parseFloat(document.getElementById('agreedRate').value) || 0;
+                const total = hours * rate;
+
+                document.getElementById('summaryHours').textContent = hours > 0 ? `${hours} hrs` : '0 hrs';
+                document.getElementById('summaryRate').textContent = `LKR ${rate.toLocaleString()}`;
+                document.getElementById('summaryTotal').textContent = `LKR ${total.toLocaleString()}`;
+            } else {
+                const fixedPrice = parseFloat(document.getElementById('fixedPriceAmount').value) || 0;
+                document.getElementById('summaryFixedTotal').textContent = `LKR ${fixedPrice.toLocaleString()}`;
+            }
         }
 
         // Add event listeners for cost calculation
         document.addEventListener('DOMContentLoaded', function() {
             const hoursInput = document.getElementById('estimatedHours');
             const rateInput = document.getElementById('agreedRate');
+            const fixedInput = document.getElementById('fixedPriceAmount');
             
             if (hoursInput) {
                 hoursInput.addEventListener('input', updateCostSummary);
             }
             if (rateInput) {
                 rateInput.addEventListener('input', updateCostSummary);
+            }
+            if (fixedInput) {
+                fixedInput.addEventListener('input', updateCostSummary);
             }
 
             // Handle assignment form submission
@@ -6124,10 +6145,23 @@ if (!$companyId) {
                             </div>
                         </div>
 
-                        <div class="form-row">
+                        <!-- Pricing Model Selection -->
+                        <div class="form-group">
+                            <label><i class="fas fa-file-invoice-dollar"></i> Pricing Model <span class="required">*</span></label>
+                            <div style="display: flex; gap: 15px; margin-top: 5px;">
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: normal;">
+                                    <input type="radio" name="pricingModel" value="hourly" checked onchange="togglePricingModel()"> Hourly Rate
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: normal;">
+                                    <input type="radio" name="pricingModel" value="fixed" onchange="togglePricingModel()"> Fixed Price
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-row" id="hourlyPricingMode">
                             <div class="form-group">
                                 <label for="assignEstimatedHours">Estimated Hours <span class="required">*</span></label>
-                                <small class="form-helper-top">Approximate hours needed to complete</small>
+                                <small class="form-helper-top">Approximate hours needed</small>
                                 <input type="number" id="assignEstimatedHours" class="form-control" 
                                        min="1" step="0.5" placeholder="e.g., 8 or 8.5" 
                                        oninput="updateAssignmentCost()" required>
@@ -6135,15 +6169,22 @@ if (!$companyId) {
                             
                             <div class="form-group">
                                 <label for="assignHourlyRate">
-                                    <i class="fas fa-lock"></i> Hourly Rate (LKR) 
-                                    <span class="fixed-rate-badge">FIXED</span>
+                                    <i class="fas fa-lock"></i> Hourly Rate (LKR)
                                 </label>
                                 <small class="form-helper-top">
-                                    <i class="fas fa-info-circle"></i> Rate from repairer's application (cannot be changed)
+                                    <i class="fas fa-info-circle"></i> Base rate
                                 </small>
-                                <input type="number" id="assignHourlyRate" class="form-control readonly-field" 
-                                       readonly disabled
-                                       min="100" step="100" placeholder="Loading rate...">
+                                <input type="number" id="assignHourlyRate" class="form-control" 
+                                       oninput="updateAssignmentCost()"
+                                       min="100" step="100" placeholder="e.g., 2500" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row" id="fixedPricingMode" style="display: none;">
+                            <div class="form-group">
+                                <label for="assignFixedPrice"><i class="fas fa-tag"></i> Fixed Task Price (LKR) <span class="required">*</span></label>
+                                <small class="form-helper-top">Total amount to pay upon completion</small>
+                                <input type="number" id="assignFixedPrice" class="form-control" min="0" step="100" placeholder="e.g., 15000" oninput="updateAssignmentCost()">
                             </div>
                         </div>
 
@@ -6158,7 +6199,8 @@ if (!$companyId) {
                     <!-- Cost Summary -->
                     <div class="form-section cost-summary">
                         <h4><i class="fas fa-calculator"></i> Cost Estimate</h4>
-                        <div class="cost-breakdown">
+                        
+                        <div class="cost-breakdown" id="hourlyCostSummary">
                             <div class="cost-item">
                                 <span class="cost-label"><i class="fas fa-clock"></i> Estimated Hours:</span>
                                 <span class="cost-value"><span id="assignCostHours">0</span> hrs</span>
@@ -6173,6 +6215,13 @@ if (!$companyId) {
                                 <span class="cost-value total-value">LKR <span id="assignCostTotal">0</span></span>
                             </div>
                         </div>
+
+                        <div class="cost-breakdown" id="fixedCostSummary" style="display: none;">
+                            <div class="cost-item total">
+                                <span class="cost-label"><i class="fas fa-tag"></i> Total Fixed Price:</span>
+                                <span class="cost-value total-value">LKR <span id="assignCostFixedTotal">0</span></span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Action Buttons -->
@@ -6181,11 +6230,61 @@ if (!$companyId) {
                             <i class="fas fa-times"></i> Cancel
                         </button>
                         <button type="submit" class="btn-confirm">
-                            <i class="fas fa-check"></i> Confirm Assignment
+                            <i class="fas fa-paper-plane"></i> Send Job Offer
                         </button>
                     </div>
                 </form>
             </div>
+            
+            <script>
+                function togglePricingModel() {
+                    const model = document.querySelector('input[name="pricingModel"]:checked').value;
+                    const hourlyDiv = document.getElementById('hourlyPricingMode');
+                    const fixedDiv = document.getElementById('fixedPricingMode');
+                    const hourlySummary = document.getElementById('hourlyCostSummary');
+                    const fixedSummary = document.getElementById('fixedCostSummary');
+
+                    if (model === 'hourly') {
+                        hourlyDiv.style.display = 'flex';
+                        fixedDiv.style.display = 'none';
+                        hourlySummary.style.display = 'block';
+                        fixedSummary.style.display = 'none';
+                        // Add required attrs to hourly, remove from fixed
+                        document.getElementById('assignEstimatedHours').setAttribute('required', 'required');
+                        document.getElementById('assignHourlyRate').setAttribute('required', 'required');
+                        document.getElementById('assignFixedPrice').removeAttribute('required');
+                    } else {
+                        hourlyDiv.style.display = 'none';
+                        fixedDiv.style.display = 'flex';
+                        hourlySummary.style.display = 'none';
+                        fixedSummary.style.display = 'block';
+                        // Add required attrs to fixed, remove from hourly
+                        document.getElementById('assignFixedPrice').setAttribute('required', 'required');
+                        document.getElementById('assignEstimatedHours').removeAttribute('required');
+                        document.getElementById('assignHourlyRate').removeAttribute('required');
+                    }
+                    
+                    if (typeof updateAssignmentCost === 'function') updateAssignmentCost();
+                }
+
+                function updateAssignmentCost() {
+                    const model = document.querySelector('input[name="pricingModel"]:checked').value;
+                    
+                    if (model === 'hourly') {
+                        const hours = parseFloat(document.getElementById('assignEstimatedHours').value) || 0;
+                        const rateStr = document.getElementById('assignHourlyRate').value;
+                        const rate = parseFloat(rateStr) || 0;
+                        const total = hours * rate;
+
+                        document.getElementById('assignCostHours').textContent = hours;
+                        document.getElementById('assignCostRate').textContent = rate.toLocaleString();
+                        document.getElementById('assignCostTotal').textContent = total.toLocaleString();
+                    } else {
+                        const fixedPrice = parseFloat(document.getElementById('assignFixedPrice').value) || 0;
+                        document.getElementById('assignCostFixedTotal').textContent = fixedPrice.toLocaleString();
+                    }
+                }
+            </script>
         </div>
     </div>
 
@@ -6427,6 +6526,8 @@ if (!$companyId) {
 
     <!-- Load Company Employees Database Integration -->
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/company-employees-db.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/freelancers-db.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/applications-db.js"></script>
 
 </body>
 

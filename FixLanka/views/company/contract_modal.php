@@ -73,20 +73,20 @@
                             <div id="quotationPreview" class="quotation-preview" style="display: none;">
                                 <div class="preview-header">
                                     <i class="fas fa-check-circle"></i>
-                                    <span id="selectedTitle">Selected: Kitchen Sink Pipe Leak Repair</span>
+                                    <span id="selectedTitle">Selected: -</span>
                                 </div>
                                 <div class="preview-details">
                                     <div class="detail-item">
                                         <span class="label">Customer:</span>
-                                        <span class="value" id="customerName">Rajitha Silva</span>
+                                        <span class="value" id="customerName">-</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="label">Amount:</span>
-                                        <span class="value" id="quotationAmount">LKR 15,000</span>
+                                        <span class="value" id="quotationAmount">-</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="label">Budget Type:</span>
-                                        <span class="value" id="budgetType">FLEXIBLE</span>
+                                        <span class="value" id="budgetType">-</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="label">Payment:</span>
@@ -94,11 +94,11 @@
                                     </div>
                                     <div class="detail-item">
                                         <span class="label">Pricing:</span>
-                                        <span class="value" id="pricingType">Fixed Price</span>
+                                        <span class="value" id="pricingType">-</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="label">Duration:</span>
-                                        <span class="value" id="duration">5 days</span>
+                                        <span class="value" id="duration">-</span>
                                     </div>
                                 </div>
                                 <div class="preview-notice">

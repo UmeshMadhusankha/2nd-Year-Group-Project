@@ -2,13 +2,16 @@
  * Customer Contracts Page
  * Fetches and displays contracts for the logged-in user
  */
-(function() {
+(function () {
     'use strict';
 
-    const API = '/2nd-Year-Group-Project/FixLanka/api/contracts/customer.php';
+    const API = '/2nd-Year-Group-Project/FixLanka/api/contracts.php';
     let allContracts = [];
     let currentFilter = '';
     let currentSearch = '';
+
+    let currentContractMilestones = [];
+    let currentReviewMilestoneId = null;
 
     document.addEventListener('DOMContentLoaded', init);
 
@@ -16,7 +19,16 @@
         loadContracts();
         bindFilters();
         bindModalClose();
+
+        // Bind Proof Modal Close
+        const proofOverlay = document.getElementById('proofReviewOverlay');
+        if (proofOverlay) {
+            proofOverlay.addEventListener('click', (e) => {
+                if (e.target === proofOverlay) closeProofModal();
+            });
+        }
     }
+
 
     // =========================================
     // LOAD CONTRACTS
@@ -189,7 +201,7 @@
         let terms = {};
         if (c.terms_parsed) terms = c.terms_parsed;
         else if (c.terms_conditions) {
-            try { terms = JSON.parse(c.terms_conditions); } catch(e) {}
+            try { terms = JSON.parse(c.terms_conditions); } catch (e) { }
         }
 
         const progress = parseInt(c.progress_percentage) || 0;
@@ -333,11 +345,28 @@
         // Footer action buttons
         if (footer) {
             const isPending = ['draft', 'pending_signature'].includes(c.status);
+
             if (isPending && c.sent_to_customer) {
                 footer.innerHTML = `
                     <button class="cd-btn danger" onclick="respondContract(${c.contract_id}, 'rejected')"><i class="fas fa-times"></i> Decline</button>
                     <button class="cd-btn primary" onclick="respondContract(${c.contract_id}, 'accepted')"><i class="fas fa-check"></i> Accept Contract</button>
                 `;
+            } else if (c.undo_available) {
+                // Calculate time remaining
+                const deadline = new Date(c.undo_deadline);
+                const now = new Date();
+                const diff = Math.max(0, Math.floor((deadline - now) / 1000 / 60)); // minutes
+                const hours = Math.floor(diff / 60);
+                const mins = diff % 60;
+
+                footer.innerHTML = `
+                    <div style="flex: 1; display: flex; align-items: center; font-size: 0.85em; color: var(--text-medium);">
+                        <i class="fas fa-stopwatch" style="margin-right: 6px; color: var(--warning);"></i> 
+                        Undo available: ${hours}h ${mins}m remaining
+                    </div>
+                    <button class="cd-btn danger" onclick="undoContract(${c.contract_id})" title="Cancel contract within 24 hours of acceptance"><i class="fas fa-undo"></i> Undo Contract</button>
+                    <button class="cd-btn secondary" onclick="closeContractDetail()"><i class="fas fa-times"></i> Close</button>
+                 `;
             } else {
                 footer.innerHTML = `<button class="cd-btn secondary" onclick="closeContractDetail()"><i class="fas fa-times"></i> Close</button>`;
             }
@@ -345,6 +374,8 @@
     }
 
     function renderMilestonesTable(milestones, isMilestoneBased) {
+        currentContractMilestones = milestones; // Store globally
+
         let html = `<table class="cd-milestones-table">
             <thead><tr>
                 <th>#</th>
@@ -352,16 +383,26 @@
                 <th>Due Date</th>
                 ${isMilestoneBased ? '<th>Amount</th>' : ''}
                 <th>Status</th>
+                <th>Action</th>
             </tr></thead><tbody>`;
 
         milestones.forEach(ms => {
             const statusClass = (ms.status || 'pending').replace(/ /g, '_');
+
+            let actionBtn = '—';
+            if (ms.status === 'submitted') {
+                actionBtn = `<button class="cd-btn secondary small" onclick="openProofModal(${ms.milestone_id})" style="padding: 4px 10px; font-size: 0.8rem;"><i class="fas fa-eye"></i> Review</button>`;
+            } else if (ms.status === 'approved') {
+                actionBtn = '<span class="text-success"><i class="fas fa-check"></i> Paid</span>';
+            }
+
             html += `<tr>
                 <td>${ms.milestone_number}</td>
                 <td><strong>${esc(ms.title)}</strong>${ms.description ? '<br><small style="color:var(--text-medium)">' + esc(ms.description) + '</small>' : ''}</td>
                 <td>${formatDate(ms.due_date)}</td>
                 ${isMilestoneBased ? `<td>${formatCurrency(ms.amount)}</td>` : ''}
                 <td><span class="ms-status-badge ${statusClass}">${formatStatus(ms.status)}</span></td>
+                <td>${actionBtn}</td>
             </tr>`;
         });
 
@@ -462,7 +503,7 @@
     // =========================================
     // RESPOND TO CONTRACT
     // =========================================
-    window.respondContract = async function(contractId, response) {
+    window.respondContract = async function (contractId, response) {
         const label = response === 'accepted' ? 'accept' : 'decline';
         if (!confirm(`Are you sure you want to ${label} this contract?`)) return;
 
@@ -485,61 +526,221 @@
             console.error('Respond error:', err);
             alert('Could not process your response. Please try again.');
         }
+    }
+};
+// =========================================
+// UNDO CONTRACT
+// =========================================
+window.undoContract = async function (contractId) {
+    const reason = prompt("Please provide a reason for cancelling this contract:");
+    if (reason === null) return; // User cancelled prompt
+
+    if (reason.trim() === "") {
+        alert("Please provide a reason.");
+        return;
+    }
+
+    if (!confirm("Are you sure you want to cancel this contract? This action cannot be undone and the job request will be reopened.")) return;
+
+    try {
+        // Show loading state
+        const btn = document.querySelector(`button[onclick="undoContract(${contractId})"]`);
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+        }
+
+        const res = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts/undo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contract_id: contractId, reason: reason })
+        });
+        const json = await res.json();
+
+        if (json.success) {
+            alert('Contract cancelled successfully.');
+            closeContractDetail();
+            // Reload to refresh lists
+            loadContracts();
+            updateStats(); // Refresh stats too
+        } else {
+            alert('Error: ' + json.message);
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-undo"></i> Undo Contract';
+                btn.disabled = false;
+            }
+        }
+    } catch (err) {
+        console.error('Undo error:', err);
+        alert('Could not cancel contract. Please try again.');
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-undo"></i> Undo Contract';
+            btn.disabled = false;
+        }
+    }
+};
+
+window.closeContractDetail = closeDetail;
+
+// =========================================
+// HELPERS
+// =========================================
+function formatCurrency(val) {
+    const num = parseFloat(val) || 0;
+    return 'LKR ' + num.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatDate(d) {
+    if (!d) return '—';
+    const date = new Date(d);
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function formatStatus(s) {
+    if (!s) return 'Draft';
+    return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function getStatusIcon(s) {
+    const map = {
+        'active': 'fa-check-circle',
+        'in_progress': 'fa-spinner',
+        'pending_signature': 'fa-pen',
+        'draft': 'fa-file-alt',
+        'completed': 'fa-trophy',
+        'terminated': 'fa-ban',
+        'disputed': 'fa-exclamation-triangle'
     };
+    return map[s] || 'fa-file-contract';
+}
 
-    window.closeContractDetail = closeDetail;
+function formatPaymentMethod(m) {
+    const map = {
+        'full_upfront': 'Full Upfront',
+        'milestone_based': 'Milestone-Based',
+        '50_50': '50/50 Split',
+        '30_70': '30/70 Split',
+        'completion': 'On Completion'
+    };
+    return map[m] || capitalize(m || '');
+}
 
-    // =========================================
-    // HELPERS
-    // =========================================
-    function formatCurrency(val) {
-        const num = parseFloat(val) || 0;
-        return 'LKR ' + num.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// =========================================
+// PROOF REVIEW
+// =========================================
+window.openProofModal = function (milestoneId) {
+    const ms = currentContractMilestones.find(m => m.milestone_id == milestoneId);
+    if (!ms) return;
+
+    currentReviewMilestoneId = milestoneId;
+
+    const overlay = document.getElementById('proofReviewOverlay');
+    const title = document.getElementById('proofPhaseTitle');
+    const body = document.getElementById('proofReviewBody');
+
+    if (title) title.textContent = ms.title;
+
+    // Parse proof files
+    let filesHtml = '<p>No files attached.</p>';
+    try {
+        if (ms.proof_files) {
+            const files = JSON.parse(ms.proof_files);
+            if (files && files.length > 0) {
+                filesHtml = '<ul class="proof-files-list">';
+                files.forEach(path => {
+                    const name = path.split('/').pop();
+                    filesHtml += `<li><a href="/2nd-Year-Group-Project/FixLanka/${path}" target="_blank"><i class="fas fa-file-download"></i> ${esc(name)}</a></li>`;
+                });
+                filesHtml += '</ul>';
+            }
+        }
+    } catch (e) {
+        console.error('JSON Parse error', e);
     }
 
-    function formatDate(d) {
-        if (!d) return '—';
-        const date = new Date(d);
-        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    body.innerHTML = `
+        <div class="proof-section">
+            <h4><i class="fas fa-align-left"></i> Description of Work</h4>
+            <div class="proof-desc">${esc(ms.proof_of_work || 'No description provided.')}</div>
+        </div>
+        <div class="proof-section">
+            <h4><i class="fas fa-paperclip"></i> Attached Files</h4>
+            ${filesHtml}
+        </div>
+        <div class="proof-section">
+            <h4><i class="fas fa-info-circle"></i> Verification Info</h4>
+            <p class="text-small">By approving this phase, the funds (${formatCurrency(ms.amount)}) will be released from Escrow to the Company. This action cannot be undone.</p>
+        </div>
+    `;
+
+    overlay.classList.add('show');
+};
+
+window.closeProofModal = function () {
+    const overlay = document.getElementById('proofReviewOverlay');
+    if (overlay) overlay.classList.remove('show');
+    currentReviewMilestoneId = null;
+};
+
+window.verifyMilestoneCurrent = async function (action) {
+    if (!currentReviewMilestoneId) return;
+
+    const actionText = action === 'approve' ? 'APPROVE and RELEASE PAYMENT' : 'REJECT';
+    if (!confirm(`Are you sure you want to ${actionText} for this phase?`)) return;
+
+    let feedback = '';
+    if (action === 'reject') {
+        feedback = prompt("Please provide a reason for rejection (required):");
+        if (!feedback || !feedback.trim()) {
+            alert("Rejection reason is required.");
+            return;
+        }
     }
 
-    function formatStatus(s) {
-        if (!s) return 'Draft';
-        return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    }
+    try {
+        // Show loading
+        const body = document.getElementById('proofReviewBody');
+        body.innerHTML = '<div class="contracts-loading"><div class="spinner"></div><p>Processing verification...</p></div>';
 
-    function getStatusIcon(s) {
-        const map = {
-            'active': 'fa-check-circle',
-            'in_progress': 'fa-spinner',
-            'pending_signature': 'fa-pen',
-            'draft': 'fa-file-alt',
-            'completed': 'fa-trophy',
-            'terminated': 'fa-ban',
-            'disputed': 'fa-exclamation-triangle'
-        };
-        return map[s] || 'fa-file-contract';
-    }
+        const formData = new FormData();
+        formData.append('milestone_id', currentReviewMilestoneId);
+        formData.append('action', action);
+        if (feedback) formData.append('feedback', feedback);
 
-    function formatPaymentMethod(m) {
-        const map = {
-            'full_upfront': 'Full Upfront',
-            'milestone_based': 'Milestone-Based',
-            '50_50': '50/50 Split',
-            '30_70': '30/70 Split',
-            'completion': 'On Completion'
-        };
-        return map[m] || capitalize(m || '');
-    }
+        // Call API with action=verify_phase in URL to route correctly
+        const res = await fetch('/2nd-Year-Group-Project/FixLanka/api/projects.php?action=verify_phase', {
+            method: 'POST',
+            body: formData
+        });
 
-    function capitalize(s) {
-        return s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ') : '';
-    }
+        const json = await res.json();
 
-    function esc(s) {
-        if (!s) return '';
-        const d = document.createElement('div');
-        d.textContent = s;
-        return d.innerHTML;
+        if (json.success) {
+            alert(`Phase ${action}ed successfully.`);
+            closeProofModal();
+            closeContractDetail(); // Close parent modal too to refresh
+            loadContracts(); // Refresh list
+        } else {
+            alert('Error: ' + json.message);
+            // Reload modal content if failed (optional, or just close)
+            closeProofModal();
+        }
+
+    } catch (err) {
+        console.error(err);
+        alert('Communication error. Please try again.');
+        closeProofModal();
     }
-})();
+}
+
+function capitalize(s) {
+    return s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ') : '';
+}
+
+function esc(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+    }) ();

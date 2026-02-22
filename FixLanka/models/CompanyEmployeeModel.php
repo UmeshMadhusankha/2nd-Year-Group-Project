@@ -52,29 +52,36 @@ class CompanyEmployeeModel {
      */
     public function getAll($companyId, $filters = []) {
         try {
-            $query = "SELECT * FROM CompanyEmployee WHERE company_id = :company_id";
+            $query = "SELECT ce.*, r.f_name as first_name, r.l_name as last_name, u.email, u.contact_no as phone,
+                             c.name as specialty, r.experience_years, r.average_rating as rating,
+                             r.hourly_rate as applicant_hourly_rate, u.profile_pic as profile_photo
+                      FROM company_employees ce
+                      LEFT JOIN Repairer r ON ce.repairer_id = r.repairer_id
+                      LEFT JOIN Category c ON r.category_id = c.category_id
+                      LEFT JOIN User u ON r.user_id = u.user_id
+                      WHERE ce.company_id = :company_id";
             $params = ['company_id' => $companyId];
             
             // Filter by specialty
             if (!empty($filters['specialty'])) {
-                $query .= " AND specialty = :specialty";
+                $query .= " AND c.name = :specialty";
                 $params['specialty'] = $filters['specialty'];
             }
             
             // Filter by status
             if (!empty($filters['status'])) {
-                $query .= " AND status = :status";
+                $query .= " AND ce.status = :status";
                 $params['status'] = $filters['status'];
             }
             
             // Search by name
             if (!empty($filters['search'])) {
-                $query .= " AND (first_name LIKE :search OR last_name LIKE :search OR email LIKE :search)";
+                $query .= " AND (r.f_name LIKE :search OR r.l_name LIKE :search OR u.email LIKE :search)";
                 $params['search'] = '%' . $filters['search'] . '%';
             }
             
             // Order by
-            $orderBy = $filters['order_by'] ?? 'created_at';
+            $orderBy = $filters['order_by'] ?? 'ce.created_at';
             $orderDir = $filters['order_dir'] ?? 'DESC';
             $query .= " ORDER BY {$orderBy} {$orderDir}";
             
@@ -96,7 +103,16 @@ class CompanyEmployeeModel {
      */
     public function getById($employeeId) {
         try {
-            $stmt = $this->db->prepare("SELECT * FROM CompanyEmployee WHERE employee_id = :employee_id");
+            $stmt = $this->db->prepare("
+                SELECT ce.*, r.f_name as first_name, r.l_name as last_name, u.email, u.contact_no as phone,
+                       c.name as specialty, r.experience_years, r.average_rating as rating,
+                       r.hourly_rate as applicant_hourly_rate, u.profile_pic as profile_photo
+                FROM company_employees ce
+                LEFT JOIN Repairer r ON ce.repairer_id = r.repairer_id
+                LEFT JOIN Category c ON r.category_id = c.category_id
+                LEFT JOIN User u ON r.user_id = u.user_id
+                WHERE ce.employee_id = :employee_id
+            ");
             $stmt->execute(['employee_id' => $employeeId]);
             $employee = $stmt->fetch(PDO::FETCH_ASSOC);
             return $this->transformEmployee($employee);
@@ -112,9 +128,15 @@ class CompanyEmployeeModel {
     public function getBySpecialty($companyId, $specialty) {
         try {
             $stmt = $this->db->prepare("
-                SELECT * FROM CompanyEmployee 
-                WHERE company_id = :company_id AND specialty = :specialty
-                ORDER BY rating DESC
+                SELECT ce.*, r.f_name as first_name, r.l_name as last_name, u.email, u.contact_no as phone,
+                       c.name as specialty, r.experience_years, r.average_rating as rating,
+                       r.hourly_rate as applicant_hourly_rate, u.profile_pic as profile_photo
+                FROM company_employees ce
+                LEFT JOIN Repairer r ON ce.repairer_id = r.repairer_id
+                LEFT JOIN Category c ON r.category_id = c.category_id
+                LEFT JOIN User u ON r.user_id = u.user_id
+                WHERE ce.company_id = :company_id AND c.name = :specialty
+                ORDER BY r.average_rating DESC
             ");
             $stmt->execute([
                 'company_id' => $companyId,
@@ -138,17 +160,20 @@ class CompanyEmployeeModel {
             // Get summary by specialty
             $stmt = $this->db->prepare("
                 SELECT 
-                    specialty,
-                    total_count,
-                    active_count,
-                    inactive_count,
-                    avg_rating,
-                    avg_hourly_rate,
-                    min_hourly_rate,
-                    max_hourly_rate
-                FROM StaffSummary
-                WHERE company_id = :company_id
-                ORDER BY specialty
+                    c.name as specialty,
+                    COUNT(*) as total_count,
+                    SUM(CASE WHEN ce.status = 'active' THEN 1 ELSE 0 END) as active_count,
+                    SUM(CASE WHEN ce.status = 'inactive' THEN 1 ELSE 0 END) as inactive_count,
+                    AVG(r.average_rating) as avg_rating,
+                    AVG(ce.hourly_rate) as avg_hourly_rate,
+                    MIN(ce.hourly_rate) as min_hourly_rate,
+                    MAX(ce.hourly_rate) as max_hourly_rate
+                FROM company_employees ce
+                LEFT JOIN Repairer r ON ce.repairer_id = r.repairer_id
+                LEFT JOIN Category c ON r.category_id = c.category_id
+                WHERE ce.company_id = :company_id
+                GROUP BY c.name
+                ORDER BY c.name
             ");
             $stmt->execute(['company_id' => $companyId]);
             $specialties = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -157,13 +182,14 @@ class CompanyEmployeeModel {
             $stmt = $this->db->prepare("
                 SELECT 
                     COUNT(*) as total_employees,
-                    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_employees,
-                    SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) as inactive_employees,
-                    SUM(CASE WHEN status = 'on_leave' THEN 1 ELSE 0 END) as on_leave_employees,
-                    AVG(rating) as avg_rating,
-                    AVG(hourly_rate) as avg_hourly_rate
-                FROM CompanyEmployee
-                WHERE company_id = :company_id
+                    SUM(CASE WHEN ce.status = 'active' THEN 1 ELSE 0 END) as active_employees,
+                    SUM(CASE WHEN ce.status = 'inactive' THEN 1 ELSE 0 END) as inactive_employees,
+                    SUM(CASE WHEN ce.status = 'suspended' THEN 1 ELSE 0 END) as on_leave_employees,
+                    AVG(r.average_rating) as avg_rating,
+                    AVG(ce.hourly_rate) as avg_hourly_rate
+                FROM company_employees ce
+                LEFT JOIN Repairer r ON ce.repairer_id = r.repairer_id
+                WHERE ce.company_id = :company_id
             ");
             $stmt->execute(['company_id' => $companyId]);
             $totals = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -195,32 +221,24 @@ class CompanyEmployeeModel {
     public function create($data) {
         try {
             $stmt = $this->db->prepare("
-                INSERT INTO CompanyEmployee (
-                    company_id, repairer_id, first_name, last_name, email, phone,
-                    specialty, hourly_rate, rating, status, hire_date, 
-                    experience_years, certification_details, profile_photo
+                INSERT INTO company_employees (
+                    company_id, repairer_id, job_title, employment_type,
+                    status, hired_date, hourly_rate, notes
                 ) VALUES (
-                    :company_id, :repairer_id, :first_name, :last_name, :email, :phone,
-                    :specialty, :hourly_rate, :rating, :status, :hire_date,
-                    :experience_years, :certification_details, :profile_photo
+                    :company_id, :repairer_id, :job_title, :employment_type,
+                    :status, :hire_date, :hourly_rate, :notes
                 )
             ");
             
             $stmt->execute([
                 'company_id' => $data['company_id'],
-                'repairer_id' => $data['repairer_id'] ?? null,
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'email' => $data['email'] ?? null,
-                'phone' => $data['phone'] ?? null,
-                'specialty' => $data['specialty'],
-                'hourly_rate' => $data['hourly_rate'] ?? 0,
-                'rating' => $data['rating'] ?? 0,
+                'repairer_id' => $data['repairer_id'],
+                'job_title' => $data['job_title'] ?? null,
+                'employment_type' => $data['employment_type'] ?? 'freelance',
                 'status' => $data['status'] ?? 'active',
                 'hire_date' => $data['hire_date'] ?? date('Y-m-d'),
-                'experience_years' => $data['experience_years'] ?? 0,
-                'certification_details' => $data['certification_details'] ?? null,
-                'profile_photo' => $data['profile_photo'] ?? null
+                'hourly_rate' => $data['hourly_rate'] ?? null,
+                'notes' => $data['notes'] ?? null
             ]);
             
             return [
@@ -244,34 +262,22 @@ class CompanyEmployeeModel {
     public function update($employeeId, $data) {
         try {
             $stmt = $this->db->prepare("
-                UPDATE CompanyEmployee SET
-                    first_name = :first_name,
-                    last_name = :last_name,
-                    email = :email,
-                    phone = :phone,
-                    specialty = :specialty,
-                    hourly_rate = :hourly_rate,
-                    rating = :rating,
+                UPDATE company_employees SET
+                    job_title = :job_title,
+                    employment_type = :employment_type,
                     status = :status,
-                    experience_years = :experience_years,
-                    certification_details = :certification_details,
-                    profile_photo = :profile_photo
+                    hourly_rate = :hourly_rate,
+                    notes = :notes
                 WHERE employee_id = :employee_id
             ");
             
             $stmt->execute([
                 'employee_id' => $employeeId,
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'email' => $data['email'] ?? null,
-                'phone' => $data['phone'] ?? null,
-                'specialty' => $data['specialty'],
-                'hourly_rate' => $data['hourly_rate'] ?? 0,
-                'rating' => $data['rating'] ?? 0,
+                'job_title' => $data['job_title'] ?? null,
+                'employment_type' => $data['employment_type'] ?? 'freelance',
                 'status' => $data['status'] ?? 'active',
-                'experience_years' => $data['experience_years'] ?? 0,
-                'certification_details' => $data['certification_details'] ?? null,
-                'profile_photo' => $data['profile_photo'] ?? null
+                'hourly_rate' => $data['hourly_rate'] ?? null,
+                'notes' => $data['notes'] ?? null
             ]);
             
             return [
@@ -294,7 +300,7 @@ class CompanyEmployeeModel {
     public function updateStatus($employeeId, $status) {
         try {
             $stmt = $this->db->prepare("
-                UPDATE CompanyEmployee 
+                UPDATE company_employees 
                 SET status = :status 
                 WHERE employee_id = :employee_id
             ");
@@ -323,7 +329,7 @@ class CompanyEmployeeModel {
      */
     public function delete($employeeId) {
         try {
-            $stmt = $this->db->prepare("DELETE FROM CompanyEmployee WHERE employee_id = :employee_id");
+            $stmt = $this->db->prepare("DELETE FROM company_employees WHERE employee_id = :employee_id");
             $stmt->execute(['employee_id' => $employeeId]);
             
             return [

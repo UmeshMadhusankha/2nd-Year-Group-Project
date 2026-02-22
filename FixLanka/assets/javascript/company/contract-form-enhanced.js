@@ -54,6 +54,15 @@
         if (submitBtn) submitBtn.addEventListener('click', submitContract);
         if (saveDraftBtn) saveDraftBtn.addEventListener('click', saveDraft);
 
+        // Prevent default form submission (e.g. Enter key)
+        const form = document.getElementById('contractForm');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                return false;
+            });
+        }
+
         // Quotation selector
         const selector = document.getElementById('quotationSelector');
         if (selector) selector.addEventListener('change', onQuotationSelected);
@@ -84,32 +93,52 @@
         const addMsBtn = document.getElementById('addMilestoneBtn');
         if (addMsBtn) addMsBtn.addEventListener('click', addMilestoneRow);
 
-        // Delegation for remove milestone buttons AND percentage input changes
-        const msBody = document.getElementById('milestonesBody');
-        if (msBody) {
-            msBody.addEventListener('click', function (e) {
-                const btn = e.target.closest('.btn-remove-ms');
-                if (btn) {
-                    btn.closest('tr').remove();
-                    renumberMilestones();
-                    recalcMilestoneTotals();
-                }
-            });
-            msBody.addEventListener('input', function (e) {
-                if (e.target.classList.contains('ms-pct-input')) {
-                    recalcMilestoneAmountFromPct(e.target);
-                    recalcMilestoneTotals();
-                }
-            });
-        }
+        // Sidebar "Edit milestones" link in Payment step
 
-        // "Edit milestones" link in payment section → go to Step 6 (Timeline)
+
+        // Delegation for remove milestone buttons AND percentage input changes (Document level for robustness)
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.btn-remove-ms');
+            if (btn && document.getElementById('milestonesBody')?.contains(btn)) {
+                // Feature: Prevent deletion of last remaining phase
+                const rows = document.querySelectorAll('#milestonesBody .milestone-row');
+                if (rows.length <= 1) {
+                    showNotification('error', 'Action Denied', 'At least one phase is required. You cannot delete the last remaining phase.');
+                    return;
+                }
+
+                // Feature: Two-step confirmation
+                if (confirm('Are you sure you want to delete this phase? This action cannot be undone.')) {
+                    btn.closest('tr').remove();
+                    if (typeof renumberMilestones === 'function') renumberMilestones();
+                    if (typeof recalcMilestoneTotals === 'function') recalcMilestoneTotals();
+                    if (typeof generatePaymentPreview === 'function') generatePaymentPreview();
+                }
+            }
+        });
+
+        document.addEventListener('input', function (e) {
+            const msBody = document.getElementById('milestonesBody');
+            if (!msBody || !msBody.contains(e.target)) return;
+
+            // If percentage changed
+            if (e.target.classList.contains('ms-pct-input')) {
+                if (typeof recalcMilestoneAmountFromPct === 'function') recalcMilestoneAmountFromPct(e.target);
+                if (typeof recalcMilestoneTotals === 'function') recalcMilestoneTotals();
+                if (typeof generatePaymentPreview === 'function') generatePaymentPreview();
+            }
+            // If any other input changed (name, date, amount directly)
+            else if (e.target.tagName === 'INPUT') {
+                if (typeof generatePaymentPreview === 'function') generatePaymentPreview();
+            }
+        });
+
+        // "Edit milestones" link in payment section (Step 5) → validate & go to Step 6 (Milestones)
         const goToMsLink = document.getElementById('goToMilestonesLink');
         if (goToMsLink) {
             goToMsLink.addEventListener('click', function (e) {
                 e.preventDefault();
-                currentStep = 6;
-                showStep(6);
+                goNext();
             });
         }
 
@@ -152,6 +181,8 @@
         const modal = document.getElementById('newContractModal');
         if (modal) {
             modal.classList.add('active');
+            document.body.classList.add('enhanced-form-active'); // Signal to legacy scripts
+            window.enhancedFormActive = true;
             resetForm();
             loadQuotations();
         }
@@ -162,7 +193,11 @@
             if (!confirm('You have unsaved changes. Are you sure you want to close?')) return;
         }
         const modal = document.getElementById('newContractModal');
-        if (modal) modal.classList.remove('active');
+        if (modal) {
+            modal.classList.remove('active');
+            document.body.classList.remove('enhanced-form-active');
+            window.enhancedFormActive = false;
+        }
         resetForm();
     }
 
@@ -271,11 +306,18 @@
         let valid = true;
 
         switch (currentStep) {
-            case 1: // Quotation selection
-                const qSel = document.getElementById('quotationSelector');
-                if (!qSel || !qSel.value) {
-                    showFieldError(qSel, 'Please select an accepted quotation');
-                    valid = false;
+            case 1: // Quotation or Contract ID validation
+                const editContractId = document.getElementById('editContractId')?.value;
+                if (editContractId) {
+                    // EDIT MODE: Validate contract ID is present (quotation already linked)
+                    // No further Step 1 validation needed — contract is identified by ID
+                } else {
+                    // NEW CONTRACT MODE: Must select a quotation
+                    const qSel = document.getElementById('quotationSelector');
+                    if (!qSel || !qSel.value) {
+                        showFieldError(qSel, 'Please select an accepted quotation');
+                        valid = false;
+                    }
                 }
                 break;
 
@@ -287,7 +329,7 @@
                 valid = validateRequired(step, ['scopeDescription']);
                 break;
 
-            case 5: // Payments (was step 6)
+            case 5: // Payments (Swapped from 6)
                 valid = validateRequired(step, ['contractValue']);
                 if (valid) {
                     const val = parseFloat(document.getElementById('contractValue').value);
@@ -295,22 +337,10 @@
                         showFieldError(document.getElementById('contractValue'), 'Contract value must be greater than zero');
                         valid = false;
                     }
-                    // Validate milestone totals when milestone_based
-                    if (valid && document.getElementById('paymentMethod')?.value === 'milestone_based') {
-                        let totalPct = 0;
-                        document.querySelectorAll('#milestonesBody .milestone-row .ms-pct-input').forEach(input => {
-                            totalPct += parseFloat(input.value || 0);
-                        });
-                        if (Math.abs(totalPct - 100) > 0.5) {
-                            const paymentField = document.getElementById('paymentMethod');
-                            showFieldError(paymentField, `Milestone percentages total ${totalPct.toFixed(0)}% — they must equal 100%. Go to Step 6 to fix.`);
-                            valid = false;
-                        }
-                    }
                 }
                 break;
 
-            case 6: // Timeline (was step 5)
+            case 6: // Timeline & Milestones (Swapped from 5)
                 valid = validateRequired(step, ['startDate', 'endDate']);
                 if (valid) {
                     const start = new Date(document.getElementById('startDate').value);
@@ -318,6 +348,19 @@
                     if (end <= start) {
                         showFieldError(document.getElementById('endDate'), 'End date must be after start date');
                         valid = false;
+                    }
+
+                    // Validate milestone totals for ALL methods (since columns are always visible)
+                    if (valid) {
+                        let totalPct = 0;
+                        document.querySelectorAll('#milestonesBody .milestone-row .ms-pct-input').forEach(input => {
+                            totalPct += parseFloat(input.value || 0);
+                        });
+                        if (Math.abs(totalPct - 100) > 0.5) {
+                            const addBtn = document.getElementById('addMilestoneBtn');
+                            showFieldError(addBtn, `Phase percentages total ${totalPct.toFixed(0)}% — they must equal 100%. Adjust phase percentages below.`);
+                            valid = false;
+                        }
                     }
                 }
                 break;
@@ -644,10 +687,10 @@
         const method = document.getElementById('paymentMethod')?.value;
         const isMilestone = method === 'milestone_based';
 
-        // Toggle payment columns in milestone table (Step 6)
-        toggleMilestonePaymentColumns(isMilestone);
+        // ALWAYS show payment columns in timeline (Step 6) as requested
+        toggleMilestonePaymentColumns(true);
 
-        // Toggle info banners
+        // Toggle info banners (keep these specific to method for clarity)
         const trackingInfo = document.getElementById('mpliTracking');
         const paymentInfo = document.getElementById('mpliPayment');
         if (trackingInfo) trackingInfo.style.display = isMilestone ? 'none' : 'flex';
@@ -657,13 +700,32 @@
         const notice = document.getElementById('milestonePaymentNotice');
         if (notice) notice.style.display = isMilestone ? 'flex' : 'none';
 
-        // Recalc amounts if switching to milestone
-        if (isMilestone) {
-            recalcMilestoneAmountsAll();
-            recalcMilestoneTotals();
-        }
+        // Recalc amounts for ALL methods now
+        autoDistributePayment(method);
+        recalcMilestoneAmountsAll();
+        recalcMilestoneTotals();
 
         generatePaymentPreview();
+    }
+
+    function autoDistributePayment(method) {
+        const rows = document.querySelectorAll('#milestonesBody .milestone-row');
+        if (rows.length === 0) return;
+
+        if (method === 'full_upfront') {
+            // First row 100%, others 0%
+            rows.forEach((row, index) => {
+                const input = row.querySelector('.ms-pct-input');
+                if (input) input.value = (index === 0) ? 100 : 0;
+            });
+        } else if (method === 'completion') {
+            // Last row 100%, others 0%
+            rows.forEach((row, index) => {
+                const input = row.querySelector('.ms-pct-input');
+                if (input) input.value = (index === rows.length - 1) ? 100 : 0;
+            });
+        }
+        // For other methods (milestone_based, 50_50, 30_70), we respect user input or defaults
     }
 
     function toggleMilestonePaymentColumns(show) {
@@ -699,6 +761,9 @@
     }
 
     function recalcMilestoneTotals() {
+        // Always run validation as columns are now always visible
+        const warning = document.getElementById('msTotalWarning');
+
         let totalPct = 0;
         let totalAmount = 0;
         document.querySelectorAll('#milestonesBody .milestone-row').forEach(row => {
@@ -711,22 +776,21 @@
         if (totalAmountEl) totalAmountEl.textContent = totalAmount.toLocaleString();
 
         // Validation warning
-        const warning = document.getElementById('msTotalWarning');
         const warningText = document.getElementById('msTotalWarningText');
         const contractValue = parseFloat(getVal('contractValue') || 0);
 
         if (warning && warningText) {
             if (Math.abs(totalPct - 100) > 0.5) {
                 warning.style.display = 'flex';
-                warningText.textContent = `Milestone percentages total ${totalPct.toFixed(0)}% — they must equal 100%.`;
+                warningText.textContent = `Phase percentages total ${totalPct.toFixed(0)}% — they must equal 100%.`;
                 warning.className = 'milestone-total-warning error';
             } else if (contractValue > 0 && Math.abs(totalAmount - contractValue) > 1) {
                 warning.style.display = 'flex';
-                warningText.textContent = `Milestone amounts (LKR ${totalAmount.toLocaleString()}) don't match contract value (LKR ${contractValue.toLocaleString()}).`;
+                warningText.textContent = `Phase amounts (LKR ${totalAmount.toLocaleString()}) don't match contract value (LKR ${contractValue.toLocaleString()}).`;
                 warning.className = 'milestone-total-warning error';
             } else if (totalPct > 0) {
                 warning.style.display = 'flex';
-                warningText.textContent = `✓ Milestones total 100% — LKR ${totalAmount.toLocaleString()}`;
+                warningText.textContent = `✓ Phases total 100% — LKR ${totalAmount.toLocaleString()}`;
                 warning.className = 'milestone-total-warning success';
             } else {
                 warning.style.display = 'none';
@@ -860,11 +924,11 @@
         tr.className = 'milestone-row';
         tr.innerHTML = `
             <td>${rowCount}</td>
-            <td><input type="text" name="ms_name[]" placeholder="Milestone name"></td>
+            <td><input type="text" name="ms_name[]" placeholder="Phase name"></td>
             <td><input type="text" name="ms_desc[]" placeholder="Description"></td>
             <td><input type="date" name="ms_date[]"></td>
-            <td class="ms-payment-col" style="display:${display}"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1"></td>
-            <td class="ms-payment-col" style="display:${display}"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
+            <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1"></td>
+            <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
             <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
         `;
         tbody.appendChild(tr);
@@ -890,8 +954,8 @@
                 <td><input type="text" name="ms_name[]" placeholder="Project Start" value="Project Commencement"></td>
                 <td><input type="text" name="ms_desc[]" placeholder="Description" value="Site preparation and initial setup"></td>
                 <td><input type="date" name="ms_date[]"></td>
-                <td class="ms-payment-col" style="display:${display}"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1" value="30"></td>
-                <td class="ms-payment-col" style="display:${display}"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
+                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1" value="30"></td>
+                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
                 <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
             </tr>
             <tr class="milestone-row">
@@ -899,8 +963,8 @@
                 <td><input type="text" name="ms_name[]" placeholder="Midpoint" value="Mid-Project Review"></td>
                 <td><input type="text" name="ms_desc[]" placeholder="Description" value="Progress inspection and quality check"></td>
                 <td><input type="date" name="ms_date[]"></td>
-                <td class="ms-payment-col" style="display:${display}"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1" value="40"></td>
-                <td class="ms-payment-col" style="display:${display}"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
+                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1" value="40"></td>
+                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
                 <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
             </tr>
             <tr class="milestone-row">
@@ -908,8 +972,8 @@
                 <td><input type="text" name="ms_name[]" placeholder="Completion" value="Project Handover"></td>
                 <td><input type="text" name="ms_desc[]" placeholder="Description" value="Final inspection, cleanup, and handover"></td>
                 <td><input type="date" name="ms_date[]"></td>
-                <td class="ms-payment-col" style="display:${display}"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1" value="30"></td>
-                <td class="ms-payment-col" style="display:${display}"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
+                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1" value="30"></td>
+                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
                 <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
             </tr>
         `;
@@ -1052,37 +1116,57 @@
         container.innerHTML = html;
     }
 
+    let isSubmitting = false;
+
     // ===================================
     // FORM SUBMISSION
     // ===================================
-    async function submitContract() {
-        // Final validation
-        if (!validateAllSteps()) return;
+    async function submitContract(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }
 
+        if (isSubmitting) return;
+
+        isSubmitting = true;
         const submitBtn = document.getElementById('formSubmitBtn');
         if (submitBtn) submitBtn.disabled = true;
+
+        // Final validation (skips Step 1 in edit mode)
+        if (!validateAllSteps()) {
+            isSubmitting = false;
+            if (submitBtn) submitBtn.disabled = false;
+            return;
+        }
 
         try {
             const payload = collectFormData();
             const editId = getVal('editContractId');
             const isEdit = editId && editId.length > 0;
-            
-            let url, successMsg;
-            
+
+            // Safety check: in edit mode, contract ID must exist
+            if (isEdit && !editId) {
+                showNotification('error', 'Error', 'Contract ID is missing. Cannot save changes.');
+                return;
+            }
+
+            let url, method;
+
             if (isEdit) {
-                // Update existing contract
+                // UPDATE existing contract using its database ID
                 url = `/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=update&id=${editId}`;
                 payload.contract_id = editId;
-                successMsg = 'Contract updated successfully!';
+                method = 'POST';
             } else {
-                // Create new contract
+                // CREATE new contract from quotation
                 url = `${ENHANCED_API}?action=create`;
                 payload.send_to_customer = true;
-                successMsg = null; // Will use dynamic message below
+                method = 'POST';
             }
 
             const response = await fetch(url, {
-                method: 'POST',
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
@@ -1091,27 +1175,41 @@
 
             if (result.success) {
                 formDirty = false;
-                closeModal();
-                
-                // Clear edit ID
-                const editField = document.getElementById('editContractId');
-                if (editField) editField.value = '';
+
+                // Close modal immediately
+                const modal = document.getElementById('newContractModal');
+                if (modal) {
+                    modal.classList.remove('active');
+                    document.body.classList.remove('enhanced-form-active');
+                    window.enhancedFormActive = false;
+                    document.body.style.overflow = '';
+                }
 
                 // Show success notification
                 if (isEdit) {
-                    showNotification('success', successMsg, 'Your changes have been saved.');
+                    showNotification('success', 'Contract updated successfully!', 'Your changes have been saved.');
                 } else {
                     showNotification(
                         'success',
-                        `Contract ${result.data.contract_number} created & sent!`,
+                        `Contract ${result.data?.contract_number || ''} created & sent!`,
                         'The contract has been sent to the customer for review.'
                     );
                 }
 
-                // Reload contracts list
-                if (typeof loadContractsData === 'function') {
-                    loadContractsData();
-                }
+                // Reset form and reload data AFTER modal is hidden
+                setTimeout(() => {
+                    resetForm();
+
+                    // Clear edit state
+                    const editField = document.getElementById('editContractId');
+                    if (editField) editField.value = '';
+
+                    // Reload the contracts list
+                    if (typeof loadContractsData === 'function') {
+                        loadContractsData();
+                    }
+                }, 400);
+
             } else {
                 showNotification('error', 'Failed to save contract', result.message || 'Unknown error');
             }
@@ -1120,7 +1218,11 @@
             console.error('Submit error:', error);
             showNotification('error', 'Error', 'Failed to connect to the server. Please try again.');
         } finally {
-            if (submitBtn) submitBtn.disabled = false;
+            isSubmitting = false;
+            const submitBtn = document.getElementById('formSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+            }
         }
     }
 
@@ -1232,7 +1334,11 @@
         const origStep = currentStep;
         let allValid = true;
 
-        for (let s = 1; s <= TOTAL_STEPS - 1; s++) {
+        // In edit mode, skip Step 1 (quotation selection) — quotation is already assigned
+        const isEditMode = !!document.getElementById('editContractId')?.value;
+        const startStep = isEditMode ? 2 : 1;
+
+        for (let s = startStep; s <= TOTAL_STEPS - 1; s++) {
             currentStep = s;
             if (!validateCurrentStep()) {
                 showStep(s);
@@ -1375,42 +1481,44 @@
     // ===================================
     // EXPOSE EDIT MODE TO EXTERNAL CODE
     // ===================================
-    window.openContractForEdit = function(contractData) {
+    window.openContractForEdit = function (contractData) {
         const modal = document.getElementById('newContractModal');
         if (!modal) return;
-        
+
         // Reset form first
         const form = document.getElementById('contractForm');
         if (form) form.reset();
-        
+
         // Set edit contract ID after reset
         const editField = document.getElementById('editContractId');
         if (editField) editField.value = contractData.contract_id;
-        
+
         // Populate form with existing contract data (global function from contracts-enhanced.js)
         if (typeof populateFormWithContract === 'function') {
             populateFormWithContract(contractData);
         }
-        
+
         // Update title & button
         const titleEl = document.getElementById('formModalTitle');
         if (titleEl) titleEl.textContent = 'Edit Contract';
         const submitBtn = document.getElementById('formSubmitBtn');
         if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-        
+
         // Skip to step 2 (project details) — Step 1 is quotation selection, not editable
         currentStep = 2;
         showStep(2);
         updateStepIndicators();
-        
+
         // Mark step 1 as completed in progress bar
         document.querySelectorAll('.progress-step').forEach(el => {
             const step = parseInt(el.dataset.step);
             if (step === 1) el.classList.add('completed');
         });
-        
+
         // Open modal
         modal.classList.add('active');
+        document.body.classList.add('enhanced-form-active');
+        window.enhancedFormActive = true;
         document.body.style.overflow = 'hidden';
         formDirty = false;
     };
