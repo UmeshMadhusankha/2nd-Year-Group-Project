@@ -358,9 +358,9 @@ let currentRepairerStatus = 'available'; // available, busy
 // INITIALIZATION
 // ================================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const currentPage = window.location.pathname;
-    
+
     if (currentPage.includes('job-postings.php')) {
         loadJobPostings();
     } else if (currentPage.includes('my-applications.php')) {
@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadMessages();
         updateContractStats();
     }
-    
+
     // Initialize cover letter character counter
     const coverLetterInput = document.getElementById('coverLetter');
     if (coverLetterInput) {
@@ -387,14 +387,14 @@ document.addEventListener('DOMContentLoaded', function() {
 function loadJobPostings() {
     const jobsGrid = document.getElementById('jobsGrid');
     if (!jobsGrid) return;
-    
+
     jobsGrid.innerHTML = '';
-    
+
     jobPostingsData.forEach(job => {
         const jobCard = createJobCard(job);
         jobsGrid.appendChild(jobCard);
     });
-    
+
     // Update job count
     const jobCountEl = document.getElementById('jobCount');
     if (jobCountEl) {
@@ -406,9 +406,9 @@ function createJobCard(job) {
     const card = document.createElement('div');
     card.className = 'job-card';
     card.onclick = () => viewJobDetails(job.id);
-    
+
     const priorityBadge = job.priority === 'Urgent' ? 'urgent' : 'active';
-    
+
     card.innerHTML = `
         <div class="job-card-header">
             <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
@@ -445,14 +445,14 @@ function createJobCard(job) {
             </button>
         </div>
     `;
-    
+
     return card;
 }
 
 function viewJobDetails(jobId) {
     const job = jobPostingsData.find(j => j.id === jobId);
     if (!job) return;
-    
+
     // Populate drawer with job details
     document.getElementById('jobCompanyAvatar').textContent = job.companyAvatar;
     document.getElementById('jobDetailTitle').textContent = job.title;
@@ -468,12 +468,12 @@ function viewJobDetails(jobId) {
     document.getElementById('jobDeadline').textContent = job.deadline;
     document.getElementById('jobDescription').textContent = job.description;
     document.getElementById('jobLocationRequirements').textContent = job.locationRequirements;
-    
+
     // Update status badge
     const statusBadge = document.getElementById('jobStatusBadge');
     statusBadge.textContent = job.status.charAt(0).toUpperCase() + job.status.slice(1);
     statusBadge.className = `job-badge ${job.status}`;
-    
+
     // Populate skills
     const skillsContainer = document.getElementById('jobSkillsTags');
     skillsContainer.innerHTML = '';
@@ -483,10 +483,10 @@ function viewJobDetails(jobId) {
         skillTag.textContent = skill;
         skillsContainer.appendChild(skillTag);
     });
-    
+
     // Store job ID for application
     document.getElementById('jobDetailsDrawer').dataset.jobId = jobId;
-    
+
     // Open drawer
     document.getElementById('jobDetailsDrawer').classList.add('active');
 }
@@ -499,18 +499,18 @@ function openApplicationForm() {
     const jobId = document.getElementById('jobDetailsDrawer').dataset.jobId;
     const job = jobPostingsData.find(j => j.id == jobId);
     if (!job) return;
-    
+
     // Populate application form
     document.getElementById('applyingJobTitle').textContent = job.title;
     document.getElementById('applyingCompanyName').textContent = job.company;
     document.getElementById('jobBudgetRange').textContent = job.budget;
-    
+
     // Store job ID
     document.getElementById('applicationFormDrawer').dataset.jobId = jobId;
-    
+
     // Close job details drawer
     closeJobDetailsDrawer();
-    
+
     // Open application form drawer
     document.getElementById('applicationFormDrawer').classList.add('active');
 }
@@ -525,17 +525,17 @@ function submitApplication() {
     const proposedRate = document.getElementById('proposedRate').value;
     const availability = document.getElementById('availability').value;
     const coverLetter = document.getElementById('coverLetter').value;
-    
+
     if (!proposedRate || !availability || !coverLetter) {
         showNotification('Please fill in all required fields', 'error');
         return;
     }
-    
+
     // In production, send to server
-    
+
     showNotification('Application submitted successfully!', 'success');
     closeApplicationFormDrawer();
-    
+
     // Optionally reload the applications tab
     setTimeout(() => {
         // Reload applications instead of redirecting to a non-existent page
@@ -558,7 +558,7 @@ function filterJobsByCategory(category) {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
-    
+
     // Filter jobs
     const jobCards = document.querySelectorAll('.job-card');
     jobCards.forEach(card => {
@@ -575,7 +575,7 @@ function filterJobsByCategory(category) {
 function searchJobs() {
     const searchTerm = document.getElementById('jobSearchInput').value.toLowerCase();
     const jobCards = document.querySelectorAll('.job-card');
-    
+
     jobCards.forEach(card => {
         const text = card.textContent.toLowerCase();
         card.style.display = text.includes(searchTerm) ? 'block' : 'none';
@@ -594,9 +594,9 @@ function refreshJobPostings() {
 function loadApplications() {
     const applicationsList = document.getElementById('applicationsList');
     if (!applicationsList) return;
-    
+
     applicationsList.innerHTML = '';
-    
+
     if (applicationsData.length === 0) {
         applicationsList.innerHTML = `
             <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
@@ -610,12 +610,12 @@ function loadApplications() {
         `;
         return;
     }
-    
+
     applicationsData.forEach(app => {
         const appCard = createApplicationCard(app);
         applicationsList.appendChild(appCard);
     });
-    
+
     // Update application count
     const appCountEl = document.getElementById('appCount');
     if (appCountEl) {
@@ -627,12 +627,12 @@ function createApplicationCard(app) {
     const card = document.createElement('div');
     card.className = 'application-card';
     card.onclick = () => viewApplicationDetails(app.id);
-    
-    const iconClass = app.status === 'pending' ? 'pending' : 
-                      app.status === 'accepted' ? 'accepted' : 'rejected';
+
+    const iconClass = app.status === 'pending' ? 'pending' :
+        app.status === 'accepted' ? 'accepted' : 'rejected';
     const icon = app.status === 'pending' ? 'fa-clock' :
-                 app.status === 'accepted' ? 'fa-check-circle' : 'fa-times-circle';
-    
+        app.status === 'accepted' ? 'fa-check-circle' : 'fa-times-circle';
+
     card.innerHTML = `
         <div class="application-icon ${iconClass}">
             <i class="fas ${icon}"></i>
@@ -648,20 +648,20 @@ function createApplicationCard(app) {
         </div>
         <span class="status-badge ${app.status}">${app.status.charAt(0).toUpperCase() + app.status.slice(1)}</span>
     `;
-    
+
     return card;
 }
 
 function viewApplicationDetails(applicationId) {
     const app = applicationsData.find(a => a.id === applicationId);
     if (!app) return;
-    
+
     // Update status banner
     const statusBanner = document.getElementById('appStatusBanner');
     const statusIcon = document.getElementById('appStatusIcon');
     const statusTitle = document.getElementById('appStatusTitle');
     const statusMessage = document.getElementById('appStatusMessage');
-    
+
     statusBanner.className = 'application-status-banner';
     if (app.status === 'accepted') {
         statusBanner.classList.add('accepted');
@@ -678,7 +678,7 @@ function viewApplicationDetails(applicationId) {
         statusTitle.textContent = 'Application Under Review';
         statusMessage.textContent = 'Your application is being reviewed by the company';
     }
-    
+
     // Populate application details
     document.getElementById('appJobTitle').textContent = app.jobTitle;
     document.getElementById('appCompanyName').textContent = app.company;
@@ -688,12 +688,12 @@ function viewApplicationDetails(applicationId) {
     document.getElementById('appProposedRate').textContent = `LKR ${app.proposedRate.toLocaleString()}/hr`;
     document.getElementById('appAvailability').textContent = app.availability;
     document.getElementById('appCoverLetter').textContent = app.coverLetter;
-    
+
     // Update status badge
     const statusBadge = document.getElementById('appStatusBadge');
     statusBadge.textContent = app.status.charAt(0).toUpperCase() + app.status.slice(1);
     statusBadge.className = `status-badge ${app.status}`;
-    
+
     // Populate timeline
     const timeline = document.getElementById('appTimeline');
     timeline.innerHTML = '';
@@ -709,12 +709,12 @@ function viewApplicationDetails(applicationId) {
         `;
         timeline.appendChild(timelineItem);
     });
-    
+
     // Show/hide withdraw button
     const withdrawBtn = document.getElementById('withdrawBtn');
     withdrawBtn.style.display = app.status === 'pending' ? 'inline-flex' : 'none';
     withdrawBtn.onclick = () => withdrawApplication(app.id);
-    
+
     // Open drawer
     document.getElementById('applicationDetailsDrawer').classList.add('active');
 }
@@ -727,12 +727,12 @@ function withdrawApplication(applicationId) {
     if (!confirm('Are you sure you want to withdraw this application?')) {
         return;
     }
-    
+
     // In production, send to server
-    
+
     showNotification('Application withdrawn successfully', 'success');
     closeApplicationDetailsDrawer();
-    
+
     // Refresh applications
     setTimeout(() => {
         loadApplications();
@@ -746,7 +746,7 @@ function filterApplications(status) {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
-    
+
     // Filter applications
     const appCards = document.querySelectorAll('.application-card');
     appCards.forEach(card => {
@@ -762,7 +762,7 @@ function filterApplications(status) {
 function searchApplications() {
     const searchTerm = document.getElementById('applicationSearchInput').value.toLowerCase();
     const appCards = document.querySelectorAll('.application-card');
-    
+
     appCards.forEach(card => {
         const text = card.textContent.toLowerCase();
         card.style.display = text.includes(searchTerm) ? 'flex' : 'none';
@@ -774,12 +774,12 @@ function updateApplicationStats() {
     const accepted = applicationsData.filter(a => a.status === 'accepted').length;
     const rejected = applicationsData.filter(a => a.status === 'rejected').length;
     const total = applicationsData.length;
-    
+
     const pendingEl = document.getElementById('pendingCount');
     const acceptedEl = document.getElementById('acceptedCount');
     const rejectedEl = document.getElementById('rejectedCount');
     const totalEl = document.getElementById('totalCount');
-    
+
     if (pendingEl) pendingEl.textContent = pending;
     if (acceptedEl) acceptedEl.textContent = accepted;
     if (rejectedEl) rejectedEl.textContent = rejected;
@@ -799,9 +799,9 @@ function refreshApplications() {
 function loadContracts() {
     const contractsGrid = document.getElementById('contractsGrid');
     if (!contractsGrid) return;
-    
+
     contractsGrid.innerHTML = '';
-    
+
     contractsData.forEach(contract => {
         const contractCard = createContractCard(contract);
         contractsGrid.appendChild(contractCard);
@@ -812,7 +812,7 @@ function createContractCard(contract) {
     const card = document.createElement('div');
     card.className = 'contract-card';
     card.onclick = () => viewContractDetails(contract.id);
-    
+
     card.innerHTML = `
         <div class="contract-header">
             <div class="company-avatar">${contract.companyAvatar}</div>
@@ -841,14 +841,14 @@ function createContractCard(contract) {
             </div>
         </div>
     `;
-    
+
     return card;
 }
 
 function viewContractDetails(contractId) {
     const contract = contractsData.find(c => c.id === contractId);
     if (!contract) return;
-    
+
     // Populate contract details
     document.getElementById('contractCompanyAvatar').textContent = contract.companyAvatar;
     document.getElementById('contractCompanyName').textContent = contract.company;
@@ -861,17 +861,17 @@ function viewContractDetails(contractId) {
     document.getElementById('totalEarnings').textContent = `LKR ${contract.totalEarnings.toLocaleString()}`;
     document.getElementById('companyEmail').textContent = contract.email;
     document.getElementById('companyPhone').textContent = contract.phone;
-    
+
     // Update status badge
     const statusBadge = document.getElementById('contractStatus');
     statusBadge.textContent = contract.status.charAt(0).toUpperCase() + contract.status.slice(1);
     statusBadge.className = `status-badge ${contract.status}`;
-    
+
     // Load contract assignments
     const assignmentsTimeline = document.getElementById('contractAssignments');
     assignmentsTimeline.innerHTML = '';
     const contractAssignments = assignmentsData.filter(a => a.contractId === contractId);
-    
+
     contractAssignments.slice(0, 3).forEach(assignment => {
         const assignmentItem = document.createElement('div');
         assignmentItem.className = 'assignment-card';
@@ -885,15 +885,15 @@ function viewContractDetails(contractId) {
                 <span class="status-badge ${assignment.status}">${assignment.status.replace('-', ' ')}</span>
             </div>
             <p style="color: var(--text-secondary); font-size: 14px; margin: 4px 0;">
-                <i class="fas fa-calendar"></i> ${assignment.date} â€¢ ${assignment.time}
+                <i class="fas fa-calendar"></i> ${assignment.date} &bull; ${assignment.time}
             </p>
         `;
         assignmentsTimeline.appendChild(assignmentItem);
     });
-    
+
     // Store contract ID
     document.getElementById('contractDetailsDrawer').dataset.contractId = contractId;
-    
+
     // Open drawer
     document.getElementById('contractDetailsDrawer').classList.add('active');
 }
@@ -905,9 +905,9 @@ function closeContractDetailsDrawer() {
 function loadAssignments() {
     const assignmentsList = document.getElementById('assignmentsList');
     if (!assignmentsList) return;
-    
+
     assignmentsList.innerHTML = '';
-    
+
     assignmentsData.forEach(assignment => {
         const assignmentCard = createAssignmentCard(assignment);
         assignmentsList.appendChild(assignmentCard);
@@ -918,7 +918,7 @@ function createAssignmentCard(assignment) {
     const card = document.createElement('div');
     card.className = `assignment-card ${assignment.priority === 'urgent' ? 'urgent' : ''}`;
     card.onclick = () => viewAssignmentDetails(assignment.id);
-    
+
     card.innerHTML = `
         <div class="assignment-header">
             <div class="assignment-info">
@@ -949,14 +949,14 @@ function createAssignmentCard(assignment) {
             </div>
         </div>
     `;
-    
+
     return card;
 }
 
 function viewAssignmentDetails(assignmentId) {
     const assignment = assignmentsData.find(a => a.id === assignmentId);
     if (!assignment) return;
-    
+
     // Populate assignment details
     document.getElementById('assignmentTitle').textContent = assignment.title;
     document.getElementById('assignmentCompany').textContent = assignment.company;
@@ -965,22 +965,22 @@ function viewAssignmentDetails(assignmentId) {
     document.getElementById('assignmentLocation').textContent = assignment.location;
     document.getElementById('estimatedHours').textContent = `${assignment.estimatedHours} hours`;
     document.getElementById('assignmentDescription').textContent = assignment.description;
-    
+
     // Update priority badge
     const priorityBadge = document.getElementById('assignmentPriority');
     priorityBadge.innerHTML = `<span class="priority-badge ${assignment.priority}">${assignment.priority.charAt(0).toUpperCase() + assignment.priority.slice(1)} Priority</span>`;
-    
+
     // Update status badge
     const statusBadge = document.getElementById('assignmentStatus');
     statusBadge.textContent = assignment.status.replace('-', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     statusBadge.className = `status-badge ${assignment.status}`;
-    
+
     // Set status dropdown
     document.getElementById('jobStatus').value = assignment.status;
-    
+
     // Store assignment ID
     document.getElementById('assignmentDetailsDrawer').dataset.assignmentId = assignmentId;
-    
+
     // Open drawer
     document.getElementById('assignmentDetailsDrawer').classList.add('active');
 }
@@ -991,7 +991,7 @@ function closeAssignmentDetailsDrawer() {
 
 function updateAssignmentStatus() {
     const status = document.getElementById('jobStatus').value;
-    
+
     // Status will be saved when user clicks "Save Update"
 }
 
@@ -999,39 +999,39 @@ function saveProgressUpdate() {
     const assignmentId = document.getElementById('assignmentDetailsDrawer').dataset.assignmentId;
     const status = document.getElementById('jobStatus').value;
     const note = document.getElementById('progressNote').value;
-    
+
     // In production, send to server
-    
+
     showNotification('Progress updated successfully!', 'success');
-    
+
     // Update local data
     const assignment = assignmentsData.find(a => a.id == assignmentId);
     if (assignment) {
         assignment.status = status;
     }
-    
+
     // Refresh UI
     loadAssignments();
 }
 
 function markAssignmentComplete() {
     const assignmentId = document.getElementById('assignmentDetailsDrawer').dataset.assignmentId;
-    
+
     if (!confirm('Mark this assignment as complete?')) {
         return;
     }
-    
+
     // In production, send to server
-    
+
     showNotification('Assignment marked as complete!', 'success');
     closeAssignmentDetailsDrawer();
-    
+
     // Update local data
     const assignment = assignmentsData.find(a => a.id == assignmentId);
     if (assignment) {
         assignment.status = 'completed';
     }
-    
+
     // Refresh UI
     setTimeout(() => {
         loadAssignments();
@@ -1042,14 +1042,14 @@ function markAssignmentComplete() {
 function loadMessages() {
     const conversationsList = document.getElementById('conversationsList');
     if (!conversationsList) return;
-    
+
     conversationsList.innerHTML = '';
-    
+
     messagesData.forEach(message => {
         const conversationCard = createConversationCard(message);
         conversationsList.appendChild(conversationCard);
     });
-    
+
     // Update unread count
     const unreadCount = messagesData.filter(m => m.unread).length;
     const unreadBadge = document.getElementById('sidebarUnreadCount');
@@ -1063,12 +1063,12 @@ function createConversationCard(message) {
     const card = document.createElement('div');
     card.className = `conversation-card ${message.unread ? 'unread' : ''}`;
     card.onclick = () => openChatView(message.id);
-    
+
     // Get last message preview
-    const lastMsg = message.messages && message.messages.length > 0 
-        ? message.messages[message.messages.length - 1].text 
+    const lastMsg = message.messages && message.messages.length > 0
+        ? message.messages[message.messages.length - 1].text
         : message.lastMessage;
-    
+
     card.innerHTML = `
         <div class="conversation-avatar">${message.companyAvatar}</div>
         <div class="conversation-content">
@@ -1081,7 +1081,7 @@ function createConversationCard(message) {
         </div>
         ${message.unread ? '<div class="unread-indicator"></div>' : ''}
     `;
-    
+
     return card;
 }
 
@@ -1090,28 +1090,28 @@ let activeMessageId = null;
 function openChatView(messageId) {
     const message = messagesData.find(m => m.id === messageId);
     if (!message) return;
-    
+
     activeMessageId = messageId;
-    
+
     // Hide empty state, show chat
     document.querySelector('.chat-empty-state').style.display = 'none';
     document.getElementById('chatActive').style.display = 'flex';
-    
+
     // Populate chat header
     document.getElementById('activeChatAvatar').textContent = message.companyAvatar;
     document.getElementById('activeChatCompany').textContent = message.company;
     document.getElementById('activeChatProject').textContent = message.projectName;
-    
+
     // Load messages
     loadChatMessages(message);
-    
+
     // Mark as read
     message.unread = false;
-    
+
     // Refresh conversation list to update unread status
     loadMessages();
     updateContractStats();
-    
+
     // Highlight active conversation
     document.querySelectorAll('.conversation-card').forEach(card => {
         card.classList.remove('active');
@@ -1122,19 +1122,19 @@ function openChatView(messageId) {
 function loadChatMessages(message) {
     const chatMessagesArea = document.getElementById('chatMessagesArea');
     chatMessagesArea.innerHTML = '';
-    
+
     if (!message.messages || message.messages.length === 0) {
         chatMessagesArea.innerHTML = '<div class="no-messages">No messages yet</div>';
         return;
     }
-    
+
     message.messages.forEach(msg => {
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message-item ${msg.sender === 'repairer' ? 'sent' : 'received'}`;
-        
+
         const senderName = msg.sender === 'repairer' ? 'FixLanka Team' : message.company;
         const avatarText = msg.sender === 'repairer' ? 'FL' : message.companyAvatar;
-        
+
         messageDiv.innerHTML = `
             <div class="message-avatar">${avatarText}</div>
             <div class="message-content-wrapper">
@@ -1145,10 +1145,10 @@ function loadChatMessages(message) {
                 <div class="message-bubble-text">${msg.text}</div>
             </div>
         `;
-        
+
         chatMessagesArea.appendChild(messageDiv);
     });
-    
+
     // Scroll to bottom
     chatMessagesArea.scrollTop = chatMessagesArea.scrollHeight;
 }
@@ -1157,7 +1157,7 @@ function closeChatView() {
     document.querySelector('.chat-empty-state').style.display = 'flex';
     document.getElementById('chatActive').style.display = 'none';
     activeMessageId = null;
-    
+
     // Remove active state from all conversations
     document.querySelectorAll('.conversation-card').forEach(card => {
         card.classList.remove('active');
@@ -1167,15 +1167,15 @@ function closeChatView() {
 function sendChatMessage() {
     const chatInput = document.getElementById('chatInput');
     const messageText = chatInput.value.trim();
-    
+
     if (!messageText) {
         showNotification('Please enter a message', 'error');
         return;
     }
-    
+
     const message = messagesData.find(m => m.id == activeMessageId);
     if (!message) return;
-    
+
     // Create timestamp
     const now = new Date();
     const hours = now.getHours();
@@ -1183,28 +1183,28 @@ function sendChatMessage() {
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours % 12 || 12;
     const timeStr = `Today, ${displayHours}:${minutes} ${ampm}`;
-    
+
     // Add to local data
     message.messages.push({
         sender: 'repairer',
         text: messageText,
         timestamp: timeStr
     });
-    
+
     // Update last message
     message.lastMessage = messageText;
     message.time = 'Just now';
-    
+
     // Reload messages in chat
     loadChatMessages(message);
-    
+
     // Clear input
     chatInput.value = '';
     chatInput.style.height = 'auto';
-    
+
     // Refresh conversation list
     loadMessages();
-    
+
     showNotification('Message sent successfully', 'success');
 }
 
@@ -1235,12 +1235,12 @@ function handleMessageKeyPress(event) {
 function sendMessageToCompany() {
     const contractId = document.getElementById('contractDetailsDrawer').dataset.contractId;
     const contract = contractsData.find(c => c.id == contractId);
-    
+
     if (!contract) return;
-    
+
     // Find or create message thread
     let message = messagesData.find(m => m.contractId == contractId);
-    
+
     if (!message) {
         // Create new message thread
         message = {
@@ -1256,9 +1256,9 @@ function sendMessageToCompany() {
         };
         messagesData.push(message);
     }
-    
+
     closeContractDetailsDrawer();
-    
+
     // Switch to messages tab and open thread
     switchTab('messages');
     setTimeout(() => {
@@ -1271,41 +1271,41 @@ function updateContractStats() {
     const activeAssignments = assignmentsData.filter(a => a.status !== 'completed').length;
     const unreadMessages = messagesData.filter(m => m.unread).length;
     const completedJobs = assignmentsData.filter(a => a.status === 'completed').length;
-    
+
     // Calculate total earnings from contracts
     let totalEarnings = 0;
     let pendingPayments = 0;
-    
+
     contractsData.forEach(contract => {
         totalEarnings += contract.totalEarnings || 0;
     });
-    
+
     assignmentsData.forEach(assignment => {
         if (assignment.paymentStatus === 'pending') {
-            const amount = typeof assignment.totalPaid === 'string' 
+            const amount = typeof assignment.totalPaid === 'string'
                 ? parseFloat(assignment.totalPaid.replace(/[^\d.]/g, ''))
                 : assignment.totalPaid;
             pendingPayments += amount || 0;
         }
     });
-    
+
     // Update contract tab stats
     const activeContractsEl = document.getElementById('activeContractsCount');
     const totalContractEarningsEl = document.getElementById('totalContractEarnings');
     const pendingPaymentsEl = document.getElementById('pendingPayments');
-    const completedJobsEl = document.getElementById('completedJobsCount');
-    
+    const completedJobsEl = document.getElementById('completed_jobs_count');
+
     if (activeContractsEl) activeContractsEl.textContent = activeContracts;
     if (totalContractEarningsEl) totalContractEarningsEl.textContent = `LKR ${totalEarnings.toLocaleString()}`;
     if (pendingPaymentsEl) pendingPaymentsEl.textContent = `LKR ${pendingPayments.toLocaleString()}`;
     if (completedJobsEl) completedJobsEl.textContent = completedJobs;
-    
+
     // Update assignments tab stats
     const activeAssignmentsCountEl = document.getElementById('activeAssignmentsCount');
     const pendingAssignmentsEl = document.getElementById('pendingAssignments');
     const completedAssignmentsEl = document.getElementById('completedAssignments');
     const totalHoursEl = document.getElementById('totalHours');
-    
+
     if (activeAssignmentsCountEl) activeAssignmentsCountEl.textContent = activeAssignments;
     if (pendingAssignmentsEl) {
         const pending = assignmentsData.filter(a => a.status === 'pending').length;
@@ -1319,12 +1319,12 @@ function updateContractStats() {
         });
         totalHoursEl.textContent = `${totalHours}h`;
     }
-    
+
     // Update messages tab stats
     const unreadMessagesCountEl = document.getElementById('unreadMessagesCount');
     const totalThreadsEl = document.getElementById('totalThreads');
     const sentMessagesEl = document.getElementById('sentMessages');
-    
+
     if (unreadMessagesCountEl) unreadMessagesCountEl.textContent = unreadMessages;
     if (totalThreadsEl) totalThreadsEl.textContent = messagesData.length;
     if (sentMessagesEl) {
@@ -1334,12 +1334,12 @@ function updateContractStats() {
         });
         sentMessagesEl.textContent = sentCount;
     }
-    
+
     // Update badges
     const contractsBadge = document.getElementById('contractsBadge');
     const assignmentsBadge = document.getElementById('assignmentsBadge');
     const messagesBadge = document.getElementById('messagesBadge');
-    
+
     if (contractsBadge) {
         contractsBadge.textContent = activeContracts;
         contractsBadge.style.display = activeContracts > 0 ? 'inline-block' : 'none';
@@ -1361,7 +1361,7 @@ function switchTab(tabName) {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
-    
+
     // Update tab content within the current section
     const parentContent = parentTabs.closest('.tab-content');
     if (parentContent) {
@@ -1378,17 +1378,17 @@ function switchMainTab(tabName) {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
-    
+
     // Update main tab content
     document.querySelectorAll('.content-wrapper > .tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    
+
     const targetTab = document.getElementById(`${tabName}Tab`);
     if (targetTab) {
         targetTab.classList.add('active');
     }
-    
+
     // Load content for the active tab
     if (tabName === 'browse') {
         loadJobPostings();
@@ -1406,9 +1406,9 @@ function switchMainTab(tabName) {
 function refreshCurrentTab() {
     const activeTab = document.querySelector('.tabs-container > .tabs > .tab-btn.active');
     if (!activeTab) return;
-    
+
     const tabText = activeTab.textContent.trim().toLowerCase();
-    
+
     if (tabText.includes('browse')) {
         showNotification('Refreshing job postings...', 'info');
         loadJobPostings();
@@ -1435,11 +1435,11 @@ function refreshContracts() {
 
 function toggleAvailabilityStatus() {
     currentRepairerStatus = currentRepairerStatus === 'available' ? 'busy' : 'available';
-    
+
     const statusBtn = document.getElementById('statusToggleBtn');
     const statusText = document.getElementById('statusText');
     const statusIcon = statusBtn.querySelector('i');
-    
+
     if (currentRepairerStatus === 'available') {
         statusText.textContent = 'Available';
         if (statusIcon) statusIcon.style.color = '#2ecc71';
@@ -1449,9 +1449,9 @@ function toggleAvailabilityStatus() {
         if (statusIcon) statusIcon.style.color = '#e74c3c';
         showNotification('Status updated to Busy', 'info');
     }
-    
+
     // In production, send to server
-    
+
 }
 
 // ================================================
@@ -1463,7 +1463,7 @@ function getRelativeTime(dateString) {
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) return 'today';
     if (diffDays === 1) return 'yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
@@ -1473,30 +1473,30 @@ function getRelativeTime(dateString) {
 
 function formatDate(dateString) {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric', 
-        year: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
     });
 }
 
 function showNotification(message, type = 'info') {
     // Remove existing notifications
     document.querySelectorAll('.notification').forEach(n => n.remove());
-    
+
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
-    
-    const icon = type === 'success' ? 'check-circle' : 
-                 type === 'error' ? 'exclamation-circle' : 
-                 type === 'warning' ? 'exclamation-triangle' : 'info-circle';
-    
+
+    const icon = type === 'success' ? 'check-circle' :
+        type === 'error' ? 'exclamation-circle' :
+            type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+
     notification.innerHTML = `
         <i class="fas fa-${icon}"></i>
         <span>${message}</span>
         <button onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
     `;
-    
+
     notification.style.cssText = `
         position: fixed;
         top: 20px;
@@ -1512,11 +1512,11 @@ function showNotification(message, type = 'info') {
         z-index: 10000;
         min-width: 300px;
         animation: slideInRight 0.3s ease;
-        border-left: 4px solid ${type === 'success' ? '#27ae60' : 
-                                  type === 'error' ? '#e74c3c' : 
-                                  type === 'warning' ? '#f39c12' : '#3498db'};
+        border-left: 4px solid ${type === 'success' ? '#27ae60' :
+            type === 'error' ? '#e74c3c' :
+                type === 'warning' ? '#f39c12' : '#3498db'};
     `;
-    
+
     notification.querySelector('button').style.cssText = `
         background: none;
         border: none;
@@ -1525,9 +1525,9 @@ function showNotification(message, type = 'info') {
         padding: 4px;
         margin-left: auto;
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         if (notification.parentElement) {
             notification.style.animation = 'slideOutRight 0.3s ease';

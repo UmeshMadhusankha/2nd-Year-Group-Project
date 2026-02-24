@@ -1,0 +1,161 @@
+
+    /**
+     * Get project timeline events
+     * 
+     * @param int $projectId Project ID
+     * @return array List of timeline events sorted by date
+     */
+    public function getTimeline($projectId)
+    {
+        try {
+            $timeline = [];
+
+            // 1. Get Project base events
+            $sql = "SELECT created_at, start_date, end_date, status, title FROM Project WHERE project_id = :project_id";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':project_id' => $projectId]);
+            $project = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($project) {
+                // Project Created
+                if (!empty($project['created_at'])) {
+                    $timeline[] = [
+                        'date' => $project['created_at'],
+                        'title' => 'Project Created',
+                        'description' => 'Project "' . $project['title'] . '" was created',
+                        'type' => 'creation',
+                        'icon' => 'fa-plus-circle'
+                    ];
+                }
+
+                // Project Started
+                if (!empty($project['start_date'])) {
+                    $timeline[] = [
+                        'date' => $project['start_date'],
+                        'title' => 'Start Date',
+                        'description' => 'Scheduled start date',
+                        'type' => 'start',
+                        'icon' => 'fa-calendar-plus'
+                    ];
+                }
+
+                // Project Ends
+                if (!empty($project['end_date'])) {
+                    $timeline[] = [
+                        'date' => $project['end_date'],
+                        'title' => 'Expected End Date',
+                        'description' => 'Scheduled completion date',
+                        'type' => 'end',
+                        'icon' => 'fa-flag-checkered'
+                    ];
+                }
+            }
+
+            // 2. Get Contract Events
+            // Assuming Contract has project_id
+            $sqlContract = "SELECT contract_id, contract_date, signed_at, created_at, status FROM Contract WHERE project_id = :project_id LIMIT 1";
+            $stmtContract = $this->pdo->prepare($sqlContract);
+            $stmtContract->execute([':project_id' => $projectId]);
+            $contract = $stmtContract->fetch(PDO::FETCH_ASSOC);
+
+            if ($contract) {
+                $contractId = $contract['contract_id'];
+
+                // Contract Created
+                if (!empty($contract['created_at'])) {
+                    $timeline[] = [
+                        'date' => $contract['created_at'],
+                        'title' => 'Contract Created',
+                        'description' => 'Contract draft created',
+                        'type' => 'contract_created',
+                        'icon' => 'fa-file-signature'
+                    ];
+                }
+
+                // Contract Signed
+                if (!empty($contract['signed_at'])) {
+                    $timeline[] = [
+                        'date' => $contract['signed_at'],
+                        'title' => 'Contract Signed',
+                        'description' => 'Contract formally signed by both parties',
+                        'type' => 'contract_signed',
+                        'icon' => 'fa-signature'
+                    ];
+                }
+
+                // 3. Get Milestones
+                // Depending on table structure, either `milestone` (legacy) or `contract_milestone`
+                // Checking `milestone` first as per migration phase 1
+                $sqlMilestones = "SELECT name, due_date, status, completion_date FROM Milestone WHERE contract_id = :contract_id";
+                // If table is contract_milestone, change needed. Assuming legacy `milestone` for now or check both.
+                // Migration Phase 7 mentions `contract_milestone`. Let's try `contract_milestone` first if newer, or fallback.
+                // But `milestone` table was ALTERed in Phase 1. Let's use `milestone` if it has contract_id.
+                // Migration file shows `ALTER TABLE milestone`. It doesn't show adding `contract_id` so it must have had it.
+                
+                try {
+                     $stmtMilestone = $this->pdo->prepare($sqlMilestones);
+                     $stmtMilestone->execute([':contract_id' => $contractId]);
+                     $milestones = $stmtMilestone->fetchAll(PDO::FETCH_ASSOC);
+     
+                     foreach ($milestones as $ms) {
+                         if (!empty($ms['due_date'])) {
+                             $timeline[] = [
+                                 'date' => $ms['due_date'],
+                                 'title' => 'Milestone Due: ' . $ms['name'],
+                                 'description' => 'Status: ' . $ms['status'],
+                                 'type' => 'milestone',
+                                 'icon' => 'fa-map-marker-alt'
+                             ];
+                         }
+                         if (!empty($ms['completion_date'])) {
+                             $timeline[] = [
+                                 'date' => $ms['completion_date'],
+                                 'title' => 'Milestone Completed: ' . $ms['name'],
+                                 'description' => 'Milestone marked as completed',
+                                 'type' => 'milestone_completed',
+                                 'icon' => 'fa-check-circle'
+                             ];
+                         }
+                     }
+                } catch (Exception $e) {
+                    // Ignore if table issue
+                }
+
+                // 4. Get Contract Timeline Events (Phase 9)
+                try {
+                    $sqlTimeline = "SELECT event_title, event_description, created_at, event_type FROM contract_timeline WHERE contract_id = :contract_id";
+                    $stmtTimeline = $this->pdo->prepare($sqlTimeline);
+                    $stmtTimeline->execute([':contract_id' => $contractId]);
+                    $events = $stmtTimeline->fetchAll(PDO::FETCH_ASSOC);
+
+                    foreach ($events as $ev) {
+                        $timeline[] = [
+                            'date' => $ev['created_at'],
+                            'title' => $ev['event_title'],
+                            'description' => $ev['event_description'],
+                            'type' => 'system_event', // or $ev['event_type']
+                            'icon' => 'fa-info-circle' // Map icon based on type if needed
+                        ];
+                    }
+                } catch (Exception $e) {
+                    // Ignore if table doesn't exist yet
+                }
+            }
+
+            // Sort by date descending (newest first)
+            usort($timeline, function ($a, $b) {
+                return strtotime($b['date']) - strtotime($a['date']);
+            });
+
+            return [
+                'success' => true,
+                'data' => $timeline
+            ];
+
+        } catch (PDOException $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to fetch timeline: ' . $e->getMessage()
+            ];
+        }
+    }

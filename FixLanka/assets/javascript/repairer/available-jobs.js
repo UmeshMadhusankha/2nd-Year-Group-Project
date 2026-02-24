@@ -8,7 +8,7 @@ let currentRepairerId = 1; // TODO: Get from session
 let availableJobs = [];
 let submittedQuotes = [];
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeJobsPage();
     initializeFilters();
     initializeTabs();
@@ -21,9 +21,9 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 function initializeTabs() {
     const tabButtons = document.querySelectorAll('.tab-button');
-    
+
     tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const tabName = this.getAttribute('data-tab');
             switchTab(tabName);
         });
@@ -41,14 +41,14 @@ function switchTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    
+
     // Add active class to selected tab
     const selectedButton = document.querySelector(`[data-tab="${tabName}"]`);
     const selectedContent = document.getElementById(`${tabName}-tab`);
-    
+
     if (selectedButton) selectedButton.classList.add('active');
     if (selectedContent) selectedContent.classList.add('active');
-    
+
     // Load quotations when switching to that tab
     if (tabName === 'submitted-quotes') {
         loadSubmittedQuotations();
@@ -59,7 +59,7 @@ function switchTab(tabName) {
  * Initialize the jobs page functionality
  */
 function initializeJobsPage() {
-    
+
     // Add smooth scroll behavior for better UX
     document.documentElement.style.scrollBehavior = 'smooth';
 }
@@ -69,7 +69,7 @@ function initializeJobsPage() {
  */
 async function loadAvailableJobs(filters = {}) {
     const container = document.getElementById('jobs-grid-container');
-    
+
     // Show loading state
     container.innerHTML = `
         <div class="loading-state">
@@ -77,7 +77,7 @@ async function loadAvailableJobs(filters = {}) {
             <p>Loading available jobs...</p>
         </div>
     `;
-    
+
     try {
         // Build query parameters
         const params = new URLSearchParams();
@@ -85,18 +85,18 @@ async function loadAvailableJobs(filters = {}) {
         if (filters.district) params.append('district', filters.district);
         if (filters.sort) params.append('sort', filters.sort);
         params.append('service_provider_type', 'individual'); // Only show jobs for individual repairers
-        
+
         const apiUrl = `/2nd-Year-Group-Project/FixLanka/api/job-requests.php?${params.toString()}`;
-        
+
         const response = await fetch(apiUrl);
-        
+
         // Check if response is ok
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
             availableJobs = result.data;
             renderJobs(availableJobs);
@@ -116,7 +116,7 @@ async function loadAvailableJobs(filters = {}) {
  */
 function renderJobs(jobs) {
     const container = document.getElementById('jobs-grid-container');
-    
+
     if (jobs.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
@@ -127,7 +127,7 @@ function renderJobs(jobs) {
         `;
         return;
     }
-    
+
     container.innerHTML = jobs.map(job => createJobCard(job)).join('');
 }
 
@@ -139,7 +139,7 @@ function createJobCard(job) {
     const urgencyClass = job.urgency === 'urgent' ? 'high' : 'low';
     const urgencyIcon = job.urgency === 'urgent' ? 'fa-exclamation-circle' : 'fa-info-circle';
     const urgencyText = job.urgency === 'urgent' ? 'High Priority' : 'Low Priority';
-    
+
     return `
         <div class="job-card" data-job-id="${job.request_id}">
             <div class="job-header">
@@ -193,14 +193,14 @@ function createJobCard(job) {
 function updateJobCounts(totalCount) {
     // Update header stats
     const newJobsCount = availableJobs.filter(job => {
-        const hoursAgo = (new Date() - new Date(job.dateCreated)) / (1000 * 60 * 60);
+        const hoursAgo = (new Date() - new Date(job.created_at)) / (1000 * 60 * 60);
         return hoursAgo < 24;
     }).length;
-    
+
     document.getElementById('new-jobs-count').textContent = newJobsCount;
     document.getElementById('total-jobs-count').textContent = totalCount;
     document.getElementById('available-jobs-badge').textContent = totalCount;
-    
+
     // Update section subtitle
     document.getElementById('jobs-count').textContent = `${totalCount} job${totalCount !== 1 ? 's' : ''} available`;
 }
@@ -211,12 +211,12 @@ function updateJobCounts(totalCount) {
 function initializeFilters() {
     const applyFiltersBtn = document.querySelector('.btn-filter.btn-primary');
     const resetFiltersBtn = document.querySelector('.btn-filter.btn-secondary');
-    
+
     // Apply filters button
     if (applyFiltersBtn) {
         applyFiltersBtn.addEventListener('click', applyFilters);
     }
-    
+
     // Reset filters button
     if (resetFiltersBtn) {
         resetFiltersBtn.addEventListener('click', resetFilters);
@@ -230,14 +230,14 @@ function applyFilters() {
     const categoryFilter = document.getElementById('category-filter');
     const locationFilter = document.getElementById('location-filter');
     const sortFilter = document.getElementById('sort-filter');
-    
+
     const filters = {
         category: categoryFilter ? categoryFilter.value : '',
         district: locationFilter ? locationFilter.value : '',
         sort: sortFilter ? sortFilter.value : 'newest'
     };
-    
-    
+
+
     loadAvailableJobs(filters);
 }
 
@@ -248,12 +248,12 @@ function resetFilters() {
     const categoryFilter = document.getElementById('category-filter');
     const locationFilter = document.getElementById('location-filter');
     const sortFilter = document.getElementById('sort-filter');
-    
+
     if (categoryFilter) categoryFilter.value = '';
     if (locationFilter) locationFilter.value = '';
     if (sortFilter) sortFilter.value = 'newest';
-    
-    
+
+
     loadAvailableJobs();
 }
 
@@ -261,7 +261,7 @@ function resetFilters() {
  * View job details
  */
 function viewJobDetails(jobId) {
-    
+
     openJobDetailsDrawer(jobId);
 }
 
@@ -271,32 +271,32 @@ function viewJobDetails(jobId) {
 async function openJobDetailsDrawer(jobId) {
     const job = availableJobs.find(j => j.request_id == jobId);
     if (!job) return;
-    
+
     const drawer = document.getElementById('jobDetailsDrawer');
-    
+
     // Populate drawer with job details
     const categoryClass = getCategoryClass(job.category_name);
     const urgencyClass = job.urgency === 'urgent' ? 'high' : 'low';
-    
+
     document.getElementById('detailCategory').innerHTML = `
         <i class="${getCategoryIcon(job.category_name)}"></i>
         <span>${job.category_name}</span>
     `;
     document.getElementById('detailCategory').className = `job-detail-category ${categoryClass}`;
-    
+
     document.getElementById('detailUrgency').innerHTML = `
         <i class="fas ${job.urgency === 'urgent' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
         <span>${job.urgency === 'urgent' ? 'High Priority' : 'Low Priority'}</span>
     `;
     document.getElementById('detailUrgency').className = `job-detail-urgency ${urgencyClass}`;
-    
+
     document.getElementById('detailTitle').textContent = job.title;
     document.getElementById('detailCustomerName').textContent = job.customer_name;
     document.getElementById('detailPosted').textContent = job.posted_ago;
     document.getElementById('detailAddress').textContent = job.address;
     document.getElementById('detailSchedule').textContent = formatDate(job.finish_date);
     document.getElementById('detailDescription').textContent = job.description;
-    
+
     // Handle attachments
     const attachmentsContainer = document.getElementById('detailAttachments');
     if (job.photos && job.photos.length > 0) {
@@ -309,10 +309,10 @@ async function openJobDetailsDrawer(jobId) {
     } else {
         attachmentsContainer.innerHTML = '<p class="text-muted">No attachments</p>';
     }
-    
+
     // Store current job ID for submit quote button
     drawer.dataset.currentJobId = jobId;
-    
+
     // Show drawer
     drawer.classList.add('open');
 }
@@ -340,7 +340,7 @@ function submitQuoteFromDetails() {
  * Submit quote for a job
  */
 function submitQuote(jobId) {
-    
+
     // Navigate to submit quote page with job ID using absolute path
     window.location.href = `/2nd-Year-Group-Project/FixLanka/views/repairer/pages/submit-quote.php?jobId=${jobId}`;
 }
@@ -352,7 +352,7 @@ async function loadSubmittedQuotations() {
     const container = document.getElementById('submitted-quotes-container');
     const countBadge = document.getElementById('quotes-count-badge');
     const countText = document.getElementById('quotes-count');
-    
+
     // Show loading state
     container.innerHTML = `
         <div class="loading-state">
@@ -360,15 +360,15 @@ async function loadSubmittedQuotations() {
             <p>Loading your quotations...</p>
         </div>
     `;
-    
+
     try {
         const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-quotes.php?repairer_id=${currentRepairerId}`);
         const result = await response.json();
-        
+
         if (result.success) {
             submittedQuotes = result.data;
             renderQuotations(submittedQuotes);
-            
+
             // Update counts
             countBadge.textContent = result.count;
             countText.textContent = `${result.count} quotation${result.count !== 1 ? 's' : ''} submitted`;
@@ -386,7 +386,7 @@ async function loadSubmittedQuotations() {
  */
 function renderQuotations(quotes) {
     const container = document.getElementById('submitted-quotes-container');
-    
+
     if (quotes.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
@@ -397,35 +397,35 @@ function renderQuotations(quotes) {
         `;
         return;
     }
-    
+
     // Group quotes by status
     const pending = quotes.filter(q => q.status === 'pending');
     const accepted = quotes.filter(q => q.status === 'accepted');
     const rejected = quotes.filter(q => q.status === 'rejected');
     const expired = quotes.filter(q => q.status === 'expired');
-    
+
     let html = '';
-    
+
     if (pending.length > 0) {
         html += `<h3 class="quotes-section-title"><i class="fas fa-clock"></i> Pending Quotations</h3>`;
         html += pending.map(q => createQuoteCard(q)).join('');
     }
-    
+
     if (accepted.length > 0) {
         html += `<h3 class="quotes-section-title"><i class="fas fa-check-circle"></i> Accepted Quotations</h3>`;
         html += accepted.map(q => createQuoteCard(q)).join('');
     }
-    
+
     if (rejected.length > 0) {
         html += `<h3 class="quotes-section-title"><i class="fas fa-times-circle"></i> Rejected Quotations</h3>`;
         html += rejected.map(q => createQuoteCard(q)).join('');
     }
-    
+
     if (expired.length > 0) {
         html += `<h3 class="quotes-section-title"><i class="fas fa-hourglass-end"></i> Expired Quotations</h3>`;
         html += expired.map(q => createQuoteCard(q)).join('');
     }
-    
+
     container.innerHTML = html;
 }
 
@@ -436,7 +436,7 @@ function createQuoteCard(quote) {
     const statusClass = getQuoteStatusClass(quote.status);
     const statusIcon = getQuoteStatusIcon(quote.status);
     const canEdit = quote.status === 'pending';
-    
+
     return `
         <div class="quote-card ${statusClass}" data-quote-id="${quote.quote_id}">
             <div class="quote-header">
@@ -444,7 +444,7 @@ function createQuoteCard(quote) {
                     <h4 class="quote-job-title">${escapeHtml(quote.job_title || 'Job Request')}</h4>
                     <p class="quote-job-meta">
                         <i class="fas fa-calendar"></i> ${formatDate(quote.job_posted_date)}
-                        <span class="separator">â€¢</span>
+                        <span class="separator">&bull;</span>
                         <i class="fas fa-map-marker-alt"></i> ${escapeHtml(quote.district || 'N/A')}
                     </p>
                 </div>
@@ -504,7 +504,7 @@ function createQuoteCard(quote) {
  * Edit a quotation
  */
 function editQuote(quoteId) {
-    
+
     window.location.href = `/2nd-Year-Group-Project/FixLanka/views/repairer/pages/edit-quote.php?quoteId=${quoteId}`;
 }
 
@@ -515,14 +515,14 @@ async function deleteQuote(quoteId) {
     if (!confirm('Are you sure you want to delete this quotation? This action cannot be undone.')) {
         return;
     }
-    
+
     try {
         const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-quotes.php?quote_id=${quoteId}&repairer_id=${currentRepairerId}`, {
             method: 'DELETE'
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
             showToast('Quotation deleted successfully!', 'success');
             loadSubmittedQuotations(); // Reload quotations
@@ -615,7 +615,7 @@ function showToast(message, type = 'info') {
         <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
         <span>${message}</span>
     `;
-    
+
     // Style toast
     toast.style.cssText = `
         position: fixed;
@@ -632,10 +632,10 @@ function showToast(message, type = 'info') {
         gap: 12px;
         animation: slideIn 0.3s ease;
     `;
-    
+
     // Add to document
     document.body.appendChild(toast);
-    
+
     // Remove after 3 seconds
     setTimeout(() => {
         toast.style.animation = 'slideOut 0.3s ease';
@@ -652,16 +652,16 @@ function initializeInfiniteScroll() {
     let currentPage = 1;
     const loadingIndicator = document.getElementById('loading-indicator');
     const endResults = document.getElementById('end-results');
-    
+
     // Add scroll event listener
-    window.addEventListener('scroll', function() {
+    window.addEventListener('scroll', function () {
         if (isLoading || !hasMoreJobs) return;
-        
+
         // Check if user scrolled near bottom
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         const windowHeight = window.innerHeight;
         const documentHeight = document.documentElement.scrollHeight;
-        
+
         // Load more when user is 200px from bottom
         if (scrollTop + windowHeight >= documentHeight - 200) {
             loadMoreJobs();
@@ -674,39 +674,39 @@ function initializeInfiniteScroll() {
  */
 function loadMoreJobs() {
     if (isLoading || !hasMoreJobs) return;
-    
+
     isLoading = true;
     currentPage++;
-    
+
     // Show loading indicator
     const loadingIndicator = document.getElementById('loading-indicator');
     if (loadingIndicator) {
         loadingIndicator.style.display = 'flex';
     }
-    
-    
+
+
     // Simulate API call delay
     setTimeout(() => {
         const newJobs = generateJobCards(6); // Generate 6 more job cards
         appendJobsToGrid(newJobs);
-        
+
         // Hide loading indicator
         if (loadingIndicator) {
             loadingIndicator.style.display = 'none';
         }
-        
+
         isLoading = false;
-        
+
         // Simulate reaching end after 5 pages (30 total jobs)
         if (currentPage >= 5) {
             hasMoreJobs = false;
             showEndOfResults();
         }
-        
+
         // Update results count
         const totalJobs = document.querySelectorAll('.job-card').length;
         updateResultsCount(totalJobs);
-        
+
     }, 1500); // Simulate network delay
 }
 
@@ -782,19 +782,19 @@ function generateJobCards(count) {
             posted: '3 days ago'
         }
     ];
-    
+
     const jobs = [];
     for (let i = 0; i < count; i++) {
         const template = jobTemplates[i % jobTemplates.length];
         const jobId = Date.now() + i; // Generate unique ID
-        
+
         jobs.push({
             ...template,
             id: jobId,
             title: `${template.title} #${jobId.toString().slice(-3)}` // Add unique suffix
         });
     }
-    
+
     return jobs;
 }
 
@@ -804,16 +804,16 @@ function generateJobCards(count) {
 function appendJobsToGrid(jobs) {
     const jobsGrid = document.querySelector('.jobs-grid');
     if (!jobsGrid) return;
-    
+
     jobs.forEach((job, index) => {
         const jobCard = createJobCardElement(job);
-        
+
         // Add animation delay
         jobCard.style.opacity = '0';
         jobCard.style.transform = 'translateY(20px)';
-        
+
         jobsGrid.appendChild(jobCard);
-        
+
         // Animate in
         setTimeout(() => {
             jobCard.style.transition = 'all 0.5s ease';
@@ -829,7 +829,7 @@ function appendJobsToGrid(jobs) {
 function createJobCardElement(job) {
     const jobCard = document.createElement('div');
     jobCard.className = 'job-card';
-    
+
     jobCard.innerHTML = `
         <div class="job-header">
             <div class="job-category-badge ${job.category}">
@@ -873,7 +873,7 @@ function createJobCardElement(job) {
             </button>
         </div>
     `;
-    
+
     return jobCard;
 }
 
@@ -902,11 +902,11 @@ function refreshJobs() {
  */
 function animateJobCards() {
     const jobCards = document.querySelectorAll('.job-card');
-    
+
     jobCards.forEach((card, index) => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
-        
+
         setTimeout(() => {
             card.style.transition = 'all 0.5s ease';
             card.style.opacity = '1';
@@ -921,14 +921,14 @@ function animateJobCards() {
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
     toast.textContent = message;
-    
+
     const colors = {
         success: 'var(--success-color)',
         warning: 'var(--warning-color)',
         error: 'var(--danger-color)',
         info: 'var(--info-color)'
     };
-    
+
     toast.style.cssText = `
         position: fixed;
         top: 20px;
@@ -941,9 +941,9 @@ function showToast(message, type = 'success') {
         z-index: 10000;
         animation: slideInRight 0.3s ease;
     `;
-    
+
     document.body.appendChild(toast);
-    
+
     setTimeout(() => {
         toast.style.animation = 'slideOutRight 0.3s ease';
         setTimeout(() => {
@@ -961,18 +961,18 @@ function searchJobs(query) {
     const jobCards = document.querySelectorAll('.job-card');
     const searchQuery = query.toLowerCase();
     let visibleCount = 0;
-    
+
     jobCards.forEach(card => {
         const title = card.querySelector('.job-title').textContent.toLowerCase();
         const customer = card.querySelector('.job-customer span').textContent.toLowerCase();
         const location = card.querySelector('.job-location span').textContent.toLowerCase();
         const category = card.querySelector('.job-category-badge').textContent.toLowerCase();
-        
-        const matches = title.includes(searchQuery) || 
-                       customer.includes(searchQuery) || 
-                       location.includes(searchQuery) || 
-                       category.includes(searchQuery);
-        
+
+        const matches = title.includes(searchQuery) ||
+            customer.includes(searchQuery) ||
+            location.includes(searchQuery) ||
+            category.includes(searchQuery);
+
         if (matches) {
             card.style.display = 'flex';
             visibleCount++;
@@ -980,7 +980,7 @@ function searchJobs(query) {
             card.style.display = 'none';
         }
     });
-    
+
     updateResultsCount(visibleCount);
 }
 
@@ -1105,32 +1105,32 @@ const jobDetailsData = {
 function viewJobDetails(jobId) {
     const drawer = document.getElementById('jobDetailsDrawer');
     const jobData = jobDetailsData[jobId];
-    
+
     if (!jobData) {
         showToast('Job details not available', 'error');
         return;
     }
-    
+
     // Populate drawer with job data
     document.getElementById('detailCategory').innerHTML = `
         <i class="fas fa-${getCategoryIcon(jobData.category)}"></i>
         <span>${jobData.category}</span>
     `;
-    
+
     const urgencyElement = document.getElementById('detailUrgency');
     urgencyElement.className = `job-detail-urgency ${jobData.priority}`;
     urgencyElement.innerHTML = `
         <i class="fas fa-${jobData.priority === 'high' ? 'exclamation-circle' : 'info-circle'}"></i>
         <span>${jobData.priority === 'high' ? 'High Priority' : 'Low Priority'}</span>
     `;
-    
+
     document.getElementById('detailTitle').textContent = jobData.title;
     document.getElementById('detailCustomerName').textContent = jobData.customerName;
     document.getElementById('detailPosted').textContent = jobData.posted;
     document.getElementById('detailAddress').textContent = jobData.address;
     document.getElementById('detailSchedule').textContent = jobData.schedule;
     document.getElementById('detailDescription').textContent = jobData.description;
-    
+
     // Populate additional info
     const infoContainer = document.querySelector('.detail-list');
     infoContainer.innerHTML = jobData.additionalInfo.map(info => `
@@ -1139,7 +1139,7 @@ function viewJobDetails(jobId) {
             <span>${info}</span>
         </div>
     `).join('');
-    
+
     // Populate attachments
     const attachmentsContainer = document.getElementById('detailAttachments');
     if (jobData.attachments && jobData.attachments.length > 0) {
@@ -1152,7 +1152,7 @@ function viewJobDetails(jobId) {
     } else {
         attachmentsContainer.innerHTML = '<p style="color: var(--text-secondary);">No attachments available</p>';
     }
-    
+
     // Show drawer
     drawer.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -1201,10 +1201,10 @@ function loadSubmittedQuotations() {
     const container = document.getElementById('submitted-quotes-container');
     const quotesCount = document.getElementById('quotes-count');
     const quotesCountBadge = document.getElementById('quotes-count-badge');
-    
+
     // Get repairer ID (in real app, this would come from session)
     const repairerId = 1; // Dummy repairer ID
-    
+
     // Fetch quotations from API
     fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-quotes.php?repairer_id=${repairerId}`)
         .then(response => response.json())
@@ -1246,21 +1246,21 @@ function displayQuotations(quotations, container) {
 function createQuoteCard(quote) {
     const statusClass = quote.status.toLowerCase();
     const canEdit = quote.status === 'pending';
-    
+
     // Format dates
     const submittedDate = new Date(quote.dateSubmitted);
     const validUntilDate = new Date(quote.validUntil);
-    const formattedSubmitted = submittedDate.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
+    const formattedSubmitted = submittedDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
     });
-    const formattedValidUntil = validUntilDate.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
+    const formattedValidUntil = validUntilDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
     });
-    
+
     // Format warranty
     let warrantyText = 'No warranty';
     if (quote.warrantyPeriod > 0) {
@@ -1272,7 +1272,7 @@ function createQuoteCard(quote) {
             warrantyText = `${quote.warrantyPeriod} month${quote.warrantyPeriod !== 1 ? 's' : ''}`;
         }
     }
-    
+
     return `
         <div class="quote-card" data-quote-id="${quote.quote_id}">
             <!-- Quote Header -->
@@ -1400,7 +1400,7 @@ function displayErrorState(container) {
  * View quotation details
  */
 function viewQuoteDetails(quoteId) {
-    
+
     // Navigate to quote details page or open modal
     showToast(`Opening details for quote #${quoteId}`, 'info');
 }
@@ -1409,7 +1409,7 @@ function viewQuoteDetails(quoteId) {
  * Edit quotation (only for pending status)
  */
 function editQuote(quoteId) {
-    
+
     // Navigate to edit quote page with quote data pre-filled
     window.location.href = `/2nd-Year-Group-Project/FixLanka/views/repairer/pages/edit-quote.php?quoteId=${quoteId}`;
 }
@@ -1418,41 +1418,41 @@ function editQuote(quoteId) {
  * Delete quotation
  */
 function deleteQuote(quoteId) {
-    
-    
+
+
     if (!confirm('Are you sure you want to delete this quotation? This action cannot be undone.')) {
         return;
     }
-    
+
     // Show loading toast
     showToast('Deleting quotation...', 'info');
-    
+
     // Construct delete URL with both quote_id and repairer_id
     const deleteUrl = `/2nd-Year-Group-Project/FixLanka/api/repairer-quotes.php?quote_id=${quoteId}&repairer_id=${currentRepairerId}`;
-    
+
     // Delete via API
     fetch(deleteUrl, {
         method: 'DELETE'
     })
-    .then(response => {
-        
-        return response.json();
-    })
-    .then(data => {
-        
-        if (data.success) {
-            showToast('Quotation deleted successfully!', 'success');
-            // Reload quotations
-            loadSubmittedQuotations();
-        } else {
-            showToast('Failed to delete quotation: ' + (data.error || 'Unknown error'), 'error');
-            console.error('Delete failed:', data);
-        }
-    })
-    .catch(error => {
-        console.error('Error deleting quotation:', error);
-        showToast('Failed to delete quotation', 'error');
-    });
+        .then(response => {
+
+            return response.json();
+        })
+        .then(data => {
+
+            if (data.success) {
+                showToast('Quotation deleted successfully!', 'success');
+                // Reload quotations
+                loadSubmittedQuotations();
+            } else {
+                showToast('Failed to delete quotation: ' + (data.error || 'Unknown error'), 'error');
+                console.error('Delete failed:', data);
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting quotation:', error);
+            showToast('Failed to delete quotation', 'error');
+        });
 }
 
 /**
@@ -1466,7 +1466,7 @@ function showToast(message, type = 'info') {
         <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
         <span>${message}</span>
     `;
-    
+
     // Style toast
     toast.style.cssText = `
         position: fixed;
@@ -1483,10 +1483,10 @@ function showToast(message, type = 'info') {
         gap: 12px;
         animation: slideIn 0.3s ease;
     `;
-    
+
     // Add to document
     document.body.appendChild(toast);
-    
+
     // Remove after 3 seconds
     setTimeout(() => {
         toast.style.animation = 'slideOut 0.3s ease';

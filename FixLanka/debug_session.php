@@ -1,9 +1,10 @@
 <?php
-session_start();
+require_once 'c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\config\session.php';
 header('Content-Type: application/json');
 
 echo json_encode([
-    'user_id' => $_SESSION['user_id'] ?? 'not set',
-    'user_role' => $_SESSION['user_role'] ?? 'not set',
-    'all_session' => $_SESSION
+    'sessionData' => $_SESSION,
+    'userData' => getUserData(),
+    'companyId' => getUserData()['id'] ?? 'Not found'
 ]);
+?>

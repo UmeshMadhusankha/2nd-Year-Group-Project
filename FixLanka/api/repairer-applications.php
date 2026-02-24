@@ -90,17 +90,19 @@ function getApplications($db) {
                     ra.status,
                     ra.applied_date,
                     ra.cover_letter,
-                    r.first_name,
-                    r.last_name,
-                    r.email,
-                    r.phone,
-                    r.specialty,
+                    r.f_name as first_name,
+                    r.l_name as last_name,
+                    u.email,
+                    u.contact_no as phone,
+                    c.name as specialty,
                     r.experience_years,
                     r.hourly_rate,
-                    r.rating,
+                    r.average_rating as rating,
                     jp.title as job_title
                 FROM repairer_applications ra
-                LEFT JOIN repairers r ON ra.repairer_id = r.repairer_id
+                LEFT JOIN Repairer r ON ra.repairer_id = r.repairer_id
+                LEFT JOIN Category c ON r.category_id = c.category_id
+                LEFT JOIN User u ON r.user_id = u.user_id
                 LEFT JOIN job_postings jp ON ra.job_posting_id = jp.posting_id
                 LEFT JOIN job_postings jp2 ON jp2.company_id = ?
                 WHERE jp2.company_id = ?";
@@ -153,19 +155,21 @@ function getApplicationDetails($db) {
     try {
         $sql = "SELECT 
                     ra.*,
-                    r.first_name,
-                    r.last_name,
-                    r.email,
-                    r.phone,
-                    r.specialty,
+                    r.f_name as first_name,
+                    r.l_name as last_name,
+                    u.email,
+                    u.contact_no as phone,
+                    c.name as specialty,
                     r.experience_years,
                     r.hourly_rate,
-                    r.rating,
-                    r.profile_photo,
+                    r.average_rating as rating,
+                    u.profile_pic as profile_photo,
                     jp.title as job_title,
                     jp.description as job_description
                 FROM repairer_applications ra
-                LEFT JOIN repairers r ON ra.repairer_id = r.repairer_id
+                LEFT JOIN Repairer r ON ra.repairer_id = r.repairer_id
+                LEFT JOIN Category c ON r.category_id = c.category_id
+                LEFT JOIN User u ON r.user_id = u.user_id
                 LEFT JOIN job_postings jp ON ra.job_posting_id = jp.posting_id
                 WHERE ra.application_id = ?";
         
@@ -214,9 +218,41 @@ function approveApplication($db) {
     }
     
     try {
+        $db->beginTransaction();
+
         $sql = "UPDATE repairer_applications SET status = 'approved' WHERE application_id = ?";
         $stmt = $db->prepare($sql);
         $stmt->execute([$application_id]);
+
+        // Automated Onboarding Feature
+        // 1. Get application details
+        $sql = "SELECT jp.company_id, ra.repairer_id, jp.employment_type, ra.expected_rate
+                FROM repairer_applications ra
+                JOIN job_postings jp ON ra.job_posting_id = jp.posting_id
+                WHERE ra.application_id = ?";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$application_id]);
+        $appDetails = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($appDetails) {
+            // 2. Insert into company_employees
+            $sql = "INSERT INTO company_employees (
+                        company_id, repairer_id, job_title, employment_type,
+                        status, hired_date, hourly_rate
+                    ) VALUES (
+                        ?, ?, 'Freelancer', ?,
+                        'active', CURDATE(), ?
+                    ) ON DUPLICATE KEY UPDATE status = 'active'";
+            $stmt = $db->prepare($sql);
+            $stmt->execute([
+                $appDetails['company_id'],
+                $appDetails['repairer_id'],
+                $appDetails['employment_type'],
+                $appDetails['expected_rate']
+            ]);
+        }
+
+        $db->commit();
         
         echo json_encode([
             'success' => true,
@@ -224,6 +260,7 @@ function approveApplication($db) {
         ]);
         
     } catch (PDOException $e) {
+        $db->rollBack();
         echo json_encode([
             'success' => false,
             'error' => 'Failed to approve application: ' . $e->getMessage()
