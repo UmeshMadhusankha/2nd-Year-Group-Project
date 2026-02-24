@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Repairer Quotes API
  * Handles CRUD operations for repairer quotations
@@ -185,8 +185,6 @@ function handlePut() {
     $input = json_decode($rawInput, true);
     
     // Debug logging
-    error_log("PUT Request Raw Input: " . $rawInput);
-    error_log("PUT Request Decoded: " . print_r($input, true));
     
     // Validate quote_id and repairer_id
     if (!isset($input['quote_id']) || !isset($input['repairer_id'])) {
@@ -272,7 +270,6 @@ function handleDelete() {
     
     // Debug logging
     error_log("DELETE Request - quote_id: " . ($quote_id ?? 'null') . ", repairer_id: " . ($repairer_id ?? 'null'));
-    error_log("DELETE Request - Full GET params: " . print_r($_GET, true));
     
     if (!$quote_id || !$repairer_id) {
         error_log("DELETE Failed - Missing parameters. quote_id: " . ($quote_id ? 'present' : 'missing') . 

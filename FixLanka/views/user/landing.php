@@ -49,36 +49,86 @@ $isLoggedIn = isLoggedIn();
                 <form class="search-form" id="searchForm">
                     <div class="form-row">
                         <div class="form-group">
-                            <select class="form-select" id="serviceSelect">
-                                <option value="">Select Service</option>
-                                <option value="plumbing">Plumbing</option>
-                                <option value="electrical">Electrical</option>
-                                <option value="hvac">HVAC</option>
-                                <option value="cleaning">Cleaning</option>
-                                <option value="carpentry">Carpentry</option>
-                                <option value="painting">Painting</option>
+                            <select class="form-select" id="serviceSelect" name="service">
+                                <option value="">All Services</option>
+                                <option value="1">Plumbing</option>
+                                <option value="2">Electrical</option>
+                                <option value="3">HVAC</option>
+                                <option value="4">Cleaning</option>
+                                <option value="5">Carpentry</option>
+                                <option value="6">Painting</option>
+                                <option value="7">Appliance Repair</option>
+                                <option value="8">Roofing</option>
+                                <option value="9">Landscaping</option>
+                                <option value="10">Pest Control</option>
+                                <option value="11">Home Security</option>
+                                <option value="12">Interior Design</option>
+                                <option value="13">Flooring</option>
+                                <option value="14">Masonry</option>
+                                <option value="15">Welding</option>
+                                <option value="16">Glass & Mirror</option>
+                                <option value="17">Tile Work</option>
+                                <option value="18">Drywall</option>
+                                <option value="19">Insulation</option>
+                                <option value="20">Window Installation</option>
                             </select>
                         </div>
                         
                         <div class="form-group">
-                            <select class="form-select" id="ratingSelect">
+                            <select class="form-select" id="districtSelect" name="district">
+                                <option value="">All Districts</option>
+                                <option value="Colombo">Colombo</option>
+                                <option value="Gampaha">Gampaha</option>
+                                <option value="Kalutara">Kalutara</option>
+                                <option value="Kandy">Kandy</option>
+                                <option value="Matale">Matale</option>
+                                <option value="Nuwara Eliya">Nuwara Eliya</option>
+                                <option value="Galle">Galle</option>
+                                <option value="Matara">Matara</option>
+                                <option value="Hambantota">Hambantota</option>
+                                <option value="Jaffna">Jaffna</option>
+                                <option value="Kilinochchi">Kilinochchi</option>
+                                <option value="Mannar">Mannar</option>
+                                <option value="Vavuniya">Vavuniya</option>
+                                <option value="Mullaitivu">Mullaitivu</option>
+                                <option value="Batticaloa">Batticaloa</option>
+                                <option value="Ampara">Ampara</option>
+                                <option value="Trincomalee">Trincomalee</option>
+                                <option value="Kurunegala">Kurunegala</option>
+                                <option value="Puttalam">Puttalam</option>
+                                <option value="Anuradhapura">Anuradhapura</option>
+                                <option value="Polonnaruwa">Polonnaruwa</option>
+                                <option value="Badulla">Badulla</option>
+                                <option value="Moneragala">Moneragala</option>
+                                <option value="Ratnapura">Ratnapura</option>
+                                <option value="Kegalle">Kegalle</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <select class="form-select" id="ratingSelect" name="rating">
                                 <option value="">All Ratings</option>
-                                <option value="5">5 Stars</option>
+                                <option value="4.5">4.5+ Stars</option>
                                 <option value="4">4+ Stars</option>
+                                <option value="3.5">3.5+ Stars</option>
                                 <option value="3">3+ Stars</option>
                             </select>
                         </div>
                         
-                        <div class="form-group">
-                            <input type="text" class="form-input" id="locationInput" placeholder="Enter your location">
-                        </div>
-                        
-                        <div class="form-group">
+                        <div class="form-group form-actions">
                             <button type="submit" class="search-btn">
-                                <i class="fas fa-search"></i>
-                                Search
+                                <i class="fas fa-filter"></i>
+                                Apply Filters
+                            </button>
+                            <button type="button" class="clear-btn" id="clearFiltersBtn">
+                                <i class="fas fa-times"></i>
+                                Clear
                             </button>
                         </div>
+                    </div>
+                    <div class="active-filters" id="activeFilters" style="display: none;">
+                        <span class="filter-label">Active Filters:</span>
+                        <div class="filter-tags" id="filterTags"></div>
                     </div>
                 </form>
             </div>
@@ -163,10 +213,14 @@ $isLoggedIn = isLoggedIn();
         </div>
     </footer>
 
+    <!-- Company Profile Popup -->
+    <?php include 'company-profile-popup.php'; ?>
+
     <!-- Repairer Profile Popup -->
     <?php include 'repairer-profile-popup.php'; ?>
 
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/landing.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/company-profile-popup.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/repairer-profile-popup.js"></script>
 </body>
 </html>

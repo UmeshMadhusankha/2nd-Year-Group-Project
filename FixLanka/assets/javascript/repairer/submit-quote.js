@@ -1,4 +1,4 @@
-// ================================================
+﻿// ================================================
 // SUBMIT QUOTE PAGE JAVASCRIPT
 // ================================================
 
@@ -382,7 +382,6 @@ function confirmQuoteSubmission() {
             showNotification('Quote submitted successfully! The customer will be notified.', 'success');
             
             // Log the submitted data (for debugging in dummy mode)
-            console.log('Quote submitted:', data.data);
             
             // Clear form
             clearForm();

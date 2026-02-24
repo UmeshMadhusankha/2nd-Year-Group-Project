@@ -55,6 +55,8 @@ function getAvailableJobs() {
         $request_id = isset($_GET['request_id']) ? intval($_GET['request_id']) : null;
         
         // Base query - get pending job requests with related data
+        // IMPORTANT: Filter out expired PUBLIC requests (finish_date < today)
+        // This keeps the marketplace clean - companies don't need to see expired public opportunities
         $sql = "SELECT 
                     jr.request_id,
                     jr.user_id,
@@ -62,21 +64,27 @@ function getAvailableJobs() {
                     jr.title,
                     jr.description,
                     jr.status,
-                    jr.district,
-                    jr.address,
+                    l.district,
+                    l.address,
                     jr.service_provider_type,
                     jr.urgency,
                     jr.finish_date,
-                    jr.dateCreated,
+                    jr.created_at,
                     jr.photos,
                     c.name as category_name,
                     u.f_name as customer_first_name,
                     u.l_name as customer_last_name,
-                    TIMESTAMPDIFF(HOUR, jr.dateCreated, NOW()) as hours_ago
+                    TIMESTAMPDIFF(HOUR, jr.created_at, NOW()) as hours_ago,
+                    CASE 
+                        WHEN jr.finish_date < CURDATE() THEN 1 
+                        ELSE 0 
+                    END as is_expired
                 FROM JobRequest jr
+                LEFT JOIN location l ON jr.location_id = l.location_id
                 LEFT JOIN Category c ON jr.category_id = c.category_id
                 LEFT JOIN User u ON jr.user_id = u.user_id
-                WHERE jr.status = 'pending'";
+                WHERE jr.status = 'pending'
+                AND jr.finish_date >= CURDATE()";
         
         $params = [];
         
@@ -92,7 +100,7 @@ function getAvailableJobs() {
         }
         
         if ($district) {
-            $sql .= " AND jr.district = ?";
+            $sql .= " AND l.district = ?";
             $params[] = $district;
         }
         
@@ -113,17 +121,17 @@ function getAvailableJobs() {
         // Apply sorting
         switch ($sort) {
             case 'oldest':
-                $sql .= " ORDER BY jr.dateCreated ASC";
+                $sql .= " ORDER BY jr.created_at ASC";
                 break;
             case 'urgency':
-                $sql .= " ORDER BY FIELD(jr.urgency, 'urgent', 'medium'), jr.dateCreated DESC";
+                $sql .= " ORDER BY FIELD(jr.urgency, 'urgent', 'medium'), jr.created_at DESC";
                 break;
             case 'deadline':
                 $sql .= " ORDER BY jr.finish_date ASC";
                 break;
             case 'newest':
             default:
-                $sql .= " ORDER BY jr.dateCreated DESC";
+                $sql .= " ORDER BY jr.created_at DESC";
                 break;
         }
         

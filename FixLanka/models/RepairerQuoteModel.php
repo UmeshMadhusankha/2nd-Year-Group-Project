@@ -56,16 +56,17 @@ class RepairerQuote {
             $sql = "SELECT rq.*, 
                            jr.title as job_title,
                            jr.description as job_description,
-                           jr.district,
-                           jr.address,
+                           jr_loc.district,
+                           jr_loc.address,
                            jr.urgency,
                            jr.finish_date,
-                           jr.dateCreated as job_posted_date,
+                           jr.created_at as job_posted_date,
                            c.name as category_name,
                            u.f_name as customer_first_name,
                            u.l_name as customer_last_name
                     FROM RepairerQuote rq
                     LEFT JOIN JobRequest jr ON rq.request_id = jr.request_id
+                    LEFT JOIN location jr_loc ON jr.location_id = jr_loc.location_id
                     LEFT JOIN Category c ON jr.category_id = c.category_id
                     LEFT JOIN User u ON jr.user_id = u.user_id
                     WHERE 1=1";
@@ -116,18 +117,19 @@ class RepairerQuote {
                 SELECT rq.*, 
                        jr.title as job_title,
                        jr.description as job_description,
-                       jr.district,
-                       jr.address,
+                       jr_loc.district,
+                       jr_loc.address,
                        jr.urgency,
                        jr.finish_date,
                        jr.photos as job_photos,
-                       jr.dateCreated as job_posted_date,
+                       jr.created_at as job_posted_date,
                        c.name as category_name,
                        u.f_name as customer_first_name,
                        u.l_name as customer_last_name,
                        u.email as customer_email
                 FROM RepairerQuote rq
                 LEFT JOIN JobRequest jr ON rq.request_id = jr.request_id
+                LEFT JOIN location jr_loc ON jr.location_id = jr_loc.location_id
                 LEFT JOIN Category c ON jr.category_id = c.category_id
                 LEFT JOIN User u ON jr.user_id = u.user_id
                 WHERE rq.quote_id = ?

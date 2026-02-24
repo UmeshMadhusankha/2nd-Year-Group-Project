@@ -6,7 +6,7 @@ function showTab(tabName) {
     // Hide all tab contents
     document.getElementById('income-tab').style.display = 'none';
     document.getElementById('expenses-tab').style.display = 'none';
-    
+
     // Remove active class from all tabs and tab contents
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -14,7 +14,7 @@ function showTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    
+
     // Show selected tab content
     if (tabName === 'payments') {
         document.getElementById('income-tab').style.display = 'block';
@@ -26,7 +26,7 @@ function showTab(tabName) {
         document.getElementById('expenses-tab').classList.add('active');
         // Add active class to expenses tab button
         document.querySelector(`[data-tab="expenses"]`).classList.add('active');
-        
+
         // Load expenses if not already loaded
         if (allExpenses.length === 0) {
             loadExpenseData();
@@ -51,7 +51,7 @@ let allTransactions = [];
 let filteredTransactions = [];
 
 // Initialize page
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     loadPaymentData();
     setupEventListeners();
     updateSummaryCharts();
@@ -321,7 +321,7 @@ function loadPaymentData() {
             description: 'Industrial ventilation system testing milestone'
         }
     ];
-    
+
     updateSummaryStats();
     applyFilters();
 }
@@ -334,7 +334,7 @@ function generateSampleMilestonePayments(count) {
         { name: 'Nimali Gunasekara', email: 'nimali.g@email.com', avatar: 'NG' },
         { name: 'Kasun Wijeratne', email: 'kasun.w@email.com', avatar: 'KW' }
     ];
-    
+
     const projects = [
         { title: 'Kitchen Renovation', description: 'Complete kitchen upgrade with modern appliances' },
         { title: 'Office Electrical Repair', description: 'Electrical system maintenance and repair' },
@@ -342,20 +342,20 @@ function generateSampleMilestonePayments(count) {
         { title: 'HVAC Installation', description: 'Central air conditioning system installation' },
         { title: 'Appliance Repair Service', description: 'Home appliance repair and maintenance' }
     ];
-    
+
     const milestoneTypes = [
         { type: 'initial', title: 'Project Started', description: 'Initial payment for materials and setup', percentage: 30 },
         { type: 'progress', title: 'Work in Progress', description: 'Milestone payment for completed phase', percentage: 60 },
         { type: 'completion', title: 'Work Completed', description: 'Payment after work completion', percentage: 90 },
         { type: 'final', title: 'Final Payment', description: 'Final payment after quality check', percentage: 100 }
     ];
-    
+
     const methods = ['online-banking', 'card', 'cash', 'wallet'];
     const statuses = ['completed', 'pending', 'failed'];
     const repairers = ['Saman Kumara', 'Ajith Perera', 'Gayan Silva', 'Roshan Fernando'];
-    
+
     const transactions = [];
-    
+
     for (let i = 0; i < count; i++) {
         const customer = customers[Math.floor(Math.random() * customers.length)];
         const project = projects[Math.floor(Math.random() * projects.length)];
@@ -363,15 +363,15 @@ function generateSampleMilestonePayments(count) {
         const method = methods[Math.floor(Math.random() * methods.length)];
         const status = statuses[Math.floor(Math.random() * statuses.length)];
         const repairer = repairers[Math.floor(Math.random() * repairers.length)];
-        
+
         // Generate random date within last 30 days
         const date = new Date();
         date.setDate(date.getDate() - Math.floor(Math.random() * 30));
-        
+
         // Generate due date (5-15 days from payment date)
         const dueDate = new Date(date);
         dueDate.setDate(dueDate.getDate() + Math.floor(Math.random() * 10) + 5);
-        
+
         transactions.push({
             id: `INV-2024-${(1239 + i).toString().padStart(6, '0')}`,
             date: date.toISOString(),
@@ -389,17 +389,17 @@ function generateSampleMilestonePayments(count) {
             dueDate: dueDate.toISOString().split('T')[0]
         });
     }
-    
+
     return transactions;
 }
 
 function setupEventListeners() {
     // Period selector
     document.getElementById('period-select').addEventListener('change', updatePeriod);
-    
+
     // Search functionality
     document.getElementById('search-filter').addEventListener('input', debounce(searchTransactions, 300));
-    
+
     // Page size change
     document.getElementById('page-size').addEventListener('change', changePageSize);
 }
@@ -408,12 +408,12 @@ function setupEventListeners() {
 function updatePeriod() {
     const period = document.getElementById('period-select').value;
     const periodBadge = document.getElementById('current-period');
-    
+
     if (period === 'custom') {
         showDateRangeModal();
         return;
     }
-    
+
     const periodLabels = {
         'today': 'Today',
         'week': 'This Week',
@@ -421,9 +421,9 @@ function updatePeriod() {
         'quarter': 'This Quarter',
         'year': 'This Year'
     };
-    
+
     periodBadge.textContent = periodLabels[period];
-    
+
     // Filter transactions based on period
     filterByPeriod(period);
     updateSummaryStats();
@@ -433,8 +433,8 @@ function updatePeriod() {
 function filterByPeriod(period) {
     const now = new Date();
     let startDate = new Date();
-    
-    switch(period) {
+
+    switch (period) {
         case 'today':
             startDate.setHours(0, 0, 0, 0);
             break;
@@ -456,7 +456,7 @@ function filterByPeriod(period) {
             startDate.setHours(0, 0, 0, 0);
             break;
     }
-    
+
     allTransactions = allTransactions.filter(transaction => {
         const transactionDate = new Date(transaction.date);
         return transactionDate >= startDate && transactionDate <= now;
@@ -478,13 +478,13 @@ function updateSummaryStats() {
 
     const completed = allTransactions.filter(t => t.status === 'completed');
     const pending = allTransactions.filter(t => t.status === 'pending');
-    
+
     const totalRevenue = completed.reduce((sum, t) => sum + t.amount, 0);
     const totalExpenses = Math.floor(totalRevenue * 0.618); // Assuming 61.8% expenses
     const netProfit = totalRevenue - totalExpenses;
     const pendingAmount = pending.reduce((sum, t) => sum + t.amount, 0);
     const avgPayment = completed.length > 0 ? Math.floor(totalRevenue / completed.length) : 0;
-    
+
     document.getElementById('total-revenue').textContent = `LKR ${totalRevenue.toLocaleString()}`;
     document.getElementById('total-expenses').textContent = `LKR ${totalExpenses.toLocaleString()}`;
     document.getElementById('net-profit').textContent = `LKR ${netProfit.toLocaleString()}`;
@@ -500,16 +500,16 @@ function applyFilters() {
         if (currentFilters.status !== 'all' && transaction.status !== currentFilters.status) {
             return false;
         }
-        
+
         // Method filter
         if (currentFilters.method !== 'all' && transaction.method !== currentFilters.method) {
             return false;
         }
-        
+
         // Amount filter
         if (currentFilters.amount !== 'all') {
             const amount = transaction.amount;
-            switch(currentFilters.amount) {
+            switch (currentFilters.amount) {
                 case '0-1000':
                     if (amount > 1000) return false;
                     break;
@@ -524,12 +524,12 @@ function applyFilters() {
                     break;
             }
         }
-        
+
         // Service filter
         if (currentFilters.service !== 'all' && transaction.service !== currentFilters.service) {
             return false;
         }
-        
+
         // Search filter
         if (currentFilters.search) {
             const searchTerm = currentFilters.search.toLowerCase();
@@ -538,15 +538,15 @@ function applyFilters() {
                 return false;
             }
         }
-        
+
         return true;
     });
-    
+
     sortTransactions();
-    
+
     // Reset to first page
     currentPage = 1;
-    
+
     // Update display
     displayTransactions();
     updatePagination();
@@ -561,14 +561,14 @@ function resetFilters() {
         service: 'all',
         search: ''
     };
-    
+
     // Reset form elements
     document.getElementById('status-filter').value = 'all';
     document.getElementById('method-filter').value = 'all';
     document.getElementById('amount-filter').value = 'all';
     document.getElementById('service-filter').value = 'all';
     document.getElementById('search-filter').value = '';
-    
+
     applyFilters();
 }
 
@@ -578,11 +578,11 @@ function searchTransactions() {
 }
 
 // Filter event handlers
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Status filter
     const statusFilter = document.getElementById('status-filter');
     if (statusFilter) {
-        statusFilter.addEventListener('change', function() {
+        statusFilter.addEventListener('change', function () {
             currentFilters.status = this.value;
             applyFilters();
         });
@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Project filter
     const projectFilter = document.getElementById('project-filter');
     if (projectFilter) {
-        projectFilter.addEventListener('change', function() {
+        projectFilter.addEventListener('change', function () {
             currentFilters.project = this.value;
             applyFilters();
         });
@@ -600,7 +600,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Milestone filter
     const milestoneFilter = document.getElementById('milestone-filter');
     if (milestoneFilter) {
-        milestoneFilter.addEventListener('change', function() {
+        milestoneFilter.addEventListener('change', function () {
             currentFilters.milestone = this.value;
             applyFilters();
         });
@@ -609,7 +609,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Amount filter
     const amountFilter = document.getElementById('amount-filter');
     if (amountFilter) {
-        amountFilter.addEventListener('change', function() {
+        amountFilter.addEventListener('change', function () {
             currentFilters.amount = this.value;
             applyFilters();
         });
@@ -624,10 +624,10 @@ function sortTable(field) {
         currentSort.field = field;
         currentSort.direction = 'desc';
     }
-    
+
     // Update sort indicators
     updateSortIndicators();
-    
+
     sortTransactions();
     displayTransactions();
 }
@@ -635,8 +635,8 @@ function sortTable(field) {
 function sortTransactions() {
     filteredTransactions.sort((a, b) => {
         let aValue, bValue;
-        
-        switch(currentSort.field) {
+
+        switch (currentSort.field) {
             case 'date':
                 aValue = new Date(a.date);
                 bValue = new Date(b.date);
@@ -668,7 +668,7 @@ function sortTransactions() {
             default:
                 return 0;
         }
-        
+
         if (aValue < bValue) return currentSort.direction === 'asc' ? -1 : 1;
         if (aValue > bValue) return currentSort.direction === 'asc' ? 1 : -1;
         return 0;
@@ -680,7 +680,7 @@ function updateSortIndicators() {
     document.querySelectorAll('.payments-table th.sortable i').forEach(icon => {
         icon.className = 'fas fa-sort';
     });
-    
+
     // Update current sort indicator
     const currentHeader = document.querySelector(`[onclick="sortTable('${currentSort.field}')"] i`);
     if (currentHeader) {
@@ -694,14 +694,14 @@ function displayTransactions() {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const pageTransactions = filteredTransactions.slice(startIndex, endIndex);
-    
+
     tbody.innerHTML = '';
-    
+
     pageTransactions.forEach(transaction => {
         const row = createTransactionRow(transaction);
         tbody.appendChild(row);
     });
-    
+
     // Clear selections
     selectedTransactions.clear();
     document.getElementById('select-all').checked = false;
@@ -711,10 +711,10 @@ function createTransactionRow(transaction) {
     const row = document.createElement('tr');
     row.className = 'payment-row';
     row.onclick = () => openInvoiceModal(transaction.id);
-    
+
     const statusClass = getStatusClass(transaction.status);
     const milestoneClass = getMilestoneClass(transaction.milestone.type);
-    
+
     row.innerHTML = `
         <td onclick="event.stopPropagation()">
             <input type="checkbox" class="transaction-checkbox" value="${transaction.id}" 
@@ -777,7 +777,7 @@ function createTransactionRow(transaction) {
             </div>
         </td>
     `;
-    
+
     return row;
 }
 
@@ -855,22 +855,22 @@ function formatTime(dateString) {
 function updatePagination() {
     const totalPages = Math.ceil(filteredTransactions.length / pageSize);
     const paginationNumbers = document.getElementById('pagination-numbers');
-    
+
     // Update pagination info
     const startItem = Math.min((currentPage - 1) * pageSize + 1, filteredTransactions.length);
     const endItem = Math.min(currentPage * pageSize, filteredTransactions.length);
-    document.getElementById('pagination-info').textContent = 
+    document.getElementById('pagination-info').textContent =
         `Showing ${startItem}-${endItem} of ${filteredTransactions.length} results`;
-    
+
     // Update button states
     document.getElementById('first-btn').classList.toggle('disabled', currentPage === 1);
     document.getElementById('prev-btn').classList.toggle('disabled', currentPage === 1);
     document.getElementById('next-btn').classList.toggle('disabled', currentPage === totalPages);
     document.getElementById('last-btn').classList.toggle('disabled', currentPage === totalPages);
-    
+
     // Generate page numbers
     paginationNumbers.innerHTML = '';
-    
+
     for (let i = 1; i <= totalPages; i++) {
         if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
             const pageBtn = document.createElement('button');
@@ -891,7 +891,7 @@ function updatePagination() {
 function changePage(page) {
     if (typeof page === 'string') {
         const totalPages = Math.ceil(filteredTransactions.length / pageSize);
-        switch(page) {
+        switch (page) {
             case 'first':
                 currentPage = 1;
                 break;
@@ -908,7 +908,7 @@ function changePage(page) {
     } else {
         currentPage = page;
     }
-    
+
     displayTransactions();
     updatePagination();
 }
@@ -921,7 +921,7 @@ function changePageSize() {
 }
 
 function updateResultsCount() {
-    document.getElementById('results-count').textContent = 
+    document.getElementById('results-count').textContent =
         `Showing 1-${Math.min(pageSize, filteredTransactions.length)} of ${filteredTransactions.length} transactions`;
 }
 
@@ -929,7 +929,7 @@ function updateResultsCount() {
 function toggleSelectAll() {
     const selectAll = document.getElementById('select-all');
     const checkboxes = document.querySelectorAll('.transaction-checkbox');
-    
+
     checkboxes.forEach(checkbox => {
         checkbox.checked = selectAll.checked;
         if (selectAll.checked) {
@@ -946,7 +946,7 @@ function toggleTransactionSelection(transactionId) {
     } else {
         selectedTransactions.add(transactionId);
     }
-    
+
     // Update select all checkbox
     const totalCheckboxes = document.querySelectorAll('.transaction-checkbox').length;
     const selectAllCheckbox = document.getElementById('select-all');
@@ -958,7 +958,7 @@ function toggleTransactionSelection(transactionId) {
 function setTableView(view) {
     document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelector(`[data-view="${view}"]`).classList.add('active');
-    
+
     const table = document.getElementById('payments-table');
     table.className = `payments-table ${view}-view`;
 }
@@ -980,9 +980,9 @@ function toggleExportMenu() {
 function exportAs(format) {
     const dropdown = document.getElementById('export-dropdown');
     dropdown.classList.remove('show');
-    
+
     showNotification(`Exporting as ${format.toUpperCase()}...`, 'info');
-    
+
     // Implementation for different export formats
     setTimeout(() => {
         showNotification(`Export completed! Downloaded as ${format.toUpperCase()}`, 'success');
@@ -1003,31 +1003,31 @@ function closeDateRangeModal() {
 function applyCustomDateRange() {
     const startDate = document.getElementById('start-date').value;
     const endDate = document.getElementById('end-date').value;
-    
+
     if (!startDate || !endDate) {
         showNotification('Please select both start and end dates', 'error');
         return;
     }
-    
+
     if (new Date(startDate) > new Date(endDate)) {
         showNotification('Start date cannot be after end date', 'error');
         return;
     }
-    
+
     // Apply custom date filter
     const start = new Date(startDate);
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999); // Include full end day
-    
+
     allTransactions = allTransactions.filter(transaction => {
         const transactionDate = new Date(transaction.date);
         return transactionDate >= start && transactionDate <= end;
     });
-    
+
     // Update period badge
-    document.getElementById('current-period').textContent = 
+    document.getElementById('current-period').textContent =
         `${startDate} to ${endDate}`;
-    
+
     closeDateRangeModal();
     updateSummaryStats();
     applyFilters();
@@ -1037,11 +1037,11 @@ function applyCustomDateRange() {
 function openInvoiceModal(invoiceId) {
     const transaction = allTransactions.find(t => t.id === invoiceId);
     if (!transaction) return;
-    
+
     // Create invoice modal dynamically
     const modal = createInvoiceModal(transaction);
     document.body.appendChild(modal);
-    
+
     // Show modal
     setTimeout(() => modal.classList.add('show'), 100);
 }
@@ -1052,10 +1052,10 @@ function createInvoiceModal(transaction) {
     modal.onclick = (e) => {
         if (e.target === modal) closeInvoiceModal();
     };
-    
+
     const statusClass = getStatusClass(transaction.status);
     const milestoneClass = getMilestoneClass(transaction.milestone.type);
-    
+
     modal.innerHTML = `
         <div class="invoice-modal-content">
             <div class="invoice-header">
@@ -1150,7 +1150,7 @@ function createInvoiceModal(transaction) {
             </div>
         </div>
     `;
-    
+
     return modal;
 }
 
@@ -1192,7 +1192,7 @@ function downloadReceipt(transactionId) {
 
 function refreshData() {
     showNotification('Refreshing payment data...', 'info');
-    
+
     // Simulate data refresh
     setTimeout(() => {
         loadPaymentData();
@@ -1206,27 +1206,27 @@ function updateSummaryCharts() {
     // Simple revenue trend chart using canvas
     const canvas = document.getElementById('revenueCanvas');
     const ctx = canvas.getContext('2d');
-    
+
     // Sample data for revenue trend
     const data = [2400, 2800, 3200, 2900, 3500, 4200, 3800];
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    
+
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     // Draw simple line chart
     const padding = 40;
     const chartWidth = canvas.width - 2 * padding;
     const chartHeight = canvas.height - 2 * padding;
-    
+
     const maxValue = Math.max(...data);
     const minValue = Math.min(...data);
     const valueRange = maxValue - minValue;
-    
+
     // Draw grid lines
     ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = 1;
-    
+
     for (let i = 0; i <= 5; i++) {
         const y = padding + (chartHeight / 5) * i;
         ctx.beginPath();
@@ -1234,31 +1234,31 @@ function updateSummaryCharts() {
         ctx.lineTo(canvas.width - padding, y);
         ctx.stroke();
     }
-    
+
     // Draw data line
     ctx.strokeStyle = '#3498db';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    
+
     data.forEach((value, index) => {
         const x = padding + (chartWidth / (data.length - 1)) * index;
         const y = padding + chartHeight - ((value - minValue) / valueRange) * chartHeight;
-        
+
         if (index === 0) {
             ctx.moveTo(x, y);
         } else {
             ctx.lineTo(x, y);
         }
     });
-    
+
     ctx.stroke();
-    
+
     // Draw data points
     ctx.fillStyle = '#3498db';
     data.forEach((value, index) => {
         const x = padding + (chartWidth / (data.length - 1)) * index;
         const y = padding + chartHeight - ((value - minValue) / valueRange) * chartHeight;
-        
+
         ctx.beginPath();
         ctx.arc(x, y, 4, 0, Math.PI * 2);
         ctx.fill();
@@ -1286,13 +1286,13 @@ function showNotification(message, type = 'info') {
         <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'info'}-circle"></i>
         <span>${message}</span>
     `;
-    
+
     // Add to page
     document.body.appendChild(notification);
-    
+
     // Show notification
     setTimeout(() => notification.classList.add('show'), 100);
-    
+
     // Remove notification
     setTimeout(() => {
         notification.classList.remove('show');
@@ -1301,16 +1301,16 @@ function showNotification(message, type = 'info') {
 }
 
 // Close dropdowns when clicking outside
-document.addEventListener('click', function(event) {
+document.addEventListener('click', function (event) {
     const exportDropdown = document.getElementById('export-dropdown');
     const exportToggle = document.querySelector('.dropdown-toggle');
-    
+
     if (!exportToggle.contains(event.target)) {
         exportDropdown.classList.remove('show');
     }
 });
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     updateSummaryStats();
     loadExpenseData();
     setupExpenseEventListeners();
@@ -1455,7 +1455,7 @@ function loadExpenseData() {
             receipt: null
         }
     ];
-    
+
     updateExpenseSummaryStats();
     applyExpenseFilters();
     populateExpenseProjectFilters();
@@ -1471,7 +1471,7 @@ function setupExpenseEventListeners() {
 // Update expense summary statistics
 function updateExpenseSummaryStats() {
     const totalExpenses = allExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-    
+
     // Calculate this month's expenses
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
@@ -1479,13 +1479,13 @@ function updateExpenseSummaryStats() {
         const expenseDate = new Date(expense.date);
         return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
     }).reduce((sum, expense) => sum + expense.amount, 0);
-    
+
     // Count active projects (projects with expenses)
     const activeProjects = new Set(allExpenses.map(expense => expense.projectId)).size;
-    
+
     // Calculate average expense
     const avgExpense = allExpenses.length > 0 ? Math.floor(totalExpenses / allExpenses.length) : 0;
-    
+
     document.getElementById('total-expenses-amount').textContent = `LKR ${totalExpenses.toLocaleString()}`;
     document.getElementById('monthly-expenses').textContent = `LKR ${monthlyExpenses.toLocaleString()}`;
     document.getElementById('active-projects-expenses').textContent = activeProjects.toString();
@@ -1495,14 +1495,14 @@ function updateExpenseSummaryStats() {
 // Populate project filter dropdown
 function populateExpenseProjectFilters() {
     const projectFilter = document.getElementById('expense-project-filter');
-    const projects = [...new Set(allExpenses.map(expense => ({ 
-        id: expense.projectId, 
-        name: expense.projectName 
+    const projects = [...new Set(allExpenses.map(expense => ({
+        id: expense.projectId,
+        name: expense.projectName
     })))];
-    
+
     // Clear existing options except "All Projects"
     projectFilter.innerHTML = '<option value="all">All Projects</option>';
-    
+
     projects.forEach(project => {
         const option = document.createElement('option');
         option.value = project.id;
@@ -1518,18 +1518,18 @@ function applyExpenseFilters() {
         if (currentExpenseFilters.project !== 'all' && expense.projectId !== currentExpenseFilters.project) {
             return false;
         }
-        
+
         // Category filter
         if (currentExpenseFilters.category !== 'all' && expense.category !== currentExpenseFilters.category) {
             return false;
         }
-        
+
         // Date filter
         if (currentExpenseFilters.date !== 'all') {
             const expenseDate = new Date(expense.date);
             const now = new Date();
-            
-            switch(currentExpenseFilters.date) {
+
+            switch (currentExpenseFilters.date) {
                 case 'today':
                     if (expenseDate.toDateString() !== now.toDateString()) return false;
                     break;
@@ -1546,7 +1546,7 @@ function applyExpenseFilters() {
                     break;
             }
         }
-        
+
         // Search filter
         if (currentExpenseFilters.search) {
             const searchTerm = currentExpenseFilters.search.toLowerCase();
@@ -1555,15 +1555,15 @@ function applyExpenseFilters() {
                 return false;
             }
         }
-        
+
         return true;
     });
-    
+
     sortExpenseData();
-    
+
     // Reset to first page
     currentExpensePage = 1;
-    
+
     // Update display
     displayExpenses();
     updateExpensePagination();
@@ -1571,22 +1571,22 @@ function applyExpenseFilters() {
 }
 
 // Update filter handlers
-document.getElementById('expense-project-filter').addEventListener('change', function() {
+document.getElementById('expense-project-filter').addEventListener('change', function () {
     currentExpenseFilters.project = this.value;
     applyExpenseFilters();
 });
 
-document.getElementById('expense-category-filter').addEventListener('change', function() {
+document.getElementById('expense-category-filter').addEventListener('change', function () {
     currentExpenseFilters.category = this.value;
     applyExpenseFilters();
 });
 
-document.getElementById('expense-date-filter').addEventListener('change', function() {
+document.getElementById('expense-date-filter').addEventListener('change', function () {
     currentExpenseFilters.date = this.value;
     applyExpenseFilters();
 });
 
-document.getElementById('expense-search').addEventListener('input', function() {
+document.getElementById('expense-search').addEventListener('input', function () {
     currentExpenseFilters.search = this.value;
     applyExpenseFilters();
 });
@@ -1599,7 +1599,7 @@ function sortExpenses(field) {
         currentExpenseSort.field = field;
         currentExpenseSort.direction = 'desc';
     }
-    
+
     applyExpenseFilters();
 }
 
@@ -1607,7 +1607,7 @@ function sortExpenseData() {
     filteredExpenses.sort((a, b) => {
         let aVal = a[currentExpenseSort.field];
         let bVal = b[currentExpenseSort.field];
-        
+
         if (currentExpenseSort.field === 'amount') {
             aVal = parseFloat(aVal);
             bVal = parseFloat(bVal);
@@ -1618,7 +1618,7 @@ function sortExpenseData() {
             aVal = aVal ? aVal.toString().toLowerCase() : '';
             bVal = bVal ? bVal.toString().toLowerCase() : '';
         }
-        
+
         if (aVal < bVal) {
             return currentExpenseSort.direction === 'asc' ? -1 : 1;
         } else if (aVal > bVal) {
@@ -1634,7 +1634,7 @@ function displayExpenses() {
     const startIndex = (currentExpensePage - 1) * expensePageSize;
     const endIndex = startIndex + expensePageSize;
     const pageExpenses = filteredExpenses.slice(startIndex, endIndex);
-    
+
     if (pageExpenses.length === 0) {
         tableBody.innerHTML = `
             <tr>
@@ -1647,7 +1647,7 @@ function displayExpenses() {
         `;
         return;
     }
-    
+
     tableBody.innerHTML = pageExpenses.map(expense => `
         <tr onclick="editExpense('${expense.id}')">
             <td>${formatDate(expense.date)}</td>
@@ -1677,9 +1677,9 @@ function displayExpenses() {
 function updateExpensePagination() {
     const totalPages = Math.ceil(filteredExpenses.length / expensePageSize);
     const pageNumbers = document.getElementById('expense-page-numbers');
-    
+
     pageNumbers.innerHTML = '';
-    
+
     for (let i = 1; i <= totalPages; i++) {
         const pageBtn = document.createElement('button');
         pageBtn.className = `page-btn ${i === currentExpensePage ? 'active' : ''}`;
@@ -1687,11 +1687,11 @@ function updateExpensePagination() {
         pageBtn.onclick = () => goToExpensePage(i);
         pageNumbers.appendChild(pageBtn);
     }
-    
+
     // Update navigation buttons
     const prevBtn = document.querySelector('button[onclick="previousExpensePage()"]');
     const nextBtn = document.querySelector('button[onclick="nextExpensePage()"]');
-    
+
     if (prevBtn) prevBtn.disabled = currentExpensePage === 1;
     if (nextBtn) nextBtn.disabled = currentExpensePage === totalPages;
 }
@@ -1699,8 +1699,8 @@ function updateExpensePagination() {
 function updateExpenseResultsCount() {
     const startIndex = (currentExpensePage - 1) * expensePageSize + 1;
     const endIndex = Math.min(currentExpensePage * expensePageSize, filteredExpenses.length);
-    
-    document.getElementById('expense-results-count').textContent = 
+
+    document.getElementById('expense-results-count').textContent =
         `Showing ${startIndex}-${endIndex} of ${filteredExpenses.length} expenses`;
 }
 
@@ -1743,16 +1743,16 @@ function saveExpense() {
     const amount = parseFloat(document.getElementById('expense-amount').value);
     const date = document.getElementById('expense-date').value;
     const description = document.getElementById('expense-description').value;
-    
+
     if (!project || !category || !amount || !date || !description) {
         alert('Please fill in all required fields');
         return;
     }
-    
+
     // Get project name from the dropdown
     const projectSelect = document.getElementById('expense-project');
     const projectName = projectSelect.options[projectSelect.selectedIndex].text;
-    
+
     const newExpense = {
         id: `EXP-2025-${String(allExpenses.length + 1).padStart(3, '0')}`,
         date: date,
@@ -1763,13 +1763,13 @@ function saveExpense() {
         amount: amount,
         receipt: null
     };
-    
+
     allExpenses.unshift(newExpense);
     updateExpenseSummaryStats();
     applyExpenseFilters();
     populateExpenseProjectFilters();
     closeExpenseModal();
-    
+
     // Show success message
     alert('Expense added successfully!');
 }
@@ -1777,16 +1777,16 @@ function saveExpense() {
 function editExpense(expenseId) {
     const expense = allExpenses.find(exp => exp.id === expenseId);
     if (!expense) return;
-    
+
     editingExpenseId = expenseId;
-    
+
     // Populate edit form
     document.getElementById('edit-expense-project').value = expense.projectId;
     document.getElementById('edit-expense-category').value = expense.category;
     document.getElementById('edit-expense-amount').value = expense.amount;
     document.getElementById('edit-expense-date').value = expense.date;
     document.getElementById('edit-expense-description').value = expense.description;
-    
+
     document.getElementById('edit-expense-modal').style.display = 'flex';
 }
 
@@ -1798,22 +1798,22 @@ function closeEditExpenseModal() {
 
 function updateExpense() {
     if (!editingExpenseId) return;
-    
+
     const project = document.getElementById('edit-expense-project').value;
     const category = document.getElementById('edit-expense-category').value;
     const amount = parseFloat(document.getElementById('edit-expense-amount').value);
     const date = document.getElementById('edit-expense-date').value;
     const description = document.getElementById('edit-expense-description').value;
-    
+
     if (!project || !category || !amount || !date || !description) {
         alert('Please fill in all required fields');
         return;
     }
-    
+
     // Get project name from the dropdown
     const projectSelect = document.getElementById('edit-expense-project');
     const projectName = projectSelect.options[projectSelect.selectedIndex].text;
-    
+
     const expenseIndex = allExpenses.findIndex(exp => exp.id === editingExpenseId);
     if (expenseIndex !== -1) {
         allExpenses[expenseIndex] = {
@@ -1825,12 +1825,12 @@ function updateExpense() {
             date: date,
             description: description
         };
-        
+
         updateExpenseSummaryStats();
         applyExpenseFilters();
         populateExpenseProjectFilters();
         closeEditExpenseModal();
-        
+
         alert('Expense updated successfully!');
     }
 }
@@ -1850,12 +1850,12 @@ function deleteExpense(expenseId) {
 
 function exportExpenses() {
     // Simple CSV export
-    const csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8,"
         + "Date,Project,Category,Description,Amount\n"
-        + filteredExpenses.map(expense => 
+        + filteredExpenses.map(expense =>
             `${expense.date},${expense.projectName},${expense.category},"${expense.description}",${expense.amount}`
         ).join("\n");
-    
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);

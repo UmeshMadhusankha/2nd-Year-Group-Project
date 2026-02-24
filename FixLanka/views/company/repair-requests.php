@@ -1,3 +1,32 @@
+<?php
+/**
+ * Company Repair Requests Page
+ * 
+ * This page allows companies to:
+ * - View available job requests from customers
+ * - Submit quotations for job requests
+ * - Manage submitted quotations (view, edit, delete)
+ * - Track quotation status (pending, accepted, rejected, successful)
+ * 
+ * Authentication: Requires logged-in company user
+ * 
+ * @package FixLanka\Views\Company
+ * @version 1.0.0
+ */
+
+// Start session and verify authentication
+require_once '../../config/session.php';
+requireRole('company');
+
+// Retrieve logged-in user data from session
+$userData = getUserData();
+$userId = $userData['id'] ?? null;
+
+// Ensure user is authenticated
+if (!$userId) {
+    die('Error: User not authenticated');
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -29,11 +58,13 @@
 
     <div class="dashboard-container">
         <!-- Sidebar Container -->
-        <div id="sidebar-container"></div>
+        <!-- Sidebar Component -->
+        <?php include 'sidebar.php'; ?>
 
         <main class="main-content">
             <!-- Header Container -->
-            <div id="header-container"></div>
+            <!-- Header Component -->
+            <?php include 'topbar.php'; ?>
 
             <!-- Page Header -->
             <header class="page-header">
@@ -89,7 +120,7 @@
                     <button class="tab-button" data-tab="direct-requests">
                         <i class="fas fa-inbox"></i>
                         Direct Requests
-                        <span class="tab-count">8</span>
+                        <span class="tab-count" id="direct-requests-tab-count">0</span>
                     </button>
                     <button class="tab-button" data-tab="logs">
                         <i class="fas fa-history"></i>
@@ -159,175 +190,44 @@
 
             <!-- Direct Requests Tab -->
             <section id="direct-requests" class="tab-content">
-                <!-- Controls -->
-                <div class="requests-controls">
-                    <div class="controls-row">
-                        <div class="filters-group">
-                            <div class="filter-item">
-                                <label class="filter-label">Status</label>
-                                <select class="filter-select">
-                                    <option value="">All Status</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="accepted">Accepted</option>
-                                    <option value="rejected">Rejected</option>
-                                </select>
-                            </div>
-                            <div class="filter-item">
-                                <label class="filter-label">Date Range</label>
-                                <select class="filter-select">
-                                    <option value="">All Time</option>
-                                    <option value="today">Today</option>
-                                    <option value="week">This Week</option>
-                                    <option value="month">This Month</option>
-                                </select>
-                            </div>
+                <!-- Direct Requests Table -->
+                <div class="requests-table-container" id="direct-requests-container">
+                    <!-- Empty state - shown when no direct requests -->
+                    <div class="empty-state-table" id="direct-requests-empty">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-inbox"></i>
                         </div>
-
-                        <div class="search-box">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" class="search-input" placeholder="Search direct requests...">
+                        <h3 class="empty-state-title">No Direct Requests Yet</h3>
+                        <p class="empty-state-description">
+                            Direct requests from customers who specifically choose your company will appear here.
+                            <br>
+                            These are high-value opportunities because the customer already knows your work!
+                        </p>
+                        <div class="empty-state-tips">
+                            <h4><i class="fas fa-lightbulb"></i> How to get direct requests:</h4>
+                            <ul>
+                                <li>Provide excellent service to build your reputation</li>
+                                <li>Encourage satisfied customers to request you again</li>
+                                <li>Complete your company profile to stand out</li>
+                                <li>Respond quickly to public requests to build trust</li>
+                            </ul>
                         </div>
                     </div>
-                <!-- </div> -->
 
-                <!-- Direct Requests Table -->
-                <div class="requests-table-container">
-                    <table class="requests-table">
+                    <!-- Table - shown when direct requests exist -->
+                    <table class="requests-table" id="direct-requests-table" style="display: none;">
                         <thead>
                             <tr>
                                 <th>Request Details</th>
                                 <th>Customer</th>
                                 <th>Date Received</th>
+                                <th>Deadline</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>
-                                    <div>
-                                        <h5>AC Repair - Colombo</h5>
-                                        <p
-                                            style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
-                                            #REQ-2025-004 • Emergency Service
-                                        </p>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="table-customer">
-                                        <div class="table-customer-avatar">RJ</div>
-                                        <div class="table-customer-info">
-                                            <h5>Robert Johnson</h5>
-                                            <p>robert@email.com</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Sept 10, 2025</td>
-                                <td>
-                                    <span class="status-badge pending">
-                                        <i class="fas fa-clock"></i>
-                                        Pending
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="table-actions">
-                                        <button class="table-action-btn view" onclick="viewRequestDetails('REQ-2025-004')">
-                                            <i class="fas fa-eye"></i>
-                                            View
-                                        </button>
-                                        <button class="table-action-btn accept"
-                                            onclick="acceptDirectRequest('REQ-2025-004')">
-                                            <i class="fas fa-check"></i>
-                                            Accept
-                                        </button>
-                                        <button class="table-action-btn reject"
-                                            onclick="rejectDirectRequest('REQ-2025-004')">
-                                            <i class="fas fa-times"></i>
-                                            Reject
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div>
-                                        <h5>Plumbing Fix - Kandy</h5>
-                                        <p
-                                            style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
-                                            #REQ-2025-005 • Bathroom Renovation
-                                        </p>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="table-customer">
-                                        <div class="table-customer-avatar">JS</div>
-                                        <div class="table-customer-info">
-                                            <h5>Jane Smith</h5>
-                                            <p>jane.smith@email.com</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Sept 12, 2025</td>
-                                <td>
-                                    <span class="status-badge pending">
-                                        <i class="fas fa-clock"></i>
-                                        Pending
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="table-actions">
-                                        <button class="table-action-btn view" onclick="viewRequestDetails('REQ-2025-005')">
-                                            <i class="fas fa-eye"></i>
-                                            View
-                                        </button>
-                                        <button class="table-action-btn accept"
-                                            onclick="acceptDirectRequest('REQ-2025-005')">
-                                            <i class="fas fa-check"></i>
-                                            Accept
-                                        </button>
-                                        <button class="table-action-btn reject"
-                                            onclick="rejectDirectRequest('REQ-2025-005')">
-                                            <i class="fas fa-times"></i>
-                                            Reject
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div>
-                                        <h5>Electrical Installation</h5>
-                                        <p
-                                            style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
-                                            #REQ-2025-006 • New Construction
-                                        </p>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="table-customer">
-                                        <div class="table-customer-avatar">MB</div>
-                                        <div class="table-customer-info">
-                                            <h5>Mike Brown</h5>
-                                            <p>mike.brown@email.com</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Sept 11, 2025</td>
-                                <td>
-                                    <span class="status-badge accepted">
-                                        <i class="fas fa-check"></i>
-                                        Accepted
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="table-actions">
-                                        <a href="/2nd-Year-Group-Project/FixLanka/views/company/contracts.php?id=REQ-2025-006" class="table-action-btn view">
-                                            <i class="fas fa-eye"></i>
-                                            View Contract
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
+                        <tbody id="direct-requests-tbody">
+                            <!-- Direct requests will be dynamically loaded here -->
                         </tbody>
                     </table>
                 </div>
@@ -494,60 +394,6 @@
                         </div>
                     </div>
 
-                    <!-- Pricing Section -->
-                    <div class="form-section">
-                        <h3 class="form-section-title">
-                            <i class="fas fa-calculator"></i>
-                            Pricing & Cost Breakdown
-                        </h3>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label" for="labor-cost">
-                                    Labor Cost (LKR) <span class="required">*</span>
-                                </label>
-                                <input type="number" id="labor-cost" name="labor_cost" class="form-input" 
-                                    placeholder="0.00" min="0" step="0.01" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="material-cost">
-                                    Material Cost (LKR) <span class="required">*</span>
-                                </label>
-                                <input type="number" id="material-cost" name="material_cost" class="form-input" 
-                                    placeholder="0.00" min="0" step="0.01" required>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label" for="transport-cost">
-                                    Transport Cost (LKR)
-                                </label>
-                                <input type="number" id="transport-cost" name="transport_cost" class="form-input" 
-                                    placeholder="0.00" min="0" step="0.01" value="0">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="other-cost">
-                                    Other Charges (LKR)
-                                </label>
-                                <input type="number" id="other-cost" name="other_cost" class="form-input" 
-                                    placeholder="0.00" min="0" step="0.01" value="0">
-                            </div>
-                        </div>
-
-                        <div class="cost-summary">
-                            <div class="cost-row">
-                                <span>Subtotal:</span>
-                                <span id="subtotal-amount">LKR 0.00</span>
-                            </div>
-                            <div class="cost-row total">
-                                <span>Total Quotation Amount:</span>
-                                <span id="total-amount">LKR 0.00</span>
-                            </div>
-                        </div>
-                        <input type="hidden" id="total-price" name="total_price" value="0">
-                    </div>
-
                     <!-- Timeline Section -->
                     <div class="form-section">
                         <h3 class="form-section-title">
@@ -578,7 +424,428 @@
                             </label>
                             <input type="number" id="estimated-duration" name="estimated_duration" 
                                 class="form-input" placeholder="e.g., 5" min="1" max="365" required>
-                            <small class="form-hint">Number of working days to complete the project</small>
+                            <small class="form-hint">Number of calendar days to complete the project</small>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================ -->
+                    <!-- ⭐ NEW: Work Schedule Specifications (Supervisor Requirement) -->
+                    <!-- ============================================================ -->
+                    <div class="form-section work-schedule-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-calendar-alt"></i>
+                            Work Schedule Specifications
+                        </h3>
+                        <p class="section-description">
+                            <i class="fas fa-info-circle"></i>
+                            Specify your working days and hours for transparency and clear customer expectations
+                        </p>
+
+                        <div class="form-row">
+                            <!-- Schedule Type -->
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="work-schedule-type">
+                                    Work Schedule Type <span class="required">*</span>
+                                    <i class="fas fa-question-circle tooltip-icon" title="How many days per week will you work on this project?"></i>
+                                </label>
+                                <select id="work-schedule-type" name="work_schedule_type" class="form-input" required>
+                                    <option value="">-- Select Schedule --</option>
+                                    <option value="weekdays_only" selected>Weekdays Only (Monday - Friday)</option>
+                                    <option value="weekends_included">Weekends Included (Monday - Saturday)</option>
+                                    <option value="all_days">All Days (7 days per week)</option>
+                                    <option value="custom">Custom Schedule</option>
+                                </select>
+                            </div>
+
+                            <!-- Working Days Per Week -->
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="working-days-per-week">
+                                    Working Days Per Week <span class="required">*</span>
+                                </label>
+                                <input type="number" id="working-days-per-week" name="working_days_per_week" 
+                                    class="form-input" min="1" max="7" value="5" required>
+                                <small class="form-hint">Number of days you'll work (1-7)</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <!-- Daily Work Hours -->
+                            <div class="form-group col-md-4">
+                                <label class="form-label" for="daily-work-hours">
+                                    Daily Work Hours <span class="required">*</span>
+                                </label>
+                                <input type="number" id="daily-work-hours" name="daily_work_hours" 
+                                    class="form-input" min="0.5" max="24" step="0.5" value="8.00" required>
+                                <small class="form-hint">Hours per working day</small>
+                            </div>
+
+                            <!-- Work Start Time -->
+                            <div class="form-group col-md-4">
+                                <label class="form-label" for="work-start-time">
+                                    Start Time <span class="required">*</span>
+                                </label>
+                                <input type="time" id="work-start-time" name="work_start_time" 
+                                    class="form-input" value="08:00" required>
+                                <small class="form-hint">Daily work begins at</small>
+                            </div>
+
+                            <!-- Work End Time -->
+                            <div class="form-group col-md-4">
+                                <label class="form-label" for="work-end-time">
+                                    End Time <span class="required">*</span>
+                                </label>
+                                <input type="time" id="work-end-time" name="work_end_time" 
+                                    class="form-input" value="17:00" required>
+                                <small class="form-hint">Daily work ends at</small>
+                            </div>
+                        </div>
+
+                        <!-- Total Work Hours (Auto-calculated) -->
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="total-work-hours">
+                                    Total Estimated Work Hours
+                                    <i class="fas fa-calculator tooltip-icon" title="Auto-calculated based on duration, working days, and daily hours"></i>
+                                </label>
+                                <input type="number" id="total-work-hours" name="total_work_hours" 
+                                    class="form-input" step="0.5" readonly 
+                                    style="background-color: #f8f9fa; cursor: not-allowed;">
+                                <small class="form-hint">
+                                    <i class="fas fa-info-circle"></i>
+                                    Auto-calculated: (Duration ÷ 7 weeks) × Working Days/Week × Hours/Day
+                                </small>
+                            </div>
+
+                            <!-- Overtime Available -->
+                            <div class="form-group col-md-6">
+                                <label class="form-label d-block">Overtime Work Available?</label>
+                                <div class="custom-switch-wrapper">
+                                    <label class="custom-switch">
+                                        <input type="checkbox" id="overtime-available" name="overtime_available" value="1">
+                                        <span class="switch-slider"></span>
+                                        <span class="switch-label">Yes, overtime is available</span>
+                                    </label>
+                                </div>
+                                <small class="form-hint">Can you work extra hours if needed?</small>
+                            </div>
+                        </div>
+
+                        <!-- Overtime Rate (Conditional) -->
+                        <div class="form-row" id="overtime-rate-row" style="display: none;">
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="overtime-rate">
+                                    Overtime Hourly Rate (LKR) <span class="required">*</span>
+                                </label>
+                                <input type="number" id="overtime-rate" name="overtime_rate" 
+                                    class="form-input" min="0" step="0.01" placeholder="e.g., 1500.00">
+                                <small class="form-hint">
+                                    <i class="fas fa-lightbulb"></i>
+                                    Typically 1.5x your regular hourly rate
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Custom Schedule Details (Conditional) -->
+                        <div class="form-row" id="custom-schedule-row" style="display: none;">
+                            <div class="form-group col-12">
+                                <label class="form-label" for="custom-schedule-details">
+                                    Custom Schedule Details <span class="required">*</span>
+                                </label>
+                                <textarea id="custom-schedule-details" name="custom_schedule_details" 
+                                    class="form-input" rows="3" 
+                                    placeholder="Example: Monday-Thursday 8am-5pm, Friday 8am-3pm. Lunch break: 12pm-1pm. No work on public holidays."></textarea>
+                                <small class="form-hint">Provide specific details about your custom work schedule</small>
+                            </div>
+                        </div>
+
+                        <!-- Work Schedule Preview Box -->
+                        <div class="schedule-preview-box">
+                            <h5 class="preview-title">
+                                <i class="fas fa-eye"></i> Schedule Preview
+                            </h5>
+                            <div id="schedule-preview-content" class="preview-content">
+                                <p class="text-muted">
+                                    <i class="fas fa-arrow-up"></i> Fill in the fields above to see your work schedule preview
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pricing Section -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-calculator"></i>
+                            Pricing & Cost Breakdown
+                        </h3>
+
+                        <!-- Labor Cost Subsection -->
+                        <div class="pricing-subsection">
+                            <h4 class="subsection-title">
+                                <i class="fas fa-user-hard-hat"></i> Labor Costs
+                            </h4>
+                            
+                            <!-- Labor Pricing Method -->
+                            <div class="form-group">
+                                <label class="form-label">Labor Pricing Method <span class="required">*</span></label>
+                                <div class="radio-group-grid">
+                                    <label class="radio-card">
+                                        <input type="radio" name="labor_pricing_method" value="fixed" checked>
+                                        <span class="radio-card-content">
+                                            <i class="fas fa-hand-holding-usd"></i>
+                                            <strong>Fixed Price</strong>
+                                        </span>
+                                    </label>
+                                    <label class="radio-card">
+                                        <input type="radio" name="labor_pricing_method" value="hourly">
+                                        <span class="radio-card-content">
+                                            <i class="fas fa-clock"></i>
+                                            <strong>Per Hour</strong>
+                                        </span>
+                                    </label>
+                                    <label class="radio-card">
+                                        <input type="radio" name="labor_pricing_method" value="per_sqm">
+                                        <span class="radio-card-content">
+                                            <i class="fas fa-ruler-combined"></i>
+                                            <strong>Per m²</strong>
+                                        </span>
+                                    </label>
+                                    <label class="radio-card">
+                                        <input type="radio" name="labor_pricing_method" value="per_unit">
+                                        <span class="radio-card-content">
+                                            <i class="fas fa-boxes"></i>
+                                            <strong>Per Unit</strong>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Unit-Based Labor Pricing -->
+                            <div id="labor-unit-pricing" class="unit-pricing-section" style="display: none;">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            Unit Price (LKR) <span class="required">*</span>
+                                            <span class="unit-label" id="labor-unit-label"></span>
+                                        </label>
+                                        <input type="number" id="labor-unit-price" class="form-input" 
+                                            placeholder="Enter price per unit" min="0" step="0.01">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            <span id="labor-quantity-label">Quantity</span> <span class="required">*</span>
+                                        </label>
+                                        <input type="number" id="labor-quantity" class="form-input form-input-calculated" 
+                                            placeholder="Auto-filled from Work Schedule" min="0" step="0.01" readonly>
+                                    </div>
+                                </div>
+
+                                <!-- Labor Cost Breakdown -->
+                                <div class="cost-breakdown-small">
+                                    <div class="breakdown-row">
+                                        <span><span id="labor-breakdown-qty-label">Quantity</span>:</span>
+                                        <span id="labor-breakdown-qty">0</span>
+                                    </div>
+                                    <div class="breakdown-row">
+                                        <span>Unit Price:</span>
+                                        <span id="labor-breakdown-unit">LKR 0.00</span>
+                                    </div>
+                                    <div class="breakdown-row highlight">
+                                        <span>= Labor Cost:</span>
+                                        <span id="labor-breakdown-total">LKR 0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Total Labor Cost (Read-only when calculated) -->
+                            <div class="form-group">
+                                <label class="form-label" for="labor-cost">
+                                    Total Labor Cost (LKR) <span class="required">*</span>
+                                </label>
+                                <input type="number" id="labor-cost" name="labor_cost" class="form-input form-input-calculated" 
+                                    placeholder="0.00" min="0" step="0.01" required>
+                            </div>
+                        </div>
+
+                        <!-- Material Cost Subsection -->
+                        <div class="pricing-subsection">
+                            <h4 class="subsection-title">
+                                <i class="fas fa-boxes"></i> Material Costs
+                            </h4>
+
+                            <!-- Material Supply Checkbox -->
+                            <div class="form-group">
+                                <label class="checkbox-option material-supply-toggle">
+                                    <input type="checkbox" id="vendor-supplies-materials" name="vendor_supplies_materials" value="1">
+                                    <span class="checkbox-label">
+                                        <strong>I will supply the materials for this job</strong>
+                                        <small class="checkbox-hint">Check this if you're providing all materials. Leave unchecked if customer supplies materials.</small>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- Material Pricing Details (Shown when checkbox is checked) -->
+                            <div id="material-pricing-section" style="display: none;">
+                                
+                                <!-- Material Pricing Method -->
+                                <div class="form-group">
+                                    <label class="form-label">Material Pricing Method <span class="required">*</span></label>
+                                    <div class="radio-group-grid">
+                                        <label class="radio-card">
+                                            <input type="radio" name="material_pricing_method" value="fixed" checked>
+                                            <span class="radio-card-content">
+                                                <i class="fas fa-hand-holding-usd"></i>
+                                                <strong>Fixed Price</strong>
+                                            </span>
+                                        </label>
+                                        <label class="radio-card">
+                                            <input type="radio" name="material_pricing_method" value="per_sqm">
+                                            <span class="radio-card-content">
+                                                <i class="fas fa-ruler-combined"></i>
+                                                <strong>Per m²</strong>
+                                            </span>
+                                        </label>
+                                        <label class="radio-card">
+                                            <input type="radio" name="material_pricing_method" value="per_unit">
+                                            <span class="radio-card-content">
+                                                <i class="fas fa-boxes"></i>
+                                                <strong>Per Unit</strong>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Unit-Based Material Pricing -->
+                                <div id="material-unit-pricing" class="unit-pricing-section" style="display: none;">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                Unit Price (LKR) <span class="required">*</span>
+                                                <span class="unit-label" id="material-unit-label"></span>
+                                            </label>
+                                            <input type="number" id="material-unit-price" class="form-input" 
+                                                placeholder="Enter price per unit" min="0" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                <span id="material-quantity-label">Quantity</span> <span class="required">*</span>
+                                            </label>
+                                            <input type="number" id="material-quantity" class="form-input" 
+                                                placeholder="Enter quantity" min="0" step="0.01">
+                                        </div>
+                                    </div>
+
+                                    <!-- Material Cost Breakdown -->
+                                    <div class="cost-breakdown-small">
+                                        <div class="breakdown-row">
+                                            <span><span id="material-breakdown-qty-label">Quantity</span>:</span>
+                                            <span id="material-breakdown-qty">0</span>
+                                        </div>
+                                        <div class="breakdown-row">
+                                            <span>Unit Price:</span>
+                                            <span id="material-breakdown-unit">LKR 0.00</span>
+                                        </div>
+                                        <div class="breakdown-row highlight">
+                                            <span>= Material Cost:</span>
+                                            <span id="material-breakdown-total">LKR 0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Total Material Cost -->
+                                <div class="form-group">
+                                    <label class="form-label" for="material-cost">
+                                        Total Material Cost (LKR) <span class="required">*</span>
+                                    </label>
+                                    <input type="number" id="material-cost" name="material_cost" class="form-input form-input-calculated" 
+                                        placeholder="0.00" min="0" step="0.01" value="0">
+                                </div>
+                            </div>
+
+                            <!-- Message when materials not supplied by vendor -->
+                            <div id="material-not-supplied-message" class="info-message">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Materials will be supplied by the customer. No material cost included in this quotation.</span>
+                            </div>
+                        </div>
+
+                        <!-- Other Costs -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="transport-cost">
+                                    <i class="fas fa-truck"></i> Transport Cost (LKR)
+                                </label>
+                                <input type="number" id="transport-cost" name="transport_cost" class="form-input" 
+                                    placeholder="0.00" min="0" step="0.01" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="other-cost">
+                                    <i class="fas fa-receipt"></i> Other Charges (LKR)
+                                </label>
+                                <input type="number" id="other-cost" name="other_cost" class="form-input" 
+                                    placeholder="0.00" min="0" step="0.01" value="0">
+                            </div>
+                        </div>
+
+                        <!-- Final Cost Summary -->
+                        <div class="cost-summary">
+                            <div class="cost-row">
+                                <span>Subtotal:</span>
+                                <span id="subtotal-amount">LKR 0.00</span>
+                            </div>
+                            <div class="cost-row total">
+                                <span>Total Quotation Amount:</span>
+                                <span id="total-amount">LKR 0.00</span>
+                            </div>
+                        </div>
+                        <input type="hidden" id="total-price" name="total_price" value="0">
+                    </div>
+
+                    <!-- ============================================================ -->
+                    <!-- BUSINESS LOGIC: Payment Method Section -->
+                    <!-- ============================================================ -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-credit-card"></i>
+                            Payment Method
+                        </h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Select Payment Structure <span class="required">*</span></label>
+                            <select id="payment-method" name="payment_method" class="form-select" required onchange="updatePaymentMethodInfo()">
+                                <option value="">Choose payment method</option>
+                                <option value="milestone">Milestone-Based Payment</option>
+                                <option value="50-50">50% Upfront, 50% on Completion</option>
+                                <option value="30-70">30% Upfront, 70% on Completion</option>
+                                <option value="upfront_final">100% Upfront Payment</option>
+                                <option value="time_material">Time & Material (Hourly Rate)</option>
+                            </select>
+                        </div>
+
+                        <!-- Payment Method Information Box -->
+                        <div id="payment-method-info" style="display: none;">
+                            <!-- Info will be populated by JavaScript -->
+                        </div>
+
+                        <!-- Hourly Rate Field (shown only for Time & Material) -->
+                        <div id="hourly-rate-section" style="display: none;">
+                            <div class="form-group">
+                                <label class="form-label">Hourly Rate (LKR) <span class="required">*</span></label>
+                                <input type="number" id="hourly-rate" name="hourly_rate" class="form-input" 
+                                       placeholder="Enter your hourly rate" min="0" step="0.01">
+                            </div>
+                        </div>
+
+                        <!-- Spending Cap (optional for Time & Material) -->
+                        <div id="spending-cap-section" style="display: none;">
+                            <div class="form-group">
+                                <label class="form-label">Maximum Spending Cap Multiplier (Optional)</label>
+                                <input type="number" id="spending-cap" name="spending_cap_multiplier" class="form-input" 
+                                       value="1.5" min="1" max="2" step="0.1"
+                                       placeholder="Enter multiplier (e.g., 1.5 = 150% of estimate)">
+                                <small class="form-hint">
+                                    Default: 1.5x (Project will stop if costs exceed estimate × multiplier)
+                                </small>
+                            </div>
                         </div>
                     </div>
 
@@ -589,19 +856,7 @@
                             Terms & Conditions
                         </h3>
 
-                        <div class="form-group">
-                            <label class="form-label">
-                                Payment Terms <span class="required">*</span>
-                            </label>
-                            <select id="payment-terms" name="payment_terms" class="form-select" required>
-                                <option value="">Select payment terms</option>
-                                <option value="full_advance">100% Advance Payment</option>
-                                <option value="50_50">50% Advance, 50% on Completion</option>
-                                <option value="30_70">30% Advance, 70% on Completion</option>
-                                <option value="milestone">Milestone-based Payment</option>
-                                <option value="on_completion">Payment on Completion</option>
-                            </select>
-                        </div>
+                        <!-- Payment Terms field REMOVED - now linked to Payment Method section above -->
 
                         <div class="form-group">
                             <label class="form-label">
@@ -696,60 +951,471 @@
     </div>
 
     <!-- JavaScript -->
+    <script>
+        // Pass PHP session data to JavaScript
+        window.CURRENT_USER_ID = <?php echo json_encode($userId); ?>;
+    </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/repair-requests-db.js"></script>
 
     <script>
-        // Load components when DOM is ready
-        document.addEventListener('DOMContentLoaded', function () {
-            loadComponent('sidebar-container', '/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php');
-            loadComponent('header-container', '/2nd-Year-Group-Project/FixLanka/views/company/topbar.php');
+        // Additional scripts if needed
+
+
+        // ========================================
+        // ENHANCED PRICING CALCULATION SYSTEM
+        // ========================================
+
+        class QuotationPricingCalculator {
+            constructor() {
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                // Labor pricing method listeners
+                document.querySelectorAll('input[name="labor_pricing_method"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => this.handleLaborMethodChange(e.target.value));
+                });
+
+                // Labor calculation inputs
+                const laborUnitPrice = document.getElementById('labor-unit-price');
+                const laborQuantity = document.getElementById('labor-quantity');
+                const laborCost = document.getElementById('labor-cost');
+
+                if (laborUnitPrice) laborUnitPrice.addEventListener('input', () => this.calculateLaborCost());
+                if (laborQuantity) laborQuantity.addEventListener('input', () => this.calculateLaborCost());
+                if (laborCost) laborCost.addEventListener('input', () => this.updateTotal());
+
+                // Material supply checkbox
+                const materialSupplyCheckbox = document.getElementById('vendor-supplies-materials');
+                if (materialSupplyCheckbox) {
+                    materialSupplyCheckbox.addEventListener('change', (e) => this.toggleMaterialPricing(e.target.checked));
+                }
+
+                // Material pricing method listeners
+                document.querySelectorAll('input[name="material_pricing_method"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => this.handleMaterialMethodChange(e.target.value));
+                });
+
+                // Material calculation inputs
+                const materialUnitPrice = document.getElementById('material-unit-price');
+                const materialQuantity = document.getElementById('material-quantity');
+                const materialCost = document.getElementById('material-cost');
+
+                if (materialUnitPrice) materialUnitPrice.addEventListener('input', () => this.calculateMaterialCost());
+                if (materialQuantity) materialQuantity.addEventListener('input', () => this.calculateMaterialCost());
+                if (materialCost) materialCost.addEventListener('input', () => this.updateTotal());
+
+                // Other costs
+                const transportCost = document.getElementById('transport-cost');
+                const otherCost = document.getElementById('other-cost');
+
+                if (transportCost) transportCost.addEventListener('input', () => this.updateTotal());
+                if (otherCost) otherCost.addEventListener('input', () => this.updateTotal());
+            }
+
+            // ===== LABOR CALCULATION METHODS =====
+
+            handleLaborMethodChange(method) {
+                const unitPricingSection = document.getElementById('labor-unit-pricing');
+                const laborCostInput = document.getElementById('labor-cost');
+                const unitLabel = document.getElementById('labor-unit-label');
+                const qtyLabel = document.getElementById('labor-quantity-label');
+                const qtyBreakdownLabel = document.getElementById('labor-breakdown-qty-label');
+
+                if (method === 'fixed') {
+                    // Fixed pricing - hide unit pricing, allow manual input
+                    if (unitPricingSection) unitPricingSection.style.display = 'none';
+                    if (laborCostInput) {
+                        laborCostInput.removeAttribute('readonly');
+                        laborCostInput.classList.remove('form-input-calculated');
+                    }
+                } else {
+                    // Unit-based pricing - show unit pricing, make total readonly
+                    if (unitPricingSection) unitPricingSection.style.display = 'block';
+                    if (laborCostInput) {
+                        laborCostInput.setAttribute('readonly', true);
+                        laborCostInput.classList.add('form-input-calculated');
+                    }
+
+                    // Update labels based on method
+                    const labelConfig = {
+                        'hourly': {
+                            unitLabel: '(per hour)',
+                            qtyLabel: 'Number of Hours',
+                            placeholder: 'e.g., 8',
+                            breakdownLabel: 'Hours'
+                        },
+                        'per_sqm': {
+                            unitLabel: '(per m²)',
+                            qtyLabel: 'Area (Square Meters)',
+                            placeholder: 'e.g., 50',
+                            breakdownLabel: 'Area (m²)'
+                        },
+                        'per_unit': {
+                            unitLabel: '(per unit)',
+                            qtyLabel: 'Number of Units',
+                            placeholder: 'e.g., 10',
+                            breakdownLabel: 'Units'
+                        }
+                    };
+
+                    const config = labelConfig[method];
+                    if (config) {
+                        if (unitLabel) unitLabel.textContent = config.unitLabel;
+                        if (qtyLabel) qtyLabel.textContent = config.qtyLabel;
+                        if (qtyBreakdownLabel) qtyBreakdownLabel.textContent = config.breakdownLabel;
+                        
+                        const qtyInput = document.getElementById('labor-quantity');
+                        if (qtyInput) qtyInput.placeholder = config.placeholder;
+                    }
+                }
+
+                this.calculateLaborCost();
+            }
+
+            calculateLaborCost() {
+                const method = document.querySelector('input[name="labor_pricing_method"]:checked')?.value;
+                const laborCostInput = document.getElementById('labor-cost');
+
+                if (!method || !laborCostInput) return;
+
+                if (method === 'fixed') {
+                    // For fixed pricing, just update the total
+                    this.updateTotal();
+                    return;
+                }
+
+                // Unit-based calculation
+                const unitPrice = parseFloat(document.getElementById('labor-unit-price')?.value) || 0;
+                const quantity = parseFloat(document.getElementById('labor-quantity')?.value) || 0;
+                const totalCost = unitPrice * quantity;
+
+                // Update labor cost input
+                laborCostInput.value = totalCost.toFixed(2);
+
+                // Update breakdown display
+                const breakdownUnit = document.getElementById('labor-breakdown-unit');
+                const breakdownQty = document.getElementById('labor-breakdown-qty');
+                const breakdownTotal = document.getElementById('labor-breakdown-total');
+
+                if (breakdownUnit) breakdownUnit.textContent = `LKR ${unitPrice.toFixed(2)}`;
+                if (breakdownQty) breakdownQty.textContent = quantity.toFixed(2);
+                if (breakdownTotal) breakdownTotal.textContent = `LKR ${totalCost.toFixed(2)}`;
+
+                this.updateTotal();
+            }
+
+            // ===== MATERIAL CALCULATION METHODS =====
+
+            toggleMaterialPricing(isSupplied) {
+                const pricingSection = document.getElementById('material-pricing-section');
+                const notSuppliedMessage = document.getElementById('material-not-supplied-message');
+                const materialCostInput = document.getElementById('material-cost');
+
+                if (isSupplied) {
+                    if (pricingSection) pricingSection.style.display = 'block';
+                    if (notSuppliedMessage) notSuppliedMessage.style.display = 'none';
+                    if (materialCostInput) materialCostInput.required = true;
+                } else {
+                    if (pricingSection) pricingSection.style.display = 'none';
+                    if (notSuppliedMessage) notSuppliedMessage.style.display = 'flex';
+                    if (materialCostInput) {
+                        materialCostInput.value = '0.00';
+                        materialCostInput.required = false;
+                    }
+                    this.updateTotal();
+                }
+            }
+
+            handleMaterialMethodChange(method) {
+                const unitPricingSection = document.getElementById('material-unit-pricing');
+                const materialCostInput = document.getElementById('material-cost');
+                const unitLabel = document.getElementById('material-unit-label');
+                const qtyLabel = document.getElementById('material-quantity-label');
+                const qtyBreakdownLabel = document.getElementById('material-breakdown-qty-label');
+
+                if (method === 'fixed') {
+                    // Fixed pricing
+                    if (unitPricingSection) unitPricingSection.style.display = 'none';
+                    if (materialCostInput) {
+                        materialCostInput.removeAttribute('readonly');
+                        materialCostInput.classList.remove('form-input-calculated');
+                    }
+                } else {
+                    // Unit-based pricing
+                    if (unitPricingSection) unitPricingSection.style.display = 'block';
+                    if (materialCostInput) {
+                        materialCostInput.setAttribute('readonly', true);
+                        materialCostInput.classList.add('form-input-calculated');
+                    }
+
+                    // Update labels
+                    const labelConfig = {
+                        'per_sqm': {
+                            unitLabel: '(per m²)',
+                            qtyLabel: 'Area (Square Meters)',
+                            placeholder: 'e.g., 50',
+                            breakdownLabel: 'Area (m²)'
+                        },
+                        'per_unit': {
+                            unitLabel: '(per unit)',
+                            qtyLabel: 'Number of Units',
+                            placeholder: 'e.g., 10',
+                            breakdownLabel: 'Units'
+                        }
+                    };
+
+                    const config = labelConfig[method];
+                    if (config) {
+                        if (unitLabel) unitLabel.textContent = config.unitLabel;
+                        if (qtyLabel) qtyLabel.textContent = config.qtyLabel;
+                        if (qtyBreakdownLabel) qtyBreakdownLabel.textContent = config.breakdownLabel;
+                        
+                        const qtyInput = document.getElementById('material-quantity');
+                        if (qtyInput) qtyInput.placeholder = config.placeholder;
+                    }
+                }
+
+                this.calculateMaterialCost();
+            }
+
+            calculateMaterialCost() {
+                const method = document.querySelector('input[name="material_pricing_method"]:checked')?.value;
+                const materialCostInput = document.getElementById('material-cost');
+
+                if (!method || !materialCostInput) return;
+
+                if (method === 'fixed') {
+                    this.updateTotal();
+                    return;
+                }
+
+                // Unit-based calculation
+                const unitPrice = parseFloat(document.getElementById('material-unit-price')?.value) || 0;
+                const quantity = parseFloat(document.getElementById('material-quantity')?.value) || 0;
+                const totalCost = unitPrice * quantity;
+
+                // Update material cost input
+                materialCostInput.value = totalCost.toFixed(2);
+
+                // Update breakdown display
+                const breakdownUnit = document.getElementById('material-breakdown-unit');
+                const breakdownQty = document.getElementById('material-breakdown-qty');
+                const breakdownTotal = document.getElementById('material-breakdown-total');
+
+                if (breakdownUnit) breakdownUnit.textContent = `LKR ${unitPrice.toFixed(2)}`;
+                if (breakdownQty) breakdownQty.textContent = quantity.toFixed(2);
+                if (breakdownTotal) breakdownTotal.textContent = `LKR ${totalCost.toFixed(2)}`;
+
+                this.updateTotal();
+            }
+
+            // ===== TOTAL CALCULATION =====
+
+            updateTotal() {
+                const laborCost = parseFloat(document.getElementById('labor-cost')?.value) || 0;
+                const materialCost = parseFloat(document.getElementById('material-cost')?.value) || 0;
+                const transportCost = parseFloat(document.getElementById('transport-cost')?.value) || 0;
+                const otherCost = parseFloat(document.getElementById('other-cost')?.value) || 0;
+
+                const subtotal = laborCost + materialCost + transportCost + otherCost;
+                const total = subtotal;
+
+                // Update display
+                const subtotalDisplay = document.getElementById('subtotal-amount');
+                const totalDisplay = document.getElementById('total-amount');
+                const totalInput = document.getElementById('total-price');
+
+                if (subtotalDisplay) subtotalDisplay.textContent = `LKR ${subtotal.toFixed(2)}`;
+                if (totalDisplay) totalDisplay.textContent = `LKR ${total.toFixed(2)}`;
+                if (totalInput) totalInput.value = total.toFixed(2);
+            }
+        }
+
+        // Initialize pricing calculator when modal is opened
+        let pricingCalculator;
+        document.addEventListener('DOMContentLoaded', function() {
+            pricingCalculator = new QuotationPricingCalculator();
         });
 
-        // Function to load HTML components
-        function loadComponent(containerId, componentFile) {
-            fetch(componentFile)
-                .then(response => response.text())
-                .then(html => {
-                    if (containerId === 'sidebar-container') {
-                        // Set active state immediately in the HTML before inserting
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = html;
+        // ========================================================================
+        // BUSINESS LOGIC: Budget Flexibility Functions
+        // ========================================================================
 
-                        // Remove any existing active classes
-                        const allNavItems = tempDiv.querySelectorAll('.nav-item');
-                        allNavItems.forEach(item => item.classList.remove('active'));
+        /**
+         * Update budget range display when budget type or total changes
+         */
+        function updateBudgetDisplay() {
+            const budgetType = document.querySelector('input[name="budget_type"]:checked')?.value;
+            const totalAmount = parseFloat(document.getElementById('total-amount')?.value) || 0;
+            const rangeDisplay = document.getElementById('budget-range-display');
+            const rangeText = document.getElementById('budget-range-text');
 
-                        // Set repair requests as active immediately
-                        const repairRequestsLink = tempDiv.querySelector('a[href="/2nd-Year-Group-Project/FixLanka/views/company/repair-requests.php"]');
-                        if (repairRequestsLink) {
-                            repairRequestsLink.parentElement.classList.add('active');
-                        }
+            if (budgetType === 'flexible' && totalAmount > 0) {
+                const minBudget = (totalAmount * 0.90).toFixed(2);
+                const maxBudget = (totalAmount * 1.10).toFixed(2);
+                
+                if (rangeText) {
+                    rangeText.textContent = `LKR ${parseFloat(minBudget).toLocaleString()} - LKR ${parseFloat(maxBudget).toLocaleString()}`;
+                }
+                if (rangeDisplay) {
+                    rangeDisplay.style.display = 'block';
+                }
+            } else {
+                if (rangeDisplay) {
+                    rangeDisplay.style.display = 'none';
+                }
+            }
+        }
 
-                        // Insert the modified HTML
-                        document.getElementById(containerId).innerHTML = tempDiv.innerHTML;
-                    } else {
-                        document.getElementById(containerId).innerHTML = html;
-                    }
+        // Update budget display when total changes
+        const totalAmountField = document.getElementById('total-amount');
+        if (totalAmountField) {
+            // Use MutationObserver to watch for value changes
+            const observer = new MutationObserver(updateBudgetDisplay);
+            observer.observe(totalAmountField, { attributes: true, attributeFilter: ['value'] });
+            
+            // Also listen to input events
+            totalAmountField.addEventListener('input', updateBudgetDisplay);
+        }
 
-                    // Initialize topbar after loading
-                    if (containerId === 'header-container') {
-                        if (typeof initializeTopbar === 'function') {
-                            setTimeout(initializeTopbar, 100);
-                        }
-                        if (typeof initProfileDropdown === 'function') {
-                            setTimeout(initProfileDropdown, 200);
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading component:', error);
-                });
+        // ========================================================================
+        // BUSINESS LOGIC: Payment Method Functions
+        // ========================================================================
+
+        /**
+         * Update payment method information box
+         */
+        function updatePaymentMethodInfo() {
+            const paymentMethod = document.getElementById('payment-method')?.value;
+            const infoBox = document.getElementById('payment-method-info');
+            const hourlyRateSection = document.getElementById('hourly-rate-section');
+            const spendingCapSection = document.getElementById('spending-cap-section');
+
+            if (!paymentMethod || !infoBox) return;
+
+            const paymentInfo = {
+                'milestone': {
+                    icon: 'fas fa-tasks',
+                    title: 'Milestone-Based Payment',
+                    description: 'Payment released in stages as project milestones are completed. Provides security for both parties.',
+                    color: '#2196F3'
+                },
+                '50-50': {
+                    icon: 'fas fa-balance-scale',
+                    title: '50-50 Split Payment',
+                    description: '50% paid upfront to start the project, remaining 50% paid upon successful completion.',
+                    color: '#4CAF50'
+                },
+                '30-70': {
+                    icon: 'fas fa-percentage',
+                    title: '30-70 Split Payment',
+                    description: '30% paid upfront, 70% paid upon completion. Lower initial commitment.',
+                    color: '#FF9800'
+                },
+                'upfront_final': {
+                    icon: 'fas fa-dollar-sign',
+                    title: '100% Upfront Payment',
+                    description: 'Full payment made before work begins. Usually for trusted relationships or small projects.',
+                    color: '#9C27B0'
+                },
+                'time_material': {
+                    icon: 'fas fa-clock',
+                    title: 'Time & Material',
+                    description: 'Pay based on actual hours worked and materials used. Hourly rate applies.',
+                    color: '#F44336'
+                }
+            };
+
+            const info = paymentInfo[paymentMethod];
+            if (info) {
+                infoBox.innerHTML = `
+                    <div class="info-box" style="border-left-color: ${info.color}">
+                        <i class="${info.icon}" style="color: ${info.color}"></i>
+                        <div>
+                            <strong>${info.title}</strong>
+                            <p>${info.description}</p>
+                        </div>
+                    </div>
+                `;
+                infoBox.style.display = 'block';
+            } else {
+                infoBox.style.display = 'none';
+            }
+
+            // Show/hide hourly rate and spending cap sections
+            const hourlyRateInput = document.getElementById('hourly-rate');
+            if (paymentMethod === 'time_material') {
+                if (hourlyRateSection) hourlyRateSection.style.display = 'block';
+                if (spendingCapSection) spendingCapSection.style.display = 'block';
+                // Make hourly rate required when Time & Material is selected
+                if (hourlyRateInput) hourlyRateInput.required = true;
+            } else {
+                if (hourlyRateSection) hourlyRateSection.style.display = 'none';
+                if (spendingCapSection) spendingCapSection.style.display = 'none';
+                // Remove required attribute when not Time & Material
+                if (hourlyRateInput) hourlyRateInput.required = false;
+            }
         }
     </script>
+
+    <!-- ============================================================ -->
+    <!-- BUSINESS LOGIC: Additional Styles -->
+    <!-- ============================================================ -->
+    <style>
+        .info-box {
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+            background: #e8f4f8;
+            border-left: 4px solid #2196F3;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .info-box i {
+            color: #2196F3;
+            font-size: 1.5rem;
+            margin-top: 2px;
+        }
+
+        .info-box div {
+            flex: 1;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+        }
+
+        .info-box p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .radio-group-inline {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .radio-card small {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+    </style>
 </body>
 
 </html>
+
+
+
 
 
 

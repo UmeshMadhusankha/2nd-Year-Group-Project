@@ -1,4 +1,4 @@
-// ================================================
+﻿// ================================================
 // FORM VALIDATION & INTERACTIVITY
 // ================================================
 
@@ -152,10 +152,9 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         // Log to console
-        console.log('Job Posted Successfully!', formData);
-
+        
         // Show success message
-        alert('✅ Job posted successfully!\n\nYour job has been submitted and will be visible to repairers shortly.');
+        alert('âœ… Job posted successfully!\n\nYour job has been submitted and will be visible to repairers shortly.');
 
         // Optional: Reset form
         // form.reset();

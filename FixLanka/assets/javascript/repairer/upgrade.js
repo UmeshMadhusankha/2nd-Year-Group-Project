@@ -1,4 +1,4 @@
-// ================================================
+﻿// ================================================
 // UPGRADE PAGE JAVASCRIPT
 // ================================================
 
@@ -55,7 +55,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializePage() {
-    console.log('Upgrade page initialized');
     
     // Set initial billing display
     updatePricingDisplay();
@@ -105,7 +104,7 @@ function attachEventListeners() {
 
 function updatePricingDisplay() {
     // This is handled by CSS, but we can add JavaScript enhancements here
-    console.log('Billing mode:', isAnnualBilling ? 'Annual' : 'Monthly');
+    
 }
 
 function selectPlan(planType) {
@@ -133,7 +132,6 @@ function selectPlan(planType) {
 }
 
 function updateModalContent(plan) {
-    console.log('Updating modal for:', plan.name, 'Billing:', modalBillingType);
     
     // Update plan name and icon
     const modalPlanName = document.getElementById('modal-plan-name');
@@ -187,17 +185,16 @@ function updateModalContent(plan) {
         `).join('');
     }
     
-    console.log('Total amount:', totalAmount);
+    
 }
 
 function attachBillingOptionListeners() {
     const billingOptions = document.querySelectorAll('.billing-option-card');
-    console.log('Attaching listeners to', billingOptions.length, 'billing options');
     
     billingOptions.forEach(option => {
         option.addEventListener('click', function() {
             const billingType = this.getAttribute('data-billing');
-            console.log('Billing option clicked:', billingType);
+            
             switchBillingType(billingType);
         });
     });
@@ -205,7 +202,6 @@ function attachBillingOptionListeners() {
 
 function switchBillingType(billingType) {
     modalBillingType = billingType;
-    console.log('Switching to:', billingType);
     
     // Update active state on cards
     const billingOptions = document.querySelectorAll('.billing-option-card');
@@ -285,7 +281,7 @@ function processUpgrade() {
         showSuccessMessage(plan.name, modalBillingType);
         
         // In a real application, you would redirect to payment processor
-        console.log('Redirecting to payment for:', plan.name, 'Billing:', modalBillingType, 'Total:', totalPrice);
+        
     }, 2000);
 }
 
@@ -366,7 +362,7 @@ function formatPrice(price) {
 
 function trackUpgradeEvent(planType, billingType) {
     // Analytics tracking would go here
-    console.log('Upgrade event:', { planType, billingType });
+    
 }
 
 // Export functions for global access

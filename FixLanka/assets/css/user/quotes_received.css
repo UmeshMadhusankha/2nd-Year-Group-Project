@@ -1,0 +1,39 @@
+.quotes-page {
+    padding-top: 24px;
+}
+
+.quotes-page-card {
+    grid-column: span 12;
+}
+
+.quotes-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+}
+
+.quotes-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.quotes-filter select {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: #fff;
+}
+
+/* Make quote items wrap nicely on small widths */
+.quote-item {
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .quotes-toolbar {
+        justify-content: flex-start;
+    }
+}

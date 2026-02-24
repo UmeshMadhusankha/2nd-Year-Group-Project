@@ -6,12 +6,17 @@ RewriteBase /2nd-Year-Group-Project/FixLanka/
 # Security: Block access to sensitive files and directories
 RewriteRule ^(config|controllers|models|\.env|\.git|\.htaccess) - [F,L]
 
+# Handle direct PHP file requests (MUST be BEFORE other rules)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} \.php$ [NC]
+RewriteRule ^ - [L]
+
 # Handle static files (CSS, JS, images, fonts)
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|pdf|webp)$ [NC]
 RewriteRule ^ - [L]
 
-# Skip rewriting for existing files and directories
+# Skip rewriting for other existing files and directories
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]

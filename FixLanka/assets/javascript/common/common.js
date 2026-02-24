@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Common JavaScript Functions
  * Shared functionality across all pages
  */
@@ -74,7 +74,7 @@ function initializeSearch() {
  * Perform search operation
  */
 function performSearch(query) {
-    console.log('Searching for:', query);
+    
     // In a real application, this would make an API call
     // For now, just show a simple message
     showSearchResults(query);
@@ -86,7 +86,7 @@ function performSearch(query) {
 function showSearchResults(query) {
     // This would typically show a dropdown or navigate to search results page
     // For now, just log to console
-    console.log(`Search results for: ${query}`);
+    void query;
 }
 
 /**
@@ -167,7 +167,7 @@ function openNotificationDropdown() {
     const notificationBell = document.querySelector('.notification-bell');
     if (notificationBell) {
         notificationBell.classList.add('active');
-        console.log('Notification dropdown opened');
+        
     }
 }
 
@@ -178,7 +178,7 @@ function closeNotificationDropdown() {
     const notificationBell = document.querySelector('.notification-bell');
     if (notificationBell) {
         notificationBell.classList.remove('active');
-        console.log('Notification dropdown closed');
+        
     }
 }
 
@@ -194,7 +194,7 @@ function handleNotificationClick(notificationItem) {
     
     // Get notification details and perform action
     const title = notificationItem.querySelector('.notification-title')?.textContent;
-    console.log('Notification clicked:', title);
+    void title;
     
     // You can add navigation or modal display here
     // For example:
@@ -213,7 +213,7 @@ function markAllNotificationsAsRead() {
     // Update badge count
     updateNotificationBadge();
     
-    console.log('All notifications marked as read');
+    
 }
 
 /**
@@ -335,7 +335,7 @@ function handleProfileMenuAction(action) {
             handleLogout();
             break;
         default:
-            console.log('Unknown action:', action);
+            break;
     }
     
     closeProfileMenu();

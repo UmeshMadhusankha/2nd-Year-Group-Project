@@ -1,4 +1,4 @@
-// ================================================
+﻿// ================================================
 // MY JOBS PAGE JAVASCRIPT
 // ================================================
 
@@ -149,7 +149,6 @@ function initializeStatusSelects() {
             const jobItem = this.closest('.job-item');
             const jobId = jobItem.querySelector('.job-title').textContent;
             
-            console.log(`Status changed for "${jobId}" to: ${this.value}`);
             
             // Here you would typically send an API request to update the status
             // For now, we'll just show a confirmation
@@ -299,7 +298,7 @@ function cancelJob(button, jobId) {
         showNotification('Job cancelled successfully. Customer will be notified.', 'warning');
         
         // Log the cancellation (in production, this would be an API call)
-        console.log(`Job ${jobId} cancelled. Reason: ${reason}`);
+        
     } else if (reason !== null) {
         // User clicked OK but didn't provide a reason
         alert('Please provide a reason for cancellation.');
@@ -361,7 +360,7 @@ function markJobAsCompleted(button, jobId) {
         showNotification('Job marked as completed! Customer notified to make payment.', 'success');
         
         // Log the completion (in production, this would be an API call)
-        console.log(`Job ${jobId} marked as completed. Customer notified for payment.`);
+        
     }
 }
 
@@ -443,7 +442,7 @@ function sortJobs(sortBy) {
     // Re-append sorted items
     jobItems.forEach(item => jobsList.appendChild(item));
     
-    console.log(`Jobs sorted by: ${sortBy}`);
+    
 }
 
 function getJobDate(jobItem) {
@@ -466,7 +465,6 @@ function getJobAmount(jobItem) {
 
 // ===== JOB ACTIONS =====
 function updateJobStatus(jobId) {
-    console.log(`Updating status for job ID: ${jobId}`);
     
     // Get the job item
     const jobItem = document.querySelector(`[data-job-id="${jobId}"]`) || 
@@ -657,7 +655,6 @@ const jobsData = {
 };
 
 function viewJobDetails(jobId) {
-    console.log(`Viewing details for job ID: ${jobId}`);
     
     // Get job data
     const job = jobsData[jobId];
@@ -754,7 +751,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function downloadInvoice(jobId) {
-    console.log(`Downloading invoice for job ID: ${jobId}`);
     
     showNotification('Generating invoice...', 'info');
     
@@ -763,12 +759,11 @@ function downloadInvoice(jobId) {
         showNotification('Invoice downloaded successfully!', 'success');
         
         // In a real application, this would trigger an actual file download
-        console.log(`Invoice for job ${jobId} would be downloaded as PDF`);
+        
     }, 1500);
 }
 
 function loadMoreJobs() {
-    console.log('Loading more jobs...');
     
     const loadMoreBtn = document.querySelector('.load-more-btn');
     const originalText = loadMoreBtn.innerHTML;

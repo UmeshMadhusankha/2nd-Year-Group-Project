@@ -1,0 +1,25 @@
+  admin.moderatorUI[m
+* [32minterimCRUDs[m
+  main[m
+  newAdminModeratorUI[m
+  user_views[m
+  [31mremotes/origin/AMinterim[m
+  [31mremotes/origin/CRinterim[m
+  [31mremotes/origin/HEAD[m -> origin/main
+  [31mremotes/origin/admin.moderatorUI[m
+  [31mremotes/origin/adminCRUD[m
+  [31mremotes/origin/adminMerger[m
+  [31mremotes/origin/company-repairer-CRUD[m
+  [31mremotes/origin/companyUI[m
+  [31mremotes/origin/interimCRUDs[m
+  [31mremotes/origin/main[m
+  [31mremotes/origin/merge-testing-main[m
+  [31mremotes/origin/newAdminModeratorUI[m
+  [31mremotes/origin/quotes_CRUD[m
+  [31mremotes/origin/repairerUI[m
+  [31mremotes/origin/signup-resolve[m
+  [31mremotes/origin/syncing[m
+  [31mremotes/origin/testCRUD[m
+  [31mremotes/origin/testCRUDcompany[m
+  [31mremotes/origin/userCRUD[m
+  [31mremotes/origin/user_views[m

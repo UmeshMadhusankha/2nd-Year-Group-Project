@@ -1,3 +1,9 @@
+<?php
+// Start session and check authentication
+require_once '../../config/session.php';
+requireRole(['company']);
+$userData = getUserData();
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -18,12 +24,14 @@
 
     <div class="dashboard-container">
         <!-- Sidebar Component -->
-        <div id="sidebar-container"></div>
+        <!-- Sidebar Component -->
+        <?php include 'sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content">
             <!-- Header Component -->
-            <div id="header-container"></div>
+            <!-- Header Component -->
+            <?php include 'topbar.php'; ?>
 
             <!-- Profile Header -->
             <div class="settings-header">
@@ -54,9 +62,9 @@
                         <i class="fas fa-lock"></i>
                         <span>Change Password</span>
                     </button>
-                    <button class="tab-btn" data-tab="reviews-tab">
-                        <i class="fas fa-star"></i>
-                        <span>Reviews & Feedback</span>
+                    <button class="tab-btn" data-tab="password-tab">
+                        <i class="fas fa-lock"></i>
+                        <span>Change Password</span>
                     </button>
                 </div>
 
@@ -86,7 +94,7 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="companyName">Company Name *</label>
-                                    <input type="text" id="companyName" value="FixLanka Solutions Pvt Ltd" required>
+                                    <input type="text" id="companyName" value="" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="businessType">Business Type</label>
@@ -103,27 +111,27 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="registrationNumber">Business Registration Number</label>
-                                    <input type="text" id="registrationNumber" value="BRN-12345-2020">
+                                    <input type="text" id="registrationNumber" value="">
                                 </div>
                                 <div class="form-group">
                                     <label for="taxId">Tax ID / VAT Number</label>
-                                    <input type="text" id="taxId" value="VAT-LK-67890">
+                                    <input type="text" id="taxId" value="">
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <label for="companyDescription">Company Description</label>
-                                <textarea id="companyDescription" rows="4" placeholder="Tell us about your company...">We are a leading repair and maintenance company in Sri Lanka, providing quality services for over 5 years.</textarea>
+                                <textarea id="companyDescription" rows="4" placeholder="Tell us about your company..."></textarea>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="website">Website</label>
-                                    <input type="url" id="website" value="https://fixlanka.lk" placeholder="https://yourcompany.com">
+                                    <input type="url" id="website" value="" placeholder="https://yourcompany.com">
                                 </div>
                                 <div class="form-group">
                                     <label for="establishedYear">Established Year</label>
-                                    <input type="number" id="establishedYear" value="2020" min="1900" max="2025">
+                                    <input type="number" id="establishedYear" value="" min="1900" max="2025">
                                 </div>
                             </div>
                         </div>
@@ -135,34 +143,34 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="email">Primary Email *</label>
-                                    <input type="email" id="email" value="info@fixlanka.lk" required>
+                                    <input type="email" id="email" value="" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="phone">Phone Number *</label>
-                                    <input type="tel" id="phone" value="+94 77 123 4567" required>
+                                    <input type="tel" id="phone" value="" required>
                                 </div>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="alternatePhone">Alternate Phone</label>
-                                    <input type="tel" id="alternatePhone" value="+94 76 987 6543">
+                                    <input type="tel" id="alternatePhone" value="">
                                 </div>
                                 <div class="form-group">
                                     <label for="companyWhatsapp">WhatsApp Business</label>
-                                    <input type="tel" id="companyWhatsapp" value="+94 77 123 4567">
+                                    <input type="tel" id="companyWhatsapp" value="">
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <label for="address">Business Address *</label>
-                                <input type="text" id="address" value="123 Main Street, Colombo 03" required>
+                                <input type="text" id="address" value="" required>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="city">City</label>
-                                    <input type="text" id="city" value="Colombo">
+                                    <input type="text" id="city" value="">
                                 </div>
                                 <div class="form-group">
                                     <label for="province">Province</label>
@@ -180,7 +188,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="postalCode">Postal Code</label>
-                                    <input type="text" id="postalCode" value="00300">
+                                    <input type="text" id="postalCode" value="">
                                 </div>
                             </div>
                         </div>
@@ -228,39 +236,7 @@
                             <p class="section-description">Manage bank accounts where you receive payments from customers</p>
 
                             <!-- Primary Bank Account -->
-                            <div class="payment-method-card active">
-                                <div class="card-icon">
-                                    <i class="fas fa-university"></i>
-                                </div>
-                                <div class="card-info">
-                                    <h4>Commercial Bank - Business Account</h4>
-                                    <p>Account Number: ****6789 • Branch: Colombo</p>
-                                </div>
-                                <div class="card-badge">
-                                    <span class="badge-primary">Primary</span>
-                                </div>
-                                <button class="btn-icon" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </div>
-
-                            <!-- Secondary Bank Account -->
-                            <div class="payment-method-card">
-                                <div class="card-icon">
-                                    <i class="fas fa-university"></i>
-                                </div>
-                                <div class="card-info">
-                                    <h4>Bank of Ceylon - Current Account</h4>
-                                    <p>Account Number: ****4532 • Branch: Kandy</p>
-                                </div>
-                                <button class="btn-set-primary">Set as Primary</button>
-                                <button class="btn-icon" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn-icon" title="Remove">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
+                            <!-- Bank Accounts will be loaded here -->
 
                             <!-- Add New Bank Account Button -->
                             <button class="btn-add-card" id="addBankAccountBtn">
@@ -1175,80 +1151,8 @@
             }
         });
 
-        // Save Buttons
-        document.getElementById('saveCompanyBtn')?.addEventListener('click', () => {
-            alert('Company profile saved successfully!');
-        });
+        // Mock Save Buttons Removed - Real logic implemented below
 
-        document.getElementById('savePaymentBtn')?.addEventListener('click', () => {
-            alert('Payment settings saved successfully!');
-        });
-
-        // Bank Account Form Toggle
-        document.getElementById('addBankAccountBtn')?.addEventListener('click', () => {
-            const form = document.getElementById('bankAccountForm');
-            if (form) {
-                form.style.display = form.style.display === 'none' ? 'block' : 'none';
-                // Scroll to form
-                if (form.style.display === 'block') {
-                    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            }
-        });
-
-        document.getElementById('cancelBankAccountBtn')?.addEventListener('click', () => {
-            const form = document.getElementById('bankAccountForm');
-            if (form) {
-                form.style.display = 'none';
-                // Clear form
-                document.getElementById('bankName').value = '';
-                document.getElementById('branchName').value = '';
-                document.getElementById('accountNumber').value = '';
-                document.getElementById('accountHolderName').value = '';
-                document.getElementById('accountType').value = '';
-                document.getElementById('swiftCode').value = '';
-            }
-        });
-
-        document.getElementById('saveBankAccountBtn')?.addEventListener('click', () => {
-            const bankName = document.getElementById('bankName').value;
-            const accountNumber = document.getElementById('accountNumber').value;
-            const accountHolder = document.getElementById('accountHolderName').value;
-            const accountType = document.getElementById('accountType').value;
-
-            if (!bankName || !accountNumber || !accountHolder || !accountType) {
-                alert('Please fill in all required fields');
-                return;
-            }
-
-            alert('Bank account added successfully!');
-            document.getElementById('cancelBankAccountBtn').click();
-        });
-
-        document.getElementById('savePasswordBtn')?.addEventListener('click', () => {
-            const current = document.getElementById('currentPassword').value;
-            const newPass = document.getElementById('newPassword').value;
-            const confirm = document.getElementById('confirmPassword').value;
-
-            if (!current || !newPass || !confirm) {
-                alert('Please fill in all password fields');
-                return;
-            }
-
-            if (newPass !== confirm) {
-                alert('New passwords do not match!');
-                return;
-            }
-
-            alert('Password changed successfully!');
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('confirmPassword').value = '';
-        });
-
-        document.getElementById('saveAllBtn')?.addEventListener('click', () => {
-            alert('All changes saved successfully!');
-        });
 
         // Reviews & Feedback Tab Functionality
         document.addEventListener('DOMContentLoaded', function() {
@@ -1410,3 +1314,228 @@
 
 
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCompanyProfile();
+            fetchBankAccounts();
+            
+            // Tab switching logic
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                    
+                    btn.classList.add('active');
+                    const tabId = btn.getAttribute('data-tab');
+                    document.getElementById(tabId).style.display = 'block';
+                });
+            });
+
+            // Initialize first tab
+            document.getElementById('company-tab').style.display = 'block';
+
+            // Save Company Profile
+            document.getElementById('saveCompanyBtn').addEventListener('click', saveCompanyProfile);
+            
+            // Change Password
+            document.getElementById('savePasswordBtn').addEventListener('click', changePassword);
+            
+            // Add Bank Account Toggle
+            document.getElementById('addBankAccountBtn').addEventListener('click', () => {
+               document.getElementById('bankAccountForm').style.display = 'block';
+               // Clear form
+               document.getElementById('bankName').value = '';
+               document.getElementById('branchName').value = '';
+               document.getElementById('accountNumber').value = '';
+               document.getElementById('accountHolderName').value = '';
+               document.getElementById('accountType').value = '';
+               document.getElementById('swiftCode').value = '';
+               document.getElementById('saveBankAccountBtn').dataset.id = 0; // Reset ID for new
+            });
+            
+            document.getElementById('cancelBankAccountBtn').addEventListener('click', () => {
+               document.getElementById('bankAccountForm').style.display = 'none';
+            });
+            
+            document.getElementById('saveBankAccountBtn').addEventListener('click', saveBankAccount);
+        });
+
+        async function fetchCompanyProfile() {
+            try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-profile.php?action=get_profile');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    document.getElementById('companyName').value = data.name || '';
+                    document.getElementById('businessType').value = data.business_type ? data.business_type.split(',')[0] : ''; // Simple select for now
+                    document.getElementById('registrationNumber').value = data.registration_no || '';
+                    document.getElementById('taxId').value = data.tax_id || '';
+                    document.getElementById('companyDescription').value = data.description || '';
+                    document.getElementById('website').value = data.website || '';
+                    // document.getElementById('establishedYear').value = data.established_year || ''; // Not in DB yet
+                    
+                    document.getElementById('email').value = data.email || '';
+                    document.getElementById('phone').value = data.contact_no || '';
+                    document.getElementById('address').value = data.address || '';
+                    
+                    // Populate other fields as needed...
+                }
+            } catch (error) {
+                console.error('Error fetching profile:', error);
+            }
+        }
+
+        async function saveCompanyProfile() {
+            const data = {
+                action: 'update_profile',
+                name: document.getElementById('companyName').value,
+                business_type: document.getElementById('businessType').value,
+                registration_no: document.getElementById('registrationNumber').value,
+                tax_id: document.getElementById('taxId').value,
+                description: document.getElementById('companyDescription').value,
+                website: document.getElementById('website').value,
+                email: document.getElementById('email').value,
+                contact_no: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                districts: '' // todo: add district selection
+            };
+
+            try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-profile.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                alert(result.message);
+            } catch (error) {
+                console.error('Error saving profile:', error);
+                alert('Failed to save profile');
+            }
+        }
+
+        async function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                alert('New passwords do not match');
+                return;
+            }
+
+            try {
+                 const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-profile.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'change_password',
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+                const result = await response.json();
+                alert(result.message);
+                if(result.success) {
+                     document.getElementById('currentPassword').value = '';
+                     document.getElementById('newPassword').value = '';
+                     document.getElementById('confirmPassword').value = '';
+                }
+            } catch (error) {
+                 console.error('Error changing password:', error);
+                 alert('Failed to change password');
+            }
+        }
+
+        async function fetchBankAccounts() {
+             try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-profile.php?action=get_bank_accounts');
+                const result = await response.json();
+                
+                const container = document.querySelector('#payment-tab .settings-section:first-child'); 
+                // Clear existing cards but keep title and Add button
+                const children = Array.from(container.children);
+                children.forEach(child => {
+                    if (child.classList.contains('payment-method-card')) {
+                        child.remove();
+                    }
+                });
+                
+                const addBtn = document.getElementById('addBankAccountBtn');
+
+                if (result.success && result.data.length > 0) {
+                    result.data.forEach(acc => {
+                        const card = document.createElement('div');
+                        card.className = `payment-method-card ${acc.is_primary == 1 ? 'active' : ''}`;
+                        card.innerHTML = `
+                             <div class="card-icon">
+                                    <i class="fas fa-university"></i>
+                                </div>
+                                <div class="card-info">
+                                    <h4>${acc.bank_name} - ${acc.account_type}</h4>
+                                    <p>Account Number: ****${acc.account_number.slice(-4)} • Branch: ${acc.branch_name}</p>
+                                </div>
+                                ${acc.is_primary == 1 ? '<div class="card-badge"><span class="badge-primary">Primary</span></div>' : ''}
+                                <button class="btn-icon" title="Delete" onclick="deleteBankAccount(${acc.bank_id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                        `;
+                        container.insertBefore(card, addBtn);
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching bank accounts:', error);
+            }
+        }
+        
+        async function saveBankAccount() {
+             const data = {
+                action: 'save_bank_account',
+                bank_id: document.getElementById('saveBankAccountBtn').dataset.id || 0,
+                bank_name: document.getElementById('bankName').value,
+                branch_name: document.getElementById('branchName').value,
+                account_number: document.getElementById('accountNumber').value,
+                account_holder_name: document.getElementById('accountHolderName').value,
+                account_type: document.getElementById('accountType').value,
+                swift_code: document.getElementById('swiftCode').value,
+                is_primary: false // Default for now
+            };
+            
+             try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-profile.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                alert(result.message);
+                if (result.success) {
+                    document.getElementById('bankAccountForm').style.display = 'none';
+                    fetchBankAccounts();
+                }
+             } catch (error) {
+                 console.error('Error saving bank account:', error);
+                 alert('Failed to save bank account');
+             }
+        }
+
+        async function deleteBankAccount(id) {
+             if(!confirm('Are you sure?')) return;
+             try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-profile.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'delete_bank_account', bank_id: id })
+                });
+                const result = await response.json();
+                alert(result.message);
+                if (result.success) fetchBankAccounts();
+             } catch (error) {
+                 console.error('Error deleting bank account:', error);
+             }
+        }
+    </script>
+</body>
+</html>

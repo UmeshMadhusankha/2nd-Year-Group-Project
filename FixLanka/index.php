@@ -92,6 +92,10 @@ switch ($request) {
     case '/payment':
         require_once __DIR__ . '/views/user/payment.php';
         break;
+
+    case '/my-contracts':
+        require_once __DIR__ . '/views/user/contracts.php';
+        break;
     
     case '/provider':
         require_once __DIR__ . '/views/user/provider.php';
@@ -298,6 +302,49 @@ case '/moderator-static-content':
     
     case '/company-feedback':
         require_once __DIR__ . '/views/company/feedback.php';
+        break;
+
+    // API Routes for Quotations
+    case '/company-submit-quotation':
+        require_once __DIR__ . '/controllers/CompanyQuotationController.php';
+        $controller = new CompanyQuotationController();
+        $controller->create();
+        break;
+
+    case '/company-get-quotations':
+        require_once __DIR__ . '/controllers/CompanyQuotationController.php';
+        $controller = new CompanyQuotationController();
+        $controller->getMyQuotations();
+        break;
+
+    case '/api/job-requests/open':
+        require_once __DIR__ . '/controllers/JobRequestController.php';
+        $controller = new JobRequestController();
+        $controller->getOpenRequests();
+        break;
+
+    case '/api/contracts/undo':
+        require_once __DIR__ . '/controllers/ContractController.php';
+        $controller = new ContractController();
+        $controller->undoContract();
+        break;
+    
+    case '/get-providers':
+        require_once __DIR__ . '/controllers/ProviderController.php';
+        $controller = new ProviderController();
+        $controller->getProviders();
+        break;
+    
+    case '/get-featured-providers':
+        require_once __DIR__ . '/controllers/ProviderController.php';
+        $controller = new ProviderController();
+        $controller->getFeatured();
+        break;
+    
+    case '/get-provider-details':
+        require_once __DIR__ . '/controllers/ProviderController.php';
+        $controller = new ProviderController();
+        $controller->getProviderDetails();
         break;
     
     default:

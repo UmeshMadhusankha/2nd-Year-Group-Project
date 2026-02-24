@@ -1,56 +1,66 @@
+<?php
+// Get current page filename
+$current_page = basename($_SERVER['PHP_SELF']);
+?>
 <!-- Sidebar Component -->
 <aside class="sidebar" id="sidebar">
     <nav class="sidebar-nav">
         <ul class="nav-list">
-            <li class="nav-item">
+            <li class="nav-item <?php echo ($current_page == 'dashboard.php' || $current_page == 'index.php') ? 'active' : ''; ?>">
                 <a href="/2nd-Year-Group-Project/FixLanka/views/company/dashboard.php" class="nav-link" data-tooltip="Dashboard">
                     <i class="fas fa-chart-pie"></i>
                     <span>Dashboard</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item <?php echo ($current_page == 'repair-requests.php') ? 'active' : ''; ?>">
                 <a href="/2nd-Year-Group-Project/FixLanka/views/company/repair-requests.php" class="nav-link" data-tooltip="Repair Requests">
                     <i class="fas fa-tools"></i>
                     <span>Repair Requests</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item <?php echo ($current_page == 'projects.php') ? 'active' : ''; ?>">
                 <a href="/2nd-Year-Group-Project/FixLanka/views/company/projects.php" class="nav-link" data-tooltip="Projects">
                     <i class="fas fa-tasks"></i>
                     <span>Projects</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item <?php echo ($current_page == 'workforce.php') ? 'active' : ''; ?>">
                 <a href="/2nd-Year-Group-Project/FixLanka/views/company/workforce.php" class="nav-link" data-tooltip="Workforce">
                     <i class="fas fa-users-cog"></i>
                     <span>Workforce</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item <?php echo ($current_page == 'payments.php') ? 'active' : ''; ?>">
                 <a href="/2nd-Year-Group-Project/FixLanka/views/company/payments.php" class="nav-link" data-tooltip="Payments">
                     <i class="fas fa-wallet"></i>
                     <span>Payments</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item <?php echo ($current_page == 'contracts.php') ? 'active' : ''; ?>">
                 <a href="/2nd-Year-Group-Project/FixLanka/views/company/contracts.php" class="nav-link" data-tooltip="Contracts">
                     <i class="fas fa-handshake"></i>
                     <span>Contracts</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item <?php echo ($current_page == 'advertisements.php') ? 'active' : ''; ?>">
                 <a href="/2nd-Year-Group-Project/FixLanka/views/company/advertisements.php" class="nav-link" data-tooltip="Advertisements">
                     <i class="fas fa-bullhorn"></i>
                     <span>Advertisements</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item <?php echo ($current_page == 'reviews.php') ? 'active' : ''; ?>">
+                <a href="/2nd-Year-Group-Project/FixLanka/views/company/reviews.php" class="nav-link" data-tooltip="Reviews">
+                    <i class="fas fa-star"></i>
+                    <span>Reviews</span>
+                </a>
+            </li>
+            <li class="nav-item <?php echo ($current_page == 'support.php') ? 'active' : ''; ?>">
                 <a href="/2nd-Year-Group-Project/FixLanka/views/company/support.php" class="nav-link" data-tooltip="Support">
                     <i class="fas fa-life-ring"></i>
                     <span>Support</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item <?php echo ($current_page == 'settings.php') ? 'active' : ''; ?>">
                 <a href="/2nd-Year-Group-Project/FixLanka/views/company/settings.php" class="nav-link" data-tooltip="Settings">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
@@ -64,7 +74,7 @@
         <p>© 2025 FixLanka<br>
             <a href="#terms">Terms</a> |
             <a href="#privacy">Privacy</a> |
-            <a href="#help">Help</a>
+            <a href="help.php" target="_blank">Help</a>
         </p>
     </footer>
 </aside>
