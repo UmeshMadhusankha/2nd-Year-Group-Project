@@ -17,8 +17,13 @@ require_once __DIR__ . '/_components/Common.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../controllers/AdScheduleController.php';
 
-global $pdo;
-$controller = new AdScheduleController($pdo);
+// ✅ FIXED: Proper PDO initialization
+try {
+    $pdo = getDatabaseConnection();
+    $controller = new AdScheduleController($pdo);
+} catch (Exception $e) {
+    die("⛔ Database Error: " . htmlspecialchars($e->getMessage()));
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $controller->handlePostRequest();

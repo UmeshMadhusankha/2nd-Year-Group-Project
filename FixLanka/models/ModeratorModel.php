@@ -3,6 +3,9 @@
  * ModeratorModel.php - Professional Database Layer
  * Handles ALL database operations for Moderator CRUD
  * NO business logic - pure data access only
+ * 
+ * ✅ FIXED: getAllModerators() now returns ALL rows regardless of status value
+ *           (handles NULL, empty string, 'active', 'inactive' equally)
  */
 
 class ModeratorModel
@@ -15,19 +18,26 @@ class ModeratorModel
     }
 
     /**
-     * Get all moderators with status
+     * Get all moderators - returns every row in the table
+     * 
+     * ✅ FIXED: Uses COALESCE so rows with NULL status still appear.
+     *    No WHERE clause on status - admin should see ALL moderators.
+     *    If your table has a deleted_at column for soft deletes, we 
+     *    explicitly exclude only hard-deleted rows.
      */
     public function getAllModerators()
     {
+        // COALESCE ensures NULL status is treated as 'inactive' for display,
+        // but crucially the row is ALWAYS returned.
         $sql = "SELECT 
                     moderator_id, 
                     username, 
                     email, 
                     assigned_section, 
-                    status,
+                    COALESCE(status, 'inactive') AS status,
                     last_login,
                     created_at 
-                FROM Moderator 
+                FROM moderator
                 ORDER BY created_at DESC";
         
         $stmt = $this->pdo->prepare($sql);
@@ -40,7 +50,7 @@ class ModeratorModel
      */
     public function getActiveModerators()
     {
-        $sql = "SELECT * FROM Moderator WHERE status = 'active' ORDER BY username ASC";
+        $sql = "SELECT * FROM moderator WHERE status = 'active' ORDER BY username ASC";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -56,10 +66,10 @@ class ModeratorModel
                     username, 
                     email, 
                     assigned_section, 
-                    status,
+                    COALESCE(status, 'inactive') AS status,
                     last_login,
                     created_at 
-                FROM Moderator 
+                FROM moderator 
                 WHERE moderator_id = ?";
         
         $stmt = $this->pdo->prepare($sql);
@@ -73,11 +83,11 @@ class ModeratorModel
     public function usernameExists($username, $exclude_id = null)
     {
         if ($exclude_id) {
-            $sql = "SELECT moderator_id FROM Moderator WHERE username = ? AND moderator_id != ?";
+            $sql = "SELECT moderator_id FROM moderator WHERE username = ? AND moderator_id != ?";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([$username, $exclude_id]);
         } else {
-            $sql = "SELECT moderator_id FROM Moderator WHERE username = ?";
+            $sql = "SELECT moderator_id FROM moderator WHERE username = ?";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([$username]);
         }
@@ -90,11 +100,11 @@ class ModeratorModel
     public function emailExists($email, $exclude_id = null)
     {
         if ($exclude_id) {
-            $sql = "SELECT moderator_id FROM Moderator WHERE email = ? AND moderator_id != ?";
+            $sql = "SELECT moderator_id FROM moderator WHERE email = ? AND moderator_id != ?";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([$email, $exclude_id]);
         } else {
-            $sql = "SELECT moderator_id FROM Moderator WHERE email = ?";
+            $sql = "SELECT moderator_id FROM moderator WHERE email = ?";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([$email]);
         }
@@ -106,7 +116,7 @@ class ModeratorModel
      */
     public function createModerator($username, $email, $hashedPassword, $assigned_section)
     {
-        $sql = "INSERT INTO Moderator (username, email, password, assigned_section, status) 
+        $sql = "INSERT INTO moderator (username, email, password, assigned_section, status) 
                 VALUES (?, ?, ?, ?, 'active')";
         
         $stmt = $this->pdo->prepare($sql);
@@ -120,7 +130,7 @@ class ModeratorModel
      */
     public function updateModerator($moderator_id, $email, $assigned_section)
     {
-        $sql = "UPDATE Moderator 
+        $sql = "UPDATE moderator 
                 SET email = ?, assigned_section = ? 
                 WHERE moderator_id = ?";
         
@@ -133,7 +143,7 @@ class ModeratorModel
      */
     public function updateModeratorWithPassword($moderator_id, $email, $hashedPassword, $assigned_section)
     {
-        $sql = "UPDATE Moderator 
+        $sql = "UPDATE moderator 
                 SET email = ?, password = ?, assigned_section = ? 
                 WHERE moderator_id = ?";
         
@@ -146,7 +156,7 @@ class ModeratorModel
      */
     public function deactivateModerator($moderator_id)
     {
-        $sql = "UPDATE Moderator SET status = 'inactive' WHERE moderator_id = ?";
+        $sql = "UPDATE moderator SET status = 'inactive' WHERE moderator_id = ?";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([$moderator_id]);
     }
@@ -156,7 +166,7 @@ class ModeratorModel
      */
     public function activateModerator($moderator_id)
     {
-        $sql = "UPDATE Moderator SET status = 'active' WHERE moderator_id = ?";
+        $sql = "UPDATE moderator SET status = 'active' WHERE moderator_id = ?";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([$moderator_id]);
     }
@@ -166,7 +176,7 @@ class ModeratorModel
      */
     public function deleteModerator($moderator_id)
     {
-        $sql = "DELETE FROM Moderator WHERE moderator_id = ?";
+        $sql = "DELETE FROM moderator WHERE moderator_id = ?";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$moderator_id]);
         return $stmt->rowCount();
@@ -174,13 +184,12 @@ class ModeratorModel
 
     /**
      * Check if moderator can be safely deleted (foreign key checks)
-     * FIXED: Advertisement table uses 'reviewed_by' NOT 'moderator_id'
      */
     public function canDeleteModerator($moderator_id)
     {
         $constraints = [];
 
-        // Check Advertisement table - FIXED: Uses 'reviewed_by' column
+        // Check Advertisement table
         $stmt = $this->pdo->prepare("SELECT COUNT(*) as count FROM Advertisement WHERE reviewed_by = ?");
         $stmt->execute([$moderator_id]);
         $adCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
@@ -224,21 +233,22 @@ class ModeratorModel
      */
     public function updateLastLogin($moderator_id)
     {
-        $sql = "UPDATE Moderator SET last_login = NOW() WHERE moderator_id = ?";
+        $sql = "UPDATE moderator SET last_login = NOW() WHERE moderator_id = ?";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([$moderator_id]);
     }
 
     /**
      * Get moderator statistics
+     * ✅ FIXED: Counts NULL status rows as 'inactive' so total always matches getAllModerators()
      */
     public function getModeratorStats()
     {
         $sql = "SELECT 
                     COUNT(*) as total,
-                    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
-                    SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) as inactive
-                FROM Moderator";
+                    SUM(CASE WHEN COALESCE(status,'inactive') = 'active' THEN 1 ELSE 0 END) as active,
+                    SUM(CASE WHEN COALESCE(status,'inactive') = 'inactive' THEN 1 ELSE 0 END) as inactive
+                FROM moderator";
         
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute();

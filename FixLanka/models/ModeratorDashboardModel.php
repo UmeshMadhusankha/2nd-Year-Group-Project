@@ -1,16 +1,20 @@
 <?php
 /**
  * ModeratorDashboardModel.php
- * FIXED - Recent Activity now properly shows moderator actions with correct timestamps
+ * Dashboard Data Provider with Activity Logging Integration
  */
+
+require_once __DIR__ . '/ActivityLogModel.php';
 
 class ModeratorDashboardModel
 {
     private $pdo;
+    private $activityLog;
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
+        $this->activityLog = new ActivityLogModel($pdo);
     }
 
     /**
@@ -22,145 +26,71 @@ class ModeratorDashboardModel
 
         // Total Users
         $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM User");
-        $stats['total_users'] = $stmt->fetch()['count'];
+        $stats['total_users'] = $stmt->fetch()['count'] ?? 0;
 
         // New Users Today
         $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM User WHERE DATE(created_at) = CURDATE()");
-        $stats['new_users_today'] = $stmt->fetch()['count'];
+        $stats['new_users_today'] = $stmt->fetch()['count'] ?? 0;
 
         // Active Ads (approved or active status)
         $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM Advertisement WHERE status IN ('approved', 'active')");
-        $stats['active_ads'] = $stmt->fetch()['count'];
+        $stats['active_ads'] = $stmt->fetch()['count'] ?? 0;
 
-        // Ads Approved Today
-        $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM moderator_activity WHERE activity_type = 'ad_approved' AND DATE(created_at) = CURDATE()");
-        $stats['ads_approved_today'] = $stmt->fetch()['count'];
+        // Ads Approved Today (from activity logs)
+        $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM system_activity_logs WHERE activity_type = 'ad_approved' AND DATE(created_at) = CURDATE()");
+        $stats['ads_approved_today'] = $stmt->fetch()['count'] ?? 0;
 
         // Pending Reviews (pending ads)
         $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM Advertisement WHERE status = 'pending'");
-        $stats['pending_reviews'] = $stmt->fetch()['count'];
+        $stats['pending_reviews'] = $stmt->fetch()['count'] ?? 0;
 
         // Reports Today
         $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM IssueReport WHERE DATE(date) = CURDATE()");
-        $stats['reports_today'] = $stmt->fetch()['count'];
+        $stats['reports_today'] = $stmt->fetch()['count'] ?? 0;
 
         // Total Revenue (from Payments this month)
         $stmt = $this->pdo->query("SELECT COALESCE(SUM(amount), 0) as total FROM Payment WHERE MONTH(paymentDate) = MONTH(CURDATE()) AND YEAR(paymentDate) = YEAR(CURDATE())");
-        $stats['total_revenue'] = $stmt->fetch()['total'];
+        $stats['total_revenue'] = $stmt->fetch()['total'] ?? 0;
 
         // System Alerts (pending notifications)
         $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM Notification WHERE status = 'pending'");
-        $stats['system_alerts'] = $stmt->fetch()['count'];
+        $stats['system_alerts'] = $stmt->fetch()['count'] ?? 0;
 
         return $stats;
     }
 
     /**
-     * Get recent activity - FIXED to use moderator_activity table
+     * Get recent activity from system_activity_logs
      */
-    public function getRecentActivity()
+    public function getRecentActivity($limit = 10)
     {
-        $activities = [];
+        $rows = $this->activityLog->getRecentActivities($limit);
 
-        try {
-            // Get recent moderator activities from the moderator_activity table
-            $stmt = $this->pdo->query("
-                SELECT 
-                    activity_type,
-                    target_title,
-                    description,
-                    created_at
-                FROM moderator_activity 
-                ORDER BY created_at DESC 
-                LIMIT 10
-            ");
-            
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $activities[] = [
-                    'type' => $row['activity_type'],
-                    'message' => !empty($row['target_title']) 
-                        ? $row['target_title'] . ' ' . $this->getActionText($row['activity_type'])
-                        : $row['description'],
-                    'time' => $row['created_at'],
-                    'icon' => $this->getIconForType($row['activity_type']),
-                    'color' => $this->getColorForType($row['activity_type'])
-                ];
-            }
-        } catch (PDOException $e) {
-            error_log("Error getting moderator activities: " . $e->getMessage());
-        }
-
-        // If no activities found, show default message
-        if (empty($activities)) {
-            $activities = [
+        if (empty($rows)) {
+            return [
                 [
-                    'type' => 'system',
-                    'message' => 'No recent activities to display',
-                    'time' => date('Y-m-d H:i:s'),
-                    'icon' => 'activity',
-                    'color' => 'gray'
+                    'activity_type' => 'system',
+                    'description' => 'No recent activity available',
+                    'user_role' => 'system',
+                    'icon' => $this->activityLog->getActivityIcon('system'),
+                    'created_at' => date('Y-m-d H:i:s')
                 ]
             ];
         }
 
+        // Normalize to keys views expect
+        $activities = [];
+        foreach ($rows as $r) {
+            $activities[] = [
+                'activity_type' => $r['activity_type'] ?? 'system',
+                'description' => $r['description'] ?? '',
+                'user_role' => isset($r['user_role']) ? strtolower($r['user_role']) : 'system',
+                'icon' => $this->activityLog->getActivityIcon($r['activity_type'] ?? 'system'),
+                'created_at' => $r['created_at'] ?? date('Y-m-d H:i:s')
+            ];
+        }
+
         return $activities;
-    }
-
-    /**
-     * Get action text for activity type
-     */
-    private function getActionText($type)
-    {
-        $textMap = [
-            'ad_approved' => 'approved',
-            'ad_rejected' => 'rejected',
-            'ad_activated' => 'activated',
-            'user_banned' => 'banned',
-            'content_updated' => 'updated',
-            'payment_verified' => 'verified',
-            'user_registered' => 'registered',
-            'report_resolved' => 'resolved'
-        ];
-        
-        return $textMap[$type] ?? 'processed';
-    }
-
-    /**
-     * Get icon for activity type
-     */
-    private function getIconForType($type)
-    {
-        $iconMap = [
-            'ad_approved' => 'check-circle',
-            'ad_rejected' => 'x-circle',
-            'ad_activated' => 'zap',
-            'user_banned' => 'user-x',
-            'content_updated' => 'edit',
-            'payment_verified' => 'dollar-sign',
-            'user_registered' => 'user-plus',
-            'report_resolved' => 'flag'
-        ];
-        
-        return $iconMap[$type] ?? 'activity';
-    }
-
-    /**
-     * Get color for activity type
-     */
-    private function getColorForType($type)
-    {
-        $colorMap = [
-            'ad_approved' => 'green',
-            'ad_rejected' => 'red',
-            'ad_activated' => 'blue',
-            'user_banned' => 'red',
-            'content_updated' => 'purple',
-            'payment_verified' => 'green',
-            'user_registered' => 'blue',
-            'report_resolved' => 'yellow'
-        ];
-        
-        return $colorMap[$type] ?? 'gray';
     }
 
     /**
@@ -170,65 +100,45 @@ class ModeratorDashboardModel
     {
         $overview = [];
 
-        // User Registrations
-        try {
-            $stmtThisMonth = $this->pdo->query("SELECT COUNT(*) as count FROM User WHERE MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())");
-            $stmtLastMonth = $this->pdo->query("SELECT COUNT(*) as count FROM User WHERE MONTH(created_at) = MONTH(CURDATE()) - 1 AND YEAR(created_at) = YEAR(CURDATE())");
-            $thisMonthUsers = $stmtThisMonth->fetch()['count'];
-            $lastMonthUsers = $stmtLastMonth->fetch()['count'];
-            
-            if ($lastMonthUsers > 0) {
-                $overview['user_registrations'] = min(100, round(($thisMonthUsers / $lastMonthUsers) * 100));
-            } else {
-                $overview['user_registrations'] = $thisMonthUsers > 0 ? 100 : 0;
-            }
-        } catch (PDOException $e) {
-            $overview['user_registrations'] = 0;
-        }
-
         // Ad Approvals
         try {
-            $stmtTotal = $this->pdo->query("SELECT COUNT(*) as count FROM Advertisement");
-            $stmtApproved = $this->pdo->query("SELECT COUNT(*) as count FROM Advertisement WHERE status IN ('approved', 'active')");
-            $total = $stmtTotal->fetch()['count'];
-            $approved = $stmtApproved->fetch()['count'];
+            $stmt = $this->pdo->query("SELECT COUNT(*) as total FROM Advertisement");
+            $total = $stmt->fetch()['total'] ?? 0;
+            $stmt = $this->pdo->query("SELECT COUNT(*) as approved FROM Advertisement WHERE status IN ('approved', 'active')");
+            $approved = $stmt->fetch()['approved'] ?? 0;
             $overview['ad_approvals'] = $total > 0 ? round(($approved / $total) * 100) : 0;
         } catch (PDOException $e) {
+            error_log("Error getting ad approvals: " . $e->getMessage());
             $overview['ad_approvals'] = 0;
         }
 
         // Revenue Growth
         try {
-            $stmtCurrent = $this->pdo->query("SELECT COALESCE(SUM(amount), 0) as total FROM Payment WHERE MONTH(paymentDate) = MONTH(CURDATE()) AND YEAR(paymentDate) = YEAR(CURDATE())");
-            $stmtLast = $this->pdo->query("SELECT COALESCE(SUM(amount), 1) as total FROM Payment WHERE MONTH(paymentDate) = MONTH(CURDATE()) - 1 AND YEAR(paymentDate) = YEAR(CURDATE())");
-            $currentRevenue = $stmtCurrent->fetch()['total'];
-            $lastRevenue = $stmtLast->fetch()['total'];
-            
-            if ($lastRevenue > 0 && $currentRevenue > 0) {
-                $overview['revenue_growth'] = min(100, round(($currentRevenue / $lastRevenue) * 100));
+            $stmt = $this->pdo->query("SELECT COALESCE(SUM(amount), 0) as this_month FROM Payment WHERE MONTH(paymentDate) = MONTH(CURDATE()) AND YEAR(paymentDate) = YEAR(CURDATE())");
+            $thisMonth = $stmt->fetch()['this_month'] ?? 0;
+            $stmt = $this->pdo->query("SELECT COALESCE(SUM(amount), 0) as last_month FROM Payment WHERE MONTH(paymentDate) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND YEAR(paymentDate) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))");
+            $lastMonth = $stmt->fetch()['last_month'] ?? 0;
+            if ($lastMonth > 0) {
+                $overview['revenue_growth'] = round((($thisMonth - $lastMonth) / $lastMonth) * 100);
             } else {
-                $overview['revenue_growth'] = 0;
+                $overview['revenue_growth'] = $thisMonth > 0 ? 100 : 0;
             }
         } catch (PDOException $e) {
+            error_log("Error calculating revenue growth: " . $e->getMessage());
             $overview['revenue_growth'] = 0;
         }
 
-        // System Performance
+        // System Performance (simple heuristic)
         try {
-            $start = microtime(true);
-            $this->pdo->query("SELECT 1");
-            $end = microtime(true);
-            $responseTime = ($end - $start) * 1000;
-            
-            if ($responseTime < 5) {
-                $overview['system_performance'] = 95 + rand(0, 5);
-            } elseif ($responseTime < 20) {
-                $overview['system_performance'] = 80 + round((20 - $responseTime) / 20 * 15);
-            } else {
-                $overview['system_performance'] = 60 + rand(0, 10);
-            }
+            $stmt = $this->pdo->query("SELECT COUNT(*) as total FROM Advertisement");
+            $adCount = $stmt->fetch()['total'] ?? 0;
+            $stmt = $this->pdo->query("SELECT COUNT(*) as total FROM User");
+            $userCount = $stmt->fetch()['total'] ?? 0;
+            $performance = min(100, ($adCount + $userCount) > 0 ? round((100 / ($adCount + $userCount)) * 10) + 50 : 96);
+            $overview['system_performance'] = max(50, min(100, $performance));
         } catch (PDOException $e) {
-            $overview['system_performance'] = 90;
+            error_log("Error calculating system performance: " . $e->getMessage());
+            $overview['system_performance'] = 96;
         }
 
         return $overview;
@@ -242,42 +152,42 @@ class ModeratorDashboardModel
         $status = [];
 
         $status['server'] = [
-            'status' => 'Online',
-            'uptime' => '99.9%',
-            'color' => 'green'
+            'status' => 'operational',
+            'label' => 'Server Status',
+            'value' => 'Operational'
         ];
 
         try {
-            $start = microtime(true);
-            $this->pdo->query("SELECT 1");
-            $end = microtime(true);
-            $responseTime = round(($end - $start) * 1000, 1);
-            
+            $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM Advertisement");
+            $adCount = $stmt->fetch()['count'] ?? 0;
             $status['database'] = [
-                'status' => 'Connected',
-                'response_time' => $responseTime . 'ms',
-                'color' => 'green'
+                'status' => 'operational',
+                'label' => 'Database',
+                'value' => 'Connected',
+                'detail' => $adCount . ' ads'
             ];
         } catch (PDOException $e) {
             $status['database'] = [
-                'status' => 'Error',
-                'response_time' => 'N/A',
-                'color' => 'red'
+                'status' => 'error',
+                'label' => 'Database',
+                'value' => 'Error',
+                'detail' => 'Connection failed'
             ];
         }
 
         try {
-            $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM Notification WHERE status = 'pending'");
-            $alertCount = $stmt->fetch()['count'];
-            
-            $status['alerts'] = [
-                'count' => $alertCount,
-                'color' => $alertCount > 0 ? 'yellow' : 'green'
+            $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM IssueReport WHERE status = 'pending'");
+            $reportCount = $stmt->fetch()['count'] ?? 0;
+            $status['reports'] = [
+                'status' => $reportCount > 5 ? 'warning' : 'operational',
+                'label' => 'Reports',
+                'value' => $reportCount . ' pending'
             ];
         } catch (PDOException $e) {
-            $status['alerts'] = [
-                'count' => 0,
-                'color' => 'gray'
+            $status['reports'] = [
+                'status' => 'error',
+                'label' => 'Reports',
+                'value' => 'Unknown'
             ];
         }
 
@@ -293,28 +203,28 @@ class ModeratorDashboardModel
 
         try {
             $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM Advertisement WHERE status = 'pending'");
-            $counts['pending_reviews'] = $stmt->fetch()['count'];
+            $counts['pending_reviews'] = $stmt->fetch()['count'] ?? 0;
         } catch (PDOException $e) {
             $counts['pending_reviews'] = 0;
         }
 
         try {
-            $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM IssueReport WHERE status IN ('pending', 'investigating')");
-            $counts['moderation_needed'] = $stmt->fetch()['count'];
+            $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM User WHERE account_status = 'flagged'");
+            $counts['moderation_needed'] = $stmt->fetch()['count'] ?? 0;
         } catch (PDOException $e) {
             $counts['moderation_needed'] = 0;
         }
 
         try {
             $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM IssueReport WHERE DATE(date) = CURDATE()");
-            $counts['reports_today'] = $stmt->fetch()['count'];
+            $counts['reports_today'] = $stmt->fetch()['count'] ?? 0;
         } catch (PDOException $e) {
             $counts['reports_today'] = 0;
         }
 
         try {
-            $stmt = $this->pdo->query("SELECT COALESCE(SUM(amount), 0) as total FROM Payment");
-            $counts['total_revenue'] = $stmt->fetch()['total'];
+            $stmt = $this->pdo->query("SELECT COALESCE(SUM(amount), 0) as total FROM Payment WHERE MONTH(paymentDate) = MONTH(CURDATE()) AND YEAR(paymentDate) = YEAR(CURDATE())");
+            $counts['total_revenue'] = $stmt->fetch()['total'] ?? 0;
         } catch (PDOException $e) {
             $counts['total_revenue'] = 0;
         }

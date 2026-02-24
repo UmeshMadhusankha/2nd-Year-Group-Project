@@ -37,7 +37,7 @@ class ModeratorDashboardController
     }
 
     /**
-     * Format dashboard stats for view
+     * Get formatted stats for view
      */
     public function getFormattedStats()
     {
@@ -56,56 +56,21 @@ class ModeratorDashboardController
     }
 
     /**
-     * Calculate time ago from timestamp
+     * Format datetime for display
+     * Format: "20 Feb 2026, 03:45 PM"
      */
-    public function getTimeAgo($datetime)
+    public function formatDateTime($datetime)
     {
-        if (empty($datetime)) return 'Unknown';
-        
-        try {
-            $now = new DateTime();
-            $ago = new DateTime($datetime);
-            $diff = $now->diff($ago);
-
-            $totalSeconds = ($diff->days * 86400) + ($diff->h * 3600) + ($diff->i * 60) + $diff->s;
-
-            if ($totalSeconds < 1) {
-                return 'Just now';
-            }
-            
-            if ($totalSeconds < 60) {
-                return $diff->s . ' second' . ($diff->s > 1 ? 's' : '') . ' ago';
-            }
-
-            if ($diff->i > 0 && $diff->h == 0 && $diff->d == 0) {
-                return $diff->i . ' minute' . ($diff->i > 1 ? 's' : '') . ' ago';
-            }
-
-            if ($diff->h > 0 && $diff->d == 0) {
-                return $diff->h . ' hour' . ($diff->h > 1 ? 's' : '') . ' ago';
-            }
-
-            if ($diff->d > 0 && $diff->d < 7) {
-                return $diff->d . ' day' . ($diff->d > 1 ? 's' : '') . ' ago';
-            }
-
-            if ($diff->d >= 7 && $diff->d < 30) {
-                $weeks = floor($diff->d / 7);
-                return $weeks . ' week' . ($weeks > 1 ? 's' : '') . ' ago';
-            }
-
-            if ($diff->m > 0 && $diff->y == 0) {
-                return $diff->m . ' month' . ($diff->m > 1 ? 's' : '') . ' ago';
-            }
-
-            if ($diff->y > 0) {
-                return $diff->y . ' year' . ($diff->y > 1 ? 's' : '') . ' ago';
-            }
-
-            return 'Just now';
-        } catch (Exception $e) {
-            error_log("Error calculating time ago: " . $e->getMessage());
+        if (empty($datetime)) {
             return 'Unknown';
+        }
+
+        try {
+            $date = new DateTime($datetime);
+            return $date->format('d M Y, h:i A');
+        } catch (Exception $e) {
+            error_log("Date format error: " . $e->getMessage());
+            return 'Invalid date';
         }
     }
 }

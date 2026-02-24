@@ -8,10 +8,14 @@ require_once __DIR__ . '/_components/Common.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../controllers/IssueReportController.php';
 
-global $pdo;
-$controller = new IssueReportController($pdo);
-$controller->handlePostRequest();
-
+// ✅ FIXED: Proper PDO initialization
+try {
+    $pdo = getDatabaseConnection();
+    $controller = new IssueReportController($pdo);
+    $controller->handlePostRequest();
+} catch (Exception $e) {
+    die("⛔ Database Error: " . htmlspecialchars($e->getMessage()));
+}
 $issues      = $controller->getIssues();
 $stats       = $controller->getStatistics();
 $messageData = $controller->getMessage();

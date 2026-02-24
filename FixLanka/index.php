@@ -167,10 +167,14 @@ case '/admin-moderators-action':
         require_once __DIR__ . '/views/moderator/ads.php';
         break;
     
-    case '/moderator-static-content':
-        require_once __DIR__ . '/views/moderator/static-content.php';
-        break;
     
+case '/moderator-static-content':
+    require_once __DIR__ . '/models/StaticContentModel.php';
+    require_once __DIR__ . '/controllers/StaticContentController.php';
+    $controller = new StaticContentController();
+    $controller->handleRequest();
+    break;
+
     case '/moderator-ad-schedule':
         require_once __DIR__ . '/views/moderator/ad-schedule.php';
         break;

@@ -1,75 +1,15 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-// Direct database connection
-$db = new mysqli("localhost", "root", "", "fix_lanka");
-
-if ($db->connect_error) {
-    die("Connection failed: " . $db->connect_error);
-}
-
-// Include the model
-require_once __DIR__ . '/../../models/StaticContentModel.php';
-$model = new StaticContentModel($db);
-
-// Handle status toggle (Publish/Unpublish)
-if (isset($_GET['toggle_status']) && isset($_GET['id'])) {
-    $id = intval($_GET['id']);
-    $content = $model->getContentById($id);
-    
-    if ($content) {
-        if ($content['status'] === 'Published') {
-            $success = $model->unpublishContent($id);
-            $_SESSION['message'] = $success ? 'Content unpublished successfully!' : 'Failed to unpublish content';
-        } else {
-            $success = $model->publishContent($id);
-            $_SESSION['message'] = $success ? 'Content published successfully!' : 'Failed to publish content';
-        }
-        $_SESSION['message_type'] = 'success';
-    }
-    
-    header('Location: /2nd-Year-Group-Project/FixLanka/views/moderator/static-content.php');
-    exit;
-}
-
-// Handle update
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_content'])) {
-    $id = intval($_POST['content_id']);
-    $title = trim($_POST['title']);
-    $description = trim($_POST['description']);
-    $body = trim($_POST['body']);
-    $status = $_POST['status'];
-    
-    $success = $model->updateContent($id, $title, $description, $body, $status);
-    
-    if ($success) {
-        $_SESSION['message'] = 'Content updated successfully!';
-        $_SESSION['message_type'] = 'success';
-    } else {
-        $_SESSION['message'] = 'Failed to update content';
-        $_SESSION['message_type'] = 'error';
-    }
-    
-    header('Location: /2nd-Year-Group-Project/FixLanka/views/moderator/static-content.php');
-    exit;
-}
-
-// Get data using model
-$contents = $model->getAllContent();
-$stats = $model->getStatistics();
-
-$message = $_SESSION['message'] ?? '';
-$message_type = $_SESSION['message_type'] ?? '';
-unset($_SESSION['message'], $_SESSION['message_type']);
+/**
+ * static-content-view.php
+ * PURE VIEW - Only displays data, no business logic
+ * Data is passed from controller via variables: $contents, $stats, $message, $message_type
+ */
 
 // Include components
 require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
-
+require_once __DIR__ . '/../../controllers/StaticContentController.php';
 $basePath = '../..';
 $currentPath = '/2nd-Year-Group-Project/FixLanka/moderator-static-content';
 $pageTitle = 'Static Content Management';
@@ -80,6 +20,7 @@ $pageDescription = 'Edit and manage website content';
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath); ?>
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/static-content.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 <body class="bg-background text-foreground">
     <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle-input">
@@ -99,8 +40,9 @@ $pageDescription = 'Edit and manage website content';
 
                     <!-- Success/Error Message -->
                     <?php if ($message): ?>
-                    <div class="alert alert-<?= $message_type === 'success' ? 'success' : 'error' ?>">
-                        <?= $message_type === 'success' ? '✓' : '✗' ?> <?= htmlspecialchars($message) ?>
+                    <div id="alertMessage" class="alert alert-<?= $message_type === 'success' ? 'success' : 'error' ?>" style="display: flex;">
+                        <i class="fa-solid <?= $message_type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation' ?>"></i>
+                        <span><?= htmlspecialchars($message) ?></span>
                     </div>
                     <?php endif; ?>
 
@@ -184,14 +126,16 @@ $pageDescription = 'Edit and manage website content';
                                             </p>
                                         </div>
                                         <div class="flex items-center gap-2">
-                                            <!-- Publish/Unpublish Toggle Button -->
+                                            <!-- ✅ Points to CONTROLLER -->
                                             <?php if ($item['status'] === 'Draft'): ?>
-                                            <a href="?toggle_status=1&id=<?= $item['content_id'] ?>" class="btn btn-primary">
+                                            <a href="/2nd-Year-Group-Project/FixLanka/controllers/StaticContentController.php?action=toggle_status&id=<?= $item['content_id'] ?>" 
+                                               class="btn btn-primary">
                                                 <i class="fa-solid fa-upload h-4 w-4"></i>
                                                 Publish
                                             </a>
                                             <?php else: ?>
-                                            <a href="?toggle_status=1&id=<?= $item['content_id'] ?>" class="btn btn-secondary">
+                                            <a href="/2nd-Year-Group-Project/FixLanka/controllers/StaticContentController.php?action=toggle_status&id=<?= $item['content_id'] ?>" 
+                                               class="btn btn-secondary">
                                                 <i class="fa-solid fa-box-archive h-4 w-4"></i>
                                                 Unpublish
                                             </a>
@@ -235,10 +179,11 @@ $pageDescription = 'Edit and manage website content';
                         <i class="fa-solid fa-xmark h-5 w-5"></i>
                     </button>
                 </div>
-                <form method="POST" action="/2nd-Year-Group-Project/FixLanka/views/moderator/static-content.php">
+                <!-- ✅ Form submits to CONTROLLER -->
+                <form method="POST" action="/2nd-Year-Group-Project/FixLanka/controllers/StaticContentController.php">
                     <div class="modal-body">
+                        <input type="hidden" name="action" value="update">
                         <input type="hidden" name="content_id" id="editContentId">
-                        <input type="hidden" name="update_content" value="1">
                         
                         <div class="form-group">
                             <label class="form-label">Section Title</label>
@@ -305,6 +250,19 @@ $pageDescription = 'Edit and manage website content';
                 closeModal();
             }
         });
+
+        // Auto-hide success/error messages after 5 seconds
+        setTimeout(() => {
+            const alertMessage = document.getElementById('alertMessage');
+            if (alertMessage) {
+                alertMessage.style.opacity = '0';
+                alertMessage.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => {
+                    alertMessage.style.display = 'none';
+                }, 300);
+            }
+        }, 5000);
     </script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
 </body>
 </html>
