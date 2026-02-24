@@ -39,7 +39,7 @@ if (!$userId) {
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/progress-bars.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/global.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/repair-requests.css">
@@ -65,6 +65,9 @@ if (!$userId) {
             <!-- Header Container -->
             <!-- Header Component -->
             <?php include 'topbar.php'; ?>
+
+            <!-- Repair Requests Container -->
+            <div class="repair-requests-container">
 
             <!-- Page Header -->
             <header class="page-header">
@@ -338,6 +341,8 @@ if (!$userId) {
                     </div>
                 </div>
             </section>
+
+            </div><!-- /.repair-requests-container -->
         </main>
     </div>
 
@@ -391,183 +396,6 @@ if (!$userId) {
                             <textarea id="service-description" name="description" class="form-textarea" rows="4"
                                 placeholder="Describe the services you will provide, work scope, and deliverables..." required></textarea>
                             <small class="form-hint">Be specific about what's included in this quotation</small>
-                        </div>
-                    </div>
-
-                    <!-- Timeline Section -->
-                    <div class="form-section">
-                        <h3 class="form-section-title">
-                            <i class="fas fa-calendar-alt"></i>
-                            Project Timeline
-                        </h3>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label" for="estimated-start-date">
-                                    Estimated Start Date <span class="required">*</span>
-                                </label>
-                                <input type="date" id="estimated-start-date" name="estimated_start_date" 
-                                    class="form-input" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="estimated-completion-date">
-                                    Estimated Completion Date <span class="required">*</span>
-                                </label>
-                                <input type="date" id="estimated-completion-date" name="estimated_completion_date" 
-                                    class="form-input" required>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="estimated-duration">
-                                Estimated Duration (Days) <span class="required">*</span>
-                            </label>
-                            <input type="number" id="estimated-duration" name="estimated_duration" 
-                                class="form-input" placeholder="e.g., 5" min="1" max="365" required>
-                            <small class="form-hint">Number of calendar days to complete the project</small>
-                        </div>
-                    </div>
-
-                    <!-- ============================================================ -->
-                    <!-- ⭐ NEW: Work Schedule Specifications (Supervisor Requirement) -->
-                    <!-- ============================================================ -->
-                    <div class="form-section work-schedule-section">
-                        <h3 class="form-section-title">
-                            <i class="fas fa-calendar-alt"></i>
-                            Work Schedule Specifications
-                        </h3>
-                        <p class="section-description">
-                            <i class="fas fa-info-circle"></i>
-                            Specify your working days and hours for transparency and clear customer expectations
-                        </p>
-
-                        <div class="form-row">
-                            <!-- Schedule Type -->
-                            <div class="form-group col-md-6">
-                                <label class="form-label" for="work-schedule-type">
-                                    Work Schedule Type <span class="required">*</span>
-                                    <i class="fas fa-question-circle tooltip-icon" title="How many days per week will you work on this project?"></i>
-                                </label>
-                                <select id="work-schedule-type" name="work_schedule_type" class="form-input" required>
-                                    <option value="">-- Select Schedule --</option>
-                                    <option value="weekdays_only" selected>Weekdays Only (Monday - Friday)</option>
-                                    <option value="weekends_included">Weekends Included (Monday - Saturday)</option>
-                                    <option value="all_days">All Days (7 days per week)</option>
-                                    <option value="custom">Custom Schedule</option>
-                                </select>
-                            </div>
-
-                            <!-- Working Days Per Week -->
-                            <div class="form-group col-md-6">
-                                <label class="form-label" for="working-days-per-week">
-                                    Working Days Per Week <span class="required">*</span>
-                                </label>
-                                <input type="number" id="working-days-per-week" name="working_days_per_week" 
-                                    class="form-input" min="1" max="7" value="5" required>
-                                <small class="form-hint">Number of days you'll work (1-7)</small>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <!-- Daily Work Hours -->
-                            <div class="form-group col-md-4">
-                                <label class="form-label" for="daily-work-hours">
-                                    Daily Work Hours <span class="required">*</span>
-                                </label>
-                                <input type="number" id="daily-work-hours" name="daily_work_hours" 
-                                    class="form-input" min="0.5" max="24" step="0.5" value="8.00" required>
-                                <small class="form-hint">Hours per working day</small>
-                            </div>
-
-                            <!-- Work Start Time -->
-                            <div class="form-group col-md-4">
-                                <label class="form-label" for="work-start-time">
-                                    Start Time <span class="required">*</span>
-                                </label>
-                                <input type="time" id="work-start-time" name="work_start_time" 
-                                    class="form-input" value="08:00" required>
-                                <small class="form-hint">Daily work begins at</small>
-                            </div>
-
-                            <!-- Work End Time -->
-                            <div class="form-group col-md-4">
-                                <label class="form-label" for="work-end-time">
-                                    End Time <span class="required">*</span>
-                                </label>
-                                <input type="time" id="work-end-time" name="work_end_time" 
-                                    class="form-input" value="17:00" required>
-                                <small class="form-hint">Daily work ends at</small>
-                            </div>
-                        </div>
-
-                        <!-- Total Work Hours (Auto-calculated) -->
-                        <div class="form-row">
-                            <div class="form-group col-md-6">
-                                <label class="form-label" for="total-work-hours">
-                                    Total Estimated Work Hours
-                                    <i class="fas fa-calculator tooltip-icon" title="Auto-calculated based on duration, working days, and daily hours"></i>
-                                </label>
-                                <input type="number" id="total-work-hours" name="total_work_hours" 
-                                    class="form-input" step="0.5" readonly 
-                                    style="background-color: #f8f9fa; cursor: not-allowed;">
-                                <small class="form-hint">
-                                    <i class="fas fa-info-circle"></i>
-                                    Auto-calculated: (Duration ÷ 7 weeks) × Working Days/Week × Hours/Day
-                                </small>
-                            </div>
-
-                            <!-- Overtime Available -->
-                            <div class="form-group col-md-6">
-                                <label class="form-label d-block">Overtime Work Available?</label>
-                                <div class="custom-switch-wrapper">
-                                    <label class="custom-switch">
-                                        <input type="checkbox" id="overtime-available" name="overtime_available" value="1">
-                                        <span class="switch-slider"></span>
-                                        <span class="switch-label">Yes, overtime is available</span>
-                                    </label>
-                                </div>
-                                <small class="form-hint">Can you work extra hours if needed?</small>
-                            </div>
-                        </div>
-
-                        <!-- Overtime Rate (Conditional) -->
-                        <div class="form-row" id="overtime-rate-row" style="display: none;">
-                            <div class="form-group col-md-6">
-                                <label class="form-label" for="overtime-rate">
-                                    Overtime Hourly Rate (LKR) <span class="required">*</span>
-                                </label>
-                                <input type="number" id="overtime-rate" name="overtime_rate" 
-                                    class="form-input" min="0" step="0.01" placeholder="e.g., 1500.00">
-                                <small class="form-hint">
-                                    <i class="fas fa-lightbulb"></i>
-                                    Typically 1.5x your regular hourly rate
-                                </small>
-                            </div>
-                        </div>
-
-                        <!-- Custom Schedule Details (Conditional) -->
-                        <div class="form-row" id="custom-schedule-row" style="display: none;">
-                            <div class="form-group col-12">
-                                <label class="form-label" for="custom-schedule-details">
-                                    Custom Schedule Details <span class="required">*</span>
-                                </label>
-                                <textarea id="custom-schedule-details" name="custom_schedule_details" 
-                                    class="form-input" rows="3" 
-                                    placeholder="Example: Monday-Thursday 8am-5pm, Friday 8am-3pm. Lunch break: 12pm-1pm. No work on public holidays."></textarea>
-                                <small class="form-hint">Provide specific details about your custom work schedule</small>
-                            </div>
-                        </div>
-
-                        <!-- Work Schedule Preview Box -->
-                        <div class="schedule-preview-box">
-                            <h5 class="preview-title">
-                                <i class="fas fa-eye"></i> Schedule Preview
-                            </h5>
-                            <div id="schedule-preview-content" class="preview-content">
-                                <p class="text-muted">
-                                    <i class="fas fa-arrow-up"></i> Fill in the fields above to see your work schedule preview
-                                </p>
-                            </div>
                         </div>
                     </div>
 
@@ -634,8 +462,8 @@ if (!$userId) {
                                         <label class="form-label">
                                             <span id="labor-quantity-label">Quantity</span> <span class="required">*</span>
                                         </label>
-                                        <input type="number" id="labor-quantity" class="form-input form-input-calculated" 
-                                            placeholder="Auto-filled from Work Schedule" min="0" step="0.01" readonly>
+                                        <input type="number" id="labor-quantity" class="form-input" 
+                                            placeholder="Enter quantity" min="0" step="0.01">
                                     </div>
                                 </div>
 
@@ -798,6 +626,84 @@ if (!$userId) {
                             </div>
                         </div>
                         <input type="hidden" id="total-price" name="total_price" value="0">
+                    </div>
+
+                    <!-- Timeline Section -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-calendar-alt"></i>
+                            Project Timeline
+                        </h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="estimated-start-date">
+                                    Estimated Start Date <span class="required">*</span>
+                                </label>
+                                <input type="date" id="estimated-start-date" name="estimated_start_date" 
+                                    class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="estimated-completion-date">
+                                    Estimated Completion Date <span class="required">*</span>
+                                </label>
+                                <input type="date" id="estimated-completion-date" name="estimated_completion_date" 
+                                    class="form-input" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="estimated-duration">
+                                Estimated Duration (Days) <span class="required">*</span>
+                            </label>
+                            <input type="number" id="estimated-duration" name="estimated_duration" 
+                                class="form-input" placeholder="e.g., 5" min="1" max="365" required>
+                            <small class="form-hint">Number of working days to complete the project</small>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================ -->
+                    <!-- BUSINESS LOGIC: Budget Flexibility Section -->
+                    <!-- ============================================================ -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-chart-line"></i>
+                            Budget Flexibility
+                        </h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Budget Type <span class="required">*</span></label>
+                            <div class="radio-group-inline">
+                                <label class="radio-card">
+                                    <input type="radio" name="budget_type" value="fixed" checked onchange="updateBudgetDisplay()">
+                                    <span class="radio-card-content">
+                                        <i class="fas fa-lock"></i>
+                                        <strong>Fixed Budget</strong>
+                                        <small>Exact amount, no flexibility</small>
+                                    </span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="budget_type" value="flexible" onchange="updateBudgetDisplay()">
+                                    <span class="radio-card-content">
+                                        <i class="fas fa-unlock"></i>
+                                        <strong>Flexible Budget (±10%)</strong>
+                                        <small>Allows minor adjustments</small>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Budget Range Display (shown for flexible budget) -->
+                        <div id="budget-range-display" style="display: none;">
+                            <div class="info-box">
+                                <i class="fas fa-info-circle"></i>
+                                <div>
+                                    <strong>Budget Range:</strong>
+                                    <p id="budget-range-text">LKR 0.00 - LKR 0.00</p>
+                                    <small>Final cost may vary within this range based on actual requirements</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- ============================================================ -->

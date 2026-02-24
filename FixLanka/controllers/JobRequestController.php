@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/databse.php';
+require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../models/JobRequestModel.php';
 
@@ -212,37 +212,6 @@ class JobRequestController {
         }
         
         header('Location: /2nd-Year-Group-Project/FixLanka/job-history');
-        exit;
-    }
-
-    /**
-     * API - Get all open job requests (for companies)
-     */
-    public function getOpenRequests() {
-        // Ensure user is logged in
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        
-        if (!isset($_SESSION['user_id'])) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-            exit;
-        }
-
-        // Get filters from query parameters
-        $filters = [];
-        if (isset($_GET['district']) && !empty($_GET['district'])) {
-            $filters['district'] = $_GET['district'];
-        }
-        if (isset($_GET['category_id']) && !empty($_GET['category_id'])) {
-            $filters['category_id'] = $_GET['category_id'];
-        }
-        
-        $requests = $this->jobRequestModel->getAllOpen($filters);
-        
-        header('Content-Type: application/json');
-        echo json_encode(['success' => true, 'data' => $requests]);
         exit;
     }
 }

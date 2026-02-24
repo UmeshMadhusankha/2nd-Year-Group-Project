@@ -189,8 +189,8 @@ unset($_SESSION['error']);
                 </div>
                 
                 <div class="form-group">
-                    <label for="profile_picture">Profile Picture (Optional)</label>
-                    <input type="file" id="profile_picture" name="profile_picture" accept="image/*">
+                    <label for="profilePicture">Profile Picture (Optional)</label>
+                    <input type="file" id="profilePicture" name="profilePicture" accept="image/*">
                     <small class="password-hint">Max 5MB - JPG, PNG, GIF</small>
                 </div>
                 

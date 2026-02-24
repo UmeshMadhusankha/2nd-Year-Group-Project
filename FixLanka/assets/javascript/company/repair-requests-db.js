@@ -62,7 +62,7 @@ let requestDetailsModal;
  * Sets up event listeners, loads data, and initializes UI components
  */
 document.addEventListener('DOMContentLoaded', function () {
-
+    
     // Validate user authentication
     if (!currentCompanyId) {
         console.error('User ID not found. Please login.');
@@ -70,13 +70,13 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-
+    
     // Get DOM elements after DOM is ready
     quotationModal = document.getElementById('quotation-modal');
     quotationForm = document.getElementById('quotation-form');
     requestDetailsModal = document.getElementById('request-details-modal');
 
-
+    
     initializeTabs();
     initializeViewToggle();
     initializeFilters();
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
     loadCompanyDefaults();
 
     // Load initial data from API
-
+    
     loadAvailableRequests();
     loadSubmittedQuotations();
 });
@@ -140,7 +140,7 @@ async function loadAvailableRequests() {
  */
 async function loadSubmittedQuotations() {
     try {
-
+        
         const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?user_id=${currentCompanyId}`);
 
         // Check for HTTP errors
@@ -153,11 +153,11 @@ async function loadSubmittedQuotations() {
 
         const result = await response.json();
 
-
-
+        
+        
         if (result.success) {
             submittedQuotations = result.data || [];
-
+            
             renderSubmittedQuotations();
             updateQuotationCounts();
         } else {
@@ -178,7 +178,7 @@ async function loadSubmittedQuotations() {
  */
 async function loadCompanyDefaults() {
     try {
-
+        
         const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-defaults.php?user_id=${currentCompanyId}`);
 
         if (!response.ok) {
@@ -190,7 +190,7 @@ async function loadCompanyDefaults() {
 
         if (result.success && result.data) {
             companyDefaults = result.data;
-
+            
         }
     } catch (error) {
         console.warn('Error loading company defaults:', error);
@@ -228,7 +228,7 @@ function createRequestCard(request) {
     const urgencyClass = request.urgency === 'urgent' ? 'high' : 'low';
     const urgencyText = request.urgency === 'urgent' ? 'High Priority' : 'Low Priority';
     const initials = getInitials(request.customer_fname, request.customer_lname);
-    const datePosted = formatTimeAgo(request.created_at);
+    const datePosted = formatTimeAgo(request.dateCreated);
     const hasAttachments = request.photos && request.photos.length > 0;
 
     // Calculate days until expiry
@@ -237,10 +237,10 @@ function createRequestCard(request) {
     today.setHours(0, 0, 0, 0);
     deadline.setHours(0, 0, 0, 0);
     const daysUntilExpiry = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
-
+    
     // Determine if expiring soon (within 3 days)
     const isExpiringSoon = daysUntilExpiry > 0 && daysUntilExpiry <= 3;
-    const expiryWarning = isExpiringSoon
+    const expiryWarning = isExpiringSoon 
         ? `<div class="expiry-warning">
                <i class="fas fa-exclamation-triangle"></i>
                Expires in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}!
@@ -315,8 +315,8 @@ function createRequestCard(request) {
  * Render submitted quotations in logs tab
  */
 function renderSubmittedQuotations() {
-
-
+    
+    
     const pendingList = document.getElementById('pending-quotations-list');
     const acceptedList = document.getElementById('accepted-quotations-list');
     const rejectedList = document.getElementById('rejected-quotations-list');
@@ -329,7 +329,7 @@ function renderSubmittedQuotations() {
     const successfulCount = document.getElementById('successful-contracts-count');
     const draftCount = document.getElementById('draft-quotations-count');
 
-
+    
     if (!pendingList) {
         console.error('CRITICAL: pending-quotations-list element not found!');
         return;
@@ -341,9 +341,9 @@ function renderSubmittedQuotations() {
     const successful = submittedQuotations.filter(q => q.status === 'successful');
     const draft = []; // Draft quotations would need separate handling
 
-
+    
     if (pending.length > 0) {
-
+        
     }
 
     // Update counts
@@ -355,9 +355,9 @@ function renderSubmittedQuotations() {
 
     // Render pending quotations
     if (pendingList) {
-
+        
         if (pending.length === 0) {
-
+            
             pendingList.innerHTML = `
                 <div class="quotations-empty-state">
                     <div class="empty-state-icon">
@@ -368,11 +368,11 @@ function renderSubmittedQuotations() {
                 </div>
             `;
         } else {
-
+            
             const quotationsHTML = pending.map(q => createQuotationLogItem(q)).join('');
-
+            
             pendingList.innerHTML = quotationsHTML;
-
+            
         }
     } else {
         console.error('Cannot render pending quotations - pendingList element not found');
@@ -493,12 +493,12 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
                                 <i class="fas fa-hashtag"></i>
                                 ${isSuccessful ? 'Contract' : 'Request'} ${quotation.request_id}
                             </span>
-                            <span class="meta-separator">&bull;</span>
+                            <span class="meta-separator">â€¢</span>
                             <span class="meta-item">
                                 <i class="fas fa-user"></i>
                                 ${escapeHtml(quotation.customer_fname + ' ' + quotation.customer_lname)}
                             </span>
-                            <span class="meta-separator">&bull;</span>
+                            <span class="meta-separator">â€¢</span>
                             <span class="meta-item">
                                 <i class="fas fa-calendar-alt"></i>
                                 ${formattedDate}
@@ -576,11 +576,11 @@ function openQuotationModal(requestId) {
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0); // Reset time for date-only comparison
     requestDeadline.setHours(0, 0, 0, 0);
-
+    
     if (requestDeadline < currentDate) {
         // Request has expired - cannot submit quotation
         showToast('Cannot submit quotation - This request has expired', 'error', 5000);
-
+        
         // Show detailed error modal
         const daysExpired = Math.ceil((currentDate - requestDeadline) / (1000 * 60 * 60 * 24));
         alert(
@@ -600,7 +600,7 @@ function openQuotationModal(requestId) {
     detailsContainer.innerHTML = `
         <h4 style="margin: 0 0 0.5rem 0;">${escapeHtml(request.title)}</h4>
         <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
-            <i class="fas fa-map-marker-alt"></i> ${escapeHtml(request.district)} &bull; 
+            <i class="fas fa-map-marker-alt"></i> ${escapeHtml(request.district)} â€¢ 
             <i class="fas fa-calendar"></i> Needed by ${formatDate(request.finish_date)}
         </p>
     `;
@@ -631,13 +631,13 @@ function openQuotationModal(requestId) {
 
     // 4. Auto-fill Estimated Completion Date with intelligent logic
     let completionDate;
-
+    
     if (request.finish_date) {
         // Customer has a preferred deadline
         const customerDeadline = new Date(request.finish_date);
         const minCompletionDate = new Date(startDate);
         minCompletionDate.setDate(minCompletionDate.getDate() + 1); // At least 1 day after start
-
+        
         // If customer deadline is AFTER our start date, use it as a target
         if (customerDeadline > startDate) {
             completionDate = customerDeadline;
@@ -652,7 +652,7 @@ function openQuotationModal(requestId) {
         completionDate = new Date(startDate);
         completionDate.setDate(completionDate.getDate() + 7);
     }
-
+    
     document.getElementById('estimated-completion-date').value = completionDate.toISOString().split('T')[0];
 
     // 5. Auto-calculate and fill Estimated Duration
@@ -717,11 +717,6 @@ function openQuotationModal(requestId) {
     quotationModal.classList.add('active');
     document.body.style.overflow = 'hidden';
 
-    // Initialize work schedule features after modal is shown
-    setTimeout(() => {
-        initializeWorkSchedule();
-    }, 100);
-
     // Show auto-fill notification
     showToast('Form auto-filled with available data. Please review and adjust as needed.', 'info', 3000);
 }
@@ -737,7 +732,7 @@ function openQuotationModal(requestId) {
  * @returns {Promise<void>}
  */
 async function editQuotation(quotationId) {
-
+    
     try {
         const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?quotation_id=${quotationId}`);
 
@@ -773,7 +768,7 @@ async function editQuotation(quotationId) {
             document.getElementById('estimated-start-date').value = quotation.start_date;
             document.getElementById('estimated-completion-date').value = quotation.completion_date;
             document.getElementById('estimated-duration').value = quotation.estimated_duration;
-
+            
             // Map payment_method (if available) or derive from payment_terms
             if (quotation.payment_method) {
                 document.getElementById('payment-method').value = quotation.payment_method;
@@ -793,18 +788,18 @@ async function editQuotation(quotationId) {
                 }
             }
             updatePaymentMethodInfo();
-
+            
             // Populate budget_type if available
             if (quotation.budget_type) {
                 document.querySelector(`input[name="budget_type"][value="${quotation.budget_type}"]`).checked = true;
                 updateBudgetDisplay();
             }
-
+            
             // Populate hourly_rate if available
             if (quotation.hourly_rate) {
                 document.getElementById('hourly-rate').value = quotation.hourly_rate;
             }
-
+            
             document.getElementById('warranty-period').value = quotation.warranty_period || '';
             document.getElementById('terms-conditions').value = quotation.additional_terms || '';
 
@@ -816,7 +811,7 @@ async function editQuotation(quotationId) {
             detailsContainer.innerHTML = `
                 <h4 style="margin: 0 0 0.5rem 0;">${escapeHtml(quotation.job_title)}</h4>
                 <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
-                    <i class="fas fa-map-marker-alt"></i> ${escapeHtml(quotation.district)} &bull; 
+                    <i class="fas fa-map-marker-alt"></i> ${escapeHtml(quotation.district)} â€¢ 
                     Request #${quotation.request_id}
                 </p>
             `;
@@ -850,7 +845,7 @@ async function editQuotation(quotationId) {
  * @returns {Promise<void>}
  */
 async function submitQuotation() {
-
+    
     // Validate all required form fields
     if (!quotationForm.checkValidity()) {
         quotationForm.reportValidity();
@@ -871,7 +866,7 @@ async function submitQuotation() {
     } else if (laborMethod === 'per_sqm' || laborMethod === 'per_unit') {
         pricing_type = 'hybrid';
     }
-
+    
     // Override if payment method is time_material
     if (payment_method === 'time_material') {
         pricing_type = 'time_based';
@@ -934,14 +929,14 @@ async function submitQuotation() {
         // ===== END BUSINESS LOGIC FIELDS =====
     };
 
-
+    
     try {
         let response;
 
         if (editingQuotationId) {
             // UPDATE existing quotation using ENHANCED endpoint
             formData.quotation_id = editingQuotationId;
-
+            
             response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?action=update_enhanced', {
                 method: 'PUT',
                 headers: {
@@ -951,7 +946,7 @@ async function submitQuotation() {
             });
         } else {
             // CREATE new quotation using ENHANCED endpoint
-
+            
             response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?action=create_enhanced', {
                 method: 'POST',
                 headers: {
@@ -970,24 +965,24 @@ async function submitQuotation() {
         }
 
         const result = await response.json();
-
+        
         if (result.success) {
             showToast(editingQuotationId ? 'Quotation updated successfully!' : 'Quotation submitted successfully!', 'success');
             closeQuotationModal();
 
-
+            
             // Reload quotations and wait for it to complete
             await loadSubmittedQuotations();
             await loadAvailableRequests();
 
-
+            
             // Switch to logs tab to show the new quotation
             if (!editingQuotationId) {
                 // Use setTimeout to ensure DOM is updated
                 setTimeout(() => {
                     const logsTab = document.querySelector('[data-tab="logs"]');
                     if (logsTab) {
-
+                        
                         logsTab.click();
                     } else {
                         console.error('Logs tab not found!');
@@ -1014,7 +1009,7 @@ async function submitQuotation() {
  * @returns {Promise<void>}
  */
 async function deleteQuotation(quotationId) {
-
+    
     // Confirm deletion with user
     if (!confirm('Are you sure you want to delete this quotation? This action cannot be undone.')) {
         return;
@@ -1022,7 +1017,7 @@ async function deleteQuotation(quotationId) {
 
     try {
         const deleteUrl = `/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?quotation_id=${quotationId}`;
-
+        
         const response = await fetch(deleteUrl, {
             method: 'DELETE'
         });
@@ -1036,7 +1031,7 @@ async function deleteQuotation(quotationId) {
         }
 
         const result = await response.json();
-
+        
         if (result.success) {
             showToast('Quotation deleted successfully!', 'success');
             loadSubmittedQuotations();
@@ -1161,7 +1156,7 @@ function initializeFilters() {
     filters.forEach(filter => {
         filter.addEventListener('change', () => {
             // TODO: Implement filtering logic
-
+            
         });
     });
 }
@@ -1290,12 +1285,12 @@ function autoCalculateDuration() {
             durationInput.value = '';
             durationInput.classList.add('error');
             showToast('Completion date cannot be before start date!', 'error', 3000);
-
+            
             // Auto-fix: Set completion to start + 7 days
             const fixedCompletion = new Date(startDate);
             fixedCompletion.setDate(fixedCompletion.getDate() + 7);
             completionDateInput.value = fixedCompletion.toISOString().split('T')[0];
-
+            
             // Recalculate with fixed date
             const fixedDuration = Math.ceil((fixedCompletion - startDate) / (1000 * 60 * 60 * 24));
             durationInput.value = fixedDuration;
@@ -1305,17 +1300,17 @@ function autoCalculateDuration() {
 
         // Calculate duration (in days)
         const durationDays = Math.ceil((completionDate - startDate) / (1000 * 60 * 60 * 24));
-
+        
         // Warn if duration is 0 (same day completion)
         if (durationDays === 0) {
             showToast('Same-day completion selected. Are you sure?', 'warning', 3000);
         }
-
+        
         // Warn if duration is very long (> 90 days)
         if (durationDays > 90) {
             showToast(`Duration is ${durationDays} days. Please verify this is correct.`, 'warning', 3000);
         }
-
+        
         durationInput.value = durationDays;
         durationInput.classList.remove('error');
     }
@@ -1483,7 +1478,7 @@ window.closeRequestDetailsModal = closeRequestDetailsModal;
 function loadDirectRequests() {
     const emptyState = document.getElementById('direct-requests-empty');
     const table = document.getElementById('direct-requests-table');
-
+    
     // For now, always show empty state
     // Future: Fetch from API when direct requests feature is implemented
     if (emptyState) {
@@ -1492,11 +1487,11 @@ function loadDirectRequests() {
     if (table) {
         table.style.display = 'none';
     }
-
+    
     // Set count to 0
     updateDirectRequestsCount(0);
-
-
+    
+    
 }
 
 /**
@@ -1506,7 +1501,7 @@ function loadDirectRequests() {
 function updateDirectRequestsCount(count) {
     const headerCount = document.getElementById('direct-requests-count');
     const tabCount = document.getElementById('direct-requests-tab-count');
-
+    
     if (headerCount) {
         headerCount.textContent = count;
     }
@@ -1523,9 +1518,9 @@ function renderDirectRequests(requests) {
     const tbody = document.getElementById('direct-requests-tbody');
     const emptyState = document.getElementById('direct-requests-empty');
     const table = document.getElementById('direct-requests-table');
-
+    
     if (!tbody) return;
-
+    
     if (!requests || requests.length === 0) {
         // Show empty state
         emptyState.style.display = 'block';
@@ -1533,14 +1528,14 @@ function renderDirectRequests(requests) {
         updateDirectRequestsCount(0);
         return;
     }
-
+    
     // Hide empty state, show table
     emptyState.style.display = 'none';
     table.style.display = 'table';
-
+    
     // Update counts
     updateDirectRequestsCount(requests.length);
-
+    
     // Render rows
     tbody.innerHTML = requests.map(request => createDirectRequestRow(request)).join('');
 }
@@ -1552,23 +1547,23 @@ function renderDirectRequests(requests) {
  */
 function createDirectRequestRow(request) {
     const initials = getInitials(request.customer_fname, request.customer_lname);
-    const statusClass = request.status === 'accepted' ? 'accepted' :
-        request.status === 'rejected' ? 'rejected' : 'pending';
-    const statusIcon = request.status === 'accepted' ? 'check' :
-        request.status === 'rejected' ? 'times' : 'clock';
-
+    const statusClass = request.status === 'accepted' ? 'accepted' : 
+                       request.status === 'rejected' ? 'rejected' : 'pending';
+    const statusIcon = request.status === 'accepted' ? 'check' : 
+                      request.status === 'rejected' ? 'times' : 'clock';
+    
     // Check if expired
     const deadline = new Date(request.finish_date);
     const today = new Date();
     const isExpired = deadline < today;
-
+    
     return `
         <tr data-request-id="${request.request_id}">
             <td>
                 <div>
                     <h5>${escapeHtml(request.title)}</h5>
                     <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
-                        #REQ-${request.request_id} &bull; ${escapeHtml(request.category_name || 'General')}
+                        #REQ-${request.request_id} â€¢ ${escapeHtml(request.category_name || 'General')}
                     </p>
                 </div>
             </td>
@@ -1581,14 +1576,14 @@ function createDirectRequestRow(request) {
                     </div>
                 </div>
             </td>
-            <td>${formatDate(request.created_at)}</td>
+            <td>${formatDate(request.dateCreated)}</td>
             <td>
-                ${isExpired
-            ? `<span style="color: var(--danger-color); font-weight: 600;">
+                ${isExpired 
+                    ? `<span style="color: var(--danger-color); font-weight: 600;">
                          <i class="fas fa-exclamation-triangle"></i> Expired
-                       </span>`
-            : formatDate(request.finish_date)
-        }
+                       </span>` 
+                    : formatDate(request.finish_date)
+                }
             </td>
             <td>
                 <span class="status-badge ${statusClass}">
@@ -1645,12 +1640,12 @@ async function acceptDirectRequest(requestId) {
     if (!confirm('Accept this direct request? This will create a contract with the customer.')) {
         return;
     }
-
+    
     try {
         // Future: API call to accept direct request
         // For now, show placeholder message
         showToast('Direct requests feature coming soon! This will create a contract.', 'info', 5000);
-
+        
         // Future implementation:
         // const response = await fetch('/api/direct-requests.php', {
         //     method: 'POST',
@@ -1677,11 +1672,11 @@ async function rejectDirectRequest(requestId) {
         showToast('Decline cancelled - reason is required', 'info');
         return;
     }
-
+    
     try {
         // Future: API call to reject direct request
         showToast('Direct requests feature coming soon! Reason: ' + reason, 'info', 5000);
-
+        
         // Future implementation:
         // const response = await fetch('/api/direct-requests.php', {
         //     method: 'POST',
@@ -1723,278 +1718,3 @@ if (document.readyState === 'loading') {
     loadDirectRequests();
 }
 
-// ============================================================
-// ⭐ NEW: Work Schedule Management Functions
-// ============================================================
-
-/**
- * Initialize work schedule features
- * Sets up event listeners and default values for work schedule fields
- */
-function initializeWorkSchedule() {
-    console.log('🔧 Initializing work schedule features...');
-
-    // Auto-update working days based on schedule type
-    const scheduleTypeSelect = document.getElementById('work-schedule-type');
-    if (scheduleTypeSelect) {
-        scheduleTypeSelect.addEventListener('change', function () {
-            const scheduleType = this.value;
-            const workingDaysInput = document.getElementById('working-days-per-week');
-            const customScheduleRow = document.getElementById('custom-schedule-row');
-            const customScheduleField = document.getElementById('custom-schedule-details');
-
-            switch (scheduleType) {
-                case 'weekdays_only':
-                    workingDaysInput.value = 5;
-                    customScheduleRow.style.display = 'none';
-                    customScheduleField.required = false;
-                    break;
-                case 'weekends_included':
-                    workingDaysInput.value = 6;
-                    customScheduleRow.style.display = 'none';
-                    customScheduleField.required = false;
-                    break;
-                case 'all_days':
-                    workingDaysInput.value = 7;
-                    customScheduleRow.style.display = 'none';
-                    customScheduleField.required = false;
-                    break;
-                case 'custom':
-                    customScheduleRow.style.display = 'block';
-                    customScheduleField.required = true;
-                    break;
-            }
-
-            // Recalculate total hours and update preview
-            calculateTotalWorkHours();
-            updateSchedulePreview();
-        });
-    }
-
-    // Show/hide overtime rate field
-    const overtimeCheckbox = document.getElementById('overtime-available');
-    if (overtimeCheckbox) {
-        overtimeCheckbox.addEventListener('change', function () {
-            const overtimeRateRow = document.getElementById('overtime-rate-row');
-            const overtimeRateField = document.getElementById('overtime-rate');
-
-            if (this.checked) {
-                overtimeRateRow.style.display = 'block';
-                overtimeRateField.required = true;
-            } else {
-                overtimeRateRow.style.display = 'none';
-                overtimeRateField.required = false;
-                overtimeRateField.value = '';
-            }
-
-            updateSchedulePreview();
-        });
-    }
-
-    // Auto-calculate total work hours when relevant fields change
-    const fieldsForCalculation = ['estimated-duration', 'working-days-per-week', 'daily-work-hours'];
-    fieldsForCalculation.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('input', calculateTotalWorkHours);
-        }
-    });
-
-    // Update preview when any schedule field changes
-    const fieldsForPreview = [
-        'work-schedule-type', 'working-days-per-week', 'daily-work-hours',
-        'work-start-time', 'work-end-time', 'overtime-available', 'overtime-rate'
-    ];
-    fieldsForPreview.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('change', updateSchedulePreview);
-            field.addEventListener('input', updateSchedulePreview);
-        }
-    });
-
-    // Initial calculation and preview
-    calculateTotalWorkHours();
-    updateSchedulePreview();
-
-    console.log('✅ Work schedule features initialized');
-}
-
-/**
- * Calculate total work hours based on duration, working days, and daily hours
- * Also auto-populates the hourly labor "Number of Hours" field
- */
-function calculateTotalWorkHours() {
-    const estimatedDuration = parseFloat(document.getElementById('estimated-duration')?.value) || 0;
-    const workingDaysPerWeek = parseFloat(document.getElementById('working-days-per-week')?.value) || 5;
-    const dailyWorkHours = parseFloat(document.getElementById('daily-work-hours')?.value) || 8;
-
-    const totalHoursField = document.getElementById('total-work-hours');
-    const laborHoursField = document.getElementById('labor-quantity'); // Hourly labor pricing field
-
-    if (estimatedDuration > 0 && totalHoursField) {
-        // Convert calendar days to work days
-        // Formula: (calendar_days / 7) * working_days_per_week * hours_per_day
-        const weeksNeeded = Math.ceil(estimatedDuration / 7);
-        const totalWorkDays = weeksNeeded * workingDaysPerWeek;
-        const totalHours = (totalWorkDays * dailyWorkHours).toFixed(2);
-
-        // Update work schedule total hours
-        totalHoursField.value = totalHours;
-
-        // 💡 Auto-populate hourly labor "Number of Hours" field
-        if (laborHoursField) {
-            laborHoursField.value = totalHours;
-            // Trigger change event to recalculate labor cost
-            laborHoursField.dispatchEvent(new Event('input', { bubbles: true }));
-            console.log(`� Auto-filled hourly labor hours: ${totalHours}`);
-        }
-
-        console.log(`�📊 Total work hours calculated: ${totalHours} (${weeksNeeded} weeks × ${workingDaysPerWeek} days × ${dailyWorkHours} hrs)`);
-    } else if (totalHoursField) {
-        totalHoursField.value = '';
-        if (laborHoursField) {
-            laborHoursField.value = '';
-        }
-    }
-}
-
-/**
- * Update the schedule preview display
- */
-function updateSchedulePreview() {
-    const scheduleType = document.getElementById('work-schedule-type')?.value;
-    const workingDays = document.getElementById('working-days-per-week')?.value;
-    const dailyHours = document.getElementById('daily-work-hours')?.value;
-    const startTime = document.getElementById('work-start-time')?.value;
-    const endTime = document.getElementById('work-end-time')?.value;
-    const totalHours = document.getElementById('total-work-hours')?.value;
-    const overtimeAvailable = document.getElementById('overtime-available')?.checked;
-    const overtimeRate = document.getElementById('overtime-rate')?.value;
-
-    const previewContent = document.getElementById('schedule-preview-content');
-
-    if (!previewContent) return;
-
-    // If no data yet, show placeholder
-    if (!scheduleType || !workingDays || !dailyHours) {
-        previewContent.innerHTML = `
-            <p class="text-muted">
-                <i class="fas fa-arrow-up"></i> Fill in the fields above to see your work schedule preview
-            </p>
-        `;
-        return;
-    }
-
-    // Schedule type names
-    const scheduleNames = {
-        'weekdays_only': 'Weekdays Only (Monday - Friday)',
-        'weekends_included': 'Weekends Included (Monday - Saturday)',
-        'all_days': 'All 7 Days per Week',
-        'custom': 'Custom Schedule'
-    };
-
-    // Build preview HTML
-    let html = `<div class="schedule-summary">`;
-
-    // Schedule Type
-    html += `
-        <div class="schedule-item">
-            <i class="fas fa-calendar-week"></i>
-            <div>
-                <strong>Schedule:</strong> ${scheduleNames[scheduleType] || scheduleType}
-            </div>
-        </div>
-    `;
-
-    // Working Days
-    html += `
-        <div class="schedule-item">
-            <i class="fas fa-business-time"></i>
-            <div>
-                <strong>Working Days:</strong> ${workingDays} days per week
-            </div>
-        </div>
-    `;
-
-    // Daily Hours
-    html += `
-        <div class="schedule-item">
-            <i class="fas fa-clock"></i>
-            <div>
-                <strong>Daily Hours:</strong> ${parseFloat(dailyHours).toFixed(1)} hours/day
-            </div>
-        </div>
-    `;
-
-    // Work Time
-    if (startTime && endTime) {
-        html += `
-            <div class="schedule-item">
-                <i class="fas fa-stopwatch"></i>
-                <div>
-                    <strong>Work Time:</strong> ${formatTime(startTime)} - ${formatTime(endTime)}
-                </div>
-            </div>
-        `;
-    }
-
-    // Total Hours
-    if (totalHours) {
-        html += `
-            <div class="schedule-item">
-                <i class="fas fa-calculator"></i>
-                <div>
-                    <strong>Total Project Hours:</strong> <span class="highlight">${parseFloat(totalHours).toFixed(2)} hours</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // Overtime
-    if (overtimeAvailable) {
-        const rateText = overtimeRate ? `LKR ${parseFloat(overtimeRate).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '(not set)';
-        html += `
-            <div class="schedule-item overtime-info">
-                <i class="fas fa-plus-circle"></i>
-                <div>
-                    <strong>Overtime:</strong> Available at ${rateText}/hour
-                </div>
-            </div>
-        `;
-    }
-
-    html += `</div>`;
-
-    previewContent.innerHTML = html;
-}
-
-/**
- * Format time for display (e.g., 08:00 -> 8:00 AM)
- * @param {string} timeString - Time in HH:MM format
- * @returns {string} Formatted time string
- */
-function formatTime(timeString) {
-    if (!timeString) return '';
-
-    const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour === 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-
-    return `${displayHour}:${minutes} ${ampm}`;
-}
-
-// ============================================================
-// Initialize Work Schedule on Page Load
-// ============================================================
-
-// Add work schedule initialization to existing DOMContentLoaded
-document.addEventListener('DOMContentLoaded', function () {
-    // Wait a bit to ensure form is fully loaded
-    setTimeout(() => {
-        initializeWorkSchedule();
-    }, 500);
-});
-
-console.log('📅 Work schedule module loaded');

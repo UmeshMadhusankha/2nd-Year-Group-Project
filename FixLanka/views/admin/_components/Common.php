@@ -10,7 +10,7 @@ function renderCard($label, $value, $description, $icon, $iconColor)
                 <p class="dashboard-stat-value"><?php echo $value; ?></p>
                 <p class="text-xs text-muted-foreground"><?php echo $description; ?></p>
             </div>
-            <i class="fa-solid <?php echo $icon; ?> h-8 w-8 <?php echo $iconColor; ?>"></i>
+            <i data-lucide="<?php echo $icon; ?>" class="h-8 w-8 <?php echo $iconColor; ?>"></i>
         </div>
     </div>
 <?php
@@ -30,7 +30,7 @@ function renderBadge($text, $variant = 'default')
 }
 
 
-function renderStatCard($title, $value, $description = '', $icon = 'fa-arrow-trend-up', $color = 'blue')
+function renderStatCard($title, $value, $description = '', $icon = 'trending-up', $color = 'blue')
 {
     $colorClasses = [
         'blue' => 'text-fixlanka-primary',
@@ -47,7 +47,7 @@ function renderStatCard($title, $value, $description = '', $icon = 'fa-arrow-tre
     return '<div class="card p-6">
                 <div class="flex items-center justify-between w-full mb-4">
                     <h3 class="text-sm font-medium text-muted-foreground">' . $title . '</h3>
-                    <i class="fa-solid ' . $icon . ' h-4 w-4 ' . $iconColor . '"></i>
+                    <i data-lucide="' . $icon . '" class="h-4 w-4 ' . $iconColor . '"></i>
                 </div>
                 <div class="text-2xl font-bold text-foreground">' . $value . '</div>' .
         ($description ? '<p class="text-xs text-muted-foreground mt-1">' . $description . '</p>' : '') .

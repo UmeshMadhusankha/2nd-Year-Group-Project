@@ -207,7 +207,7 @@ function initializeFileUploads() {
     }
 
     // Profile picture upload
-    const profileInput = document.getElementById('profile_picture');
+    const profileInput = document.getElementById('profilePicture');
     const profileImage = document.getElementById('profileImage');
     const profileUploadBtn = document.getElementById('uploadProfileBtn');
 

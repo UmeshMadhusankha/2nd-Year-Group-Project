@@ -14,7 +14,7 @@
                 <div class="profile-header-bg"></div>
                 <div class="profile-header-content">
                     <div class="profile-avatar">
-                        <img id="profileImage" src="https://ui-avatars.com/api/?name=Repairer&size=200&background=17a2b8&color=fff" alt="Profile">
+                        <img id="profileImage" src="https://ui-avatars.com/api/?name=John+Doe&size=200&background=17a2b8&color=fff" alt="Profile">
                     </div>
                     <div class="profile-header-info">
                         <h2 id="profileName" class="profile-name">Loading...</h2>
@@ -27,7 +27,7 @@
                                 <i class="fas fa-star"></i>
                                 <i class="fas fa-star-half-alt"></i>
                             </div>
-                            <span id="profileRatingText" class="rating-text">0.0</span>
+                            <span id="profileRatingText" class="rating-text">4.5 (120 reviews)</span>
                         </div>
                         <div class="profile-stats">
                             <div class="stat-item">
@@ -102,13 +102,17 @@
                         <i class="fas fa-tools"></i>
                         Send Repair Request
                     </button>
+                    <button class="btn-secondary" onclick="contactRepairer()">
+                        <i class="fas fa-comment"></i>
+                        Send Message
+                    </button>
                     <button class="btn-outline" onclick="requestQuote()">
                         <i class="fas fa-file-invoice"></i>
                         Request Quote
                     </button>
-                    <button class="btn-outline" onclick="closeRepairerProfile()">
-                        <i class="fas fa-times"></i>
-                        Close
+                    <button class="btn-outline" onclick="viewFullProfile()">
+                        <i class="fas fa-external-link-alt"></i>
+                        View Full Profile
                     </button>
                 </div>
             </div>

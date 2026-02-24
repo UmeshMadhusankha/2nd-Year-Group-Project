@@ -1,311 +1,455 @@
 <?php
-/**
- * Advertisement Review View (MODERATOR)
- * ✅ Pure MVC with PDO - No inline CSS
- * Version: 3.0.0
- */
-
+// Start session only if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Include components
 require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
 require_once __DIR__ . '/_components/Common.php';
-require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/admin-modarator/auth.php';
+require_once __DIR__ . '/../../includes/admin-modarator/mock-data.php';
 
-try {
-    $pdo = getDatabaseConnection();
-    require_once __DIR__ . '/../../controllers/AdvertisementController.php';
-    $controller = new AdvertisementController($pdo);
-    
-    if (!$controller->checkTable()) {
-        die("⛔ Advertisement table does not exist.");
-    }
-    
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $controller->handlePostRequest();
-        header("Location: /2nd-Year-Group-Project/FixLanka/views/moderator/ads.php");
-        exit();
-    }
-    
-    $reviewAdId = isset($_GET['review']) ? intval($_GET['review']) : null;
-    $advertisement = null;
-    if ($reviewAdId) {
-        $advertisement = $controller->review($reviewAdId);
-    }
-    
-    $viewData = $controller->getViewData();
-    $messages = $controller->getMessages();
-    
-    $stats = $viewData['stats'];
-    $adsData = $viewData['ads'];
-    $filters = $viewData['filters'];
-    $message = $messages['message'];
-    $messageType = $messages['type'];
-    
-} catch (Exception $e) {
-    die("⛔ Error: " . htmlspecialchars($e->getMessage()));
-}
+// Check if user is logged in and get user info
+// $isLoggedIn = isLoggedIn();
+// $user = $isLoggedIn ? getCurrentUser() : null;
+// requireRole("moderator", $basePath);
+// $user = getCurrentUser();
 
+$message = '';
 $basePath = '';
-$currentPath = '/2nd-Year-Group-Project/FixLanka/moderator-ads';
-$pageTitle = 'Advertisement Review - FixLanka';
-$pageDescription = 'Review and manage submitted advertisements';
+$currentPath = 'ads';
+
+// Get mock data
+$adsData = $mockAds;
+
+// Get page title and description from variables or use defaults
+$pageTitle = $title ?? 'Advanced PHP Router';
+$pageDescription = $description ?? 'A Next.js-inspired PHP routing system with advanced features';
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <?php renderMeta($pageTitle, $pageDescription, $basePath); ?>
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/ads.css?v=<?php echo time(); ?>">
+    <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
 </head>
+
 <body class="bg-foreground text-background">
+    <!-- Sidebar Toggle Checkbox -->
     <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle-input">
+
     <div class="dashboard-container">
         <?php renderModeratorSidebar($currentPath, $basePath); ?>
-        
         <div class="dashboard-main">
+            <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/ads.css">
+
             <?php renderPageHeader($basePath, 'Advertisement Review', 'Review and manage submitted advertisements'); ?>
 
             <main style="margin-top: 5rem;" class="ads-content">
                 <div class="space-y-6">
-                    <?php if ($message): ?>
-                    <div class="message-alert <?php echo $messageType; ?>">
-                        <?php echo htmlspecialchars($message); ?>
-                    </div>
-                    <?php endif; ?>
-
-                    <!-- Statistics Cards -->
-                    <div class="grid gap-4 grid-cols-4">
-                        <div class="stat-card" data-color="blue">
-                            <div class="stat-card-inner">
-                                <div class="stat-info">
-                                    <h4>TOTAL ADS</h4>
-                                    <div class="stat-value"><?php echo $stats['total']; ?></div>
-                                </div>
-                                <div class="stat-icon"><i class="fas fa-bullhorn"></i></div>
-                            </div>
-                        </div>
-
-                        <div class="stat-card" data-color="yellow">
-                            <div class="stat-card-inner">
-                                <div class="stat-info">
-                                    <h4>PENDING REVIEW</h4>
-                                    <div class="stat-value"><?php echo $stats['pending']; ?></div>
-                                </div>
-                                <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                            </div>
-                        </div>
-
-                        <div class="stat-card" data-color="green">
-                            <div class="stat-card-inner">
-                                <div class="stat-info">
-                                    <h4>APPROVED</h4>
-                                    <div class="stat-value"><?php echo $stats['approved']; ?></div>
-                                </div>
-                                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                            </div>
-                        </div>
-
-                        <div class="stat-card" data-color="red">
-                            <div class="stat-card-inner">
-                                <div class="stat-info">
-                                    <h4>REJECTED</h4>
-                                    <div class="stat-value"><?php echo $stats['rejected']; ?></div>
-                                </div>
-                                <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
-                            </div>
-                        </div>
+                    <div>
+                        <h2 class="text-3xl font-bold tracking-tight text-foreground">Advertisement Review</h2>
+                        <p class="text-muted-foreground">Review and manage submitted advertisements from companies</p>
                     </div>
 
-                    <!-- Filter & Table Card -->
+                    <div id="messageContainer" style="display: none;" class="bg-fixlanka-highlight/10 border border-fixlanka-highlight/20 text-fixlanka-primary px-4 py-3 rounded"></div>
+
+                    <div class="grid gap-4 grid-cols-4" id="statsContainer">
+                        Stats will be loaded dynamically
+                    </div>
+
                     <div class="bg-card rounded-lg shadow border">
-                        <div class="p-6 border-b">
-                            <h2 class="table-title">Advertisement Queue</h2>
-                            <p class="table-subtitle">Review and manage advertisement submissions</p>
-                        </div>
-
                         <div class="p-6">
-                            <form method="GET" id="filterForm" class="space-y-4">
-                                <div class="grid gap-4 grid-cols-6">
-                                    <div>
-                                        <label class="block text-sm font-medium mb-2">Status</label>
-                                        <select name="status" class="form-select w-full">
-                                            <option value="">All Advertisements</option>
-                                            <option value="pending" <?php echo ($filters['status'] === 'pending') ? 'selected' : ''; ?>>Pending</option>
-                                            <option value="approved" <?php echo ($filters['status'] === 'approved') ? 'selected' : ''; ?>>Approved</option>
-                                            <option value="rejected" <?php echo ($filters['status'] === 'rejected') ? 'selected' : ''; ?>>Rejected</option>
-                                        </select>
-                                    </div>
+                            <h3 class="text-lg font-medium text-foreground">Advertisement Queue</h3>
+                            <p class="text-sm text-muted-foreground">Review submitted advertisements and approve or reject them</p>
 
-                                    <div>
-                                        <label class="block text-sm font-medium mb-2">Type</label>
-                                        <select name="type" class="form-select w-full">
-                                            <option value="">All Types</option>
-                                            <option value="banner" <?php echo ($filters['type'] === 'banner') ? 'selected' : ''; ?>>Banner</option>
-                                            <option value="featured" <?php echo ($filters['type'] === 'featured') ? 'selected' : ''; ?>>Featured</option>
-                                            <option value="sponsored" <?php echo ($filters['type'] === 'sponsored') ? 'selected' : ''; ?>>Sponsored</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="col-span-3">
-                                        <label class="block text-sm font-medium mb-2">Search</label>
-                                        <input type="text" name="search" value="<?php echo htmlspecialchars($filters['search']); ?>" 
-                                               placeholder="Search ads..." class="form-input w-full">
-                                    </div>
-
-                                    <div class="flex items-end">
-                                        <button type="submit" id="filterBtn" class="filter-button">
-                                            <i class="fas fa-filter"></i> <span>Filter</span>
-                                        </button>
-                                    </div>
+                            <div class="mt-4 flex items-center space-x-2">
+                                <div class="relative flex-1 max-w-sm">
+                                    <i data-lucide="search" class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"></i>
+                                    <input type="text" id="searchInput" placeholder="Search ads..." class="form-input pl-8" onkeyup="searchAds()">
                                 </div>
-                            </form>
-
-                            <!-- Table -->
-                            <div class="table-wrapper">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>TITLE</th>
-                                            <th>PROVIDER</th>
-                                            <th>TYPE</th>
-                                            <th>BUDGET</th>
-                                            <th>STATUS</th>
-                                            <th>SUBMITTED</th>
-                                            <th>ACTIONS</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php if (empty($adsData)): ?>
-                                        <tr>
-                                            <td colspan="8" style="text-align: center; padding: 2rem; color: #6b7280;">
-                                                No advertisements found.
-                                            </td>
-                                        </tr>
-                                        <?php else: ?>
-                                            <?php foreach ($adsData as $ad): ?>
-                                            <tr>
-                                                <td class="font-mono">#<?php echo $ad['ad_id']; ?></td>
-                                                <td class="font-medium"><?php echo htmlspecialchars($ad['title']); ?></td>
-                                                <td><?php echo htmlspecialchars($ad['provider_name'] ?? 'Unknown'); ?></td>
-                                                <td><span class="type-badge"><?php echo ucfirst($ad['type']); ?></span></td>
-                                                <td>LKR <?php echo number_format($ad['budget'], 2); ?></td>
-                                                <td>
-                                                    <span class="badge status-<?php echo strtolower($ad['status']); ?>">
-                                                        <?php echo ucfirst($ad['status']); ?>
-                                                    </span>
-                                                </td>
-                                                <td><?php echo date('M d, Y', strtotime($ad['submission_date'])); ?></td>
-                                                <td>
-                                                    <a href="?review=<?php echo $ad['ad_id']; ?>" class="btn-primary btn-sm">
-                                                        <i class="fas fa-eye"></i> Review
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                            <?php endforeach; ?>
-                                        <?php endif; ?>
-                                    </tbody>
-                                </table>
+                                <select id="statusFilter" class="form-select" onchange="loadAds()">
+                                    <option value="">All Status</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Approved">Approved</option>
+                                    <option value="Rejected">Rejected</option>
+                                    <option value="Active">Active</option>
+                                </select>
+                                <select id="typeFilter" class="form-select" onchange="loadAds()">
+                                    <option value="">All Types</option>
+                                    <option value="Banner">Banner</option>
+                                    <option value="Sponsored">Sponsored</option>
+                                    <option value="Featured">Featured</option>
+                                </select>
                             </div>
                         </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Company</th>
+                                        <th>Title</th>
+                                        <th>Type</th>
+                                        <th>Budget</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adsTableBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">Loading ads...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="paginationContainer" class="flex justify-center mt-4 p-4"></div>
                     </div>
                 </div>
             </main>
 
-            <!-- Review Modal -->
-            <?php if ($advertisement && is_array($advertisement)): ?>
-            <div id="reviewModal" class="modal-bg">
-                <div class="modal-box">
-                    <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/ads.php" class="close-btn">×</a>
-                    <h2 style="margin-bottom: 20px;">Advertisement Review</h2>
-                    
-                    <div id="modalContent">
-                        <div class="detail-row">
-                            <span class="detail-label">Advertisement ID:</span>
-                            <span class="detail-value">#<?php echo $advertisement['ad_id']; ?></span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Title:</span>
-                            <span class="detail-value"><?php echo htmlspecialchars($advertisement['title']); ?></span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Description:</span>
-                            <span class="detail-value"><?php echo htmlspecialchars($advertisement['description'] ?? 'No description'); ?></span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Provider:</span>
-                            <span class="detail-value"><?php echo htmlspecialchars($advertisement['provider_name'] ?? 'Unknown'); ?></span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Contact Email:</span>
-                            <span class="detail-value"><?php echo htmlspecialchars($advertisement['contact_email'] ?? $advertisement['provider_email'] ?? 'N/A'); ?></span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Contact Phone:</span>
-                            <span class="detail-value"><?php echo htmlspecialchars($advertisement['contact_phone'] ?? $advertisement['provider_phone'] ?? 'N/A'); ?></span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Type:</span>
-                            <span class="detail-value"><?php echo ucfirst($advertisement['type']); ?></span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Budget:</span>
-                            <span class="detail-value">LKR <?php echo number_format($advertisement['budget'], 2); ?></span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Status:</span>
-                            <span class="detail-value">
-                                <span class="badge status-<?php echo strtolower($advertisement['status']); ?>">
-                                    <?php echo ucfirst($advertisement['status']); ?>
-                                </span>
-                            </span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Submitted:</span>
-                            <span class="detail-value"><?php echo date('M d, Y H:i', strtotime($advertisement['submission_date'])); ?></span>
-                        </div>
-                    </div>
-                    
-                    <?php if ($advertisement['status'] === 'pending'): ?>
-                    <form method="POST" style="margin-top: 20px;">
-                        <input type="hidden" name="ad_id" value="<?php echo $advertisement['ad_id']; ?>">
-                        
-                        <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Review Notes:</label>
-                            <textarea name="notes" rows="3" placeholder="Add optional notes..." 
-                                      style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;"></textarea>
+            <div id="reviewModal" class="modal-overlay">
+                <div class="modal-content">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-foreground mb-4">Review Advertisement</h3>
+
+                        <div class="ad-details" id="adDetailsContent">
+                            Content will be populated by JavaScript
                         </div>
 
-                        <div class="modal-actions">
-                            <button type="submit" name="action" value="approve" class="approve-btn">
-                                <i class="fas fa-check"></i> Approve
-                            </button>
-                            <button type="submit" name="action" value="reject" class="reject-btn">
-                                <i class="fas fa-times"></i> Reject
-                            </button>
-                        </div>
-                    </form>
-                    <?php else: ?>
-                    <div style="margin-top: 20px; padding: 15px; background: #f3f4f6; border-radius: 6px; color: #6b7280;">
-                        <strong>Note:</strong> <?php echo $controller->getStatusExplanation($advertisement['status']); ?>
+                        <form id="reviewForm" class="space-y-4 mt-6">
+                            <input type="hidden" id="reviewAdId">
+
+                            <div>
+                                <label class="block text-sm font-medium text-foreground">Decision *</label>
+                                <select id="reviewStatus" required class="form-select mt-1">
+                                    <option value="">Select decision</option>
+                                    <option value="Approved">Approve Advertisement</option>
+                                    <option value="Rejected">Reject Advertisement</option>
+                                    <option value="Active">Set as Active</option>
+                                </select>
+                            </div>
+
+                            <div id="rejectionReasonGroup" style="display: none;">
+                                <label class="block text-sm font-medium text-foreground">Rejection Reason *</label>
+                                <textarea id="rejectionReason" rows="3" placeholder="Provide reason for rejection..." class="form-textarea mt-1"></textarea>
+                            </div>
+
+                            <div class="flex justify-end space-x-3">
+                                <button type="button" onclick="closeModal('reviewModal')" class="btn btn-secondary">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    Submit Review
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <?php endif; ?>
                 </div>
             </div>
-            <?php endif; ?>
+
+            <script>
+                lucide.createIcons();
+
+                // Mock data embedded from PHP
+                const mockAdsData = <?= json_encode($adsData) ?>;
+                
+                let currentPage = 1;
+                let allAds = [];
+
+                // Initialize ads from mock data
+                function initializeAds() {
+                    allAds = mockAdsData.map(ad => ({
+                        id: ad.id,
+                        company: ad.company,
+                        title: ad.title,
+                        type: ad.type,
+                        budget: ad.budget,
+                        duration: ad.duration,
+                        status: ad.status,
+                        submittedDate: ad.submittedDate || ad.created_at || new Date().toISOString()
+                    }));
+                }
+
+                document.addEventListener('DOMContentLoaded', () => {
+                    initializeAds();
+                    loadAds();
+                    loadStats();
+                });
+
+                // Show/hide rejection reason based on status
+                document.getElementById('reviewStatus').addEventListener('change', (e) => {
+                    const rejectionGroup = document.getElementById('rejectionReasonGroup');
+                    const rejectionReason = document.getElementById('rejectionReason');
+
+                    if (e.target.value === 'Rejected') {
+                        rejectionGroup.style.display = 'block';
+                        rejectionReason.required = true;
+                    } else {
+                        rejectionGroup.style.display = 'none';
+                        rejectionReason.required = false;
+                    }
+                });
+
+                function loadStats() {
+                    const pending = allAds.filter(a => a.status === 'Pending').length;
+                    const approved = allAds.filter(a => a.status === 'Approved').length;
+                    const rejected = allAds.filter(a => a.status === 'Rejected').length;
+
+                    document.getElementById('statsContainer').innerHTML = `
+                ${renderCard('Total Ads', allAds.length, 'All submissions', 'monitor', 'text-blue-600')}
+                ${renderCard('Pending Review', pending, 'Awaiting approval', 'clock', 'text-yellow-600')}
+                ${renderCard('Approved', approved, 'Currently active', 'check-circle', 'text-green-600')}
+                ${renderCard('Rejected', rejected, 'Not approved', 'x-circle', 'text-red-600')}
+            `;
+                    lucide.createIcons();
+                }
+
+                function renderCard(title, value, description, icon, colorClass) {
+                    return `
+            <div class="bg-card rounded-lg border p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-muted-foreground">${title}</p>
+                        <p class="text-2xl font-bold text-foreground mt-2">${value}</p>
+                        <p class="text-xs text-muted-foreground mt-1">${description}</p>
+                    </div>
+                    <div class="${colorClass}">
+                        <i data-lucide="${icon}" class="h-8 w-8"></i>
+                    </div>
+                </div>
+            </div>
+        `;
+                }
+
+                function loadAds(page = 1) {
+                    currentPage = page;
+                    const search = document.getElementById('searchInput').value.toLowerCase();
+                    const status = document.getElementById('statusFilter').value;
+                    const type = document.getElementById('typeFilter').value;
+
+                    // Filter ads
+                    let filtered = allAds.filter(ad => {
+                        if (search && !ad.title.toLowerCase().includes(search) && 
+                            !ad.company.toLowerCase().includes(search)) return false;
+                        if (status && ad.status !== status) return false;
+                        if (type && ad.type !== type) return false;
+                        return true;
+                    });
+
+                    // Pagination
+                    const limit = 20;
+                    const total = filtered.length;
+                    const pages = Math.ceil(total / limit) || 1;
+                    const offset = (page - 1) * limit;
+                    const data = filtered.slice(offset, offset + limit);
+
+                    renderAds(data);
+                    renderPagination({ page, pages, total });
+                }
+
+                function renderAds(ads) {
+                    const tbody = document.getElementById('adsTableBody');
+
+                    if (ads.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">No ads found</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = ads.map(ad => {
+                        const statusVariants = {
+                            'Pending': 'outline',
+                            'Approved': 'default',
+                            'Rejected': 'destructive',
+                            'Active': 'default',
+                            'Expired': 'secondary'
+                        };
+
+                        const typeColors = {
+                            'Banner': 'bg-fixlanka-primary/10 text-fixlanka-primary',
+                            'Sponsored': 'bg-fixlanka-highlight/20 text-fixlanka-primary',
+                            'Featured': 'bg-fixlanka-error/10 text-fixlanka-error'
+                        };
+                        const typeColor = typeColors[ad.type] || 'bg-muted text-muted-foreground';
+
+                        return `
+                <tr>
+                    <td class="font-medium text-foreground">#${ad.id}</td>
+                    <td class="text-muted-foreground">${escapeHtml(ad.company)}</td>
+                    <td class="text-muted-foreground max-w-xs truncate">${escapeHtml(ad.title)}</td>
+                    <td>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${typeColor}">
+                            ${ad.type}
+                        </span>
+                    </td>
+                    <td class="text-muted-foreground">${ad.budget ? '$' + parseFloat(ad.budget).toFixed(2) : '-'}</td>
+                    <td>
+                        <span class="badge badge-${statusVariants[ad.status]}">${ad.status}</span>
+                    </td>
+                    <td>
+                        <button onclick="reviewAd(${ad.id})" class="btn btn-primary">
+                            <i data-lucide="eye" class="mr-1 h-3 w-3"></i>
+                            Review
+                        </button>
+                    </td>
+                </tr>
+            `;
+                    }).join('');
+
+                    lucide.createIcons();
+                }
+
+                function renderPagination(pagination) {
+                    const container = document.getElementById('paginationContainer');
+
+                    if (pagination.pages <= 1) {
+                        container.innerHTML = '';
+                        return;
+                    }
+
+                    let html = '<div class="flex space-x-2">';
+
+                    if (pagination.page > 1) {
+                        html += `<button onclick="loadAds(${pagination.page - 1})" class="btn btn-secondary">Previous</button>`;
+                    }
+
+                    for (let i = 1; i <= pagination.pages; i++) {
+                        if (i === pagination.page) {
+                            html += `<button class="btn btn-primary">${i}</button>`;
+                        } else if (i === 1 || i === pagination.pages || Math.abs(i - pagination.page) <= 2) {
+                            html += `<button onclick="loadAds(${i})" class="btn btn-secondary">${i}</button>`;
+                        } else if (i === pagination.page - 3 || i === pagination.page + 3) {
+                            html += `<span class="px-2">...</span>`;
+                        }
+                    }
+
+                    if (pagination.page < pagination.pages) {
+                        html += `<button onclick="loadAds(${pagination.page + 1})" class="btn btn-secondary">Next</button>`;
+                    }
+
+                    html += '</div>';
+                    container.innerHTML = html;
+                }
+
+                function searchAds() {
+                    clearTimeout(window.searchTimeout);
+                    window.searchTimeout = setTimeout(() => {
+                        loadAds(1);
+                    }, 500);
+                }
+
+                function reviewAd(adId) {
+                    const ad = allAds.find(a => a.id === adId);
+                    
+                    if (!ad) {
+                        showMessage('Ad not found', 'error');
+                        return;
+                    }
+
+                    document.getElementById('adDetailsContent').innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="font-medium mb-2">Advertisement Details</h4>
+                        <div class="space-y-2 text-sm">
+                            <p><strong>Company:</strong> ${escapeHtml(ad.company)}</p>
+                            <p><strong>Title:</strong> ${escapeHtml(ad.title)}</p>
+                            <p><strong>Type:</strong> ${ad.type}</p>
+                            <p><strong>Budget:</strong> ${ad.budget}</p>
+                            <p><strong>Duration:</strong> ${ad.duration || 'Not specified'}</p>
+                            <p><strong>Status:</strong> ${ad.status}</p>
+                            <p><strong>Views:</strong> ${ad.views || 0}</p>
+                            <p><strong>Clicks:</strong> ${ad.clicks || 0}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-medium mb-2">Description</h4>
+                        <div class="bg-muted/50 p-4 rounded-lg text-sm">
+                            ${ad.description ? escapeHtml(ad.description) : 'No description provided'}
+                        </div>
+                        ${ad.rejection_reason ? `
+                            <div class="mt-4">
+                                <h4 class="font-medium mb-2 text-red-600">Previous Rejection Reason</h4>
+                                <div class="bg-red-50 p-4 rounded-lg text-sm">
+                                    ${escapeHtml(ad.rejection_reason)}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+                    document.getElementById('reviewAdId').value = ad.id;
+                    document.getElementById('reviewStatus').value = '';
+                    document.getElementById('rejectionReason').value = '';
+                    document.getElementById('rejectionReasonGroup').style.display = 'none';
+
+                    openModal('reviewModal');
+                }
+
+                document.getElementById('reviewForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+
+                    const adId = document.getElementById('reviewAdId').value;
+                    const status = document.getElementById('reviewStatus').value;
+                    const rejectionReason = document.getElementById('rejectionReason').value;
+
+                    // Update local data
+                    const adIndex = allAds.findIndex(a => a.id === parseInt(adId));
+                    if (adIndex !== -1) {
+                        allAds[adIndex].status = status;
+                        if (status === 'Rejected' && rejectionReason) {
+                            allAds[adIndex].rejection_reason = rejectionReason;
+                        }
+                    }
+
+                    showMessage('Ad reviewed successfully', 'success');
+                    closeModal('reviewModal');
+                    loadAds(currentPage);
+                    loadStats();
+                });
+
+                function openModal(modalId) {
+                    document.getElementById(modalId).classList.add('show');
+                }
+
+                function closeModal(modalId) {
+                    document.getElementById(modalId).classList.remove('show');
+                }
+
+                function showMessage(message, type = 'success') {
+                    const container = document.getElementById('messageContainer');
+                    container.textContent = message;
+                    container.className = type === 'success' ?
+                        'bg-fixlanka-highlight/10 border border-fixlanka-highlight/20 text-fixlanka-primary px-4 py-3 rounded' :
+                        'bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded';
+                    container.style.display = 'block';
+
+                    setTimeout(() => {
+                        container.style.display = 'none';
+                    }, 5000);
+                }
+
+                function escapeHtml(text) {
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                }
+            </script>
 
         </div>
     </div>
-
     <script>
-        document.getElementById('filterForm').addEventListener('submit', function(e) {
-            var btn = document.getElementById('filterBtn');
-            btn.classList.add('loading');
-            btn.querySelector('span').textContent = 'Filtering...';
-        });
+        lucide.createIcons();
     </script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
+
 </body>
+
 </html>
+

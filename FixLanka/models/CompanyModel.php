@@ -11,26 +11,11 @@ class CompanyModel {
 
     // Get Company Profile by ID
     public function getProfile($companyId) {
-        $sql = "SELECT c.*, l.address, l.district 
-                FROM Company c 
-                LEFT JOIN location l ON c.location_id = l.location_id 
-                WHERE c.company_id = ?";
+        $sql = "SELECT * FROM Company WHERE company_id = ?";
         
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$companyId]);
-        
-        $profile = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        // Fetch service areas (districts)
-        if ($profile) {
-            $areaSql = "SELECT district FROM service_area WHERE owner_id = ? AND owner_type = 'company'";
-            $areaStmt = $this->pdo->prepare($areaSql);
-            $areaStmt->execute([$companyId]);
-            $districts = $areaStmt->fetchAll(PDO::FETCH_COLUMN);
-            $profile['districts'] = implode(',', $districts);
-        }
-        
-        return $profile;
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     // Update Company Profile
@@ -39,39 +24,9 @@ class CompanyModel {
         $fields = [];
         $values = [];
 
-        // 1. Handle location updates separately
-        if (isset($data['address']) || isset($data['district'])) {
-            $locFields = [];
-            $locValues = [];
-            if (isset($data['address'])) {
-                $locFields[] = "address = ?";
-                $locValues[] = $data['address'];
-                unset($data['address']);
-            }
-            if (isset($data['district'])) {
-                $locFields[] = "district = ?";
-                $locValues[] = $data['district'];
-                unset($data['district']);
-            }
-            
-            if (!empty($locFields)) {
-                // Get company location_id
-                $stmt = $this->pdo->prepare("SELECT location_id FROM Company WHERE company_id = ?");
-                $stmt->execute([$companyId]);
-                $locId = $stmt->fetchColumn();
-                
-                if ($locId) {
-                    $locSql = "UPDATE location SET " . implode(', ', $locFields) . " WHERE location_id = ?";
-                    $locValues[] = $locId;
-                    $locUpdateStmt = $this->pdo->prepare($locSql);
-                    $locUpdateStmt->execute($locValues);
-                }
-            }
-        }
-
-        // Allowed fields to update (Company table only)
+        // Allowed fields to update
         $allowedFields = [
-            'name', 'contact_no', 'description', 
+            'name', 'contact_no', 'address', 'description', 
             'website', 'city', 'province', 'postal_code', 
             'facebook', 'instagram', 'linkedin', 'twitter',
             'alternate_phone', 'whatsapp'
@@ -85,7 +40,7 @@ class CompanyModel {
         }
 
         if (empty($fields)) {
-            return true; // Locations might have been updated, so return true
+            return false; // Nothing to update
         }
 
         $sql = "UPDATE Company SET " . implode(', ', $fields) . " WHERE company_id = ?";

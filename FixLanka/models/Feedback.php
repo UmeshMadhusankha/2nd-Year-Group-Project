@@ -30,7 +30,7 @@ class Feedback {
                     u.user_id,
                     u.f_name,
                     u.l_name,
-                    u.profile_picture
+                    u.profilePicture
                 FROM Feedback f
                 JOIN Project p ON f.project_id = p.project_id
                 JOIN User u ON f.given_by = u.user_id

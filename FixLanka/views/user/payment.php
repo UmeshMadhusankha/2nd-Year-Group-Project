@@ -1,6 +1,6 @@
+<?php
 // filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\views\user\payment.php
 require_once __DIR__ . '/../../config/session.php';
-require_once __DIR__ . '/../../models/ContractModel.php';
 
 // Redirect if not logged in
 if (!isLoggedIn()) {
@@ -8,30 +8,8 @@ if (!isLoggedIn()) {
     exit;
 }
 
-$contractId = $_GET['contract_id'] ?? null;
-$contractData = [];
-
-if ($contractId) {
-    try {
-        $contractModel = new ContractModel();
-        // Use correct method name getById
-        $contract = $contractModel->getById($contractId);
-        
-        // Verify ownership (optional but recommended)
-        // Assuming session verification is handled by requireRole or similar, but for user payment:
-        // if ($contract && $contract['customer_id'] != $_SESSION['user_id']) { $contract = null; $error = "Unauthorized access."; }
-
-        if ($contract) {
-            $contractData = $contract;
-        } else {
-             $error = "Contract not found.";
-        }
-    } catch (Exception $e) {
-        $error = "Error loading contract details.";
-    }
-} else {
-    $error = "No contract specified.";
-}
+// Get job/agreement details (you'll implement this later)
+$jobId = $_GET['job_id'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -79,17 +57,6 @@ if ($contractId) {
             </div>
         </div>
     </div>
-
-    </div>
-
-    <?php if (!empty($error)): ?>
-        <div class="error-container" style="text-align: center; padding: 50px;">
-            <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #ef4444; margin-bottom: 20px;"></i>
-            <h2>Error</h2>
-            <p><?php echo htmlspecialchars($error); ?></p>
-            <a href="/2nd-Year-Group-Project/FixLanka/views/user/dashboard.php" class="btn-primary" style="display: inline-block; margin-top: 20px; padding: 10px 20px; text-decoration: none;">Return to Dashboard</a>
-        </div>
-    <?php else: ?>
 
     <!-- Main Content -->
     <main class="payment-main">
@@ -330,15 +297,15 @@ if ($contractId) {
 
                     <div class="order-item">
                         <div class="item-details">
-                            <h4 class="item-name"><?php echo htmlspecialchars($contractData['project_title'] ?? 'Service Payment'); ?></h4>
-                            <p class="item-description"><?php echo htmlspecialchars($contractData['project_description'] ?? 'Project payment'); ?></p>
+                            <h4 class="item-name">Kitchen Sink Repair</h4>
+                            <p class="item-description">Professional plumbing service</p>
                             <p class="item-provider">
                                 <i class="fas fa-user-circle"></i>
-                                <?php echo htmlspecialchars($contractData['company_name'] ?? 'Service Provider'); ?>
+                                Kasun Silva
                             </p>
                         </div>
                         <div class="item-price">
-                            <span class="price-amount">LKR <?php echo number_format($contractData['contract_value'] ?? 0, 2); ?></span>
+                            <span class="price-amount">LKR 5,000</span>
                         </div>
                     </div>
 
@@ -364,30 +331,25 @@ if ($contractId) {
 
                     <!-- Price Breakdown -->
                     <div class="price-breakdown">
-                        <?php 
-                            $subtotal = $contractData['contract_value'] ?? 0;
-                            $serviceFee = $subtotal * 0.10; // 10% Service Fee
-                            $total = $subtotal + $serviceFee;
-                        ?>
                         <div class="price-row">
                             <span class="price-label">Subtotal</span>
-                            <span class="price-value" id="subtotal">LKR <?php echo number_format($subtotal, 2); ?></span>
+                            <span class="price-value" id="subtotal">LKR 5,000</span>
                         </div>
                         <div class="price-row">
-                            <span class="price-label">Service Fee (10%)</span>
-                            <span class="price-value" id="serviceFee">LKR <?php echo number_format($serviceFee, 2); ?></span>
+                            <span class="price-label">Service Fee</span>
+                            <span class="price-value" id="serviceFee">LKR 500</span>
                         </div>
                         <div class="price-row discount-row" id="discountRow" style="display: none;">
                             <span class="price-label">
                                 <i class="fas fa-tag"></i>
                                 Discount
                             </span>
-                            <span class="price-value discount" id="discount">- LKR 0.00</span>
+                            <span class="price-value discount" id="discount">- LKR 0</span>
                         </div>
                         <div class="summary-divider"></div>
                         <div class="price-row total-row">
                             <span class="price-label">Total</span>
-                            <span class="price-value total" id="total">LKR <?php echo number_format($total, 2); ?></span>
+                            <span class="price-value total" id="total">LKR 5,500</span>
                         </div>
                     </div>
 
@@ -469,6 +431,5 @@ if ($contractId) {
     </a>
 
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/payment.js"></script>
-<?php endif; ?>
 </body>
 </html>

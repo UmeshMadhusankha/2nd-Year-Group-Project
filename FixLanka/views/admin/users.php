@@ -12,6 +12,12 @@ require_once __DIR__ . '/_components/Common.php';
 require_once __DIR__ . '/../../includes/admin-modarator/auth.php';
 require_once __DIR__ . '/../../includes/admin-modarator/mock-data.php';
 
+// // Check if user is logged in and get user info
+// $isLoggedIn = isLoggedIn();
+// $user = $isLoggedIn ? getCurrentUser() : null;
+// requireRole("admin", $basePath);
+// $user = getCurrentUser();
+
 $basePath = '';
 $currentPath = 'users';
 $message = '';
@@ -28,6 +34,8 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
 
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
 </head>
 
 <body class="bg-background text-foreground">
@@ -48,7 +56,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                             <p class="text-muted-foreground">Manage service providers, companies, and moderators</p>
                         </div>
                         <button onclick="openAddUserModal()" class="users-add-btn">
-                            <i class="fa-solid fa-plus mr-2 h-4 w-4"></i>
+                            <i data-lucide="plus" class="mr-2 h-4 w-4"></i>
                             Add User
                         </button>
                     </div>
@@ -62,7 +70,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
 
                             <div class="users-search-container">
                                 <div class="users-search-input">
-                                    <i class="fa-solid fa-magnifying-glass users-search-icon"></i>
+                                    <i data-lucide="search" class="users-search-icon"></i>
                                     <input
                                         type="text"
                                         id="searchInput"
@@ -117,11 +125,6 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                 <div class="users-modal-content">
                     <div class="users-modal-header">
                         <h3 id="modalTitle" class="text-lg font-medium text-card-foreground">Add New User</h3>
-                        <button onclick="closeModal('userModal')" class="users-modal-close">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                    <div class="users-modal-body">
                         <!-- Modal-specific message container -->
                         <div id="modalMessageContainer" style="display: none;" class="bg-fixlanka-highlight/10 border border-fixlanka-highlight/20 text-fixlanka-primary px-4 py-3 rounded mb-3"></div>
                         <form id="userForm" class="users-modal-form">
@@ -179,7 +182,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                                     Cancel
                                 </button>
                                 <button type="button" id="deleteAccountBtn" onclick="confirmDeleteFromModal()" class="users-delete-btn" style="display: none;">
-                                    <i class="fa-solid fa-trash mr-2 h-4 w-4"></i>
+                                    <i data-lucide="trash-2" class="mr-2 h-4 w-4"></i>
                                     Delete Account
                                 </button>
                                 <button type="submit" class="users-save-btn" id="saveButton">
@@ -196,11 +199,6 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                 <div class="users-modal-content" style="max-width: 400px;">
                     <div class="users-modal-header">
                         <h3 class="text-lg font-medium text-card-foreground">Confirm Delete</h3>
-                        <button onclick="closeModal('deleteModal')" class="users-modal-close">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                    <div class="users-modal-body">
                         <p class="text-sm text-muted-foreground mb-4">Are you sure you want to delete this user? This action cannot be undone.</p>
                         <div class="users-form-actions">
                             <button type="button" onclick="closeModal('deleteModal')" class="users-cancel-btn">
@@ -215,6 +213,8 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
             </div>
 
             <script>
+                lucide.createIcons();
+
                 // Mock data embedded from PHP
                 const mockUsersData = <?= json_encode($usersData) ?>;
                 
@@ -306,16 +306,18 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                     <td>
                         <div class="flex space-x-2">
                             <button onclick="editUser(${user.id})" class="users-edit-btn" title="Edit">
-                                <i class="fa-solid fa-pen-to-square h-4 w-4"></i>
+                                <i data-lucide="edit" class="h-4 w-4"></i>
                             </button>
                             <button onclick="deleteUser(${user.id})" class="users-edit-btn" style="color: #dc2626;" title="Delete">
-                                <i class="fa-solid fa-trash h-4 w-4"></i>
+                                <i data-lucide="trash-2" class="h-4 w-4"></i>
                             </button>
                         </div>
                     </td>
                 </tr>
             `;
                     }).join('');
+
+                    lucide.createIcons();
                 }
 
                 function renderPagination(pagination) {
@@ -535,7 +537,11 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
             </script>
         </div>
     </div>
+    <script>
+        lucide.createIcons();
+    </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
 </body>
 
 </html>
+

@@ -136,7 +136,7 @@ foreach ($jobRequests as $job) {
                                     <h3 class="job-title"><?php echo htmlspecialchars($job['category_name'] ?? 'Job Request'); ?></h3>
                                     <p class="job-date">
                                         <i class="fas fa-calendar-alt"></i> 
-                                        Posted on <?php echo date('F j, Y \a\t g:i A', strtotime($job['created_at'])); ?>
+                                        Posted on <?php echo date('F j, Y \a\t g:i A', strtotime($job['dateCreated'])); ?>
                                     </p>
                                 </div>
                                 <div class="job-badges">
@@ -198,10 +198,6 @@ foreach ($jobRequests as $job) {
                                             <i class="fas fa-trash-alt"></i> Delete
                                         </button>
                                     </form>
-                                    
-                                    <button onclick="viewQuotes(<?php echo $job['request_id']; ?>)" class="action-btn btn-view-quotes" style="background-color: #17a2b8; color: white;">
-                                        <i class="fas fa-file-invoice-dollar"></i> View Quotes
-                                    </button>
                                 <?php else: ?>
                                     <!-- Read-only indicator for non-pending jobs -->
                                     <span class="read-only-badge">
@@ -362,24 +358,6 @@ foreach ($jobRequests as $job) {
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quotes Modal -->
-    <div id="quotesModal" class="modal-overlay">
-        <div class="modal-container" style="max-width: 800px; width: 90%;">
-            <div class="modal-header">
-                <h2 class="modal-title">Received Quotations</h2>
-                <button class="modal-close" onclick="closeQuotesModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-content">
-                <div id="quotesList" class="quotes-list">
-                    <!-- Quotes will be loaded here -->
-                    <div class="text-center p-4" style="text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
-                </div>
             </div>
         </div>
     </div>
