@@ -4,7 +4,7 @@ RewriteEngine On
 RewriteBase /2nd-Year-Group-Project/FixLanka/
 
 # Security: Block access to sensitive files and directories
-RewriteRule ^(config|models|\.env|\.git|\.htaccess) - [F,L]
+RewriteRule ^(config|models|controllers|\.env|\.git|\.htaccess) - [F,L]
 
 # Handle static files (CSS, JS, images, fonts)
 RewriteCond %{REQUEST_FILENAME} -f
