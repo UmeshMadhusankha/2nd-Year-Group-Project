@@ -1,4 +1,4 @@
--- Database Schema for Home Repair Service Platform
+﻿-- Database Schema for Home Repair Service Platform
 -- Matches Live Database as of 2026-01-18
 
 DROP DATABASE IF EXISTS fix_lanka;
@@ -247,7 +247,67 @@ CREATE TABLE `chatmessage` (
   CONSTRAINT `chatmessage_ibfk_2` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Company Employee
+CREATE TABLE `companyemployee` (
+  `employee_id` int(11) NOT NULL AUTO_INCREMENT,
+  `company_id` int(11) NOT NULL,
+  `repairer_id` int(11) DEFAULT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `specialty` varchar(100) NOT NULL,
+  `hourly_rate` decimal(10,2) DEFAULT 0.00,
+  `rating` decimal(3,2) DEFAULT 0.00,
+  `status` enum('active','inactive','on_leave') DEFAULT 'active',
+  `hire_date` date DEFAULT NULL,
+  `experience_years` int(11) DEFAULT 0,
+  `certification_details` text DEFAULT NULL,
+  `profile_photo` varchar(500) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`employee_id`),
+  KEY `repairer_id` (`repairer_id`),
+  KEY `idx_company` (`company_id`),
+  KEY `idx_specialty` (`specialty`),
+  KEY `idx_status` (`status`),
+  KEY `idx_rating` (`rating`),
+  CONSTRAINT `companyemployee_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE,
+  CONSTRAINT `companyemployee_ibfk_2` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Company Job Post
+CREATE TABLE `companyjobpost` (
+  `posting_id` int(11) NOT NULL AUTO_INCREMENT,
+  `company_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `category` varchar(100) NOT NULL,
+  `employment_type` enum('freelance','contract','part-time','project-based') NOT NULL,
+  `related_project_id` int(11) DEFAULT NULL,
+  `description` text NOT NULL,
+  `min_experience` enum('entry','junior','mid','senior','expert') NOT NULL,
+  `priority_level` enum('low','medium','high','urgent') DEFAULT 'medium',
+  `min_budget` decimal(10,2) NOT NULL,
+  `max_budget` decimal(10,2) NOT NULL,
+  `application_deadline` date DEFAULT NULL,
+  `required_skills` text DEFAULT NULL,
+  `location` varchar(500) NOT NULL,
+  `location_requirements` varchar(500) DEFAULT NULL,
+  `status` enum('draft','open','closed','filled') DEFAULT 'draft',
+  `notify_repairers` tinyint(1) DEFAULT 1,
+  `allow_direct_applications` tinyint(1) DEFAULT 1,
+  `created_by` int(11) DEFAULT NULL,
+  `posted_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `closed_date` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`posting_id`),
+  KEY `idx_company` (`company_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_category` (`category`),
+  KEY `idx_posted_date` (`posted_date`),
+  KEY `idx_deadline` (`application_deadline`),
+  CONSTRAINT `companyjobpost_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Job Request
 CREATE TABLE `jobrequest` (
@@ -295,7 +355,7 @@ CREATE TABLE `companyquotation` (
   `additional_terms` text DEFAULT NULL,
   
   -- Phase 1: Budget Flexibility & Payment Methods
-  `budget_type` enum('fixed','flexible') DEFAULT 'fixed' COMMENT 'Fixed or Flexible (±10%)',
+  `budget_type` enum('fixed','flexible') DEFAULT 'fixed' COMMENT 'Fixed or Flexible (Â±10%)',
   `budget_min` decimal(10,2) DEFAULT NULL COMMENT 'Minimum budget for flexible pricing',
   `budget_max` decimal(10,2) DEFAULT NULL COMMENT 'Maximum budget for flexible pricing',
   `payment_method` enum('full_upfront','milestone_based','50_50','30_70','completion') DEFAULT 'full_upfront' COMMENT 'Payment method selected',
@@ -745,7 +805,36 @@ CREATE TABLE `promotion` (
   CONSTRAINT `promotion_ibfk_1` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Repairer Application
+CREATE TABLE `repairerapplication` (
+  `app_id` int(11) NOT NULL AUTO_INCREMENT,
+  `repairer_id` int(11) NOT NULL,
+  `posting_id` int(11) NOT NULL,
+  `date_applied` timestamp NOT NULL DEFAULT current_timestamp(),
+  `app_status` enum('pending','reviewed','accepted','rejected') DEFAULT 'pending',
+  PRIMARY KEY (`app_id`),
+  KEY `idx_repairer` (`repairer_id`),
+  KEY `idx_posting` (`posting_id`),
+  KEY `idx_status` (`app_status`),
+  CONSTRAINT `repairerapplication_ibfk_1` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE,
+  CONSTRAINT `repairerapplication_ibfk_2` FOREIGN KEY (`posting_id`) REFERENCES `companyjobpost` (`posting_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Repairer Assignment
+CREATE TABLE `repairerassignment` (
+  `assignment_id` int(11) NOT NULL AUTO_INCREMENT,
+  `project_id` int(11) NOT NULL,
+  `repairer_id` int(11) NOT NULL,
+  `role` varchar(100) DEFAULT NULL,
+  `amount` decimal(10,2) DEFAULT NULL,
+  `assigned_date` date DEFAULT curdate(),
+  `status` enum('assigned','active','completed','removed') DEFAULT 'assigned',
+  PRIMARY KEY (`assignment_id`),
+  KEY `idx_project` (`project_id`),
+  KEY `idx_repairer` (`repairer_id`),
+  CONSTRAINT `repairerassignment_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE CASCADE,
+  CONSTRAINT `repairerassignment_ibfk_2` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Repairer Quote
 CREATE TABLE `repairerquote` (

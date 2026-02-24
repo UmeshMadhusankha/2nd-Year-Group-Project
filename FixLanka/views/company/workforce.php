@@ -64,7 +64,7 @@ if (!$companyId) {
                     <div class="header-content">
                         <div class="header-main">
                             <div class="title-section">
-                                <h1><i class="fas fa-users-cog"></i> Workforce Management</h1>
+                                <h1><i class="fas fa-users-cog"></i> Workforce Management (DEBUG: Company ID: <?php echo $companyId; ?>)</h1>
                                 <p class="subtitle">Manage your company employees and freelance contractors</p>
                                 <nav class="breadcrumbs">
                                     <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard"><i class="fas fa-home"></i> Dashboard</a>
