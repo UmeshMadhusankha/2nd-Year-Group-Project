@@ -89,6 +89,11 @@ function getCompanyInitials(name) {
     return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 }
 
+function getCompanyInitials(name) {
+    if (!name) return '?';
+    return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+}
+
 function createJobCard(job) {
     const card = document.createElement('div');
     card.className = 'job-card';
@@ -265,7 +270,7 @@ function filterJobsByCategory(category) {
 function searchJobs() {
     const searchTerm = document.getElementById('jobSearchInput').value.toLowerCase();
     const jobCards = document.querySelectorAll('.job-card');
-    
+
     jobCards.forEach(card => {
         const text = card.textContent.toLowerCase();
         card.style.display = text.includes(searchTerm) ? 'block' : 'none';
@@ -355,6 +360,7 @@ function createApplicationCard(app) {
         </div>
         <span class="status-badge ${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
     `;
+    
     return card;
 }
 
@@ -464,7 +470,7 @@ function filterApplications(status, clickedEl) {
 function searchApplications() {
     const searchTerm = document.getElementById('applicationSearchInput').value.toLowerCase();
     const appCards = document.querySelectorAll('.application-card');
-    
+
     appCards.forEach(card => {
         const text = card.textContent.toLowerCase();
         card.style.display = text.includes(searchTerm) ? 'flex' : 'none';
@@ -773,7 +779,7 @@ function closeAssignmentDetailsDrawer() {
 
 function updateAssignmentStatus() {
     const status = document.getElementById('jobStatus').value;
-    
+
     // Status will be saved when user clicks "Save Update"
 }
 
@@ -875,7 +881,7 @@ function closeChatView() {
     document.querySelector('.chat-empty-state').style.display = 'flex';
     document.getElementById('chatActive').style.display = 'none';
     activeMessageId = null;
-    
+
     // Remove active state from all conversations
     document.querySelectorAll('.conversation-card').forEach(card => {
         card.classList.remove('active');
@@ -912,7 +918,12 @@ function handleMessageKeyPress(event) {
 
 function sendMessageToCompany() {
     closeContractDetailsDrawer();
-    switchMainTab('messages');
+    
+    // Switch to messages tab and open thread
+    switchTab('messages');
+    setTimeout(() => {
+        viewMessageThread(message.id);
+    }, 300);
 }
 
 function updateContractStats() {
@@ -972,7 +983,7 @@ function switchTab(tabName) {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
-    
+
     // Update tab content within the current section
     const parentContent = parentTabs.closest('.tab-content');
     if (parentContent) {
@@ -989,17 +1000,17 @@ function switchMainTab(tabName) {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
-    
+
     // Update main tab content
     document.querySelectorAll('.content-wrapper > .tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    
+
     const targetTab = document.getElementById(`${tabName}Tab`);
     if (targetTab) {
         targetTab.classList.add('active');
     }
-    
+
     // Load content for the active tab
     if (tabName === 'browse') {
         loadJobPostings();
@@ -1017,9 +1028,9 @@ function switchMainTab(tabName) {
 function refreshCurrentTab() {
     const activeTab = document.querySelector('.tabs-container > .tabs > .tab-btn.active');
     if (!activeTab) return;
-    
+
     const tabText = activeTab.textContent.trim().toLowerCase();
-    
+
     if (tabText.includes('browse')) {
         showNotification('Refreshing job postings...', 'info');
         loadJobPostings();
@@ -1079,7 +1090,7 @@ function getRelativeTime(dateString) {
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) return 'today';
     if (diffDays === 1) return 'yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
@@ -1089,24 +1100,24 @@ function getRelativeTime(dateString) {
 
 function formatDate(dateString) {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric', 
-        year: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
     });
 }
 
 function showNotification(message, type = 'info') {
     // Remove existing notifications
     document.querySelectorAll('.notification').forEach(n => n.remove());
-    
+
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
-    
-    const icon = type === 'success' ? 'check-circle' : 
-                 type === 'error' ? 'exclamation-circle' : 
-                 type === 'warning' ? 'exclamation-triangle' : 'info-circle';
-    
+
+    const icon = type === 'success' ? 'check-circle' :
+        type === 'error' ? 'exclamation-circle' :
+            type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+
     notification.innerHTML = `
         <i class="fas fa-${icon}"></i>
         <span>${message}</span>
@@ -1114,7 +1125,7 @@ function showNotification(message, type = 'info') {
     `;
 
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         if (notification.parentElement) {
             notification.style.animation = 'slideOutRight 0.3s ease';

@@ -1,0 +1,96 @@
+Contract ID: 1
+Array
+(
+    [0] => Array
+        (
+            [sort_order] => 1
+            [phase_name] => Project Handover
+            [description] => Final inspection, cleanup, and handover
+            [target_date] => 2026-02-05
+            [pct_of_total] => 0.00
+            [amount_lkr] => 0.00
+            [status] => pending
+        )
+
+)
+
+Contract ID: 1
+Array
+(
+    [0] => Array
+        (
+            [sort_order] => 1
+            [phase_name] => Project Handover
+            [description] => Final inspection, cleanup, and handover
+            [target_date] => 2026-02-05
+            [pct_of_total] => 0.00
+            [amount_lkr] => 0.00
+            [status] => pending
+        )
+
+)
+
+Contract ID: 1
+Array
+(
+    [0] => Array
+        (
+            [sort_order] => 1
+            [phase_name] => Project Handover
+            [description] => Final inspection, cleanup, and handover
+            [target_date] => 2026-02-05
+            [pct_of_total] => 0.00
+            [amount_lkr] => 0.00
+            [status] => pending
+        )
+
+)
+
+Contract ID: 1
+Array
+(
+    [0] => Array
+        (
+            [sort_order] => 1
+            [phase_name] => Project Handover
+            [description] => Final inspection, cleanup, and handover
+            [target_date] => 2026-02-05
+            [pct_of_total] => 0.00
+            [amount_lkr] => 0.00
+            [status] => pending
+        )
+
+)
+
+Contract ID: 1
+Array
+(
+    [0] => Array
+        (
+            [sort_order] => 1
+            [phase_name] => Project Handover
+            [description] => Final inspection, cleanup, and handover
+            [target_date] => 2026-02-05
+            [pct_of_total] => 0.00
+            [amount_lkr] => 0.00
+            [status] => pending
+        )
+
+)
+
+Contract ID: 1
+Array
+(
+    [0] => Array
+        (
+            [sort_order] => 1
+            [phase_name] => Project Handover
+            [description] => Final inspection, cleanup, and handover
+            [target_date] => 2026-02-05
+            [pct_of_total] => 0.00
+            [amount_lkr] => 0.00
+            [status] => pending
+        )
+
+)
+

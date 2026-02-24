@@ -1,0 +1,2 @@
+﻿milestone_id	contract_id	milestone_number	title	description	due_date	amount	percentage	status	escrow_held	payment_released	payment_released_at	proof_of_work	submitted_at	reviewed_by	reviewed_at	review_comments	created_at	updated_at	completed_at	approved_at	proof_files	comments
+21	1	1	Project Handover	Final inspection, cleanup, and handover	2026-02-05	0.00	0.00	submitted	0.00	0.00	NULL	Completed via test script	NULL	NULL	NULL	NULL	2026-02-17 17:36:31	2026-02-18 23:59:25	2026-02-18 23:59:25	NULL	NULL	NULL

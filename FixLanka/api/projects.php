@@ -18,9 +18,11 @@ header('Access-Control-Allow-Headers: Content-Type');
 // Include required dependencies
 require_once '../config/database.php';
 require_once '../models/ProjectModel.php';
+require_once '../models/PaymentModel.php';
 
 // Initialize project model with database connection
 $projectModel = new Project($pdo);
+$paymentModel = new PaymentModel($pdo); // Initialize PaymentModel
 
 // Get HTTP request method
 $method = $_SERVER['REQUEST_METHOD'];
@@ -78,6 +80,39 @@ function handleGet()
         return;
     }
 
+    // Get timeline
+    if ($action === 'timeline' && isset($_GET['project_id'])) {
+        $projectId = intval($_GET['project_id']);
+        $result = $projectModel->getTimeline($projectId);
+        echo json_encode($result);
+        return;
+    }
+
+    // Get phases (timeline table)
+    if ($action === 'phases' && isset($_GET['project_id'])) {
+        $projectId = intval($_GET['project_id']);
+        $result = $projectModel->getContractPhases($projectId);
+        echo json_encode($result);
+        return;
+    }
+
+    // Get financials
+    if ($action === 'financials' && isset($_GET['project_id'])) {
+        global $paymentModel;
+        $projectId = intval($_GET['project_id']);
+        $result = $projectModel->getProjectFinancials($projectId);
+        
+        // Include payment history if contract exists
+        if ($result['success'] && $result['data']['has_contract']) {
+            $contractId = $result['data']['contract_id'];
+            $payments = $paymentModel->getByContractId($contractId);
+            $result['data']['payments'] = $payments ?: [];
+        }
+        
+        echo json_encode($result);
+        return;
+    }
+
     // Get single project by ID
     if (isset($_GET['project_id'])) {
         $projectId = intval($_GET['project_id']);
@@ -99,6 +134,9 @@ function handleGet()
     
     if (isset($_GET['status'])) {
         $filters['status'] = $_GET['status'];
+    } else {
+        // By default, do not show 'planned' projects (those awaiting contract acceptance)
+        $filters['exclude_status'] = 'planned';
     }
     
     if (isset($_GET['project_type'])) {
@@ -130,6 +168,54 @@ function handleGet()
 function handlePost()
 {
     global $projectModel;
+
+    // Check for specific actions in the URL query string
+    $action = isset($_GET['action']) ? $_GET['action'] : null;
+
+    // Start Phase
+    if ($action === 'start_phase' && isset($_POST['milestone_id'])) {
+        $milestoneId = intval($_POST['milestone_id']);
+        $result = $projectModel->startPhase($milestoneId);
+        echo json_encode($result);
+        return;
+    }
+
+    // Complete Phase (Submit Proof)
+    if ($action === 'complete_phase' && isset($_POST['milestone_id'])) {
+        $milestoneId = intval($_POST['milestone_id']);
+        $description = $_POST['description'] ?? '';
+        $files = $_FILES['proof_files'] ?? [];
+        
+        $result = $projectModel->submitPhaseProof($milestoneId, $description, $files);
+        echo json_encode($result);
+        return;
+    }
+
+    // Verify Phase (Approve/Reject)
+    if ($action === 'verify_phase' && isset($_POST['milestone_id']) && isset($_POST['action'])) {
+        $milestoneId = intval($_POST['milestone_id']);
+        $verifyAction = $_POST['action'];
+        $feedback = $_POST['feedback'] ?? '';
+        
+        $result = $projectModel->verifyPhase($milestoneId, $verifyAction, $feedback);
+        echo json_encode($result);
+        return;
+    }
+
+    // Start Project from Accepted Contract
+    if ($action === 'start_from_contract') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (isset($input['contract_id'])) {
+            $contractId = intval($input['contract_id']);
+            $result = $projectModel->startFromContract($contractId);
+            echo json_encode($result);
+            return;
+        } else {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Missing contract_id']);
+            return;
+        }
+    }
 
     // Get JSON input
     $input = json_decode(file_get_contents('php://input'), true);

@@ -2,9 +2,32 @@
 // filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\index.php
 require_once __DIR__ . '/config/session.php';
 
+// Check if query parameter routing is being used (for Account Moderation)
+if (isset($_GET['page'])) {
+    require_once __DIR__ . '/config/database.php';
+    
+    $page = $_GET['page'];
+    
+    switch ($page) {
+        case 'accountModeration':
+            require_once __DIR__ . '/models/AccountModerationModel.php';
+            require_once __DIR__ . '/controllers/AccountModerationController.php';
+            
+            $controller = new AccountModerationController($pdo);
+            $controller->handleRequest();
+            exit;
+            break;
+        
+        default:
+            // Continue to path-based routing below
+            break;
+    }
+}
+
+// Original path-based routing
 $request = $_SERVER['REQUEST_URI'];
 $request = str_replace('/2nd-Year-Group-Project/FixLanka', '', $request);
-$request = strtok($request, '?'); // Remove query string
+$request = strtok($request, '?');
 
 switch ($request) {
     case '/':
@@ -69,6 +92,10 @@ switch ($request) {
     case '/payment':
         require_once __DIR__ . '/views/user/payment.php';
         break;
+
+    case '/my-contracts':
+        require_once __DIR__ . '/views/user/contracts.php';
+        break;
     
     case '/provider':
         require_once __DIR__ . '/views/user/provider.php';
@@ -95,6 +122,14 @@ switch ($request) {
         require_once __DIR__ . '/views/admin/alerts.php';
         break;
     
+    // ✅ NEW: Admin Alert Actions Route (Handles Create, Update, Delete, Toggle)
+    case '/admin-alerts-action':
+        require_once __DIR__ . '/controllers/AdminAlertController.php';
+        $controller = new AdminAlertController();
+        $controller->handleRequest();
+        exit;
+        break;
+    
     case '/admin-analytics':
         require_once __DIR__ . '/views/admin/analytics.php';
         break;
@@ -114,6 +149,15 @@ switch ($request) {
     case '/admin-moderators':
         require_once __DIR__ . '/views/admin/moderators.php';
         break;
+
+// ✅ NEW ROUTE: Moderator Actions Handler
+case '/admin-moderators-action':
+    require_once __DIR__ . '/config/databse.php';
+    require_once __DIR__ . '/controllers/ModeratorController.php';
+    $controller = new ModeratorController();
+    $controller->handleRequest();
+    exit;
+    break;
     
     case '/moderator-dashboard':
         require_once __DIR__ . '/views/moderator/dashboard.php';
@@ -127,10 +171,14 @@ switch ($request) {
         require_once __DIR__ . '/views/moderator/ads.php';
         break;
     
-    case '/moderator-static-content':
-        require_once __DIR__ . '/views/moderator/static-content.php';
-        break;
     
+case '/moderator-static-content':
+    require_once __DIR__ . '/models/StaticContentModel.php';
+    require_once __DIR__ . '/controllers/StaticContentController.php';
+    $controller = new StaticContentController();
+    $controller->handleRequest();
+    break;
+
     case '/moderator-ad-schedule':
         require_once __DIR__ . '/views/moderator/ad-schedule.php';
         break;
@@ -254,6 +302,31 @@ switch ($request) {
     
     case '/company-feedback':
         require_once __DIR__ . '/views/company/feedback.php';
+        break;
+
+    // API Routes for Quotations
+    case '/company-submit-quotation':
+        require_once __DIR__ . '/controllers/CompanyQuotationController.php';
+        $controller = new CompanyQuotationController();
+        $controller->create();
+        break;
+
+    case '/company-get-quotations':
+        require_once __DIR__ . '/controllers/CompanyQuotationController.php';
+        $controller = new CompanyQuotationController();
+        $controller->getMyQuotations();
+        break;
+
+    case '/api/job-requests/open':
+        require_once __DIR__ . '/controllers/JobRequestController.php';
+        $controller = new JobRequestController();
+        $controller->getOpenRequests();
+        break;
+
+    case '/api/contracts/undo':
+        require_once __DIR__ . '/controllers/ContractController.php';
+        $controller = new ContractController();
+        $controller->undoContract();
         break;
     
     case '/get-providers':
