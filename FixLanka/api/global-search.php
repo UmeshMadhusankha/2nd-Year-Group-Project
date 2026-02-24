@@ -12,7 +12,7 @@ ini_set('display_errors', 0); // JSON response, so hide HTML errors
 header('Content-Type: application/json');
 
 // Include database connection
-require_once __DIR__ . '/../config/databse.php';
+require_once __DIR__ . '/../config/database.php';
 
 // Start session
 session_start();

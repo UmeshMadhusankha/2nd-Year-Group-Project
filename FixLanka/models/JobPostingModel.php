@@ -207,6 +207,39 @@ class JobPostingModel {
     }
     
     /**
+     * Get all open job postings for repairers to browse (with company info)
+     */
+    public function getAllOpen($category = null, $search = null) {
+        try {
+            $sql = "SELECT cjp.*, c.name AS company_name, c.email AS company_email,
+                        (SELECT COUNT(*) FROM RepairerApplication ra WHERE ra.posting_id = cjp.posting_id) AS application_count
+                    FROM CompanyJobPost cjp
+                    JOIN company c ON cjp.company_id = c.company_id
+                    WHERE cjp.status = 'open'";
+            $params = [];
+
+            if ($category && $category !== 'all') {
+                $sql .= " AND LOWER(cjp.category) = :category";
+                $params[':category'] = strtolower($category);
+            }
+
+            if ($search) {
+                $sql .= " AND (cjp.title LIKE :search OR cjp.category LIKE :search OR cjp.location LIKE :search)";
+                $params[':search'] = '%' . $search . '%';
+            }
+
+            $sql .= " ORDER BY cjp.posted_date DESC";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("JobPostingModel::getAllOpen error: " . $e->getMessage());
+            throw new Exception("Failed to fetch open job postings");
+        }
+    }
+
+    /**
      * Get application count for a job posting
      */
     public function getApplicationCount($postingId) {

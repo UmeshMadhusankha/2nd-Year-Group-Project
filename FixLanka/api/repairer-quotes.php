@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Repairer Quotes API
  * Handles CRUD operations for repairer quotations

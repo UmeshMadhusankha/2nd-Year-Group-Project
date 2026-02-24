@@ -1,4 +1,14 @@
 <?php
+require_once __DIR__ . '/../../../config/session.php';
+
+// Ensure repairer is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: /2nd-Year-Group-Project/FixLanka/views/auth/login.php');
+    exit;
+}
+
+$currentRepairerId = (int)$_SESSION['user_id'];
+
 // Page configuration
 $currentPage = 'my-jobs';
 $pageTitle = 'My Jobs';
@@ -16,6 +26,7 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/repairer-pages.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/my-jobs.css">
 </head>
 <body>
@@ -29,8 +40,6 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
 
         <!-- Include Sidebar -->
         <?php require_once __DIR__ . '/../common/sidebar.php'; ?>
-            
-        </aside>
 
         <!-- Main Content -->
         <div class="main-content-wrapper">
@@ -45,15 +54,15 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                             </div>
                             <div class="page-header-stats">
                                 <div class="header-stat">
-                                    <span class="header-stat-number">3</span>
+                                    <span class="header-stat-number" id="headerActiveJobs">—</span>
                                     <span class="header-stat-label">Active Jobs</span>
                                 </div>
                                 <div class="header-stat">
-                                    <span class="header-stat-number">0</span>
+                                    <span class="header-stat-number" id="headerAwaitingPayment">—</span>
                                     <span class="header-stat-label">Awaiting Payment</span>
                                 </div>
                                 <div class="header-stat">
-                                    <span class="header-stat-number">6</span>
+                                    <span class="header-stat-number" id="headerTotalJobs">—</span>
                                     <span class="header-stat-label">Total Jobs</span>
                                 </div>
                             </div>
@@ -67,27 +76,27 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                 <button class="filter-tab active" data-filter="all">
                                     <i class="fas fa-list"></i>
                                     All Jobs
-                                    <span class="tab-count">6</span>
+                                    <span class="tab-count" id="tabCountAll">—</span>
                                 </button>
                                 <button class="filter-tab" data-filter="active">
                                     <i class="fas fa-play-circle"></i>
                                     Active
-                                    <span class="tab-count">3</span>
+                                    <span class="tab-count" id="tabCountActive">—</span>
                                 </button>
                                 <button class="filter-tab" data-filter="completed">
                                     <i class="fas fa-clipboard-check"></i>
                                     Completed
-                                    <span class="tab-count">0</span>
+                                    <span class="tab-count" id="tabCountCompleted">—</span>
                                 </button>
                                 <button class="filter-tab" data-filter="paid">
                                     <i class="fas fa-check-circle"></i>
                                     Paid
-                                    <span class="tab-count">2</span>
+                                    <span class="tab-count" id="tabCountPaid">—</span>
                                 </button>
                                 <button class="filter-tab" data-filter="cancelled">
                                     <i class="fas fa-times-circle"></i>
                                     Cancelled
-                                    <span class="tab-count">1</span>
+                                    <span class="tab-count" id="tabCountCancelled">—</span>
                                 </button>
                             </div>
                             <div class="filter-actions">
@@ -108,262 +117,14 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                             <div class="jobs-list-container">
                                 <div class="section-header">
                                     <h2 class="section-title">My Jobs</h2>
-                                    <span class="section-subtitle">6 jobs found</span>
+                                    <span class="section-subtitle" id="jobsFoundCount">Loading...</span>
                                 </div>
 
-                        <!-- Jobs List -->
-                        <div class="jobs-list">
-                            <!-- Job Item 1 - Active -->
-                            <div class="job-item active-job" data-status="active">
-                                <div class="job-status-badge active">
-                                    <i class="fas fa-tools"></i>
-                                    Active
-                                </div>
-                                <div class="job-info">
-                                    <div class="job-header">
-                                        <h3 class="job-title">Kitchen Sink Repair</h3>
-                                    </div>
-                                    <div class="job-details">
-                                        <div class="job-customer">
-                                            <i class="fas fa-user"></i>
-                                            <span>Sarah Fernando</span>
-                                        </div>
-                                        <div class="job-location">
-                                            <i class="fas fa-map-marker-alt"></i>
-                                            <span>Colombo 07, Western Province</span>
-                                        </div>
-                                        <div class="job-date">
-                                            <i class="fas fa-calendar"></i>
-                                            <span>Started 2 days ago</span>
-                                        </div>
-                                        <div class="job-amount">
-                                            <i class="fas fa-money-bill"></i>
-                                            <span class="amount">LKR 2,800</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="job-actions">
-                                    <button class="btn btn-primary" onclick="viewJobDetails(1)">
-                                        <i class="fas fa-eye"></i>
-                                        View Details
-                                    </button>
-                                    <button class="btn btn-success" onclick="markJobAsCompleted(this, 1)">
-                                        <i class="fas fa-check"></i>
-                                        Mark as Completed
-                                    </button>
-                                    <button class="btn btn-danger" onclick="cancelJob(this, 1)">
-                                        <i class="fas fa-times"></i>
-                                        Cancel Job
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Job Item 2 - Active -->
-                            <div class="job-item active-job" data-status="active">
-                                <div class="job-status-badge active">
-                                    <i class="fas fa-tools"></i>
-                                    Active
-                                </div>
-                                <div class="job-info">
-                                    <div class="job-header">
-                                        <h3 class="job-title">Ceiling Fan Installation</h3>
-                                    </div>
-                                    <div class="job-details">
-                                        <div class="job-customer">
-                                            <i class="fas fa-building"></i>
-                                            <span>Kandy Hardware Store</span>
-                                        </div>
-                                        <div class="job-location">
-                                            <i class="fas fa-map-marker-alt"></i>
-                                            <span>Kandy, Central Province</span>
-                                        </div>
-                                        <div class="job-date">
-                                            <i class="fas fa-calendar"></i>
-                                            <span>Started yesterday</span>
-                                        </div>
-                                        <div class="job-amount">
-                                            <i class="fas fa-money-bill"></i>
-                                            <span class="amount">LKR 4,200</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="job-actions">
-                                    <button class="btn btn-primary" onclick="viewJobDetails(2)">
-                                        <i class="fas fa-eye"></i>
-                                        View Details
-                                    </button>
-                                    <button class="btn btn-success" onclick="markJobAsCompleted(this, 2)">
-                                        <i class="fas fa-check"></i>
-                                        Mark as Completed
-                                    </button>
-                                    <button class="btn btn-danger" onclick="cancelJob(this, 2)">
-                                        <i class="fas fa-times"></i>
-                                        Cancel Job
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Job Item 3 - Active -->
-                            <div class="job-item active-job" data-status="active">
-                                <div class="job-status-badge active">
-                                    <i class="fas fa-tools"></i>
-                                    Active
-                                </div>
-                                <div class="job-info">
-                                    <div class="job-header">
-                                        <h3 class="job-title">Air Conditioning Repair</h3>
-                                    </div>
-                                    <div class="job-details">
-                                        <div class="job-customer">
-                                            <i class="fas fa-user"></i>
-                                            <span>Priya Wickramasinghe</span>
-                                        </div>
-                                        <div class="job-location">
-                                            <i class="fas fa-map-marker-alt"></i>
-                                            <span>Nugegoda, Western Province</span>
-                                        </div>
-                                        <div class="job-date">
-                                            <i class="fas fa-calendar"></i>
-                                            <span>Started today</span>
-                                        </div>
-                                        <div class="job-amount">
-                                            <i class="fas fa-money-bill"></i>
-                                            <span class="amount">LKR 3,500</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="job-actions">
-                                    <button class="btn btn-primary" onclick="viewJobDetails(3)">
-                                        <i class="fas fa-eye"></i>
-                                        View Details
-                                    </button>
-                                    <button class="btn btn-success" onclick="markJobAsCompleted(this, 3)">
-                                        <i class="fas fa-check"></i>
-                                        Mark as Completed
-                                    </button>
-                                    <button class="btn btn-danger" onclick="cancelJob(this, 3)">
-                                        <i class="fas fa-times"></i>
-                                        Cancel Job
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Job Item 4 - Paid -->
-                            <div class="job-item completed-job" data-status="paid">
-                                <div class="job-status-badge paid">
-                                    <i class="fas fa-check-circle"></i>
-                                    Paid
-                                </div>
-                                <div class="job-info">
-                                    <div class="job-header">
-                                        <h3 class="job-title">Washing Machine Repair</h3>
-                                    </div>
-                                    <div class="job-details">
-                                        <div class="job-customer">
-                                            <i class="fas fa-user"></i>
-                                            <span>Nimal Perera</span>
-                                        </div>
-                                        <div class="job-location">
-                                            <i class="fas fa-map-marker-alt"></i>
-                                            <span>Maharagama, Western Province</span>
-                                        </div>
-                                        <div class="job-date">
-                                            <i class="fas fa-calendar"></i>
-                                            <span>Completed 3 days ago</span>
-                                        </div>
-                                        <div class="job-amount">
-                                            <i class="fas fa-money-bill"></i>
-                                            <span class="amount">LKR 2,500</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="job-actions">
-                                    <button class="btn btn-primary" onclick="viewJobDetails(4)">
-                                        <i class="fas fa-eye"></i>
-                                        View Details
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Job Item 5 - Paid -->
-                            <div class="job-item completed-job" data-status="completed">
-                                <div class="job-status-badge paid">
-                                    <i class="fas fa-check-circle"></i>
-                                    Paid
-                                </div>
-                                <div class="job-info">
-                                    <div class="job-header">
-                                        <h3 class="job-title">Bathroom Plumbing Fix</h3>
-                                    </div>
-                                    <div class="job-details">
-                                        <div class="job-customer">
-                                            <i class="fas fa-user"></i>
-                                            <span>Kamala Silva</span>
-                                        </div>
-                                        <div class="job-location">
-                                            <i class="fas fa-map-marker-alt"></i>
-                                            <span>Dehiwala, Western Province</span>
-                                        </div>
-                                        <div class="job-date">
-                                            <i class="fas fa-calendar"></i>
-                                            <span>Completed 1 week ago</span>
-                                        </div>
-                                        <div class="job-amount">
-                                            <i class="fas fa-money-bill"></i>
-                                            <span class="amount">LKR 1,800</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="job-actions">
-                                    <button class="btn btn-primary" onclick="viewJobDetails(5)">
-                                        <i class="fas fa-eye"></i>
-                                        View Details
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Job Item 6 - Cancelled (Sample) -->
-                            <div class="job-item cancelled-job" data-status="cancelled">
-                                <div class="job-status-badge cancelled">
-                                    <i class="fas fa-times-circle"></i>
-                                    Cancelled
-                                </div>
-                                <div class="job-info">
-                                    <div class="job-header">
-                                        <h3 class="job-title">Electrical Wiring Repair</h3>
-                                    </div>
-                                    <div class="job-details">
-                                        <div class="job-customer">
-                                            <i class="fas fa-user"></i>
-                                            <span>Rajith Kumar</span>
-                                        </div>
-                                        <div class="job-location">
-                                            <i class="fas fa-map-marker-alt"></i>
-                                            <span>Moratuwa, Western Province</span>
-                                        </div>
-                                        <div class="job-date">
-                                            <i class="fas fa-calendar"></i>
-                                            <span>Cancelled 2 days ago</span>
-                                        </div>
-                                        <div class="job-amount">
-                                            <i class="fas fa-money-bill"></i>
-                                            <span class="amount">LKR 3,200</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="job-actions">
-                                    <div class="cancellation-info">
-                                        <span class="cancelled-label">
-                                            <i class="fas fa-times-circle"></i>
-                                            Job Cancelled
-                                        </span>
-                                        <span class="cancel-reason">Reason: Customer requested another repairer</span>
-                                    </div>
-                                    <button class="btn btn-secondary" onclick="viewJobDetails(6)">
-                                        <i class="fas fa-eye"></i>
-                                        View Details
-                                    </button>
-                                </div>
+                        <!-- Jobs list populated by my-jobs.js -->
+                        <div class="jobs-list" id="jobsList">
+                            <div class="loading-state" style="text-align:center;padding:40px;color:var(--text-secondary)">
+                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                <p style="margin-top:12px">Loading your jobs...</p>
                             </div>
                         </div>
                         <!-- End Jobs List -->
@@ -436,13 +197,13 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                     <!-- Job Header -->
                     <div class="job-details-header">
                         <div class="job-detail-title-section">
-                            <h2 id="modal-job-title">Kitchen Sink Repair</h2>
+                            <h2 id="modal-job-title">—</h2>
                             <span class="job-detail-status" id="modal-job-status">
                                 <i class="fas fa-tools"></i>
                                 Active
                             </span>
                         </div>
-                        <div class="job-detail-amount" id="modal-job-amount">LKR 2,800</div>
+                        <div class="job-detail-amount" id="modal-job-amount">—</div>
                     </div>
 
                     <!-- Customer Information -->
@@ -454,19 +215,19 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                         <div class="detail-grid">
                             <div class="detail-item">
                                 <span class="detail-label">Name:</span>
-                                <span class="detail-value" id="modal-customer-name">Sarah Fernando</span>
+                                <span class="detail-value" id="modal-customer-name">—</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Phone:</span>
-                                <span class="detail-value" id="modal-customer-phone">+94 77 123 4567</span>
+                                <span class="detail-value" id="modal-customer-phone">—</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Email:</span>
-                                <span class="detail-value" id="modal-customer-email">sarah.fernando@email.com</span>
+                                <span class="detail-value" id="modal-customer-email">—</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Location:</span>
-                                <span class="detail-value" id="modal-job-location">Colombo 07, Western Province</span>
+                                <span class="detail-value" id="modal-job-location">—</span>
                             </div>
                         </div>
                     </div>
@@ -480,19 +241,19 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                         <div class="detail-grid">
                             <div class="detail-item">
                                 <span class="detail-label">Started:</span>
-                                <span class="detail-value" id="modal-job-started">October 21, 2025</span>
+                                <span class="detail-value" id="modal-job-started">—</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Estimated Completion:</span>
-                                <span class="detail-value" id="modal-job-completion">October 24, 2025</span>
+                                <span class="detail-value" id="modal-job-completion">—</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Job ID:</span>
-                                <span class="detail-value" id="modal-job-id">#JOB-2025-001</span>
+                                <span class="detail-value" id="modal-job-id">—</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Category:</span>
-                                <span class="detail-value" id="modal-job-category">Plumbing</span>
+                                <span class="detail-value" id="modal-job-category">—</span>
                             </div>
                         </div>
                     </div>
@@ -503,9 +264,7 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                             <i class="fas fa-file-alt"></i>
                             Description
                         </h4>
-                        <p class="job-description" id="modal-job-description">
-                            The kitchen sink is leaking from the pipe underneath. Water is dripping constantly and needs immediate repair. The customer mentioned that the issue started 3 days ago and has been getting worse. Please bring necessary tools and replacement parts if needed.
-                        </p>
+                        <p class="job-description" id="modal-job-description">—</p>
                     </div>
 
                     <!-- Payment Details -->
@@ -517,24 +276,24 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                         <div class="payment-breakdown">
                             <div class="payment-row">
                                 <span class="payment-label">Service Charge:</span>
-                                <span class="payment-value" id="modal-service-charge">LKR 2,500</span>
+                                <span class="payment-value" id="modal-service-charge">—</span>
                             </div>
                             <div class="payment-row">
                                 <span class="payment-label">Platform Fee (15%):</span>
-                                <span class="payment-value" id="modal-platform-fee">LKR 375</span>
+                                <span class="payment-value" id="modal-platform-fee">—</span>
                             </div>
                             <div class="payment-row">
                                 <span class="payment-label">Tax (5%):</span>
-                                <span class="payment-value" id="modal-tax">LKR 125</span>
+                                <span class="payment-value" id="modal-tax">—</span>
                             </div>
                             <div class="payment-divider"></div>
                             <div class="payment-row payment-total">
                                 <span class="payment-label">Total Amount:</span>
-                                <span class="payment-value" id="modal-total-amount">LKR 2,800</span>
+                                <span class="payment-value" id="modal-total-amount">—</span>
                             </div>
                             <div class="payment-row">
                                 <span class="payment-label">Your Earnings:</span>
-                                <span class="payment-value payment-earnings" id="modal-earnings">LKR 2,125</span>
+                                <span class="payment-value payment-earnings" id="modal-earnings">—</span>
                             </div>
                         </div>
                     </div>
@@ -546,42 +305,7 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                             Status Timeline
                         </h4>
                         <div class="status-timeline" id="modal-timeline">
-                            <div class="timeline-item completed">
-                                <div class="timeline-icon">
-                                    <i class="fas fa-check"></i>
-                                </div>
-                                <div class="timeline-content">
-                                    <div class="timeline-title">Job Accepted</div>
-                                    <div class="timeline-date">October 21, 2025 - 10:30 AM</div>
-                                </div>
-                            </div>
-                            <div class="timeline-item completed">
-                                <div class="timeline-icon">
-                                    <i class="fas fa-check"></i>
-                                </div>
-                                <div class="timeline-content">
-                                    <div class="timeline-title">Work Started</div>
-                                    <div class="timeline-date">October 21, 2025 - 2:00 PM</div>
-                                </div>
-                            </div>
-                            <div class="timeline-item active">
-                                <div class="timeline-icon">
-                                    <i class="fas fa-tools"></i>
-                                </div>
-                                <div class="timeline-content">
-                                    <div class="timeline-title">In Progress</div>
-                                    <div class="timeline-date">Current Status</div>
-                                </div>
-                            </div>
-                            <div class="timeline-item pending">
-                                <div class="timeline-icon">
-                                    <i class="fas fa-clock"></i>
-                                </div>
-                                <div class="timeline-content">
-                                    <div class="timeline-title">Pending Completion</div>
-                                    <div class="timeline-date">Est. October 24, 2025</div>
-                                </div>
-                            </div>
+                            <!-- Timeline populated by my-jobs.js -->
                         </div>
                     </div>
                 </div>
@@ -599,6 +323,10 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
         </div>
     </div>
 
+    <script>
+        window.CURRENT_REPAIRER_ID = <?php echo $currentRepairerId; ?>;
+        window.BASE_URL = '/2nd-Year-Group-Project/FixLanka/';
+    </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/my-jobs.js"></script>
 </body>

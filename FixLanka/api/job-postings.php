@@ -63,6 +63,17 @@ try {
  */
 function handleGet($model, $action) {
     switch ($action) {
+        case 'browse':
+            // Get all open job postings for repairers to browse
+            $category = $_GET['category'] ?? null;
+            $search = $_GET['search'] ?? null;
+            $postings = $model->getAllOpen($category, $search);
+            echo json_encode([
+                'success' => true,
+                'postings' => $postings
+            ]);
+            break;
+
         case 'list':
             // Get all job postings for a company
             $companyId = $_GET['company_id'] ?? null;

@@ -205,6 +205,29 @@ CREATE TABLE `category` (
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Seed Categories (Required for Repairer Registration)
+INSERT INTO `category` (`category_id`, `name`) VALUES
+(1, 'Plumbing'),
+(2, 'Electrical'),
+(3, 'HVAC'),
+(4, 'Cleaning'),
+(5, 'Carpentry'),
+(6, 'Painting'),
+(7, 'Appliance Repair'),
+(8, 'Roofing'),
+(9, 'Landscaping'),
+(10, 'Pest Control'),
+(11, 'Home Security'),
+(12, 'Interior Design'),
+(13, 'Flooring'),
+(14, 'Masonry'),
+(15, 'Welding'),
+(16, 'Glass & Mirror'),
+(17, 'Tile Work'),
+(18, 'Drywall'),
+(19, 'Insulation'),
+(20, 'Window Installation');
+
 -- Repairer
 CREATE TABLE `repairer` (
   `repairer_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -334,6 +357,7 @@ CREATE TABLE `jobrequest` (
 -- Company Quotation
 CREATE TABLE `companyquotation` (
   `quotation_id` int(11) NOT NULL AUTO_INCREMENT,
+  `company_id` int(11) NOT NULL,
   `request_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `title` varchar(250) NOT NULL,
@@ -353,11 +377,13 @@ CREATE TABLE `companyquotation` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`quotation_id`),
+  KEY `idx_company` (`company_id`),
   KEY `idx_request` (`request_id`),
   KEY `idx_user` (`user_id`),
   KEY `idx_status` (`status`),
   CONSTRAINT `companyquotation_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE,
-  CONSTRAINT `companyquotation_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
+  CONSTRAINT `companyquotation_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  CONSTRAINT `companyquotation_ibfk_3` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Project
