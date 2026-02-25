@@ -7,204 +7,85 @@ CREATE DATABASE fix_lanka;
 USE fix_lanka;
 
 -- User Table
-CREATE TABLE `user` (
-  `user_id` int(11) NOT NULL AUTO_INCREMENT,
-  `f_name` varchar(100) NOT NULL,
-  `l_name` varchar(100) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `profilePicture` varchar(500) DEFAULT NULL,
-  `address` text DEFAULT NULL,
-  `district` varchar(100) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`user_id`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE User (
+    user_id INT PRIMARY KEY AUTO_INCREMENT,
+    f_name VARCHAR(100) NOT NULL,
+    l_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    profilePicture VARCHAR(500),
+    address TEXT,
+    district VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
--- Activity Log
-CREATE TABLE `activitylog` (
-  `activity_id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) DEFAULT NULL,
-  `action_type` varchar(100) NOT NULL,
-  `description` text DEFAULT NULL,
-  `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
-  `ip_address` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`activity_id`),
-  KEY `idx_user` (`user_id`),
-  KEY `idx_timestamp` (`timestamp`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- Issue Report Table
+CREATE TABLE IssueReport (
+    issue_id INT PRIMARY KEY AUTO_INCREMENT,
+    reportedBy_id INT NOT NULL,
+    target_id INT NOT NULL, -- Can reference User, Repairer, or Company
+    target_type ENUM('user', 'repairer', 'company') NOT NULL,
+    description TEXT NOT NULL,
+    status ENUM('open', 'investigating', 'resolved', 'closed') DEFAULT 'open',
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (reportedBy_id) REFERENCES User(user_id) ON DELETE CASCADE,
+    INDEX idx_reporter (reportedBy_id),
+    INDEX idx_status (status)
+);
 
--- Admin
-CREATE TABLE `admin` (
-  `username` varchar(100) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `email` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`username`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- Category Table
+CREATE TABLE Category (
+    category_id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- Advertisement
-CREATE TABLE `advertisement` (
-  `ad_id` int(11) NOT NULL AUTO_INCREMENT,
-  `provider_id` int(11) NOT NULL,
-  `provider_type` enum('repairer','company') NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `category` varchar(100) DEFAULT NULL,
-  `image_url` varchar(500) DEFAULT NULL,
-  `start_date` date DEFAULT NULL,
-  `end_date` date DEFAULT NULL,
-  `view_count` int(11) DEFAULT 0,
-  `click_count` int(11) DEFAULT 0,
-  `type` enum('banner','featured','sponsored') NOT NULL,
-  `budget` decimal(10,2) NOT NULL,
-  `submission_date` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `status` enum('pending','approved','active','expired','rejected') DEFAULT 'pending',
-  PRIMARY KEY (`ad_id`),
-  KEY `idx_provider` (`provider_id`,`provider_type`),
-  KEY `idx_status` (`status`),
-  KEY `idx_dates` (`start_date`,`end_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- JobRequest table
+CREATE TABLE JobRequest (
+    request_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    category_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    status ENUM('pending', 'accepted', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+    district VARCHAR(100) NOT NULL,
+    address TEXT NOT NULL,
+    service_provider_type VARCHAR(50) NOT NULL, -- Can store 'individual', 'company', or 'both'
+    urgency ENUM('medium', 'urgent') DEFAULT 'medium',
+    finish_date DATE NOT NULL,
+    dateCreated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    photos VARCHAR(255),
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES Category(category_id) ON DELETE RESTRICT,
+    INDEX idx_user (user_id),
+    INDEX idx_status (status),
+    INDEX idx_created (dateCreated),
+    INDEX idx_district (district)
+);
 
--- Ad Schedule
-CREATE TABLE `adschedule` (
-  `schedule_id` int(11) NOT NULL AUTO_INCREMENT,
-  `ad_id` int(11) NOT NULL,
-  `start_date` date NOT NULL,
-  `end_date` date NOT NULL,
-  `start_time` time DEFAULT NULL,
-  `end_time` time DEFAULT NULL,
-  PRIMARY KEY (`schedule_id`),
-  KEY `idx_ad` (`ad_id`),
-  KEY `idx_dates` (`start_date`,`end_date`),
-  CONSTRAINT `adschedule_ibfk_1` FOREIGN KEY (`ad_id`) REFERENCES `advertisement` (`ad_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Company
-CREATE TABLE `company` (
-  `company_id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) NOT NULL,
-  `business_type` varchar(255) DEFAULT NULL,
-  `registration_no` varchar(100) NOT NULL,
-  `tax_id` varchar(100) DEFAULT NULL,
-  `address` text NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `website` varchar(255) DEFAULT NULL,
-  `contact_no` varchar(20) NOT NULL,
-  `districts` text DEFAULT NULL,
-  `password` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `rating` decimal(3,2) DEFAULT 0.00,
-  `date_of_joined` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`company_id`),
-  UNIQUE KEY `registration_no` (`registration_no`),
-  UNIQUE KEY `email` (`email`),
-  KEY `idx_email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Company Settings
-CREATE TABLE `companysettings` (
-  `setting_id` int(11) NOT NULL AUTO_INCREMENT,
-  `company_id` int(11) NOT NULL,
-  `email_repair_requests` tinyint(1) DEFAULT 1,
-  `email_project_updates` tinyint(1) DEFAULT 1,
-  `email_payments` tinyint(1) DEFAULT 1,
-  `email_team_activity` tinyint(1) DEFAULT 0,
-  `email_messages` tinyint(1) DEFAULT 1,
-  `push_desktop` tinyint(1) DEFAULT 1,
-  `push_mobile` tinyint(1) DEFAULT 0,
-  `quiet_hours_start` time DEFAULT '22:00:00',
-  `quiet_hours_end` time DEFAULT '08:00:00',
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`setting_id`),
-  UNIQUE KEY `unique_company` (`company_id`),
-  CONSTRAINT `companysettings_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- User Sessions (Session Management)
-CREATE TABLE `user_sessions` (
-  `session_id` varchar(255) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `user_role` enum('user','repairer','company','admin','moderator') NOT NULL,
-  `device_type` varchar(100) DEFAULT NULL,
-  `browser` varchar(100) DEFAULT NULL,
-  `os` varchar(100) DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `last_activity` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `is_current` tinyint(1) DEFAULT 0,
-  PRIMARY KEY (`session_id`),
-  KEY `idx_user` (`user_id`,`user_role`),
-  KEY `idx_last_activity` (`last_activity`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Company Subscriptions
-CREATE TABLE `company_subscriptions` (
-  `subscription_id` int(11) NOT NULL AUTO_INCREMENT,
-  `company_id` int(11) NOT NULL,
-  `plan_name` enum('free','basic','professional','enterprise') DEFAULT 'free',
-  `plan_price` decimal(10,2) NOT NULL DEFAULT 0.00,
-  `billing_period` enum('monthly','yearly') DEFAULT 'monthly',
-  `status` enum('active','cancelled','expired','trial') DEFAULT 'trial',
-  `start_date` date NOT NULL,
-  `end_date` date DEFAULT NULL,
-  `next_billing_date` date DEFAULT NULL,
-  `auto_renew` tinyint(1) DEFAULT 1,
-  `trial_ends_at` date DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`subscription_id`),
-  KEY `idx_company` (`company_id`),
-  KEY `idx_status` (`status`),
-  CONSTRAINT `company_subscriptions_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Payment Methods
-CREATE TABLE `payment_methods` (
-  `payment_method_id` int(11) NOT NULL AUTO_INCREMENT,
-  `company_id` int(11) NOT NULL,
-  `card_type` enum('visa','mastercard','amex','discover') NOT NULL,
-  `last_four_digits` char(4) NOT NULL,
-  `card_holder_name` varchar(100) NOT NULL,
-  `expiry_month` char(2) NOT NULL,
-  `expiry_year` char(4) NOT NULL,
-  `billing_address` varchar(255) DEFAULT NULL,
-  `is_primary` tinyint(1) DEFAULT 0,
-  `is_active` tinyint(1) DEFAULT 1,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`payment_method_id`),
-  KEY `idx_company` (`company_id`),
-  KEY `idx_primary` (`is_primary`),
-  KEY `idx_active` (`is_active`),
-  CONSTRAINT `payment_methods_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Billing History
-CREATE TABLE `billinghistory` (
-  `invoice_id` varchar(50) NOT NULL,
-  `company_id` int(11) NOT NULL,
-  `date` date NOT NULL,
-  `amount` decimal(10,2) NOT NULL,
-  `status` enum('paid','pending','failed') DEFAULT 'pending',
-  `download_url` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`invoice_id`),
-  KEY `idx_company_date` (`company_id`,`date`),
-  CONSTRAINT `billinghistory_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Category
-CREATE TABLE `category` (
-  `category_id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`category_id`),
-  UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- Seed Categories (Required for Repairer Registration)
+INSERT INTO `category` (`category_id`, `name`) VALUES
+(1, 'Plumbing'),
+(2, 'Electrical'),
+(3, 'HVAC'),
+(4, 'Cleaning'),
+(5, 'Carpentry'),
+(6, 'Painting'),
+(7, 'Appliance Repair'),
+(8, 'Roofing'),
+(9, 'Landscaping'),
+(10, 'Pest Control'),
+(11, 'Home Security'),
+(12, 'Interior Design'),
+(13, 'Flooring'),
+(14, 'Masonry'),
+(15, 'Welding'),
+(16, 'Glass & Mirror'),
+(17, 'Tile Work'),
+(18, 'Drywall'),
+(19, 'Insulation'),
+(20, 'Window Installation');
 
 -- Repairer Table
 CREATE TABLE Repairer (
@@ -303,34 +184,33 @@ CREATE TABLE Promotion (
     INDEX idx_dates (start_date, end_date)
 );
 
--- Company Quotation
-CREATE TABLE `companyquotation` (
-  `quotation_id` int(11) NOT NULL AUTO_INCREMENT,
-  `request_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `title` varchar(250) NOT NULL,
-  `description` varchar(500) DEFAULT NULL,
-  `labor_cost` decimal(10,2) NOT NULL,
-  `material_cost` decimal(10,2) NOT NULL,
-  `transport_cost` decimal(10,2) DEFAULT 0.00,
-  `other_charges` decimal(10,2) DEFAULT 0.00,
-  `total_amount` decimal(10,2) NOT NULL,
-  `start_date` date NOT NULL,
-  `completion_date` date NOT NULL,
-  `estimated_duration` int(11) NOT NULL,
-  `payment_terms` varchar(100) DEFAULT NULL,
-  `warranty_period` varchar(50) DEFAULT NULL,
-  `additional_terms` text DEFAULT NULL,
-  `status` enum('pending','accepted','rejected','successful') DEFAULT 'pending',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`quotation_id`),
-  KEY `idx_request` (`request_id`),
-  KEY `idx_user` (`user_id`),
-  KEY `idx_status` (`status`),
-  CONSTRAINT `companyquotation_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE,
-  CONSTRAINT `companyquotation_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- Quotation Table
+CREATE TABLE CompanyQuotation (
+    quotation_id INT PRIMARY KEY AUTO_INCREMENT,
+    request_id INT NOT NULL,
+    user_id INT NOT NULL,
+    title VARCHAR(250) NOT NULL,
+    description VARCHAR(500),
+    labor_cost DECIMAL(10,2) NOT NULL,
+    material_cost DECIMAL(10,2) NOT NULL,
+    transport_cost DECIMAL(10,2) DEFAULT 0.00,
+    other_charges DECIMAL(10,2) DEFAULT 0.00,
+    total_amount DECIMAL(10,2) NOT NULL,
+    start_date DATE NOT NULL,
+    completion_date DATE NOT NULL,
+    estimated_duration INT NOT NULL,
+    payment_terms VARCHAR(100),
+    warranty_period VARCHAR(50),
+    additional_terms TEXT,
+    status ENUM('pending', 'accepted', 'rejected', 'successful') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (request_id) REFERENCES JobRequest(request_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE,
+    INDEX idx_request (request_id),
+    INDEX idx_user (user_id),
+    INDEX idx_status (status)
+);
 
 -- Company Table
 CREATE TABLE Company (

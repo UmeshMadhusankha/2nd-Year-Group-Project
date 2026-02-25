@@ -793,57 +793,8 @@ function initializeCalendar() {
 }
 
 function loadSampleEvents() {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-
-    calendarState.events = [
-        {
-            id: 'evt-1',
-            title: 'Team Meeting',
-            date: new Date(currentYear, currentMonth, 27),
-            time: '10:00 AM',
-            type: 'meeting',
-            description: 'Weekly team coordination meeting',
-            participants: ['John Smith', 'Sarah Johnson', 'Mike Wilson']
-        },
-        {
-            id: 'evt-2',
-            title: 'Project Deadline',
-            date: new Date(currentYear, currentMonth, 30),
-            time: '5:00 PM',
-            type: 'deadline',
-            description: 'ABC Corporation office renovation completion',
-            priority: 'high'
-        },
-        {
-            id: 'evt-3',
-            title: 'Client Consultation',
-            date: new Date(currentYear, currentMonth, 25),
-            time: '2:00 PM',
-            type: 'consultation',
-            description: 'Initial consultation for kitchen renovation',
-            client: 'Emma Davis'
-        },
-        {
-            id: 'evt-4',
-            title: 'Equipment Maintenance',
-            date: new Date(currentYear, currentMonth, 28),
-            time: '9:00 AM',
-            type: 'maintenance',
-            description: 'Monthly equipment maintenance check',
-            location: 'Workshop'
-        },
-        {
-            id: 'evt-5',
-            title: 'Training Session',
-            date: new Date(currentYear, currentMonth, 29),
-            time: '11:00 AM',
-            type: 'training',
-            description: 'Safety protocols training for new team members',
-            duration: '2 hours'
-        }
-    ];
+    // Initialize with empty events - no sample data
+    calendarState.events = [];
 
     saveCalendarEvents();
     updateCalendarDisplay();
@@ -875,10 +826,10 @@ function loadCalendarEvents() {
             });
         } catch (e) {
             console.warn('Failed to load calendar events:', e);
-            loadSampleEvents();
+            calendarState.events = [];
         }
     } else {
-        loadSampleEvents();
+        calendarState.events = [];
     }
 }
 

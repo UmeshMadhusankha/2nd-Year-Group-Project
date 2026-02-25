@@ -5,6 +5,18 @@ function renderModeratorSidebar($currentPath, $basePath)
     // Normalize current path (remove trailing slashes)
     $currentPath = trim($currentPath, '/');
 
+    // Icon mapping: Lucide → Font Awesome
+    $iconMap = [
+        'home' => 'fa-home',
+        'dollar-sign' => 'fa-dollar-sign',
+        'monitor' => 'fa-desktop',
+        'file-text' => 'fa-file-lines',
+        'calendar' => 'fa-calendar',
+        'flag' => 'fa-flag',
+        'bell' => 'fa-bell',
+        'users' => 'fa-users'
+    ];
+
     // Menu items for the new UI
     $menuItems = [
         ['title' => 'Dashboard', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-dashboard', 'icon' => 'home'],
@@ -14,7 +26,7 @@ function renderModeratorSidebar($currentPath, $basePath)
         ['title' => 'Ad Scheduling', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-ad-schedule', 'icon' => 'calendar'],
         ['title' => 'Ad Reports', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-ad-reports', 'icon' => 'flag'],
         ['title' => 'Notifications', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-notifications', 'icon' => 'bell'],
-        ['title' => 'User Management', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-account-moderation', 'icon' => 'users']
+      //  ['title' => 'User Management', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-account-moderation', 'icon' => 'users']
     ];
 
     echo '<!-- Sidebar Component -->';
@@ -23,12 +35,15 @@ function renderModeratorSidebar($currentPath, $basePath)
     echo '<ul class="nav-list">';
 
     foreach ($menuItems as $item) {
-        $isActive = ($currentPath === trim($item['url'], '/'));
+        $isActive = (trim($currentPath, '/') === trim($item['url'], '/'));
         $activeClass = $isActive ? 'active' : '';
+        
+        // Get Font Awesome icon class
+        $faIcon = $iconMap[$item['icon']] ?? 'fa-circle';
 
         echo '<li class="nav-item ' . $activeClass . '">';
         echo '<a href="' . htmlspecialchars($item['url']) . '" class="nav-link" data-tooltip="' . htmlspecialchars($item['title']) . '">';
-        echo '<i data-lucide="' . htmlspecialchars($item['icon']) . '" class=""></i>';
+        echo '<i class="fa-solid ' . $faIcon . '"></i>';
         echo '<span>' . htmlspecialchars($item['title']) . '</span>';
         echo '</a>';
         echo '</li>';

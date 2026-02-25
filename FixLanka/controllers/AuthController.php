@@ -76,7 +76,7 @@ class AuthController {
             }
             
             // Try to find user in Company table
-            $stmt = $this->pdo->prepare("SELECT company_id, name, email, password FROM company WHERE email = ?");
+            $stmt = $this->pdo->prepare("SELECT company_id, name, email, password FROM Company WHERE email = ?");
             $stmt->execute([$email]);
             $company = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -91,7 +91,7 @@ class AuthController {
             }
             
             // Try to find user in Repairer table
-            $stmt = $this->pdo->prepare("SELECT repairer_id, f_name, l_name, email, password FROM repairer WHERE email = ?");
+            $stmt = $this->pdo->prepare("SELECT repairer_id, f_name, l_name, email, password FROM Repairer WHERE email = ?");
             $stmt->execute([$email]);
             $repairer = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -182,13 +182,18 @@ class AuthController {
                 exit;
             }
             
+            // 1. Insert into Location table first
+            $stmt = $this->pdo->prepare("INSERT INTO location (address) VALUES (?)");
+            $stmt->execute([$address]);
+            $locationId = $this->pdo->lastInsertId();
+
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             
             $stmt = $this->pdo->prepare("
-                INSERT INTO user (f_name, l_name, email, password, address) 
+                INSERT INTO User (f_name, l_name, email, password, address) 
                 VALUES (?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$f_name, $l_name, $email, $hashedPassword, $address]);
+            $stmt->execute([$f_name, $l_name, $email, $hashedPassword, $locationId]);
             
             $userId = $this->pdo->lastInsertId();
             $_SESSION['user_id'] = $userId;
@@ -262,30 +267,38 @@ class AuthController {
             }
             
             // Handle file upload
-            $profilePicture = null;
-            if (isset($_FILES['profilePicture']) && $_FILES['profilePicture']['error'] === UPLOAD_ERR_OK) {
-                $profilePicture = $this->handleFileUpload($_FILES['profilePicture'], 'repairers');
-                if ($profilePicture === false) {
+            $profile_picture = null;
+            if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
+                $profile_picture = $this->handleFileUpload($_FILES['profile_picture'], 'repairers');
+                if ($profile_picture === false) {
                     $_SESSION['error'] = 'Failed to upload profile picture';
                     header('Location: /2nd-Year-Group-Project/FixLanka/signup');
                     exit;
                 }
             }
             
-            // Convert districts array to CSV
-            $districtsCSV = implode(',', $districts);
+            // Convert districts array to CSV (Keep for backward compatibility during migration, if needed. Or skip if fully adopting Phase 3)
+            // Phase 3: Districts are strictly handled in service_area now.
             
             // Hash password
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             
-            // Insert into repairer table
+            // Insert into Repairer table
             $stmt = $this->pdo->prepare("
-                INSERT INTO repairer (f_name, l_name, email, password, phoneNumber, about, profilePicture, districts, category_id, availability) 
+                INSERT INTO Repairer (f_name, l_name, email, password, phoneNumber, about, profilePicture, districts, category_id, availability) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')
             ");
-            $stmt->execute([$f_name, $l_name, $email, $hashedPassword, $phoneNumber, $about, $profilePicture, $districtsCSV, $category_id]);
+            $stmt->execute([$f_name, $l_name, $email, $hashedPassword, $phoneNumber, $about, $profile_picture, $category_id]);
             
             $repairerId = $this->pdo->lastInsertId();
+
+            // Insert service areas
+            if (!empty($districts)) {
+                $areaStmt = $this->pdo->prepare("INSERT INTO service_area (owner_id, owner_type, district) VALUES (?, 'repairer', ?)");
+                foreach ($districts as $district) {
+                    $areaStmt->execute([$repairerId, $district]);
+                }
+            }
             $_SESSION['user_id'] = $repairerId;
             $_SESSION['user_name'] = $f_name . ' ' . $l_name;
             $_SESSION['user_email'] = $email;
@@ -374,21 +387,28 @@ class AuthController {
                 exit;
             }
             
-            // Convert arrays to CSV
+            // Convert arrays to CSV (Business type only)
             $businessTypeCSV = implode(',', $business_type);
-            $districtsCSV = implode(',', $districts);
             
             // Hash password
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             
-            // Insert into company table
+            // Insert into Company table
             $stmt = $this->pdo->prepare("
-                INSERT INTO company (name, business_type, registration_no, tax_id, address, email, website, contact_no, districts, password, description) 
+                INSERT INTO Company (name, business_type, registration_no, tax_id, address, email, website, contact_no, districts, password, description) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$name, $businessTypeCSV, $registration_no, $tax_id, $address, $email, $website, $contact_no, $districtsCSV, $hashedPassword, $description]);
+            $stmt->execute([$name, $businessTypeCSV, $registration_no, $tax_id, $locationId, $email, $website, $contact_no, $hashedPassword, $description]);
             
             $companyId = $this->pdo->lastInsertId();
+
+            // 3. Insert service areas
+            if (!empty($districts)) {
+                $areaStmt = $this->pdo->prepare("INSERT INTO service_area (owner_id, owner_type, district) VALUES (?, 'company', ?)");
+                foreach ($districts as $district) {
+                    $areaStmt->execute([$companyId, $district]);
+                }
+            }
             $_SESSION['user_id'] = $companyId;
             $_SESSION['user_name'] = $name;
             $_SESSION['user_email'] = $email;

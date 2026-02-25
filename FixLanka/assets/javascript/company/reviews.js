@@ -76,7 +76,7 @@ function renderReviews(reviews) {
         html += `
             <div class="review-card" style="background: white; padding: 24px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); display: flex; gap: 20px;">
                 <div class="reviewer-avatar" style="width: 50px; height: 50px; background: var(--bg-secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--primary-color); flex-shrink: 0;">
-                    ${review.profilePicture ? `<img src="${review.profilePicture}" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : initials}
+                    ${review.profile_picture ? `<img src="${review.profile_picture}" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : initials}
                 </div>
                 <div class="review-content" style="flex: 1;">
                     <div class="review-header" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
