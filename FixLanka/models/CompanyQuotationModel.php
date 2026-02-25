@@ -65,12 +65,12 @@ class CompanyQuotation
     {
         try {
             $sql = "INSERT INTO CompanyQuotation (
-                request_id, user_id, title, description,
+                request_id, company_id, user_id, title, description,
                 labor_cost, material_cost, transport_cost, other_charges,
                 total_amount, start_date, completion_date, estimated_duration,
                 payment_terms, warranty_period, additional_terms, status
             ) VALUES (
-                :request_id, :user_id, :title, :description,
+                :request_id, :company_id, :user_id, :title, :description,
                 :labor_cost, :material_cost, :transport_cost, :other_charges,
                 :total_amount, :start_date, :completion_date, :estimated_duration,
                 :payment_terms, :warranty_period, :additional_terms, :status
@@ -83,6 +83,7 @@ class CompanyQuotation
 
             $stmt->execute([
                 ':request_id' => $data['request_id'],
+                ':company_id' => $data['company_id'],
                 ':user_id' => $data['user_id'],
                 ':title' => $data['title'],
                 ':description' => $data['description'] ?? null,
@@ -422,14 +423,14 @@ class CompanyQuotation
             }
 
             $sql = "INSERT INTO CompanyQuotation (
-                        request_id, user_id, title, description,
+                        request_id, company_id, user_id, title, description,
                         labor_cost, material_cost, transport_cost, other_charges, total_amount,
                         budget_type, budget_min, budget_max,
                         start_date, completion_date, estimated_duration,
                         payment_terms, payment_method, pricing_type, hourly_rate, spending_cap_multiplier,
                         warranty_period, additional_terms, status
                     ) VALUES (
-                        :request_id, :user_id, :title, :description,
+                        :request_id, :company_id, :user_id, :title, :description,
                         :labor_cost, :material_cost, :transport_cost, :other_charges, :total_amount,
                         :budget_type, :budget_min, :budget_max,
                         :start_date, :completion_date, :estimated_duration,
@@ -440,6 +441,7 @@ class CompanyQuotation
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
                 ':request_id' => $data['request_id'],
+                ':company_id' => $data['company_id'],
                 ':user_id' => $data['user_id'],
                 ':title' => $data['title'],
                 ':description' => $data['description'] ?? null,

@@ -2,54 +2,21 @@
 @import "../common/variables.css";
 @import "../common/filters.css";
 
-/* Reset default browser styles to ensure consistent appearance across all browsers */
-*,
-html,
-body {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box; /* Makes width/height calculations include padding and border */
-}
-
-/* Enable smooth scrolling for better user experience when navigating within the page */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Base body styles that apply to the entire repair requests page */
-body {
-  font-family: var(--font-family-primary);
-  color: var(--text-primary);
-  line-height: 1.6; /* Comfortable reading line height */
-  -webkit-font-smoothing: antialiased; /* Better font rendering on Mac/iOS */
-  -moz-osx-font-smoothing: grayscale; /* Better font rendering on Firefox */
-  overflow-x: hidden; /* Prevent horizontal scrollbar */
-  min-height: 100vh; /* Ensure page fills viewport height */
-}
-
-/* Main container that holds the sidebar and content area using flexbox layout */
-.dashboard-container {
-  display: flex;
-  min-height: 100vh; /* Full viewport height */
-  background: transparent;
-}
-
-/* Main content area where repair requests are displayed */
-.main-content {
-  flex: 1; /* Take up remaining space after sidebar */
-  margin-left: var(--sidebar-width); /* Push content right to make room for sidebar */
-  margin-top: var(--header-height); /* Push content down to make room for top navigation */
+/* Repair Requests Container - matches the pattern used by projects, workforce, etc. */
+.repair-requests-container {
+  flex: 1;
   padding: var(--spacing-xl);
-  transition: margin-left var(--transition-normal); /* Smooth animation when sidebar opens/closes */
-  height: calc(100vh - var(--header-height)); /* Full height minus header */
-  overflow-y: auto; /* Enable vertical scrolling for long content */
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%); /* Beautiful gradient background */
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+  border-radius: var(--border-radius-xl) var(--border-radius-xl) 0 0;
+  height: calc(100vh - var(--header-height));
+  overflow-y: scroll;
+  box-shadow: var(--shadow-md);
+  margin: var(--header-height) 0 0 var(--sidebar-width);
   scroll-behavior: smooth;
-  border-radius: var(--border-radius-xl);
 }
 
-/* Adjust content margin when sidebar is collapsed to save screen space */
-#sidebar-toggle:checked~.dashboard-container .main-content {
+/* Adjust container margin when sidebar is collapsed */
+#sidebar-toggle:checked ~ .dashboard-container .repair-requests-container {
   margin-left: var(--sidebar-collapsed-width);
 }
 

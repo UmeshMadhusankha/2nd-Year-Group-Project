@@ -29,8 +29,8 @@ class Repairer {
                     r.dateJoined,
                     c.name as category_name,
                     'individual' as provider_type
-                FROM Repairer r
-                LEFT JOIN Category c ON r.category_id = c.category_id
+                FROM repairer r
+                LEFT JOIN category c ON r.category_id = c.category_id
                 WHERE r.availability = 'available'
                 ORDER BY r.ratings DESC, r.completedJobsCount DESC
                 LIMIT ? OFFSET ?
@@ -66,8 +66,8 @@ class Repairer {
                     r.dateJoined,
                     c.name as category_name,
                     'individual' as provider_type
-                FROM Repairer r
-                LEFT JOIN Category c ON r.category_id = c.category_id
+                FROM repairer r
+                LEFT JOIN category c ON r.category_id = c.category_id
                 WHERE 1=1
             ";
             
@@ -130,8 +130,8 @@ class Repairer {
                     r.category_id,
                     c.name as category_name,
                     'individual' as provider_type
-                FROM Repairer r
-                LEFT JOIN Category c ON r.category_id = c.category_id
+                FROM repairer r
+                LEFT JOIN category c ON r.category_id = c.category_id
                 WHERE r.repairer_id = ?
             ");
             
@@ -148,7 +148,7 @@ class Repairer {
      */
     public function getCount($filters = []) {
         try {
-            $sql = "SELECT COUNT(*) as total FROM Repairer r WHERE 1=1";
+            $sql = "SELECT COUNT(*) as total FROM repairer r WHERE 1=1";
             $params = [];
             
             if (!empty($filters['category_id'])) {
@@ -198,6 +198,87 @@ class Repairer {
         } catch (PDOException $e) {
             error_log('Error getting review summary: ' . $e->getMessage());
             return ['average' => 0.0, 'count' => 0];
+        }
+    }
+
+    /**
+     * Update repairer profile details.
+     */
+    public function updateProfile($repairerId, $data) {
+        try {
+            // Split full_name into f_name and l_name
+            $nameParts = explode(' ', trim($data['full_name']), 2);
+            $fName = $nameParts[0];
+            $lName = isset($nameParts[1]) ? $nameParts[1] : '';
+
+            $stmt = $this->pdo->prepare("
+                UPDATE repairer SET
+                    f_name = ?,
+                    l_name = ?,
+                    email = ?,
+                    phoneNumber = ?,
+                    category_id = ?,
+                    districts = ?,
+                    availability = ?,
+                    about = ?
+                WHERE repairer_id = ?
+            ");
+
+            return $stmt->execute([
+                $fName,
+                $lName,
+                $data['email'],
+                $data['phone'],
+                $data['category_id'] ?: null,
+                $data['districts'],
+                $data['availability'],
+                $data['about'] ?? null,
+                $repairerId
+            ]);
+        } catch (PDOException $e) {
+            error_log("Error updating repairer profile: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update repairer password.
+     */
+    public function updatePassword($repairerId, $newPasswordHash) {
+        try {
+            $stmt = $this->pdo->prepare("UPDATE repairer SET password = ? WHERE repairer_id = ?");
+            return $stmt->execute([$newPasswordHash, $repairerId]);
+        } catch (PDOException $e) {
+            error_log("Error updating repairer password: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get repairer's current password hash for verification.
+     */
+    public function getPasswordHash($repairerId) {
+        try {
+            $stmt = $this->pdo->prepare("SELECT password FROM repairer WHERE repairer_id = ?");
+            $stmt->execute([$repairerId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $row ? $row['password'] : null;
+        } catch (PDOException $e) {
+            error_log("Error getting repairer password: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Update repairer profile picture path.
+     */
+    public function updateProfilePicture($repairerId, $picturePath) {
+        try {
+            $stmt = $this->pdo->prepare("UPDATE repairer SET profilePicture = ? WHERE repairer_id = ?");
+            return $stmt->execute([$picturePath, $repairerId]);
+        } catch (PDOException $e) {
+            error_log("Error updating profile picture: " . $e->getMessage());
+            return false;
         }
     }
 
