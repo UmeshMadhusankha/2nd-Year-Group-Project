@@ -329,24 +329,10 @@ function escapeHtml(text) {
 }
 
 /**
- * Contact repairer - Opens chat
- */
-function contactRepairer() {
-    alert('Opening chat... (This will redirect to chat page in the actual application)');
-}
-
-/**
  * Request quote from repairer
  */
 function requestQuote() {
     alert('Opening quote request form... (This will redirect to post job page in the actual application)');
-}
-
-/**
- * View full profile page
- */
-function viewFullProfile() {
-    alert('Opening full profile page... (This will redirect to provider page in the actual application)');
 }
 
 // Close modal on ESC key

@@ -213,10 +213,14 @@ $isLoggedIn = isLoggedIn();
         </div>
     </footer>
 
+    <!-- Company Profile Popup -->
+    <?php include 'company-profile-popup.php'; ?>
+
     <!-- Repairer Profile Popup -->
     <?php include 'repairer-profile-popup.php'; ?>
 
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/landing.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/company-profile-popup.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/repairer-profile-popup.js"></script>
 </body>
 </html>
