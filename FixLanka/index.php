@@ -2,9 +2,32 @@
 // filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\index.php
 require_once __DIR__ . '/config/session.php';
 
+// Check if query parameter routing is being used (for Account Moderation)
+if (isset($_GET['page'])) {
+    require_once __DIR__ . '/config/database.php';
+    
+    $page = $_GET['page'];
+    
+    switch ($page) {
+        case 'accountModeration':
+            require_once __DIR__ . '/models/AccountModerationModel.php';
+            require_once __DIR__ . '/controllers/AccountModerationController.php';
+            
+            $controller = new AccountModerationController($pdo);
+            $controller->handleRequest();
+            exit;
+            break;
+        
+        default:
+            // Continue to path-based routing below
+            break;
+    }
+}
+
+// Original path-based routing
 $request = $_SERVER['REQUEST_URI'];
 $request = str_replace('/2nd-Year-Group-Project/FixLanka', '', $request);
-$request = strtok($request, '?'); // Remove query string
+$request = strtok($request, '?');
 
 switch ($request) {
     case '/':
@@ -95,6 +118,14 @@ switch ($request) {
         require_once __DIR__ . '/views/admin/alerts.php';
         break;
     
+    // ✅ NEW: Admin Alert Actions Route (Handles Create, Update, Delete, Toggle)
+    case '/admin-alerts-action':
+        require_once __DIR__ . '/controllers/AdminAlertController.php';
+        $controller = new AdminAlertController();
+        $controller->handleRequest();
+        exit;
+        break;
+    
     case '/admin-analytics':
         require_once __DIR__ . '/views/admin/analytics.php';
         break;
@@ -114,6 +145,15 @@ switch ($request) {
     case '/admin-moderators':
         require_once __DIR__ . '/views/admin/moderators.php';
         break;
+
+// ✅ NEW ROUTE: Moderator Actions Handler
+case '/admin-moderators-action':
+    require_once __DIR__ . '/config/databse.php';
+    require_once __DIR__ . '/controllers/ModeratorController.php';
+    $controller = new ModeratorController();
+    $controller->handleRequest();
+    exit;
+    break;
     
     case '/moderator-dashboard':
         require_once __DIR__ . '/views/moderator/dashboard.php';
@@ -127,10 +167,14 @@ switch ($request) {
         require_once __DIR__ . '/views/moderator/ads.php';
         break;
     
-    case '/moderator-static-content':
-        require_once __DIR__ . '/views/moderator/static-content.php';
-        break;
     
+case '/moderator-static-content':
+    require_once __DIR__ . '/models/StaticContentModel.php';
+    require_once __DIR__ . '/controllers/StaticContentController.php';
+    $controller = new StaticContentController();
+    $controller->handleRequest();
+    break;
+
     case '/moderator-ad-schedule':
         require_once __DIR__ . '/views/moderator/ad-schedule.php';
         break;

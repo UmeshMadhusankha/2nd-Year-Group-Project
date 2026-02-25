@@ -1,197 +1,201 @@
 <?php
-// Start session only if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Include components
 require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
 require_once __DIR__ . '/_components/Common.php';
-require_once __DIR__ . '/../../includes/admin-modarator/auth.php';
-require_once __DIR__ . '/../../includes/admin-modarator/mock-data.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../controllers/ModeratorDashboardController.php';
 
-// Check if user is logged in and get user info
-// $isLoggedIn = isLoggedIn();
-// $user = $isLoggedIn ? getCurrentUser() : null;
-// requireRole("admin", $basePath);
-// $user = getCurrentUser();
+try {
+    $pdo = getDatabaseConnection();
+    $controller = new ModeratorDashboardController($pdo);
+    
+    $dashboardData = $controller->getDashboardData();
+    $dashboardStats = $controller->getFormattedStats();
+    $recentActivity = $dashboardData['recentActivity'];
+    $activityOverview = $dashboardData['activityOverview'];
+} catch (Exception $e) {
+    die("⛔ Database Error: " . htmlspecialchars($e->getMessage()));
+}
 
-$basePath = '';
-$currentPath = 'dashboard';
 $message = '';
-
-// Get page title and description from variables or use defaults
-$pageTitle = $title ?? 'Advanced PHP Router';
-$pageDescription = $description ?? 'A Next.js-inspired PHP routing system with advanced features';
+$basePath = '';
+$currentPath = '/2nd-Year-Group-Project/FixLanka/admin-dashboard';
+$pageTitle = 'Admin Dashboard - FixLanka';
+$pageDescription = 'Overview of system activity and quick access to management tools';
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin/dashboard.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 </head>
-
-<body class="bg-background text-foreground">
+<body class="bg-foreground text-background">
     <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle-input">
-
     <div class="dashboard-container">
         <?php renderAdminSidebar($currentPath, $basePath); ?>
         <div class="dashboard-main">
-            <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin/dashboard.css">
+            <?php renderPageHeader($basePath, 'Admin Dashboard', 'Overview of system activity and quick access to management tools'); ?>
+            <main class="main-content">
+                <?php if ($message): ?>
+                    <div class="alert-message"><?php echo htmlspecialchars($message); ?></div>
+                <?php endif; ?>
 
-            <?php renderPageHeader($basePath, 'Admin Dashboard', 'Full Access Of the website!'); ?>
+                <div class="stats-grid">
+                    <div class="stat-card" data-color="blue">
+                        <div class="stat-card-inner">
+                            <div class="stat-info">
+                                <h4>TOTAL USERS</h4>
+                                <div class="stat-value"><?php echo number_format($dashboardStats['totalUsers']); ?></div>
+                                <div class="stat-change">+<?php echo $dashboardStats['newUsersToday']; ?> today</div>
+                            </div>
+                            <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        </div>
+                    </div>
+                    <div class="stat-card" data-color="green">
+                        <div class="stat-card-inner">
+                            <div class="stat-info">
+                                <h4>ACTIVE ADS</h4>
+                                <div class="stat-value"><?php echo number_format($dashboardStats['activeAds']); ?></div>
+                                <div class="stat-change"><?php echo $dashboardStats['adsApprovedToday']; ?> approved today</div>
+                            </div>
+                            <div class="stat-icon"><i class="fas fa-bullhorn"></i></div>
+                        </div>
+                    </div>
+                    <div class="stat-card" data-color="yellow">
+                        <div class="stat-card-inner">
+                            <div class="stat-info">
+                                <h4>PENDING REVIEWS</h4>
+                                <div class="stat-value"><?php echo number_format($dashboardStats['pendingReviews']); ?></div>
+                                <div class="stat-change"><?php echo $dashboardStats['reportsToday']; ?> reports today</div>
+                            </div>
+                            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                        </div>
+                    </div>
+                    <div class="stat-card" data-color="purple">
+                        <div class="stat-card-inner">
+                            <div class="stat-info">
+                                <h4>REVENUE</h4>
+                                <div class="stat-value">LKR <?php echo number_format($dashboardStats['totalRevenue'], 2); ?></div>
+                                <div class="stat-change">This month</div>
+                            </div>
+                            <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+                        </div>
+                    </div>
+                </div>
 
-            <main style="margin-top: 5rem;" class="main-content">
-                <div class="space-y-6">
-                    <div>
-                        <h2 class="text-3xl font-bold tracking-tight text-foreground">Dashboard Overview</h2>
-                        <p class="text-muted-foreground">Welcome to the FixLanka admin panel. Here's what's happening today.</p>
+                <div class="section-card">
+                    <h3 class="section-title"><i class="fas fa-bolt"></i> Quick Actions</h3>
+                    <div class="quick-actions-grid">
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/admin/moderators.php" class="action-card action-blue">
+                            <div class="action-icon"><i class="fas fa-user-cog"></i></div>
+                            <div class="action-content"><h4>Moderator Management</h4><p>Manage moderators</p></div>
+                        </a>
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/admin/account-moderation.php" class="action-card action-green">
+                            <div class="action-icon"><i class="fas fa-users-cog"></i></div>
+                            <div class="action-content"><h4>Account Moderation</h4><p>Moderate user accounts</p></div>
+                        </a>
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/admin/alerts.php" class="action-card action-red">
+                            <div class="action-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="action-content"><h4>Send Alerts</h4><p>Send system notifications</p></div>
+                        </a>
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/admin/issues.php" class="action-card action-orange">
+                            <div class="action-icon"><i class="fas fa-flag"></i></div>
+                            <div class="action-content"><h4>Issues & Reports</h4><p>View reported issues</p></div>
+                        </a>
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/admin/analytics.php" class="action-card action-purple">
+                            <div class="action-icon"><i class="fas fa-chart-bar"></i></div>
+                            <div class="action-content"><h4>Analytics</h4><p>View platform analytics</p></div>
+                        </a>
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/admin/ads.php" class="action-card action-indigo">
+                            <div class="action-icon"><i class="fas fa-ad"></i></div>
+                            <div class="action-content"><h4>Advertisement Review</h4><p>Review pending ads</p></div>
+                        </a>
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/admin/reports.php" class="action-card action-teal">
+                            <div class="action-icon"><i class="fas fa-file-invoice"></i></div>
+                            <div class="action-content"><h4>Financial Overview</h4><p>Revenue & transactions</p></div>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="two-column-grid">
+                    <div class="section-card">
+                        <h3 class="section-title"><i class="fas fa-chart-line"></i> Activity Overview</h3>
+                        <div class="activity-overview-list">
+                            <div class="activity-overview-item" data-color="blue">
+                                <div class="activity-overview-header">
+                                    <span class="activity-overview-label">Ad Approvals</span>
+                                    <span class="activity-overview-value"><?php echo $activityOverview['ad_approvals']; ?>%</span>
+                                </div>
+                                <div class="activity-overview-bar">
+                                    <div class="activity-overview-fill" style="width: <?php echo $activityOverview['ad_approvals']; ?>%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="activity-overview-item" data-color="orange">
+                                <div class="activity-overview-header">
+                                    <span class="activity-overview-label">Revenue Growth</span>
+                                    <span class="activity-overview-value"><?php echo $activityOverview['revenue_growth']; ?>%</span>
+                                </div>
+                                <div class="activity-overview-bar">
+                                    <div class="activity-overview-fill" style="width: <?php echo abs($activityOverview['revenue_growth']); ?>%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="activity-overview-item" data-color="purple">
+                                <div class="activity-overview-header">
+                                    <span class="activity-overview-label">System Performance</span>
+                                    <span class="activity-overview-value"><?php echo $activityOverview['system_performance']; ?>%</span>
+                                </div>
+                                <div class="activity-overview-bar">
+                                    <div class="activity-overview-fill" style="width: <?php echo $activityOverview['system_performance']; ?>%;"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="dashboard-grid grid-cols-4">
-                        <?php
-                        renderCard('Total Users', number_format($mockAnalytics['totalUsers']), '+12% from last month', 'users', 'text-fixlanka-primary');
-                        renderCard('Service Providers', number_format($mockAnalytics['serviceProviders']), 'Active providers', 'building-2', 'text-fixlanka-highlight');
-                        renderCard('Active Ads', $mockAnalytics['activeAds'], 'Currently running', 'monitor', 'text-fixlanka-primary');
-                        renderCard('Monthly Revenue', 'LKR ' . number_format($mockFinancials['monthlyRevenue'] / 1000000, 1) . 'M', '+15.2% growth', 'dollar-sign', 'text-fixlanka-highlight');
-                        ?>
-                    </div>
-
-                    <div class="dashboard-activity-grid">
-                        <div class="dashboard-system-overview">
-                            <h3 class="text-lg font-medium text-foreground">System Overview</h3>
-                            <p class="text-sm text-muted-foreground">Key metrics and performance indicators</p>
-
-                            <div class="mt-6 space-y-4">
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="space-y-2">
-                                        <p class="text-sm font-medium text-foreground">User Engagement</p>
-                                        <div class="flex items-center space-x-2">
-                                            <div class="progress-bar">
-                                                <div class="progress-fill" style="width: <?php echo $mockAnalytics['userEngagement']; ?>%"></div>
+                    <div class="section-card">
+                        <h3 class="section-title"><i class="fas fa-history"></i> Recent Activity</h3>
+                        <div class="recent-activity-list">
+                            <?php if (!empty($recentActivity)): ?>
+                                <?php foreach ($recentActivity as $activity): ?>
+                                    <div class="activity-item">
+                                        <div class="activity-icon activity-icon-<?php echo htmlspecialchars($activity['activity_type']); ?>">
+                                            <i class="fas fa-<?php echo htmlspecialchars($activity['icon']); ?>"></i>
+                                        </div>
+                                        <div class="activity-details">
+                                            <div class="activity-text">
+                                                <?php echo htmlspecialchars($activity['description']); ?>
+                                                <span class="badge-<?php echo htmlspecialchars($activity['user_role']); ?>" style="margin-left: 8px; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: <?php echo $activity['user_role'] === 'admin' ? '#dc2626' : '#2563eb'; ?>; color: white;">
+                                                    <?php echo strtoupper($activity['user_role']); ?>
+                                                </span>
                                             </div>
-                                            <span class="text-sm text-muted-foreground"><?php echo $mockAnalytics['userEngagement']; ?>%</span>
+                                            <div class="activity-time"><?php echo $controller->formatDateTime($activity['created_at']); ?></div>
                                         </div>
                                     </div>
-                                    <div class="space-y-2">
-                                        <p class="text-sm font-medium text-foreground">Revenue Growth</p>
-                                        <div class="flex items-center space-x-2">
-                                            <div class="progress-bar">
-                                                <div class="progress-fill" style="width: <?php echo $mockAnalytics['revenueGrowth'] * 5; ?>%"></div>
-                                            </div>
-                                            <span class="text-sm text-muted-foreground">+<?php echo $mockAnalytics['revenueGrowth']; ?>%</span>
-                                        </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="activity-item">
+                                    <div class="activity-icon activity-icon-system">
+                                        <i class="fas fa-info-circle"></i>
+                                    </div>
+                                    <div class="activity-details">
+                                        <div class="activity-text">No recent activity available</div>
+                                        <div class="activity-time"><?php echo date('d M Y, h:i A'); ?></div>
                                     </div>
                                 </div>
-                                <div class="pt-4">
-                                    <div class="flex items-center justify-between w-full">
-                                        <span class="text-sm font-medium text-foreground">Pending Withdrawals</span>
-                                        <?php renderBadge('LKR ' . number_format($mockFinancials['pendingWithdrawals'] / 1000) . 'K', 'outline'); ?>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="dashboard-recent-activity">
-                            <h3 class="text-lg font-medium text-foreground">Recent Activity</h3>
-                            <p class="text-sm text-muted-foreground">Latest system activities and updates</p>
-
-                            <div class="mt-6 space-y-4">
-                                <?php
-                                $recentActivity = [
-                                    ['action' => 'New service provider registered', 'time' => '2 minutes ago', 'type' => 'user'],
-                                    ['action' => 'Advertisement approved', 'time' => '15 minutes ago', 'type' => 'ad'],
-                                    ['action' => 'Issue reported and resolved', 'time' => '1 hour ago', 'type' => 'issue'],
-                                    ['action' => 'Financial report generated', 'time' => '2 hours ago', 'type' => 'finance']
-                                ];
-
-                                foreach ($recentActivity as $activity) {
-                                    $iconMap = [
-                                        'user' => 'users',
-                                        'ad' => 'monitor',
-                                        'issue' => 'alert-triangle',
-                                        'finance' => 'dollar-sign'
-                                    ];
-                                    $colorMap = [
-                                        'user' => 'text-fixlanka-primary',
-                                        'ad' => 'text-fixlanka-primary',
-                                        'issue' => 'text-fixlanka-error',
-                                        'finance' => 'text-fixlanka-highlight'
-                                    ];
-
-                                    echo '<div class="dashboard-activity-item">';
-                                    echo '<div class="flex-shrink-0">';
-                                    echo '<i data-lucide="' . $iconMap[$activity['type']] . '" class="h-4 w-4 ' . $colorMap[$activity['type']] . '"></i>';
-                                    echo '</div>';
-                                    echo '<div class="flex-1 min-w-0">';
-                                    echo '<p class="text-sm font-medium text-foreground">' . $activity['action'] . '</p>';
-                                    echo '<p class="text-xs text-muted-foreground">' . $activity['time'] . '</p>';
-                                    echo '</div>';
-                                    echo '</div>';
-                                }
-                                ?>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="dashboard-quick-actions">
-                        <div class="card">
-                            <div class="p-6">
-                                <h3 class="text-lg font-medium text-foreground flex items-center gap-2">
-                                    <i data-lucide="trending-up" class="h-5 w-5 text-fixlanka-primary"></i>
-                                    Quick Actions
-                                </h3>
-                                <div class="mt-4 grid grid-cols-2 gap-2">
-                                    <?php
-                                    renderBadge('Send Alert', 'secondary');
-                                    renderBadge('Review Ads', 'secondary');
-                                    renderBadge('User Management', 'secondary');
-                                    renderBadge('Generate Report', 'secondary');
-                                    ?>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <div class="p-6">
-                                <h3 class="text-lg font-medium text-foreground">System Health</h3>
-                                <div class="dashboard-health-indicators mt-4">
-                                    <div class="dashboard-health-item">
-                                        <span class="text-sm text-foreground">Server Status</span>
-                                        <?php renderBadge('Online', 'default'); ?>
-                                    </div>
-                                    <div class="dashboard-health-item">
-                                        <span class="text-sm text-foreground">Database</span>
-                                        <?php renderBadge('Healthy', 'default'); ?>
-                                    </div>
-                                    <div class="dashboard-health-item">
-                                        <span class="text-sm text-foreground">Payment Gateway</span>
-                                        <?php renderBadge('Active', 'default'); ?>
-                                    </div>
-                                    <div class="dashboard-health-item">
-                                        <span class="text-sm text-foreground">Backup Status</span>
-                                        <?php renderBadge('Last: 2h ago', 'outline'); ?>
-                                    </div>
-                                </div>
-                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
             </main>
-            <script>
-                lucide.createIcons();
-            </script>
         </div>
     </div>
-    <script>
-        lucide.createIcons();
-    </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
 </body>
-
 </html>
-
