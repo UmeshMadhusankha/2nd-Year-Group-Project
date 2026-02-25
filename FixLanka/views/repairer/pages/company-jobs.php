@@ -239,7 +239,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                         <i class="fas fa-calendar-check"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="completedJobsCount">—</span>
+                                        <span class="stat-number" id="completed_jobs_count">27</span>
                                         <span class="stat-label">Completed Jobs</span>
                                     </div>
                                 </div>

@@ -115,7 +115,7 @@ function handlePost($model) {
     }
     
     // Validate required fields
-    $required = ['company_id', 'first_name', 'last_name', 'specialty'];
+    $required = ['company_id', 'repairer_id'];
     foreach ($required as $field) {
         if (!isset($data[$field]) || empty($data[$field])) {
             http_response_code(400);
@@ -167,7 +167,7 @@ function handlePut($model) {
     }
     
     // Full update
-    $required = ['first_name', 'last_name', 'specialty'];
+    $required = ['job_title'];
     foreach ($required as $field) {
         if (!isset($data[$field]) || empty($data[$field])) {
             http_response_code(400);

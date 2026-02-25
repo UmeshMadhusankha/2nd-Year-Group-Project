@@ -17,13 +17,20 @@ let cachedMessages = [];
 // INITIALIZATION
 // ================================================
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Load initial tab content (Browse Jobs)
-    loadJobPostings();
+document.addEventListener('DOMContentLoaded', function () {
+    const currentPage = window.location.pathname;
 
-    // Update all tab stats for badges
-    updateApplicationStats();
-    updateContractStats();
+    if (currentPage.includes('job-postings.php')) {
+        loadJobPostings();
+    } else if (currentPage.includes('my-applications.php')) {
+        loadApplications();
+        updateApplicationStats();
+    } else if (currentPage.includes('my-contracts.php')) {
+        loadContracts();
+        loadAssignments();
+        loadMessages();
+        updateContractStats();
+    }
 
     // Initialize cover letter character counter
     const coverLetterInput = document.getElementById('coverLetter');
@@ -81,6 +88,17 @@ async function loadJobPostings() {
                     <i class="fas fa-sync-alt"></i> Try Again
                 </button>
             </div>`;
+    jobsGrid.innerHTML = '';
+
+    jobPostingsData.forEach(job => {
+        const jobCard = createJobCard(job);
+        jobsGrid.appendChild(jobCard);
+    });
+
+    // Update job count
+    const jobCountEl = document.getElementById('jobCount');
+    if (jobCountEl) {
+        jobCountEl.textContent = `${jobPostingsData.length} jobs available`;
     }
 }
 
@@ -92,15 +110,9 @@ function getCompanyInitials(name) {
 function createJobCard(job) {
     const card = document.createElement('div');
     card.className = 'job-card';
-    card.dataset.category = (job.category || '').toLowerCase();
-    card.onclick = () => viewJobDetails(job.posting_id);
+    card.onclick = () => viewJobDetails(job.id);
 
-    const priority      = (job.priority_level || 'medium').toLowerCase();
-    const priorityLabel = priority.charAt(0).toUpperCase() + priority.slice(1);
-    const badgeClass    = priority === 'urgent' ? 'urgent' : 'active';
-    const avatar        = getCompanyInitials(job.company_name);
-    const budget        = `LKR ${Number(job.min_budget).toLocaleString()} - ${Number(job.max_budget).toLocaleString()}/hr`;
-    const appCount      = job.application_count || 0;
+    const priorityBadge = job.priority === 'Urgent' ? 'urgent' : 'active';
 
     card.innerHTML = `
         <div class="job-card-header">
@@ -126,47 +138,36 @@ function createJobCard(job) {
             </button>
         </div>
     `;
+
     return card;
 }
 
-async function viewJobDetails(postingId) {
-    let job = cachedJobPostings.find(j => j.posting_id == postingId);
+function viewJobDetails(jobId) {
+    const job = jobPostingsData.find(j => j.id === jobId);
+    if (!job) return;
 
-    if (!job) {
-        try {
-            const res  = await fetch(`${API_BASE}/job-postings.php?action=get&posting_id=${postingId}`);
-            const data = await res.json();
-            if (!data.success) throw new Error(data.error);
-            job = data.posting;
-        } catch (err) {
-            showNotification('Failed to load job details', 'error');
-            return;
-        }
-    }
+    // Populate drawer with job details
+    document.getElementById('jobCompanyAvatar').textContent = job.companyAvatar;
+    document.getElementById('jobDetailTitle').textContent = job.title;
+    document.getElementById('jobCompanyName').textContent = job.company;
+    document.getElementById('jobPostedDate').textContent = `Posted ${getRelativeTime(job.postedDate)}`;
+    document.getElementById('jobApplicationCount').textContent = `${job.applicationCount} applicants`;
+    document.getElementById('jobLocation').textContent = job.location;
+    document.getElementById('jobCategory').textContent = job.category.toUpperCase();
+    document.getElementById('jobEmploymentType').textContent = job.employmentType;
+    document.getElementById('jobBudget').textContent = job.budget;
+    document.getElementById('jobExperience').textContent = job.experience;
+    document.getElementById('jobPriority').textContent = job.priority;
+    document.getElementById('jobDeadline').textContent = job.deadline;
+    document.getElementById('jobDescription').textContent = job.description;
+    document.getElementById('jobLocationRequirements').textContent = job.locationRequirements;
 
-    const expMap = { entry: 'Entry Level', junior: 'Junior (1-2 yrs)', mid: 'Mid Level (3-5 yrs)', senior: 'Senior (5+ yrs)', expert: 'Expert (8+ yrs)' };
-    const budget = `LKR ${Number(job.min_budget).toLocaleString()} - ${Number(job.max_budget).toLocaleString()}/hr`;
-
-    document.getElementById('jobCompanyAvatar').textContent    = getCompanyInitials(job.company_name);
-    document.getElementById('jobDetailTitle').textContent      = job.title || '';
-    document.getElementById('jobCompanyName').textContent      = job.company_name || '';
-    document.getElementById('jobPostedDate').textContent       = `Posted ${getRelativeTime(job.posted_date)}`;
-    document.getElementById('jobApplicationCount').textContent = `${job.application_count || 0} applicants`;
-    document.getElementById('jobLocation').textContent         = job.location || '';
-    document.getElementById('jobCategory').textContent         = (job.category || '').toUpperCase();
-    document.getElementById('jobEmploymentType').textContent   = job.employment_type || '';
-    document.getElementById('jobBudget').textContent           = budget;
-    document.getElementById('jobExperience').textContent       = expMap[job.min_experience] || job.min_experience || '';
-    document.getElementById('jobPriority').textContent         = job.priority_level || '';
-    document.getElementById('jobDeadline').textContent         = job.application_deadline ? formatDate(job.application_deadline) : 'No deadline';
-    document.getElementById('jobDescription').textContent      = job.description || '';
-    document.getElementById('jobLocationRequirements').textContent = job.location_requirements || 'None specified';
-
+    // Update status badge
     const statusBadge = document.getElementById('jobStatusBadge');
-    const status = job.status || 'open';
-    statusBadge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
-    statusBadge.className   = `job-badge ${status}`;
+    statusBadge.textContent = job.status.charAt(0).toUpperCase() + job.status.slice(1);
+    statusBadge.className = `job-badge ${job.status}`;
 
+    // Populate skills
     const skillsContainer = document.getElementById('jobSkillsTags');
     skillsContainer.innerHTML = '';
     const skills = job.required_skills ? job.required_skills.split(',').map(s => s.trim()).filter(Boolean) : [];
@@ -177,7 +178,10 @@ async function viewJobDetails(postingId) {
         skillsContainer.appendChild(tag);
     });
 
-    document.getElementById('jobDetailsDrawer').dataset.jobId = postingId;
+    // Store job ID for application
+    document.getElementById('jobDetailsDrawer').dataset.jobId = jobId;
+
+    // Open drawer
     document.getElementById('jobDetailsDrawer').classList.add('active');
 }
 
@@ -190,12 +194,18 @@ function openApplicationForm() {
     const job = cachedJobPostings.find(j => j.posting_id == postingId);
     if (!job) return;
 
-    const budget = `LKR ${Number(job.min_budget).toLocaleString()} - ${Number(job.max_budget).toLocaleString()}/hr`;
-    document.getElementById('applyingJobTitle').textContent    = job.title;
-    document.getElementById('applyingCompanyName').textContent = job.company_name || '';
+    // Populate application form
+    document.getElementById('applyingJobTitle').textContent = job.title;
+    document.getElementById('applyingCompanyName').textContent = job.company;
+    document.getElementById('jobBudgetRange').textContent = job.budget;
 
-    document.getElementById('applicationFormDrawer').dataset.jobId = postingId;
+    // Store job ID
+    document.getElementById('applicationFormDrawer').dataset.jobId = jobId;
+
+    // Close job details drawer
     closeJobDetailsDrawer();
+
+    // Open application form drawer
     document.getElementById('applicationFormDrawer').classList.add('active');
 }
 
@@ -208,37 +218,24 @@ async function submitApplication() {
     const postingId   = document.getElementById('applicationFormDrawer').dataset.jobId;
     const proposedRate = document.getElementById('proposedRate').value;
     const availability = document.getElementById('availability').value;
-    const coverLetter  = document.getElementById('coverLetter').value;
+    const coverLetter = document.getElementById('coverLetter').value;
 
     if (!proposedRate || !availability || !coverLetter) {
         showNotification('Please fill in all required fields', 'error');
         return;
     }
 
-    try {
-        const res  = await fetch(`${API_BASE}/repairer-job-applications.php?action=submit`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                repairer_id:   currentRepairerId,
-                posting_id:    parseInt(postingId),
-                proposed_rate: parseFloat(proposedRate),
-                availability:  availability,
-                cover_letter:  coverLetter
-            })
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error);
+    // In production, send to server
 
-        showNotification('Application submitted successfully!', 'success');
-        closeApplicationFormDrawer();
-        setTimeout(() => {
-            loadApplications();
-            switchMainTab('applications');
-        }, 1200);
-    } catch (err) {
-        showNotification(err.message || 'Failed to submit application', 'error');
-    }
+    showNotification('Application submitted successfully!', 'success');
+    closeApplicationFormDrawer();
+
+    // Optionally reload the applications tab
+    setTimeout(() => {
+        // Reload applications instead of redirecting to a non-existent page
+        loadApplicationsList();
+        switchMainTab('applications');
+    }, 1500);
 }
 
 function updateCoverLetterCount() {
@@ -250,7 +247,13 @@ function updateCoverLetterCount() {
 }
 
 function filterJobsByCategory(category) {
-    // Filter cards using the data-category attribute set during rendering
+    // Update active filter button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    // Filter jobs
     const jobCards = document.querySelectorAll('.job-card');
     jobCards.forEach(card => {
         if (category === 'all') {
@@ -265,7 +268,7 @@ function filterJobsByCategory(category) {
 function searchJobs() {
     const searchTerm = document.getElementById('jobSearchInput').value.toLowerCase();
     const jobCards = document.querySelectorAll('.job-card');
-    
+
     jobCards.forEach(card => {
         const text = card.textContent.toLowerCase();
         card.style.display = text.includes(searchTerm) ? 'block' : 'none';
@@ -285,60 +288,43 @@ async function loadApplications() {
     const applicationsList = document.getElementById('applicationsList');
     if (!applicationsList) return;
 
-    applicationsList.innerHTML = `
-        <div style="text-align:center; padding:40px 20px; color:var(--text-secondary);">
-            <i class="fas fa-spinner fa-spin" style="font-size:32px;"></i>
-            <p>Loading applications...</p>
-        </div>`;
+    applicationsList.innerHTML = '';
 
-    try {
-        const res  = await fetch(`${API_BASE}/repairer-job-applications.php?action=my-list&repairer_id=${currentRepairerId}`);
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error || 'Failed to load applications');
-
-        cachedApplications = data.applications || [];
-        applicationsList.innerHTML = '';
-
-        if (cachedApplications.length === 0) {
-            applicationsList.innerHTML = `
-                <div style="text-align:center; padding:60px 20px; color:var(--text-secondary);">
-                    <i class="fas fa-inbox" style="font-size:64px; opacity:0.3; margin-bottom:16px;"></i>
-                    <h3>No Applications Yet</h3>
-                    <p>You haven't submitted any job applications. Browse available jobs to get started!</p>
-                    <button class="btn btn-primary" onclick="switchMainTab('browse')" style="margin-top:16px;">
-                        <i class="fas fa-search"></i> Browse Jobs
-                    </button>
-                </div>`;
-        } else {
-            cachedApplications.forEach(app => applicationsList.appendChild(createApplicationCard(app)));
-        }
-
-        const appCountEl = document.getElementById('appCount');
-        if (appCountEl) appCountEl.textContent = `${cachedApplications.length} application${cachedApplications.length !== 1 ? 's' : ''} submitted`;
-
-        updateApplicationStats();
-
-    } catch (err) {
-        console.error('loadApplications error:', err);
+    if (applicationsData.length === 0) {
         applicationsList.innerHTML = `
-            <div style="text-align:center; padding:60px 20px; color:var(--text-secondary);">
-                <i class="fas fa-exclamation-circle" style="font-size:64px; opacity:0.3;"></i>
-                <h3>Failed to Load Applications</h3>
-                <p>${err.message}</p>
-            </div>`;
+            <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                <i class="fas fa-inbox" style="font-size: 64px; opacity: 0.3; margin-bottom: 16px;"></i>
+                <h3>No Applications Yet</h3>
+                <p>You haven't submitted any job applications. Browse available jobs to get started!</p>
+                <button class="btn btn-primary" onclick="switchMainTab('browse')" style="margin-top: 16px;">
+                    <i class="fas fa-search"></i> Browse Jobs
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    applicationsData.forEach(app => {
+        const appCard = createApplicationCard(app);
+        applicationsList.appendChild(appCard);
+    });
+
+    // Update application count
+    const appCountEl = document.getElementById('appCount');
+    if (appCountEl) {
+        appCountEl.textContent = `${applicationsData.length} applications submitted`;
     }
 }
 
 function createApplicationCard(app) {
     const card = document.createElement('div');
     card.className = 'application-card';
-    card.dataset.appId = app.app_id;
-    card.onclick = () => viewApplicationDetails(app.app_id);
+    card.onclick = () => viewApplicationDetails(app.id);
 
-    const status    = (app.app_status || 'pending').toLowerCase();
-    const iconClass = status === 'accepted' ? 'accepted' : status === 'rejected' ? 'rejected' : 'pending';
-    const icon      = status === 'accepted' ? 'fa-check-circle' : status === 'rejected' ? 'fa-times-circle' : 'fa-clock';
-    const budget    = `LKR ${Number(app.min_budget).toLocaleString()} - ${Number(app.max_budget).toLocaleString()}/hr`;
+    const iconClass = app.status === 'pending' ? 'pending' :
+        app.status === 'accepted' ? 'accepted' : 'rejected';
+    const icon = app.status === 'pending' ? 'fa-clock' :
+        app.status === 'accepted' ? 'fa-check-circle' : 'fa-times-circle';
 
     card.innerHTML = `
         <div class="application-icon ${iconClass}">
@@ -362,10 +348,10 @@ function viewApplicationDetails(appId) {
     const app = cachedApplications.find(a => a.app_id == appId);
     if (!app) return;
 
-    const status = (app.app_status || 'pending').toLowerCase();
-    const statusBanner  = document.getElementById('appStatusBanner');
-    const statusIcon    = document.getElementById('appStatusIcon');
-    const statusTitle   = document.getElementById('appStatusTitle');
+    // Update status banner
+    const statusBanner = document.getElementById('appStatusBanner');
+    const statusIcon = document.getElementById('appStatusIcon');
+    const statusTitle = document.getElementById('appStatusTitle');
     const statusMessage = document.getElementById('appStatusMessage');
 
     statusBanner.className = 'application-status-banner';
@@ -385,21 +371,22 @@ function viewApplicationDetails(appId) {
         statusMessage.textContent = 'Your application is being reviewed by the company.';
     }
 
-    const budget = `LKR ${Number(app.min_budget).toLocaleString()} - ${Number(app.max_budget).toLocaleString()}/hr`;
-    document.getElementById('appJobTitle').textContent    = app.title || '';
-    document.getElementById('appCompanyName').textContent = app.company_name || '';
-    document.getElementById('appJobCategory').textContent = (app.category || '').toUpperCase();
-    document.getElementById('appJobBudget').textContent   = budget;
-    document.getElementById('appAppliedDate').textContent = formatDate(app.date_applied);
-    document.getElementById('appProposedRate').textContent = budget;
-    document.getElementById('appAvailability').textContent = '';
-    document.getElementById('appCoverLetter').textContent  = '';
+    // Populate application details
+    document.getElementById('appJobTitle').textContent = app.jobTitle;
+    document.getElementById('appCompanyName').textContent = app.company;
+    document.getElementById('appJobCategory').textContent = app.category.toUpperCase();
+    document.getElementById('appJobBudget').textContent = app.jobBudget;
+    document.getElementById('appAppliedDate').textContent = formatDate(app.appliedDate);
+    document.getElementById('appProposedRate').textContent = `LKR ${app.proposedRate.toLocaleString()}/hr`;
+    document.getElementById('appAvailability').textContent = app.availability;
+    document.getElementById('appCoverLetter').textContent = app.coverLetter;
 
+    // Update status badge
     const statusBadge = document.getElementById('appStatusBadge');
-    statusBadge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
-    statusBadge.className   = `status-badge ${status}`;
+    statusBadge.textContent = app.status.charAt(0).toUpperCase() + app.status.slice(1);
+    statusBadge.className = `status-badge ${app.status}`;
 
-    // Build simple timeline
+    // Populate timeline
     const timeline = document.getElementById('appTimeline');
     timeline.innerHTML = '';
     const items = [{ event: 'Application Submitted', date: formatDate(app.date_applied) }];
@@ -411,10 +398,12 @@ function viewApplicationDetails(appId) {
         timeline.appendChild(ti);
     });
 
+    // Show/hide withdraw button
     const withdrawBtn = document.getElementById('withdrawBtn');
-    withdrawBtn.style.display = status === 'pending' ? 'inline-flex' : 'none';
-    withdrawBtn.onclick = () => withdrawApplication(app.app_id);
+    withdrawBtn.style.display = app.status === 'pending' ? 'inline-flex' : 'none';
+    withdrawBtn.onclick = () => withdrawApplication(app.id);
 
+    // Open drawer
     document.getElementById('applicationDetailsDrawer').classList.add('active');
 }
 
@@ -440,6 +429,17 @@ async function withdrawApplication(appId) {
     } catch (err) {
         showNotification(err.message || 'Failed to withdraw application', 'error');
     }
+
+    // In production, send to server
+
+    showNotification('Application withdrawn successfully', 'success');
+    closeApplicationDetailsDrawer();
+
+    // Refresh applications
+    setTimeout(() => {
+        loadApplications();
+        updateApplicationStats();
+    }, 500);
 }
 
 function filterApplications(status, clickedEl) {
@@ -447,9 +447,9 @@ function filterApplications(status, clickedEl) {
     document.querySelectorAll('#applicationsTab .filter-chip').forEach(chip => {
         chip.classList.remove('active');
     });
-    if (clickedEl) clickedEl.classList.add('active');
+    event.target.classList.add('active');
 
-    // Filter application cards
+    // Filter applications
     const appCards = document.querySelectorAll('.application-card');
     appCards.forEach(card => {
         if (status === 'all') {
@@ -464,7 +464,7 @@ function filterApplications(status, clickedEl) {
 function searchApplications() {
     const searchTerm = document.getElementById('applicationSearchInput').value.toLowerCase();
     const appCards = document.querySelectorAll('.application-card');
-    
+
     appCards.forEach(card => {
         const text = card.textContent.toLowerCase();
         card.style.display = text.includes(searchTerm) ? 'flex' : 'none';
@@ -472,22 +472,20 @@ function searchApplications() {
 }
 
 function updateApplicationStats() {
-    const pending  = cachedApplications.filter(a => (a.app_status || '').toLowerCase() === 'pending').length;
-    const accepted = cachedApplications.filter(a => (a.app_status || '').toLowerCase() === 'accepted').length;
-    const rejected = cachedApplications.filter(a => (a.app_status || '').toLowerCase() === 'rejected').length;
-    const total    = cachedApplications.length;
+    const pending = applicationsData.filter(a => a.status === 'pending').length;
+    const accepted = applicationsData.filter(a => a.status === 'accepted').length;
+    const rejected = applicationsData.filter(a => a.status === 'rejected').length;
+    const total = applicationsData.length;
 
-    const el = id => document.getElementById(id);
-    if (el('pendingCount'))  el('pendingCount').textContent  = pending;
-    if (el('acceptedCount')) el('acceptedCount').textContent = accepted;
-    if (el('rejectedCount')) el('rejectedCount').textContent = rejected;
-    if (el('totalCount'))    el('totalCount').textContent    = total;
+    const pendingEl = document.getElementById('pendingCount');
+    const acceptedEl = document.getElementById('acceptedCount');
+    const rejectedEl = document.getElementById('rejectedCount');
+    const totalEl = document.getElementById('totalCount');
 
-    const badge = document.getElementById('applicationsBadge');
-    if (badge) {
-        badge.textContent     = total;
-        badge.style.display   = total > 0 ? 'inline-block' : 'none';
-    }
+    if (pendingEl) pendingEl.textContent = pending;
+    if (acceptedEl) acceptedEl.textContent = accepted;
+    if (rejectedEl) rejectedEl.textContent = rejected;
+    if (totalEl) totalEl.textContent = total;
 }
 
 function refreshApplications() {
@@ -504,47 +502,102 @@ async function loadContracts() {
     const contractsGrid = document.getElementById('contractsGrid');
     if (!contractsGrid) return;
 
-    contractsGrid.innerHTML = `
-        <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--text-secondary);">
-            <i class="fas fa-spinner fa-spin" style="font-size:32px; margin-bottom:12px;"></i>
-            <p>Loading contracts...</p>
-        </div>`;
+    contractsGrid.innerHTML = '';
 
-    try {
-        const res  = await fetch(`${API_BASE}/repairer-job-applications.php?action=my-list&repairer_id=${currentRepairerId}`);
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error || 'Failed to load contracts');
+    contractsData.forEach(contract => {
+        const contractCard = createContractCard(contract);
+        contractsGrid.appendChild(contractCard);
+    });
+}
 
-        cachedContracts = (data.applications || []).filter(a => (a.app_status || '').toLowerCase() === 'accepted');
-        contractsGrid.innerHTML = '';
+function createContractCard(contract) {
+    const card = document.createElement('div');
+    card.className = 'contract-card';
+    card.onclick = () => viewContractDetails(contract.id);
 
-        if (cachedContracts.length === 0) {
-            contractsGrid.innerHTML = `
-                <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--text-secondary);">
-                    <i class="fas fa-handshake" style="font-size:64px; opacity:0.3; margin-bottom:16px;"></i>
-                    <h3>No Active Contracts</h3>
-                    <p>Contracts will appear here once a company accepts your application.</p>
-                </div>`;
-        } else {
-            cachedContracts.forEach(contract => contractsGrid.appendChild(createContractCard(contract)));
-        }
+    card.innerHTML = `
+        <div class="contract-header">
+            <div class="company-avatar">${contract.companyAvatar}</div>
+            <div>
+                <h4>${contract.company}</h4>
+                <p style="color: var(--text-secondary); font-size: 14px;">${contract.role}</p>
+            </div>
+        </div>
+        <div style="margin: 12px 0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: var(--text-secondary); font-size: 14px;">Progress</span>
+                <span style="color: var(--text-primary); font-weight: 600;">${contract.completedAssignments}/${contract.totalAssignments}</span>
+            </div>
+            <div style="height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
+                <div style="width: ${(contract.completedAssignments / contract.totalAssignments) * 100}%; height: 100%; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));"></div>
+            </div>
+        </div>
+        <div class="contract-stats">
+            <div class="contract-stat">
+                <span class="contract-stat-value">LKR ${contract.rate.toLocaleString()}</span>
+                <span class="contract-stat-label">Hourly Rate</span>
+            </div>
+            <div class="contract-stat">
+                <span class="contract-stat-value">LKR ${contract.totalEarnings.toLocaleString()}</span>
+                <span class="contract-stat-label">Total Earned</span>
+            </div>
+        </div>
+    `;
 
-        const contractCountEl = document.getElementById('contractCount');
-        if (contractCountEl) contractCountEl.textContent = `${cachedContracts.length} active contract${cachedContracts.length !== 1 ? 's' : ''}`;
+    return card;
+}
 
-        updateContractStats();
-    } catch (err) {
-        console.error('loadContracts error:', err);
-        contractsGrid.innerHTML = `
-            <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--text-secondary);">
-                <i class="fas fa-exclamation-circle" style="font-size:64px; opacity:0.3; margin-bottom:16px;"></i>
-                <h3>Failed to Load Contracts</h3>
-                <p>${err.message}</p>
-                <button class="btn btn-primary" onclick="loadContracts()" style="margin-top:16px;">
-                    <i class="fas fa-sync-alt"></i> Try Again
-                </button>
-            </div>`;
-    }
+function viewContractDetails(contractId) {
+    const contract = contractsData.find(c => c.id === contractId);
+    if (!contract) return;
+
+    // Populate contract details
+    document.getElementById('contractCompanyAvatar').textContent = contract.companyAvatar;
+    document.getElementById('contractCompanyName').textContent = contract.company;
+    document.getElementById('contractRole').textContent = contract.role;
+    document.getElementById('contractStartDate').textContent = formatDate(contract.startDate);
+    document.getElementById('contractRate').textContent = `LKR ${contract.rate.toLocaleString()}/hr`;
+    document.getElementById('contractType').textContent = contract.type;
+    document.getElementById('totalAssignments').textContent = contract.totalAssignments;
+    document.getElementById('completedAssignments').textContent = contract.completedAssignments;
+    document.getElementById('totalEarnings').textContent = `LKR ${contract.totalEarnings.toLocaleString()}`;
+    document.getElementById('companyEmail').textContent = contract.email;
+    document.getElementById('companyPhone').textContent = contract.phone;
+
+    // Update status badge
+    const statusBadge = document.getElementById('contractStatus');
+    statusBadge.textContent = contract.status.charAt(0).toUpperCase() + contract.status.slice(1);
+    statusBadge.className = `status-badge ${contract.status}`;
+
+    // Load contract assignments
+    const assignmentsTimeline = document.getElementById('contractAssignments');
+    assignmentsTimeline.innerHTML = '';
+    const contractAssignments = assignmentsData.filter(a => a.contractId === contractId);
+
+    contractAssignments.slice(0, 3).forEach(assignment => {
+        const assignmentItem = document.createElement('div');
+        assignmentItem.className = 'assignment-card';
+        assignmentItem.onclick = (e) => {
+            e.stopPropagation();
+            viewAssignmentDetails(assignment.id);
+        };
+        assignmentItem.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <h5 style="margin: 0; font-size: 16px;">${assignment.title}</h5>
+                <span class="status-badge ${assignment.status}">${assignment.status.replace('-', ' ')}</span>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 14px; margin: 4px 0;">
+                <i class="fas fa-calendar"></i> ${assignment.date} &bull; ${assignment.time}
+            </p>
+        `;
+        assignmentsTimeline.appendChild(assignmentItem);
+    });
+
+    // Store contract ID
+    document.getElementById('contractDetailsDrawer').dataset.contractId = contractId;
+
+    // Open drawer
+    document.getElementById('contractDetailsDrawer').classList.add('active');
 }
 
 function closeContractDetailsDrawer() {
@@ -638,60 +691,18 @@ async function loadAssignments() {
     const assignmentsList = document.getElementById('assignmentsList');
     if (!assignmentsList) return;
 
-    assignmentsList.innerHTML = `
-        <div style="text-align:center; padding:40px 20px; color:var(--text-secondary);">
-            <i class="fas fa-spinner fa-spin" style="font-size:32px;"></i>
-            <p>Loading assignments...</p>
-        </div>`;
+    assignmentsList.innerHTML = '';
 
-    try {
-        const res  = await fetch(`${API_BASE}/repairer-jobs.php?action=list&repairer_id=${currentRepairerId}`);
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error || 'Failed to load assignments');
-
-        cachedAssignments = data.jobs || [];
-        assignmentsList.innerHTML = '';
-
-        if (cachedAssignments.length === 0) {
-            assignmentsList.innerHTML = `
-                <div style="text-align:center; padding:60px 20px; color:var(--text-secondary);">
-                    <i class="fas fa-clipboard-list" style="font-size:64px; opacity:0.3; margin-bottom:16px;"></i>
-                    <h3>No Job Assignments</h3>
-                    <p>Your accepted repair job assignments will appear here.</p>
-                </div>`;
-        } else {
-            cachedAssignments.forEach(a => assignmentsList.appendChild(createAssignmentCard(a)));
-        }
-
-        const assignmentCountEl = document.getElementById('assignmentCount');
-        if (assignmentCountEl) assignmentCountEl.textContent = `${cachedAssignments.length} assignment${cachedAssignments.length !== 1 ? 's' : ''}`;
-
-        updateContractStats();
-    } catch (err) {
-        console.error('loadAssignments error:', err);
-        assignmentsList.innerHTML = `
-            <div style="text-align:center; padding:60px 20px; color:var(--text-secondary);">
-                <i class="fas fa-exclamation-circle" style="font-size:64px; opacity:0.3;"></i>
-                <h3>Failed to Load Assignments</h3>
-                <p>${err.message}</p>
-            </div>`;
-    }
+    assignmentsData.forEach(assignment => {
+        const assignmentCard = createAssignmentCard(assignment);
+        assignmentsList.appendChild(assignmentCard);
+    });
 }
 
 function createAssignmentCard(assignment) {
     const card = document.createElement('div');
-    const ui_status = (assignment.ui_status || 'active').toLowerCase();
-    const isUrgent  = (assignment.urgency || '').toLowerCase() === 'urgent';
-
-    card.className = `assignment-card${isUrgent ? ' urgent' : ''}`;
-    card.onclick   = () => viewAssignmentDetails(assignment.request_id);
-
-    const urgencyClass = isUrgent ? 'urgent' : 'normal';
-    const urgencyLabel = isUrgent ? 'Urgent' : 'Normal';
-    const statusClass  = (ui_status === 'completed' || ui_status === 'paid') ? 'completed' : ui_status === 'cancelled' ? 'rejected' : 'in-progress';
-    const statusLabel  = ui_status === 'paid' ? 'Paid' : ui_status.charAt(0).toUpperCase() + ui_status.slice(1);
-    const dueDate      = assignment.finish_date ? `Due ${formatDate(assignment.finish_date)}` : `Posted ${getRelativeTime(assignment.job_posted_date)}`;
-    const customerName = `${assignment.customer_first_name || ''} ${assignment.customer_last_name || ''}`.trim() || 'Customer';
+    card.className = `assignment-card ${assignment.priority === 'urgent' ? 'urgent' : ''}`;
+    card.onclick = () => viewAssignmentDetails(assignment.id);
 
     card.innerHTML = `
         <div class="assignment-header">
@@ -724,46 +735,39 @@ function createAssignmentCard(assignment) {
             <span style="font-size:var(--font-size-xs); color:var(--text-secondary);">${assignment.estimatedDays ? assignment.estimatedDays + ' day(s)' : ''}</span>
         </div>
     `;
+
     return card;
 }
 
-function viewAssignmentDetails(requestId) {
-    const assignment = cachedAssignments.find(a => a.request_id == requestId);
-    if (!assignment) {
-        document.getElementById('assignmentDetailsDrawer').classList.add('active');
-        return;
-    }
+function viewAssignmentDetails(assignmentId) {
+    const assignment = assignmentsData.find(a => a.id === assignmentId);
+    if (!assignment) return;
 
-    const el = id => document.getElementById(id);
-    const customerName = `${assignment.customer_first_name || ''} ${assignment.customer_last_name || ''}`.trim() || 'Customer';
-    const location     = [assignment.address, assignment.district].filter(Boolean).join(', ');
+    // Populate assignment details
+    document.getElementById('assignmentTitle').textContent = assignment.title;
+    document.getElementById('assignmentCompany').textContent = assignment.company;
+    document.getElementById('assignmentDate').textContent = assignment.date;
+    document.getElementById('assignmentTime').textContent = assignment.time;
+    document.getElementById('assignmentLocation').textContent = assignment.location;
+    document.getElementById('estimatedHours').textContent = `${assignment.estimatedHours} hours`;
+    document.getElementById('assignmentDescription').textContent = assignment.description;
 
-    if (el('assignmentTitle'))       el('assignmentTitle').textContent       = assignment.job_title || '';
-    if (el('assignmentCompany'))     el('assignmentCompany').textContent     = customerName;
-    if (el('assignmentDate'))        el('assignmentDate').textContent        = assignment.job_posted_date ? formatDate(assignment.job_posted_date) : '—';
-    if (el('assignmentTime'))        el('assignmentTime').textContent        = '—';
-    if (el('assignmentLocation'))    el('assignmentLocation').textContent    = location || '—';
-    if (el('estimatedHours'))        el('estimatedHours').textContent        = assignment.estimatedDays ? `${assignment.estimatedDays} day(s)` : '—';
-    if (el('assignmentPriority'))    el('assignmentPriority').textContent    = assignment.urgency || '—';
-    if (el('assignmentDescription')) el('assignmentDescription').textContent = assignment.job_description || '';
+    // Update priority badge
+    const priorityBadge = document.getElementById('assignmentPriority');
+    priorityBadge.innerHTML = `<span class="priority-badge ${assignment.priority}">${assignment.priority.charAt(0).toUpperCase() + assignment.priority.slice(1)} Priority</span>`;
 
-    const statusSelect = el('jobStatus');
-    if (statusSelect) {
-        const ui = assignment.ui_status || 'active';
-        const map = { active: 'assigned', 'in-progress': 'in-progress', completed: 'completed', paid: 'completed', cancelled: 'assigned' };
-        statusSelect.value = map[ui] || 'assigned';
-    }
+    // Update status badge
+    const statusBadge = document.getElementById('assignmentStatus');
+    statusBadge.textContent = assignment.status.replace('-', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    statusBadge.className = `status-badge ${assignment.status}`;
 
-    const statusBadge = el('assignmentStatus');
-    if (statusBadge) {
-        const ui = assignment.ui_status || 'active';
-        const sc = (ui === 'completed' || ui === 'paid') ? 'completed' : 'in-progress';
-        const sl = ui === 'paid' ? 'Paid' : ui.charAt(0).toUpperCase() + ui.slice(1);
-        statusBadge.textContent = sl;
-        statusBadge.className   = `status-badge ${sc}`;
-    }
+    // Set status dropdown
+    document.getElementById('jobStatus').value = assignment.status;
 
-    document.getElementById('assignmentDetailsDrawer').dataset.requestId = requestId;
+    // Store assignment ID
+    document.getElementById('assignmentDetailsDrawer').dataset.assignmentId = assignmentId;
+
+    // Open drawer
     document.getElementById('assignmentDetailsDrawer').classList.add('active');
 }
 
@@ -773,70 +777,49 @@ function closeAssignmentDetailsDrawer() {
 
 function updateAssignmentStatus() {
     const status = document.getElementById('jobStatus').value;
-    
+
     // Status will be saved when user clicks "Save Update"
 }
 
-async function saveProgressUpdate() {
-    const requestId = document.getElementById('assignmentDetailsDrawer').dataset.requestId;
-    const status    = document.getElementById('jobStatus')?.value;
+function saveProgressUpdate() {
+    const assignmentId = document.getElementById('assignmentDetailsDrawer').dataset.assignmentId;
+    const status = document.getElementById('jobStatus').value;
+    const note = document.getElementById('progressNote').value;
 
-    if (!requestId) {
-        showNotification('No assignment selected', 'error');
-        return;
+    // In production, send to server
+
+    showNotification('Progress updated successfully!', 'success');
+
+    // Update local data
+    const assignment = assignmentsData.find(a => a.id == assignmentId);
+    if (assignment) {
+        assignment.status = status;
     }
 
-    const statusMap = { 'assigned': 'in_progress', 'in-progress': 'in_progress', 'completed': 'completed' };
-    const apiStatus = statusMap[status] || 'in_progress';
-
-    try {
-        const res  = await fetch(`${API_BASE}/repairer-jobs.php`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action:      'update-status',
-                request_id:  parseInt(requestId),
-                status:      apiStatus,
-                repairer_id: currentRepairerId
-            })
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error || data.message);
-
-        showNotification('Progress saved successfully!', 'success');
-        closeAssignmentDetailsDrawer();
-        loadAssignments();
-    } catch (err) {
-        showNotification(err.message || 'Failed to save progress', 'error');
-    }
+    // Refresh UI
+    loadAssignments();
 }
 
-async function markAssignmentComplete() {
-    const requestId = document.getElementById('assignmentDetailsDrawer').dataset.requestId;
+function markAssignmentComplete() {
+    const assignmentId = document.getElementById('assignmentDetailsDrawer').dataset.assignmentId;
 
-    if (!requestId) {
-        showNotification('No assignment selected', 'error');
+    if (!confirm('Mark this assignment as complete?')) {
         return;
     }
 
-    if (!confirm('Mark this assignment as complete?')) return;
+    // In production, send to server
 
-    try {
-        const res  = await fetch(`${API_BASE}/repairer-jobs.php`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action:      'update-status',
-                request_id:  parseInt(requestId),
-                status:      'completed',
-                repairer_id: currentRepairerId
-            })
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error || data.message);
+    showNotification('Assignment marked as complete!', 'success');
+    closeAssignmentDetailsDrawer();
 
-        showNotification('Assignment marked as complete!', 'success');
-        closeAssignmentDetailsDrawer();
+    // Update local data
+    const assignment = assignmentsData.find(a => a.id == assignmentId);
+    if (assignment) {
+        assignment.status = 'completed';
+    }
+
+    // Refresh UI
+    setTimeout(() => {
         loadAssignments();
         updateContractStats();
     } catch (err) {
@@ -847,35 +830,114 @@ async function markAssignmentComplete() {
 function loadMessages() {
     const conversationsList = document.getElementById('conversationsList');
     if (!conversationsList) return;
-    conversationsList.innerHTML = `
-        <div style="text-align:center; padding:40px 20px; color:var(--text-secondary);">
-            <i class="fas fa-comments" style="font-size:48px; opacity:0.3; margin-bottom:12px;"></i>
-            <p>No messages yet. Messages from companies will appear here.</p>
-        </div>`;
+
+    conversationsList.innerHTML = '';
+
+    messagesData.forEach(message => {
+        const conversationCard = createConversationCard(message);
+        conversationsList.appendChild(conversationCard);
+    });
+
+    // Update unread count
+    const unreadCount = messagesData.filter(m => m.unread).length;
+    const unreadBadge = document.getElementById('sidebarUnreadCount');
+    if (unreadBadge) {
+        unreadBadge.textContent = unreadCount;
+        unreadBadge.style.display = unreadCount > 0 ? 'inline-flex' : 'none';
+    }
 }
 
 function createConversationCard(message) {
     const card = document.createElement('div');
-    card.className = 'conversation-card';
+    card.className = `conversation-card ${message.unread ? 'unread' : ''}`;
+    card.onclick = () => openChatView(message.id);
+
+    // Get last message preview
+    const lastMsg = message.messages && message.messages.length > 0
+        ? message.messages[message.messages.length - 1].text
+        : message.lastMessage;
+
+    card.innerHTML = `
+        <div class="conversation-avatar">${message.companyAvatar}</div>
+        <div class="conversation-content">
+            <div class="conversation-header">
+                <h4>${message.company}</h4>
+                <span class="conversation-time">${message.time}</span>
+            </div>
+            <p class="conversation-project">${message.projectName}</p>
+            <p class="conversation-preview">${lastMsg}</p>
+        </div>
+        ${message.unread ? '<div class="unread-indicator"></div>' : ''}
+    `;
+
     return card;
 }
 
 let activeMessageId = null;
 
 function openChatView(messageId) {
-    // Chat will be implemented when message data is available from the server
+    const message = messagesData.find(m => m.id === messageId);
+    if (!message) return;
+    // Populate chat header
+    document.getElementById('activeChatAvatar').textContent = message.companyAvatar;
+    document.getElementById('activeChatCompany').textContent = message.company;
+    document.getElementById('activeChatProject').textContent = message.projectName;
+
+    // Load messages
+    loadChatMessages(message);
+
+    // Mark as read
+    message.unread = false;
+
+    // Refresh conversation list to update unread status
+    loadMessages();
+    updateContractStats();
+
+    document.querySelectorAll('.conversation-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    event.target.closest('.conversation-card').classList.add('active');
 }
 
 function loadChatMessages(message) {
     const chatMessagesArea = document.getElementById('chatMessagesArea');
-    if (chatMessagesArea) chatMessagesArea.innerHTML = '<div class="no-messages">No messages yet</div>';
+    chatMessagesArea.innerHTML = '';
+
+    if (!message.messages || message.messages.length === 0) {
+        chatMessagesArea.innerHTML = '<div class="no-messages">No messages yet</div>';
+        return;
+    }
+
+    message.messages.forEach(msg => {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message-item ${msg.sender === 'repairer' ? 'sent' : 'received'}`;
+
+        const senderName = msg.sender === 'repairer' ? 'FixLanka Team' : message.company;
+        const avatarText = msg.sender === 'repairer' ? 'FL' : message.companyAvatar;
+
+        messageDiv.innerHTML = `
+            <div class="message-avatar">${avatarText}</div>
+            <div class="message-content-wrapper">
+                <div class="message-sender-info">
+                    <span class="message-sender-name">${senderName}</span>
+                    <span class="message-time">${msg.timestamp}</span>
+                </div>
+                <div class="message-bubble-text">${msg.text}</div>
+            </div>
+        `;
+
+        chatMessagesArea.appendChild(messageDiv);
+    });
+
+    // Scroll to bottom
+    chatMessagesArea.scrollTop = chatMessagesArea.scrollHeight;
 }
 
 function closeChatView() {
     document.querySelector('.chat-empty-state').style.display = 'flex';
     document.getElementById('chatActive').style.display = 'none';
     activeMessageId = null;
-    
+
     // Remove active state from all conversations
     document.querySelectorAll('.conversation-card').forEach(card => {
         card.classList.remove('active');
@@ -883,7 +945,47 @@ function closeChatView() {
 }
 
 function sendChatMessage() {
-    showNotification('Messaging not yet connected to server', 'info');
+    const chatInput = document.getElementById('chatInput');
+    const messageText = chatInput.value.trim();
+
+    if (!messageText) {
+        showNotification('Please enter a message', 'error');
+        return;
+    }
+
+    const message = messagesData.find(m => m.id == activeMessageId);
+    if (!message) return;
+
+    // Create timestamp
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const timeStr = `Today, ${displayHours}:${minutes} ${ampm}`;
+
+    // Add to local data
+    message.messages.push({
+        sender: 'repairer',
+        text: messageText,
+        timestamp: timeStr
+    });
+
+    // Update last message
+    message.lastMessage = messageText;
+    message.time = 'Just now';
+
+    // Reload messages in chat
+    loadChatMessages(message);
+
+    // Clear input
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+
+    // Refresh conversation list
+    loadMessages();
+
+    showNotification('Message sent successfully', 'success');
 }
 
 function handleChatKeyPress(event) {
@@ -911,45 +1013,113 @@ function handleMessageKeyPress(event) {
 }
 
 function sendMessageToCompany() {
+    const contractId = document.getElementById('contractDetailsDrawer').dataset.contractId;
+    const contract = contractsData.find(c => c.id == contractId);
+
+    if (!contract) return;
+
+    // Find or create message thread
+    let message = messagesData.find(m => m.contractId == contractId);
+
+    if (!message) {
+        // Create new message thread
+        message = {
+            id: messagesData.length + 1,
+            contractId: contractId,
+            company: contract.company,
+            companyAvatar: contract.companyAvatar,
+            projectName: `${contract.role} Contract`,
+            lastMessage: '',
+            time: 'Now',
+            unread: false,
+            messages: []
+        };
+        messagesData.push(message);
+    }
+
     closeContractDetailsDrawer();
-    switchMainTab('messages');
+
+    // Switch to messages tab and open thread
+    switchTab('messages');
+    setTimeout(() => {
+        viewMessageThread(message.id);
+    }, 300);
 }
 
 function updateContractStats() {
-    const el = id => document.getElementById(id);
+    const activeContracts = contractsData.filter(c => c.status === 'active').length;
+    const activeAssignments = assignmentsData.filter(a => a.status !== 'completed').length;
+    const unreadMessages = messagesData.filter(m => m.unread).length;
+    const completedJobs = assignmentsData.filter(a => a.status === 'completed').length;
 
-    // Contract stats from cachedContracts (accepted applications to company job postings)
-    const activeContracts   = cachedContracts.length;
-    const completedJobCount = cachedAssignments.filter(a => a.ui_status === 'completed' || a.ui_status === 'paid').length;
-    const totalEarned       = cachedAssignments
-        .filter(a => a.ui_status === 'paid')
-        .reduce((sum, a) => sum + Number(a.payment_amount || 0), 0);
-    const pendingEarned     = cachedAssignments
-        .filter(a => a.ui_status === 'completed')
-        .reduce((sum, a) => sum + Number(a.quoteAmount || 0), 0);
+    // Calculate total earnings from contracts
+    let totalEarnings = 0;
+    let pendingPayments = 0;
 
-    if (el('activeContractsCount'))  el('activeContractsCount').textContent  = activeContracts;
-    if (el('totalContractEarnings')) el('totalContractEarnings').textContent = `LKR ${totalEarned.toLocaleString()}`;
-    if (el('pendingPayments'))       el('pendingPayments').textContent       = `LKR ${pendingEarned.toLocaleString()}`;
-    if (el('completedJobsCount'))    el('completedJobsCount').textContent    = completedJobCount;
+    contractsData.forEach(contract => {
+        totalEarnings += contract.totalEarnings || 0;
+    });
 
-    // Assignment stats from cachedAssignments (customer-side repair jobs)
-    const activeAssign    = cachedAssignments.filter(a => a.ui_status === 'active').length;
-    const pendingAssign   = cachedAssignments.filter(a => (a.job_status || '') === 'pending').length;
-    const completedAssign = completedJobCount;
-    const totalDays       = cachedAssignments.reduce((sum, a) => sum + (parseInt(a.estimatedDays) || 0), 0);
+    assignmentsData.forEach(assignment => {
+        if (assignment.paymentStatus === 'pending') {
+            const amount = typeof assignment.totalPaid === 'string'
+                ? parseFloat(assignment.totalPaid.replace(/[^\d.]/g, ''))
+                : assignment.totalPaid;
+            pendingPayments += amount || 0;
+        }
+    });
 
-    if (el('activeAssignmentsCount')) el('activeAssignmentsCount').textContent = activeAssign;
-    if (el('pendingAssignments'))     el('pendingAssignments').textContent     = pendingAssign;
-    if (el('completedAssignments'))   el('completedAssignments').textContent   = completedAssign;
-    if (el('totalHours'))             el('totalHours').textContent             = `${totalDays}d`;
+    // Update contract tab stats
+    const activeContractsEl = document.getElementById('activeContractsCount');
+    const totalContractEarningsEl = document.getElementById('totalContractEarnings');
+    const pendingPaymentsEl = document.getElementById('pendingPayments');
+    const completedJobsEl = document.getElementById('completed_jobs_count');
 
-    if (el('unreadMessagesCount')) el('unreadMessagesCount').textContent = 0;
-    if (el('totalThreads'))        el('totalThreads').textContent        = 0;
-    if (el('sentMessages'))        el('sentMessages').textContent        = 0;
+    if (activeContractsEl) activeContractsEl.textContent = activeContracts;
+    if (totalContractEarningsEl) totalContractEarningsEl.textContent = `LKR ${totalEarnings.toLocaleString()}`;
+    if (pendingPaymentsEl) pendingPaymentsEl.textContent = `LKR ${pendingPayments.toLocaleString()}`;
+    if (completedJobsEl) completedJobsEl.textContent = completedJobs;
 
-    // Tab badges
-    const contractsBadge = el('contractsBadge');
+    // Update assignments tab stats
+    const activeAssignmentsCountEl = document.getElementById('activeAssignmentsCount');
+    const pendingAssignmentsEl = document.getElementById('pendingAssignments');
+    const completedAssignmentsEl = document.getElementById('completedAssignments');
+    const totalHoursEl = document.getElementById('totalHours');
+
+    if (activeAssignmentsCountEl) activeAssignmentsCountEl.textContent = activeAssignments;
+    if (pendingAssignmentsEl) {
+        const pending = assignmentsData.filter(a => a.status === 'pending').length;
+        pendingAssignmentsEl.textContent = pending;
+    }
+    if (completedAssignmentsEl) completedAssignmentsEl.textContent = completedJobs;
+    if (totalHoursEl) {
+        let totalHours = 0;
+        assignmentsData.forEach(a => {
+            totalHours += parseFloat(a.hoursWorked || 0);
+        });
+        totalHoursEl.textContent = `${totalHours}h`;
+    }
+
+    // Update messages tab stats
+    const unreadMessagesCountEl = document.getElementById('unreadMessagesCount');
+    const totalThreadsEl = document.getElementById('totalThreads');
+    const sentMessagesEl = document.getElementById('sentMessages');
+
+    if (unreadMessagesCountEl) unreadMessagesCountEl.textContent = unreadMessages;
+    if (totalThreadsEl) totalThreadsEl.textContent = messagesData.length;
+    if (sentMessagesEl) {
+        let sentCount = 0;
+        messagesData.forEach(msg => {
+            sentCount += msg.messages.filter(m => m.sender === 'repairer').length;
+        });
+        sentMessagesEl.textContent = sentCount;
+    }
+
+    // Update badges
+    const contractsBadge = document.getElementById('contractsBadge');
+    const assignmentsBadge = document.getElementById('assignmentsBadge');
+    const messagesBadge = document.getElementById('messagesBadge');
+
     if (contractsBadge) {
         contractsBadge.textContent   = activeContracts;
         contractsBadge.style.display = activeContracts > 0 ? 'inline-block' : 'none';
@@ -972,7 +1142,7 @@ function switchTab(tabName) {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
-    
+
     // Update tab content within the current section
     const parentContent = parentTabs.closest('.tab-content');
     if (parentContent) {
@@ -989,17 +1159,17 @@ function switchMainTab(tabName) {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
-    
+
     // Update main tab content
     document.querySelectorAll('.content-wrapper > .tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    
+
     const targetTab = document.getElementById(`${tabName}Tab`);
     if (targetTab) {
         targetTab.classList.add('active');
     }
-    
+
     // Load content for the active tab
     if (tabName === 'browse') {
         loadJobPostings();
@@ -1017,9 +1187,9 @@ function switchMainTab(tabName) {
 function refreshCurrentTab() {
     const activeTab = document.querySelector('.tabs-container > .tabs > .tab-btn.active');
     if (!activeTab) return;
-    
+
     const tabText = activeTab.textContent.trim().toLowerCase();
-    
+
     if (tabText.includes('browse')) {
         showNotification('Refreshing job postings...', 'info');
         loadJobPostings();
@@ -1047,9 +1217,9 @@ function refreshContracts() {
 function toggleAvailabilityStatus() {
     currentRepairerStatus = currentRepairerStatus === 'available' ? 'busy' : 'available';
 
-    const statusBtn  = document.getElementById('statusToggleBtn');
+    const statusBtn = document.getElementById('statusToggleBtn');
     const statusText = document.getElementById('statusText');
-    const statusIcon = statusBtn ? statusBtn.querySelector('i') : null;
+    const statusIcon = statusBtn.querySelector('i');
 
     if (currentRepairerStatus === 'available') {
         statusText.textContent = 'Available';
@@ -1067,7 +1237,8 @@ function toggleAvailabilityStatus() {
         showNotification('Status updated to Busy', 'info');
     }
 
-    // TODO: persist status change to server
+    // In production, send to server
+
 }
 
 // ================================================
@@ -1079,7 +1250,7 @@ function getRelativeTime(dateString) {
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) return 'today';
     if (diffDays === 1) return 'yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
@@ -1089,32 +1260,61 @@ function getRelativeTime(dateString) {
 
 function formatDate(dateString) {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric', 
-        year: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
     });
 }
 
 function showNotification(message, type = 'info') {
     // Remove existing notifications
     document.querySelectorAll('.notification').forEach(n => n.remove());
-    
+
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
-    
-    const icon = type === 'success' ? 'check-circle' : 
-                 type === 'error' ? 'exclamation-circle' : 
-                 type === 'warning' ? 'exclamation-triangle' : 'info-circle';
-    
+
+    const icon = type === 'success' ? 'check-circle' :
+        type === 'error' ? 'exclamation-circle' :
+            type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+
     notification.innerHTML = `
         <i class="fas fa-${icon}"></i>
         <span>${message}</span>
         <button onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
     `;
 
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        padding: 16px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 10000;
+        min-width: 300px;
+        animation: slideInRight 0.3s ease;
+        border-left: 4px solid ${type === 'success' ? '#27ae60' :
+            type === 'error' ? '#e74c3c' :
+                type === 'warning' ? '#f39c12' : '#3498db'};
+    `;
+
+    notification.querySelector('button').style.cssText = `
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 4px;
+        margin-left: auto;
+    `;
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         if (notification.parentElement) {
             notification.style.animation = 'slideOutRight 0.3s ease';

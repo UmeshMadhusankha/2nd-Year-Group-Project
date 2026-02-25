@@ -1,0 +1,30 @@
+﻿    if (editContractFromBanner) {
+        editContractFromBanner.addEventListener('click', function() {
+            if (currentNegotiationContract) {
+                closeNegotiationModal();
+                setTimeout(() => {
+                    handleEditContract(currentNegotiationContract);
+                }, 300);
+                showNotification('Opening contract editor...', 'info');
+            }
+        });
+    }
+    
+    if (reviseContractBtn) {
+        reviseContractBtn.addEventListener('click', function() {
+            if (currentNegotiationContract) {
+                closeNegotiationModal();
+                setTimeout(() => {
+                    handleEditContract(currentNegotiationContract);
+                }, 300);
+                showNotification('Opening contract editor to make revisions...', 'info');
+            }
+        });
+    }
+    
+    if (viewOriginalBtn) {
+        viewOriginalBtn.addEventListener('click', function() {
+            if (currentNegotiationContract) {
+                showNotification('Opening original contract...', 'info');
+                setTimeout(() => {
+                    handleViewContract(currentNegotiationContract);

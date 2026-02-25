@@ -103,6 +103,7 @@ async function loadAvailableJobs(filters = {}) {
 
         const result = await response.json();
 
+
         if (result.success) {
             availableJobs = result.data || [];
             renderJobs(availableJobs);
@@ -393,6 +394,7 @@ async function loadSubmittedQuotations() {
 
         const result = await response.json();
 
+
         if (result.success) {
             submittedQuotes = result.data || [];
             renderQuotations(submittedQuotes);
@@ -448,6 +450,7 @@ function renderQuotations(quotes) {
         html += `<h3 class="quotes-section-title"><i class="fas fa-hourglass-end"></i> Expired Quotations (${groups.expired.length})</h3>`;
         html += groups.expired.map(createQuoteCard).join('');
     }
+
 
     container.innerHTML = html;
 }
@@ -621,6 +624,7 @@ async function deleteQuote(quoteId) {
         return;
     }
 
+
     try {
         const response = await fetch(
             `${API_BASE}/repairer-quotes.php?quote_id=${quoteId}&repairer_id=${currentRepairerId}`,
@@ -628,6 +632,7 @@ async function deleteQuote(quoteId) {
         );
 
         const result = await response.json();
+
 
         if (result.success) {
             showToast('Quotation deleted successfully!', 'success');

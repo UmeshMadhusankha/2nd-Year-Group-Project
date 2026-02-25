@@ -1,162 +1,137 @@
 ﻿// FixLanka Projects Page JavaScript
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // View Toggle (Table/Card)
-    const viewToggles = document.querySelectorAll('.view-toggle');
-    const tableView = document.querySelector('.table-view');
-    const cardView = document.querySelector('.card-view');
-    
-    viewToggles.forEach(toggle => {
-        toggle.addEventListener('click', function() {
-            const view = this.dataset.view;
-            
-            // Update toggle states
-            viewToggles.forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Switch views
-            if (view === 'table') {
-                tableView.classList.add('active');
-                cardView.classList.remove('active');
-            } else {
-                cardView.classList.add('active');
-                tableView.classList.remove('active');
-            }
-            
-            // Reattach drawer events to new visible elements
-            attachDrawerEvents();
-        });
-    });
-    
+document.addEventListener('DOMContentLoaded', function () {
+
+    // View toggle is handled by projects-db.js (initializeViewToggle)
+
     // Function to attach drawer events to project elements
     function attachDrawerEvents() {
         const projectElements = document.querySelectorAll('.project-row, .project-card');
-        
+
         // Remove existing event listeners by cloning and replacing elements
         projectElements.forEach(element => {
             const newElement = element.cloneNode(true);
             element.parentNode.replaceChild(newElement, element);
         });
-        
+
         // Reattach events to new elements
         const newProjectElements = document.querySelectorAll('.project-row, .project-card');
         newProjectElements.forEach(element => {
             const viewBtn = element.querySelector('.action-btn-sm.primary');
             const editBtn = element.querySelector('.action-btn-sm.secondary');
-            
+
             if (viewBtn) {
-                viewBtn.addEventListener('click', function(e) {
+                viewBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
                     openDrawer(element.dataset.project);
                 });
             }
-            
+
             if (editBtn) {
-                editBtn.addEventListener('click', function(e) {
+                editBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
                     // Only open edit modal, don't open drawer
                     enableEditMode();
                 });
             }
-            
+
             // Also open on element click
-            element.addEventListener('click', function() {
+            element.addEventListener('click', function () {
                 openDrawer(this.dataset.project);
             });
         });
     }
-    
+
     // Phase Tab Navigation
     const phaseTabs = document.querySelectorAll('.phase-tab');
-    
+
     phaseTabs.forEach(tab => {
-        tab.addEventListener('click', function() {
+        tab.addEventListener('click', function () {
             // Update active tab
             phaseTabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
-            
+
             // Filter projects based on phase (if needed)
             const phase = this.dataset.phase;
             filterByPhase(phase);
         });
     });
-    
+
     // Project Detail Drawer
     const drawerOverlay = document.getElementById('projectDrawer');
     const closeDrawer = document.querySelector('.close-drawer');
-    
+
     // Initial attachment of drawer events
     attachDrawerEvents();
-    
+
     // Close drawer
-    closeDrawer?.addEventListener('click', function() {
+    closeDrawer?.addEventListener('click', function () {
         drawerOverlay.classList.remove('active');
     });
-    
-    drawerOverlay?.addEventListener('click', function(e) {
+
+    drawerOverlay?.addEventListener('click', function (e) {
         if (e.target === this) {
             this.classList.remove('active');
         }
     });
-    
+
     // Drawer Tab Navigation
     const drawerTabs = document.querySelectorAll('.drawer-tab');
     const drawerContents = document.querySelectorAll('.drawer-tab-content');
-    
+
     drawerTabs.forEach(tab => {
-        tab.addEventListener('click', function() {
+        tab.addEventListener('click', function () {
             const targetTab = this.dataset.tab;
-            
+
             // Update active tab
             drawerTabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
-            
+
             // Switch content
             drawerContents.forEach(content => {
                 content.classList.remove('active');
             });
-            
+
             const targetContent = document.getElementById(targetTab);
             targetContent?.classList.add('active');
         });
     });
-    
+
     // Search Functionality
     const searchInput = document.querySelector('.global-search');
-    
-    searchInput?.addEventListener('input', function() {
+
+    searchInput?.addEventListener('input', function () {
         const searchTerm = this.value.toLowerCase();
         filterProjects(searchTerm);
     });
-    
+
     // Status Filter Functionality
     const filterSelect = document.querySelector('.filter-select');
-    
-    filterSelect?.addEventListener('change', function() {
+
+    filterSelect?.addEventListener('change', function () {
         const selectedStatus = this.value;
         filterByStatus(selectedStatus);
     });
-    
+
     // Filter Functions
     function filterByPhase(phase) {
         const projects = document.querySelectorAll('.project-row, .project-card');
-        
+
         projects.forEach(project => {
             // Show/hide based on phase (implement your filtering logic)
             project.style.display = 'block';
         });
     }
-    
+
     function filterByStatus(status) {
         const projects = document.querySelectorAll('.project-row, .project-card');
-        
+
         projects.forEach(project => {
             if (status === 'all') {
                 project.style.display = '';
             } else {
-                const projectStatus = project.querySelector('td:nth-child(7) .status-badge')?.textContent.trim().toLowerCase() || 
-                                    project.querySelector('.card-status .status-badge')?.textContent.trim().toLowerCase() || '';
-                
+                const projectStatus = project.querySelector('td:nth-child(7) .status-badge')?.textContent.trim().toLowerCase() ||
+                    project.querySelector('.card-status .status-badge')?.textContent.trim().toLowerCase() || '';
+
                 if (projectStatus.includes(status.toLowerCase()) || status === 'all') {
                     project.style.display = '';
                 } else {
@@ -165,14 +140,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     function filterProjects(searchTerm) {
         const projects = document.querySelectorAll('.project-row, .project-card');
-        
+
         projects.forEach(project => {
             const title = project.querySelector('h4')?.textContent.toLowerCase() || '';
             const customer = project.querySelector('.customer-name')?.textContent.toLowerCase() || '';
-            
+
             if (title.includes(searchTerm) || customer.includes(searchTerm)) {
                 project.style.display = 'block';
             } else {
@@ -180,17 +155,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     function openDrawer(projectId) {
         // Load project data (implement your data loading logic)
         drawerOverlay.classList.add('active');
     }
-    
+
     // Function to open drawer with specific tab
     function openDrawerWithTab(projectId, tabName) {
         // Open the drawer first
         openDrawer(projectId);
-        
+
         // Wait a bit for drawer to open, then switch to the specified tab
         setTimeout(() => {
             // Find and click the tab
@@ -199,12 +174,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Remove active from all tabs
                 drawerTabs.forEach(t => t.classList.remove('active'));
                 targetTab.classList.add('active');
-                
+
                 // Switch content
                 drawerContents.forEach(content => {
                     content.classList.remove('active');
                 });
-                
+
                 const targetContent = document.getElementById(tabName);
                 if (targetContent) {
                     targetContent.classList.add('active');
@@ -212,38 +187,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 100);
     }
-    
+
     // Make function globally accessible
     window.openDrawerWithTab = openDrawerWithTab;
-    
+
     // Message Send Functionality
     const sendBtn = document.querySelector('.send-btn');
     const messageInput = document.querySelector('.message-input input');
-    
-    sendBtn?.addEventListener('click', function() {
+
+    sendBtn?.addEventListener('click', function () {
         const message = messageInput.value.trim();
         if (message) {
             addMessage(message, 'company');
             messageInput.value = '';
         }
     });
-    
-    messageInput?.addEventListener('keypress', function(e) {
+
+    messageInput?.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             sendBtn.click();
         }
     });
-    
+
     function addMessage(text, sender) {
         const messagesContainer = document.querySelector('.chat-messages');
         if (!messagesContainer) return;
-        
+
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}`;
-        
+
         const now = new Date();
-        const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
         messageDiv.innerHTML = `
             <div class="message-avatar">${sender === 'company' ? 'FL' : 'CU'}</div>
             <div class="message-content">
@@ -254,70 +229,70 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="message-text">${text}</div>
             </div>
         `;
-        
+
         messagesContainer.appendChild(messageDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
-    
+
     // Editable Content (Milestones)
     const editableElements = document.querySelectorAll('.editable');
-    
+
     editableElements.forEach(element => {
-        element.addEventListener('blur', function() {
+        element.addEventListener('blur', function () {
             // Save changes (implement your save logic)
-            
+
         });
-        
-        element.addEventListener('keypress', function(e) {
+
+        element.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 this.blur();
             }
         });
     });
-    
+
     // File Upload Functionality
     const uploadBtn = document.querySelector('.upload-btn');
-    
-    uploadBtn?.addEventListener('click', function() {
+
+    uploadBtn?.addEventListener('click', function () {
         // Create and trigger file input
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.multiple = true;
         fileInput.accept = '.pdf,.doc,.docx,.jpg,.jpeg,.png,.zip';
-        
-        fileInput.addEventListener('change', function(e) {
+
+        fileInput.addEventListener('change', function (e) {
             const files = Array.from(e.target.files);
             files.forEach(file => {
                 addFileToList(file);
             });
         });
-        
+
         fileInput.click();
     });
-    
+
     function addFileToList(file) {
         const filesList = document.querySelector('.files-list');
         if (!filesList) return;
-        
+
         const fileDiv = document.createElement('div');
         fileDiv.className = 'file-item';
-        
+
         const iconClass = getFileIcon(file.name);
         const fileSize = formatFileSize(file.size);
         const uploadDate = new Date().toLocaleDateString();
-        
+
         fileDiv.innerHTML = `
             <i class="${iconClass} file-icon"></i>
             <div class="file-info">
                 <div class="file-name">${file.name}</div>
-                <div class="file-meta">${fileSize} â€¢ Uploaded ${uploadDate}</div>
+                <div class="file-meta">${fileSize} &bull; Uploaded ${uploadDate}</div>
             </div>
             <button class="download-btn"><i class="fas fa-download"></i></button>
         `;
-        
+
         filesList.appendChild(fileDiv);
     }
-    
+
     function getFileIcon(filename) {
         const ext = filename.split('.').pop().toLowerCase();
         const iconMap = {
@@ -331,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         return iconMap[ext] || 'fas fa-file';
     }
-    
+
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -339,25 +314,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
-    
+
     // Filter Controls
     const filterSelects = document.querySelectorAll('.filter-select');
     const filterDates = document.querySelectorAll('.filter-date');
     const budgetInputs = document.querySelectorAll('.budget-input');
-    
+
     // Add change listeners for filters
     [...filterSelects, ...filterDates, ...budgetInputs].forEach(input => {
         input.addEventListener('change', applyFilters);
     });
-    
+
     function applyFilters() {
         // Implement your filtering logic here
-        
+
     }
-    
+
     // Initialize smooth transitions
     document.body.style.setProperty('--transition-speed', '0.3s');
-    
+
     // Date Range Picker Functionality
     const dateRangeBtn = document.getElementById('dateRangeBtn');
     const dateRangeModal = document.getElementById('dateRangeModal');
@@ -370,72 +345,72 @@ document.addEventListener('DOMContentLoaded', function() {
     const applyBtn = document.getElementById('applyDateRange');
     const clearBtn = document.getElementById('clearDateRange');
     const cancelBtn = document.getElementById('cancelDateRange');
-    
+
     let selectedStartDate = null;
     let selectedEndDate = null;
     let selectedQuickRange = null;
-    
+
     // Open date range modal
-    dateRangeBtn?.addEventListener('click', function() {
+    dateRangeBtn?.addEventListener('click', function () {
         dateRangeModal.classList.add('active');
         dateRangeBtn.classList.add('active');
     });
-    
+
     // Close modal functions
     function closeDateRangeModal() {
         dateRangeModal.classList.remove('active');
         dateRangeBtn.classList.remove('active');
     }
-    
+
     closeDateModal?.addEventListener('click', closeDateRangeModal);
     dateRangeOverlay?.addEventListener('click', closeDateRangeModal);
     cancelBtn?.addEventListener('click', closeDateRangeModal);
-    
+
     // Quick select functionality
     quickSelectBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             // Remove selected class from all buttons
             quickSelectBtns.forEach(b => b.classList.remove('selected'));
             // Add selected class to clicked button
             this.classList.add('selected');
-            
+
             const range = this.dataset.range;
             selectedQuickRange = range;
-            
+
             const dates = getQuickSelectDates(range);
             selectedStartDate = dates.start;
             selectedEndDate = dates.end;
-            
+
             // Update custom date inputs
             startDateInput.value = formatDateForInput(selectedStartDate);
             endDateInput.value = formatDateForInput(selectedEndDate);
-            
+
             // Update preview
             updateRangePreview();
         });
     });
-    
+
     // Custom date input handlers
-    startDateInput?.addEventListener('change', function() {
+    startDateInput?.addEventListener('change', function () {
         selectedStartDate = new Date(this.value);
         selectedQuickRange = null;
         quickSelectBtns.forEach(btn => btn.classList.remove('selected'));
         updateRangePreview();
     });
-    
-    endDateInput?.addEventListener('change', function() {
+
+    endDateInput?.addEventListener('change', function () {
         selectedEndDate = new Date(this.value);
         selectedQuickRange = null;
         quickSelectBtns.forEach(btn => btn.classList.remove('selected'));
         updateRangePreview();
     });
-    
+
     // Apply date range
-    applyBtn?.addEventListener('click', function() {
+    applyBtn?.addEventListener('click', function () {
         if (selectedStartDate && selectedEndDate) {
             const startStr = formatDateDisplay(selectedStartDate);
             const endStr = formatDateDisplay(selectedEndDate);
-            
+
             // Update button text
             const dateText = dateRangeBtn.querySelector('.date-range-text');
             if (selectedQuickRange) {
@@ -443,43 +418,43 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 dateText.textContent = `${startStr} - ${endStr}`;
             }
-            
+
             // Apply filters (implement your filtering logic)
             applyDateFilter(selectedStartDate, selectedEndDate);
-            
+
             closeDateRangeModal();
         }
     });
-    
+
     // Clear date range
-    clearBtn?.addEventListener('click', function() {
+    clearBtn?.addEventListener('click', function () {
         selectedStartDate = null;
         selectedEndDate = null;
         selectedQuickRange = null;
-        
+
         // Clear inputs
         startDateInput.value = '';
         endDateInput.value = '';
-        
+
         // Clear selections
         quickSelectBtns.forEach(btn => btn.classList.remove('selected'));
-        
+
         // Reset button text
         const dateText = dateRangeBtn.querySelector('.date-range-text');
         dateText.textContent = 'Select Date Range';
-        
+
         // Clear filters
         clearDateFilter();
-        
+
         updateRangePreview();
     });
-    
+
     // Helper functions for date range picker
     function getQuickSelectDates(range) {
         const today = new Date();
         const start = new Date();
         const end = new Date();
-        
+
         switch (range) {
             case 'today':
                 start.setHours(0, 0, 0, 0);
@@ -541,10 +516,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 end.setHours(23, 59, 59, 999);
                 break;
         }
-        
+
         return { start, end };
     }
-    
+
     function getQuickRangeLabel(range) {
         const labels = {
             'today': 'Today',
@@ -560,12 +535,12 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         return labels[range] || 'Custom Range';
     }
-    
+
     function formatDateForInput(date) {
         if (!date) return '';
         return date.toISOString().split('T')[0];
     }
-    
+
     function formatDateDisplay(date) {
         if (!date) return '';
         return date.toLocaleDateString('en-US', {
@@ -574,12 +549,12 @@ document.addEventListener('DOMContentLoaded', function() {
             day: 'numeric'
         });
     }
-    
+
     function updateRangePreview() {
         if (selectedStartDate && selectedEndDate) {
             const startStr = formatDateDisplay(selectedStartDate);
             const endStr = formatDateDisplay(selectedEndDate);
-            
+
             if (selectedQuickRange) {
                 rangeText.textContent = `${getQuickRangeLabel(selectedQuickRange)} (${startStr} - ${endStr})`;
             } else {
@@ -593,10 +568,10 @@ document.addEventListener('DOMContentLoaded', function() {
             rangeText.textContent = 'No date range selected';
         }
     }
-    
+
     function applyDateFilter(startDate, endDate) {
         // Implement your date filtering logic here
-        
+
         // Example: Filter projects based on date range
         const projects = document.querySelectorAll('.project-row, .project-card');
         projects.forEach(project => {
@@ -605,34 +580,34 @@ document.addEventListener('DOMContentLoaded', function() {
             project.style.display = 'block';
         });
     }
-    
+
     function clearDateFilter() {
         // Clear date filters and show all projects
-        
+
         const projects = document.querySelectorAll('.project-row, .project-card');
         projects.forEach(project => {
             project.style.display = 'block';
         });
     }
-    
+
     // ESC key to close modal
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && dateRangeModal.classList.contains('active')) {
             closeDateRangeModal();
         }
     });
-    
+
     // ============================================
     // Edit Mode Functions - Simple Form Interface
     // ============================================
-    
+
     function enableEditMode() {
         openEditModal();
     }
-    
+
     function openEditModal() {
         const projectData = getCurrentProjectData();
-        
+
         const modal = document.createElement('div');
         modal.id = 'projectEditModal';
         modal.className = 'modal-overlay active';
@@ -718,9 +693,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="form-group">
                                         <label>Completion Evidence/Documentation (Required)</label>
                                         <textarea name="milestone_${index}_evidence" rows="3" placeholder="Describe completed work:
-â€¢ What was done?
-â€¢ Any photos/documentation?
-â€¢ Ready for customer inspection?" required></textarea>
+&bull; What was done?
+&bull; Any photos/documentation?
+&bull; Ready for customer inspection?" required></textarea>
                                     </div>
                                     <div class="notification-preview">
                                         <i class="fas fa-bell"></i>
@@ -775,25 +750,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
-        
+
         // Close modal when clicking on overlay background
-        modal.addEventListener('click', function(e) {
+        modal.addEventListener('click', function (e) {
             if (e.target === modal) {
                 closeEditModal();
             }
         });
     }
-    
+
     function getCurrentProjectData() {
         const description = document.querySelector('.project-description p')?.textContent || '';
-        
+
         const milestones = [];
         document.querySelectorAll('.milestone-item').forEach((item, index) => {
-            const status = item.classList.contains('completed') ? 'completed' : 
-                          item.classList.contains('active') ? 'active' : 'pending';
-            
+            const status = item.classList.contains('completed') ? 'completed' :
+                item.classList.contains('active') ? 'active' : 'pending';
+
             milestones.push({
                 title: item.querySelector('h5')?.textContent || '',
                 description: item.querySelector('p')?.textContent || '',
@@ -804,13 +779,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 verifiedByCustomer: status === 'completed'
             });
         });
-        
+
         return {
             description: description,
             milestones: milestones
         };
     }
-    
+
     function getMilestonePaymentStatus(milestone) {
         if (milestone.status === 'completed' && milestone.paymentStatus === 'paid') {
             return `<span class="payment-status paid"><i class="fas fa-check-circle"></i> Payment Released</span>`;
@@ -822,7 +797,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return `<span class="payment-status unpaid"><i class="fas fa-circle"></i> Payment Pending</span>`;
         }
     }
-    
+
     function closeEditModal() {
         const modal = document.getElementById('projectEditModal');
         if (modal) {
@@ -830,17 +805,17 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => modal.remove(), 300);
         }
     }
-    
+
     function handleMilestoneStatusChange(index, status) {
         const verificationSection = document.getElementById(`verification_${index}`);
         const timelineInfo = document.getElementById(`timeline_${index}`);
-        
+
         if (status === 'review') {
             // Show verification requirements
             verificationSection.style.display = 'block';
             timelineInfo.style.display = 'block';
             verificationSection.querySelector('textarea').required = true;
-            
+
             // Update timeline to show current step
             const timelineSteps = timelineInfo.querySelectorAll('.timeline-step');
             timelineSteps[0].classList.remove('pending');
@@ -852,39 +827,39 @@ document.addEventListener('DOMContentLoaded', function() {
             timelineInfo.style.display = 'none';
             verificationSection.querySelector('textarea').required = false;
         }
-        
+
         // Recalculate progress and auto-update project status
         calculateProgressAndUpdateStatus();
     }
-    
+
     function calculateProgress() {
         const milestoneSelects = document.querySelectorAll('[name^="milestone_"][name$="_status"]');
         let totalMilestones = milestoneSelects.length;
         let completedMilestones = 0;
-        
+
         milestoneSelects.forEach(select => {
             if (select.value === 'completed') {
                 completedMilestones++;
             }
         });
-        
+
         const progress = Math.round((completedMilestones / totalMilestones) * 100);
-        
+
         // Update display
         document.getElementById('calculatedProgress').textContent = progress + '%';
         document.getElementById('progressFill').style.width = progress + '%';
-        
+
         return progress;
     }
-    
+
     function calculateProgressAndUpdateStatus() {
         const progress = calculateProgress();
         const statusSelect = document.querySelector('[name="status"]');
-        
+
         const milestoneSelects = document.querySelectorAll('[name^="milestone_"][name$="_status"]');
         let hasDelayed = false;
         let allCompleted = true;
-        
+
         milestoneSelects.forEach(select => {
             if (select.value === 'pending') {
                 allCompleted = false;
@@ -892,7 +867,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Check if deadline passed for pending/active milestones
             // You would implement actual deadline checking here
         });
-        
+
         // Auto-update project status based on milestones
         if (progress === 100 && allCompleted) {
             statusSelect.value = 'completed';
@@ -903,7 +878,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (progress > 0) {
             statusSelect.value = 'ongoing';
         }
-        
+
         // Disable manual override if all milestones are complete
         if (allCompleted) {
             statusSelect.disabled = true;
@@ -911,13 +886,13 @@ document.addEventListener('DOMContentLoaded', function() {
             statusSelect.disabled = false;
         }
     }
-    
+
     function showStatusUpdateNotice(message) {
         const existingNotice = document.querySelector('.auto-status-notice');
         if (existingNotice) {
             existingNotice.remove();
         }
-        
+
         const notice = document.createElement('div');
         notice.className = 'auto-status-notice';
         notice.innerHTML = `
@@ -937,23 +912,23 @@ document.addEventListener('DOMContentLoaded', function() {
             font-size: 14px;
             animation: slideInDown 0.3s ease;
         `;
-        
+
         const statusGroup = document.querySelector('[name="status"]').closest('.form-group');
         statusGroup.parentNode.insertBefore(notice, statusGroup);
     }
-    
+
     function saveProjectChanges() {
         const form = document.getElementById('projectEditForm');
-        
+
         // Validate form first
         if (!form.checkValidity()) {
             form.reportValidity();
             return;
         }
-        
+
         const formData = new FormData(form);
         const calculatedProgress = calculateProgress();
-        
+
         const projectData = {
             status: formData.get('status'),
             progress: calculatedProgress, // Auto-calculated, not from user input
@@ -963,7 +938,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updatedBy: 'Current User', // TODO: Get from auth system
             customerNotifications: []
         };
-        
+
         // Collect milestone status updates with verification
         const milestoneItems = document.querySelectorAll('.milestone-status-item');
         milestoneItems.forEach((item, index) => {
@@ -972,13 +947,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 index: index,
                 status: status
             };
-            
+
             // If submitted for review, prepare customer notification
             if (status === 'review') {
                 milestoneData.evidence = formData.get(`milestone_${index}_evidence`);
                 milestoneData.submittedForReview = new Date().toISOString();
                 milestoneData.requiresCustomerApproval = true;
-                
+
                 // Add to notifications queue
                 projectData.customerNotifications.push({
                     type: 'milestone_review',
@@ -988,53 +963,53 @@ document.addEventListener('DOMContentLoaded', function() {
                     notificationChannels: ['email', 'sms', 'in-app']
                 });
             }
-            
+
             // If already completed (customer verified), include verification details
             if (status === 'completed') {
                 milestoneData.verifiedByCustomer = true;
                 milestoneData.completedAt = new Date().toISOString();
                 milestoneData.paymentStatus = 'released';
             }
-            
+
             projectData.milestones.push(milestoneData);
         });
-        
-        
+
+
         // Show what will happen
         let notificationMessage = `âœ… Project status updated successfully!\n\n`;
         notificationMessage += `ðŸ“Š Progress: ${calculatedProgress}%\n`;
         notificationMessage += `ðŸ“‹ Status: ${projectData.status}\n\n`;
-        
+
         if (projectData.customerNotifications.length > 0) {
             notificationMessage += `ðŸ”” Customer Notifications:\n`;
             projectData.customerNotifications.forEach(notif => {
-                notificationMessage += `  â€¢ ${notif.milestoneTitle} - Pending customer approval\n`;
+                notificationMessage += `  &bull; ${notif.milestoneTitle} - Pending customer approval\n`;
             });
             notificationMessage += `\nðŸ“§ Customer will be notified via Email & SMS\n`;
             notificationMessage += `ðŸ’° Payment will auto-release upon approval\n`;
         }
-        
+
         // TODO: Send to backend API
         // const response = await fetch('/api/projects/update-status', { 
         //     method: 'POST', 
         //     body: JSON.stringify(projectData),
         //     headers: { 'Content-Type': 'application/json' }
         // });
-        
+
         // Backend should:
         // 1. Update project status
         // 2. Send customer notifications
         // 3. Create approval requests for customer
         // 4. Log all changes for audit trail
         // 5. Set up payment release triggers for approved milestones
-        
+
         showEnhancedSuccessMessage(notificationMessage, projectData);
         closeEditModal();
-        
+
         // Reload to show updated status
         // setTimeout(() => location.reload(), 2000);
     }
-    
+
     function showEnhancedSuccessMessage(message, projectData) {
         const modal = document.createElement('div');
         modal.className = 'success-modal-overlay active';
@@ -1087,24 +1062,24 @@ document.addEventListener('DOMContentLoaded', function() {
             z-index: 10002;
             animation: fadeIn 0.3s ease;
         `;
-        
+
         document.body.appendChild(modal);
-        
-        window.closeSuccessModal = function() {
+
+        window.closeSuccessModal = function () {
             modal.style.animation = 'fadeOut 0.3s ease';
             setTimeout(() => modal.remove(), 300);
         };
     }
-    
+
     window.enableEditMode = enableEditMode;
     window.closeEditModal = closeEditModal;
     window.saveProjectChanges = saveProjectChanges;
     window.handleMilestoneStatusChange = handleMilestoneStatusChange;
-    
+
     // ================================================
     // EXPORT FUNCTIONALITY
     // ================================================
-    
+
     function openExportModal() {
         const modal = document.getElementById('exportModal');
         if (modal) {
@@ -1112,7 +1087,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.style.overflow = 'hidden';
         }
     }
-    
+
     function closeExportModal() {
         const modal = document.getElementById('exportModal');
         if (modal) {
@@ -1120,21 +1095,21 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.style.overflow = '';
         }
     }
-    
+
     function executeExport() {
         const format = document.querySelector('input[name="exportFormat"]:checked')?.value || 'csv';
         const dataRange = document.querySelector('input[name="dataRange"]:checked')?.value || 'all';
         const selectedColumns = Array.from(document.querySelectorAll('input[name="column"]:checked'))
             .map(cb => cb.value);
-        
+
         if (selectedColumns.length === 0) {
             alert('Please select at least one column to export.');
             return;
         }
-        
+
         // Get project data
         const projectData = getProjectData(dataRange);
-        
+
         // Export based on format
         switch (format) {
             case 'csv':
@@ -1147,13 +1122,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 exportToPDF(projectData, selectedColumns);
                 break;
         }
-        
+
         closeExportModal();
     }
-    
+
     function getProjectData(dataRange) {
         const projects = [];
-        
+
         // Determine which rows to export
         let rows;
         if (dataRange === 'visible') {
@@ -1168,7 +1143,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get all rows (from table view)
             rows = document.querySelectorAll('.table-view .project-row');
         }
-        
+
         rows.forEach(row => {
             const project = {
                 title: row.querySelector('.project-title h4')?.textContent.trim() || '',
@@ -1185,10 +1160,10 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             projects.push(project);
         });
-        
+
         return projects;
     }
-    
+
     function exportToCSV(projectData, selectedColumns) {
         const columnMapping = {
             title: 'Project Title',
@@ -1199,11 +1174,11 @@ document.addEventListener('DOMContentLoaded', function() {
             budget: 'Budget',
             status: 'Status'
         };
-        
+
         // Build CSV headers
         const headers = [];
         const dataKeys = [];
-        
+
         selectedColumns.forEach(col => {
             switch (col) {
                 case 'title':
@@ -1236,26 +1211,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
             }
         });
-        
+
         // Build CSV content
         let csvContent = headers.join(',') + '\n';
-        
+
         projectData.forEach(project => {
             const row = dataKeys.map(key => {
                 const value = project[key] || '';
                 // Escape quotes and wrap in quotes if contains comma
-                return value.includes(',') || value.includes('"') 
-                    ? `"${value.replace(/"/g, '""')}"` 
+                return value.includes(',') || value.includes('"')
+                    ? `"${value.replace(/"/g, '""')}"`
                     : value;
             });
             csvContent += row.join(',') + '\n';
         });
-        
+
         // Download CSV
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        
+
         const date = new Date().toISOString().split('T')[0];
         link.setAttribute('href', url);
         link.setAttribute('download', `FixLanka_Projects_${date}.csv`);
@@ -1263,14 +1238,14 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         showExportSuccessMessage('CSV file downloaded successfully!');
     }
-    
+
     function exportToExcel(projectData, selectedColumns) {
         // For Excel export, we'll create an HTML table and convert it
         // This is a simple approach that works in most browsers
-        
+
         const columnMapping = {
             title: ['Project Title', 'Project ID'],
             customer: ['Customer Name', 'Customer Contact'],
@@ -1280,9 +1255,9 @@ document.addEventListener('DOMContentLoaded', function() {
             budget: ['Total Budget', 'Spent Budget'],
             status: ['Status']
         };
-        
+
         let tableHTML = '<table border="1"><thead><tr>';
-        
+
         // Build headers
         const dataKeys = [];
         selectedColumns.forEach(col => {
@@ -1290,7 +1265,7 @@ document.addEventListener('DOMContentLoaded', function() {
             headers.forEach(header => {
                 tableHTML += `<th>${header}</th>`;
             });
-            
+
             // Map to data keys
             switch (col) {
                 case 'title':
@@ -1316,9 +1291,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
             }
         });
-        
+
         tableHTML += '</tr></thead><tbody>';
-        
+
         // Build rows
         projectData.forEach(project => {
             tableHTML += '<tr>';
@@ -1327,14 +1302,14 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             tableHTML += '</tr>';
         });
-        
+
         tableHTML += '</tbody></table>';
-        
+
         // Create blob and download
         const blob = new Blob([tableHTML], { type: 'application/vnd.ms-excel' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        
+
         const date = new Date().toISOString().split('T')[0];
         link.setAttribute('href', url);
         link.setAttribute('download', `FixLanka_Projects_${date}.xls`);
@@ -1342,14 +1317,14 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         showExportSuccessMessage('Excel file downloaded successfully!');
     }
-    
+
     function exportToPDF(projectData, selectedColumns) {
         // For PDF, we'll create a printable HTML page
         const printWindow = window.open('', '_blank');
-        
+
         const columnMapping = {
             title: ['Project Title', 'Project ID'],
             customer: ['Customer Name', 'Contact'],
@@ -1359,7 +1334,7 @@ document.addEventListener('DOMContentLoaded', function() {
             budget: ['Total Budget', 'Spent'],
             status: ['Status']
         };
-        
+
         let tableHTML = `
             <!DOCTYPE html>
             <html>
@@ -1444,14 +1419,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     <thead>
                         <tr>
         `;
-        
+
         const dataKeys = [];
         selectedColumns.forEach(col => {
             const headers = columnMapping[col] || [col];
             headers.forEach(header => {
                 tableHTML += `<th>${header}</th>`;
             });
-            
+
             switch (col) {
                 case 'title':
                     dataKeys.push('title', 'id');
@@ -1476,9 +1451,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
             }
         });
-        
+
         tableHTML += '</tr></thead><tbody>';
-        
+
         projectData.forEach(project => {
             tableHTML += '<tr>';
             dataKeys.forEach(key => {
@@ -1486,7 +1461,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             tableHTML += '</tr>';
         });
-        
+
         tableHTML += `
                     </tbody>
                 </table>
@@ -1504,13 +1479,13 @@ document.addEventListener('DOMContentLoaded', function() {
             </body>
             </html>
         `;
-        
+
         printWindow.document.write(tableHTML);
         printWindow.document.close();
-        
+
         showExportSuccessMessage('PDF generation initiated. Please use your browser\'s print dialog.');
     }
-    
+
     function showExportSuccessMessage(message) {
         const notification = document.createElement('div');
         notification.innerHTML = `
@@ -1534,23 +1509,23 @@ document.addEventListener('DOMContentLoaded', function() {
             animation: slideInRight 0.3s ease;
         `;
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             notification.style.animation = 'slideOutRight 0.3s ease';
             setTimeout(() => notification.remove(), 300);
         }, 3000);
     }
-    
+
     // Close export modal on clicking overlay
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const exportModal = document.getElementById('exportModal');
         if (e.target === exportModal) {
             closeExportModal();
         }
     });
-    
+
     // Close on Escape key
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
             const exportModal = document.getElementById('exportModal');
             if (exportModal && exportModal.style.display === 'flex') {
@@ -1558,10 +1533,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-    
+
     // Make functions globally available
     window.openExportModal = openExportModal;
     window.closeExportModal = closeExportModal;
     window.executeExport = executeExport;
-    
+
 });

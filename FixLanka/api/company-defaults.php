@@ -18,7 +18,7 @@ require_once '../../config/session.php';
 header('Content-Type: application/json');
 
 try {
-    $stmt = $pdo->prepare($query); 
+    // Removed buggy $stmt = $pdo->prepare($query); since $query is not defined yet
     // Get user_id from request
     $userId = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
 
@@ -33,7 +33,7 @@ try {
     // Get company details and defaults
     $query = "SELECT 
                 u.id as user_id,
-                u.district,
+                u_loc.district,
                 c.company_name,
                 c.payment_terms as default_payment_terms,
                 c.warranty_period as default_warranty,
@@ -41,6 +41,7 @@ try {
                 c.quotation_validity_days,
                 c.standard_lead_time_days
               FROM users u
+              LEFT JOIN location u_loc ON u.location_id = u_loc.location_id
               LEFT JOIN companies c ON u.id = c.user_id
               WHERE u.id = :user_id AND u.user_type = 'company'";
 
