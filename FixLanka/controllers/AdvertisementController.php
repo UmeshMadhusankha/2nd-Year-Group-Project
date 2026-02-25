@@ -21,7 +21,7 @@ class AdvertisementController
     private function getCurrentModeratorId()
     {
         // TODO: Replace with proper session authentication
-        $moderatorId = $_SESSION['moderator_id'] ?? 1;
+        $moderatorId = $_SESSION['moderator_id'] ?? $_SESSION['user_id'] ?? 1;
         
         if (!$this->model->moderatorExists($moderatorId)) {
             error_log("CRITICAL: Moderator ID {$moderatorId} does not exist!");

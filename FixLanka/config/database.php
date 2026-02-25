@@ -31,8 +31,8 @@ function getDatabaseConnection()
         error_log("Database Connection Failed: " . $e->getMessage());
         die("⛔ Database connection failed. Please check if XAMPP MySQL is running.");
     }
-    
-    // Otherwise die with error message
-    die("Database connection failed: " . $e->getMessage());
 }
+
+// Create global $pdo instance so files using "global $pdo" work correctly
+$pdo = getDatabaseConnection();
 

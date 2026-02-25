@@ -59,24 +59,7 @@ class AdvertisementModel
     public function getAdvertisements($filters = [])
     {
         // SIMPLIFIED QUERY - No JOINs for now
-        $sql = "SELECT 
-                    ad_id,
-                    title,
-                    description,
-                    provider_id,
-                    provider_type,
-                    type,
-                    budget,
-                    status,
-                    submission_date,
-                    reviewed_by,
-                    reviewed_at,
-                    moderator_notes,
-                    contact_email,
-                    contact_phone,
-                    image_url,
-                    category_id
-                FROM advertisement
+        $sql = "SELECT * FROM advertisement
                 WHERE 1=1";
 
         $params = [];
@@ -103,12 +86,12 @@ class AdvertisementModel
             $stmt->execute($params);
             $results = $stmt->fetchAll();
             
-            // Add derived fields
+            // Add derived fields (safe access for optional columns)
             foreach ($results as &$ad) {
                 $ad['provider_name'] = $this->getProviderName($ad['provider_id'], $ad['provider_type']);
-                $ad['moderator_name'] = $this->getModeratorName($ad['reviewed_by']);
-                $ad['moderator_email'] = $this->getModeratorEmail($ad['reviewed_by']);
-                $ad['category_name'] = $this->getCategoryName($ad['category_id']);
+                $ad['moderator_name'] = $this->getModeratorName($ad['reviewed_by'] ?? null);
+                $ad['moderator_email'] = $this->getModeratorEmail($ad['reviewed_by'] ?? null);
+                $ad['category_name'] = $this->getCategoryName($ad['category_id'] ?? null);
             }
             
             return $results;
@@ -126,11 +109,11 @@ class AdvertisementModel
             if ($providerType === 'company') {
                 $stmt = $this->pdo->prepare("SELECT name FROM company WHERE company_id = :id");
             } else {
-                $stmt = $this->pdo->prepare("SELECT first_name FROM repairer WHERE repairer_id = :id");
+                $stmt = $this->pdo->prepare("SELECT f_name FROM repairer WHERE repairer_id = :id");
             }
             $stmt->execute(['id' => $providerId]);
             $row = $stmt->fetch();
-            return $row ? ($row['name'] ?? $row['first_name'] ?? 'Unknown') : 'Unknown';
+            return $row ? ($row['name'] ?? $row['f_name'] ?? 'Unknown') : 'Unknown';
         } catch (PDOException $e) {
             return 'Unknown';
         }
@@ -189,9 +172,9 @@ class AdvertisementModel
             
             if ($ad) {
                 $ad['provider_name'] = $this->getProviderName($ad['provider_id'], $ad['provider_type']);
-                $ad['moderator_name'] = $this->getModeratorName($ad['reviewed_by']);
-                $ad['moderator_email'] = $this->getModeratorEmail($ad['reviewed_by']);
-                $ad['category_name'] = $this->getCategoryName($ad['category_id']);
+                $ad['moderator_name'] = $this->getModeratorName($ad['reviewed_by'] ?? null);
+                $ad['moderator_email'] = $this->getModeratorEmail($ad['reviewed_by'] ?? null);
+                $ad['category_name'] = $this->getCategoryName($ad['category_id'] ?? null);
             }
             
             return $ad ?: null;

@@ -6,8 +6,7 @@ class AuthController {
     private $pdo;
     
     public function __construct() {
-        global $pdo;
-        $this->pdo = $pdo;
+        $this->pdo = getDatabaseConnection();
     }
     
     public function showLoginPage() {
@@ -31,7 +30,7 @@ class AuthController {
         
         try {
             // Try to find user in User table
-            $stmt = $this->pdo->prepare("SELECT user_id, f_name, l_name, email, password FROM User WHERE email = ? AND is_deleted = 0");
+            $stmt = $this->pdo->prepare("SELECT user_id, f_name, l_name, email, password FROM User WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -76,7 +75,7 @@ class AuthController {
             }
             
             // Try to find user in Company table
-            $stmt = $this->pdo->prepare("SELECT company_id, name, email, password FROM Company WHERE email = ? AND is_deleted = 0");
+            $stmt = $this->pdo->prepare("SELECT company_id, name, email, password FROM Company WHERE email = ?");
             $stmt->execute([$email]);
             $company = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -91,7 +90,7 @@ class AuthController {
             }
             
             // Try to find user in Repairer table
-            $stmt = $this->pdo->prepare("SELECT repairer_id, f_name, l_name, email, password FROM Repairer WHERE email = ? AND is_deleted = 0");
+            $stmt = $this->pdo->prepare("SELECT repairer_id, f_name, l_name, email, password FROM Repairer WHERE email = ?");
             $stmt->execute([$email]);
             $repairer = $stmt->fetch(PDO::FETCH_ASSOC);
             

@@ -130,7 +130,7 @@ class AccountModerationModel
                     r.repairer_id as account_id,
                     CONCAT(r.f_name, ' ', r.l_name) as name,
                     r.email,
-                    r.phone,
+                    r.phoneNumber,
                     'Repairer' as account_type,
                     COALESCE(ams.account_status, 'ACTIVE') as account_status,
                     COALESCE(ams.banned_permanent, 0) as banned_permanent,
@@ -145,7 +145,7 @@ class AccountModerationModel
         $params = [];
         
         if (!empty($search)) {
-            $sql .= " AND (CONCAT(r.f_name, ' ', r.l_name) LIKE ? OR r.email LIKE ? OR r.phone LIKE ?)";
+            $sql .= " AND (CONCAT(r.f_name, ' ', r.l_name) LIKE ? OR r.email LIKE ? OR r.phoneNumber LIKE ?)";
             $searchParam = "%$search%";
             $params = array_merge($params, [$searchParam, $searchParam, $searchParam]);
         }
@@ -170,7 +170,7 @@ class AccountModerationModel
                     c.company_id as account_id,
                     c.name as name,
                     c.email,
-                    c.phone,
+                    c.contact_no,
                     'Company' as account_type,
                     COALESCE(ams.account_status, 'ACTIVE') as account_status,
                     COALESCE(ams.banned_permanent, 0) as banned_permanent,
@@ -185,7 +185,7 @@ class AccountModerationModel
         $params = [];
         
         if (!empty($search)) {
-            $sql .= " AND (c.name LIKE ? OR c.email LIKE ? OR c.phone LIKE ?)";
+            $sql .= " AND (c.name LIKE ? OR c.email LIKE ? OR c.contact_no LIKE ?)";
             $searchParam = "%$search%";
             $params = array_merge($params, [$searchParam, $searchParam, $searchParam]);
         }

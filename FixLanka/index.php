@@ -152,7 +152,7 @@ switch ($request) {
 
 // ✅ NEW ROUTE: Moderator Actions Handler
 case '/admin-moderators-action':
-    require_once __DIR__ . '/config/databse.php';
+    require_once __DIR__ . '/config/database.php';
     require_once __DIR__ . '/controllers/ModeratorController.php';
     $controller = new ModeratorController();
     $controller->handleRequest();

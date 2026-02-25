@@ -7,7 +7,7 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
-require_once __DIR__ . '/../../config/databse.php';
+require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../models/NotificationModel.php';
 
 // Handle POST actions
