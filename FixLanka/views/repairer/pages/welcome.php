@@ -38,7 +38,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                 <section class="welcome-section">
                     <div class="welcome-header">
                         <div class="welcome-text">
-                            <h1 class="welcome-title">Welcome back, <span class="repairer-name">John Doe</span>!</h1>
+                            <h1 class="welcome-title">Welcome back, <span class="repairer-name"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'User'); ?></span>!</h1>
                             <p class="welcome-subtitle">Ready to help more customers today? Here's your current overview.</p>
                         </div>
                         <div class="welcome-actions">
@@ -58,7 +58,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                 <i class="fas fa-hammer"></i>
                             </div>
                             <div class="stat-content">
-                                <h3 class="stat-number">5</h3>
+                                <h3 class="stat-number" id="welcomeActiveJobs">—</h3>
                                 <p class="stat-label">Active Jobs</p>
                             </div>
                         </div>
@@ -68,7 +68,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                 <i class="fas fa-file-invoice"></i>
                             </div>
                             <div class="stat-content">
-                                <h3 class="stat-number">8</h3>
+                                <h3 class="stat-number" id="welcomePendingQuotes">—</h3>
                                 <p class="stat-label">Pending Quotes</p>
                             </div>
                         </div>
@@ -78,7 +78,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                 <i class="fas fa-coins"></i>
                             </div>
                             <div class="stat-content">
-                                <h3 class="stat-number">LKR 45,200</h3>
+                                <h3 class="stat-number" id="welcomeTotalEarnings">—</h3>
                                 <p class="stat-label">Total Earnings</p>
                             </div>
                         </div>
@@ -190,75 +190,10 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                         <a href="/2nd-Year-Group-Project/FixLanka/repairer-my-jobs" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
                     </div>
 
-                    <div class="activity-list">
-                        <div class="activity-item">
-                            <div class="activity-icon">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h4 class="activity-title">Job Completed</h4>
-                                <p class="activity-description">Plumbing repair at Colombo 07 - Customer paid LKR 2,500</p>
-                                <span class="activity-time">2 hours ago</span>
-                            </div>
-                            <div class="activity-status completed">
-                                <span>Completed</span>
-                            </div>
-                        </div>
-
-                        <div class="activity-item">
-                            <div class="activity-icon">
-                                <i class="fas fa-file-invoice"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h4 class="activity-title">Quote Submitted</h4>
-                                <p class="activity-description">Electrical repair quote for Kandy - LKR 1,800</p>
-                                <span class="activity-time">5 hours ago</span>
-                            </div>
-                            <div class="activity-status pending">
-                                <span>Pending</span>
-                            </div>
-                        </div>
-
-                        <div class="activity-item">
-                            <div class="activity-icon">
-                                <i class="fas fa-star"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h4 class="activity-title">New Review Received</h4>
-                                <p class="activity-description">5-star review from Nimal Perera - "Excellent service!"</p>
-                                <span class="activity-time">1 day ago</span>
-                            </div>
-                            <div class="activity-status review">
-                                <span>5 ★</span>
-                            </div>
-                        </div>
-
-                        <div class="activity-item">
-                            <div class="activity-icon">
-                                <i class="fas fa-handshake"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h4 class="activity-title">Job Accepted</h4>
-                                <p class="activity-description">AC repair at Nugegoda - Starting tomorrow 9:00 AM</p>
-                                <span class="activity-time">1 day ago</span>
-                            </div>
-                            <div class="activity-status accepted">
-                                <span>Accepted</span>
-                            </div>
-                        </div>
-
-                        <div class="activity-item">
-                            <div class="activity-icon">
-                                <i class="fas fa-coins"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h4 class="activity-title">Payment Received</h4>
-                                <p class="activity-description">Appliance repair payment - LKR 3,200 credited to account</p>
-                                <span class="activity-time">2 days ago</span>
-                            </div>
-                            <div class="activity-status payment">
-                                <span>Paid</span>
-                            </div>
+                    <div class="activity-list" id="activityList">
+                        <div class="loading-state" style="text-align:center;padding:40px;color:var(--text-secondary)">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                            <p style="margin-top:12px">Loading recent activity...</p>
                         </div>
                     </div>
                 </section>

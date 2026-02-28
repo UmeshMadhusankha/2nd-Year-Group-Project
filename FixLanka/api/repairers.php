@@ -2,11 +2,20 @@
 require_once __DIR__ . '/../controllers/RepairerController.php';
 
 $controller = new RepairerController();
-$action = $_GET['action'] ?? 'getDetails';
+$action = $_GET['action'] ?? $_POST['action'] ?? 'getDetails';
 
 switch ($action) {
     case 'getDetails':
         $controller->getDetails();
+        break;
+    case 'updateProfile':
+        $controller->updateProfile();
+        break;
+    case 'changePassword':
+        $controller->changePassword();
+        break;
+    case 'uploadPhoto':
+        $controller->uploadPhoto();
         break;
     default:
         header('Content-Type: application/json');

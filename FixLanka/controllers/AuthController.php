@@ -31,7 +31,7 @@ class AuthController {
         
         try {
             // Try to find user in User table
-            $stmt = $this->pdo->prepare("SELECT user_id, f_name, l_name, email, password FROM User WHERE email = ?");
+            $stmt = $this->pdo->prepare("SELECT user_id, f_name, l_name, email, password FROM user WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -45,9 +45,9 @@ class AuthController {
                 exit;
             }
             
-            // Try to find user in Admin table
-            $stmt = $this->pdo->prepare("SELECT username, email, password FROM Admin WHERE email = ?");
-            $stmt->execute([$email]);
+            // Try to find user in Admin table (by email or username)
+            $stmt = $this->pdo->prepare("SELECT username, email, password FROM Admin WHERE email = ? OR username = ?");
+            $stmt->execute([$email, $email]);
             $admin = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($admin && password_verify($password, $admin['password'])) {
@@ -76,7 +76,7 @@ class AuthController {
             }
             
             // Try to find user in Company table
-            $stmt = $this->pdo->prepare("SELECT company_id, name, email, password FROM Company WHERE email = ?");
+            $stmt = $this->pdo->prepare("SELECT company_id, name, email, password FROM company WHERE email = ?");
             $stmt->execute([$email]);
             $company = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -91,7 +91,7 @@ class AuthController {
             }
             
             // Try to find user in Repairer table
-            $stmt = $this->pdo->prepare("SELECT repairer_id, f_name, l_name, email, password FROM Repairer WHERE email = ?");
+            $stmt = $this->pdo->prepare("SELECT repairer_id, f_name, l_name, email, password FROM repairer WHERE email = ?");
             $stmt->execute([$email]);
             $repairer = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -174,7 +174,7 @@ class AuthController {
         }
         
         try {
-            $stmt = $this->pdo->prepare("SELECT user_id FROM User WHERE email = ?");
+            $stmt = $this->pdo->prepare("SELECT user_id FROM user WHERE email = ?");
             $stmt->execute([$email]);
             if ($stmt->fetch()) {
                 $_SESSION['error'] = 'Email already registered';
@@ -185,7 +185,7 @@ class AuthController {
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             
             $stmt = $this->pdo->prepare("
-                INSERT INTO User (f_name, l_name, email, password, address) 
+                INSERT INTO user (f_name, l_name, email, password, address) 
                 VALUES (?, ?, ?, ?, ?)
             ");
             $stmt->execute([$f_name, $l_name, $email, $hashedPassword, $address]);
@@ -253,7 +253,7 @@ class AuthController {
         
         try {
             // Check email uniqueness
-            $stmt = $this->pdo->prepare("SELECT repairer_id FROM Repairer WHERE email = ?");
+            $stmt = $this->pdo->prepare("SELECT repairer_id FROM repairer WHERE email = ?");
             $stmt->execute([$email]);
             if ($stmt->fetch()) {
                 $_SESSION['error'] = 'Email already registered';
@@ -278,9 +278,9 @@ class AuthController {
             // Hash password
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             
-            // Insert into Repairer table
+            // Insert into repairer table
             $stmt = $this->pdo->prepare("
-                INSERT INTO Repairer (f_name, l_name, email, password, phoneNumber, about, profilePicture, districts, category_id, availability) 
+                INSERT INTO repairer (f_name, l_name, email, password, phoneNumber, about, profilePicture, districts, category_id, availability) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')
             ");
             $stmt->execute([$f_name, $l_name, $email, $hashedPassword, $phoneNumber, $about, $profilePicture, $districtsCSV, $category_id]);
@@ -357,7 +357,7 @@ class AuthController {
         
         try {
             // Check email uniqueness
-            $stmt = $this->pdo->prepare("SELECT company_id FROM Company WHERE email = ?");
+            $stmt = $this->pdo->prepare("SELECT company_id FROM company WHERE email = ?");
             $stmt->execute([$email]);
             if ($stmt->fetch()) {
                 $_SESSION['error'] = 'Email already registered';
@@ -366,7 +366,7 @@ class AuthController {
             }
             
             // Check registration number uniqueness
-            $stmt = $this->pdo->prepare("SELECT company_id FROM Company WHERE registration_no = ?");
+            $stmt = $this->pdo->prepare("SELECT company_id FROM company WHERE registration_no = ?");
             $stmt->execute([$registration_no]);
             if ($stmt->fetch()) {
                 $_SESSION['error'] = 'Registration number already exists';
@@ -381,9 +381,9 @@ class AuthController {
             // Hash password
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             
-            // Insert into Company table
+            // Insert into company table
             $stmt = $this->pdo->prepare("
-                INSERT INTO Company (name, business_type, registration_no, tax_id, address, email, website, contact_no, districts, password, description) 
+                INSERT INTO company (name, business_type, registration_no, tax_id, address, email, website, contact_no, districts, password, description) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([$name, $businessTypeCSV, $registration_no, $tax_id, $address, $email, $website, $contact_no, $districtsCSV, $hashedPassword, $description]);

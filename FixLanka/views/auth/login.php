@@ -36,8 +36,8 @@ unset($_SESSION['error']);
             
             <form action="/2nd-Year-Group-Project/FixLanka/login" method="POST" class="login-form" id="loginForm" autocomplete="off">
                 <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" required placeholder="Enter your email" autocomplete="off">
+                    <label for="email">Email or Username</label>
+                    <input type="text" id="email" name="email" required placeholder="Enter your email or username" autocomplete="off">
                 </div>
                 
                 <div class="form-group">

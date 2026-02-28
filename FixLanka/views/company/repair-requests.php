@@ -39,6 +39,7 @@ if (!$userId) {
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/progress-bars.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/global.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
@@ -65,6 +66,9 @@ if (!$userId) {
             <!-- Header Container -->
             <!-- Header Component -->
             <?php include 'topbar.php'; ?>
+
+            <!-- Repair Requests Container -->
+            <div class="repair-requests-container">
 
             <!-- Page Header -->
             <header class="page-header">
@@ -338,6 +342,8 @@ if (!$userId) {
                     </div>
                 </div>
             </section>
+
+            </div><!-- /.repair-requests-container -->
         </main>
     </div>
 
