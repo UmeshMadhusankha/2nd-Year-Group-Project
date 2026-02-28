@@ -97,6 +97,14 @@ CREATE TABLE `advertisement` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `advertisement`
+--
+
+INSERT INTO `advertisement` (`ad_id`, `provider_id`, `provider_type`, `title`, `description`, `type`, `budget`, `status`, `reviewed_by`, `contact_email`, `contact_phone`, `category_id`) VALUES
+(1, 1, 'company', 'Professional Plumbing Services', 'We offer 24/7 plumbing services for residential and commercial properties.', 'featured', 5000.00, 'pending', NULL, 'contact@plumbing.com', '0771234567', NULL),
+(2, 2, 'repairer', 'Expert Electrician', 'Fixing all electrical issues safely and quickly.', 'banner', 2500.00, 'approved', 1, 'electrician@gmail.com', '0719876543', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -810,6 +818,14 @@ CREATE TABLE `ad_reports` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `ad_reports`
+--
+
+INSERT INTO `ad_reports` (`report_id`, `ad_id`, `reporter_id`, `reporter_type`, `report_category`, `description`, `severity`, `status`) VALUES
+(1, 1, 1, 'user', 'spam', 'This advertisement seems to be posted multiple times and looks like spam.', 'medium', 'pending'),
+(2, 2, 2, 'user', 'misleading_information', 'The prices mentioned are different from what is charged.', 'high', 'investigating');
 
 -- --------------------------------------------------------
 

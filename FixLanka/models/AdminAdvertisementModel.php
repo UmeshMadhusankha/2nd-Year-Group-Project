@@ -69,33 +69,7 @@ class AdminAdvertisementModel
 
     public function getAdvertisements($filters = [], $limit = 200)
     {
-        $sql = "SELECT 
-                    ad_id,
-                    title,
-                    description,
-                    provider_id,
-                    provider_type,
-                    type,
-                    budget,
-                    status,
-                    submission_date,
-                    reviewed_by,
-                    reviewed_at,
-                    moderator_notes,
-                    admin_reviewed_by,
-                    admin_reviewed_at,
-                    admin_notes,
-                    override_reason,
-                    is_override,
-                    contact_email,
-                    contact_phone,
-                    image_url,
-                    category_id,
-                    target_audience,
-                    start_date,
-                    end_date,
-                    clicks,
-                    impressions
+        $sql = "SELECT *
                 FROM advertisement 
                 WHERE 1=1";
 
@@ -139,10 +113,10 @@ class AdminAdvertisementModel
             $results = $stmt->fetchAll();
             
             foreach ($results as &$ad) {
-                $ad['provider_name'] = $this->getProviderName($ad['provider_id'], $ad['provider_type']);
-                $ad['moderator_name'] = $this->getModeratorName($ad['reviewed_by']);
-                $ad['moderator_email'] = $this->getModeratorEmail($ad['reviewed_by']);
-                $ad['category_name'] = $this->getCategoryName($ad['category_id']);
+                $ad['provider_name'] = $this->getProviderName($ad['provider_id'] ?? null, $ad['provider_type'] ?? null);
+                $ad['moderator_name'] = $this->getModeratorName($ad['reviewed_by'] ?? null);
+                $ad['moderator_email'] = $this->getModeratorEmail($ad['reviewed_by'] ?? null);
+                $ad['category_name'] = $this->getCategoryName($ad['category_id'] ?? null);
             }
             
             return $results;
@@ -223,10 +197,10 @@ class AdminAdvertisementModel
             $ad = $stmt->fetch();
             
             if ($ad) {
-                $ad['provider_name'] = $this->getProviderName($ad['provider_id'], $ad['provider_type']);
-                $ad['moderator_name'] = $this->getModeratorName($ad['reviewed_by']);
-                $ad['moderator_email'] = $this->getModeratorEmail($ad['reviewed_by']);
-                $ad['category_name'] = $this->getCategoryName($ad['category_id']);
+                $ad['provider_name'] = $this->getProviderName($ad['provider_id'] ?? null, $ad['provider_type'] ?? null);
+                $ad['moderator_name'] = $this->getModeratorName($ad['reviewed_by'] ?? null);
+                $ad['moderator_email'] = $this->getModeratorEmail($ad['reviewed_by'] ?? null);
+                $ad['category_name'] = $this->getCategoryName($ad['category_id'] ?? null);
             }
             
             return $ad ?: null;
