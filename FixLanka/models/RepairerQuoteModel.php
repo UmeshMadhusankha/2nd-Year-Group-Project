@@ -60,7 +60,7 @@ class RepairerQuote {
                            jr_loc.address,
                            jr.urgency,
                            jr.finish_date,
-                           jr.created_at as job_posted_date,
+                           jr.dateCreated as job_posted_date,
                            c.name as category_name,
                            u.f_name as customer_first_name,
                            u.l_name as customer_last_name
@@ -122,7 +122,7 @@ class RepairerQuote {
                        jr.urgency,
                        jr.finish_date,
                        jr.photos as job_photos,
-                       jr.created_at as job_posted_date,
+                       jr.dateCreated as job_posted_date,
                        c.name as category_name,
                        u.f_name as customer_first_name,
                        u.l_name as customer_last_name,

@@ -51,7 +51,7 @@ class JobRequest {
                 LEFT JOIN Category c ON jr.category_id = c.category_id
                 LEFT JOIN location l ON jr.location_id = l.location_id
                 WHERE jr.user_id = ?
-                ORDER BY jr.created_at DESC
+                ORDER BY jr.dateCreated DESC
             ");
             $stmt->execute([$userId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -220,7 +220,7 @@ class JobRequest {
                 $params[] = $filters['category_id'];
             }
             
-            $sql .= " ORDER BY jr.created_at DESC";
+            $sql .= " ORDER BY jr.dateCreated DESC";
             
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);

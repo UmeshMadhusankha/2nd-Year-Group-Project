@@ -69,12 +69,12 @@ function getAvailableJobs() {
                     jr.service_provider_type,
                     jr.urgency,
                     jr.finish_date,
-                    jr.created_at,
+                    jr.dateCreated,
                     jr.photos,
                     c.name as category_name,
                     u.f_name as customer_first_name,
                     u.l_name as customer_last_name,
-                    TIMESTAMPDIFF(HOUR, jr.created_at, NOW()) as hours_ago,
+                    TIMESTAMPDIFF(HOUR, jr.dateCreated, NOW()) as hours_ago,
                     CASE 
                         WHEN jr.finish_date < CURDATE() THEN 1 
                         ELSE 0 
@@ -121,17 +121,17 @@ function getAvailableJobs() {
         // Apply sorting
         switch ($sort) {
             case 'oldest':
-                $sql .= " ORDER BY jr.created_at ASC";
+                $sql .= " ORDER BY jr.dateCreated ASC";
                 break;
             case 'urgency':
-                $sql .= " ORDER BY FIELD(jr.urgency, 'urgent', 'medium'), jr.created_at DESC";
+                $sql .= " ORDER BY FIELD(jr.urgency, 'urgent', 'medium'), jr.dateCreated DESC";
                 break;
             case 'deadline':
                 $sql .= " ORDER BY jr.finish_date ASC";
                 break;
             case 'newest':
             default:
-                $sql .= " ORDER BY jr.created_at DESC";
+                $sql .= " ORDER BY jr.dateCreated DESC";
                 break;
         }
         
