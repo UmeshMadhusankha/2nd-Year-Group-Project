@@ -209,68 +209,6 @@ button:focus-visible {
     text-align: center;
 }
 
-/* Notifications dropdown */
-.notification-dropdown {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  width: 340px;
-  max-width: 90vw;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  z-index: 9999;
-}
-
-.notification-dropdown-header {
-  padding: 12px 14px;
-  border-bottom: 1px solid #eaeaea;
-  font-weight: 700;
-  font-size: 14px;
-  color: #333;
-}
-
-.notification-dropdown-list {
-  max-height: 360px;
-  overflow: auto;
-}
-
-.notification-item {
-  padding: 12px 14px;
-  border-bottom: 1px solid #f0f0f0;
-  text-align: left;
-}
-
-.notification-item:last-child {
-  border-bottom: none;
-}
-
-.notification-title {
-  font-weight: 700;
-  font-size: 13px;
-  color: #222;
-  margin-bottom: 4px;
-}
-
-.notification-message {
-  font-size: 12px;
-  color: #555;
-  line-height: 1.35;
-  margin-bottom: 6px;
-}
-
-.notification-meta {
-  font-size: 11px;
-  color: #888;
-}
-
-.notification-empty {
-  padding: 16px 14px;
-  font-size: 12px;
-  color: #777;
-}
-
 /* Mobile Menu */
 .mobile-menu-toggle {
   display: none;

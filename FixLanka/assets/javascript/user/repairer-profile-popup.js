@@ -1,29 +1,181 @@
-// Repairer Profile Popup JavaScript (loads real DB data)
+// Repairer Profile Popup JavaScript with Mock Data
 
-const DEFAULT_APP_BASE = '/2nd-Year-Group-Project/FixLanka';
-const DEBUG_REPAIRER_POPUP = true;
-
-if (DEBUG_REPAIRER_POPUP) {
-    console.log('[RepairerPopup] Script loaded');
-}
+// Mock data for repairers
+const mockRepairers = {
+    1: {
+        id: 1,
+        name: "Kamal Silva",
+        category: "Master Electrician",
+        rating: 4.9,
+        reviewCount: 156,
+        completedJobs: 234,
+        distance: "0.8 km away",
+        about: "Certified electrician with 15+ years of experience. Specializes in residential and commercial electrical work, including installations, repairs, and maintenance. Licensed and insured professional committed to delivering high-quality electrical solutions.",
+        phone: "+94 77 123 4567",
+        email: "kamal.silva@fixlanka.lk",
+        districts: "Colombo, Gampaha, Kalutara",
+        availability: "available",
+        image: "https://ui-avatars.com/api/?name=Kamal+Silva&size=200&background=17a2b8&color=fff&bold=true",
+        reviews: [
+            {
+                author: "Priya Fernando",
+                rating: 5,
+                text: "Excellent work! Very professional and completed the job on time. Highly recommended for any electrical work.",
+                date: "2025-10-15"
+            },
+            {
+                author: "Rajesh Kumar",
+                rating: 5,
+                text: "Kamal was very knowledgeable and fixed our electrical issues quickly. Great service!",
+                date: "2025-10-10"
+            },
+            {
+                author: "Anura Perera",
+                rating: 4,
+                text: "Good service, fair pricing. Would hire again for future electrical needs.",
+                date: "2025-10-05"
+            }
+        ]
+    },
+    2: {
+        id: 2,
+        name: "Nimal Perera",
+        category: "Plumbing Expert",
+        rating: 4.8,
+        reviewCount: 243,
+        completedJobs: 312,
+        distance: "1.2 km away",
+        about: "Licensed plumber offering 24/7 emergency services. Expert in pipe repairs, bathroom installations, water heater services, and drainage solutions. 18 years of experience serving residential and commercial clients.",
+        phone: "+94 71 234 5678",
+        email: "nimal.perera@fixlanka.lk",
+        districts: "Colombo, Dehiwala, Moratuwa",
+        availability: "busy",
+        image: "https://ui-avatars.com/api/?name=Nimal+Perera&size=200&background=28a745&color=fff&bold=true",
+        reviews: [
+            {
+                author: "Sanduni Dias",
+                rating: 5,
+                text: "Fixed our leaking pipes promptly. Very reliable and professional service.",
+                date: "2025-10-18"
+            },
+            {
+                author: "Chaminda Silva",
+                rating: 5,
+                text: "Nimal is the best plumber in Colombo! Quick response and excellent work quality.",
+                date: "2025-10-12"
+            },
+            {
+                author: "Malini Gunasekara",
+                rating: 4,
+                text: "Great plumber, solved our drainage issues efficiently.",
+                date: "2025-10-08"
+            }
+        ]
+    },
+    3: {
+        id: 3,
+        name: "Saman Fernando",
+        category: "HVAC Technician",
+        rating: 4.7,
+        reviewCount: 89,
+        completedJobs: 145,
+        distance: "2.1 km away",
+        about: "Air conditioning and heating specialist. Quick diagnostics and reliable repair services for all AC brands. Certified technician with expertise in installation, maintenance, and emergency repairs.",
+        phone: "+94 76 345 6789",
+        email: "saman.fernando@fixlanka.lk",
+        districts: "Colombo, Nugegoda, Maharagama",
+        availability: "available",
+        image: "https://ui-avatars.com/api/?name=Saman+Fernando&size=200&background=ffc107&color=000&bold=true",
+        reviews: [
+            {
+                author: "Ruwan Jayasinghe",
+                rating: 5,
+                text: "Fixed our AC unit in no time. Very knowledgeable about cooling systems.",
+                date: "2025-10-16"
+            },
+            {
+                author: "Lakshmi Rathnayake",
+                rating: 4,
+                text: "Good service and fair pricing. AC is working perfectly now.",
+                date: "2025-10-11"
+            },
+            {
+                author: "Dinesh Wijeratne",
+                rating: 5,
+                text: "Highly recommend! Saman is very professional and efficient.",
+                date: "2025-10-07"
+            }
+        ]
+    },
+    4: {
+        id: 4,
+        name: "Ranjith Kumar",
+        category: "Carpentry Specialist",
+        rating: 4.6,
+        reviewCount: 127,
+        completedJobs: 198,
+        distance: "3.5 km away",
+        about: "Expert carpenter specializing in custom furniture, kitchen cabinets, and home renovations. 12 years of experience creating beautiful and functional woodwork. Quality craftsmanship guaranteed.",
+        phone: "+94 75 456 7890",
+        email: "ranjith.kumar@fixlanka.lk",
+        districts: "Colombo, Kotte, Battaramulla",
+        availability: "available",
+        image: "https://ui-avatars.com/api/?name=Ranjith+Kumar&size=200&background=dc3545&color=fff&bold=true",
+        reviews: [
+            {
+                author: "Tharaka Mendis",
+                rating: 5,
+                text: "Built amazing custom shelves for our home. Excellent craftsmanship!",
+                date: "2025-10-14"
+            },
+            {
+                author: "Nishantha Silva",
+                rating: 4,
+                text: "Good work on our kitchen cabinets. Professional and clean.",
+                date: "2025-10-09"
+            }
+        ]
+    },
+    5: {
+        id: 5,
+        name: "Pradeep Bandara",
+        category: "Painting Professional",
+        rating: 4.5,
+        reviewCount: 93,
+        completedJobs: 167,
+        distance: "1.8 km away",
+        about: "Professional painting contractor for interior and exterior projects. Specializes in residential and commercial painting with attention to detail. High-quality finishes with premium paints.",
+        phone: "+94 77 567 8901",
+        email: "pradeep.bandara@fixlanka.lk",
+        districts: "Colombo, Rajagiriya, Pannipitiya",
+        availability: "unavailable",
+        image: "https://ui-avatars.com/api/?name=Pradeep+Bandara&size=200&background=6c757d&color=fff&bold=true",
+        reviews: [
+            {
+                author: "Gayan Perera",
+                rating: 5,
+                text: "Perfect paint job! Our house looks brand new.",
+                date: "2025-10-13"
+            },
+            {
+                author: "Amila Rajapaksa",
+                rating: 4,
+                text: "Good quality painting work. Very neat and professional.",
+                date: "2025-10-06"
+            }
+        ]
+    }
+};
 
 /**
  * Open repairer profile popup
  * @param {number} repairerId - The ID of the repairer
- * @param {object|null} repairerData - Optional repairer data from landing cache
  */
-function openRepairerProfile(repairerId, repairerData = null) {
-    if (DEBUG_REPAIRER_POPUP) {
-        console.groupCollapsed('[RepairerPopup] openRepairerProfile()');
-        console.log('repairerId (raw):', repairerId);
-        console.log('repairerId (number):', Number(repairerId));
-    }
-
+function openRepairerProfile(repairerId) {
     const modal = document.getElementById('repairerProfileModal');
     
     if (!modal) {
         console.error('Profile modal not found');
-        if (DEBUG_REPAIRER_POPUP) console.groupEnd();
         return;
     }
 
@@ -31,13 +183,8 @@ function openRepairerProfile(repairerId, repairerData = null) {
     modal.classList.add('show');
     document.body.style.overflow = 'hidden';
 
-    if (DEBUG_REPAIRER_POPUP) {
-        console.log('Modal found + show class added:', modal.classList.contains('show'));
-        console.groupEnd();
-    }
-
     // Load profile data
-    loadRepairerProfile(repairerId, repairerData);
+    loadRepairerProfile(repairerId);
 }
 
 /**
@@ -48,103 +195,22 @@ function closeRepairerProfile() {
     if (modal) {
         modal.classList.remove('show');
         document.body.style.overflow = '';
-        if (DEBUG_REPAIRER_POPUP) {
-            console.log('[RepairerPopup] closeRepairerProfile(): modal hidden');
-        }
     }
 }
 
 /**
  * Load repairer profile data
  * @param {number} repairerId - The ID of the repairer
- * @param {object|null} repairerData - Optional repairer data from landing cache
  */
-function loadRepairerProfile(repairerId, repairerData = null) {
-    const modal = document.getElementById('repairerProfileModal');
-    if (!modal) return;
-
-    const numericId = Number(repairerId);
-    if (DEBUG_REPAIRER_POPUP) {
-        console.groupCollapsed('[RepairerPopup] loadRepairerProfile()');
-        console.log('repairerId (raw):', repairerId);
-        console.log('repairerId (number):', numericId);
-    }
-
-    if (!Number.isFinite(numericId) || numericId <= 0) {
-        console.error('[RepairerPopup] Invalid repairerId, aborting:', repairerId);
-        if (DEBUG_REPAIRER_POPUP) console.groupEnd();
+function loadRepairerProfile(repairerId) {
+    const data = mockRepairers[repairerId];
+    
+    if (!data) {
+        console.error('Repairer not found');
         return;
     }
 
-    // Basic loading state
-    document.getElementById('profileName').textContent = 'Loading...';
-    document.getElementById('profileCategory').textContent = 'Service Professional';
-    document.getElementById('profileAbout').textContent = 'Loading profile information...';
-    document.getElementById('profilePhone').textContent = 'N/A';
-    document.getElementById('profileEmail').textContent = 'N/A';
-    document.getElementById('profileDistricts').textContent = 'N/A';
-    document.getElementById('completedJobs').textContent = '0';
-    displayRating(0);
-    displayReviews([]);
-
-    try {
-        const cachedRepairer = repairerData ||
-            (typeof window.getLandingRepairerById === 'function' ? window.getLandingRepairerById(numericId) : null);
-
-        if (!cachedRepairer) {
-            throw new Error('Repairer data not found in landing cache');
-        }
-
-        const p = cachedRepairer;
-        const name = p.full_name || [p.f_name, p.l_name].filter(Boolean).join(' ') || p.name || 'Repairer';
-        const category = p.category_name || 'Service Professional';
-        const rating = Number(p.ratings ?? 0);
-
-        const imageUrl = resolveProfileImageUrl(p.profilePicture, name);
-
-        const data = {
-            id: p.repairer_id || repairerId,
-            name,
-            category,
-            rating: Number.isFinite(rating) ? rating : 0,
-            completedJobs: Number(p.completedJobsCount ?? 0) || 0,
-            distance: 'N/A',
-            about: p.about || 'No description available.',
-            phone: p.phoneNumber || 'N/A',
-            email: p.email || 'N/A',
-            districts: p.districts || 'N/A',
-            availability: p.availability || 'available',
-            image: imageUrl,
-            reviews: []
-        };
-
-        if (DEBUG_REPAIRER_POPUP) console.log('Mapped profile data from landing cache:', data);
-        displayProfile(data);
-        if (DEBUG_REPAIRER_POPUP) console.groupEnd();
-    } catch (err) {
-        console.error('Failed to load repairer profile:', err);
-        document.getElementById('profileName').textContent = 'Failed to load';
-        document.getElementById('profileAbout').textContent = 'Could not load profile details. Please try again.';
-        displayReviews([]);
-        if (DEBUG_REPAIRER_POPUP) console.groupEnd();
-    }
-}
-
-// Export functions for inline onclick + other scripts
-window.openRepairerProfile = openRepairerProfile;
-window.closeRepairerProfile = closeRepairerProfile;
-window.loadRepairerProfile = loadRepairerProfile;
-
-function resolveProfileImageUrl(profilePicture, name) {
-    const value = (profilePicture || '').toString().trim();
-    if (value) {
-        if (value.startsWith('http://') || value.startsWith('https://')) return value;
-        if (value.startsWith('/')) return value;
-        return `${DEFAULT_APP_BASE}/${value}`;
-    }
-
-    const encoded = encodeURIComponent((name || 'Repairer').replace(/\s+/g, '+'));
-    return `https://ui-avatars.com/api/?name=${encoded}&size=200&background=17a2b8&color=fff&bold=true`;
+    displayProfile(data);
 }
 
 /**
@@ -162,10 +228,11 @@ function displayProfile(data) {
     document.getElementById('profileCategory').textContent = data.category;
 
     // Rating
-    displayRating(data.rating);
+    displayRating(data.rating, data.reviewCount);
 
     // Stats
     document.getElementById('completedJobs').textContent = data.completedJobs;
+    document.getElementById('profileDistance').textContent = data.distance;
 
     // About
     document.getElementById('profileAbout').textContent = data.about;
@@ -185,8 +252,9 @@ function displayProfile(data) {
 /**
  * Display rating stars
  * @param {number} rating - Rating value (0-5)
+ * @param {number} count - Number of reviews
  */
-function displayRating(rating) {
+function displayRating(rating, count) {
     const starsContainer = document.getElementById('profileStars');
     const ratingText = document.getElementById('profileRatingText');
 
@@ -212,7 +280,7 @@ function displayRating(rating) {
     }
 
     starsContainer.innerHTML = starsHTML;
-    ratingText.textContent = `${rating.toFixed(1)}`;
+    ratingText.textContent = `${rating.toFixed(1)} (${count} reviews)`;
 }
 
 /**

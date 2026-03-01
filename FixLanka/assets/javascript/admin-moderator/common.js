@@ -86,7 +86,7 @@ function performSearch(query) {
 function showSearchResults(query) {
     // This would typically show a dropdown or navigate to search results page
     // For now, just log to console
-    void query;
+    
 }
 
 /**
@@ -192,7 +192,6 @@ function handleNotificationClick(notificationItem) {
     
     // Get notification details and perform action
     const title = notificationItem.querySelector('.notification-title')?.textContent;
-    void title;
     
     // You can add navigation or modal display here
     // For example:
@@ -333,7 +332,7 @@ function handleProfileMenuAction(action) {
             handleLogout();
             break;
         default:
-            break;
+            
     }
     
     closeProfileMenu();

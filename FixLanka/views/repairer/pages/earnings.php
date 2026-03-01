@@ -16,7 +16,6 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/repairer-pages.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/earnings.css">
 </head>
 <body>
@@ -30,6 +29,8 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
 
         <!-- Include Sidebar -->
         <?php require_once __DIR__ . '/../common/sidebar.php'; ?>
+
+        <!-- Main Content -->
 
         <!-- Main Content -->
         <div class="main-content-wrapper">
@@ -74,7 +75,7 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                     <i class="fas fa-coins"></i>
                                 </div>
                                 <div class="summary-content">
-                                    <h3 class="summary-number" id="totalEarningsStat">—</h3>
+                                    <h3 class="summary-number">LKR 285,450</h3>
                                     <p class="summary-label">Total Earnings</p>
                                 </div>
                             </div>
@@ -84,7 +85,7 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                     <i class="fas fa-calendar-alt"></i>
                                 </div>
                                 <div class="summary-content">
-                                    <h3 class="summary-number" id="monthEarningsStat">—</h3>
+                                    <h3 class="summary-number">LKR 45,200</h3>
                                     <p class="summary-label">Earnings This Month</p>
                                 </div>
                             </div>
@@ -94,7 +95,7 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                     <i class="fas fa-clock"></i>
                                 </div>
                                 <div class="summary-content">
-                                    <h3 class="summary-number" id="pendingEarningsStat">—</h3>
+                                    <h3 class="summary-number">LKR 8,500</h3>
                                     <p class="summary-label">Pending Payments</p>
                                 </div>
                             </div>
@@ -104,7 +105,7 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                     <i class="fas fa-chart-bar"></i>
                                 </div>
                                 <div class="summary-content">
-                                    <h3 class="summary-number" id="avgJobValueStat">—</h3>
+                                    <h3 class="summary-number">LKR 2,850</h3>
                                     <p class="summary-label">Average Job Value</p>
                                 </div>
                             </div>
@@ -157,7 +158,7 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                     <section class="earnings-section">
                         <div class="section-header">
                             <h2 class="section-title">Earnings History</h2>
-                            <span class="section-subtitle" id="earningsSubtitle">Loading...</span>
+                            <span class="section-subtitle">5 payments this month</span>
                         </div>
 
                         <div class="earnings-table-container">
@@ -187,10 +188,194 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="earningsTableBody">
-                                    <tr>
-                                        <td colspan="6" style="text-align:center;padding:24px;color:var(--text-secondary)">
-                                            <i class="fas fa-spinner fa-spin"></i> Loading earnings...
+                                <tbody>
+                                    <tr class="earnings-row" data-status="paid">
+                                        <td class="date-cell">
+                                            <div class="date-info">
+                                                <span class="date-primary">Sep 1, 2025</span>
+                                                <span class="date-secondary">2 hours ago</span>
+                                            </div>
+                                        </td>
+                                        <td class="job-cell">
+                                            <div class="job-info">
+                                                <span class="job-title">Kitchen Sink Repair</span>
+                                                <span class="job-category">Plumbing</span>
+                                            </div>
+                                        </td>
+                                        <td class="customer-cell">
+                                            <div class="customer-info">
+                                                <span class="customer-name">Sarah Fernando</span>
+                                                <span class="customer-location">Colombo 07</span>
+                                            </div>
+                                        </td>
+                                        <td class="amount-cell">
+                                            <span class="amount-earned">LKR 2,800</span>
+                                        </td>
+                                        <td class="status-cell">
+                                            <span class="payment-status paid">
+                                                <i class="fas fa-check-circle"></i>
+                                                Paid
+                                            </span>
+                                        </td>
+                                        <td class="actions-cell">
+                                            <button class="btn btn-sm btn-outline" onclick="viewEarningDetails(1)">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline" onclick="downloadInvoice(1)">
+                                                <i class="fas fa-download"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="earnings-row" data-status="paid">
+                                        <td class="date-cell">
+                                            <div class="date-info">
+                                                <span class="date-primary">Aug 30, 2025</span>
+                                                <span class="date-secondary">2 days ago</span>
+                                            </div>
+                                        </td>
+                                        <td class="job-cell">
+                                            <div class="job-info">
+                                                <span class="job-title">Ceiling Fan Installation</span>
+                                                <span class="job-category">Electrical</span>
+                                            </div>
+                                        </td>
+                                        <td class="customer-cell">
+                                            <div class="customer-info">
+                                                <span class="customer-name">Kandy Hardware Store</span>
+                                                <span class="customer-location">Kandy</span>
+                                            </div>
+                                        </td>
+                                        <td class="amount-cell">
+                                            <span class="amount-earned">LKR 4,200</span>
+                                        </td>
+                                        <td class="status-cell">
+                                            <span class="payment-status paid">
+                                                <i class="fas fa-check-circle"></i>
+                                                Paid
+                                            </span>
+                                        </td>
+                                        <td class="actions-cell">
+                                            <button class="btn btn-sm btn-outline" onclick="viewEarningDetails(2)">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline" onclick="downloadInvoice(2)">
+                                                <i class="fas fa-download"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="earnings-row" data-status="pending">
+                                        <td class="date-cell">
+                                            <div class="date-info">
+                                                <span class="date-primary">Aug 29, 2025</span>
+                                                <span class="date-secondary">3 days ago</span>
+                                            </div>
+                                        </td>
+                                        <td class="job-cell">
+                                            <div class="job-info">
+                                                <span class="job-title">Air Conditioning Repair</span>
+                                                <span class="job-category">HVAC</span>
+                                            </div>
+                                        </td>
+                                        <td class="customer-cell">
+                                            <div class="customer-info">
+                                                <span class="customer-name">Priya Wickramasinghe</span>
+                                                <span class="customer-location">Nugegoda</span>
+                                            </div>
+                                        </td>
+                                        <td class="amount-cell">
+                                            <span class="amount-earned">LKR 3,500</span>
+                                        </td>
+                                        <td class="status-cell">
+                                            <span class="payment-status pending">
+                                                <i class="fas fa-clock"></i>
+                                                Pending
+                                            </span>
+                                        </td>
+                                        <td class="actions-cell">
+                                            <button class="btn btn-sm btn-outline" onclick="viewEarningDetails(3)">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-primary" onclick="sendReminder(3)">
+                                                <i class="fas fa-bell"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="earnings-row" data-status="paid">
+                                        <td class="date-cell">
+                                            <div class="date-info">
+                                                <span class="date-primary">Aug 28, 2025</span>
+                                                <span class="date-secondary">4 days ago</span>
+                                            </div>
+                                        </td>
+                                        <td class="job-cell">
+                                            <div class="job-info">
+                                                <span class="job-title">Washing Machine Repair</span>
+                                                <span class="job-category">Appliance</span>
+                                            </div>
+                                        </td>
+                                        <td class="customer-cell">
+                                            <div class="customer-info">
+                                                <span class="customer-name">Nimal Perera</span>
+                                                <span class="customer-location">Maharagama</span>
+                                            </div>
+                                        </td>
+                                        <td class="amount-cell">
+                                            <span class="amount-earned">LKR 2,500</span>
+                                        </td>
+                                        <td class="status-cell">
+                                            <span class="payment-status paid">
+                                                <i class="fas fa-check-circle"></i>
+                                                Paid
+                                            </span>
+                                        </td>
+                                        <td class="actions-cell">
+                                            <button class="btn btn-sm btn-outline" onclick="viewEarningDetails(4)">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline" onclick="downloadInvoice(4)">
+                                                <i class="fas fa-download"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="earnings-row" data-status="pending">
+                                        <td class="date-cell">
+                                            <div class="date-info">
+                                                <span class="date-primary">Aug 27, 2025</span>
+                                                <span class="date-secondary">5 days ago</span>
+                                            </div>
+                                        </td>
+                                        <td class="job-cell">
+                                            <div class="job-info">
+                                                <span class="job-title">Bathroom Plumbing Fix</span>
+                                                <span class="job-category">Plumbing</span>
+                                            </div>
+                                        </td>
+                                        <td class="customer-cell">
+                                            <div class="customer-info">
+                                                <span class="customer-name">Kamala Silva</span>
+                                                <span class="customer-location">Dehiwala</span>
+                                            </div>
+                                        </td>
+                                        <td class="amount-cell">
+                                            <span class="amount-earned">LKR 1,800</span>
+                                        </td>
+                                        <td class="status-cell">
+                                            <span class="payment-status pending">
+                                                <i class="fas fa-clock"></i>
+                                                Pending
+                                            </span>
+                                        </td>
+                                        <td class="actions-cell">
+                                            <button class="btn btn-sm btn-outline" onclick="viewEarningDetails(5)">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-primary" onclick="sendReminder(5)">
+                                                <i class="fas fa-bell"></i>
+                                            </button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -209,7 +394,7 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                         <i class="fas fa-briefcase"></i>
                                     </div>
                                     <div class="summary-content">
-                                        <h3 class="summary-number" id="companyTotalEarningsStat">—</h3>
+                                        <h3 class="summary-number">LKR 67,500</h3>
                                         <p class="summary-label">Total from Company Jobs</p>
                                     </div>
                                 </div>
@@ -219,7 +404,7 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                         <i class="fas fa-calendar-alt"></i>
                                     </div>
                                     <div class="summary-content">
-                                        <h3 class="summary-number" id="companyMonthEarningsStat">—</h3>
+                                        <h3 class="summary-number">LKR 24,000</h3>
                                         <p class="summary-label">This Month</p>
                                     </div>
                                 </div>
@@ -229,7 +414,7 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                         <i class="fas fa-clock"></i>
                                     </div>
                                     <div class="summary-content">
-                                        <h3 class="summary-number" id="companyPendingStat">—</h3>
+                                        <h3 class="summary-number">LKR 11,200</h3>
                                         <p class="summary-label">Pending Payments</p>
                                     </div>
                                 </div>
@@ -239,7 +424,7 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                         <i class="fas fa-handshake"></i>
                                     </div>
                                     <div class="summary-content">
-                                        <h3 class="summary-number" id="companyActiveContractsStat">—</h3>
+                                        <h3 class="summary-number">2</h3>
                                         <p class="summary-label">Active Contracts</p>
                                     </div>
                                 </div>
@@ -257,6 +442,15 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                         <option value="last-month">Last Month</option>
                                         <option value="last-3-months">Last 3 Months</option>
                                         <option value="this-year">This Year</option>
+                                    </select>
+                                </div>
+
+                                <div class="filter-group">
+                                    <label for="company-contract-filter" class="filter-label">Contract</label>
+                                    <select id="company-contract-filter" class="filter-select">
+                                        <option value="all">All Contracts</option>
+                                        <option value="techcorp">TechCorp Solutions</option>
+                                        <option value="buildpro">BuildPro Lanka</option>
                                     </select>
                                 </div>
 
@@ -282,7 +476,7 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                         <section class="earnings-section">
                             <div class="section-header">
                                 <h2 class="section-title">Company Job Payments</h2>
-                                <span class="section-subtitle" id="companyEarningsSubtitle">Loading...</span>
+                                <span class="section-subtitle">3 assignments this month</span>
                             </div>
 
                             <div class="earnings-table-container">
@@ -320,17 +514,11 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="companyEarningsTableBody">
-                                        <tr>
-                                            <td colspan="8" style="text-align:center;padding:24px;color:var(--text-secondary)">
-                                                <i class="fas fa-spinner fa-spin"></i> Loading company earnings...
-                                            </td>
-                                        </tr>
-                                        <!-- REMOVED dummy rows: Oct 22, Oct 23, Oct 24 2025 -->
-                                        <tr style="display:none" data-status="paid">
+                                    <tbody>
+                                        <tr class="earnings-row" data-status="paid">
                                             <td class="date-cell">
                                                 <div class="date-info">
-                                                    <span class="date-primary">placeholder</span>
+                                                    <span class="date-primary">Oct 22, 2025</span>
                                                     <span class="date-secondary">Today</span>
                                                 </div>
                                             </td>
@@ -496,19 +684,19 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                     <div class="detail-grid">
                         <div class="detail-item">
                             <span class="detail-label">Job Title</span>
-                            <span class="detail-value" id="earningJobTitle">—</span>
+                            <span class="detail-value" id="earningJobTitle">Kitchen Sink Repair</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Category</span>
-                            <span class="detail-value" id="earningCategory">—</span>
+                            <span class="detail-value" id="earningCategory">Plumbing</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Date Completed</span>
-                            <span class="detail-value" id="earningDate">—</span>
+                            <span class="detail-value" id="earningDate">Sep 1, 2025</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Duration</span>
-                            <span class="detail-value" id="earningDuration">—</span>
+                            <span class="detail-value" id="earningDuration">2.5 hours</span>
                         </div>
                     </div>
                 </div>
@@ -519,19 +707,26 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                     <div class="detail-grid">
                         <div class="detail-item">
                             <span class="detail-label">Customer Name</span>
-                            <span class="detail-value" id="earningCustomerName">—</span>
+                            <span class="detail-value" id="earningCustomerName">Sarah Fernando</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Location</span>
-                            <span class="detail-value" id="earningLocation">—</span>
+                            <span class="detail-value" id="earningLocation">Colombo 07</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Contact</span>
-                            <span class="detail-value" id="earningContact">—</span>
+                            <span class="detail-value" id="earningContact">+94 77 123 4567</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Rating Given</span>
-                            <span class="detail-value" id="earningRating">—</span>
+                            <span class="detail-value" id="earningRating">
+                                <i class="fas fa-star" style="color: #f39c12;"></i>
+                                <i class="fas fa-star" style="color: #f39c12;"></i>
+                                <i class="fas fa-star" style="color: #f39c12;"></i>
+                                <i class="fas fa-star" style="color: #f39c12;"></i>
+                                <i class="fas fa-star" style="color: #f39c12;"></i>
+                                <span style="margin-left: 8px;">5.0</span>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -542,19 +737,19 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                     <div class="payment-breakdown">
                         <div class="breakdown-row">
                             <span class="breakdown-label">Service Fee</span>
-                            <span class="breakdown-value" id="earningServiceFee">—</span>
+                            <span class="breakdown-value" id="earningServiceFee">LKR 2,800</span>
                         </div>
                         <div class="breakdown-row">
                             <span class="breakdown-label">Platform Fee (10%)</span>
-                            <span class="breakdown-value text-danger" id="earningPlatformFee">—</span>
+                            <span class="breakdown-value text-danger" id="earningPlatformFee">- LKR 280</span>
                         </div>
                         <div class="breakdown-row">
                             <span class="breakdown-label">Materials Cost</span>
-                            <span class="breakdown-value" id="earningMaterialsCost">—</span>
+                            <span class="breakdown-value" id="earningMaterialsCost">LKR 500</span>
                         </div>
                         <div class="breakdown-row total">
                             <span class="breakdown-label"><strong>Total Earned</strong></span>
-                            <span class="breakdown-value" id="earningTotalEarned">—</span>
+                            <span class="breakdown-value" id="earningTotalEarned"><strong>LKR 3,020</strong></span>
                         </div>
                     </div>
                 </div>
@@ -565,20 +760,20 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                     <div class="detail-grid">
                         <div class="detail-item">
                             <span class="detail-label">Payment Method</span>
-                            <span class="detail-value" id="earningPaymentMethod">—</span>
+                            <span class="detail-value" id="earningPaymentMethod">Cash</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Transaction ID</span>
-                            <span class="detail-value" id="earningTransactionId">—</span>
+                            <span class="detail-value" id="earningTransactionId">TXN-2025-09-001</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Payment Date</span>
-                            <span class="detail-value" id="earningPaymentDate">—</span>
+                            <span class="detail-value" id="earningPaymentDate">Sep 1, 2025 - 3:45 PM</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Status</span>
                             <span class="detail-value">
-                                <span class="status-badge" id="earningPaymentStatus">—</span>
+                                <span class="status-badge paid" id="earningPaymentStatus">Paid</span>
                             </span>
                         </div>
                     </div>
@@ -587,7 +782,9 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                 <!-- Job Description -->
                 <div class="detail-section">
                     <h4><i class="fas fa-align-left"></i> Job Description</h4>
-                    <p id="earningDescription" style="color: var(--text-secondary); line-height: 1.6; background: var(--bg-secondary); padding: 16px; border-radius: 8px;">—</p>
+                    <p id="earningDescription" style="color: var(--text-secondary); line-height: 1.6; background: var(--bg-secondary); padding: 16px; border-radius: 8px;">
+                        Repaired leaking kitchen sink faucet, replaced worn-out washers, and installed new O-rings. Also cleaned the drain and checked all connections for potential issues.
+                    </p>
                 </div>
 
                 <!-- Timeline -->
@@ -632,6 +829,7 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
 
         function resetCompanyFilters() {
             document.getElementById('company-period-filter').value = 'this-month';
+            document.getElementById('company-contract-filter').value = 'all';
             document.getElementById('company-status-filter').value = 'all';
         }
 

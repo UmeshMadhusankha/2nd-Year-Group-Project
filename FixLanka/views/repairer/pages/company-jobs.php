@@ -1,20 +1,9 @@
 <?php
-require_once __DIR__ . '/../../../config/session.php';
-
-// Ensure repairer is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: /2nd-Year-Group-Project/FixLanka/views/auth/login.php');
-    exit;
-}
-
 // Page configuration
 $currentPage = 'company-jobs';
 $pageTitle = 'Company Jobs';
 $pageSubtitle = 'Side projects from companies - Browse, apply, and manage contracts';
 $searchPlaceholder = 'Search company jobs...';
-
-// Get repairer ID from session (falls back to 1 for dev purposes)
-$currentRepairerId = $_SESSION['user_id'] ?? 1;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -23,11 +12,11 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Company Jobs - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/repairer-pages.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/jobs.css">
 </head>
 <body>
@@ -55,7 +44,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                             </div>
                             <div class="page-header-actions">
                                 <button class="btn-header btn-status" id="statusToggleBtn" onclick="toggleAvailabilityStatus()">
-                                    <i class="fas fa-circle available-dot"></i> <span id="statusText">Available</span>
+                                    <i class="fas fa-circle" style="color: #2ecc71;"></i> <span id="statusText">Available</span>
                                 </button>
                                 <button class="btn-header btn-secondary" onclick="refreshCurrentTab()">
                                     <i class="fas fa-sync-alt"></i> Refresh
@@ -72,19 +61,19 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                             </button>
                             <button class="tab-btn" onclick="switchMainTab('applications')">
                                 <i class="fas fa-file-alt"></i> My Applications
-                                <span class="badge" id="applicationsBadge">0</span>
+                                <span class="badge" id="applicationsBadge">3</span>
                             </button>
                             <button class="tab-btn" onclick="switchMainTab('contracts')">
                                 <i class="fas fa-handshake"></i> Active Contracts
-                                <span class="badge" id="contractsBadge">0</span>
+                                <span class="badge" id="contractsBadge">2</span>
                             </button>
                             <button class="tab-btn" onclick="switchMainTab('assignments')">
                                 <i class="fas fa-clipboard-list"></i> Job Assignments
-                                <span class="badge" id="assignmentsBadge">0</span>
+                                <span class="badge" id="assignmentsBadge">3</span>
                             </button>
                             <button class="tab-btn" onclick="switchMainTab('messages')">
                                 <i class="fas fa-comments"></i> Messages
-                                <span class="badge" id="messagesBadge">0</span>
+                                <span class="badge" id="messagesBadge">2</span>
                             </button>
                         </div>
                     </div>
@@ -134,7 +123,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                         <i class="fas fa-clock"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="pendingCount">—</span>
+                                        <span class="stat-number" id="pendingCount">5</span>
                                         <span class="stat-label">Pending Review</span>
                                     </div>
                                 </div>
@@ -143,7 +132,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                         <i class="fas fa-check-circle"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="acceptedCount">—</span>
+                                        <span class="stat-number" id="acceptedCount">3</span>
                                         <span class="stat-label">Accepted</span>
                                     </div>
                                 </div>
@@ -152,7 +141,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                         <i class="fas fa-times-circle"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="rejectedCount">—</span>
+                                        <span class="stat-number" id="rejectedCount">2</span>
                                         <span class="stat-label">Rejected</span>
                                     </div>
                                 </div>
@@ -161,7 +150,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                         <i class="fas fa-list"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="totalCount">—</span>
+                                        <span class="stat-number" id="totalCount">10</span>
                                         <span class="stat-label">Total Applications</span>
                                     </div>
                                 </div>
@@ -171,16 +160,16 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                         <!-- Filter Section -->
                         <section class="filters-section">
                             <div class="filter-chips">
-                                <button class="filter-chip active" onclick="filterApplications('all', this)">
+                                <button class="filter-chip active" onclick="filterApplications('all')">
                                     <i class="fas fa-th"></i> All Applications
                                 </button>
-                                <button class="filter-chip" onclick="filterApplications('pending', this)">
+                                <button class="filter-chip" onclick="filterApplications('pending')">
                                     <i class="fas fa-clock"></i> Pending
                                 </button>
-                                <button class="filter-chip" onclick="filterApplications('accepted', this)">
+                                <button class="filter-chip" onclick="filterApplications('accepted')">
                                     <i class="fas fa-check-circle"></i> Accepted
                                 </button>
-                                <button class="filter-chip" onclick="filterApplications('rejected', this)">
+                                <button class="filter-chip" onclick="filterApplications('rejected')">
                                     <i class="fas fa-times-circle"></i> Rejected
                                 </button>
                             </div>
@@ -212,7 +201,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                         <i class="fas fa-briefcase"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="activeContractsCount">—</span>
+                                        <span class="stat-number" id="activeContractsCount">2</span>
                                         <span class="stat-label">Active Contracts</span>
                                     </div>
                                 </div>
@@ -221,7 +210,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                         <i class="fas fa-coins"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="totalContractEarnings">—</span>
+                                        <span class="stat-number" id="totalContractEarnings">LKR 67,500</span>
                                         <span class="stat-label">Total Earned</span>
                                     </div>
                                 </div>
@@ -230,7 +219,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                         <i class="fas fa-clock"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="pendingPayments">—</span>
+                                        <span class="stat-number" id="pendingPayments">LKR 8,500</span>
                                         <span class="stat-label">Pending Payments</span>
                                     </div>
                                 </div>
@@ -239,7 +228,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                         <i class="fas fa-calendar-check"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="completedJobsCount">—</span>
+                                        <span class="stat-number" id="completed_jobs_count">27</span>
                                         <span class="stat-label">Completed Jobs</span>
                                     </div>
                                 </div>
@@ -250,7 +239,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                         <section class="contracts-section">
                             <div class="section-header">
                                 <h2 class="section-title">Active Contracts</h2>
-                                <span class="section-subtitle" id="contractCount">Loading...</span>
+                                <span class="section-subtitle" id="contractCount">2 active contracts</span>
                             </div>
                             <div class="contracts-grid" id="contractsGrid">
                                 <!-- Contracts will be loaded here -->
@@ -268,7 +257,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                         <i class="fas fa-tasks"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="activeAssignmentsCount">—</span>
+                                        <span class="stat-number" id="activeAssignmentsCount">3</span>
                                         <span class="stat-label">Active Assignments</span>
                                     </div>
                                 </div>
@@ -277,7 +266,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                         <i class="fas fa-hourglass-half"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="pendingAssignments">—</span>
+                                        <span class="stat-number" id="pendingAssignments">2</span>
                                         <span class="stat-label">Pending Start</span>
                                     </div>
                                 </div>
@@ -286,7 +275,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                         <i class="fas fa-check-circle"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="completedAssignments">—</span>
+                                        <span class="stat-number" id="completedAssignments">15</span>
                                         <span class="stat-label">Completed</span>
                                     </div>
                                 </div>
@@ -295,7 +284,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                         <i class="fas fa-clock"></i>
                                     </div>
                                     <div class="stat-content">
-                                        <span class="stat-number" id="totalHours">—</span>
+                                        <span class="stat-number" id="totalHours">127h</span>
                                         <span class="stat-label">Total Hours</span>
                                     </div>
                                 </div>
@@ -306,7 +295,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                         <section class="assignments-section">
                             <div class="section-header">
                                 <h2 class="section-title">Job Assignments</h2>
-                                <span class="section-subtitle" id="assignmentCount">Loading...</span>
+                                <span class="section-subtitle" id="assignmentCount">3 active assignments</span>
                             </div>
                             <div class="assignments-list" id="assignmentsList">
                                 <!-- Assignments will be loaded here -->
@@ -323,7 +312,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                 <div class="conversations-sidebar">
                                     <div class="conversations-header">
                                         <h3>Messages</h3>
-                                        <span class="unread-count" id="sidebarUnreadCount">0</span>
+                                        <span class="unread-count" id="sidebarUnreadCount">2</span>
                                     </div>
                                     <div class="conversations-list" id="conversationsList">
                                         <!-- Conversation cards will be loaded here -->
@@ -342,10 +331,10 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                     <div class="chat-active" id="chatActive" style="display: none;">
                                         <div class="chat-header-bar">
                                             <div class="chat-header-info">
-                                                <div class="company-avatar-circle" id="activeChatAvatar"></div>
+                                                <div class="company-avatar-circle" id="activeChatAvatar">TC</div>
                                                 <div>
-                                                    <h3 id="activeChatCompany"></h3>
-                                                    <p id="activeChatProject"></p>
+                                                    <h3 id="activeChatCompany">TechCorp Solutions</h3>
+                                                    <p id="activeChatProject">HVAC Maintenance Contract</p>
                                                 </div>
                                             </div>
                                             <button class="btn-icon" onclick="closeChatView()" title="Close chat">
@@ -391,14 +380,14 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                 <!-- Job Header -->
                 <div class="job-detail-header">
                     <div class="company-info">
-                        <div class="company-avatar" id="jobCompanyAvatar"></div>
+                        <div class="company-avatar" id="jobCompanyAvatar">TC</div>
                         <div class="company-details">
-                            <h2 id="jobDetailTitle"></h2>
-                            <p class="company-name" id="jobCompanyName"></p>
+                            <h2 id="jobDetailTitle">Senior HVAC Technician</h2>
+                            <p class="company-name" id="jobCompanyName">TechCorp Solutions</p>
                             <div class="job-meta">
-                                <span><i class="fas fa-calendar"></i> <span id="jobPostedDate"></span></span>
-                                <span><i class="fas fa-users"></i> <span id="jobApplicationCount"></span></span>
-                                <span><i class="fas fa-map-marker-alt"></i> <span id="jobLocation"></span></span>
+                                <span><i class="fas fa-calendar"></i> <span id="jobPostedDate">Posted 3 days ago</span></span>
+                                <span><i class="fas fa-users"></i> <span id="jobApplicationCount">12 applicants</span></span>
+                                <span><i class="fas fa-map-marker-alt"></i> <span id="jobLocation">Colombo, Sri Lanka</span></span>
                             </div>
                         </div>
                     </div>
@@ -413,27 +402,27 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                     <div class="info-grid">
                         <div class="info-item">
                             <span class="info-label">Category</span>
-                            <span class="info-value" id="jobCategory"></span>
+                            <span class="info-value" id="jobCategory">HVAC</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Employment Type</span>
-                            <span class="info-value" id="jobEmploymentType"></span>
+                            <span class="info-value" id="jobEmploymentType">Contract</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Budget Range</span>
-                            <span class="info-value" id="jobBudget"></span>
+                            <span class="info-value" id="jobBudget">LKR 2,500 - 3,200/hr</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Experience Required</span>
-                            <span class="info-value" id="jobExperience"></span>
+                            <span class="info-value" id="jobExperience">3+ years</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Priority</span>
-                            <span class="info-value" id="jobPriority"></span>
+                            <span class="info-value" id="jobPriority">Normal</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Application Deadline</span>
-                            <span class="info-value" id="jobDeadline"></span>
+                            <span class="info-value" id="jobDeadline">15 days remaining</span>
                         </div>
                     </div>
                 </div>
@@ -441,19 +430,22 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                 <!-- Job Description -->
                 <div class="job-description-section">
                     <h4><i class="fas fa-align-left"></i> Job Description</h4>
-                    <p id="jobDescription"></p>
+                    <p id="jobDescription">We are seeking an experienced HVAC technician...</p>
                 </div>
 
                 <!-- Required Skills -->
                 <div class="job-skills-section">
                     <h4><i class="fas fa-tools"></i> Required Skills</h4>
-                    <div class="skills-tags" id="jobSkillsTags"></div>
+                    <div class="skills-tags" id="jobSkillsTags">
+                        <span class="skill-tag">HVAC Systems</span>
+                        <span class="skill-tag">Refrigeration</span>
+                    </div>
                 </div>
 
                 <!-- Location Requirements -->
                 <div class="job-location-section">
                     <h4><i class="fas fa-map-marker-alt"></i> Location Requirements</h4>
-                    <p id="jobLocationRequirements"></p>
+                    <p id="jobLocationRequirements">Colombo and surrounding areas, must have own transportation</p>
                 </div>
             </div>
             <div class="drawer-footer">
@@ -481,8 +473,8 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                 <form id="jobApplicationForm">
                     <div class="application-job-summary">
                         <h4>Applying for:</h4>
-                        <p class="applying-job-title" id="applyingJobTitle"></p>
-                        <p class="applying-company" id="applyingCompanyName"></p>
+                        <p class="applying-job-title" id="applyingJobTitle">Senior HVAC Technician</p>
+                        <p class="applying-company" id="applyingCompanyName">TechCorp Solutions</p>
                     </div>
 
                     <div class="form-section">
@@ -509,7 +501,6 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                         <div class="form-group">
                             <label for="coverLetter">Tell the company why you're the right fit <span class="required">*</span></label>
                             <textarea id="coverLetter" rows="6" placeholder="Describe your relevant experience..." required></textarea>
-                            <div class="cover-letter-counter"><span id="coverLetterCount">0</span> characters</div>
                         </div>
                     </div>
                 </form>
@@ -551,23 +542,23 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                     <div class="detail-grid">
                         <div class="detail-item">
                             <span class="detail-label">Job Title</span>
-                            <span class="detail-value" id="appJobTitle"></span>
+                            <span class="detail-value" id="appJobTitle">Senior HVAC Technician</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Company</span>
-                            <span class="detail-value" id="appCompanyName"></span>
+                            <span class="detail-value" id="appCompanyName">TechCorp Solutions</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Category</span>
-                            <span class="detail-value" id="appJobCategory"></span>
+                            <span class="detail-value" id="appJobCategory">HVAC</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Job Budget</span>
-                            <span class="detail-value" id="appJobBudget"></span>
+                            <span class="detail-value" id="appJobBudget">LKR 2,500 - 3,200/hr</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Applied On</span>
-                            <span class="detail-value" id="appAppliedDate"></span>
+                            <span class="detail-value" id="appAppliedDate">October 20, 2025</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Status</span>
@@ -583,18 +574,20 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                     <div class="detail-grid">
                         <div class="detail-item">
                             <span class="detail-label">Proposed Rate</span>
-                            <span class="detail-value" id="appProposedRate"></span>
+                            <span class="detail-value" id="appProposedRate">LKR 2,800/hr</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Availability</span>
-                            <span class="detail-value" id="appAvailability"></span>
+                            <span class="detail-value" id="appAvailability">Immediately</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="detail-section">
                     <h4><i class="fas fa-file-alt"></i> Cover Letter</h4>
-                    <p id="appCoverLetter" style="color: var(--text-secondary); line-height: 1.6; background: var(--bg-secondary); padding: 16px; border-radius: 8px; border-left: 4px solid var(--primary-color);"></p>
+                    <p id="appCoverLetter" style="color: var(--text-secondary); line-height: 1.6; background: var(--bg-secondary); padding: 16px; border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                        I am an experienced HVAC technician with over 5 years of hands-on experience...
+                    </p>
                 </div>
 
                 <div class="detail-section">
@@ -628,10 +621,10 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
             <div class="drawer-body">
                 <div class="contract-header">
                     <div class="company-info">
-                        <div class="company-avatar" id="contractCompanyAvatar"></div>
+                        <div class="company-avatar" id="contractCompanyAvatar">TC</div>
                         <div class="company-details">
-                            <h3 id="contractCompanyName"></h3>
-                            <p class="contract-role" id="contractRole"></p>
+                            <h3 id="contractCompanyName">TechCorp Solutions</h3>
+                            <p class="contract-role" id="contractRole">HVAC Technician</p>
                         </div>
                     </div>
                     <div class="contract-status-badge">
@@ -644,27 +637,27 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                     <div class="detail-grid">
                         <div class="detail-item">
                             <span class="detail-label">Contract Type</span>
-                            <span class="detail-value" id="contractType"></span>
+                            <span class="detail-value" id="contractType">Long-term</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Start Date</span>
-                            <span class="detail-value" id="contractStartDate"></span>
+                            <span class="detail-value" id="contractStartDate">Oct 1, 2025</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Hourly Rate</span>
-                            <span class="detail-value" id="contractRate"></span>
+                            <span class="detail-value" id="contractRate">LKR 2,800/hr</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Total Assignments</span>
-                            <span class="detail-value" id="totalAssignments"></span>
+                            <span class="detail-value" id="totalAssignments">5</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Completed</span>
-                            <span class="detail-value" id="completedAssignments"></span>
+                            <span class="detail-value" id="completedAssignments">3</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Total Earnings</span>
-                            <span class="detail-value" id="totalEarnings"></span>
+                            <span class="detail-value" id="totalEarnings">LKR 45,000</span>
                         </div>
                     </div>
                 </div>
@@ -674,11 +667,11 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                     <div class="detail-grid">
                         <div class="detail-item">
                             <span class="detail-label">Email</span>
-                            <span class="detail-value" id="companyEmail"></span>
+                            <span class="detail-value" id="companyEmail">contact@techcorp.com</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Phone</span>
-                            <span class="detail-value" id="companyPhone"></span>
+                            <span class="detail-value" id="companyPhone">+94 11 234 5678</span>
                         </div>
                     </div>
                 </div>
@@ -714,8 +707,8 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
             <div class="drawer-body">
                 <div class="assignment-header">
                     <div class="assignment-info">
-                        <h3 id="assignmentTitle"></h3>
-                        <p class="assignment-company" id="assignmentCompany"></p>
+                        <h3 id="assignmentTitle">HVAC System Maintenance</h3>
+                        <p class="assignment-company" id="assignmentCompany">TechCorp Solutions</p>
                     </div>
                     <div class="assignment-status-badge">
                         <span class="status-badge in-progress" id="assignmentStatus">In Progress</span>
@@ -727,30 +720,34 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                     <div class="detail-grid">
                         <div class="detail-item">
                             <span class="detail-label">Assignment Date</span>
-                            <span class="detail-value" id="assignmentDate"></span>
+                            <span class="detail-value" id="assignmentDate">Oct 22, 2025</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Time</span>
-                            <span class="detail-value" id="assignmentTime"></span>
+                            <span class="detail-value" id="assignmentTime">9:00 AM - 5:00 PM</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Location</span>
-                            <span class="detail-value" id="assignmentLocation"></span>
+                            <span class="detail-value" id="assignmentLocation">Colombo 07</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Estimated Hours</span>
-                            <span class="detail-value" id="estimatedHours"></span>
+                            <span class="detail-value" id="estimatedHours">8 hours</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Priority</span>
-                            <span class="detail-value" id="assignmentPriority"></span>
+                            <span class="detail-value" id="assignmentPriority">
+                                <span class="priority-badge normal">Normal Priority</span>
+                            </span>
                         </div>
                     </div>
                 </div>
 
                 <div class="detail-section">
                     <h4><i class="fas fa-align-left"></i> Description</h4>
-                    <p id="assignmentDescription" style="color: var(--text-secondary); line-height: 1.6;"></p>
+                    <p id="assignmentDescription" style="color: var(--text-secondary); line-height: 1.6;">
+                        Perform routine maintenance on HVAC systems at the office complex including filter replacement, system checks, and performance optimization.
+                    </p>
                 </div>
 
                 <div class="detail-section">
@@ -787,10 +784,10 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
         <div class="drawer-content large">
             <div class="drawer-header">
                 <div class="chat-header-info">
-                    <div class="company-avatar-small" id="chatCompanyAvatar"></div>
+                    <div class="company-avatar-small" id="chatCompanyAvatar">TC</div>
                     <div class="chat-header-text">
-                        <h3 id="chatCompanyName"></h3>
-                        <p id="chatProjectName"></p>
+                        <h3 id="chatCompanyName">TechCorp Solutions</h3>
+                        <p id="chatProjectName">HVAC Maintenance Contract</p>
                     </div>
                 </div>
                 <button class="drawer-close" onclick="closeMessageThreadDrawer()">
@@ -816,11 +813,74 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
         </div>
     </div>
 
-    <script>
-        // Inject repairer ID from PHP session into JS scope
-        window.CURRENT_REPAIRER_ID = <?php echo (int)$currentRepairerId; ?>;
-    </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/jobs.js"></script>
+    <script>
+        // Initialize page on load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load initial tab content (Browse Jobs)
+            loadJobPostings();
+            
+            // Update all stats for badges
+            updateContractStats();
+            updateApplicationStats();
+            
+            // Initialize cover letter character counter
+            const coverLetterInput = document.getElementById('coverLetter');
+            if (coverLetterInput) {
+                coverLetterInput.addEventListener('input', function() {
+                    const counter = document.getElementById('coverLetterCount');
+                    if (counter) {
+                        counter.textContent = coverLetterInput.value.length;
+                    }
+                });
+            }
+        });
+        
+        // Filter functions for company jobs
+        function filterJobsByCategory(category) {
+            // Get all job cards
+            const jobsGrid = document.getElementById('jobsGrid');
+            if (!jobsGrid) return;
+            
+            const jobs = jobsGrid.querySelectorAll('.job-card');
+            
+            jobs.forEach(card => {
+                if (category === 'all') {
+                    card.style.display = 'block';
+                } else {
+                    // Check if job matches category (stored in mock data)
+                    const jobData = jobPostingsData.find(j => {
+                        const titleElement = card.querySelector('.job-card-title h3');
+                        return titleElement && titleElement.textContent === j.title;
+                    });
+                    
+                    if (jobData) {
+                        card.style.display = jobData.category === category ? 'block' : 'none';
+                    }
+                }
+            });
+        }
+        
+        function filterApplications(status) {
+            // Update active filter chip
+            const filterChips = document.querySelectorAll('#applicationsTab .filter-chip');
+            filterChips.forEach(chip => chip.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Filter application cards
+            const applicationCards = document.querySelectorAll('#applicationsList .application-card');
+            applicationCards.forEach(card => {
+                if (status === 'all') {
+                    card.style.display = 'flex';
+                } else {
+                    const statusBadge = card.querySelector('.status-badge');
+                    const cardStatus = statusBadge ? statusBadge.textContent.toLowerCase() : '';
+                    card.style.display = cardStatus === status ? 'flex' : 'none';
+                }
+            });
+        }
+    </script>
 </body>
 </html>
+

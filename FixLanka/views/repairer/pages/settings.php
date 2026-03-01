@@ -79,28 +79,28 @@ $searchPlaceholder = 'Search settings...';
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="fullName">Full Name</label>
-                                        <input type="text" id="fullName" value="" class="form-input">
+                                        <input type="text" id="fullName" value="John Doe" class="form-input">
                                     </div>
                                     <div class="form-group">
                                         <label for="username">Username</label>
-                                        <input type="text" id="username" value="" class="form-input">
+                                        <input type="text" id="username" value="johndoe" class="form-input">
                                     </div>
                                 </div>
                                 
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="email">Email Address</label>
-                                        <input type="email" id="email" value="" class="form-input">
+                                        <input type="email" id="email" value="john.doe@fixlanka.com" class="form-input">
                                     </div>
                                     <div class="form-group">
                                         <label for="phone">Phone Number</label>
-                                        <input type="tel" id="phone" value="" class="form-input">
+                                        <input type="tel" id="phone" value="+94 77 123 4567" class="form-input">
                                     </div>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="bio">Bio</label>
-                                    <textarea id="bio" rows="4" class="form-input"></textarea>
+                                    <textarea id="bio" rows="4" class="form-input">Professional repairer with 10+ years of experience in electrical and plumbing services.</textarea>
                                 </div>
                             </div>
                         </div>

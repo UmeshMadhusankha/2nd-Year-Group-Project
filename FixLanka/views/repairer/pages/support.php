@@ -133,10 +133,43 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                                 </tr>
                                             </thead>
                                             <tbody id="tickets-tbody">
-                                                <tr id="tickets-loading-row">
-                                                    <td colspan="5" style="text-align:center;padding:40px;color:var(--text-secondary)">
-                                                        <i class="fas fa-spinner fa-spin fa-2x"></i>
-                                                        <p style="margin-top:12px">Loading tickets...</p>
+                                                <tr class="ticket-row" data-ticket-id="TKT-2025-001">
+                                                    <td class="ticket-id">#TKT-2025-001</td>
+                                                    <td class="ticket-subject">Payment issue with job completion</td>
+                                                    <td class="ticket-status">
+                                                        <span class="status-badge status-open">Open</span>
+                                                    </td>
+                                                    <td class="ticket-updated">Aug 30, 2025 2:30 PM</td>
+                                                    <td class="ticket-actions">
+                                                        <button class="btn-icon view-ticket" data-ticket-id="TKT-2025-001" title="View Ticket">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <tr class="ticket-row" data-ticket-id="TKT-2025-002">
+                                                    <td class="ticket-id">#TKT-2025-002</td>
+                                                    <td class="ticket-subject">Unable to upload profile picture</td>
+                                                    <td class="ticket-status">
+                                                        <span class="status-badge status-resolved">Resolved</span>
+                                                    </td>
+                                                    <td class="ticket-updated">Aug 28, 2025 11:15 AM</td>
+                                                    <td class="ticket-actions">
+                                                        <button class="btn-icon view-ticket" data-ticket-id="TKT-2025-002" title="View Ticket">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <tr class="ticket-row" data-ticket-id="TKT-2025-003">
+                                                    <td class="ticket-id">#TKT-2025-003</td>
+                                                    <td class="ticket-subject">App crashes on job search</td>
+                                                    <td class="ticket-status">
+                                                        <span class="status-badge status-in-progress">In Progress</span>
+                                                    </td>
+                                                    <td class="ticket-updated">Aug 25, 2025 4:45 PM</td>
+                                                    <td class="ticket-actions">
+                                                        <button class="btn-icon view-ticket" data-ticket-id="TKT-2025-003" title="View Ticket">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -170,7 +203,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
             <div class="modal-header">
                 <div class="modal-title-section">
                     <h3 class="modal-title" id="modal-ticket-title">Ticket Details</h3>
-                    <span class="ticket-id-badge" id="modal-ticket-id"></span>
+                    <span class="ticket-id-badge" id="modal-ticket-id">#TKT-2025-001</span>
                 </div>
                 <button class="modal-close" id="close-ticket-modal">
                     <i class="fas fa-times"></i>
@@ -186,11 +219,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                         </div>
                         <div class="meta-item">
                             <span class="meta-label">Created:</span>
-                            <span class="meta-value" id="modal-ticket-created">—</span>
+                            <span class="meta-value" id="modal-ticket-created">Aug 30, 2025 2:30 PM</span>
                         </div>
                         <div class="meta-item">
                             <span class="meta-label">Last Updated:</span>
-                            <span class="meta-value" id="modal-ticket-updated">—</span>
+                            <span class="meta-value" id="modal-ticket-updated">Aug 30, 2025 2:30 PM</span>
                         </div>
                     </div>
                 </div>
@@ -201,7 +234,42 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                     </div>
                     
                     <div class="chat-container" id="chat-container">
-                        <!-- Conversation loaded dynamically -->
+                        <!-- User Message -->
+                        <div class="chat-message user-message">
+                            <div class="message-avatar">
+                                <img src="../common/user.png" alt="You" class="avatar-img">
+                            </div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-author">You</span>
+                                    <span class="message-time">Aug 30, 2025 2:30 PM</span>
+                                </div>
+                                <div class="message-text">
+                                    <p>I completed a repair job yesterday but the payment hasn't been processed yet. The job was marked as complete by the customer but I still don't see the payment in my earnings. Can you please help me with this issue?</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Support Response -->
+                        <div class="chat-message support-message">
+                            <div class="message-avatar">
+                                <div class="support-avatar">
+                                    <i class="fas fa-headset"></i>
+                                </div>
+                            </div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-author">FixLanka Support</span>
+                                    <span class="message-time">Aug 30, 2025 3:45 PM</span>
+                                </div>
+                                <div class="message-text">
+                                    <p>Hello John! Thank you for contacting us about your payment issue. I understand your concern about the delayed payment processing.</p>
+                                    <p>I've checked your account and can see the completed job. Payment processing typically takes 1-2 business days after job completion. Since you completed the job yesterday, the payment should be processed by tomorrow.</p>
+                                    <p>I'll monitor your case and if the payment doesn't appear by tomorrow evening, I'll escalate this to our payments team immediately.</p>
+                                    <p>Is there anything else I can help you with regarding this issue?</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Reply Form -->

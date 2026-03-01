@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Validate file upload for repairer (if provided)
             if (role === 'repairer') {
-                const fileInput = this.querySelector('input[name="profilePicture"]');
+                const fileInput = this.querySelector('input[name="profile_picture"]');
                 if (fileInput && fileInput.files.length > 0) {
                     const file = fileInput.files[0];
                     const maxSize = 5 * 1024 * 1024; // 5MB

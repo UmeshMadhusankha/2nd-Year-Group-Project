@@ -1,51 +1,283 @@
 ﻿// Fix Lanka Landing Page JavaScript
 // ===================================
 
-// App + API endpoints
-const APP_BASE = '/2nd-Year-Group-Project/FixLanka';
-const API_ENDPOINTS = Object.freeze({
-    providerSearch: `${APP_BASE}/api/user/loadLandingProviders.php`,
-    companies: `${APP_BASE}/api/companies.php`
-});
-
-/*
-|-------------------------------------------------------------------------------
-| Landing Providers Data Flow (Quick Reference)
-|-------------------------------------------------------------------------------
-| 1) API is called from: loadProviders()
-| 2) Request URL: API_ENDPOINTS.providerSearch (/api/user/loadLandingProviders.php)
-| 3) Raw API response is stored in: lastLandingProvidersResponse
-| 4) Providers array (result.data) is stored in: lastLandingProvidersBatch
-| 5) Rendering happens via:
-|    - renderProviderCard(provider)  -> repairers grid
-|    - renderCompanyCard(company)    -> companies grid
-*/
-
-const LANDING_PROVIDER_BLUEPRINTS = Object.freeze({
-    repairer: {
-        source: 'Repairer table',
-        identity: ['repairer_id', 'provider_type'],
-        primaryDisplay: ['full_name', 'category_name'],
-        ratingAndStats: ['ratings', 'completedJobsCount'],
-        media: ['profilePicture'],
-        location: ['districts', 'address'],
-        contact: ['phoneNumber', 'email'],
-        detailText: ['about', 'availability']
+// Sample provider data for demonstration (Individual Repairers)
+const providerData = [
+    {
+        id: 1,
+        name: "Kamal Silva",
+        title: "Master Electrician",
+        rating: 4.9,
+        reviews: 156,
+        distance: "0.8 km away",
+        description: "Certified electrician with 15+ years of experience. Specializes in residential and commercial electrical work.",
+        avatar: "KS"
     },
-    company: {
-        source: 'Company table',
-        identity: ['company_id', 'provider_type'],
-        primaryDisplay: ['name', 'business_type'],
-        ratingAndStats: ['ratings', 'date_of_joined'],
-        location: ['districts', 'address'],
-        contact: ['contact_no', 'email', 'website'],
-        detailText: ['description']
+    {
+        id: 2,
+        name: "Nimal Perera",
+        title: "Plumbing Expert",
+        rating: 4.8,
+        reviews: 243,
+        distance: "1.2 km away",
+        description: "Licensed plumber offering 24/7 emergency services. Expert in pipe repairs and bathroom installations.",
+        avatar: "NP"
+    },
+    {
+        id: 3,
+        name: "Saman Fernando",
+        title: "HVAC Technician",
+        rating: 4.7,
+        reviews: 89,
+        distance: "2.1 km away",
+        description: "Air conditioning and heating specialist. Quick diagnostics and reliable repair services.",
+        avatar: "SF"
+    },
+    {
+        id: 4,
+        name: "Ranjith Kumar",
+        title: "Carpentry Specialist",
+        rating: 4.6,
+        reviews: 127,
+        distance: "3.5 km away",
+        description: "Expert carpenter specializing in custom furniture, kitchen cabinets, and home renovations. Quality craftsmanship guaranteed.",
+        avatar: "RK"
+    },
+    {
+        id: 5,
+        name: "Pradeep Bandara",
+        title: "Painting Professional",
+        rating: 4.5,
+        reviews: 93,
+        distance: "1.8 km away",
+        description: "Professional painting contractor for interior and exterior projects. High-quality finishes with premium paints.",
+        avatar: "PB"
+    },
+    {
+        id: 6,
+        name: "Amara Jayasinghe",
+        title: "House Cleaning Pro",
+        rating: 5.0,
+        reviews: 178,
+        distance: "0.5 km away",
+        description: "Professional cleaning service with eco-friendly products. Trusted by 200+ families.",
+        avatar: "AJ"
+    },
+    {
+        id: 7,
+        name: "Lakshmi Wijeratne",
+        title: "Interior Painter",
+        rating: 4.9,
+        reviews: 267,
+        distance: "1.5 km away",
+        description: "Professional painter with attention to detail. Transforms spaces with quality finishes.",
+        avatar: "LW"
+    },
+    {
+        id: 8,
+        name: "Roshan Mendis",
+        title: "Appliance Repair",
+        rating: 4.5,
+        reviews: 98,
+        distance: "2.3 km away",
+        description: "Expert in washing machine, refrigerator, and microwave repairs. Same-day service available.",
+        avatar: "RM"
+    },
+    {
+        id: 9,
+        name: "Priya Gunasekara",
+        title: "Garden Maintenance",
+        rating: 4.8,
+        reviews: 156,
+        distance: "1.1 km away",
+        description: "Professional gardener offering lawn care, pruning, and landscape design services.",
+        avatar: "PG"
+    },
+    {
+        id: 10,
+        name: "Dinesh Amarasinghe",
+        title: "Tile Installation Expert",
+        rating: 4.7,
+        reviews: 112,
+        distance: "1.9 km away",
+        description: "Specialist in ceramic, marble, and porcelain tile installation. Precise workmanship.",
+        avatar: "DA"
+    },
+    {
+        id: 11,
+        name: "Kumari Abeysekera",
+        title: "Home Security Specialist",
+        rating: 4.9,
+        reviews: 87,
+        distance: "2.5 km away",
+        description: "Security system installation and maintenance. Keeping your home safe and secure.",
+        avatar: "KA"
+    },
+    {
+        id: 12,
+        name: "Janaka Rodrigo",
+        title: "Pest Control Expert",
+        rating: 4.6,
+        reviews: 145,
+        distance: "1.7 km away",
+        description: "Eco-friendly pest control solutions. Effective treatment for all types of pest problems.",
+        avatar: "JR"
+    },
+    {
+        id: 13,
+        name: "Sanduni Perera",
+        title: "Window Cleaning Pro",
+        rating: 4.8,
+        reviews: 203,
+        distance: "0.9 km away",
+        description: "Professional window cleaning for residential and commercial properties. Streak-free results.",
+        avatar: "SP"
     }
-});
+];
 
-// Latest payload storage (before populating grids)
-let lastLandingProvidersResponse = null;
-let lastLandingProvidersBatch = [];
+// Sample company data for demonstration
+const companyData = [
+    {
+        id: 1,
+        name: "Lanka Build Solutions",
+        type: "Construction & Renovation",
+        rating: 4.9,
+        reviews: 342,
+        location: "Colombo 5",
+        employees: 45,
+        projects: 280,
+        yearsFounded: "Est. 2010",
+        services: ["Construction", "Renovation", "Interior Design", "Electrical"],
+        description: "Leading construction company with over 13 years of experience in residential and commercial projects. Committed to quality and timely delivery.",
+        logo: "LBS"
+    },
+    {
+        id: 2,
+        name: "HomeFix Services Ltd",
+        type: "Multi-Service Company",
+        rating: 4.8,
+        reviews: 567,
+        location: "Nugegoda",
+        employees: 82,
+        projects: 850,
+        yearsFounded: "Est. 2008",
+        services: ["Plumbing", "Electrical", "HVAC", "Carpentry", "Painting"],
+        description: "One-stop solution for all your home repair and maintenance needs. Professional team available 24/7 for emergency services.",
+        logo: "HF"
+    },
+    {
+        id: 3,
+        name: "CleanPro Lanka",
+        type: "Cleaning Services",
+        rating: 4.9,
+        reviews: 789,
+        location: "Kandy",
+        employees: 120,
+        projects: 1200,
+        yearsFounded: "Est. 2012",
+        services: ["House Cleaning", "Office Cleaning", "Deep Cleaning", "Pest Control"],
+        description: "Premier cleaning service provider with eco-friendly solutions. Trusted by over 500 corporate clients and 5000+ residential customers.",
+        logo: "CP"
+    },
+    {
+        id: 4,
+        name: "TechElectric Solutions",
+        type: "Electrical Services",
+        rating: 4.7,
+        reviews: 423,
+        location: "Dehiwala",
+        employees: 35,
+        projects: 650,
+        yearsFounded: "Est. 2015",
+        services: ["Electrical Installation", "Wiring", "Solar Panels", "Smart Home"],
+        description: "Specialized in modern electrical solutions including smart home automation and solar energy systems. Certified technicians.",
+        logo: "TE"
+    },
+    {
+        id: 5,
+        name: "AquaFlow Plumbing Co",
+        type: "Plumbing & Water Solutions",
+        rating: 4.8,
+        reviews: 312,
+        location: "Moratuwa",
+        employees: 28,
+        projects: 520,
+        yearsFounded: "Est. 2013",
+        services: ["Plumbing", "Water Tank Installation", "Drainage", "Bathroom Fitting"],
+        description: "Expert plumbing services with 24/7 emergency response. Specialists in water management and modern bathroom installations.",
+        logo: "AF"
+    },
+    {
+        id: 6,
+        name: "CoolAir HVAC Systems",
+        type: "Air Conditioning Services",
+        rating: 4.9,
+        reviews: 456,
+        location: "Colombo 7",
+        employees: 40,
+        projects: 720,
+        yearsFounded: "Est. 2011",
+        services: ["AC Installation", "AC Repair", "Maintenance", "Ventilation"],
+        description: "Leading HVAC company providing installation, repair, and maintenance services. Authorized dealers for major AC brands.",
+        logo: "CA"
+    },
+    {
+        id: 7,
+        name: "WoodCraft Interiors",
+        type: "Carpentry & Furniture",
+        rating: 4.7,
+        reviews: 234,
+        location: "Maharagama",
+        employees: 32,
+        projects: 380,
+        yearsFounded: "Est. 2014",
+        services: ["Custom Furniture", "Kitchen Cabinets", "Wardrobes", "Doors & Windows"],
+        description: "Premium carpentry services with custom designs. Expert craftsmen creating beautiful and functional wooden solutions.",
+        logo: "WC"
+    },
+    {
+        id: 8,
+        name: "PaintPro Lanka",
+        type: "Painting & Decorating",
+        rating: 4.8,
+        reviews: 398,
+        location: "Galle",
+        employees: 55,
+        projects: 890,
+        yearsFounded: "Est. 2009",
+        services: ["Interior Painting", "Exterior Painting", "Wall Texturing", "Waterproofing"],
+        description: "Professional painting company using premium quality paints. Experts in color consultation and decorative finishes.",
+        logo: "PP"
+    },
+    {
+        id: 9,
+        name: "SecureHome Systems",
+        type: "Security & Automation",
+        rating: 4.9,
+        reviews: 287,
+        location: "Colombo 3",
+        employees: 38,
+        projects: 420,
+        yearsFounded: "Est. 2016",
+        services: ["CCTV Installation", "Alarm Systems", "Access Control", "Home Automation"],
+        description: "Advanced security solutions with smart home integration. Protecting homes and businesses with cutting-edge technology.",
+        logo: "SH"
+    },
+    {
+        id: 10,
+        name: "GreenScape Gardens",
+        type: "Landscaping & Gardening",
+        rating: 4.6,
+        reviews: 178,
+        location: "Kotte",
+        employees: 25,
+        projects: 310,
+        yearsFounded: "Est. 2017",
+        services: ["Landscape Design", "Garden Maintenance", "Irrigation", "Tree Services"],
+        description: "Professional landscaping and garden maintenance services. Creating and maintaining beautiful outdoor spaces.",
+        logo: "GS"
+    }
+];
 
 // DOM Elements
 const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
@@ -59,38 +291,12 @@ const profileAvatar = document.getElementById('profileAvatar');
 const profileDropdown = document.getElementById('profileDropdown');
 const providerTabs = document.querySelectorAll('.provider-tab');
 
-// Active grid pointer (used by loader + no-results helpers)
-let providersGrid = repairersGrid;
-
 // State variables
 let currentPage = 0;
 const itemsPerPage = 6;
 let isLoading = false;
 let allProvidersLoaded = false;
 let currentProviderType = 'repairers';
-const landingRepairersById = new Map();
-
-function cacheLandingRepairers(providers) {
-    if (!Array.isArray(providers)) return;
-
-    providers.forEach((provider) => {
-        const type = normalizeProviderType(provider?.provider_type || currentProviderType);
-        if (type !== 'individual') return;
-
-        const repairerId = Number(provider?.repairer_id);
-        if (!Number.isFinite(repairerId) || repairerId <= 0) return;
-
-        landingRepairersById.set(repairerId, provider);
-    });
-}
-
-function getLandingRepairerById(repairerId) {
-    const numericId = Number(repairerId);
-    if (!Number.isFinite(numericId) || numericId <= 0) return null;
-    return landingRepairersById.get(numericId) || null;
-}
-
-window.getLandingRepairerById = getLandingRepairerById;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -181,11 +387,9 @@ function initializeProviderTabs() {
             if (type === 'repairers') {
                 repairersGrid.classList.add('active');
                 currentProviderType = 'repairers';
-                providersGrid = repairersGrid;
             } else {
                 companiesGrid.classList.add('active');
                 currentProviderType = 'companies';
-                providersGrid = companiesGrid;
             }
             
             // Reset and reload data
@@ -205,112 +409,23 @@ function initializeSearchForm() {
     if (searchForm) {
         searchForm.addEventListener('submit', function(e) {
             e.preventDefault();
-
-            // Apply filters via API
-            filterProviders();
-            updateActiveFilters();
+            
+            const service = document.getElementById('serviceSelect').value;
+            const rating = document.getElementById('ratingSelect').value;
+            const location = document.getElementById('locationInput').value;
+            
+            // Simulate search functionality
+            
+            // Show loading state
+            showSearchLoading();
+            
+            // Simulate API call delay
+            setTimeout(() => {
+                hideSearchLoading();
+                filterProviders({ service, rating, location });
+            }, 1000);
         });
-        
-        // Also trigger filter on dropdown change
-        const filterInputs = ['serviceSelect', 'ratingSelect', 'districtSelect'];
-        filterInputs.forEach(inputId => {
-            const input = document.getElementById(inputId);
-            if (input) {
-                input.addEventListener('change', function() {
-                    filterProviders();
-                    updateActiveFilters();
-                });
-            }
-        });
-        
-        // Clear filters button
-        const clearBtn = document.getElementById('clearFiltersBtn');
-        if (clearBtn) {
-            clearBtn.addEventListener('click', function() {
-                clearAllFilters();
-            });
-        }
     }
-}
-
-// Update active filters display
-function updateActiveFilters() {
-    const activeFiltersDiv = document.getElementById('activeFilters');
-    const filterTagsDiv = document.getElementById('filterTags');
-    
-    if (!activeFiltersDiv || !filterTagsDiv) return;
-    
-    const service = document.getElementById('serviceSelect');
-    const rating = document.getElementById('ratingSelect');
-    const district = document.getElementById('districtSelect');
-    
-    let hasFilters = false;
-    filterTagsDiv.innerHTML = '';
-    
-    // Add service tag
-    if (service && service.value) {
-        hasFilters = true;
-        const tag = createFilterTag('Service', service.options[service.selectedIndex].text, () => {
-            service.value = '';
-            filterProviders();
-            updateActiveFilters();
-        });
-        filterTagsDiv.appendChild(tag);
-    }
-    
-    // Add district tag
-    if (district && district.value) {
-        hasFilters = true;
-        const tag = createFilterTag('District', district.value, () => {
-            district.value = '';
-            filterProviders();
-            updateActiveFilters();
-        });
-        filterTagsDiv.appendChild(tag);
-    }
-    
-    // Add rating tag
-    if (rating && rating.value) {
-        hasFilters = true;
-        const tag = createFilterTag('Rating', rating.options[rating.selectedIndex].text, () => {
-            rating.value = '';
-            filterProviders();
-            updateActiveFilters();
-        });
-        filterTagsDiv.appendChild(tag);
-    }
-    
-    activeFiltersDiv.style.display = hasFilters ? 'flex' : 'none';
-}
-
-// Create filter tag element
-function createFilterTag(label, value, onRemove) {
-    const tag = document.createElement('span');
-    tag.className = 'filter-tag';
-    tag.innerHTML = `
-        <span class="filter-tag-label">${label}:</span>
-        <span class="filter-tag-value">${value}</span>
-        <button class="filter-tag-remove" aria-label="Remove filter">×</button>
-    `;
-    
-    const removeBtn = tag.querySelector('.filter-tag-remove');
-    removeBtn.addEventListener('click', onRemove);
-    
-    return tag;
-}
-
-// Clear all filters
-function clearAllFilters() {
-    const service = document.getElementById('serviceSelect');
-    const rating = document.getElementById('ratingSelect');
-    const district = document.getElementById('districtSelect');
-    
-    if (service) service.value = '';
-    if (rating) rating.value = '';
-    if (district) district.value = '';
-    
-    filterProviders();
-    updateActiveFilters();
 }
 
 // Search Loading States
@@ -325,31 +440,39 @@ function showSearchLoading() {
 function hideSearchLoading() {
     const searchBtn = document.querySelector('.search-btn');
     if (searchBtn) {
-        searchBtn.innerHTML = '<i class="fas fa-filter"></i> Apply Filters';
+        searchBtn.innerHTML = '<i class="fas fa-search"></i> Search';
         searchBtn.disabled = false;
     }
 }
 
-// Filter Providers - now uses real API
-async function filterProviders() {
-    // Clear current grid and reset pagination
-    if (providersGrid) {
-        providersGrid.innerHTML = '';
+// Filter Providers (simplified for demo)
+function filterProviders(filters) {
+    let filteredData = [...providerData];
+    
+    // Filter by service (simplified matching)
+    if (filters.service) {
+        filteredData = filteredData.filter(provider => 
+            provider.title.toLowerCase().includes(filters.service.toLowerCase()) ||
+            provider.description.toLowerCase().includes(filters.service.toLowerCase())
+        );
     }
+    
+    // Filter by rating
+    if (filters.rating) {
+        const minRating = parseFloat(filters.rating);
+        filteredData = filteredData.filter(provider => provider.rating >= minRating);
+    }
+    
+    // Clear current grid and reset pagination
+    providersGrid.innerHTML = '';
     currentPage = 0;
     allProvidersLoaded = false;
-    if (scrollTrigger) {
-        scrollTrigger.style.display = 'block';
-    }
     
-    // Show loading state
-    showSearchLoading();
+    // Update provider data temporarily for this search
+    window.currentFilteredData = filteredData;
     
-    // Load filtered results from API
-    await loadProviders();
-    
-    // Hide loading state
-    hideSearchLoading();
+    // Load filtered results
+    loadProviders(true);
 }
 
 // Lazy Loading Functionality
@@ -377,92 +500,49 @@ function loadInitialProviders() {
 }
 
 // Load Providers with Pagination
-async function loadProviders() {
-    if (isLoading || allProvidersLoaded) return;
-
+function loadProviders(isFiltered = false) {
+    if (isLoading) return;
+    
     isLoading = true;
     showLoading();
-
-    try {
-        const service = document.getElementById('serviceSelect')?.value || '';
-        const rating = document.getElementById('ratingSelect')?.value || '';
-        const district = document.getElementById('districtSelect')?.value || '';
-
-        const providerType = currentProviderType === 'companies' ? 'company' : 'individual';
-        const hasFilters = Boolean(service || rating || district);
-
-        const params = new URLSearchParams();
-        params.set('mode', hasFilters ? 'search' : 'featured');
-        params.set('provider_type', providerType);
-        params.set('limit', String(itemsPerPage));
-        params.set('offset', String(currentPage * itemsPerPage));
-
-        if (service) params.set('category', service);
-        if (rating) params.set('rating', rating);
-        if (district) params.set('location', district);
-
-        const apiUrl = `${API_ENDPOINTS.providerSearch}?${params.toString()}`;
-        const response = await fetch(apiUrl, {
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch providers (${response.status})`);
-        }
-
-        const result = await response.json();
-        const providers = (result && result.success && Array.isArray(result.data)) ? result.data : [];
-
-        // Store API payload before rendering (useful for filter/debug decisions)
-        lastLandingProvidersResponse = result;
-        lastLandingProvidersBatch = providers;
-        cacheLandingRepairers(providers);
-
-        if (providers.length === 0 && currentPage === 0) {
-            showNoResults();
-            allProvidersLoaded = true;
-            if (scrollTrigger) scrollTrigger.style.display = 'none';
-            return;
-        }
-
-        hideNoResults();
-
-        providers.forEach((provider, index) => {
+    
+    // Select data source based on current provider type
+    const dataSource = currentProviderType === 'repairers' 
+        ? (window.currentFilteredData || providerData) 
+        : companyData;
+    
+    // Calculate start and end indices
+    const startIndex = currentPage * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, dataSource.length);
+    
+    // Get current batch of providers
+    const currentBatch = dataSource.slice(startIndex, endIndex);
+    
+    // Simulate network delay
+    setTimeout(() => {
+        // Render providers based on type
+        currentBatch.forEach((provider, index) => {
             setTimeout(() => {
-                if (providerType === 'company') {
-                    renderCompanyCard(provider);
-                } else {
+                if (currentProviderType === 'repairers') {
                     renderProviderCard(provider);
+                } else {
+                    renderCompanyCard(provider);
                 }
-            }, index * 80);
+            }, index * 100); // Stagger animation
         });
-
+        
+        // Update pagination state
         currentPage++;
-
-        if (result.pagination) {
-            allProvidersLoaded = !result.pagination.hasMore;
-        } else if (providers.length < itemsPerPage) {
-            allProvidersLoaded = true;
-        }
-
-        if (allProvidersLoaded && scrollTrigger) {
-            scrollTrigger.style.display = 'none';
-        }
-    } catch (error) {
-        console.error('Error loading providers:', error);
-        if (currentPage === 0) {
-            showNoResults();
-        }
-        allProvidersLoaded = true;
-        if (scrollTrigger) {
-            scrollTrigger.style.display = 'none';
-        }
-    } finally {
         isLoading = false;
         hideLoading();
-    }
+        
+        // Check if all providers are loaded
+        if (endIndex >= dataSource.length) {
+            allProvidersLoaded = true;
+            scrollTrigger.style.display = 'none';
+        }
+        
+    }, 800); // Simulate loading delay
 }
 
 // Show Loading Indicator
@@ -479,386 +559,245 @@ function hideLoading() {
     }
 }
 
-// Show No Results Message
-function showNoResults() {
-    if (!providersGrid) return;
-    
-    const noResultsDiv = document.createElement('div');
-    noResultsDiv.id = 'noResultsMessage';
-    noResultsDiv.className = 'no-results';
-    noResultsDiv.innerHTML = `
-        <div class="no-results-icon">
-            <i class="fas fa-search"></i>
-        </div>
-        <h3>No Providers Found</h3>
-        <p>We couldn't find any providers matching your criteria.</p>
-        <p>Try adjusting your filters or clearing them to see all providers.</p>
-        <button class="btn-primary" onclick="clearAllFilters()">Clear All Filters</button>
-    `;
-    
-    providersGrid.appendChild(noResultsDiv);
-}
-
-// Hide No Results Message
-function hideNoResults() {
-    const noResultsMsg = document.getElementById('noResultsMessage');
-    if (noResultsMsg) {
-        noResultsMsg.remove();
-    }
-}
-
 // Render Provider Card
 function renderProviderCard(provider) {
     const card = document.createElement('div');
     card.className = 'provider-card';
     card.style.animationDelay = '0s'; // Reset animation delay
-
-    const pictureUrl = resolveAssetUrl(provider.profilePicture);
-    
-    // Generate avatar initials or use profile picture
-    const avatar = pictureUrl
-        ? `<img src="${pictureUrl}" alt="${provider.full_name || provider.name}" class="avatar-img">`
-        : generateAvatarInitials(provider.full_name || provider.name);
-    
-    // Determine provider type and display info
-    const providerType = normalizeProviderType(provider.provider_type || 'individual');
-    const providerName = provider.full_name || provider.name || 'Unknown';
-    const providerTitle = provider.category_name || (providerType === 'company' ? 'Service Company' : 'Service Provider');
-    const rating = Number(provider.ratings ?? provider.rating ?? 0);
-    const completedJobs = Number(provider.completedJobsCount ?? 0);
-    const about = provider.about || provider.address || 'Professional service provider';
-    const availability = provider.availability || 'available';
-    const serviceAreas = String(provider.districts || provider.address || 'Available in your area');
-    
-    // Provider ID and type for viewing details
-    const providerId = providerType === 'individual' ? provider.repairer_id : provider.company_id;
-    const safeProviderId = Number(providerId);
-    if (DEBUG_PROFILE_FLOW) {
-        console.log('[ProfileFlow] renderProviderCard()', {
-            providerTypeRaw: provider.provider_type,
-            providerType,
-            providerId,
-            safeProviderId,
-            providerName
-        });
-    }
     
     card.innerHTML = `
         <div class="provider-header">
             <div class="provider-avatar">
-                ${avatar}
+                ${provider.avatar}
             </div>
             <div class="provider-info">
-                <h3 class="provider-name">${escapeHtml(providerName)}</h3>
-                <p class="provider-title">${escapeHtml(providerTitle)}</p>
-                ${providerType === 'company' ? '<span class="provider-badge company-badge">Company</span>' : ''}
-                ${availability === 'available' ? '<span class="provider-badge available-badge">Available</span>' : ''}
+                <h3 class="provider-name">${provider.name}</h3>
+                <p class="provider-title">${provider.title}</p>
             </div>
         </div>
         
         <div class="provider-rating">
             <div class="stars">
-                ${generateStars(rating)}
+                ${generateStars(provider.rating)}
             </div>
-            <span class="rating-text">${(Number.isFinite(rating) ? rating : 0).toFixed(1)} ${completedJobs > 0 ? `(${completedJobs} jobs)` : ''}</span>
+            <span class="rating-text">${provider.rating} (${provider.reviews} reviews)</span>
         </div>
         
         <div class="provider-distance">
             <i class="fas fa-map-marker-alt"></i>
-            ${escapeHtml(serviceAreas.substring(0, 50))}${serviceAreas.length > 50 ? '...' : ''}
+            ${provider.distance}
         </div>
         
         <p class="provider-description">
-            ${escapeHtml(about.substring(0, 120))}${about.length > 120 ? '...' : ''}
+            ${provider.description}
         </p>
         
         <div class="provider-actions">
-            <button class="view-profile-btn" data-provider-id="${escapeHtml(String(safeProviderId || ''))}" data-provider-type="${escapeHtml(providerType)}" onclick="viewProviderProfile(${safeProviderId || 'null'}, '${providerType}')">
+            <button class="view-profile-btn" onclick="viewProfile(${provider.id})">
                 <i class="fas fa-user"></i>
                 View Profile
             </button>
-            ${providerType === 'individual' && provider.phoneNumber ? 
-                `<a href="tel:${provider.phoneNumber}" class="contact-btn">
-                    <i class="fas fa-phone"></i>
-                </a>` : ''}
         </div>
     `;
     
-    if (providersGrid) {
-        providersGrid.appendChild(card);
+    if (repairersGrid) {
+        repairersGrid.appendChild(card);
     }
 }
 
 // Render Company Card
 function renderCompanyCard(company) {
-    // Render API company cards
     const card = document.createElement('div');
     card.className = 'company-card';
     card.style.animationDelay = '0s';
-
-    const companyName = company.name || 'Company';
-    const companyType = company.business_type || 'Service Company';
-    const rating = Number(company.ratings ?? company.rating ?? 0);
-    const location = company.districts || company.address || '';
-    const description = company.description || 'Professional service company';
-    const founded = company.date_of_joined ? String(company.date_of_joined).slice(0, 4) : '-';
-
+    
+    const servicesHTML = company.services.slice(0, 4).map(service => 
+        `<span class="service-tag">${service}</span>`
+    ).join('');
+    
     card.innerHTML = `
         <div class="company-header">
-            <div class="company-logo">${generateAvatarInitials(companyName)}</div>
+            <div class="company-logo">
+                ${company.logo}
+            </div>
             <div class="company-info">
-                <h3 class="company-name">${escapeHtml(companyName)}</h3>
-                <span class="company-type">${escapeHtml(companyType)}</span>
+                <h3 class="company-name">${company.name}</h3>
+                <span class="company-type">${company.type}</span>
             </div>
         </div>
-
+        
         <div class="company-stats">
             <div class="company-stat">
-                <span class="stat-value">${rating.toFixed(1)}</span>
-                <span class="stat-label">Rating</span>
+                <span class="stat-value">${company.employees}+</span>
+                <span class="stat-label">Employees</span>
             </div>
             <div class="company-stat">
-                <span class="stat-value">${escapeHtml(String((company.districts || '').split(',').filter(Boolean).length || 1))}</span>
-                <span class="stat-label">Areas</span>
+                <span class="stat-value">${company.projects}+</span>
+                <span class="stat-label">Projects</span>
             </div>
             <div class="company-stat">
-                <span class="stat-value">${escapeHtml(founded)}</span>
-                <span class="stat-label">Joined</span>
+                <span class="stat-value">${company.yearsFounded.split(' ')[1]}</span>
+                <span class="stat-label">Founded</span>
             </div>
         </div>
-
+        
         <div class="company-rating">
-            <div class="stars">${generateStars(rating)}</div>
-            <span class="rating-text">${rating.toFixed(1)}</span>
+            <div class="stars">
+                ${generateStars(company.rating)}
+            </div>
+            <span class="rating-text">${company.rating} (${company.reviews} reviews)</span>
         </div>
-
+        
         <div class="company-location">
             <i class="fas fa-map-marker-alt"></i>
-            ${escapeHtml(String(location).substring(0, 60))}${String(location).length > 60 ? '...' : ''}
+            ${company.location}
         </div>
-
-        <p class="company-description">${escapeHtml(String(description).substring(0, 140))}${String(description).length > 140 ? '...' : ''}</p>
-
+        
+        <div class="company-services">
+            <p class="services-label">Services Offered:</p>
+            <div class="services-tags">
+                ${servicesHTML}
+                ${company.services.length > 4 ? `<span class="service-tag">+${company.services.length - 4} more</span>` : ''}
+            </div>
+        </div>
+        
+        <p class="company-description">
+            ${company.description}
+        </p>
+        
         <div class="company-actions">
-            <button class="view-company-btn" data-provider-id="${escapeHtml(String(company.company_id ?? ''))}" data-provider-type="company" onclick="viewProviderProfile(${Number(company.company_id) || 'null'}, 'company')">
+            <button class="view-company-btn" onclick="viewCompanyDetails(${company.id})">
                 <i class="fas fa-building"></i>
                 View Company Details
             </button>
         </div>
     `;
-
-    if (providersGrid) {
-        providersGrid.appendChild(card);
+    
+    if (companiesGrid) {
+        companiesGrid.appendChild(card);
     }
 }
 
-function resolveAssetUrl(path) {
-    if (!path) return '';
-    const trimmed = String(path).trim();
-    if (!trimmed) return '';
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
-    if (trimmed.startsWith('/')) return trimmed;
-    return `${APP_BASE}/${trimmed}`;
-}
-
-const DEBUG_PROFILE_FLOW = true;
-
-function normalizeProviderType(type) {
-    const value = String(type || '').trim().toLowerCase();
-    if (value === 'individual' || value === 'repairer' || value === 'repairers') return 'individual';
-    if (value === 'company' || value === 'companies') return 'company';
-    return value || 'individual';
-}
-
-// Unified handler used by cards; repairer popup is mock-based for now
-function viewProviderProfile(providerId, providerType) {
-    const normalizedType = normalizeProviderType(providerType);
-    const numericId = Number(providerId);
-
-    if (DEBUG_PROFILE_FLOW) {
-        console.groupCollapsed('[ProfileFlow] viewProviderProfile()');
-        console.log('providerId (raw):', providerId);
-        console.log('providerType (raw):', providerType);
-        console.log('providerType (normalized):', normalizedType);
-        console.log('providerId (number):', numericId);
-        console.log('openRepairerProfile available:', typeof openRepairerProfile);
-        console.groupEnd();
-    }
-
-    if (!Number.isFinite(numericId) || numericId <= 0) {
-        console.error('[ProfileFlow] Invalid providerId, aborting:', providerId, providerType);
-        return;
-    }
-
-    if (normalizedType === 'individual') {
-        if (typeof openRepairerProfile === 'function') {
-            const repairer = getLandingRepairerById(numericId);
-            openRepairerProfile(numericId, repairer);
-        } else {
-            console.error('[ProfileFlow] openRepairerProfile() is not available. Check script load order for repairer-profile-popup.js');
-            alert('Repairer profile popup is not available right now.');
-        }
-        return;
-    }
-
-    openCompanyProfile(numericId);
-}
-
-// Make sure inline onclick can always find it
-window.viewProviderProfile = viewProviderProfile;
-
-// Defensive: handle clicks even if inline handlers break
-document.addEventListener('click', (e) => {
-    const btn = e.target?.closest?.('.view-profile-btn, .view-company-btn');
-    if (!btn) return;
-
-    // Prefer data-* if present
-    const dataId = btn.getAttribute('data-provider-id');
-    const dataType = btn.getAttribute('data-provider-type');
-
-    if (DEBUG_PROFILE_FLOW) {
-        console.log('[ProfileFlow] Click detected on view button', { dataId, dataType, className: btn.className });
-    }
-
-    if (dataId) {
-        e.preventDefault();
-        viewProviderProfile(dataId, dataType || (btn.classList.contains('view-company-btn') ? 'company' : 'individual'));
-    }
-});
-
-async function openCompanyProfile(companyId) {
-    // Remove any existing modal
-    const existing = document.getElementById('companyModal');
-    if (existing) existing.remove();
-
-    try {
-        const apiUrl = `${API_ENDPOINTS.companies}?action=getDetails&id=${encodeURIComponent(companyId)}`;
-        const response = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const result = await response.json();
-        if (!result || !result.success || !result.data) throw new Error('Invalid response');
-
-        const c = result.data;
-        const name = c.name || 'Company';
-        const businessType = c.business_type || 'Service Company';
-        const rating = Number(c.ratings ?? 0);
-        const districts = c.districts || '';
-        const description = c.description || 'No description available.';
-        const contact = c.contact_no || 'N/A';
-        const email = c.email || 'N/A';
-        const website = c.website || 'N/A';
-        const address = c.address || 'N/A';
-
-        const services = String(businessType)
-            .split(',')
-            .map(s => s.trim())
-            .filter(Boolean);
-
-        const modalHTML = `
-            <div class="company-modal-overlay" id="companyModal">
-                <div class="company-modal-container">
-                    <div class="company-modal-header">
-                        <div class="company-modal-logo">${generateAvatarInitials(name)}</div>
-                        <div class="company-modal-title-section">
-                            <h2 class="company-modal-title">${escapeHtml(name)}</h2>
-                            <p class="company-modal-type">${escapeHtml(businessType)}</p>
-                        </div>
-                        <button class="company-modal-close" onclick="closeCompanyModal()">
-                            <i class="fas fa-times"></i>
-                        </button>
+// View Company Details
+function viewCompanyDetails(companyId) {
+    const company = companyData.find(c => c.id === companyId);
+    if (!company) return;
+    
+    // Create modal HTML
+    const modalHTML = `
+        <div class="company-modal-overlay" id="companyModal">
+            <div class="company-modal-container">
+                <div class="company-modal-header">
+                    <div class="company-modal-logo">
+                        ${company.logo}
                     </div>
-                    <div class="company-modal-content">
-                        <div class="company-modal-rating">
-                            <div class="stars">${generateStars(Number.isFinite(rating) ? rating : 0)}</div>
-                            <span class="rating-text">${(Number.isFinite(rating) ? rating : 0).toFixed(1)} / 5.0</span>
+                    <div class="company-modal-title-section">
+                        <h2 class="company-modal-title">${company.name}</h2>
+                        <p class="company-modal-type">${company.type}</p>
+                    </div>
+                    <button class="company-modal-close" onclick="closeCompanyModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="company-modal-content">
+                    <div class="company-modal-rating">
+                        <div class="stars">
+                            ${generateStars(company.rating)}
                         </div>
-
-                        <div class="company-modal-info-grid">
-                            <div class="company-modal-info-item">
-                                <i class="fas fa-phone"></i>
-                                <div>
-                                    <span class="info-label">Contact</span>
-                                    <span class="info-value">${escapeHtml(contact)}</span>
-                                </div>
-                            </div>
-                            <div class="company-modal-info-item">
-                                <i class="fas fa-envelope"></i>
-                                <div>
-                                    <span class="info-label">Email</span>
-                                    <span class="info-value">${escapeHtml(email)}</span>
-                                </div>
-                            </div>
-                            <div class="company-modal-info-item">
-                                <i class="fas fa-globe"></i>
-                                <div>
-                                    <span class="info-label">Website</span>
-                                    <span class="info-value">${escapeHtml(website)}</span>
-                                </div>
-                            </div>
-                            <div class="company-modal-info-item">
-                                <i class="fas fa-map-marker-alt"></i>
-                                <div>
-                                    <span class="info-label">Service Areas</span>
-                                    <span class="info-value">${escapeHtml(districts || 'N/A')}</span>
-                                </div>
+                        <span class="rating-text">${company.rating} / 5.0 (${company.reviews} reviews)</span>
+                    </div>
+                    
+                    <div class="company-modal-info-grid">
+                        <div class="company-modal-info-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div>
+                                <span class="info-label">Location</span>
+                                <span class="info-value">${company.location}</span>
                             </div>
                         </div>
-
-                        <div class="company-modal-section">
-                            <h3 class="modal-section-title"><i class="fas fa-location-dot"></i> Address</h3>
-                            <p class="company-modal-description">${escapeHtml(address)}</p>
-                        </div>
-
-                        <div class="company-modal-section">
-                            <h3 class="modal-section-title"><i class="fas fa-info-circle"></i> About Company</h3>
-                            <p class="company-modal-description">${escapeHtml(description)}</p>
-                        </div>
-
-                        ${services.length ? `
-                        <div class="company-modal-section">
-                            <h3 class="modal-section-title"><i class="fas fa-tools"></i> Services Offered</h3>
-                            <div class="company-modal-services">
-                                ${services.map(s =>
-                                    `<span class="modal-service-tag"><i class="fas fa-check-circle"></i> ${escapeHtml(s)}</span>`
-                                ).join('')}
+                        
+                        <div class="company-modal-info-item">
+                            <i class="fas fa-users"></i>
+                            <div>
+                                <span class="info-label">Team Size</span>
+                                <span class="info-value">${company.employees}+ Employees</span>
                             </div>
                         </div>
-                        ` : ''}
-
-                        <div class="company-modal-actions">
-                            <button class="btn-primary" onclick="requestCompanyQuote(${companyId})">
-                                <i class="fas fa-file-invoice"></i>
-                                Request Quote
-                            </button>
-                            <button class="btn-secondary" onclick="contactCompany(${companyId})">
-                                <i class="fas fa-comment"></i>
-                                Message
-                            </button>
-                            <button class="btn-outline" onclick="closeCompanyModal()">
-                                <i class="fas fa-times"></i>
-                                Close
-                            </button>
+                        
+                        <div class="company-modal-info-item">
+                            <i class="fas fa-briefcase"></i>
+                            <div>
+                                <span class="info-label">Projects Completed</span>
+                                <span class="info-value">${company.projects}+</span>
+                            </div>
                         </div>
+                        
+                        <div class="company-modal-info-item">
+                            <i class="fas fa-calendar-alt"></i>
+                            <div>
+                                <span class="info-label">Established</span>
+                                <span class="info-value">${company.yearsFounded}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="company-modal-section">
+                        <h3 class="modal-section-title">
+                            <i class="fas fa-info-circle"></i>
+                            About Company
+                        </h3>
+                        <p class="company-modal-description">${company.description}</p>
+                    </div>
+                    
+                    <div class="company-modal-section">
+                        <h3 class="modal-section-title">
+                            <i class="fas fa-tools"></i>
+                            Services Offered
+                        </h3>
+                        <div class="company-modal-services">
+                            ${company.services.map(service => 
+                                `<span class="modal-service-tag">
+                                    <i class="fas fa-check-circle"></i>
+                                    ${service}
+                                </span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="company-modal-actions">
+                        <button class="btn-primary" onclick="sendRepairRequest('company', ${companyId})">
+                            <i class="fas fa-tools"></i>
+                            Send Repair Request
+                        </button>
+                        <button class="btn-secondary" onclick="contactCompany(${companyId})">
+                            <i class="fas fa-comment"></i>
+                            Contact Company
+                        </button>
+                        <button class="btn-outline" onclick="requestCompanyQuote(${companyId})">
+                            <i class="fas fa-file-invoice"></i>
+                            Request Quote
+                        </button>
                     </div>
                 </div>
             </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-
-        const modal = document.getElementById('companyModal');
-        setTimeout(() => modal.classList.add('show'), 10);
-
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                closeCompanyModal();
-            }
-        });
-    } catch (error) {
-        console.error('Failed to load company profile:', error);
-        alert('Failed to load company details. Please try again.');
-    }
+        </div>
+    `;
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Show modal with animation
+    setTimeout(() => {
+        document.getElementById('companyModal').classList.add('show');
+    }, 10);
+    
+    // Close on outside click
+    document.getElementById('companyModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeCompanyModal();
+        }
+    });
 }
 
 // Close Company Modal
@@ -869,25 +808,7 @@ function closeCompanyModal() {
         setTimeout(() => {
             modal.remove();
         }, 300);
-        document.body.style.overflow = '';
     }
-}
-
-// Generate avatar initials from name
-function generateAvatarInitials(name) {
-    if (!name) return 'SP';
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-}
-
-// Escape HTML to prevent XSS
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 // Generate Star Rating HTML
@@ -914,6 +835,28 @@ function generateStars(rating) {
     }
     
     return starsHTML;
+}
+
+// View Profile Function
+function viewProfile(providerId) {
+    const provider = providerData.find(p => p.id === providerId);
+    if (!provider) return;
+    
+    // Only show popup for repairers with detailed profiles (IDs 1-5)
+    // ID 1: Kamal Silva (Electrician)
+    // ID 2: Nimal Perera (Plumber)
+    // ID 3: Saman Fernando (HVAC)
+    // ID 4: Ranjith Kumar (Carpenter) - mapped from Chaminda
+    // ID 5: Pradeep Bandara (Painter) - mapped from Lakshmi
+    
+    if (providerId >= 1 && providerId <= 5) {
+        // Open the detailed profile popup
+        openRepairerProfile(providerId);
+    } else {
+        // For other providers, show placeholder message
+        alert(`Viewing profile for ${provider.name}\n\nDetailed profile coming soon!`);
+        
+    }
 }
 
 // Smooth Scrolling for Navigation Links
@@ -976,28 +919,26 @@ window.addEventListener('scroll', function() {
     }
 });
 
-// Provider Type Filter Function
-function filterByProviderType(type, buttonElement) {
-    // Update current provider type
-    currentProviderType = type;
+// Form Validation Enhancement
+function validateSearchForm() {
+    const location = document.getElementById('locationInput').value.trim();
     
-    // Update button active states
-    const allButtons = document.querySelectorAll('.provider-type-btn');
-    allButtons.forEach(btn => btn.classList.remove('active'));
-    buttonElement.classList.add('active');
-    
-    // Clear current providers and reset pagination
-    if (providersGrid) {
-        providersGrid.innerHTML = '';
-    }
-    currentPage = 0;
-    allProvidersLoaded = false;
-    if (scrollTrigger) {
-        scrollTrigger.style.display = 'block';
+    if (location.length < 3) {
+        alert('Please enter a valid location (at least 3 characters)');
+        return false;
     }
     
-    // Reload providers with new filter
-    loadProviders();
+    return true;
+}
+
+// Add form validation to search form
+if (searchForm) {
+    searchForm.addEventListener('submit', function(e) {
+        if (!validateSearchForm()) {
+            e.preventDefault();
+            return false;
+        }
+    });
 }
 
 // Send Repair Request Function (Placeholder - No functionality yet)

@@ -1,108 +1,389 @@
 // ================================================
-// PROFILE PAGE - LIGHTWEIGHT FRONTEND LOGIC
+// PROFILE PAGE - USER PROFILE MANAGEMENT
 // ================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    const APP_BASE = '/2nd-Year-Group-Project/FixLanka';
-    const UPDATE_USER_API = `${APP_BASE}/api/user/updateUser.php`;
-    const backendData = window.profilePageData || {};
-
-    const profileState = {
-        fullName: backendData.fullName || 'User',
-        email: backendData.email || '',
-        location: backendData.location || 'Sri Lanka',
-        avatar: backendData.avatar || '',
-        jobStats: {
-            total: Number(backendData.jobStats?.total ?? 0),
-            active: Number(backendData.jobStats?.active ?? 0),
-            completed: Number(backendData.jobStats?.completed ?? 0),
-            pending: Number(backendData.jobStats?.pending ?? 0)
-        }
+    
+    // ================================================
+    // SAMPLE USER DATA
+    // ================================================
+    const userData = {
+        fullName: "John Doe",
+        username: "johndoe",
+        email: "john.doe@example.com",
+        phone: "+94 77 123 4567",
+        location: "Colombo 07, Sri Lanka",
+        bio: "Looking for reliable service providers for home repairs and maintenance.",
+        avatar: "https://via.placeholder.com/150",
+        accountStatus: "Verified",
+        memberSince: "January 2024",
+        completionPercentage: 85,
+        stats: {
+            totalJobs: 12,
+            activeJobs: 3,
+            completedJobs: 8,
+            pendingPayments: 1
+        },
+        rating: {
+            average: 4.5,
+            total: 24,
+            breakdown: {
+                5: 15,
+                4: 6,
+                3: 2,
+                2: 1,
+                1: 0
+            }
+        },
+        recentActivity: [
+            {
+                icon: "fa-briefcase",
+                action: "Posted a new job",
+                description: "Kitchen Sink Repair",
+                time: "2 hours ago"
+            },
+            {
+                icon: "fa-handshake",
+                action: "Agreement sent",
+                description: "Electrical Wiring Installation",
+                time: "1 day ago"
+            },
+            {
+                icon: "fa-credit-card",
+                action: "Milestone payment made",
+                description: "Office Deep Cleaning - Milestone 1/3",
+                time: "2 days ago"
+            },
+            {
+                icon: "fa-star",
+                action: "Review received",
+                description: "5 stars from Kasun Silva",
+                time: "3 days ago"
+            }
+        ],
+        quotes: [
+            {
+                id: 1,
+                jobTitle: "Kitchen Sink Repair",
+                provider: {
+                    name: "Kasun Silva",
+                    type: "Individual",
+                    rating: 4.8,
+                    avatar: "https://via.placeholder.com/50"
+                },
+                amount: 5000,
+                status: "pending"
+            },
+            {
+                id: 2,
+                jobTitle: "Electrical Wiring Installation",
+                provider: {
+                    name: "Quick Fix Solutions",
+                    type: "Company",
+                    rating: 4.6,
+                    avatar: "https://via.placeholder.com/50"
+                },
+                amount: 15000,
+                status: "pending"
+            },
+            {
+                id: 3,
+                jobTitle: "AC Unit Maintenance",
+                provider: {
+                    name: "Nimal Perera",
+                    type: "Individual",
+                    rating: 4.9,
+                    avatar: "https://via.placeholder.com/50"
+                },
+                amount: 3500,
+                status: "pending"
+            }
+        ]
     };
 
+    // ================================================
+    // DOM ELEMENTS
+    // ================================================
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const profileToggle = document.getElementById('profileToggle');
+    const profileDropdown = document.getElementById('profileDropdown');
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+    
+    // Profile elements
     const editProfileBtn = document.getElementById('editProfileBtn');
-    const manageProfileBtn = document.getElementById('manageProfileBtn');
     const editProfileModal = document.getElementById('editProfileModal');
     const closeEditModal = document.getElementById('closeEditModal');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
     const editProfileForm = document.getElementById('editProfileForm');
-
     const profileAvatarImg = document.getElementById('profileAvatar');
     const avatarOverlay = document.getElementById('avatarOverlay');
     const avatarInput = document.getElementById('avatarInput');
-
+    
+    // Action buttons
+    const manageProfileBtn = document.getElementById('manageProfileBtn');
     const viewQuotesBtn = document.getElementById('viewQuotesBtn');
-    const postJobBtn = document.getElementById('postJobBtn');
+    const manageReviewsBtn = document.getElementById('manageReviewsBtn');
     const paymentHistoryBtn = document.getElementById('paymentHistoryBtn');
-    const helpCenterBtn = document.getElementById('helpCenterBtn');
     const viewAllJobsBtn = document.getElementById('viewAllJobsBtn');
-    const viewAllSetupBtn = document.getElementById('viewAllSetupBtn');
-
-    const completionPercentageEl = document.getElementById('completionPercentage');
-    const completionTasksEl = document.getElementById('completionTasks');
-    const setupLevelTextEl = document.getElementById('setupLevelText');
-    const setupHintsListEl = document.getElementById('setupHintsList');
-    const progressCircle = document.getElementById('progressCircle');
-
+    const viewAllActivityBtn = document.getElementById('viewAllActivityBtn');
+    const viewAllReviewsBtn = document.getElementById('viewAllReviewsBtn');
+    const viewAllQuotesBtn = document.getElementById('viewAllQuotesBtn');
+    
+    // Toast
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toastMessage');
 
+    // ================================================
+    // INITIALIZE
+    // ================================================
     function init() {
-        bindEvents();
-        renderProfile();
+        renderProfileData();
+        setupEventListeners();
+        loadSidebarState();
         animateCounters();
+        animateProgressBars();
     }
 
-    function bindEvents() {
-        editProfileBtn?.addEventListener('click', openEditModal);
-        manageProfileBtn?.addEventListener('click', openEditModal);
-        closeEditModal?.addEventListener('click', closeModal);
-        cancelEditBtn?.addEventListener('click', closeModal);
-
-        editProfileModal?.addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
+    // ================================================
+    // RENDER PROFILE DATA
+    // ================================================
+    function renderProfileData() {
+        // User info card
+        document.querySelector('.user-full-name').textContent = userData.fullName;
+        document.querySelector('.user-username').textContent = `@${userData.username}`;
+        document.querySelector('.account-status').textContent = userData.accountStatus;
+        document.querySelector('.member-since').textContent = `Member since ${userData.memberSince}`;
+        
+        if (profileAvatarImg) {
+            profileAvatarImg.src = userData.avatar;
+        }
+        
+        // Update all avatar images
+        document.querySelectorAll('.user-avatar, .avatar-image').forEach(img => {
+            img.src = userData.avatar;
         });
 
+        // Contact info
+        const contactItems = document.querySelectorAll('.contact-item span');
+        if (contactItems.length >= 3) {
+            contactItems[0].textContent = userData.email;
+            contactItems[1].textContent = userData.phone;
+            contactItems[2].textContent = userData.location;
+        }
+
+        // Profile completion
+        document.querySelector('.completion-percentage').textContent = `${userData.completionPercentage}%`;
+        document.querySelector('.progress-fill').style.width = `${userData.completionPercentage}%`;
+
+        // Stats
+        document.querySelector('.stat-number[data-stat="total"]').textContent = userData.stats.totalJobs;
+        document.querySelector('.stat-number[data-stat="active"]').textContent = userData.stats.activeJobs;
+        document.querySelector('.stat-number[data-stat="completed"]').textContent = userData.stats.completedJobs;
+        document.querySelector('.stat-number[data-stat="pending"]').textContent = userData.stats.pendingPayments;
+
+        // Recent activity
+        const activityList = document.querySelector('.activity-list');
+        if (activityList) {
+            activityList.innerHTML = userData.recentActivity.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas ${activity.icon}"></i>
+                    </div>
+                    <div class="activity-details">
+                        <h4 class="activity-action">${activity.action}</h4>
+                        <p class="activity-description">${activity.description}</p>
+                        <span class="activity-time">${activity.time}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Reviews summary
+        document.querySelector('.average-rating').textContent = userData.rating.average;
+        document.querySelector('.total-reviews').textContent = `${userData.rating.total} reviews`;
+
+        // Rating breakdown
+        const ratingBreakdown = document.querySelector('.rating-breakdown');
+        if (ratingBreakdown) {
+            ratingBreakdown.innerHTML = Object.entries(userData.rating.breakdown)
+                .reverse()
+                .map(([stars, count]) => {
+                    const percentage = (count / userData.rating.total * 100).toFixed(0);
+                    return `
+                        <div class="rating-row">
+                            <span class="rating-label">${stars} <i class="fas fa-star"></i></span>
+                            <div class="rating-bar">
+                                <div class="bar-fill" style="width: ${percentage}%"></div>
+                            </div>
+                            <span class="rating-count">${count}</span>
+                        </div>
+                    `;
+                }).join('');
+        }
+
+        // Quotes
+        const quotesList = document.querySelector('.quotes-list');
+        if (quotesList) {
+            quotesList.innerHTML = userData.quotes.slice(0, 3).map(quote => `
+                <div class="quote-item" data-quote-id="${quote.id}">
+                    <div class="quote-header">
+                        <div class="provider-info">
+                            <img src="${quote.provider.avatar}" alt="${quote.provider.name}" class="provider-avatar">
+                            <div>
+                                <h4 class="provider-name">${quote.provider.name}</h4>
+                                <p class="provider-type">${quote.provider.type}</p>
+                                <div class="provider-rating">
+                                    <i class="fas fa-star"></i>
+                                    <span>${quote.provider.rating}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="quote-amount">
+                            <span class="amount-label">Quote</span>
+                            <span class="amount-value">LKR ${quote.amount.toLocaleString()}</span>
+                        </div>
+                    </div>
+                    <p class="quote-job-title">${quote.jobTitle}</p>
+                    <div class="quote-actions">
+                        <button class="btn-success" onclick="handleQuoteAction('accept', ${quote.id})">
+                            <i class="fas fa-check"></i> Accept
+                        </button>
+                        <button class="btn-outline" onclick="handleQuoteAction('decline', ${quote.id})">
+                            <i class="fas fa-times"></i> Decline
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Pre-fill edit form
+        if (editProfileForm) {
+            document.getElementById('editFullName').value = userData.fullName;
+            document.getElementById('editUsername').value = userData.username;
+            document.getElementById('editEmail').value = userData.email;
+            document.getElementById('editPhone').value = userData.phone;
+            document.getElementById('editLocation').value = userData.location;
+            document.getElementById('editBio').value = userData.bio;
+        }
+    }
+
+    // ================================================
+    // EVENT LISTENERS
+    // ================================================
+    function setupEventListeners() {
+        // Sidebar toggle
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', toggleSidebar);
+        }
+
+        // Profile dropdown
+        if (profileToggle) {
+            profileToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                profileDropdown?.classList.toggle('show');
+            });
+        }
+
+        // Mobile menu
+        if (mobileMenuToggle) {
+            mobileMenuToggle.addEventListener('click', function() {
+                this.classList.toggle('active');
+                mobileMenu?.classList.toggle('show');
+            });
+        }
+
+        // Edit profile modal
+        if (editProfileBtn) {
+            editProfileBtn.addEventListener('click', openEditModal);
+        }
+        if (closeEditModal) {
+            closeEditModal.addEventListener('click', closeModal);
+        }
+        if (cancelEditBtn) {
+            cancelEditBtn.addEventListener('click', closeModal);
+        }
+        if (editProfileForm) {
+            editProfileForm.addEventListener('submit', handleProfileUpdate);
+        }
+
+        // Avatar upload
+        if (avatarOverlay) {
+            avatarOverlay.addEventListener('click', () => avatarInput?.click());
+        }
+        if (avatarInput) {
+            avatarInput.addEventListener('change', handleAvatarUpload);
+        }
+
+        // Action buttons
+        const actionButtons = {
+            manageProfileBtn: openEditModal,
+            viewQuotesBtn: () => navigateToPage('quotes'),
+            manageReviewsBtn: () => navigateToPage('reviews'),
+            paymentHistoryBtn: () => navigateToPage('payments'),
+            viewAllJobsBtn: () => navigateToPage('jobs'),
+            viewAllActivityBtn: () => navigateToPage('activity'),
+            viewAllReviewsBtn: () => navigateToPage('reviews'),
+            viewAllQuotesBtn: () => navigateToPage('quotes')
+        };
+
+        Object.entries(actionButtons).forEach(([id, handler]) => {
+            const btn = document.getElementById(id);
+            if (btn) btn.addEventListener('click', handler);
+        });
+
+        // Close on outside click
+        document.addEventListener('click', function(e) {
+            if (profileDropdown && !profileToggle?.contains(e.target) && !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.remove('show');
+            }
+            if (mobileMenu && !mobileMenuToggle?.contains(e.target) && !mobileMenu.contains(e.target)) {
+                mobileMenu.classList.remove('show');
+                mobileMenuToggle?.classList.remove('active');
+            }
+        });
+
+        // Modal overlay click
+        if (editProfileModal) {
+            editProfileModal.addEventListener('click', function(e) {
+                if (e.target === this) closeModal();
+            });
+        }
+
+        // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && editProfileModal?.classList.contains('show')) {
                 closeModal();
             }
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                openEditModal();
+            }
         });
 
-        editProfileForm?.addEventListener('submit', handleProfileUpdate);
-
-        avatarOverlay?.addEventListener('click', function() {
-            avatarInput?.click();
-        });
-
-        avatarInput?.addEventListener('change', handleAvatarUpload);
-
-        viewQuotesBtn?.addEventListener('click', function() {
-            window.location.href = `${APP_BASE}/job-history?view=quotes`;
-        });
-
-        postJobBtn?.addEventListener('click', function() {
-            window.location.href = `${APP_BASE}/post-job`;
-        });
-
-        paymentHistoryBtn?.addEventListener('click', function() {
-            window.location.href = `${APP_BASE}/job-history`;
-        });
-
-        helpCenterBtn?.addEventListener('click', function() {
-            window.location.href = `${APP_BASE}/help-center`;
-        });
-
-        viewAllJobsBtn?.addEventListener('click', function() {
-            window.location.href = `${APP_BASE}/job-history`;
-        });
-
-        viewAllSetupBtn?.addEventListener('click', function() {
-            renderSetupGame();
-            showToast('Setup score refreshed', 'info');
-        });
+        // Window resize
+        window.addEventListener('resize', handleResize);
     }
 
+    // ================================================
+    // SIDEBAR FUNCTIONS
+    // ================================================
+    function toggleSidebar() {
+        sidebar?.classList.toggle('collapsed');
+        localStorage.setItem('sidebarCollapsed', sidebar?.classList.contains('collapsed'));
+    }
+
+    function loadSidebarState() {
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed && sidebar) {
+            sidebar.classList.add('collapsed');
+        }
+    }
+
+    // ================================================
+    // MODAL FUNCTIONS
+    // ================================================
     function openEditModal() {
         editProfileModal?.classList.add('show');
         document.body.style.overflow = 'hidden';
@@ -113,264 +394,189 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.style.overflow = '';
     }
 
-    function renderProfile() {
-        setText('.user-full-name', profileState.fullName || 'User');
-
-        const contactItems = document.querySelectorAll('.contact-item span');
-        if (contactItems.length >= 2) {
-            contactItems[0].textContent = profileState.email || 'N/A';
-            contactItems[1].textContent = profileState.location || 'N/A';
-        }
-
-        if (profileAvatarImg) {
-            profileAvatarImg.src = resolveAvatarUrl(profileState.avatar, profileState.fullName);
-        }
-
-        const statEls = document.querySelectorAll('.stat-number');
-        if (statEls.length >= 4) {
-            statEls[0].textContent = String(profileState.jobStats.total || 0);
-            statEls[1].textContent = String(profileState.jobStats.active || 0);
-            statEls[2].textContent = String(profileState.jobStats.completed || 0);
-            statEls[3].textContent = String(profileState.jobStats.pending || 0);
-        }
-
-        prefillEditForm();
-        renderSetupGame();
-    }
-
-    function prefillEditForm() {
-        const fullNameInput = document.getElementById('editFullName');
-        const emailInput = document.getElementById('editEmail');
-        const locationInput = document.getElementById('editLocation');
-
-        if (fullNameInput) fullNameInput.value = profileState.fullName || '';
-        if (emailInput) emailInput.value = profileState.email || '';
-        if (locationInput) locationInput.value = profileState.location || '';
-    }
-
-    function getSetupRules() {
-        const hasName = String(profileState.fullName || '').trim().length >= 3;
-        const hasValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(profileState.email || '').trim());
-        const hasLocation = String(profileState.location || '').trim().length >= 3;
-        const hasProfilePhoto = String(profileState.avatar || '').trim() !== '';
-
-        return [
-            { label: 'Name added', ok: hasName },
-            { label: 'Valid email added', ok: hasValidEmail },
-            { label: 'Location added', ok: hasLocation },
-            { label: 'Profile photo added', ok: hasProfilePhoto }
-        ];
-    }
-
-    function renderSetupGame() {
-        const rules = getSetupRules();
-        const total = rules.length;
-        const completed = rules.filter(rule => rule.ok).length;
-        const percent = Math.round((completed / total) * 100);
-
-        if (completionPercentageEl) {
-            completionPercentageEl.textContent = String(percent);
-        }
-
-        if (completionTasksEl) {
-            completionTasksEl.innerHTML = rules.map(rule => `
-                <div class="task-item ${rule.ok ? 'completed' : 'pending'}">
-                    <i class="${rule.ok ? 'fas fa-check-circle' : 'far fa-circle'}"></i>
-                    <span>${escapeHtml(rule.label)}</span>
-                </div>
-            `).join('');
-        }
-
-        if (setupLevelTextEl) {
-            setupLevelTextEl.textContent = getLevelText(percent);
-        }
-
-        if (setupHintsListEl) {
-            const pendingRules = rules.filter(rule => !rule.ok);
-            if (pendingRules.length === 0) {
-                setupHintsListEl.innerHTML = `
-                    <div class="activity-item">
-                        <div class="activity-icon review">
-                            <i class="fas fa-trophy"></i>
-                        </div>
-                        <div class="activity-details">
-                            <p class="activity-text">Profile setup completed. Great work!</p>
-                            <span class="activity-time">100% ready</span>
-                        </div>
-                    </div>
-                `;
-            } else {
-                setupHintsListEl.innerHTML = pendingRules.slice(0, 3).map(rule => `
-                    <div class="activity-item">
-                        <div class="activity-icon payment">
-                            <i class="fas fa-lightbulb"></i>
-                        </div>
-                        <div class="activity-details">
-                            <p class="activity-text">Next quest: ${escapeHtml(rule.label)}</p>
-                            <span class="activity-time">Setup game</span>
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
-
-        updateProgressCircle(percent);
-    }
-
-    function updateProgressCircle(percent) {
-        if (!progressCircle) return;
-
-        const radius = 52;
-        const circumference = 2 * Math.PI * radius;
-        const offset = circumference - (percent / 100) * circumference;
-
-        progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
-        progressCircle.style.strokeDashoffset = `${offset}`;
-    }
-
-    function getLevelText(percent) {
-        if (percent >= 90) return 'Level: Profile Master';
-        if (percent >= 70) return 'Level: Trusted Member';
-        if (percent >= 40) return 'Level: Getting There';
-        return 'Level: Starter';
-    }
-
-    async function handleProfileUpdate(e) {
+    // ================================================
+    // PROFILE UPDATE
+    // ================================================
+    function handleProfileUpdate(e) {
         e.preventDefault();
-
-        const fullName = String(document.getElementById('editFullName')?.value || '').trim();
-        const email = String(document.getElementById('editEmail')?.value || '').trim();
-        const location = String(document.getElementById('editLocation')?.value || '').trim();
-
-        if (!fullName || !email || !location) {
-            showToast('Name, email and location are required', 'error');
-            return;
-        }
-
-        const submitBtn = editProfileForm?.querySelector('button[type="submit"]');
-        const originalBtnHtml = submitBtn?.innerHTML || '';
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-        }
-
-        try {
-            const result = await fetchJson(UPDATE_USER_API, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fullName, email, location })
-            });
-
-            const updated = result?.user || {};
-            profileState.fullName = String(updated.fullName || fullName);
-            profileState.email = String(updated.email || email);
-            profileState.location = String(updated.location || location);
-            profileState.avatar = String(updated.avatar || profileState.avatar || '');
-
-            renderProfile();
-            closeModal();
-            showToast('Profile updated successfully', 'success');
-        } catch (err) {
-            showToast(err.message || 'Failed to update profile', 'error');
-        } finally {
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnHtml;
-            }
-        }
-    }
-
-    function handleAvatarUpload(e) {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        if (!file.type.startsWith('image/')) {
-            showToast('Please select an image file', 'error');
-            return;
-        }
-
-        if (file.size > 5 * 1024 * 1024) {
-            showToast('Image size should be less than 5MB', 'error');
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-            profileState.avatar = String(evt.target?.result || '');
-            renderProfile();
-            showToast('Profile image updated', 'success');
+        
+        const updatedData = {
+            fullName: document.getElementById('editFullName').value,
+            username: document.getElementById('editUsername').value,
+            email: document.getElementById('editEmail').value,
+            phone: document.getElementById('editPhone').value,
+            location: document.getElementById('editLocation').value,
+            bio: document.getElementById('editBio').value
         };
-        reader.readAsDataURL(file);
+
+        // Update userData object
+        Object.assign(userData, updatedData);
+
+        // Show loading state
+        const submitBtn = editProfileForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+        submitBtn.disabled = true;
+
+        // Simulate API call
+        setTimeout(() => {
+            renderProfileData();
+            closeModal();
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            showToast('Profile updated successfully!', 'success');
+        }, 1500);
     }
 
-    function resolveAvatarUrl(value, fullName) {
-        const trimmed = String(value || '').trim();
-        if (trimmed) {
-            if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
-            if (trimmed.startsWith('/')) return trimmed;
-            return `${APP_BASE}/${trimmed}`;
+    // ================================================
+    // AVATAR UPLOAD
+    // ================================================
+    function handleAvatarUpload(e) {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Image size should be less than 5MB', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                userData.avatar = e.target.result;
+                
+                // Update all avatar images
+                document.querySelectorAll('.user-avatar, .avatar-image, #profileAvatar').forEach(img => {
+                    img.src = e.target.result;
+                });
+                
+                showToast('Profile picture updated successfully!', 'success');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            showToast('Please select a valid image file', 'error');
         }
-
-        const encoded = encodeURIComponent((fullName || 'User').replace(/\s+/g, '+'));
-        return `https://ui-avatars.com/api/?name=${encoded}&size=240&background=0ABAB5&color=fff&bold=true`;
     }
 
-    function setText(selector, value) {
-        const el = document.querySelector(selector);
-        if (el) el.textContent = value;
+    // ================================================
+    // NAVIGATION
+    // ================================================
+    function navigateToPage(page) {
+        const routes = {
+            'quotes': 'quotes.html',
+            'reviews': 'reviews.html',
+            'payments': 'payments.html',
+            'jobs': 'job-history.html',
+            'activity': 'activity.html'
+        };
+
+        const url = routes[page];
+        if (url) {
+            showToast(`Loading ${page}...`, 'info');
+            setTimeout(() => {
+                window.location.href = url;
+            }, 500);
+        }
     }
 
+    // ================================================
+    // QUOTE ACTIONS (Global function for onclick)
+    // ================================================
+    window.handleQuoteAction = function(action, quoteId) {
+        const quoteItem = document.querySelector(`[data-quote-id="${quoteId}"]`);
+        const quote = userData.quotes.find(q => q.id === quoteId);
+        
+        if (!quoteItem || !quote) return;
+
+        // Animate
+        quoteItem.style.transform = 'scale(0.98)';
+        quoteItem.style.opacity = '0.7';
+
+        setTimeout(() => {
+            quote.status = action === 'accept' ? 'accepted' : 'declined';
+            
+            if (action === 'accept') {
+                quoteItem.style.background = 'rgba(16, 185, 129, 0.1)';
+                quoteItem.style.border = '2px solid var(--success-color)';
+                showToast(`Quote from ${quote.provider.name} accepted!`, 'success');
+            } else {
+                quoteItem.style.background = 'rgba(239, 68, 68, 0.1)';
+                quoteItem.style.border = '2px solid var(--danger-color)';
+                showToast(`Quote from ${quote.provider.name} declined.`, 'warning');
+            }
+
+            quoteItem.style.transform = 'scale(1)';
+            quoteItem.style.opacity = '1';
+
+            // Disable buttons
+            const buttons = quoteItem.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+            });
+        }, 300);
+    };
+
+    // ================================================
+    // ANIMATIONS
+    // ================================================
     function animateCounters() {
         const counters = document.querySelectorAll('.stat-number');
+        
         counters.forEach(counter => {
-            const target = parseInt(counter.textContent || '0', 10);
-            if (!Number.isFinite(target) || target <= 0) return;
-
+            const target = parseInt(counter.textContent);
             let current = 0;
-            const increment = Math.max(1, Math.ceil(target / 30));
+            const increment = Math.ceil(target / 50);
+            const duration = 1000;
+            const stepTime = duration / 50;
+
             const timer = setInterval(() => {
                 current += increment;
                 if (current >= target) {
-                    counter.textContent = String(target);
+                    counter.textContent = target;
                     clearInterval(timer);
                 } else {
-                    counter.textContent = String(current);
+                    counter.textContent = current;
                 }
-            }, 20);
+            }, stepTime);
         });
     }
 
-    function escapeHtml(value) {
-        return String(value)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&#039;');
+    function animateProgressBars() {
+        setTimeout(() => {
+            const progressBars = document.querySelectorAll('.progress-fill, .bar-fill');
+            
+            progressBars.forEach(bar => {
+                const targetWidth = bar.style.width;
+                bar.style.width = '0%';
+                bar.style.transition = 'width 1s ease-out';
+                
+                setTimeout(() => {
+                    bar.style.width = targetWidth;
+                }, 100);
+            });
+        }, 500);
     }
 
-    async function fetchJson(url, options) {
-        const response = await fetch(url, {
-            credentials: 'same-origin',
-            ...(options || {})
-        });
-
-        const text = await response.text();
-        let data;
-
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            throw new Error('Invalid server response');
+    // ================================================
+    // RESPONSIVE HANDLING
+    // ================================================
+    function handleResize() {
+        // Close mobile menu on desktop
+        if (window.innerWidth > 768) {
+            mobileMenu?.classList.remove('show');
+            mobileMenuToggle?.classList.remove('active');
         }
-
-        if (!response.ok || data?.success === false) {
-            throw new Error(data?.message || `Request failed (${response.status})`);
+        
+        // Auto-collapse sidebar on tablet
+        if (window.innerWidth <= 1024 && sidebar && !sidebar.classList.contains('collapsed')) {
+            sidebar.classList.add('collapsed');
         }
-
-        return data;
     }
 
+    // ================================================
+    // TOAST NOTIFICATION
+    // ================================================
     function showToast(message, type = 'success') {
         if (!toast || !toastMessage) return;
 
@@ -378,11 +584,13 @@ document.addEventListener('DOMContentLoaded', function() {
         toast.className = `toast ${type}`;
         toast.classList.add('show');
 
+        // Change icon based on type
         const toastIcon = toast.querySelector('.toast-icon');
         if (toastIcon) {
             const icons = {
                 success: 'fa-check-circle',
                 error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
                 info: 'fa-info-circle'
             };
             toastIcon.className = `fas ${icons[type] || icons.success} toast-icon`;
@@ -390,8 +598,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         setTimeout(() => {
             toast.classList.remove('show');
-        }, 2600);
+        }, 3000);
     }
 
+    // ================================================
+    // INITIALIZE APP
+    // ================================================
     init();
 });

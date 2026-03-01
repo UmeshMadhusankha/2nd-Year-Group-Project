@@ -78,32 +78,22 @@ foreach ($jobRequests as $job) {
 
             <!-- Filter Tabs -->
             <div class="filter-controls">
-                <div class="history-controls-left">
-                    <div class="history-view-toggle">
-                        <button class="history-view-btn active" id="jobsPostedBtn" type="button">Jobs Posted</button>
-                        <button class="history-view-btn" id="quotesReceivedBtn" type="button">
-                            Quotes Received
-                            <span class="quotes-pill" id="quotesReceivedPill" style="display:none;">0</span>
-                        </button>
-                    </div>
-
-                    <div class="filter-tabs" id="jobsFilterTabs">
-                        <button class="filter-tab active" data-status="all">
-                            All Jobs <span class="tab-count"><?php echo count($jobRequests); ?></span>
-                        </button>
-                        <button class="filter-tab" data-status="pending">
-                            Pending <span class="tab-count"><?php echo $pendingCount; ?></span>
-                        </button>
-                        <button class="filter-tab" data-status="in_progress">
-                            In Progress <span class="tab-count"><?php echo $inProgressCount; ?></span>
-                        </button>
-                        <button class="filter-tab" data-status="completed">
-                            Completed <span class="tab-count"><?php echo $completedCount; ?></span>
-                        </button>
-                        <button class="filter-tab" data-status="cancelled">
-                            Cancelled <span class="tab-count"><?php echo $cancelledCount; ?></span>
-                        </button>
-                    </div>
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-status="all">
+                        All Jobs <span class="tab-count"><?php echo count($jobRequests); ?></span>
+                    </button>
+                    <button class="filter-tab" data-status="pending">
+                        Pending <span class="tab-count"><?php echo $pendingCount; ?></span>
+                    </button>
+                    <button class="filter-tab" data-status="in_progress">
+                        In Progress <span class="tab-count"><?php echo $inProgressCount; ?></span>
+                    </button>
+                    <button class="filter-tab" data-status="completed">
+                        Completed <span class="tab-count"><?php echo $completedCount; ?></span>
+                    </button>
+                    <button class="filter-tab" data-status="cancelled">
+                        Cancelled <span class="tab-count"><?php echo $cancelledCount; ?></span>
+                    </button>
                 </div>
                 <a href="/2nd-Year-Group-Project/FixLanka/post-job" class="btn-primary">
                     <i class="fas fa-plus"></i> Post New Job
@@ -136,7 +126,7 @@ foreach ($jobRequests as $job) {
                                     <h3 class="job-title"><?php echo htmlspecialchars($job['category_name'] ?? 'Job Request'); ?></h3>
                                     <p class="job-date">
                                         <i class="fas fa-calendar-alt"></i> 
-                                        Posted on <?php echo date('F j, Y \a\t g:i A', strtotime($job['dateCreated'])); ?>
+                                        Posted on <?php echo date('F j, Y \a\t g:i A', strtotime($job['created_at'])); ?>
                                     </p>
                                 </div>
                                 <div class="job-badges">
@@ -198,6 +188,10 @@ foreach ($jobRequests as $job) {
                                             <i class="fas fa-trash-alt"></i> Delete
                                         </button>
                                     </form>
+                                    
+                                    <button onclick="viewQuotes(<?php echo $job['request_id']; ?>)" class="action-btn btn-view-quotes" style="background-color: #17a2b8; color: white;">
+                                        <i class="fas fa-file-invoice-dollar"></i> View Quotes
+                                    </button>
                                 <?php else: ?>
                                     <!-- Read-only indicator for non-pending jobs -->
                                     <span class="read-only-badge">
@@ -208,16 +202,6 @@ foreach ($jobRequests as $job) {
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </div>
-
-            <div class="quotes-received-section" id="quotesReceivedSection" style="display: none;">
-                <div class="quotes-received-list" id="quotesReceivedList">
-                    <div class="quote-item">
-                        <div class="quote-details">
-                            <span class="quote-job">Loading quotes...</span>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </main>
@@ -362,6 +346,24 @@ foreach ($jobRequests as $job) {
         </div>
     </div>
 
+    <!-- Quotes Modal -->
+    <div id="quotesModal" class="modal-overlay">
+        <div class="modal-container" style="max-width: 800px; width: 90%;">
+            <div class="modal-header">
+                <h2 class="modal-title">Received Quotations</h2>
+                <button class="modal-close" onclick="closeQuotesModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <div id="quotesList" class="quotes-list">
+                    <!-- Quotes will be loaded here -->
+                    <div class="text-center p-4" style="text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
     const jobs = <?php echo json_encode($jobRequests); ?>;
     
@@ -434,170 +436,6 @@ foreach ($jobRequests as $job) {
             });
         });
     });
-
-    const USER_QUOTES_API = '/2nd-Year-Group-Project/FixLanka/api/user-quotes.php';
-    const jobsPostedBtn = document.getElementById('jobsPostedBtn');
-    const quotesReceivedBtn = document.getElementById('quotesReceivedBtn');
-    const jobsFilterTabs = document.getElementById('jobsFilterTabs');
-    const jobsContainer = document.querySelector('.jobs-container');
-    const quotesReceivedSection = document.getElementById('quotesReceivedSection');
-    const quotesReceivedList = document.getElementById('quotesReceivedList');
-    const quotesReceivedPill = document.getElementById('quotesReceivedPill');
-
-    function escapeHtml(value) {
-        return String(value)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&#039;');
-    }
-
-    function formatMoney(value) {
-        const n = Number(value);
-        if (!Number.isFinite(n)) return 'LKR 0';
-        return `LKR ${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-    }
-
-    async function fetchQuotesJson(url, options) {
-        const res = await fetch(url, { credentials: 'same-origin', ...(options || {}) });
-        const text = await res.text();
-        let data;
-
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            throw new Error('Invalid JSON');
-        }
-
-        if (!res.ok || data?.success === false) {
-            throw new Error(data?.message || `Request failed (${res.status})`);
-        }
-
-        return data;
-    }
-
-    function setQuotesPill(count) {
-        if (!quotesReceivedPill) return;
-        const c = Number.isFinite(count) ? count : 0;
-        if (c > 0) {
-            quotesReceivedPill.textContent = String(c);
-            quotesReceivedPill.style.display = 'inline-flex';
-        } else {
-            quotesReceivedPill.style.display = 'none';
-        }
-    }
-
-    function renderQuoteItem(q) {
-        const providerName = q.provider_name || (q.source === 'company' ? 'Company' : 'Repairer');
-        const providerTypeLabel = q.source === 'company' ? 'Company' : 'Individual';
-        const jobTitle = q.job_title || 'Job';
-        const amount = formatMoney(q.amount);
-        const canRespond = q.status === 'pending';
-
-        return `
-            <div class="quote-item" data-source="${escapeHtml(q.source)}" data-quote-id="${escapeHtml(q.quote_id)}">
-                <div class="quote-provider">
-                    <img src="${escapeHtml(q.provider_avatar || 'https://via.placeholder.com/40')}" alt="Provider" class="provider-avatar">
-                    <div class="provider-info">
-                        <span class="provider-name">${escapeHtml(providerName)}</span>
-                        <span class="provider-type">${escapeHtml(providerTypeLabel)}</span>
-                    </div>
-                </div>
-                <div class="quote-details">
-                    <span class="quote-amount">${escapeHtml(amount)}</span>
-                    <span class="quote-job">${escapeHtml(jobTitle)}</span>
-                </div>
-                <div class="quote-actions">
-                    <button class="btn-success-sm" ${canRespond ? '' : 'disabled'} onclick="handleQuoteAction('accepted','${escapeHtml(q.source)}',${escapeHtml(q.quote_id)})">Accept</button>
-                    <button class="btn-outline-sm" ${canRespond ? '' : 'disabled'} onclick="handleQuoteAction('rejected','${escapeHtml(q.source)}',${escapeHtml(q.quote_id)})">Decline</button>
-                </div>
-            </div>
-        `;
-    }
-
-    async function loadQuotesReceived() {
-        if (!quotesReceivedList) return;
-
-        quotesReceivedList.innerHTML = `
-            <div class="quote-item">
-                <div class="quote-details">
-                    <span class="quote-job">Loading quotes...</span>
-                </div>
-            </div>
-        `;
-
-        try {
-            const data = await fetchQuotesJson(`${USER_QUOTES_API}?action=summary&limit=100`);
-            const quotes = Array.isArray(data.quotes) ? data.quotes : [];
-            setQuotesPill(parseInt(data.pending_count, 10) || 0);
-
-            if (quotes.length === 0) {
-                quotesReceivedList.innerHTML = `
-                    <div class="quote-item">
-                        <div class="quote-details">
-                            <span class="quote-job">No quotes received yet</span>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-
-            quotesReceivedList.innerHTML = quotes.map(renderQuoteItem).join('');
-        } catch (e) {
-            quotesReceivedList.innerHTML = `
-                <div class="quote-item">
-                    <div class="quote-details">
-                        <span class="quote-job">Failed to load quotes</span>
-                    </div>
-                </div>
-            `;
-            setQuotesPill(0);
-        }
-    }
-
-    function switchMainView(view) {
-        const showJobs = view === 'jobs';
-
-        jobsPostedBtn.classList.toggle('active', showJobs);
-        quotesReceivedBtn.classList.toggle('active', !showJobs);
-
-        if (jobsFilterTabs) jobsFilterTabs.style.display = showJobs ? 'flex' : 'none';
-        if (jobsContainer) jobsContainer.style.display = showJobs ? '' : 'none';
-        if (quotesReceivedSection) quotesReceivedSection.style.display = showJobs ? 'none' : 'block';
-
-        if (!showJobs) {
-            loadQuotesReceived();
-        }
-    }
-
-    if (jobsPostedBtn && quotesReceivedBtn) {
-        jobsPostedBtn.addEventListener('click', function() {
-            switchMainView('jobs');
-        });
-
-        quotesReceivedBtn.addEventListener('click', function() {
-            switchMainView('quotes');
-        });
-    }
-
-    const initialView = new URLSearchParams(window.location.search).get('view');
-    if (initialView === 'quotes') {
-        switchMainView('quotes');
-    }
-
-    window.handleQuoteAction = async function(decision, source, quoteId) {
-        try {
-            await fetchQuotesJson(`${USER_QUOTES_API}?action=respond`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ source, quote_id: Number(quoteId), decision })
-            });
-            await loadQuotesReceived();
-        } catch (e) {
-            alert('Failed to update quote');
-        }
-    };
     
     // Open edit modal with populated data
     function openEditModal(requestId) {
