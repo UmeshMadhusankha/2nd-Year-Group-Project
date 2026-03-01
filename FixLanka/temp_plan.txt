@@ -1,6 +1,0 @@
---- SUCCESSFULLY READ WITH utf-16le ---
-﻿Starting Payment Terms Test...
-Using Existing Contract ID: 3
-Payment Created: ID 2 (Type: milestone, Status: held_escrow)
-Escrow Released.
-SUCCESS: Payment Terms Verified.

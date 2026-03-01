@@ -1,6 +1,0 @@
-﻿company_id	name	email
-1	Lanka Home Solutions	lankahomesolutions@email.com
-2	QuickFix Pro Services	quickfixproservices@email.com
-3	Elite Construction & Repairs	eliteconstruction&repairs@email.com
-4	City Maintenance Solutions	citymaintenancesolutions@email.com
-5	Clip Craft	company@gmail.com
