@@ -2,7 +2,7 @@
 // NotificationController.php - Business logic layer for notification operations
 // Handles validation and coordinates between API and Model
 
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/databse.php';
 require_once __DIR__ . '/../models/NotificationModel.php';
 
 class NotificationController

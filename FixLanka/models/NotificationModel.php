@@ -16,27 +16,15 @@ class NotificationModel
      */
     public function getAllNotifications()
     {
-        // Prefer current schema: notification.send_date
-        try {
-            $stmt = $this->pdo->prepare("
-                SELECT
-                    notification_id,
-                    title,
-                    message,
-                    send_date AS created_at,
-                    recipient_type,
-                    status
-                FROM notification
-                ORDER BY send_date DESC
-            ");
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            // Fallback to legacy/alternate schemas if needed
-            $stmt = $this->pdo->prepare("SELECT * FROM Notification ORDER BY send_date DESC");
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        }
+        $stmt = $this->pdo->prepare("
+            SELECT notification_id, title, message, date, time, 
+                   CONCAT(date, ' ', time) as created_at,
+                   recipient_type, status 
+            FROM Notification 
+            ORDER BY date DESC, time DESC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
@@ -48,55 +36,39 @@ class NotificationModel
      */
     public function getRecentNotifications($user_id, $user_type, $limit = 5)
     {
+        // error_log("[MODEL] getRecentNotifications called for User: $user_id Type: $user_type Limit: $limit");
         try {
             $limit = (int)$limit;
-
-            // Best-effort for advanced schemas (recipient_id/date/time/is_read)
-            try {
-                $sql = "
-                    SELECT notification_id, title, message, date, time,
-                           CONCAT(date, ' ', time) as created_at,
-                           recipient_type, status, is_read
-                    FROM Notification
-                    WHERE
-                        (recipient_id = :user_id AND recipient_type = :user_type)
-                        OR (recipient_id IS NULL AND recipient_type = :user_type)
-                        OR (recipient_type = 'all')
-                    ORDER BY date DESC, time DESC
-                    LIMIT :limit
-                ";
-
-                $stmt = $this->pdo->prepare($sql);
-                $stmt->bindValue(':user_id', (int)$user_id, PDO::PARAM_INT);
-                $stmt->bindValue(':user_type', (string)$user_type, PDO::PARAM_STR);
-                $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-                $stmt->execute();
-                return $stmt->fetchAll(PDO::FETCH_ASSOC);
-            } catch (PDOException $e) {
-                // Fall back to current schema in create_database.sql: notification(send_date, recipient_type)
-                $sql = "
-                    SELECT
-                        notification_id,
-                        title,
-                        message,
-                        send_date AS created_at,
-                        recipient_type,
-                        status
-                    FROM notification
-                    WHERE recipient_type = 'all' OR recipient_type = :user_type
-                    ORDER BY send_date DESC
-                    LIMIT :limit
-                ";
-
-                $stmt = $this->pdo->prepare($sql);
-                $stmt->bindValue(':user_type', (string)$user_type, PDO::PARAM_STR);
-                $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-                $stmt->execute();
-                return $stmt->fetchAll(PDO::FETCH_ASSOC);
-            }
+            
+            // Logic: Get notifications specifically for this user, OR broadcasts for their type, OR global broadcasts
+            $sql = "
+                SELECT notification_id, title, message, date, time, 
+                       CONCAT(date, ' ', time) as created_at,
+                       recipient_type, status, is_read 
+                FROM Notification 
+                WHERE 
+                    (recipient_id = :user_id AND recipient_type = :user_type) 
+                    OR (recipient_id IS NULL AND recipient_type = :user_type)
+                    OR (recipient_type = 'all')
+                ORDER BY date DESC, time DESC 
+                LIMIT :limit
+            ";
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+            $stmt->bindValue(':user_type', $user_type, PDO::PARAM_STR);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return $result;
         } catch (PDOException $e) {
             error_log("[MODEL ERROR] getRecentNotifications failed: " . $e->getMessage());
-            return $this->getRecentNotificationsFallback($limit);
+            // Fallback for missing columns (if migration hasn't run)
+            if (strpos($e->getMessage(), 'Unknown column') !== false) {
+                 return $this->getRecentNotificationsFallback($limit);
+            }
+            throw $e;
         }
     }
 
@@ -104,17 +76,10 @@ class NotificationModel
      * Fallback method if schema is old
      */
     private function getRecentNotificationsFallback($limit) {
-        try {
-            $stmt = $this->pdo->prepare("SELECT notification_id, title, message, send_date AS created_at, recipient_type, status FROM notification ORDER BY send_date DESC LIMIT :limit");
-            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            $stmt = $this->pdo->prepare("SELECT *, send_date as created_at FROM Notification ORDER BY send_date DESC LIMIT :limit");
-            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        }
+        $stmt = $this->pdo->prepare("SELECT *, send_date as created_at FROM Notification ORDER BY send_date DESC LIMIT :limit");
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
@@ -179,10 +144,9 @@ class NotificationModel
     {
         error_log("[MODEL] createNotification - Title: $title, Recipient: $recipient_type, Status: $status");
         try {
-            // Current schema uses send_date timestamp
             $stmt = $this->pdo->prepare("
-                INSERT INTO notification (title, message, recipient_type, status)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO Notification (title, message, recipient_type, status, date, time) 
+                VALUES (?, ?, ?, ?, CURDATE(), CURTIME())
             ");
             $stmt->execute([$title, $message, $recipient_type, $status]);
             $newId = $this->pdo->lastInsertId();
@@ -270,32 +234,27 @@ class NotificationModel
     public function getNotificationCount($user_id, $user_type)
     {
         try {
-            // Best-effort advanced schema
-            try {
-                $sql = "
-                    SELECT COUNT(*)
-                    FROM Notification
-                    WHERE
-                        (recipient_id = :user_id AND recipient_type = :user_type)
-                        OR (recipient_id IS NULL AND recipient_type = :user_type)
-                        OR (recipient_type = 'all')
-                ";
-
-                $stmt = $this->pdo->prepare($sql);
-                $stmt->bindValue(':user_id', (int)$user_id, PDO::PARAM_INT);
-                $stmt->bindValue(':user_type', (string)$user_type, PDO::PARAM_STR);
-                $stmt->execute();
-                return (int)$stmt->fetchColumn();
-            } catch (PDOException $e) {
-                // Current schema: only recipient_type
-                $sql = "SELECT COUNT(*) FROM notification WHERE recipient_type = 'all' OR recipient_type = :user_type";
-                $stmt = $this->pdo->prepare($sql);
-                $stmt->bindValue(':user_type', (string)$user_type, PDO::PARAM_STR);
-                $stmt->execute();
-                return (int)$stmt->fetchColumn();
-            }
+            $sql = "
+                SELECT COUNT(*) 
+                FROM Notification 
+                WHERE 
+                    (recipient_id = :user_id AND recipient_type = :user_type) 
+                    OR (recipient_id IS NULL AND recipient_type = :user_type)
+                    OR (recipient_type = 'all')
+            ";
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+            $stmt->bindValue(':user_type', $user_type, PDO::PARAM_STR);
+            $stmt->execute();
+            
+            return (int)$stmt->fetchColumn();
         } catch (PDOException $e) {
-            return 0;
+             // Fallback
+             if (strpos($e->getMessage(), 'Unknown column') !== false) {
+                 return 0; // Or global count
+             }
+             throw $e;
         }
     }
 }

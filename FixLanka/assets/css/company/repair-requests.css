@@ -2,21 +2,54 @@
 @import "../common/variables.css";
 @import "../common/filters.css";
 
-/* Repair Requests Container - matches the pattern used by projects, workforce, etc. */
-.repair-requests-container {
-  flex: 1;
-  padding: var(--spacing-xl);
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
-  border-radius: var(--border-radius-xl) var(--border-radius-xl) 0 0;
-  height: calc(100vh - var(--header-height));
-  overflow-y: scroll;
-  box-shadow: var(--shadow-md);
-  margin: var(--header-height) 0 0 var(--sidebar-width);
+/* Reset default browser styles to ensure consistent appearance across all browsers */
+*,
+html,
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Makes width/height calculations include padding and border */
+}
+
+/* Enable smooth scrolling for better user experience when navigating within the page */
+html {
   scroll-behavior: smooth;
 }
 
-/* Adjust container margin when sidebar is collapsed */
-#sidebar-toggle:checked ~ .dashboard-container .repair-requests-container {
+/* Base body styles that apply to the entire repair requests page */
+body {
+  font-family: var(--font-family-primary);
+  color: var(--text-primary);
+  line-height: 1.6; /* Comfortable reading line height */
+  -webkit-font-smoothing: antialiased; /* Better font rendering on Mac/iOS */
+  -moz-osx-font-smoothing: grayscale; /* Better font rendering on Firefox */
+  overflow-x: hidden; /* Prevent horizontal scrollbar */
+  min-height: 100vh; /* Ensure page fills viewport height */
+}
+
+/* Main container that holds the sidebar and content area using flexbox layout */
+.dashboard-container {
+  display: flex;
+  min-height: 100vh; /* Full viewport height */
+  background: transparent;
+}
+
+/* Main content area where repair requests are displayed */
+.main-content {
+  flex: 1; /* Take up remaining space after sidebar */
+  margin-left: var(--sidebar-width); /* Push content right to make room for sidebar */
+  margin-top: var(--header-height); /* Push content down to make room for top navigation */
+  padding: var(--spacing-xl);
+  transition: margin-left var(--transition-normal); /* Smooth animation when sidebar opens/closes */
+  height: calc(100vh - var(--header-height)); /* Full height minus header */
+  overflow-y: auto; /* Enable vertical scrolling for long content */
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%); /* Beautiful gradient background */
+  scroll-behavior: smooth;
+  border-radius: var(--border-radius-xl);
+}
+
+/* Adjust content margin when sidebar is collapsed to save screen space */
+#sidebar-toggle:checked~.dashboard-container .main-content {
   margin-left: var(--sidebar-collapsed-width);
 }
 
@@ -734,14 +767,6 @@
   text-decoration: none;
   min-width: 0;
   box-sizing: border-box;
-}
-
-.action-btn:first-child {
-  border-bottom-left-radius: var(--border-radius-xl);
-}
-
-.action-btn:last-child {
-  border-bottom-right-radius: var(--border-radius-xl);
 }
 
 .action-btn.primary {
@@ -3029,4 +3054,334 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   }
 }
 
+/* ============================================================ */
+/* ⭐ NEW: Work Schedule Section Styling */
+/* ============================================================ */
 
+/* Work Schedule Section Container */
+.work-schedule-section {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e3f2fd 100%) !important;
+  padding: 25px !important;
+  border-radius: 12px !important;
+  margin-top: 20px;
+  border-left: 4px solid #4CAF50 !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.work-schedule-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(76, 175, 80, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.work-schedule-section .form-section-title {
+  color: #2c3e50;
+  margin-bottom: 8px;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.work-schedule-section .form-section-title i {
+  color: #4CAF50;
+}
+
+.work-schedule-section .section-description {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.work-schedule-section .section-description i {
+  color: #3498db;
+  font-size: 1.1rem;
+}
+
+/* Tooltip Icon */
+.tooltip-icon {
+  cursor: help;
+  color: #3498db;
+  margin-left: 5px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.tooltip-icon:hover {
+  color: #2980b9;
+  transform: scale(1.2);
+}
+
+/* Custom Switch Styling */
+.custom-switch-wrapper {
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.custom-switch {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  gap: 12px;
+}
+
+.custom-switch input[type="checkbox"] {
+  display: none;
+}
+
+.switch-slider {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+  background-color: #ccc;
+  border-radius: 26px;
+  transition: background-color 0.3s;
+}
+
+.switch-slider::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 3px;
+  top: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+.custom-switch input:checked + .switch-slider {
+  background-color: #4CAF50;
+}
+
+.custom-switch input:checked + .switch-slider::before {
+  transform: translateX(24px);
+}
+
+.switch-label {
+  color: #2c3e50;
+  font-weight: 500;
+  user-select: none;
+}
+
+/* Schedule Preview Box */
+.schedule-preview-box {
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 25px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.schedule-preview-box:hover {
+  border-color: #4CAF50;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+}
+
+.schedule-preview-box .preview-title {
+  color: #34495e;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.schedule-preview-box .preview-title i {
+  color: #3498db;
+}
+
+.preview-content {
+  margin-top: 15px;
+}
+
+.preview-content .text-muted {
+  color: #95a5a6;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+/* Schedule Summary Grid */
+.schedule-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.schedule-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #3498db;
+  transition: all 0.3s ease;
+}
+
+.schedule-item:hover {
+  background: #e3f2fd;
+  transform: translateX(5px);
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+}
+
+.schedule-item i {
+  color: #3498db;
+  margin-right: 10px;
+  font-size: 1.2rem;
+  min-width: 20px;
+}
+
+.schedule-item.overtime-info {
+  border-left-color: #e67e22;
+  background: #fff3e0;
+}
+
+.schedule-item.overtime-info i {
+  color: #e67e22;
+}
+
+.schedule-item strong {
+  color: #2c3e50;
+  margin-right: 5px;
+}
+
+.schedule-item .highlight {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.schedule-item.full-width {
+  grid-column: 1 / -1;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.custom-schedule-text {
+  margin: 10px 0 0 0;
+  padding: 10px;
+  background: white;
+  border-radius: 4px;
+  color: #555;
+  line-height: 1.6;
+  border-left: 3px solid #3498db;
+}
+
+/* Form Row Styling for Work Schedule */
+.work-schedule-section .form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.work-schedule-section .col-md-4 {
+  flex: 1;
+  min-width: 200px;
+}
+
+.work-schedule-section .col-md-6 {
+  flex: 1;
+  min-width: 250px;
+}
+
+.work-schedule-section .col-12 {
+  width: 100%;
+}
+
+/* Form Hint Enhancements */
+.work-schedule-section .form-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  margin-top: 5px;
+}
+
+.work-schedule-section .form-hint i {
+  color: #3498db;
+}
+
+/* Responsive Design for Work Schedule */
+@media (max-width: 768px) {
+  .schedule-summary {
+    grid-template-columns: 1fr;
+  }
+  
+  .work-schedule-section {
+    padding: 20px !important;
+  }
+  
+  .work-schedule-section .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .schedule-preview-box {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .work-schedule-section {
+    padding: 15px !important;
+    margin-top: 15px;
+  }
+  
+  .work-schedule-section .form-section-title {
+    font-size: 1.05rem;
+  }
+  
+  .schedule-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .schedule-item i {
+    margin-bottom: 5px;
+  }
+}
+
+/* Animation for Preview Update */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.schedule-summary {
+  animation: fadeInUp 0.5s ease;
+}
+
+/* ============================================================ */
+/* End of Work Schedule Styling */
+/* ============================================================ */
