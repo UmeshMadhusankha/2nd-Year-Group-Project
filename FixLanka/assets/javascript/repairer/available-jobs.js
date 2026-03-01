@@ -11,7 +11,7 @@ let availableJobs = [];
 let submittedQuotes = [];
 
 // ===== Initialization =====
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function  () {
     if (!currentRepairerId) {
         showToast('Session expired. Please log in again.', 'error');
         setTimeout(() => {
@@ -85,6 +85,8 @@ function resetFilters() {
 // =========================================================================
 async function loadAvailableJobs(filters = {}) {
     const container = document.getElementById('jobs-grid-container');
+
+    // Show loading state
     container.innerHTML = `
         <div class="loading-state">
             <i class="fas fa-spinner fa-spin"></i>
@@ -102,6 +104,7 @@ async function loadAvailableJobs(filters = {}) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const result = await response.json();
+
 
         if (result.success) {
             availableJobs = result.data || [];
@@ -393,6 +396,7 @@ async function loadSubmittedQuotations() {
 
         const result = await response.json();
 
+
         if (result.success) {
             submittedQuotes = result.data || [];
             renderQuotations(submittedQuotes);
@@ -448,6 +452,7 @@ function renderQuotations(quotes) {
         html += `<h3 class="quotes-section-title"><i class="fas fa-hourglass-end"></i> Expired Quotations (${groups.expired.length})</h3>`;
         html += groups.expired.map(createQuoteCard).join('');
     }
+
 
     container.innerHTML = html;
 }
@@ -621,6 +626,7 @@ async function deleteQuote(quoteId) {
         return;
     }
 
+
     try {
         const response = await fetch(
             `${API_BASE}/repairer-quotes.php?quote_id=${quoteId}&repairer_id=${currentRepairerId}`,
@@ -628,6 +634,7 @@ async function deleteQuote(quoteId) {
         );
 
         const result = await response.json();
+
 
         if (result.success) {
             showToast('Quotation deleted successfully!', 'success');

@@ -130,8 +130,8 @@ class CompanyQuotation
                 cq.*,
                 jr.title as job_title,
                 jr.description as job_description,
-                jr.district,
-                jr.address,
+                jr_loc.district,
+                jr_loc.address,
                 jr.finish_date,
                 jr.urgency,
                 jr.service_provider_type,
@@ -141,6 +141,7 @@ class CompanyQuotation
                 u.email as customer_email
             FROM CompanyQuotation cq
             INNER JOIN JobRequest jr ON cq.request_id = jr.request_id
+            LEFT JOIN location jr_loc ON jr.location_id = jr_loc.location_id
             INNER JOIN User u ON jr.user_id = u.user_id
             LEFT JOIN Category c ON jr.category_id = c.category_id
             WHERE 1=1";
@@ -196,8 +197,8 @@ class CompanyQuotation
                 cq.*,
                 jr.title as job_title,
                 jr.description as job_description,
-                jr.district,
-                jr.address,
+                jr_loc.district,
+                jr_loc.address,
                 jr.finish_date,
                 jr.urgency,
                 jr.service_provider_type,
@@ -207,6 +208,7 @@ class CompanyQuotation
                 u.email as customer_email
             FROM CompanyQuotation cq
             INNER JOIN JobRequest jr ON cq.request_id = jr.request_id
+            LEFT JOIN location jr_loc ON jr.location_id = jr_loc.location_id
             INNER JOIN User u ON jr.user_id = u.user_id
             LEFT JOIN Category c ON jr.category_id = c.category_id
             WHERE cq.quotation_id = :quotation_id";
@@ -428,6 +430,8 @@ class CompanyQuotation
                         budget_type, budget_min, budget_max,
                         start_date, completion_date, estimated_duration,
                         payment_terms, payment_method, pricing_type, hourly_rate, spending_cap_multiplier,
+                        work_schedule_type, working_days_per_week, daily_work_hours,
+                        work_start_time, work_end_time, custom_schedule_json,
                         warranty_period, additional_terms, status
                     ) VALUES (
                         :request_id, :company_id, :user_id, :title, :description,
@@ -435,6 +439,8 @@ class CompanyQuotation
                         :budget_type, :budget_min, :budget_max,
                         :start_date, :completion_date, :estimated_duration,
                         :payment_terms, :payment_method, :pricing_type, :hourly_rate, :spending_cap_multiplier,
+                        :work_schedule_type, :working_days_per_week, :daily_work_hours,
+                        :work_start_time, :work_end_time, :custom_schedule_json,
                         :warranty_period, :additional_terms, :status
                     )";
 
@@ -461,6 +467,12 @@ class CompanyQuotation
                 ':pricing_type' => $data['pricing_type'] ?? 'fixed_price',
                 ':hourly_rate' => $data['hourly_rate'] ?? null,
                 ':spending_cap_multiplier' => $data['spending_cap_multiplier'] ?? 1.5,
+                ':work_schedule_type' => $data['work_schedule_type'] ?? 'weekdays_only',
+                ':working_days_per_week' => $data['working_days_per_week'] ?? 5,
+                ':daily_work_hours' => $data['daily_work_hours'] ?? 8.00,
+                ':work_start_time' => $data['work_start_time'] ?? '08:00:00',
+                ':work_end_time' => $data['work_end_time'] ?? '17:00:00',
+                ':custom_schedule_json' => $data['custom_schedule_json'] ?? $data['custom_schedule_details'] ?? null,
                 ':warranty_period' => $data['warranty_period'] ?? null,
                 ':additional_terms' => $data['additional_terms'] ?? null,
                 ':status' => $data['status'] ?? self::STATUS_PENDING
@@ -503,9 +515,10 @@ class CompanyQuotation
     public function getEnhancedById($quotationId)
     {
         try {
-            $sql = "SELECT cq.*, jr.title as job_title, jr.district
+            $sql = "SELECT cq.*, jr.title as job_title, jr_loc.district
                     FROM CompanyQuotation cq
                     INNER JOIN JobRequest jr ON cq.request_id = jr.request_id
+                    LEFT JOIN location jr_loc ON jr.location_id = jr_loc.location_id
                     WHERE cq.quotation_id = :quotation_id";
 
             $stmt = $this->pdo->prepare($sql);
@@ -574,6 +587,12 @@ class CompanyQuotation
                         pricing_type = :pricing_type,
                         hourly_rate = :hourly_rate,
                         spending_cap_multiplier = :spending_cap_multiplier,
+                        work_schedule_type = :work_schedule_type,
+                        working_days_per_week = :working_days_per_week,
+                        daily_work_hours = :daily_work_hours,
+                        work_start_time = :work_start_time,
+                        work_end_time = :work_end_time,
+                        custom_schedule_json = :custom_schedule_json,
                         warranty_period = :warranty_period,
                         additional_terms = :additional_terms
                     WHERE quotation_id = :quotation_id";
@@ -599,6 +618,12 @@ class CompanyQuotation
                 ':pricing_type' => $data['pricing_type'] ?? 'fixed_price',
                 ':hourly_rate' => $data['hourly_rate'] ?? null,
                 ':spending_cap_multiplier' => $data['spending_cap_multiplier'] ?? 1.5,
+                ':work_schedule_type' => $data['work_schedule_type'] ?? 'weekdays_only',
+                ':working_days_per_week' => $data['working_days_per_week'] ?? 5,
+                ':daily_work_hours' => $data['daily_work_hours'] ?? 8.00,
+                ':work_start_time' => $data['work_start_time'] ?? '08:00:00',
+                ':work_end_time' => $data['work_end_time'] ?? '17:00:00',
+                ':custom_schedule_json' => $data['custom_schedule_json'] ?? $data['custom_schedule_details'] ?? null,
                 ':warranty_period' => $data['warranty_period'] ?? null,
                 ':additional_terms' => $data['additional_terms'] ?? null
             ]);
@@ -607,5 +632,53 @@ class CompanyQuotation
             error_log("Error updating enhanced quotation: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Calculate total work hours based on schedule
+     */
+    public function calculateTotalWorkHours($estimatedDuration, $dailyWorkHours, $workingDaysPerWeek) {
+        // Calendar days to work days conversion
+        $weeksNeeded = ceil($estimatedDuration / 7);
+        $totalWorkDays = $weeksNeeded * $workingDaysPerWeek;
+        
+        // Total hours
+        $totalHours = $totalWorkDays * $dailyWorkHours;
+        
+        return round($totalHours, 2);
+    }
+
+    /**
+     * Validate work schedule data
+     */
+    public function validateWorkSchedule($data) {
+        $errors = [];
+        
+        // Validate working days per week
+        if (isset($data['working_days_per_week'])) {
+            $days = (int)$data['working_days_per_week'];
+            if ($days < 1 || $days > 7) {
+                $errors[] = 'Working days per week must be between 1 and 7';
+            }
+        }
+        
+        // Validate daily work hours
+        if (isset($data['daily_work_hours'])) {
+            $hours = (float)$data['daily_work_hours'];
+            if ($hours <= 0 || $hours > 24) {
+                $errors[] = 'Daily work hours must be between 0 and 24';
+            }
+        }
+        
+        // Validate time range
+        if (isset($data['work_start_time']) && isset($data['work_end_time'])) {
+            $start = strtotime($data['work_start_time']);
+            $end = strtotime($data['work_end_time']);
+            if ($start >= $end) {
+                $errors[] = 'Work end time must be after start time';
+            }
+        }
+        
+        return empty($errors) ? true : $errors;
     }
 }

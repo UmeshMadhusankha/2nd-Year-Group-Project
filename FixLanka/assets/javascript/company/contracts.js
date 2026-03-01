@@ -1,1315 +1,909 @@
-document.addEventListener('DOMContentLoaded', function() {
-    initializeContractsPage();
+/**
+ * FixLanka - New Contract Creation System
+ * Complete 13-Section Legal Contract Form
+ */
+
+// ============================================================================
+// GLOBAL STATE
+// ============================================================================
+
+let currentStep = 1;
+const totalSteps = 4;
+let selectedQuotation = null;
+let formData = {};
+
+// Legal clause templates
+const legalTemplates = {
+    variations: `Any changes to the original scope of work must be:
+1. Requested in writing through the FixLanka platform
+2. Reviewed and assessed for cost and timeline impact
+3. Mutually approved by both parties before implementation
+4. Documented with updated pricing and timeline
+5. Logged in the system as a variation order
+
+Unapproved changes will not be compensated. Both parties agree to negotiate in good faith for any necessary modifications.`,
+
+    communication: `All official communications regarding this contract must be conducted through the FixLanka platform messaging system to ensure:
+- Proper documentation and traceability
+- Timestamp records of all communications
+- Clear accountability for decisions
+
+In case of disagreements, both parties agree to:
+1. First attempt resolution through good-faith negotiation
+2. Use the platform's mediation features if direct negotiation fails
+3. Maintain professional and respectful communication at all times
+4. Document all agreements reached during negotiation`,
+
+    delays: `CLIENT-CAUSED DELAYS:
+- Delays in providing site access
+- Late payment of milestone amounts
+- Delayed approval of designs or materials
+- Changes in project requirements
+- Failure to provide necessary permissions
+
+CONTRACTOR-CAUSED DELAYS:
+- Failure to meet milestone deadlines without valid reason
+- Poor resource management
+- Non-compliance with quality standards
+
+RESOLUTION:
+Both parties agree to communicate delays promptly and work together on reasonable timeline adjustments. Extended delays may result in contract renegotiation or termination as per clause 10.`,
+
+    termination: `This contract may be terminated under the following conditions:
+
+BY CLIENT:
+- 7 days written notice if contractor fails to perform work
+- Immediate termination for abandonment of work
+- Material breach of contract terms
+
+BY CONTRACTOR:
+- Non-payment for more than 30 days after due date
+- Client prevents access to site repeatedly
+- Material breach by client
+
+MUTUAL TERMINATION:
+- Both parties may agree to terminate with written consent
+
+Upon termination:
+- Payment for work completed to date is required
+- Materials purchased become client property upon payment
+- All project documents and records are handed over
+- Outstanding invoices must be settled within 14 days`,
+
+    forceMajeure: `Neither party shall be liable for failure to perform obligations due to events beyond reasonable control, including:
+- Natural disasters (floods, earthquakes, storms)
+- Pandemics or epidemics
+- Government actions or regulations
+- War, terrorism, or civil unrest
+- Strikes or labor disputes (external)
+- Severe material shortages
+
+The affected party must:
+- Notify the other party within 7 days
+- Provide reasonable evidence
+- Take reasonable steps to minimize impact
+- Resume performance as soon as possible
+
+Timeline extensions will be granted for the duration of the force majeure event.`,
+
+    liability: `EXCLUSIONS:
+Neither party shall be liable for indirect, incidental, or consequential damages including:
+- Loss of profits or business opportunities
+- Loss of data or information
+- Third-party claims (except as required by law)
+
+MAXIMUM LIABILITY:
+Total liability under this contract is limited to the total contract value stated in Section 5.
+
+EXCEPTIONS:
+This limitation does not apply to:
+- Willful misconduct or gross negligence
+- Death or personal injury
+- Fraud or fraudulent misrepresentation
+- Violations of applicable law
+
+Both parties acknowledge this limitation is reasonable given the nature and value of this project.`,
+
+    governingLaw: `GOVERNING LAW:
+This contract is governed by and construed in accordance with the laws of the Democratic Socialist Republic of Sri Lanka.
+
+ENTIRE AGREEMENT:
+This document constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements.
+
+AMENDMENTS:
+Any modifications must be made in writing and signed by both parties through the FixLanka platform.
+
+SEVERABILITY:
+If any provision is found invalid, the remaining provisions continue in full effect.`
+};
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+
+$(document).ready(function() {
+    console.log('Contract form initialized');
+    loadAcceptedQuotations();
+    initializeEventListeners();
+    updateProgressBar();
+    
+    // Set today's date as default for contract date
+    const today = new Date().toISOString().split('T')[0];
+    $('#contractDate').val(today);
 });
 
-function initializeContractsPage() {
-    initializeSearch();
-    initializeFilters();
-    initializeViewSwitcher();
-    initializeModals();
-    initializeContractActions();
-    initializeInfiniteScroll();
-    initializeScrollToTop();
-}
+// ============================================================================
+// QUOTATION LOADING
+// ============================================================================
 
-function initializeSearch() {
-    const searchInput = document.getElementById('contractSearch');
-    
-    if (searchInput) {
-        searchInput.addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            filterContracts(searchTerm);
-        });
-    }
-}
-
-function filterContracts(searchTerm) {
-    const contractCards = document.querySelectorAll('.contract-card');
-    let visibleCount = 0;
-    
-    contractCards.forEach(card => {
-        const contractTitle = card.querySelector('.contract-info h3').textContent.toLowerCase();
-        const clientName = card.querySelector('.client-name').textContent.toLowerCase();
-        const isVisible = contractTitle.includes(searchTerm) || clientName.includes(searchTerm);
-        
-        if (isVisible) {
-            card.style.display = 'block';
-            visibleCount++;
-        } else {
-            card.style.display = 'none';
-        }
-    });
-    
-    updateResultsCount(visibleCount);
-}
-
-function updateResultsCount(count) {
-    const paginationInfo = document.querySelector('.pagination-info');
-    if (paginationInfo) {
-        const totalContracts = document.querySelectorAll('.contract-card').length;
-        paginationInfo.textContent = `Showing ${count} of ${totalContracts} contracts`;
-    }
-}
-
-function initializeFilters() {
-    const statusFilter = document.getElementById('statusFilter');
-    const typeFilter = document.getElementById('typeFilter');
-    const dateFilter = document.getElementById('dateFilter');
-    const clearFilters = document.getElementById('clearFilters');
-    
-    if (statusFilter) {
-        statusFilter.addEventListener('change', applyFilters);
-    }
-    
-    if (typeFilter) {
-        typeFilter.addEventListener('change', applyFilters);
-    }
-    
-    if (dateFilter) {
-        dateFilter.addEventListener('change', applyFilters);
-    }
-    
-    if (clearFilters) {
-        clearFilters.addEventListener('click', function() {
-            document.getElementById('statusFilter').value = '';
-            document.getElementById('typeFilter').value = '';
-            document.getElementById('dateFilter').value = '';
-            document.getElementById('contractSearch').value = '';
-            applyFilters();
-        });
-    }
-}
-
-function applyFilters() {
-    const statusFilter = document.getElementById('statusFilter').value;
-    const typeFilter = document.getElementById('typeFilter').value;
-    const searchTerm = document.getElementById('contractSearch').value.toLowerCase();
-    
-    const contractCards = document.querySelectorAll('.contract-card');
-    let visibleCount = 0;
-    
-    contractCards.forEach(card => {
-        const cardStatus = card.getAttribute('data-status');
-        const cardType = card.getAttribute('data-type');
-        const contractTitle = card.querySelector('.contract-info h3').textContent.toLowerCase();
-        const clientName = card.querySelector('.client-name').textContent.toLowerCase();
-        
-        const statusMatch = !statusFilter || cardStatus === statusFilter;
-        const typeMatch = !typeFilter || cardType === typeFilter;
-        const searchMatch = !searchTerm || contractTitle.includes(searchTerm) || clientName.includes(searchTerm);
-        
-        if (statusMatch && typeMatch && searchMatch) {
-            card.style.display = 'block';
-            visibleCount++;
-        } else {
-            card.style.display = 'none';
-        }
-    });
-    
-    updateResultsCount(visibleCount);
-}
-
-function initializeViewSwitcher() {
-    const viewButtons = document.querySelectorAll('.view-btn');
-    const contractsContainer = document.getElementById('contractsContainer');
-    
-    viewButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const viewType = this.getAttribute('data-view');
+function loadAcceptedQuotations() {
+    $.ajax({
+        url: '../../api/contracts.php',
+        method: 'GET',
+        data: { action: 'getAcceptedQuotations' },
+        dataType: 'json',
+        success: function(response) {
+            console.log('Quotations loaded:', response);
             
-            // Update active button
-            viewButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Switch container class
-            if (viewType === 'list') {
-                contractsContainer.classList.add('list-view');
+            if (response.success && response.data && response.data.length > 0) {
+                populateQuotationDropdown(response.data);
             } else {
-                contractsContainer.classList.remove('list-view');
+                $('#quotationSelect').html('<option value="">No accepted quotations available</option>');
+                showNotification('No accepted quotations found. Please get a quotation accepted first.', 'warning');
             }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading quotations:', error);
+            $('#quotationSelect').html('<option value="">Error loading quotations</option>');
+            showNotification('Failed to load quotations. Please try again.', 'error');
+        }
+    });
+}
+
+function populateQuotationDropdown(quotations) {
+    let options = '<option value="">-- Select a quotation --</option>';
+    
+    quotations.forEach(function(quotation) {
+        const clientName = quotation.customer_fname && quotation.customer_lname 
+            ? `${quotation.customer_fname} ${quotation.customer_lname}`
+            : 'Unknown Client';
+        
+        const amount = quotation.price ? parseFloat(quotation.price).toFixed(2) : '0.00';
+        const title = quotation.title || 'Untitled Project';
+        
+        options += `<option value="${quotation.quotation_id}" 
+                            data-quotation='${JSON.stringify(quotation)}'>
+                        ${title} - ${clientName} (Rs. ${amount})
+                    </option>`;
+    });
+    
+    $('#quotationSelect').html(options);
+}
+
+// ============================================================================
+// EVENT LISTENERS
+// ============================================================================
+
+function initializeEventListeners() {
+    // Quotation selection
+    $('#quotationSelect').on('change', function() {
+        const selectedOption = $(this).find('option:selected');
+        if (selectedOption.val()) {
+            const quotationData = selectedOption.data('quotation');
+            handleQuotationSelection(quotationData);
+        } else {
+            $('#quotationDetails').hide();
+        }
+    });
+    
+    // Payment method change
+    $('#paymentMethod').on('change', function() {
+        const method = $(this).val();
+        if (method && method !== '') {
+            generateMilestoneTable(method);
+            $('#milestoneTableContainer').show();
+        } else {
+            $('#milestoneTableContainer').hide();
+        }
+    });
+    
+    // Contract value change - update cost breakdown
+    $('#contractValue').on('change', function() {
+        updateCostBreakdown();
+    });
+    
+    // Form submission
+    $('#contractForm').on('submit', function(e) {
+        e.preventDefault();
+        submitContract();
+    });
+    
+    // Date validation
+    $('#startDate').on('change', function() {
+        const startDate = new Date($(this).val());
+        const minCompletionDate = new Date(startDate);
+        minCompletionDate.setDate(minCompletionDate.getDate() + 1);
+        $('#completionDate').attr('min', minCompletionDate.toISOString().split('T')[0]);
+    });
+}
+
+// ============================================================================
+// QUOTATION SELECTION HANDLER
+// ============================================================================
+
+function handleQuotationSelection(quotation) {
+    console.log('Selected quotation:', quotation);
+    selectedQuotation = quotation;
+    
+    // Show selection details
+    $('#selectedProjectTitle').text(quotation.title || 'N/A');
+    $('#selectedClientName').text(
+        quotation.customer_fname && quotation.customer_lname
+            ? `${quotation.customer_fname} ${quotation.customer_lname}`
+            : 'Unknown'
+    );
+    $('#selectedAmount').text(quotation.price ? parseFloat(quotation.price).toFixed(2) : '0.00');
+    $('#quotationDetails').slideDown();
+    
+    // Auto-fill form fields
+    autoFillFromQuotation(quotation);
+}
+
+function autoFillFromQuotation(quotation) {
+    // Section 1: Client Information
+    const clientName = quotation.customer_fname && quotation.customer_lname
+        ? `${quotation.customer_fname} ${quotation.customer_lname}`
+        : '';
+    $('#clientName').val(clientName);
+    $('#clientEmail').val(quotation.customer_email || '');
+    $('#clientContact').val(quotation.customer_phone || '');
+    $('#clientNIC').val(quotation.customer_nic || '');
+    $('#clientAddress').val(quotation.customer_address || '');
+    
+    // Section 2: Project Information
+    $('#projectTitle').val(quotation.title || '');
+    $('#projectReferenceID').val(quotation.quotation_id || '');
+    $('#projectType').val(quotation.project_type || '');
+    $('#projectLocation').val(quotation.location || '');
+    $('#projectDescription').val(quotation.description || '');
+    
+    // Section 3: Scope of Work
+    $('#scopeDescription').val(quotation.description || '');
+    $('#quotationReference').val(`Quotation #${quotation.quotation_id}`);
+    
+    // Section 5: Contract Value
+    const contractValue = quotation.price ? parseFloat(quotation.price) : 0;
+    $('#contractValue').val(contractValue.toFixed(2));
+    
+    // Update cost breakdown
+    updateCostBreakdown();
+    
+    // Set default dates
+    const today = new Date();
+    $('#startDate').val(today.toISOString().split('T')[0]);
+    
+    // Set completion date based on duration (default 30 days if not specified)
+    const durationDays = quotation.estimated_duration || 30;
+    const completionDate = new Date(today);
+    completionDate.setDate(completionDate.getDate() + parseInt(durationDays));
+    $('#completionDate').val(completionDate.toISOString().split('T')[0]);
+    
+    console.log('Form auto-filled successfully');
+}
+
+// ============================================================================
+// MILESTONE TABLE GENERATION
+// ============================================================================
+
+function generateMilestoneTable(paymentMethod) {
+    const contractValue = parseFloat($('#contractValue').val()) || 0;
+    const startDate = $('#startDate').val();
+    const completionDate = $('#completionDate').val();
+    
+    if (contractValue === 0) {
+        showNotification('Please ensure contract value is set', 'warning');
+        return;
+    }
+    
+    let milestones = [];
+    
+    switch(paymentMethod) {
+        case 'full_upfront':
+            milestones = [
+                { name: 'Full Payment', description: 'Complete payment before work starts', percentage: 100, daysOffset: 0 }
+            ];
+            break;
             
-            // Store preference
-            localStorage.setItem('contractsViewPreference', viewType);
-        });
-    });
-    
-    // Load saved preference
-    const savedView = localStorage.getItem('contractsViewPreference');
-    if (savedView) {
-        const targetButton = document.querySelector(`[data-view="${savedView}"]`);
-        if (targetButton) {
-            targetButton.click();
-        }
-    }
-}
-
-function initializeModals() {
-    const modal = document.getElementById('contractModal');
-    const closeModal = document.getElementById('closeModal');
-    const modalCancel = document.getElementById('modalCancel');
-    const modalClose = document.getElementById('modalClose');
-    const modalEdit = document.getElementById('modalEdit');
-    const modalDownload = document.getElementById('modalDownload');
-    const modalPrint = document.getElementById('modalPrint');
-    
-    // Close modal handlers
-    if (closeModal) {
-        closeModal.addEventListener('click', closeContractModal);
-    }
-    
-    if (modalCancel) {
-        modalCancel.addEventListener('click', closeContractModal);
-    }
-    
-    if (modalClose) {
-        modalClose.addEventListener('click', closeContractModal);
-    }
-    
-    // Action button handlers
-    if (modalEdit) {
-        modalEdit.addEventListener('click', function() {
-            showNotification('Opening contract editor...', 'info');
-            closeContractModal();
-        });
-    }
-    
-    if (modalDownload) {
-        modalDownload.addEventListener('click', function() {
-            showNotification('Downloading contract documents...', 'info');
-        });
-    }
-    
-    if (modalPrint) {
-        modalPrint.addEventListener('click', function() {
-            showNotification('Preparing contract for printing...', 'info');
-            setTimeout(() => {
-                window.print();
-            }, 1000);
-        });
-    }
-    
-    // Close on overlay click
-    if (modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                closeContractModal();
-            }
-        });
-    }
-    
-    // Close on Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modal && modal.classList.contains('active')) {
-            closeContractModal();
-        }
-    });
-}
-
-function openContractModal(contractData) {
-    const modal = document.getElementById('contractModal');
-    
-    if (modal) {
-        // Populate modal with contract data
-        populateModalContent(contractData);
-        
-        // Show modal
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-}
-
-function closeContractModal() {
-    const modal = document.getElementById('contractModal');
-    
-    if (modal) {
-        modal.classList.remove('active');
-        document.body.style.overflow = '';
-    }
-}
-
-function populateModalContent(contractData) {
-    // Populate modal with comprehensive contract data
-    document.getElementById('modalContractTitle').textContent = contractData.title;
-    document.getElementById('modalContractId').textContent = contractData.id || 'CNT-2025-001';
-    
-    // Status badge with appropriate styling
-    const statusBadge = document.getElementById('modalContractStatus');
-    statusBadge.textContent = contractData.status || 'Active';
-    statusBadge.className = `contract-status-badge ${contractData.status || 'active'}`;
-    
-    // Client Information
-    document.getElementById('modalClientName').textContent = contractData.client || 'ABC Corporation';
-    document.getElementById('modalContactPerson').textContent = contractData.contactPerson || 'John Doe';
-    document.getElementById('modalClientEmail').textContent = contractData.email || 'john@abc.com';
-    document.getElementById('modalClientPhone').textContent = contractData.phone || '+94 77 123 4567';
-    
-    // Project Details
-    document.getElementById('modalDescription').textContent = contractData.description || 'This is a comprehensive project description that will provide detailed information about the scope of work, deliverables, and requirements.';
-    document.getElementById('modalProjectType').textContent = contractData.type || 'Renovation';
-    document.getElementById('modalLocation').textContent = contractData.location || 'Colombo, Sri Lanka';
-    document.getElementById('modalStartDate').textContent = contractData.startDate || '2025-01-15';
-    document.getElementById('modalEndDate').textContent = contractData.endDate || '2025-03-15';
-    
-    // Progress Information
-    const progress = contractData.progress || 65;
-    document.getElementById('modalProgressFill').style.width = progress + '%';
-    document.getElementById('modalProgressText').textContent = progress + '% Complete';
-    document.getElementById('modalProgressStage').textContent = contractData.stage || 'Design Phase';
-    
-    // Financial Details
-    document.getElementById('modalContractValue').textContent = contractData.value || 'LKR 250,000';
-    document.getElementById('modalPaidAmount').textContent = contractData.paidAmount || 'LKR 100,000';
-    document.getElementById('modalRemainingAmount').textContent = contractData.remainingAmount || 'LKR 150,000';
-    document.getElementById('modalPaymentTerms').textContent = contractData.paymentTerms || '30 Days';
-    
-    // Contract Information
-    document.getElementById('modalContractType').textContent = contractData.contractType || 'Fixed Price';
-    document.getElementById('modalDuration').textContent = contractData.duration || '60 Days';
-    document.getElementById('modalPriority').textContent = contractData.priority || 'High';
-    document.getElementById('modalTeam').textContent = contractData.team || 'Team Alpha';
-    
-    // Populate timeline if available
-    if (contractData.timeline) {
-        populateTimeline(contractData.timeline);
-    }
-    
-    // Populate attachments if available
-    if (contractData.attachments) {
-        populateAttachments(contractData.attachments);
-    }
-}
-
-function populateTimeline(timelineData) {
-    const timelineContainer = document.getElementById('modalTimeline');
-    timelineContainer.innerHTML = '';
-    
-    timelineData.forEach(item => {
-        const timelineItem = document.createElement('div');
-        timelineItem.className = 'timeline-item';
-        timelineItem.innerHTML = `
-            <div class="timeline-icon">
-                <i class="fas fa-${item.icon}"></i>
-            </div>
-            <div class="timeline-content">
-                <h4>${item.title}</h4>
-                <p>${item.description}</p>
-                <div class="timeline-date">${item.date}</div>
-            </div>
-        `;
-        timelineContainer.appendChild(timelineItem);
-    });
-}
-
-function populateAttachments(attachmentsData) {
-    const attachmentsContainer = document.getElementById('modalAttachments');
-    attachmentsContainer.innerHTML = '';
-    
-    attachmentsData.forEach(attachment => {
-        const attachmentItem = document.createElement('div');
-        attachmentItem.className = 'attachment-item';
-        attachmentItem.innerHTML = `
-            <div class="attachment-icon">
-                <i class="fas fa-${attachment.icon}"></i>
-            </div>
-            <div class="attachment-info">
-                <h5>${attachment.name}</h5>
-                <p>${attachment.type} • ${attachment.size} • Last modified: ${attachment.date}</p>
-            </div>
-        `;
-        attachmentItem.addEventListener('click', () => {
-            showNotification(`Downloading ${attachment.name}...`, 'info');
-        });
-        attachmentsContainer.appendChild(attachmentItem);
-    });
-}
-
-function initializeContractActions() {
-    // Contract card click handler
-    document.addEventListener('click', function(e) {
-        // Check if click is on a contract card but not on an action button
-        const contractCard = e.target.closest('.contract-card');
-        const actionButton = e.target.closest('.action-btn');
-        
-        if (contractCard && !actionButton) {
-            handleViewContract(contractCard);
-            return;
-        }
-        
-        // Handle individual action buttons
-        if (e.target.closest('.action-btn.view')) {
-            handleViewContract(e.target.closest('.contract-card'));
-        }
-        
-        if (e.target.closest('.action-btn.edit')) {
-            handleEditContract(e.target.closest('.contract-card'));
-        }
-        
-        if (e.target.closest('.action-btn.download')) {
-            handleDownloadContract(e.target.closest('.contract-card'));
-        }
-        
-        if (e.target.closest('.action-btn.send')) {
-            handleSendContract(e.target.closest('.contract-card'));
-        }
-        
-        if (e.target.closest('.action-btn.invoice')) {
-            handleGenerateInvoice(e.target.closest('.contract-card'));
-        }
-    });
-    
-    // Create new contract button
-    const createBtn = document.getElementById('createContractBtn');
-    if (createBtn) {
-        createBtn.addEventListener('click', handleCreateContract);
-    }
-    
-    // Export button
-    const exportBtn = document.getElementById('exportBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', handleExportContracts);
-    }
-}
-
-function handleViewContract(contractCard) {
-    const contractTitle = contractCard.querySelector('.contract-info h3').textContent;
-    const clientName = contractCard.querySelector('.client-name').textContent.replace(/^\s*\S+\s*/, ''); // Remove icon
-    const statusElement = contractCard.querySelector('.contract-status');
-    const status = statusElement ? statusElement.textContent.trim() : 'Active';
-    const progressElement = contractCard.querySelector('.progress-fill');
-    const progress = progressElement ? parseInt(progressElement.style.width) || 0 : 0;
-    
-    // Extract contract value if available
-    const valueElement = contractCard.querySelector('.detail-row .detail-value');
-    const value = valueElement ? valueElement.textContent : 'LKR 250,000';
-    
-    // Create comprehensive contract data object
-    const contractData = {
-        id: generateContractId(contractTitle),
-        title: contractTitle,
-        client: clientName,
-        status: status.toLowerCase(),
-        progress: progress,
-        value: value,
-        
-        // Additional data that would typically come from a database
-        contactPerson: getContactPerson(clientName),
-        email: getClientEmail(clientName),
-        phone: getClientPhone(clientName),
-        description: getContractDescription(contractTitle),
-        type: getContractType(contractCard),
-        location: getProjectLocation(clientName),
-        startDate: getStartDate(),
-        endDate: getEndDate(),
-        stage: getProgressStage(progress),
-        paidAmount: getPaidAmount(value),
-        remainingAmount: getRemainingAmount(value),
-        paymentTerms: '30 Days',
-        contractType: 'Fixed Price',
-        duration: getDuration(),
-        priority: getPriority(status),
-        team: getAssignedTeam(contractTitle),
-        timeline: getProjectTimeline(contractTitle),
-        attachments: getContractAttachments(contractTitle)
-    };
-    
-    openContractModal(contractData);
-}
-
-
-function generateContractId(title) {
-    const hash = title.split('').reduce((a, b) => {
-        a = ((a << 5) - a) + b.charCodeAt(0);
-        return a & a;
-    }, 0);
-    return `CNT-2025-${Math.abs(hash).toString().slice(0, 3)}`;
-}
-
-function getContactPerson(clientName) {
-    const contacts = {
-        'Johnson Residence': 'Michael Johnson',
-        'ABC Corporation': 'Sarah Wilson',
-        'Downtown Mall': 'Robert Chen',
-        'Modern Apartments': 'Lisa Anderson',
-        'Tech Solutions Ltd': 'David Kumar',
-        'Silva Family': 'Carlos Silva'
-    };
-    return contacts[clientName] || 'John Doe';
-}
-
-function getClientEmail(clientName) {
-    const emails = {
-        'Johnson Residence': 'michael@johnson-family.com',
-        'ABC Corporation': 'sarah.wilson@abc-corp.com',
-        'Downtown Mall': 'robert.chen@downtown-mall.lk',
-        'Modern Apartments': 'lisa@modernapts.com',
-        'Tech Solutions Ltd': 'david.kumar@techsolutions.lk',
-        'Silva Family': 'carlos@silva-family.com'
-    };
-    return emails[clientName] || 'contact@client.com';
-}
-
-function getClientPhone(clientName) {
-    const phones = ['+94 77 123 4567', '+94 76 987 6543', '+94 75 555 0123', '+94 78 456 7890'];
-    return phones[Math.floor(Math.random() * phones.length)];
-}
-
-function getContractDescription(title) {
-    const descriptions = {
-        'Kitchen Renovation': 'Complete kitchen renovation including cabinet installation, countertop replacement, electrical work, and plumbing upgrades. Modern design with energy-efficient appliances.',
-        'HVAC Maintenance Agreement': 'Comprehensive HVAC system maintenance contract including quarterly inspections, filter replacements, system cleaning, and emergency repair services.',
-        'Plumbing System Overhaul': 'Complete plumbing system renovation including pipe replacement, fixture upgrades, water pressure optimization, and drainage system improvements.',
-        'Electrical System Installation': 'New electrical system installation with modern wiring, circuit breaker upgrades, outlet installations, and safety compliance verification.',
-        'Annual Maintenance Contract': 'Year-long maintenance agreement covering all building systems including HVAC, electrical, plumbing, and general facility maintenance services.'
-    };
-    return descriptions[title] || 'Comprehensive project covering all aspects of the contracted work with detailed specifications and quality assurance measures.';
-}
-
-function getContractType(contractCard) {
-    const types = ['Renovation', 'Maintenance', 'Installation', 'Repair', 'Construction'];
-    const dataType = contractCard.getAttribute('data-type');
-    return dataType ? dataType.charAt(0).toUpperCase() + dataType.slice(1) : types[Math.floor(Math.random() * types.length)];
-}
-
-function getProjectLocation(clientName) {
-    const locations = {
-        'Johnson Residence': 'Nugegoda, Colombo',
-        'ABC Corporation': 'Colombo 03, Sri Lanka',
-        'Downtown Mall': 'Kandy, Sri Lanka',
-        'Modern Apartments': 'Mount Lavinia, Colombo',
-        'Tech Solutions Ltd': 'Maharagama, Colombo',
-        'Silva Family': 'Galle, Sri Lanka'
-    };
-    return locations[clientName] || 'Colombo, Sri Lanka';
-}
-
-function getStartDate() {
-    const dates = ['2025-01-15', '2025-02-01', '2025-01-10', '2025-02-15', '2025-01-20'];
-    return dates[Math.floor(Math.random() * dates.length)];
-}
-
-function getEndDate() {
-    const dates = ['2025-03-15', '2025-04-01', '2025-03-10', '2025-04-15', '2025-03-20'];
-    return dates[Math.floor(Math.random() * dates.length)];
-}
-
-function getProgressStage(progress) {
-    if (progress < 25) return 'Planning Phase';
-    if (progress < 50) return 'Design Phase';
-    if (progress < 75) return 'Implementation Phase';
-    if (progress < 90) return 'Testing Phase';
-    return 'Final Review';
-}
-
-function getPaidAmount(value) {
-    const numValue = parseInt(value.replace(/[^\d]/g, ''));
-    const paidPercentage = Math.floor(Math.random() * 70) + 20; // 20-90%
-    const paidAmount = Math.floor(numValue * paidPercentage / 100);
-    return `LKR ${paidAmount.toLocaleString()}`;
-}
-
-function getRemainingAmount(value) {
-    const numValue = parseInt(value.replace(/[^\d]/g, ''));
-    const paidAmount = parseInt(getPaidAmount(value).replace(/[^\d]/g, ''));
-    const remaining = numValue - paidAmount;
-    return `LKR ${remaining.toLocaleString()}`;
-}
-
-function getDuration() {
-    const durations = ['30 Days', '45 Days', '60 Days', '90 Days', '120 Days'];
-    return durations[Math.floor(Math.random() * durations.length)];
-}
-
-function getPriority(status) {
-    const priorities = {
-        'active': 'High',
-        'pending': 'Medium',
-        'completed': 'Low'
-    };
-    return priorities[status] || 'Medium';
-}
-
-function getAssignedTeam(title) {
-    const teams = ['Team Alpha', 'Team Beta', 'Team Gamma', 'Team Delta', 'Team Sigma'];
-    return teams[Math.floor(Math.random() * teams.length)];
-}
-
-function getProjectTimeline(title) {
-    return [
-        {
-            icon: 'play',
-            title: 'Project Started',
-            description: 'Contract signed and project officially commenced',
-            date: 'January 15, 2025'
-        },
-        {
-            icon: 'cog',
-            title: 'Planning Phase',
-            description: 'Detailed planning and resource allocation completed',
-            date: 'January 20, 2025'
-        },
-        {
-            icon: 'tools',
-            title: 'Implementation',
-            description: 'Active work phase with regular progress updates',
-            date: 'February 1, 2025'
-        }
-    ];
-}
-
-function getContractAttachments(title) {
-    return [
-        {
-            name: 'Main Contract Agreement',
-            type: 'PDF',
-            size: '2.4 MB',
-            date: 'Jan 15, 2025',
-            icon: 'file-pdf'
-        },
-        {
-            name: 'Project Blueprints',
-            type: 'Images',
-            size: '15.2 MB',
-            date: 'Jan 10, 2025',
-            icon: 'file-image'
-        },
-        {
-            name: 'Technical Specifications',
-            type: 'DOCX',
-            size: '890 KB',
-            date: 'Jan 12, 2025',
-            icon: 'file-word'
-        }
-    ];
-}
-
-function handleEditContract(contractCard) {
-    const contractTitle = contractCard.querySelector('.contract-info h3').textContent;
-    
-    showNotification(`Opening ${contractTitle} for editing...`, 'info');
-    
-    // Here you would typically redirect to an edit page or open an edit modal
-    setTimeout(() => {
-        showNotification('Edit functionality would be implemented here', 'success');
-    }, 1000);
-}
-
-function handleDownloadContract(contractCard) {
-    const contractTitle = contractCard.querySelector('.contract-info h3').textContent;
-    
-    showNotification(`Downloading ${contractTitle}...`, 'info');
-    
-    // Simulate download
-    setTimeout(() => {
-        showNotification('Contract downloaded successfully', 'success');
-    }, 1500);
-}
-
-function handleSendContract(contractCard) {
-    const contractTitle = contractCard.querySelector('.contract-info h3').textContent;
-    const clientName = contractCard.querySelector('.client-name').textContent;
-    
-    showNotification(`Sending ${contractTitle} to ${clientName}...`, 'info');
-    
-    // Simulate sending
-    setTimeout(() => {
-        showNotification('Contract sent successfully', 'success');
-    }, 2000);
-}
-
-function handleGenerateInvoice(contractCard) {
-    const contractTitle = contractCard.querySelector('.contract-info h3').textContent;
-    
-    showNotification(`Generating invoice for ${contractTitle}...`, 'info');
-    
-    // Simulate invoice generation
-    setTimeout(() => {
-        showNotification('Invoice generated successfully', 'success');
-    }, 1500);
-}
-
-function handleCreateContract() {
-    showNotification('Opening new contract form...', 'info');
-    
-    // Here you would typically open a form modal or redirect to a form page
-    setTimeout(() => {
-        showNotification('New contract form would open here', 'success');
-    }, 1000);
-}
-
-function handleExportContracts() {
-    const visibleContracts = document.querySelectorAll('.contract-card[style*="block"], .contract-card:not([style*="none"])');
-    
-    showNotification(`Exporting ${visibleContracts.length} contracts...`, 'info');
-    
-    // Simulate export
-    setTimeout(() => {
-        showNotification('Contracts exported successfully', 'success');
-    }, 2000);
-}
-
-
-let currentPage = 1;
-let isLoading = false;
-let hasMoreContracts = true;
-const contractsPerPage = 6;
-
-function initializeInfiniteScroll() {
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    const contractsEnd = document.getElementById('contractsEnd');
-    const mainContent = document.querySelector('.main-content');
-    
-    // Load More Button Click
-    if (loadMoreBtn) {
-        loadMoreBtn.addEventListener('click', function() {
-            loadMoreContracts();
-        });
-    }
-    
-    // Infinite Scroll Detection
-    if (mainContent) {
-        mainContent.addEventListener('scroll', function() {
-            const { scrollTop, scrollHeight, clientHeight } = mainContent;
+        case '50_50':
+            milestones = [
+                { name: 'Advance Payment', description: '50% payment before work starts', percentage: 50, daysOffset: 0 },
+                { name: 'Final Payment', description: '50% payment on completion', percentage: 50, daysOffset: null }
+            ];
+            break;
             
-            if (scrollTop + clientHeight >= scrollHeight - 100 && !isLoading && hasMoreContracts) {
-                loadMoreContracts(true); // true for auto-load (infinite scroll)
-            }
-        });
+        case '30_70':
+            milestones = [
+                { name: 'Advance Payment', description: '30% payment before work starts', percentage: 30, daysOffset: 0 },
+                { name: 'Final Payment', description: '70% payment on completion', percentage: 70, daysOffset: null }
+            ];
+            break;
+            
+        case 'milestone_based':
+            const projectDuration = calculateDaysBetween(startDate, completionDate);
+            const interval = Math.floor(projectDuration / 4);
+            
+            milestones = [
+                { name: 'Advance Payment', description: 'Initial payment', percentage: 20, daysOffset: 0 },
+                { name: 'Phase 1 Complete', description: '25% project completion', percentage: 20, daysOffset: interval },
+                { name: 'Phase 2 Complete', description: '50% project completion', percentage: 20, daysOffset: interval * 2 },
+                { name: 'Phase 3 Complete', description: '75% project completion', percentage: 20, daysOffset: interval * 3 },
+                { name: 'Final Payment', description: 'Project completion', percentage: 20, daysOffset: null }
+            ];
+            break;
+            
+        case 'completion':
+            milestones = [
+                { name: 'Full Payment', description: 'Complete payment on project completion', percentage: 100, daysOffset: null }
+            ];
+            break;
     }
+    
+    // Generate table rows
+    let tableHTML = '';
+    let totalPercentage = 0;
+    let totalAmount = 0;
+    
+    milestones.forEach((milestone, index) => {
+        const amount = (contractValue * milestone.percentage / 100).toFixed(2);
+        totalPercentage += milestone.percentage;
+        totalAmount += parseFloat(amount);
+        
+        // Calculate due date
+        let dueDate = '';
+        if (milestone.daysOffset === 0) {
+            dueDate = startDate;
+        } else if (milestone.daysOffset === null) {
+            dueDate = completionDate;
+        } else {
+            const date = new Date(startDate);
+            date.setDate(date.getDate() + milestone.daysOffset);
+            dueDate = date.toISOString().split('T')[0];
+        }
+        
+        tableHTML += `
+            <tr>
+                <td><input type="text" name="milestone_name[]" value="${milestone.name}" required></td>
+                <td><input type="text" name="milestone_description[]" value="${milestone.description}" required></td>
+                <td><input type="number" name="milestone_percentage[]" value="${milestone.percentage}" min="0" max="100" step="0.01" class="milestone-percentage" required></td>
+                <td><input type="number" name="milestone_amount[]" value="${amount}" min="0" step="0.01" class="milestone-amount" readonly></td>
+                <td><input type="date" name="milestone_date[]" value="${dueDate}" required></td>
+            </tr>
+        `;
+    });
+    
+    $('#milestoneTableBody').html(tableHTML);
+    $('#totalPercentage').text(totalPercentage.toFixed(1));
+    $('#totalAmount').text(totalAmount.toFixed(2));
+    
+    // Add event listener for percentage changes
+    $('.milestone-percentage').on('input', function() {
+        updateMilestoneAmounts();
+    });
 }
 
-function loadMoreContracts(autoLoad = false) {
-    if (isLoading || !hasMoreContracts) return;
+function updateMilestoneAmounts() {
+    const contractValue = parseFloat($('#contractValue').val()) || 0;
+    let totalPercentage = 0;
+    let totalAmount = 0;
     
-    isLoading = true;
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    const contractsEnd = document.getElementById('contractsEnd');
-    
-    currentPage++;
-    
-    // Simulate loading more contracts (replace with actual API call)
-    const newContracts = generateContractCards(contractsPerPage);
-    
-    if (newContracts.length > 0) {
-        appendContractsToContainer(newContracts);
+    $('.milestone-percentage').each(function() {
+        const percentage = parseFloat($(this).val()) || 0;
+        const amount = (contractValue * percentage / 100).toFixed(2);
         
-        // Check if we've reached the end (simulate with max 4 pages)
-        if (currentPage >= 4) {
-            hasMoreContracts = false;
-            if (loadMoreBtn) loadMoreBtn.style.display = 'none';
-            if (contractsEnd) contractsEnd.style.display = 'block';
-        }
+        $(this).closest('tr').find('.milestone-amount').val(amount);
+        
+        totalPercentage += percentage;
+        totalAmount += parseFloat(amount);
+    });
+    
+    $('#totalPercentage').text(totalPercentage.toFixed(1));
+    $('#totalAmount').text(totalAmount.toFixed(2));
+    
+    // Validate total percentage
+    if (totalPercentage !== 100) {
+        $('#totalPercentage').css('color', '#e53e3e');
     } else {
-        hasMoreContracts = false;
-        if (loadMoreBtn) loadMoreBtn.style.display = 'none';
-        if (contractsEnd) contractsEnd.style.display = 'block';
+        $('#totalPercentage').css('color', '#38a169');
     }
-    
-    // Reset loading state
-    isLoading = false;
-    
-    // Animate new cards
-    animateNewCards();
 }
 
-function generateContractCards(count) {
-    // This is a simulation - replace with actual API data
-    const contractTypes = ['maintenance', 'repair', 'installation', 'renovation'];
-    const statuses = ['active', 'pending', 'completed'];
-    const clients = [
-        { name: 'Tech Solutions Ltd', icon: 'fas fa-industry' },
-        { name: 'Modern Apartments', icon: 'fas fa-building' },
-        { name: 'Green Valley Resort', icon: 'fas fa-hotel' },
-        { name: 'City Mall', icon: 'fas fa-shopping-center' },
-        { name: 'Johnson Residence', icon: 'fas fa-home' }
-    ];
-    
-    const contracts = [];
-    
-    for (let i = 0; i < count; i++) {
-        const contract = {
-            id: `contract-${currentPage}-${i}`,
-            title: `Contract ${currentPage * count + i + 1} - ${contractTypes[Math.floor(Math.random() * contractTypes.length)].charAt(0).toUpperCase() + contractTypes[Math.floor(Math.random() * contractTypes.length)].slice(1)}`,
-            client: clients[Math.floor(Math.random() * clients.length)],
-            status: statuses[Math.floor(Math.random() * statuses.length)],
-            type: contractTypes[Math.floor(Math.random() * contractTypes.length)],
-            value: Math.floor(Math.random() * 300000) + 50000,
-            progress: Math.floor(Math.random() * 100)
-        };
-        contracts.push(contract);
-    }
-    
-    return contracts;
+function calculateDaysBetween(date1, date2) {
+    const d1 = new Date(date1);
+    const d2 = new Date(date2);
+    const diffTime = Math.abs(d2 - d1);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
-function appendContractsToContainer(contracts) {
-    const container = document.getElementById('contractsContainer');
-    if (!container) return;
+// ============================================================================
+// COST BREAKDOWN
+// ============================================================================
+
+function updateCostBreakdown() {
+    const contractValue = parseFloat($('#contractValue').val()) || 0;
     
-    contracts.forEach(contract => {
-        const cardHTML = createContractCardHTML(contract);
-        container.insertAdjacentHTML('beforeend', cardHTML);
+    // Simple breakdown (can be customized based on actual data)
+    const materials = contractValue * 0.45;
+    const labor = contractValue * 0.35;
+    const equipment = contractValue * 0.10;
+    const other = contractValue * 0.05;
+    const tax = contractValue * 0.05;
+    
+    $('#materialsCost').text(materials.toFixed(2));
+    $('#laborCost').text(labor.toFixed(2));
+    $('#equipmentCost').text(equipment.toFixed(2));
+    $('#otherCosts').text(other.toFixed(2));
+    $('#taxAmount').text(tax.toFixed(2));
+    $('#totalValue').text(contractValue.toFixed(2));
+}
+
+// ============================================================================
+// TEMPLATE INSERTION
+// ============================================================================
+
+function insertTemplate(templateName, fieldId) {
+    if (legalTemplates[templateName]) {
+        $(`#${fieldId}`).val(legalTemplates[templateName]);
+        showNotification('Template inserted successfully', 'success');
+    }
+}
+
+// ============================================================================
+// STEP NAVIGATION
+// ============================================================================
+
+function nextStep() {
+    if (!validateCurrentStep()) {
+        return;
+    }
+    
+    if (currentStep < totalSteps) {
+        currentStep++;
+        showStep(currentStep);
+        updateProgressBar();
+        
+        // Generate preview on step 4
+        if (currentStep === 4) {
+            generatePreview();
+        }
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function prevStep() {
+    if (currentStep > 1) {
+        currentStep--;
+        showStep(currentStep);
+        updateProgressBar();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function showStep(step) {
+    $('.form-step').removeClass('active');
+    $(`.form-step[data-step="${step}"]`).addClass('active');
+    
+    $('.step').removeClass('active completed');
+    
+    for (let i = 1; i <= totalSteps; i++) {
+        if (i < step) {
+            $(`.step[data-step="${i}"]`).addClass('completed');
+        } else if (i === step) {
+            $(`.step[data-step="${i}"]`).addClass('active');
+        }
+    }
+}
+
+function updateProgressBar() {
+    const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
+    $('#progressLine').css('width', progress + '%');
+}
+
+// ============================================================================
+// VALIDATION
+// ============================================================================
+
+function validateCurrentStep() {
+    let isValid = true;
+    const currentStepElement = $(`.form-step[data-step="${currentStep}"]`);
+    
+    // Check required fields in current step
+    currentStepElement.find('input[required], select[required], textarea[required]').each(function() {
+        if (!$(this).val() || $(this).val().trim() === '') {
+            isValid = false;
+            $(this).css('border-color', '#e53e3e');
+            
+            // Add error message if not exists
+            if (!$(this).next('.error-message').length) {
+                $(this).after('<span class="error-message" style="color: #e53e3e; font-size: 12px; margin-top: 4px; display: block;">This field is required</span>');
+            }
+        } else {
+            $(this).css('border-color', '#e2e8f0');
+            $(this).next('.error-message').remove();
+        }
     });
+    
+    // Step-specific validation
+    if (currentStep === 1) {
+        if (!$('#quotationSelect').val()) {
+            showNotification('Please select a quotation', 'error');
+            isValid = false;
+        }
+    }
+    
+    if (currentStep === 3) {
+        // Validate milestone table if visible
+        if ($('#milestoneTableContainer').is(':visible')) {
+            const totalPercentage = parseFloat($('#totalPercentage').text()) || 0;
+            if (Math.abs(totalPercentage - 100) > 0.1) {
+                showNotification('Milestone percentages must total 100%', 'error');
+                isValid = false;
+            }
+        }
+        
+        // Validate dates
+        const startDate = new Date($('#startDate').val());
+        const completionDate = new Date($('#completionDate').val());
+        if (completionDate <= startDate) {
+            showNotification('Completion date must be after start date', 'error');
+            isValid = false;
+        }
+    }
+    
+    if (!isValid) {
+        showNotification('Please fill in all required fields correctly', 'error');
+    }
+    
+    return isValid;
 }
 
-function createContractCardHTML(contract) {
-    return `
-        <div class="contract-card" data-status="${contract.status}" data-type="${contract.type}">
-            <div class="contract-header">
-                <div class="contract-info">
-                    <h3>${contract.title}</h3>
-                    <p class="client-name">
-                        <i class="${contract.client.icon}"></i>
-                        ${contract.client.name}
-                    </p>
-                </div>
-                <div class="contract-status ${contract.status}">
-                    <i class="fas fa-${getStatusIcon(contract.status)}"></i>
-                    ${contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
-                </div>
-            </div>
-            <div class="contract-details">
-                <div class="detail-row">
-                    <span class="detail-label">Contract Value:</span>
-                    <span class="detail-value">LKR ${contract.value.toLocaleString()}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Progress:</span>
-                    <div class="progress-container">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${contract.progress}%"></div>
-                        </div>
-                        <span class="progress-text">${contract.progress}%</span>
-                    </div>
-                </div>
-            </div>
-            <div class="contract-actions">
-                <button class="action-btn view" title="View Details">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button class="action-btn edit" title="Edit Contract">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="action-btn download" title="Download Contract">
-                    <i class="fas fa-download"></i>
-                </button>
-            </div>
+// ============================================================================
+// PREVIEW GENERATION
+// ============================================================================
+
+function generatePreview() {
+    let previewHTML = '';
+    
+    // Section 1: Parties
+    previewHTML += `
+        <div class="preview-section">
+            <h3>1. Parties to the Contract</h3>
+            <div class="preview-field"><strong>Contractor (Company):</strong> <span>${$('#companyName').val()}</span></div>
+            <div class="preview-field"><strong>Business Registration:</strong> <span>${$('#businessRegistration').val()}</span></div>
+            <div class="preview-field"><strong>Company Address:</strong> <span>${$('#companyAddress').val()}</span></div>
+            <div class="preview-field"><strong>Company Contact:</strong> <span>${$('#companyContact').val()}</span></div>
+            <div class="preview-field"><strong>Company Email:</strong> <span>${$('#companyEmail').val()}</span></div>
+            <div class="preview-field"><strong>Authorized Representative:</strong> <span>${$('#companyRepresentative').val()}</span></div>
+            <br>
+            <div class="preview-field"><strong>Client Name:</strong> <span>${$('#clientName').val()}</span></div>
+            <div class="preview-field"><strong>Client NIC:</strong> <span>${$('#clientNIC').val() || 'N/A'}</span></div>
+            <div class="preview-field"><strong>Client Address:</strong> <span>${$('#clientAddress').val()}</span></div>
+            <div class="preview-field"><strong>Client Contact:</strong> <span>${$('#clientContact').val()}</span></div>
+            <div class="preview-field"><strong>Client Email:</strong> <span>${$('#clientEmail').val()}</span></div>
         </div>
     `;
-}
-
-function getStatusIcon(status) {
-    const icons = {
-        active: 'play-circle',
-        pending: 'clock',
-        completed: 'check-circle'
-    };
-    return icons[status] || 'circle';
-}
-
-function animateNewCards() {
-    const allCards = document.querySelectorAll('.contract-card');
-    const newCards = Array.from(allCards).slice(-contractsPerPage);
     
-    newCards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
+    // Section 2: Project Identification
+    previewHTML += `
+        <div class="preview-section">
+            <h3>2. Project Identification & Overview</h3>
+            <div class="preview-field"><strong>Project Title:</strong> <span>${$('#projectTitle').val()}</span></div>
+            <div class="preview-field"><strong>Reference ID:</strong> <span>${$('#projectReferenceID').val()}</span></div>
+            <div class="preview-field"><strong>Project Type:</strong> <span>${$('#projectType').val()}</span></div>
+            <div class="preview-field"><strong>Location:</strong> <span>${$('#projectLocation').val()}</span></div>
+            <div class="preview-field"><strong>Description:</strong> <span>${$('#projectDescription').val()}</span></div>
+            <div class="preview-field"><strong>Purpose:</strong> <span>${$('#projectPurpose').val()}</span></div>
+        </div>
+    `;
+    
+    // Section 3: Scope of Work
+    previewHTML += `
+        <div class="preview-section">
+            <h3>3. Scope of Work</h3>
+            <div class="preview-field"><strong>Description:</strong><br><span>${$('#scopeDescription').val().replace(/\n/g, '<br>')}</span></div>
+            <div class="preview-field"><strong>Inclusions:</strong><br><span>${$('#scopeInclusions').val().replace(/\n/g, '<br>')}</span></div>
+            <div class="preview-field"><strong>Exclusions:</strong><br><span>${$('#scopeExclusions').val().replace(/\n/g, '<br>') || 'None specified'}</span></div>
+            <div class="preview-field"><strong>Standards:</strong><br><span>${$('#scopeStandards').val() || 'Standard industry practices'}</span></div>
+            <div class="preview-field"><strong>Materials Responsibility:</strong> <span>${$('#materialsResponsibility').val()}</span></div>
+        </div>
+    `;
+    
+    // Section 4: Timeline
+    previewHTML += `
+        <div class="preview-section">
+            <h3>4. Contract Duration & Timeline</h3>
+            <div class="preview-field"><strong>Start Date:</strong> <span>${formatDate($('#startDate').val())}</span></div>
+            <div class="preview-field"><strong>Completion Date:</strong> <span>${formatDate($('#completionDate').val())}</span></div>
+            <div class="preview-field"><strong>Working Days:</strong> <span>${$('#workingDays').val()} days per week</span></div>
+            <div class="preview-field"><strong>Working Hours:</strong> <span>${$('#workingHours').val() || 'Standard hours'}</span></div>
+            <div class="preview-field"><strong>Milestones:</strong><br><span>${$('#projectMilestones').val().replace(/\n/g, '<br>') || 'See payment schedule'}</span></div>
+        </div>
+    `;
+    
+    // Section 5: Pricing
+    previewHTML += `
+        <div class="preview-section">
+            <h3>5. Contract Price & Value</h3>
+            <div class="preview-field"><strong>Total Contract Amount:</strong> <span>Rs. ${$('#contractValue').val()}</span></div>
+            <div class="preview-field"><strong>Currency:</strong> <span>${$('#currency').val()}</span></div>
+            <div class="preview-field"><strong>Pricing Model:</strong> <span>${$('#pricingModel').val()}</span></div>
+            <div class="preview-field"><strong>Tax Inclusion:</strong> <span>${$('#taxInclusion').val()}</span></div>
+        </div>
+    `;
+    
+    // Section 6: Payment
+    previewHTML += `
+        <div class="preview-section">
+            <h3>6. Payment Terms & Schedule</h3>
+            <div class="preview-field"><strong>Payment Method:</strong> <span>${$('#paymentMethod option:selected').text()}</span></div>
+            <div class="preview-field"><strong>Payment Due:</strong> <span>${$('#paymentDueDays').val()} days after invoice</span></div>
+            <div class="preview-field"><strong>Transfer Method:</strong> <span>${$('#bankTransferMethod').val()}</span></div>
+    `;
+    
+    // Add milestone table if exists
+    if ($('#milestoneTableContainer').is(':visible')) {
+        previewHTML += '<div class="preview-field"><strong>Payment Schedule:</strong></div>';
+        previewHTML += '<table class="milestone-table" style="margin-top: 10px; font-size: 13px;">';
+        previewHTML += '<thead><tr><th>Milestone</th><th>%</th><th>Amount</th><th>Due Date</th></tr></thead><tbody>';
         
-        setTimeout(() => {
-            card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 100);
-    });
+        $('#milestoneTableBody tr').each(function() {
+            const name = $(this).find('input[name="milestone_name[]"]').val();
+            const percentage = $(this).find('input[name="milestone_percentage[]"]').val();
+            const amount = $(this).find('input[name="milestone_amount[]"]').val();
+            const date = $(this).find('input[name="milestone_date[]"]').val();
+            
+            previewHTML += `<tr>
+                <td>${name}</td>
+                <td>${percentage}%</td>
+                <td>Rs. ${amount}</td>
+                <td>${formatDate(date)}</td>
+            </tr>`;
+        });
+        
+        previewHTML += '</tbody></table>';
+    }
+    
+    previewHTML += '</div>';
+    
+    // Sections 7-13: Legal Terms (abbreviated in preview)
+    previewHTML += `
+        <div class="preview-section">
+            <h3>7-13. Legal Terms & Conditions</h3>
+            <div class="preview-field">• Variations & Changes: ${$('#variationsClause').val().substring(0, 100)}...</div>
+            <div class="preview-field">• Communication & Negotiation: Standard platform communication</div>
+            <div class="preview-field">• Project Delays & Responsibilities: Defined accountability</div>
+            <div class="preview-field">• Termination: Conditions and procedures defined</div>
+            <div class="preview-field">• Force Majeure: Protection for uncontrollable events</div>
+            <div class="preview-field">• Liability Limitation: Maximum liability capped at contract value</div>
+            <div class="preview-field">• Governing Law: Laws of Sri Lanka</div>
+            <div class="preview-field"><strong>Contract Date:</strong> <span>${formatDate($('#contractDate').val())}</span></div>
+            <div class="preview-field"><strong>Acceptance Method:</strong> <span>${$('#acceptanceMethod').val()}</span></div>
+        </div>
+    `;
+    
+    $('#previewContent').html(previewHTML);
 }
 
-function initializeScrollToTop() {
-    const scrollToTopBtn = document.getElementById('scrollToTop');
-    const mainContent = document.querySelector('.main-content');
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+// ============================================================================
+// FORM SUBMISSION
+// ============================================================================
+
+function submitContract() {
+    if (!validateCurrentStep()) {
+        return;
+    }
     
-    if (!scrollToTopBtn || !mainContent) return;
+    // Disable submit button
+    const submitBtn = $('#submitBtn');
+    submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
     
-    // Show/hide scroll to top button
-    mainContent.addEventListener('scroll', function() {
-        if (mainContent.scrollTop > 300) {
-            scrollToTopBtn.classList.add('visible');
-        } else {
-            scrollToTopBtn.classList.remove('visible');
+    // Collect all form data
+    const formData = {
+        quotation_id: $('#quotationSelect').val(),
+        
+        // Section 1: Parties
+        company_name: $('#companyName').val(),
+        business_registration: $('#businessRegistration').val(),
+        company_address: $('#companyAddress').val(),
+        company_contact: $('#companyContact').val(),
+        company_email: $('#companyEmail').val(),
+        company_representative: $('#companyRepresentative').val(),
+        client_name: $('#clientName').val(),
+        client_nic: $('#clientNIC').val(),
+        client_address: $('#clientAddress').val(),
+        client_contact: $('#clientContact').val(),
+        client_email: $('#clientEmail').val(),
+        
+        // Section 2: Project
+        project_title: $('#projectTitle').val(),
+        project_reference_id: $('#projectReferenceID').val(),
+        project_type: $('#projectType').val(),
+        project_location: $('#projectLocation').val(),
+        project_description: $('#projectDescription').val(),
+        project_purpose: $('#projectPurpose').val(),
+        
+        // Section 3: Scope
+        scope_description: $('#scopeDescription').val(),
+        scope_inclusions: $('#scopeInclusions').val(),
+        scope_exclusions: $('#scopeExclusions').val(),
+        scope_standards: $('#scopeStandards').val(),
+        materials_responsibility: $('#materialsResponsibility').val(),
+        quotation_reference: $('#quotationReference').val(),
+        
+        // Section 4: Timeline
+        start_date: $('#startDate').val(),
+        completion_date: $('#completionDate').val(),
+        working_days: $('#workingDays').val(),
+        working_hours: $('#workingHours').val(),
+        project_milestones: $('#projectMilestones').val(),
+        
+        // Section 5: Pricing
+        contract_value: $('#contractValue').val(),
+        currency: $('#currency').val(),
+        pricing_model: $('#pricingModel').val(),
+        tax_inclusion: $('#taxInclusion').val(),
+        
+        // Section 6: Payment
+        payment_method: $('#paymentMethod').val(),
+        payment_due_days: $('#paymentDueDays').val(),
+        bank_transfer_method: $('#bankTransferMethod').val(),
+        
+        // Milestones
+        milestones: collectMilestoneData(),
+        
+        // Sections 7-13: Legal Terms
+        variations_clause: $('#variationsClause').val(),
+        communication_clause: $('#communicationClause').val(),
+        delays_clause: $('#delaysClause').val(),
+        termination_clause: $('#terminationClause').val(),
+        force_majeure_clause: $('#forceMajeureClause').val(),
+        liability_clause: $('#liabilityClause').val(),
+        governing_law_clause: $('#governingLawClause').val(),
+        acceptance_method: $('#acceptanceMethod').val(),
+        contract_date: $('#contractDate').val()
+    };
+    
+    console.log('Submitting contract data:', formData);
+    
+    // Submit to server
+    $.ajax({
+        url: '../../api/contracts.php',
+        method: 'POST',
+        data: {
+            action: 'createContract',
+            contractData: JSON.stringify(formData)
+        },
+        dataType: 'json',
+        success: function(response) {
+            console.log('Contract submission response:', response);
+            
+            if (response.success) {
+                showNotification('Contract created successfully!', 'success');
+                setTimeout(function() {
+                    window.location.href = 'contracts.php';
+                }, 2000);
+            } else {
+                showNotification(response.message || 'Failed to create contract', 'error');
+                submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Submit Contract');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Submission error:', error);
+            showNotification('Error submitting contract. Please try again.', 'error');
+            submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Submit Contract');
         }
     });
-    
-    // Scroll to top functionality
-    scrollToTopBtn.addEventListener('click', function() {
-        mainContent.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    });
 }
 
-function showNotification(message, type = 'info') {
-    // Create notification element if it doesn't exist
-    let notification = document.getElementById('notification');
+function collectMilestoneData() {
+    const milestones = [];
     
-    if (!notification) {
-        notification = document.createElement('div');
-        notification.id = 'notification';
-        notification.style.cssText = `
+    $('#milestoneTableBody tr').each(function() {
+        milestones.push({
+            name: $(this).find('input[name="milestone_name[]"]').val(),
+            description: $(this).find('input[name="milestone_description[]"]').val(),
+            percentage: $(this).find('input[name="milestone_percentage[]"]').val(),
+            amount: $(this).find('input[name="milestone_amount[]"]').val(),
+            due_date: $(this).find('input[name="milestone_date[]"]').val()
+        });
+    });
+    
+    return milestones;
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+function showNotification(message, type = 'info') {
+    // Remove existing notifications
+    $('.notification').remove();
+    
+    const colors = {
+        success: '#48bb78',
+        error: '#e53e3e',
+        warning: '#ed8936',
+        info: '#667eea'
+    };
+    
+    const icons = {
+        success: 'check-circle',
+        error: 'exclamation-circle',
+        warning: 'exclamation-triangle',
+        info: 'info-circle'
+    };
+    
+    const notification = $(`
+        <div class="notification" style="
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 16px 24px;
+            background: white;
+            color: ${colors[type]};
+            padding: 15px 20px;
             border-radius: 8px;
-            color: white;
-            font-weight: 500;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
             z-index: 10000;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-        `;
-        document.body.appendChild(notification);
-    }
-    
-    // Set notification style based on type
-    const colors = {
-        success: '#10b981',
-        error: '#ef4444',
-        warning: '#f59e0b',
-        info: '#0abab5'
-    };
-    
-    notification.style.backgroundColor = colors[type] || colors.info;
-    notification.textContent = message;
-    
-    // Show notification
-    notification.style.transform = 'translateX(0)';
-    
-    // Hide after 3 seconds
-    setTimeout(() => {
-        notification.style.transform = 'translateX(100%)';
-    }, 3000);
-}
-
-function animateContractCards() {
-    const contractCards = document.querySelectorAll('.contract-card');
-    
-    contractCards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        
-        setTimeout(() => {
-            card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 100);
-    });
-}
-
-function simulateRealTimeUpdates() {
-    setInterval(() => {
-        const activeContracts = document.querySelectorAll('[data-status="active"] .progress-fill');
-        
-        activeContracts.forEach(progressBar => {
-            const currentWidth = parseInt(progressBar.style.width) || 0;
-            const newWidth = Math.min(currentWidth + Math.random() * 2, 100);
-            
-            progressBar.style.width = `${newWidth}%`;
-            
-            const progressText = progressBar.parentElement.nextElementSibling;
-            if (progressText) {
-                progressText.textContent = `${Math.round(newWidth)}%`;
-            }
-        });
-    }, 30000);
-}
-
-setTimeout(simulateRealTimeUpdates, 5000);
-setTimeout(animateContractCards, 500);
-
-function initializeExportModal() {
-    const exportBtn = document.getElementById('exportBtn');
-    const exportModal = document.getElementById('exportModal');
-    const exportModalClose = document.getElementById('exportModalClose');
-    const exportCancel = document.getElementById('exportCancel');
-    const exportDownload = document.getElementById('exportDownload');
-    const exportPreview = document.getElementById('exportPreview');
-    
-    if (exportBtn) {
-        exportBtn.addEventListener('click', () => {
-            exportModal.classList.add('active');
-            updateExportSummary();
-        });
-    }
-    
-    if (exportModalClose) {
-        exportModalClose.addEventListener('click', () => {
-            exportModal.classList.remove('active');
-        });
-    }
-    
-    if (exportCancel) {
-        exportCancel.addEventListener('click', () => {
-            exportModal.classList.remove('active');
-        });
-    }
-    
-    if (exportModal) {
-        exportModal.addEventListener('click', (e) => {
-            if (e.target === exportModal) {
-                exportModal.classList.remove('active');
-            }
-        });
-    }
-    
-    initializeExportFilters();
-    initializeDatePresets();
-    if (exportPreview) {
-        exportPreview.addEventListener('click', showExportPreview);
-    }
-    
-    if (exportDownload) {
-        exportDownload.addEventListener('click', performExport);
-    }
-}
-
-function initializeExportFilters() {
-    const allCheckbox = document.getElementById('exportAll');
-    const statusCheckboxes = document.querySelectorAll('#exportActive, #exportPending, #exportCompleted, #exportCancelled, #exportExpired');
-    const specialCheckboxes = document.querySelectorAll('#exportWithIssues, #exportHighValue, #exportRecentUpdates');
-    
-    if (allCheckbox) {
-        allCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                // Uncheck all specific filters
-                [...statusCheckboxes, ...specialCheckboxes].forEach(cb => {
-                    cb.checked = false;
-                });
-            }
-            updateExportSummary();
-        });
-    }
-    
-    [...statusCheckboxes, ...specialCheckboxes].forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            if (this.checked && allCheckbox) {
-                allCheckbox.checked = false;
-            }
-            updateExportSummary();
-        });
-    });
-    
-    const startDate = document.getElementById('exportStartDate');
-    const endDate = document.getElementById('exportEndDate');
-    
-    if (startDate) {
-        startDate.addEventListener('change', updateExportSummary);
-    }
-    
-    if (endDate) {
-        endDate.addEventListener('change', updateExportSummary);
-    }
-}
-
-function initializeDatePresets() {
-    const presetButtons = document.querySelectorAll('.preset-btn');
-    const startDateInput = document.getElementById('exportStartDate');
-    const endDateInput = document.getElementById('exportEndDate');
-    
-    presetButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            presetButtons.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            
-            const days = parseInt(this.dataset.preset);
-            const endDate = new Date();
-            const startDate = new Date();
-            startDate.setDate(endDate.getDate() - days);
-            
-            if (startDateInput) {
-                startDateInput.value = startDate.toISOString().split('T')[0];
-            }
-            if (endDateInput) {
-                endDateInput.value = endDate.toISOString().split('T')[0];
-            }
-            
-            updateExportSummary();
-        });
-    });
-}
-
-function updateExportSummary() {
-    const selectedFilters = getSelectedFilters();
-    const estimatedCount = calculateEstimatedCount(selectedFilters);
-    
-    const summaryText = document.getElementById('exportSummaryText');
-    const countElement = document.getElementById('estimatedCount');
-    
-    if (summaryText && countElement) {
-        if (selectedFilters.all) {
-            summaryText.textContent = 'Ready to export all contracts';
-        } else if (selectedFilters.statuses.length > 0 || selectedFilters.special.length > 0) {
-            const filterNames = [...selectedFilters.statuses, ...selectedFilters.special];
-            summaryText.textContent = `Ready to export: ${filterNames.join(', ')}`;
-        } else {
-            summaryText.textContent = 'Select filters to export specific contracts';
-        }
-        
-        countElement.textContent = `Estimated: ${estimatedCount} contracts`;
-    }
-}
-
-function getSelectedFilters() {
-    const filters = {
-        all: document.getElementById('exportAll')?.checked || false,
-        statuses: [],
-        special: [],
-        dateRange: {
-            start: document.getElementById('exportStartDate')?.value || null,
-            end: document.getElementById('exportEndDate')?.value || null
-        },
-        format: document.querySelector('input[name="exportFormat"]:checked')?.value || 'excel'
-    };
-    
-    const statusMap = {
-        'exportActive': 'Active',
-        'exportPending': 'Pending',
-        'exportCompleted': 'Completed',
-        'exportCancelled': 'Cancelled',
-        'exportExpired': 'Expired'
-    };
-    
-    Object.keys(statusMap).forEach(id => {
-        if (document.getElementById(id)?.checked) {
-            filters.statuses.push(statusMap[id]);
-        }
-    });
-    
-    const specialMap = {
-        'exportWithIssues': 'With Issues',
-        'exportHighValue': 'High Value',
-        'exportRecentUpdates': 'Recently Updated'
-    };
-    
-    Object.keys(specialMap).forEach(id => {
-        if (document.getElementById(id)?.checked) {
-            filters.special.push(specialMap[id]);
-        }
-    });
-    
-    return filters;
-}
-
-function calculateEstimatedCount(filters) {
-    const allContracts = document.querySelectorAll('.contract-card');
-    let estimatedCount = 0;
-    
-    if (filters.all) {
-        estimatedCount = allContracts.length;
-    } else {
-        allContracts.forEach(card => {
-            let matches = false;
-            
-            if (filters.statuses.length > 0) {
-                const cardStatus = card.querySelector('.contract-status');
-                if (cardStatus) {
-                    const statusText = cardStatus.textContent.trim().toLowerCase();
-                    matches = filters.statuses.some(status => 
-                        statusText.includes(status.toLowerCase())
-                    );
-                }
-            }
-            
-            if (filters.special.length > 0) {
-                filters.special.forEach(special => {
-                    if (special === 'With Issues' && Math.random() > 0.7) matches = true;
-                    else if (special === 'High Value' && Math.random() > 0.6) matches = true;
-                    else if (special === 'Recently Updated' && Math.random() > 0.5) matches = true;
-                });
-            }
-            
-            if (matches) estimatedCount++;
-        });
-    }
-    
-    return estimatedCount;
-}
-
-function showExportPreview() {
-    const filters = getSelectedFilters();
-    const previewWindow = window.open('', '_blank', 'width=800,height=600');
-    previewWindow.document.write(`
-        <html>
-            <head>
-                <title>Export Preview - FixLanka Contracts</title>
-                <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                    th { background-color: #0abab5; color: white; }
-                    tr:nth-child(even) { background-color: #f9f9f9; }
-                    .header { color: #0abab5; border-bottom: 2px solid #0abab5; padding-bottom: 10px; }
-                    .filters { background: #f0f9ff; padding: 15px; border-radius: 8px; margin: 10px 0; }
-                </style>
-            </head>
-            <body>
-                <h1 class="header">FixLanka Contracts Export Preview</h1>
-                <div class="filters">
-                    <strong>Export Format:</strong> ${filters.format.toUpperCase()}<br>
-                    <strong>Filters Applied:</strong> ${filters.all ? 'All Contracts' : [...filters.statuses, ...filters.special].join(', ') || 'None'}<br>
-                    ${filters.dateRange.start ? `<strong>Date Range:</strong> ${filters.dateRange.start} to ${filters.dateRange.end || 'Present'}` : ''}
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Contract ID</th>
-                            <th>Project Title</th>
-                            <th>Client</th>
-                            <th>Status</th>
-                            <th>Value</th>
-                            <th>Progress</th>
-                            <th>Start Date</th>
-                            <th>End Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${generatePreviewData(filters)}
-                    </tbody>
-                </table>
-                <div style="margin-top: 20px; text-align: center;">
-                    <button onclick="window.print()" style="background: #0abab5; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Print Preview</button>
-                    <button onclick="window.close()" style="background: #6b7280; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-left: 10px;">Close</button>
-                </div>
-            </body>
-        </html>
+            border-left: 4px solid ${colors[type]};
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+        ">
+            <i class="fas fa-${icons[type]}" style="font-size: 20px;"></i>
+            <span>${message}</span>
+        </div>
     `);
-    previewWindow.document.close();
-}
-
-function generatePreviewData(filters) {
-    const sampleData = [
-        { id: 'CNT-001', title: 'Smart Home Installation', client: 'John Smith', status: 'Active', value: '$2,500', progress: '75%', start: '2024-01-15', end: '2024-03-15' },
-        { id: 'CNT-002', title: 'Office Network Setup', client: 'TechCorp Ltd', status: 'Pending', value: '$5,200', progress: '25%', start: '2024-02-01', end: '2024-04-01' },
-        { id: 'CNT-003', title: 'Server Maintenance', client: 'DataFlow Inc', status: 'Completed', value: '$1,800', progress: '100%', start: '2023-12-01', end: '2024-01-01' },
-        { id: 'CNT-004', title: 'Security System Upgrade', client: 'SafeGuard Co', status: 'Active', value: '$3,400', progress: '60%', start: '2024-01-20', end: '2024-03-20' },
-        { id: 'CNT-005', title: 'Mobile App Development', client: 'StartupXYZ', status: 'Cancelled', value: '$8,000', progress: '30%', start: '2023-11-15', end: '2024-02-15' }
-    ];
     
-    let filteredData = sampleData;
+    $('body').append(notification);
     
-    if (!filters.all) {
-        filteredData = sampleData.filter(item => {
-            if (filters.statuses.length > 0) {
-                return filters.statuses.some(status => 
-                    item.status.toLowerCase().includes(status.toLowerCase())
-                );
-            }
-            return true;
+    setTimeout(function() {
+        notification.fadeOut(function() {
+            $(this).remove();
         });
-    }
-    
-    return filteredData.map(item => `
-        <tr>
-            <td>${item.id}</td>
-            <td>${item.title}</td>
-            <td>${item.client}</td>
-            <td><span style="padding: 4px 8px; border-radius: 4px; background: ${getStatusColor(item.status)}; color: white; font-size: 12px;">${item.status}</span></td>
-            <td>${item.value}</td>
-            <td>${item.progress}</td>
-            <td>${item.start}</td>
-            <td>${item.end}</td>
-        </tr>
-    `).join('');
+    }, 5000);
 }
 
-function getStatusColor(status) {
-    const colors = {
-        'Active': '#10b981',
-        'Pending': '#f59e0b',
-        'Completed': '#3b82f6',
-        'Cancelled': '#ef4444',
-        'Expired': '#6b7280'
-    };
-    return colors[status] || '#6b7280';
-}
-
-function performExport() {
-    const filters = getSelectedFilters();
-    const format = filters.format;
-    const exportBtn = document.getElementById('exportDownload');
-    const originalText = exportBtn.innerHTML;
-    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
-    exportBtn.disabled = true;
-    
-    setTimeout(() => {
-        const timestamp = new Date().toISOString().split('T')[0];
-        const filterSuffix = filters.all ? 'all' : 'filtered';
-        const filename = `fixlanka-contracts-${filterSuffix}-${timestamp}.${format}`;
-        
-        if (format === 'excel') {
-            downloadExcelFile(filename, filters);
-        } else if (format === 'pdf') {
-            downloadPDFFile(filename, filters);
-        } else if (format === 'csv') {
-            downloadCSVFile(filename, filters);
+// Add CSS animation
+$('head').append(`
+    <style>
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
-        
-        exportBtn.innerHTML = originalText;
-        exportBtn.disabled = false;
-        document.getElementById('exportModal').classList.remove('active');
-        showNotification('Export completed successfully!', 'success');
-    }, 2000);
-}
+    </style>
+`);
 
-function downloadExcelFile(filename, filters) {
-    const data = generateExportData(filters);
-    const csvContent = convertToCSV(data);
-    downloadFile(csvContent, filename.replace('.excel', '.xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-}
+// ============================================================================
+// GLOBAL FUNCTION EXPOSURE (for onclick handlers)
+// ============================================================================
 
-function downloadPDFFile(filename, filters) {
-    const data = generateExportData(filters);
-    const pdfContent = generatePDFContent(data, filters);
-    downloadFile(pdfContent, filename, 'application/pdf');
-}
+window.nextStep = nextStep;
+window.prevStep = prevStep;
+window.insertTemplate = insertTemplate;
 
-function downloadCSVFile(filename, filters) {
-    const data = generateExportData(filters);
-    const csvContent = convertToCSV(data);
-    downloadFile(csvContent, filename, 'text/csv');
-}
-
-function generateExportData(filters) {
-    return [
-        ['Contract ID', 'Project Title', 'Client Name', 'Status', 'Contract Value', 'Progress %', 'Start Date', 'End Date', 'Issues'],
-        ['CNT-001', 'Smart Home Installation', 'John Smith', 'Active', '$2,500', '75', '2024-01-15', '2024-03-15', 'None'],
-        ['CNT-002', 'Office Network Setup', 'TechCorp Ltd', 'Pending', '$5,200', '25', '2024-02-01', '2024-04-01', 'Awaiting Documents'],
-        ['CNT-003', 'Server Maintenance', 'DataFlow Inc', 'Completed', '$1,800', '100', '2023-12-01', '2024-01-01', 'None'],
-        ['CNT-004', 'Security System Upgrade', 'SafeGuard Co', 'Active', '$3,400', '60', '2024-01-20', '2024-03-20', 'Signature Required'],
-        ['CNT-005', 'Mobile App Development', 'StartupXYZ', 'Cancelled', '$8,000', '30', '2023-11-15', '2024-02-15', 'Client Cancellation']
-    ];
-}
-
-function convertToCSV(data) {
-    return data.map(row => 
-        row.map(cell => `"${cell}"`).join(',')
-    ).join('\n');
-}
-
-function generatePDFContent(data, filters) {
-    return `PDF content for contracts export with filters: ${JSON.stringify(filters)}`;
-}
-
-function downloadFile(content, filename, mimeType) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    initializeContractsPage();
-    initializeExportModal();
-});
+console.log('Contract creation system loaded successfully');

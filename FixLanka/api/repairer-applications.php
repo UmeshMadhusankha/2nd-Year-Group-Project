@@ -214,9 +214,41 @@ function approveApplication($db) {
     }
     
     try {
+        $db->beginTransaction();
+
         $sql = "UPDATE repairer_applications SET status = 'approved' WHERE application_id = ?";
         $stmt = $db->prepare($sql);
         $stmt->execute([$application_id]);
+
+        // Automated Onboarding Feature
+        // 1. Get application details
+        $sql = "SELECT jp.company_id, ra.repairer_id, jp.employment_type, ra.expected_rate
+                FROM repairer_applications ra
+                JOIN job_postings jp ON ra.job_posting_id = jp.posting_id
+                WHERE ra.application_id = ?";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$application_id]);
+        $appDetails = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($appDetails) {
+            // 2. Insert into company_employees
+            $sql = "INSERT INTO company_employees (
+                        company_id, repairer_id, job_title, employment_type,
+                        status, hired_date, hourly_rate
+                    ) VALUES (
+                        ?, ?, 'Freelancer', ?,
+                        'active', CURDATE(), ?
+                    ) ON DUPLICATE KEY UPDATE status = 'active'";
+            $stmt = $db->prepare($sql);
+            $stmt->execute([
+                $appDetails['company_id'],
+                $appDetails['repairer_id'],
+                $appDetails['employment_type'],
+                $appDetails['expected_rate']
+            ]);
+        }
+
+        $db->commit();
         
         echo json_encode([
             'success' => true,
@@ -224,6 +256,7 @@ function approveApplication($db) {
         ]);
         
     } catch (PDOException $e) {
+        $db->rollBack();
         echo json_encode([
             'success' => false,
             'error' => 'Failed to approve application: ' . $e->getMessage()
