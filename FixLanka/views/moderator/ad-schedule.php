@@ -19,7 +19,7 @@ require_once __DIR__ . '/../../controllers/AdScheduleController.php';
 
 // ✅ FIXED: Proper PDO initialization
 try {
-    $pdo = getDatabaseConnection();
+    // $pdo is provided by config/database.php
     $controller = new AdScheduleController($pdo);
 } catch (Exception $e) {
     die("⛔ Database Error: " . htmlspecialchars($e->getMessage()));

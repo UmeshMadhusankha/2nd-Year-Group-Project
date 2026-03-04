@@ -16,7 +16,7 @@ require_once __DIR__ . '/_components/Common.php';
 require_once __DIR__ . '/../../config/database.php';
 
 try {
-    $pdo = getDatabaseConnection();
+    // $pdo is provided by config/database.php
     require_once __DIR__ . '/../../controllers/AdvertisementController.php';
     $controller = new AdvertisementController($pdo);
     

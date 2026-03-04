@@ -11,7 +11,7 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../controllers/ModeratorDashboardController.php';
 
 try {
-    $pdo = getDatabaseConnection();
+    // $pdo is provided by config/database.php
     $controller = new ModeratorDashboardController($pdo);
     
     $dashboardData = $controller->getDashboardData();

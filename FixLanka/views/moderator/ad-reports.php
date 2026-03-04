@@ -22,7 +22,7 @@ $currentPath = '/2nd-Year-Group-Project/FixLanka/moderator-ad-reports';
 
 // Initialize PDO Connection ✅ FIXED
 try {
-    $pdo = getDatabaseConnection();
+    // $pdo is provided by config/database.php
     $controller = new AdReportController($pdo);
 
     // Handle POST requests
