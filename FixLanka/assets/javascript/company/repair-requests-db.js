@@ -227,7 +227,7 @@ function renderAvailableRequests() {
 function createRequestCard(request) {
     const urgencyClass = request.urgency === 'urgent' ? 'high' : 'low';
     const urgencyText = request.urgency === 'urgent' ? 'High Priority' : 'Low Priority';
-    const initials = getInitials(request.customer_fname, request.customer_lname);
+    const initials = getInitialsFromFullName(request.customer_name || '');
     const datePosted = formatTimeAgo(request.created_at);
     const hasAttachments = request.photos && request.photos.length > 0;
 
@@ -261,7 +261,7 @@ function createRequestCard(request) {
             <div class="customer-info">
                 <div class="customer-avatar">${initials}</div>
                 <div class="customer-details">
-                    <h4>${escapeHtml(request.customer_fname + ' ' + request.customer_lname)}</h4>
+                    <h4>${escapeHtml(request.customer_name || 'Unknown Customer')}</h4>
                 </div>
                 <a href="#" class="view-profile-btn" onclick="event.preventDefault();">View Profile</a>
             </div>
