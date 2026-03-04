@@ -74,24 +74,24 @@ try {
                 provider_type,
                 title,
                 description,
-                category,
+                category_id,
                 image_url,
                 type,
                 budget,
                 start_date,
                 end_date,
-                view_count as impressions,
-                click_count as clicks,
+                impressions,
+                clicks,
                 -- Calculate click-through rate (CTR)
                 CASE 
-                    WHEN click_count > 0 AND view_count > 0 
-                    THEN ROUND((click_count / view_count) * 100, 2)
+                    WHEN clicks > 0 AND impressions > 0 
+                    THEN ROUND((clicks / impressions) * 100, 2)
                     ELSE 0.00
                 END as click_through_rate,
                 0.00 as budget_spent,
                 status,
                 submission_date as created_at,
-                updated_at,
+                NULL as updated_at,
                 -- Compute dynamic status based on dates
                 CASE 
                     WHEN start_date > CURDATE() THEN 'scheduled'
@@ -223,13 +223,11 @@ function handleCreateAdvertisement() {
         
         // Insert into database
         $query = "INSERT INTO advertisement (
-                    provider_id, provider_type, title, description, category, 
-                    image_url, type, budget, priority, target_url, 
-                    start_date, end_date, status, submission_date
+                    provider_id, provider_type, title, description, category_id, 
+                    image_url, type, budget, start_date, end_date, status, submission_date
                   ) VALUES (
-                    :provider_id, 'company', :title, :description, :category,
-                    :image_url, :type, :budget, :priority, :target_url,
-                    :start_date, :end_date, 'pending', NOW()
+                    :provider_id, 'company', :title, :description, :category_id,
+                    :image_url, :type, :budget, :start_date, :end_date, 'pending', NOW()
                   )";
         
         $stmt = $pdo->prepare($query);
@@ -237,12 +235,10 @@ function handleCreateAdvertisement() {
             ':provider_id' => $companyId,
             ':title' => $title,
             ':description' => $description,
-            ':category' => $category,
+            ':category_id' => intval($category) ?: 1,
             ':image_url' => $imageUrl,
             ':type' => $type,
             ':budget' => $budget,
-            ':priority' => $priorityPlacement,
-            ':target_url' => $targetUrl,
             ':start_date' => $startDate,
             ':end_date' => $endDate
         ]);
