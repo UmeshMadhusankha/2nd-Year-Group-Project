@@ -1,11 +1,12 @@
-﻿// CRUD Operations for Notifications
+// CRUD Operations for Notifications
 // Handles Create, Read, Update, Delete operations with API
 
 let allNotificationsData = [];
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    
+    console.log('[CRUD] Initializing notification CRUD module...');
+    console.log('[CRUD] API URL:', window.API_URL);
     
     // Hide loading overlay initially
     hideLoadingOverlay();
@@ -26,17 +27,20 @@ function setupNotificationForm() {
         return;
     }
 
-    
+    console.log('[CRUD] Setting up notification form submit handler');
+
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         e.stopPropagation(); // Prevent other handlers
         
+        console.log('[CRUD] Form submitted - CREATE operation started');
         
         const formData = new FormData(this);
         formData.set('action', 'add');
         
         // Log form data
-        ,
+        console.log('[CRUD] Form data:', {
+            title: formData.get('title'),
             message: formData.get('message'),
             recipients: formData.get('recipients'),
             action: formData.get('action')
@@ -50,14 +54,16 @@ function setupNotificationForm() {
         sendBtnText.textContent = 'Sending...';
         
         try {
-            
+            console.log('[CRUD] Fetching API:', window.API_URL);
             const response = await fetch(window.API_URL, {
                 method: 'POST',
                 body: formData
             });
             
+            console.log('[CRUD] API Response status:', response.status);
             
             const result = await response.json();
+            console.log('[CRUD] API Response data:', result);
             
             if (result.success) {
                 showSuccessAlert(result.message || 'Notification sent successfully');
@@ -87,16 +93,19 @@ function setupEditNotificationForm() {
         return;
     }
 
-    
+    console.log('[CRUD] Setting up edit notification form submit handler');
+
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         e.stopPropagation(); // Prevent other handlers
         
+        console.log('[CRUD] Edit form submitted - UPDATE operation started');
         
         const formData = new FormData(this);
         
         // Log form data
-        ,
+        console.log('[CRUD] Update form data:', {
+            notification_id: formData.get('notification_id'),
             title: formData.get('title'),
             message: formData.get('message'),
             recipients: formData.get('recipients'),
@@ -113,14 +122,15 @@ function setupEditNotificationForm() {
         if (updateBtnLoader) updateBtnLoader.style.display = 'inline';
         
         try {
-            
+            console.log('[CRUD] Fetching API for UPDATE:', window.API_URL);
             const response = await fetch(window.API_URL, {
                 method: 'POST',
                 body: formData
             });
             
-            
+            console.log('[CRUD] UPDATE Response status:', response.status);
             const result = await response.json();
+            console.log('[CRUD] UPDATE Response data:', result);
             
             if (result.success) {
                 showSuccessAlert(result.message || 'Notification updated successfully');
@@ -179,16 +189,19 @@ function setupDeleteNotificationForm() {
  * Load notifications from API
  */
 async function loadNotificationsFromAPI() {
-    
+    console.log('[CRUD] Loading notifications from API...');
+    console.log('[CRUD] API URL:', `${window.API_URL}?action=getRecent&limit=5`);
     
     try {
         const response = await fetch(`${window.API_URL}?action=getRecent&limit=5`);
+        console.log('[CRUD] Load response status:', response.status);
         
         const result = await response.json();
+        console.log('[CRUD] Load response data:', result);
         
         if (result.success) {
             allNotificationsData = result.data;
-            
+            console.log('[CRUD] Loaded notifications:', allNotificationsData);
             renderNotificationsList(result.data);
         } else {
             console.error('[CRUD] Failed to load notifications:', result.message);
@@ -294,7 +307,8 @@ function renderNotificationsList(notifications) {
  * Edit notification - Open modal with data
  */
 function editNotification(notificationId) {
-    
+    console.log('[CRUD] Edit notification clicked:', notificationId);
+    console.log('[CRUD] All notifications data:', allNotificationsData);
     
     const notification = allNotificationsData.find(n => parseInt(n.notification_id) === parseInt(notificationId));
     
@@ -304,7 +318,8 @@ function editNotification(notificationId) {
         return;
     }
 
-    
+    console.log('[CRUD] Found notification:', notification);
+
     // Map recipient type back to form values
     const recipientFormMap = {
         'all': 'all',
@@ -314,14 +329,15 @@ function editNotification(notificationId) {
     };
 
     const mappedRecipient = recipientFormMap[notification.recipient_type] || 'all';
-    
+    console.log('[CRUD] Mapped recipient:', notification.recipient_type, '->', mappedRecipient);
+
     // Populate form fields
     document.getElementById('editNotificationId').value = notification.notification_id;
     document.getElementById('editTitle').value = notification.title;
     document.getElementById('editMessage').value = notification.message;
     document.getElementById('editRecipients').value = mappedRecipient;
     
-    
+    console.log('[CRUD] Form populated, opening modal...');
     openEditModal();
 }
 
@@ -337,15 +353,16 @@ function deleteNotificationConfirm(notificationId) {
  * Open edit modal
  */
 function openEditModal() {
-    
+    console.log('[CRUD] openEditModal called');
     const modal = document.getElementById('editNotificationModal');
+    console.log('[CRUD] Modal element:', modal);
     
     if (modal) {
-        
+        console.log('[CRUD] Adding .active class to modal');
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
-        
-        .display);
+        console.log('[CRUD] Modal classes:', modal.className);
+        console.log('[CRUD] Modal display style:', window.getComputedStyle(modal).display);
     } else {
         console.error('[CRUD] Modal element not found!');
     }
@@ -491,4 +508,4 @@ function hideLoadingOverlay() {
     }
 }
 
-
+console.log('Notification CRUD module loaded successfully');

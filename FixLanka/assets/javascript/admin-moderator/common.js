@@ -74,7 +74,7 @@ function initializeSearch() {
  * Perform search operation
  */
 function performSearch(query) {
-    
+    console.log('Searching for:', query);
     // In a real application, this would make an API call
     // For now, just show a simple message
     showSearchResults(query);
@@ -86,7 +86,7 @@ function performSearch(query) {
 function showSearchResults(query) {
     // This would typically show a dropdown or navigate to search results page
     // For now, just log to console
-    
+    console.log(`Search results for: ${query}`);
 }
 
 /**
@@ -192,6 +192,7 @@ function handleNotificationClick(notificationItem) {
     
     // Get notification details and perform action
     const title = notificationItem.querySelector('.notification-title')?.textContent;
+    console.log('Notification clicked:', title);
     
     // You can add navigation or modal display here
     // For example:
@@ -210,7 +211,7 @@ function markAllNotificationsAsRead() {
     // Update badge count
     updateNotificationBadge();
     
-    
+    console.log('All notifications marked as read');
 }
 
 /**
@@ -332,7 +333,7 @@ function handleProfileMenuAction(action) {
             handleLogout();
             break;
         default:
-            
+            console.log('Unknown action:', action);
     }
     
     closeProfileMenu();
@@ -476,3 +477,157 @@ function handleSidebarToggle() {
 
 // Initialize sidebar toggle handling
 document.addEventListener('DOMContentLoaded', handleSidebarToggle);
+
+// ============================================
+// AD SCHEDULING MODAL FUNCTIONS
+// ============================================
+
+/**
+ * Validate create schedule form
+ */
+function validateScheduleForm() {
+    const adId = document.getElementById('ad_id');
+    const startDate = document.getElementById('start_date');
+    const endDate = document.getElementById('end_date');
+    
+    if (!adId || !adId.value) {
+        showToast('Please select an advertisement', 'error');
+        if (adId) adId.focus();
+        return false;
+    }
+    
+    if (!startDate || !startDate.value) {
+        showToast('Please select a start date', 'error');
+        if (startDate) startDate.focus();
+        return false;
+    }
+    
+    if (!endDate || !endDate.value) {
+        showToast('Please select an end date', 'error');
+        if (endDate) endDate.focus();
+        return false;
+    }
+    
+    const start = new Date(startDate.value);
+    const end = new Date(endDate.value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (start < today) {
+        showToast('Start date cannot be in the past', 'error');
+        startDate.focus();
+        return false;
+    }
+    
+    if (end < start) {
+        showToast('End date must be after start date', 'error');
+        endDate.focus();
+        return false;
+    }
+    
+    return true;
+}
+
+/**
+ * Validate edit schedule form
+ */
+function validateEditForm() {
+    const startDate = document.getElementById('edit_start_date');
+    const endDate = document.getElementById('edit_end_date');
+    
+    if (!startDate || !startDate.value || !endDate || !endDate.value) {
+        showToast('Please fill in all required fields', 'error');
+        return false;
+    }
+    
+    const start = new Date(startDate.value);
+    const end = new Date(endDate.value);
+    
+    if (end < start) {
+        showToast('End date must be after start date', 'error');
+        if (endDate) endDate.focus();
+        return false;
+    }
+    
+    return true;
+}
+
+/**
+ * Populate edit modal with schedule data
+ */
+function editSchedule(schedule) {
+    if (!schedule || !schedule.schedule_id) {
+        console.error('Invalid schedule data:', schedule);
+        showToast('Error loading schedule data', 'error');
+        return;
+    }
+    
+    document.getElementById('edit_schedule_id').value = schedule.schedule_id;
+    document.getElementById('edit_start_date').value = schedule.start_date;
+    document.getElementById('edit_end_date').value = schedule.end_date;
+    document.getElementById('edit_start_time').value = schedule.start_time || '00:00';
+    document.getElementById('edit_end_time').value = schedule.end_time || '23:59';
+    
+    openModal('editAdModal');
+}
+
+/**
+ * Generic modal open function
+ */
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) {
+        console.error('Modal not found:', modalId);
+        return;
+    }
+    
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    
+    setTimeout(() => {
+        const firstInput = modal.querySelector('input:not([type="hidden"]), select, textarea');
+        if (firstInput) firstInput.focus();
+    }, 100);
+}
+
+/**
+ * Generic modal close function
+ */
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) {
+        console.error('Modal not found:', modalId);
+        return;
+    }
+    
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+    
+    const form = modal.querySelector('form');
+    if (form) form.reset();
+}
+
+// Auto-close modals on Escape or overlay click
+document.addEventListener('DOMContentLoaded', function() {
+    const modalOverlays = document.querySelectorAll('.modal-overlay');
+    
+    modalOverlays.forEach(overlay => {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                closeModal(overlay.id);
+            }
+        });
+    });
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            modalOverlays.forEach(overlay => {
+                if (overlay.classList.contains('show')) {
+                    closeModal(overlay.id);
+                }
+            });
+        }
+    });
+});
+
+console.log('âœ… Ad Scheduling functions loaded');

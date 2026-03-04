@@ -6,13 +6,14 @@ function renderAdminSidebar($currentPath, $basePath)
     $currentPath = trim($currentPath, '/');
 
     $menuItems = [
-        ['title' => 'Dashboard', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-dashboard', 'icon' => 'home'],
-        ['title' => 'Moderator Management', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-moderators', 'icon' => 'users'],
-        ['title' => 'Send Alerts', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-alerts', 'icon' => 'alert-triangle'],
-        ['title' => 'Issues & Reports', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-issues', 'icon' => 'message-square'],
-        ['title' => 'Analytics', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-analytics', 'icon' => 'bar-chart-3'],
-        ['title' => 'Advertisement Review', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-ads', 'icon' => 'monitor'],
-        ['title' => 'Financial Overview', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-finance', 'icon' => 'dollar-sign']
+        ['title' => 'Dashboard', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-dashboard', 'icon' => 'fa-home'],
+        ['title' => 'Moderator Management', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-moderators', 'icon' => 'fa-users'],
+        ['title' => 'Account Moderation', 'url' => '/2nd-Year-Group-Project/FixLanka/views/admin/account-moderation.php', 'icon' => 'fa-shield'],
+        ['title' => 'Send Alerts', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-alerts', 'icon' => 'fa-triangle-exclamation'],
+        ['title' => 'Issues & Reports', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-issues', 'icon' => 'fa-message'],
+        ['title' => 'Analytics', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-analytics', 'icon' => 'fa-chart-bar'],
+        ['title' => 'Advertisement Review', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-ads', 'icon' => 'fa-desktop'],
+        ['title' => 'Financial Overview', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-finance', 'icon' => 'fa-dollar-sign']
     ];
 
     echo '<!-- Sidebar Component -->';
@@ -26,7 +27,7 @@ function renderAdminSidebar($currentPath, $basePath)
 
         echo '<li class="nav-item ' . $activeClass . '">';
         echo '<a href="' . htmlspecialchars($item['url']) . '" class="nav-link" data-tooltip="' . htmlspecialchars($item['title']) . '">';
-        echo '<i data-lucide="' . htmlspecialchars($item['icon']) . '" class=""></i>';
+        echo '<i class="fa-solid ' . htmlspecialchars($item['icon']) . '"></i>';
         echo '<span>' . htmlspecialchars($item['title']) . '</span>';
         echo '</a>';
         echo '</li>';

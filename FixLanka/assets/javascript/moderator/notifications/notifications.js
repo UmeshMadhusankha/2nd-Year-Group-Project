@@ -1,4 +1,4 @@
-﻿// Main Notifications JavaScript
+// Main Notifications JavaScript
 
 // Global variables
 let currentView = "list"
@@ -45,7 +45,8 @@ function loadNotifications() {
   showLoading()
 
   try {
-    
+    console.log("[v0] Using embedded notifications:", window.allNotifications)
+
     if (window.allNotifications && Array.isArray(window.allNotifications)) {
       filteredNotifications = [...window.allNotifications]
 
