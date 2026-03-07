@@ -12,11 +12,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/topbar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/profile.css">
+    <link rel="stylesheet" href="../../../assets/css/common/global.css">
+    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/profile.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -25,10 +25,10 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <!-- Dashboard Container -->
     <div class="dashboard-container">
         <!-- Include Topbar -->
-        <?php require_once __DIR__ . '/../common/topbar.php'; ?>
+        <?php include '../common/topbar.php'; ?>
 
         <!-- Include Sidebar -->
-        <?php require_once __DIR__ . '/../common/sidebar.php'; ?>
+        <?php include '../common/sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content-wrapper">
@@ -130,11 +130,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                             </div>
                                             <div class="form-group">
                                                 <label for="email" class="form-label">Email Address</label>
-                                                <input type="email" id="email" name="email" class="form-input" value="user@gmail.com" readonly required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address">
+                                                <input type="email" id="email" name="email" class="form-input" value="john.doe@fixlanka.com" readonly>
                                             </div>
                                             <div class="form-group">
                                                 <label for="phone" class="form-label">Phone Number</label>
-                                                <input type="tel" id="phone" name="phone" class="form-input" value="0701122333" readonly required pattern="[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}" title="Please enter a valid phone number (e.g., 0771234567 or +94771234567)">
+                                                <input type="tel" id="phone" name="phone" class="form-input" value="+1 (555) 123-4567" readonly>
                                             </div>
                                             <div class="form-group">
                                                 <label for="service-category" class="form-label">Service Category</label>
@@ -147,111 +147,36 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                                     <option value="carpentry">Carpentry</option>
                                                 </select>
                                             </div>
-                                            <div class="form-group form-group-full">
-                                                <label class="form-label">Working Districts</label>
-                                                <div class="checkbox-grid" id="working-districts">
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Ampara" disabled>
-                                                        <span>Ampara</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Anuradhapura" disabled>
-                                                        <span>Anuradhapura</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Badulla" disabled>
-                                                        <span>Badulla</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Batticaloa" disabled>
-                                                        <span>Batticaloa</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Colombo" checked disabled>
-                                                        <span>Colombo</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Galle" disabled>
-                                                        <span>Galle</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Gampaha" checked disabled>
-                                                        <span>Gampaha</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Hambantota" disabled>
-                                                        <span>Hambantota</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Jaffna" disabled>
-                                                        <span>Jaffna</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Kalutara" checked disabled>
-                                                        <span>Kalutara</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Kandy" disabled>
-                                                        <span>Kandy</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Kegalle" disabled>
-                                                        <span>Kegalle</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Kilinochchi" disabled>
-                                                        <span>Kilinochchi</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Kurunegala" disabled>
-                                                        <span>Kurunegala</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Mannar" disabled>
-                                                        <span>Mannar</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Matale" disabled>
-                                                        <span>Matale</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Matara" disabled>
-                                                        <span>Matara</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Monaragala" disabled>
-                                                        <span>Monaragala</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Mullaitivu" disabled>
-                                                        <span>Mullaitivu</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Nuwara Eliya" disabled>
-                                                        <span>Nuwara Eliya</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Polonnaruwa" disabled>
-                                                        <span>Polonnaruwa</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Puttalam" disabled>
-                                                        <span>Puttalam</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Ratnapura" disabled>
-                                                        <span>Ratnapura</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Trincomalee" disabled>
-                                                        <span>Trincomalee</span>
-                                                    </label>
-                                                    <label class="checkbox-item">
-                                                        <input type="checkbox" name="districts[]" value="Vavuniya" disabled>
-                                                        <span>Vavuniya</span>
-                                                    </label>
-                                                </div>
-                                                <small class="form-hint">Select all districts where you provide services</small>
+                                            <div class="form-group">
+                                                <label for="district" class="form-label">Working District</label>
+                                                <select id="district" name="district" class="form-select" disabled>
+                                                    <option value="">Select District</option>
+                                                    <option value="colombo">Colombo</option>
+                                                    <option value="gampaha">Gampaha</option>
+                                                    <option value="kalutara">Kalutara</option>
+                                                    <option value="kandy">Kandy</option>
+                                                    <option value="matale">Matale</option>
+                                                    <option value="nuwara-eliya">Nuwara Eliya</option>
+                                                    <option value="galle">Galle</option>
+                                                    <option value="matara">Matara</option>
+                                                    <option value="hambantota">Hambantota</option>
+                                                    <option value="jaffna">Jaffna</option>
+                                                    <option value="kilinochchi">Kilinochchi</option>
+                                                    <option value="mannar">Mannar</option>
+                                                    <option value="vavuniya">Vavuniya</option>
+                                                    <option value="mullaitivu">Mullaitivu</option>
+                                                    <option value="batticaloa">Batticaloa</option>
+                                                    <option value="ampara">Ampara</option>
+                                                    <option value="trincomalee">Trincomalee</option>
+                                                    <option value="kurunegala">Kurunegala</option>
+                                                    <option value="puttalam">Puttalam</option>
+                                                    <option value="anuradhapura">Anuradhapura</option>
+                                                    <option value="polonnaruwa">Polonnaruwa</option>
+                                                    <option value="badulla">Badulla</option>
+                                                    <option value="moneragala">Moneragala</option>
+                                                    <option value="ratnapura">Ratnapura</option>
+                                                    <option value="kegalle">Kegalle</option>
+                                                </select>
                                             </div>
                                             <div class="form-group">
                                                 <label for="availability" class="form-label">Current Availability</label>
@@ -355,7 +280,6 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
         </div>
     </div>
 
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/profile.js"></script>
+    <script src="../../../assets/javascript/repairer/profile.js"></script>
 </body>
 </html>
-

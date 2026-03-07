@@ -1,148 +1,6 @@
-﻿// ================================================
+// ================================================
 // EARNINGS PAGE JAVASCRIPT
 // ================================================
-
-// Mock earnings data
-const earningsData = {
-    customer: [
-        {
-            id: 1,
-            jobTitle: 'Kitchen Sink Repair',
-            category: 'Plumbing',
-            customerName: 'Sarah Fernando',
-            location: 'Colombo 07',
-            contact: '+94 77 123 4567',
-            date: '2025-09-01',
-            completedTime: '3:45 PM',
-            duration: '2.5 hours',
-            serviceFee: 2800,
-            platformFee: 280,
-            materialsCost: 500,
-            totalEarned: 3020,
-            paymentMethod: 'Cash',
-            transactionId: 'TXN-2025-09-001',
-            status: 'paid',
-            rating: 5.0,
-            description: 'Repaired leaking kitchen sink faucet, replaced worn-out washers, and installed new O-rings. Also cleaned the drain and checked all connections for potential issues.',
-            timeline: [
-                { event: 'Job Requested', date: '2025-09-01', time: '9:00 AM' },
-                { event: 'Job Accepted', date: '2025-09-01', time: '9:15 AM' },
-                { event: 'Work Started', date: '2025-09-01', time: '11:00 AM' },
-                { event: 'Work Completed', date: '2025-09-01', time: '1:30 PM' },
-                { event: 'Payment Received', date: '2025-09-01', time: '3:45 PM' }
-            ]
-        },
-        {
-            id: 2,
-            jobTitle: 'Ceiling Fan Installation',
-            category: 'Electrical',
-            customerName: 'Kandy Hardware Store',
-            location: 'Kandy',
-            contact: '+94 81 234 5678',
-            date: '2025-08-30',
-            completedTime: '5:20 PM',
-            duration: '3 hours',
-            serviceFee: 4200,
-            platformFee: 420,
-            materialsCost: 1200,
-            totalEarned: 4980,
-            paymentMethod: 'Bank Transfer',
-            transactionId: 'TXN-2025-08-030',
-            status: 'paid',
-            rating: 4.5,
-            description: 'Installed new ceiling fan in the main showroom. Included wiring, mounting bracket installation, and testing. Also provided guidance on maintenance.',
-            timeline: [
-                { event: 'Job Requested', date: '2025-08-29', time: '2:00 PM' },
-                { event: 'Job Accepted', date: '2025-08-29', time: '2:30 PM' },
-                { event: 'Work Started', date: '2025-08-30', time: '2:00 PM' },
-                { event: 'Work Completed', date: '2025-08-30', time: '5:00 PM' },
-                { event: 'Payment Received', date: '2025-08-30', time: '5:20 PM' }
-            ]
-        },
-        {
-            id: 3,
-            jobTitle: 'Air Conditioning Repair',
-            category: 'HVAC',
-            customerName: 'Priya Wickramasinghe',
-            location: 'Nugegoda',
-            contact: '+94 77 987 6543',
-            date: '2025-08-29',
-            completedTime: 'Pending',
-            duration: '2 hours',
-            serviceFee: 3500,
-            platformFee: 350,
-            materialsCost: 800,
-            totalEarned: 3950,
-            paymentMethod: 'Pending',
-            transactionId: 'TXN-2025-08-029',
-            status: 'pending',
-            rating: 0,
-            description: 'Diagnosed and repaired AC unit. Replaced faulty compressor relay and recharged refrigerant. Tested all functions before completion.',
-            timeline: [
-                { event: 'Job Requested', date: '2025-08-28', time: '10:00 AM' },
-                { event: 'Job Accepted', date: '2025-08-28', time: '10:30 AM' },
-                { event: 'Work Started', date: '2025-08-29', time: '9:00 AM' },
-                { event: 'Work Completed', date: '2025-08-29', time: '11:00 AM' },
-                { event: 'Awaiting Payment', date: '2025-08-29', time: '11:15 AM' }
-            ]
-        },
-        {
-            id: 4,
-            jobTitle: 'Washing Machine Repair',
-            category: 'Appliance',
-            customerName: 'Nimal Perera',
-            location: 'Maharagama',
-            contact: '+94 71 456 7890',
-            date: '2025-08-28',
-            completedTime: '4:30 PM',
-            duration: '1.5 hours',
-            serviceFee: 2500,
-            platformFee: 250,
-            materialsCost: 600,
-            totalEarned: 2850,
-            paymentMethod: 'Cash',
-            transactionId: 'TXN-2025-08-028',
-            status: 'paid',
-            rating: 4.8,
-            description: 'Fixed washing machine drainage issue. Cleaned filter, replaced drain hose, and checked motor functionality.',
-            timeline: [
-                { event: 'Job Requested', date: '2025-08-27', time: '3:00 PM' },
-                { event: 'Job Accepted', date: '2025-08-27', time: '3:20 PM' },
-                { event: 'Work Started', date: '2025-08-28', time: '3:00 PM' },
-                { event: 'Work Completed', date: '2025-08-28', time: '4:30 PM' },
-                { event: 'Payment Received', date: '2025-08-28', time: '4:30 PM' }
-            ]
-        },
-        {
-            id: 5,
-            jobTitle: 'Bathroom Plumbing Fix',
-            category: 'Plumbing',
-            customerName: 'Kamala Silva',
-            location: 'Dehiwala',
-            contact: '+94 77 234 5678',
-            date: '2025-08-27',
-            completedTime: 'Pending',
-            duration: '1 hour',
-            serviceFee: 1800,
-            platformFee: 180,
-            materialsCost: 300,
-            totalEarned: 1920,
-            paymentMethod: 'Pending',
-            transactionId: 'TXN-2025-08-027',
-            status: 'pending',
-            rating: 0,
-            description: 'Fixed leaking bathroom faucet and toilet flush mechanism. Replaced worn seals and adjusted water flow.',
-            timeline: [
-                { event: 'Job Requested', date: '2025-08-27', time: '8:00 AM' },
-                { event: 'Job Accepted', date: '2025-08-27', time: '8:15 AM' },
-                { event: 'Work Started', date: '2025-08-27', time: '10:00 AM' },
-                { event: 'Work Completed', date: '2025-08-27', time: '11:00 AM' },
-                { event: 'Awaiting Payment', date: '2025-08-27', time: '11:15 AM' }
-            ]
-        }
-    ],
-    company: []
-};
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeEarningsPage();
@@ -212,7 +70,7 @@ function applyFilters() {
     // Update count
     updateFilteredCount(visibleCount, statusFilter, periodFilter);
     
-    
+    console.log(`Applied filters: Period=${periodFilter}, Status=${statusFilter}, Visible=${visibleCount}`);
 }
 
 function updateFilteredCount(count, status, period) {
@@ -329,7 +187,7 @@ function sortEarningsTable(sortBy, direction = 'desc') {
     // Re-append sorted rows
     rows.forEach(row => tbody.appendChild(row));
     
-    `);
+    console.log(`Sorted by: ${sortBy} (${direction})`);
 }
 
 function getDateValue(row) {
@@ -396,138 +254,30 @@ function searchEarnings(searchTerm) {
 
 // ===== EARNINGS ACTIONS =====
 function viewEarningDetails(earningId) {
+    console.log(`Viewing details for earning ID: ${earningId}`);
     
-    // Find the earning data
-    const earning = earningsData.customer.find(e => e.id === earningId);
-    if (!earning) {
-        showNotification('Earning details not found', 'error');
-        return;
-    }
+    showNotification('Opening earning details...', 'info');
     
-    // Update status banner
-    const statusBanner = document.getElementById('earningStatusBanner');
-    const statusIcon = document.getElementById('earningStatusIcon');
-    const statusTitle = document.getElementById('earningStatusTitle');
-    const statusMessage = document.getElementById('earningStatusMessage');
-    
-    statusBanner.className = 'earning-status-banner';
-    if (earning.status === 'paid') {
-        statusBanner.classList.add('paid');
-        statusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
-        statusTitle.textContent = 'Payment Received';
-        statusMessage.textContent = 'This payment has been successfully received';
-    } else {
-        statusBanner.classList.add('pending');
-        statusIcon.innerHTML = '<i class="fas fa-clock"></i>';
-        statusTitle.textContent = 'Payment Pending';
-        statusMessage.textContent = 'Awaiting payment from customer';
-    }
-    
-    // Populate job information
-    document.getElementById('earningJobTitle').textContent = earning.jobTitle;
-    document.getElementById('earningCategory').textContent = earning.category;
-    document.getElementById('earningDate').textContent = formatDateDisplay(earning.date);
-    document.getElementById('earningDuration').textContent = earning.duration;
-    
-    // Populate customer information
-    document.getElementById('earningCustomerName').textContent = earning.customerName;
-    document.getElementById('earningLocation').textContent = earning.location;
-    document.getElementById('earningContact').textContent = earning.contact;
-    
-    // Populate rating
-    const ratingEl = document.getElementById('earningRating');
-    if (earning.rating > 0) {
-        const stars = Array(5).fill(0).map((_, i) => 
-            `<i class="fas fa-star" style="color: ${i < earning.rating ? '#f39c12' : '#ddd'};"></i>`
-        ).join('');
-        ratingEl.innerHTML = `${stars} <span style="margin-left: 8px;">${earning.rating.toFixed(1)}</span>`;
-    } else {
-        ratingEl.innerHTML = '<span style="color: var(--text-secondary);">No rating yet</span>';
-    }
-    
-    // Populate payment breakdown
-    document.getElementById('earningServiceFee').textContent = `LKR ${earning.serviceFee.toLocaleString()}`;
-    document.getElementById('earningPlatformFee').textContent = `- LKR ${earning.platformFee.toLocaleString()}`;
-    document.getElementById('earningMaterialsCost').textContent = `LKR ${earning.materialsCost.toLocaleString()}`;
-    document.getElementById('earningTotalEarned').innerHTML = `<strong>LKR ${earning.totalEarned.toLocaleString()}</strong>`;
-    
-    // Populate payment information
-    document.getElementById('earningPaymentMethod').textContent = earning.paymentMethod;
-    document.getElementById('earningTransactionId').textContent = earning.transactionId;
-    document.getElementById('earningPaymentDate').textContent = earning.status === 'paid' 
-        ? `${formatDateDisplay(earning.date)} - ${earning.completedTime}`
-        : 'Pending';
-    
-    const paymentStatusBadge = document.getElementById('earningPaymentStatus');
-    paymentStatusBadge.textContent = earning.status.charAt(0).toUpperCase() + earning.status.slice(1);
-    paymentStatusBadge.className = `status-badge ${earning.status}`;
-    
-    // Populate description
-    document.getElementById('earningDescription').textContent = earning.description;
-    
-    // Populate timeline
-    const timelineEl = document.getElementById('earningTimeline');
-    timelineEl.innerHTML = '';
-    earning.timeline.forEach(item => {
-        const timelineItem = document.createElement('div');
-        timelineItem.className = 'timeline-item';
-        timelineItem.innerHTML = `
-            <div class="timeline-marker"></div>
-            <div class="timeline-content">
-                <h5>${item.event}</h5>
-                <p>${item.date} at ${item.time}</p>
-            </div>
-        `;
-        timelineEl.appendChild(timelineItem);
-    });
-    
-    // Show/hide reminder button
-    const reminderBtn = document.getElementById('drawerReminderBtn');
-    reminderBtn.style.display = earning.status === 'pending' ? 'inline-flex' : 'none';
-    reminderBtn.onclick = () => sendReminder(earning.id);
-    
-    // Store earning ID for invoice download
-    document.getElementById('earningDetailsDrawer').dataset.earningId = earning.id;
-    
-    // Open drawer
-    document.getElementById('earningDetailsDrawer').classList.add('active');
-}
-
-function closeEarningDetailsDrawer() {
-    document.getElementById('earningDetailsDrawer').classList.remove('active');
-}
-
-function downloadInvoiceFromDrawer() {
-    const earningId = document.getElementById('earningDetailsDrawer').dataset.earningId;
-    downloadInvoice(parseInt(earningId));
-}
-
-function sendReminderFromDrawer() {
-    const earningId = document.getElementById('earningDetailsDrawer').dataset.earningId;
-    sendReminder(parseInt(earningId));
-}
-
-function formatDateDisplay(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-    });
+    // Simulate modal or page navigation
+    setTimeout(() => {
+        alert(`Earning Details for ID: ${earningId}\n\nThis would show:\n- Complete job information\n- Payment breakdown\n- Transaction details\n- Customer information\n- Invoice copy\n- Timeline of events`);
+    }, 500);
 }
 
 function downloadInvoice(earningId) {
+    console.log(`Downloading invoice for earning ID: ${earningId}`);
     
     showNotification('Generating invoice...', 'info');
     
     // Simulate invoice generation and download
     setTimeout(() => {
         showNotification('Invoice downloaded successfully!', 'success');
-        
+        console.log(`Invoice for earning ${earningId} would be downloaded as PDF`);
     }, 1500);
 }
 
 function sendReminder(earningId) {
+    console.log(`Sending payment reminder for earning ID: ${earningId}`);
     
     if (confirm('Send payment reminder to customer? This will notify them about the pending payment.')) {
         showNotification('Sending payment reminder...', 'info');
@@ -544,6 +294,7 @@ function sendReminder(earningId) {
 }
 
 function checkStatus(earningId) {
+    console.log(`Checking payment status for earning ID: ${earningId}`);
     
     showNotification('Checking payment status...', 'info');
     
@@ -588,6 +339,7 @@ function updatePaymentStatus(row, status) {
 }
 
 function loadMoreEarnings() {
+    console.log('Loading more earnings...');
     
     const loadMoreBtn = document.querySelector('.load-more-btn');
     const originalText = loadMoreBtn.innerHTML;
@@ -775,7 +527,7 @@ function updateEarningsSummary() {
     });
     
     // Update summary cards (simplified)
-    
+    console.log(`Updated summary: Total=${totalEarnings}, Monthly=${monthlyEarnings}, Pending=${pendingAmount}`);
 }
 
 // ===== UTILITY FUNCTIONS =====

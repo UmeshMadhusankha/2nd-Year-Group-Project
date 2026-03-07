@@ -5,7 +5,7 @@
             <i class="fas fa-bars"></i>
         </label>
         <div class="logo">
-            <img src="/2nd-Year-Group-Project/FixLanka/assets/images/fixlanka.png" alt="FixLanka" class="logo-image">
+            <img src="../../../assets/images/fixlanka.png" alt="FixLanka" class="logo-image">
         </div>
         <div class="page-info">
             <h1 class="page-title"><?php echo isset($pageTitle) ? $pageTitle : 'Dashboard'; ?></h1>
@@ -86,31 +86,31 @@
             <img src="../common/user.png" alt="Admin" class="profile-avatar">
             <div class="profile-dropdown">
                 <div class="profile-dropdown-header">
-                    <h4 class="profile-dropdown-name">Nimesha</h4>
-                    <p class="profile-dropdown-email">nimesha@gmail.com</p>
+                    <h4 class="profile-dropdown-name">John Doe</h4>
+                    <p class="profile-dropdown-email">john.doe@fixlanka.com</p>
                 </div>
                 <ul class="profile-dropdown-menu">
                     <li class="profile-dropdown-item">
-                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-profile" class="profile-dropdown-link">
+                        <a href="profile.php" class="profile-dropdown-link">
                             <i class="fas fa-user"></i>
                             <span>My Profile</span>
                         </a>
                     </li>
                     <li class="profile-dropdown-item">
-                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-settings" class="profile-dropdown-link">
+                        <a href="settings.php" class="profile-dropdown-link">
                             <i class="fas fa-cog"></i>
                             <span>Settings</span>
                         </a>
                     </li>
                     <li class="profile-dropdown-item">
-                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-upgrade" class="profile-dropdown-link">
+                        <a href="upgrade.php" class="profile-dropdown-link">
                             <i class="fas fa-crown"></i>
                             <span>Upgrade</span>
                         </a>
                     </li>
                     <li class="profile-dropdown-divider"></li>
                     <li class="profile-dropdown-item">
-                        <a href="/2nd-Year-Group-Project/FixLanka/logout" class="profile-dropdown-link logout" data-action="logout">
+                        <a href="#logout" class="profile-dropdown-link logout" data-action="logout">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Logout</span>
                         </a>

@@ -12,11 +12,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Support - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/topbar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/support.css">
+    <link rel="stylesheet" href="../../../assets/css/common/global.css">
+    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/support.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -25,10 +25,10 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <!-- Dashboard Container -->
     <div class="dashboard-container">
         <!-- Include Topbar -->
-        <?php require_once __DIR__ . '/../common/topbar.php'; ?>
+        <?php include '../common/topbar.php'; ?>
 
         <!-- Include Sidebar -->
-        <?php require_once __DIR__ . '/../common/sidebar.php'; ?>
+        <?php include '../common/sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content-wrapper">
@@ -294,8 +294,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     </div>
 
     <!-- Include JavaScript -->
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/support.js"></script>
+    <script src="../../../assets/javascript/common/common.js"></script>
+    <script src="../../../assets/javascript/repairer/support.js"></script>
 </body>
 </html>
-

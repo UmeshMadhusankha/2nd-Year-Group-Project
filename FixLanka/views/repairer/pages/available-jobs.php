@@ -12,11 +12,11 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Available Jobs - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/topbar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/available-jobs.css">
+    <link rel="stylesheet" href="../../../assets/css/common/global.css">
+    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/available-jobs.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -25,10 +25,10 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
     <!-- Dashboard Container -->
     <div class="dashboard-container">
         <!-- Include Topbar -->
-        <?php require_once __DIR__ . '/../common/topbar.php'; ?>
+        <?php include '../common/topbar.php'; ?>
 
         <!-- Include Sidebar -->
-        <?php require_once __DIR__ . '/../common/sidebar.php'; ?>
+        <?php include '../common/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content-wrapper">
@@ -43,11 +43,11 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                             </div>
                             <div class="page-header-stats">
                                 <div class="header-stat">
-                                    <span class="header-stat-number" id="new-jobs-count">0</span>
+                                    <span class="header-stat-number">24</span>
                                     <span class="header-stat-label">New Jobs</span>
                                 </div>
                                 <div class="header-stat">
-                                    <span class="header-stat-number" id="total-jobs-count">0</span>
+                                    <span class="header-stat-number">156</span>
                                     <span class="header-stat-label">Total Available</span>
                                 </div>
                             </div>
@@ -127,185 +127,291 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                         </div>
                     </section>
 
-                    <!-- Tabs Navigation -->
-                    <section class="tabs-section">
-                        <div class="tabs-container">
-                            <button class="tab-button active" data-tab="available-jobs">
-                                <i class="fas fa-briefcase"></i>
-                                Available Jobs
-                                <span class="tab-badge" id="available-jobs-badge">0</span>
-                            </button>
-                            <button class="tab-button" data-tab="submitted-quotes">
-                                <i class="fas fa-file-invoice"></i>
-                                My Quotations
-                                <span class="tab-badge" id="quotes-count-badge">0</span>
-                            </button>
+                    <!-- Jobs Section -->
+                    <section class="jobs-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Available Jobs</h2>
+                            <span class="section-subtitle">6 jobs match your criteria</span>
+                        </div>
+
+                        <div class="jobs-grid">
+                            <!-- Job Card 1 -->
+                            <div class="job-card">
+                                <div class="job-header">
+                                    <div class="job-category-badge plumbing">
+                                        <i class="fas fa-wrench"></i>
+                                        Plumbing
+                                    </div>
+                                    <div class="job-posted">
+                                        <i class="fas fa-clock"></i>
+                                        2 hours ago
+                                    </div>
+                                </div>
+                                
+                                <div class="job-content">
+                                    <h3 class="job-title">Kitchen Sink Repair</h3>
+                                    <div class="job-customer">
+                                        <i class="fas fa-user"></i>
+                                        <span>Sarah Fernando</span>
+                                    </div>
+                                    <div class="job-location">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>Colombo 07, Western Province</span>
+                                    </div>
+                                    <div class="job-schedule">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>Tomorrow, 2:00 PM - 4:00 PM</span>
+                                    </div>
+                                    <div class="job-budget">
+                                        <i class="fas fa-money-bill"></i>
+                                        <span class="budget-amount">LKR 2,500 - 3,500</span>
+                                    </div>
+                                </div>
+
+                                <div class="job-actions">
+                                    <button class="btn btn-secondary job-btn" onclick="viewJobDetails(1)">
+                                        <i class="fas fa-eye"></i>
+                                        View Details
+                                    </button>
+                                    <button class="btn btn-primary job-btn" onclick="submitQuote(1)">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                        Submit Quote
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Job Card 2 -->
+                            <div class="job-card">
+                                <div class="job-header">
+                                    <div class="job-category-badge electrical">
+                                        <i class="fas fa-bolt"></i>
+                                        Electrical
+                                    </div>
+                                    <div class="job-posted">
+                                        <i class="fas fa-clock"></i>
+                                        4 hours ago
+                                    </div>
+                                </div>
+                                
+                                <div class="job-content">
+                                    <h3 class="job-title">Ceiling Fan Installation</h3>
+                                    <div class="job-customer">
+                                        <i class="fas fa-building"></i>
+                                        <span>ABC Trading Company</span>
+                                    </div>
+                                    <div class="job-location">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>Kandy, Central Province</span>
+                                    </div>
+                                    <div class="job-schedule">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>Sept 3, 9:00 AM - 12:00 PM</span>
+                                    </div>
+                                    <div class="job-budget">
+                                        <i class="fas fa-money-bill"></i>
+                                        <span class="budget-amount">LKR 4,000 - 5,000</span>
+                                    </div>
+                                </div>
+
+                                <div class="job-actions">
+                                    <button class="btn btn-secondary job-btn" onclick="viewJobDetails(2)">
+                                        <i class="fas fa-eye"></i>
+                                        View Details
+                                    </button>
+                                    <button class="btn btn-primary job-btn" onclick="submitQuote(2)">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                        Submit Quote
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Job Card 3 -->
+                            <div class="job-card">
+                                <div class="job-header">
+                                    <div class="job-category-badge appliance">
+                                        <i class="fas fa-tv"></i>
+                                        Appliance
+                                    </div>
+                                    <div class="job-posted">
+                                        <i class="fas fa-clock"></i>
+                                        6 hours ago
+                                    </div>
+                                </div>
+                                
+                                <div class="job-content">
+                                    <h3 class="job-title">Washing Machine Repair</h3>
+                                    <div class="job-customer">
+                                        <i class="fas fa-user"></i>
+                                        <span>Nimal Perera</span>
+                                    </div>
+                                    <div class="job-location">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>Nugegoda, Western Province</span>
+                                    </div>
+                                    <div class="job-schedule">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>Sept 4, 3:00 PM - 5:00 PM</span>
+                                    </div>
+                                    <div class="job-budget">
+                                        <i class="fas fa-money-bill"></i>
+                                        <span class="budget-amount">LKR 1,800 - 2,200</span>
+                                    </div>
+                                </div>
+
+                                <div class="job-actions">
+                                    <button class="btn btn-secondary job-btn" onclick="viewJobDetails(3)">
+                                        <i class="fas fa-eye"></i>
+                                        View Details
+                                    </button>
+                                    <button class="btn btn-primary job-btn" onclick="submitQuote(3)">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                        Submit Quote
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Job Card 4 -->
+                            <div class="job-card">
+                                <div class="job-header">
+                                    <div class="job-category-badge hvac">
+                                        <i class="fas fa-snowflake"></i>
+                                        HVAC
+                                    </div>
+                                    <div class="job-posted">
+                                        <i class="fas fa-clock"></i>
+                                        1 day ago
+                                    </div>
+                                </div>
+                                
+                                <div class="job-content">
+                                    <h3 class="job-title">Air Conditioner Service</h3>
+                                    <div class="job-customer">
+                                        <i class="fas fa-user"></i>
+                                        <span>Kamala Silva</span>
+                                    </div>
+                                    <div class="job-location">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>Gampaha, Western Province</span>
+                                    </div>
+                                    <div class="job-schedule">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>Sept 5, 10:00 AM - 1:00 PM</span>
+                                    </div>
+                                    <div class="job-budget">
+                                        <i class="fas fa-money-bill"></i>
+                                        <span class="budget-amount">LKR 3,200 - 4,500</span>
+                                    </div>
+                                </div>
+
+                                <div class="job-actions">
+                                    <button class="btn btn-secondary job-btn" onclick="viewJobDetails(4)">
+                                        <i class="fas fa-eye"></i>
+                                        View Details
+                                    </button>
+                                    <button class="btn btn-primary job-btn" onclick="submitQuote(4)">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                        Submit Quote
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Job Card 5 -->
+                            <div class="job-card">
+                                <div class="job-header">
+                                    <div class="job-category-badge carpentry">
+                                        <i class="fas fa-hammer"></i>
+                                        Carpentry
+                                    </div>
+                                    <div class="job-posted">
+                                        <i class="fas fa-clock"></i>
+                                        1 day ago
+                                    </div>
+                                </div>
+                                
+                                <div class="job-content">
+                                    <h3 class="job-title">Cabinet Door Repair</h3>
+                                    <div class="job-customer">
+                                        <i class="fas fa-user"></i>
+                                        <span>Rajesh Kumar</span>
+                                    </div>
+                                    <div class="job-location">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>Mount Lavinia, Western Province</span>
+                                    </div>
+                                    <div class="job-schedule">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>Sept 6, 8:00 AM - 11:00 AM</span>
+                                    </div>
+                                    <div class="job-budget">
+                                        <i class="fas fa-money-bill"></i>
+                                        <span class="budget-amount">LKR 1,500 - 2,000</span>
+                                    </div>
+                                </div>
+
+                                <div class="job-actions">
+                                    <button class="btn btn-secondary job-btn" onclick="viewJobDetails(5)">
+                                        <i class="fas fa-eye"></i>
+                                        View Details
+                                    </button>
+                                    <button class="btn btn-primary job-btn" onclick="submitQuote(5)">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                        Submit Quote
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Job Card 6 -->
+                            <div class="job-card">
+                                <div class="job-header">
+                                    <div class="job-category-badge painting">
+                                        <i class="fas fa-paint-brush"></i>
+                                        Painting
+                                    </div>
+                                    <div class="job-posted">
+                                        <i class="fas fa-clock"></i>
+                                        2 days ago
+                                    </div>
+                                </div>
+                                
+                                <div class="job-content">
+                                    <h3 class="job-title">Room Wall Painting</h3>
+                                    <div class="job-customer">
+                                        <i class="fas fa-user"></i>
+                                        <span>Priya Wickramasinghe</span>
+                                    </div>
+                                    <div class="job-location">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>Kurunegala, North Western Province</span>
+                                    </div>
+                                    <div class="job-schedule">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>Sept 7-8, 9:00 AM - 5:00 PM</span>
+                                    </div>
+                                    <div class="job-budget">
+                                        <i class="fas fa-money-bill"></i>
+                                        <span class="budget-amount">LKR 8,000 - 12,000</span>
+                                    </div>
+                                </div>
+
+                                <div class="job-actions">
+                                    <button class="btn btn-secondary job-btn" onclick="viewJobDetails(6)">
+                                        <i class="fas fa-eye"></i>
+                                        View Details
+                                    </button>
+                                    <button class="btn btn-primary job-btn" onclick="submitQuote(6)">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                        Submit Quote
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </section>
-
-                    <!-- Tab Content: Available Jobs -->
-                    <div class="tab-content active" id="available-jobs-tab">
-                        <!-- Jobs Section -->
-                        <section class="jobs-section">
-                            <div class="section-header">
-                                <h2 class="section-title">Available Jobs</h2>
-                                <span class="section-subtitle" id="jobs-count">Loading...</span>
-                            </div>
-
-                            <div class="jobs-grid" id="jobs-grid-container">
-                                <!-- Jobs will be loaded dynamically via JavaScript -->
-                                <div class="loading-state">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    <p>Loading available jobs...</p>
-                                </div>
-                            </div>
-                        </section>
-                    </div>
-                    <!-- End Available Jobs Tab -->
-
-                    <!-- Tab Content: Submitted Quotations -->
-                    <div class="tab-content" id="submitted-quotes-tab">
-                        <section class="submitted-quotes-section">
-                            <div class="section-header">
-                                <h2 class="section-title">
-                                    <i class="fas fa-file-invoice"></i>
-                                    My Submitted Quotations
-                                </h2>
-                                <span class="section-subtitle" id="quotes-count">Loading...</span>
-                            </div>
-
-                            <div class="quotes-container" id="submitted-quotes-container">
-                                <!-- Quotations will be loaded dynamically -->
-                                <div class="loading-state">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    <p>Loading your quotations...</p>
-                                </div>
-                            </div>
-                        </section>
-                    </div>
-                    <!-- End Submitted Quotations Tab -->
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- Job Details Drawer -->
-    <div class="drawer" id="jobDetailsDrawer">
-        <div class="drawer-overlay" onclick="closeJobDetails()"></div>
-        <div class="drawer-content">
-            <div class="drawer-header">
-                <h3><i class="fas fa-briefcase"></i> Job Details</h3>
-                <button class="drawer-close" onclick="closeJobDetails()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="drawer-body">
-                <!-- Job Header -->
-                <div class="job-detail-header">
-                    <div class="job-detail-category" id="detailCategory">
-                        <i class="fas fa-wrench"></i>
-                        <span>Plumbing</span>
-                    </div>
-                    <div class="job-detail-urgency" id="detailUrgency">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <span>High Priority</span>
-                    </div>
-                </div>
-
-                <h2 class="job-detail-title" id="detailTitle">Kitchen Sink Repair</h2>
-
-                <!-- Customer Information -->
-                <div class="detail-section">
-                    <h4><i class="fas fa-user"></i> Customer Information</h4>
-                    <div class="detail-grid">
-                        <div class="detail-item">
-                            <span class="detail-label">Name</span>
-                            <span class="detail-value" id="detailCustomerName">Sarah Fernando</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Posted</span>
-                            <span class="detail-value" id="detailPosted">2 hours ago</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Location Information -->
-                <div class="detail-section">
-                    <h4><i class="fas fa-map-marker-alt"></i> Location</h4>
-                    <div class="detail-grid">
-                        <div class="detail-item">
-                            <span class="detail-label">Full Address</span>
-                            <span class="detail-value" id="detailAddress">No. 45, Galle Road, Colombo 07, Western Province</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Schedule Information -->
-                <div class="detail-section">
-                    <h4><i class="fas fa-calendar"></i> Schedule</h4>
-                    <div class="detail-grid">
-                        <div class="detail-item">
-                            <span class="detail-label">Preferred Date & Time</span>
-                            <span class="detail-value" id="detailSchedule">Tomorrow, 2:00 PM - 4:00 PM</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Job Description -->
-                <div class="detail-section">
-                    <h4><i class="fas fa-file-alt"></i> Job Description</h4>
-                    <p class="detail-description" id="detailDescription">
-                        The kitchen sink is leaking from the pipe connection underneath. Water is dripping constantly and has created a puddle. The sink was installed about 5 years ago. Need urgent repair to prevent water damage to the cabinet.
-                    </p>
-                </div>
-
-                <!-- Attachments -->
-                <div class="detail-section">
-                    <h4><i class="fas fa-paperclip"></i> Attachments</h4>
-                    <div class="attachments-grid" id="detailAttachments">
-                        <div class="attachment-item">
-                            <i class="fas fa-image"></i>
-                            <span>sink-leak.jpg</span>
-                        </div>
-                        <div class="attachment-item">
-                            <i class="fas fa-image"></i>
-                            <span>pipe-close-up.jpg</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Additional Details -->
-                <div class="detail-section">
-                    <h4><i class="fas fa-info-circle"></i> Additional Information</h4>
-                    <div class="detail-list">
-                        <div class="detail-list-item">
-                            <i class="fas fa-check-circle"></i>
-                            <span id="detailInfo1">Customer will provide necessary materials</span>
-                        </div>
-                        <div class="detail-list-item">
-                            <i class="fas fa-check-circle"></i>
-                            <span id="detailInfo2">Parking available on premises</span>
-                        </div>
-                        <div class="detail-list-item">
-                            <i class="fas fa-check-circle"></i>
-                            <span id="detailInfo3">Customer prefers afternoon appointments</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="drawer-footer">
-                <button class="btn btn-secondary" onclick="closeJobDetails()">
-                    <i class="fas fa-times"></i> Close
-                </button>
-                <button class="btn btn-primary" onclick="submitQuoteFromDetails()">
-                    <i class="fas fa-file-invoice-dollar"></i> Submit Quote
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/available-jobs.js"></script>
+    <script src="../../../assets/javascript/common/common.js"></script>
+    <script src="../../../assets/javascript/repairer/available-jobs.js"></script>
 </body>
 </html>
-

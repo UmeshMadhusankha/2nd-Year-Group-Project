@@ -12,11 +12,11 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Reviews - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/topbar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/reviews.css">
+    <link rel="stylesheet" href="../../../assets/css/common/global.css">
+    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/reviews.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -25,10 +25,10 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
     <!-- Dashboard Container -->
     <div class="dashboard-container">
         <!-- Include Topbar -->
-        <?php require_once __DIR__ . '/../common/topbar.php'; ?>
+        <?php include '../common/topbar.php'; ?>
 
         <!-- Include Sidebar -->
-        <?php require_once __DIR__ . '/../common/sidebar.php'; ?>
+        <?php include '../common/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content-wrapper">
@@ -188,10 +188,26 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
                                     </p>
                                 </div>
 
-                                <div class="review-actions">
-                                    <button class="btn btn-primary respond-btn" onclick="openRespondModal(1, 'Sarah Fernando')">
+                                <div class="review-response responded">
+                                    <div class="response-header">
                                         <i class="fas fa-reply"></i>
-                                        Respond
+                                        <span>Your Response</span>
+                                    </div>
+                                    <p class="response-text">
+                                        "Thank you so much for the wonderful feedback, Sarah! I'm glad I could help with your kitchen sink. 
+                                        Customer satisfaction is my top priority. Looking forward to helping you with any future repairs!"
+                                    </p>
+                                    <span class="response-date">1 day ago</span>
+                                </div>
+
+                                <div class="review-actions">
+                                    <button class="btn btn-secondary" onclick="editResponse(1)">
+                                        <i class="fas fa-edit"></i>
+                                        Edit Response
+                                    </button>
+                                    <button class="btn btn-outline" onclick="shareReview(1)">
+                                        <i class="fas fa-share"></i>
+                                        Share
                                     </button>
                                 </div>
                             </div>
@@ -234,6 +250,10 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
                                         <i class="fas fa-reply"></i>
                                         Respond
                                     </button>
+                                    <button class="btn btn-outline" onclick="shareReview(2)">
+                                        <i class="fas fa-share"></i>
+                                        Share
+                                    </button>
                                 </div>
                             </div>
 
@@ -270,10 +290,26 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
                                     </p>
                                 </div>
 
-                                <div class="review-actions">
-                                    <button class="btn btn-primary respond-btn" onclick="openRespondModal(3, 'Nimal Perera')">
+                                <div class="review-response responded">
+                                    <div class="response-header">
                                         <i class="fas fa-reply"></i>
-                                        Respond
+                                        <span>Your Response</span>
+                                    </div>
+                                    <p class="response-text">
+                                        "Thank you for the great review, Nimal! I'm happy the washing machine is working perfectly now. 
+                                        Don't hesitate to reach out if you need any appliance repairs in the future!"
+                                    </p>
+                                    <span class="response-date">6 days ago</span>
+                                </div>
+
+                                <div class="review-actions">
+                                    <button class="btn btn-secondary" onclick="editResponse(3)">
+                                        <i class="fas fa-edit"></i>
+                                        Edit Response
+                                    </button>
+                                    <button class="btn btn-outline" onclick="shareReview(3)">
+                                        <i class="fas fa-share"></i>
+                                        Share
                                     </button>
                                 </div>
                             </div>
@@ -316,6 +352,10 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
                                         <i class="fas fa-reply"></i>
                                         Respond
                                     </button>
+                                    <button class="btn btn-outline" onclick="shareReview(4)">
+                                        <i class="fas fa-share"></i>
+                                        Share
+                                    </button>
                                 </div>
                             </div>
 
@@ -356,6 +396,10 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
                                     <button class="btn btn-primary respond-btn" onclick="openRespondModal(5, 'Ruwan Jayawardana')">
                                         <i class="fas fa-reply"></i>
                                         Respond
+                                    </button>
+                                    <button class="btn btn-outline" onclick="shareReview(5)">
+                                        <i class="fas fa-share"></i>
+                                        Share
                                     </button>
                                 </div>
                             </div>
@@ -405,8 +449,7 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
         </div>
     </div>
 
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/reviews.js"></script>
+    <script src="../../../assets/javascript/common/common.js"></script>
+    <script src="../../../assets/javascript/repairer/reviews.js"></script>
 </body>
 </html>
-

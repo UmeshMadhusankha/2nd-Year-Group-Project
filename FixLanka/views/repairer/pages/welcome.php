@@ -12,11 +12,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/topbar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/welcome.css">
+    <link rel="stylesheet" href="../../../assets/css/common/global.css">
+    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
+    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
+    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
+    <link rel="stylesheet" href="../../../assets/css/repairer/welcome.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -25,10 +25,10 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <!-- Dashboard Container -->
     <div class="dashboard-container">
         <!-- Include Topbar -->
-        <?php require_once __DIR__ . '/../common/topbar.php'; ?>
+        <?php include '../common/topbar.php'; ?>
 
         <!-- Include Sidebar -->
-        <?php require_once __DIR__ . '/../common/sidebar.php'; ?>
+        <?php include '../common/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content-wrapper">
@@ -103,25 +103,25 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                     </div>
 
                     <div class="quick-actions-grid">
-                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-available-jobs" class="action-card">
+                        <a href="available-jobs.php" class="action-card">
                             <div class="action-icon">
-                                <i class="fas fa-briefcase"></i>
+                                <i class="fas fa-search"></i>
                             </div>
                             <div class="action-content">
-                                <h3 class="action-title">Browse Available Jobs</h3>
-                                <p class="action-description">Find repair requests from customers</p>
+                                <h3 class="action-title">Browse Jobs</h3>
+                                <p class="action-description">Find new repair requests in your area</p>
                             </div>
                             <div class="action-arrow">
                                 <i class="fas fa-arrow-right"></i>
                             </div>
                         </a>
 
-                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-my-jobs" class="action-card">
+                        <a href="my-jobs.php" class="action-card">
                             <div class="action-icon">
                                 <i class="fas fa-clipboard-list"></i>
                             </div>
                             <div class="action-content">
-                                <h3 class="action-title">My Jobs</h3>
+                                <h3 class="action-title">My Active Jobs</h3>
                                 <p class="action-description">Manage your current repair tasks</p>
                             </div>
                             <div class="action-arrow">
@@ -129,20 +129,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                             </div>
                         </a>
 
-                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-company-jobs" class="action-card">
-                            <div class="action-icon">
-                                <i class="fas fa-building"></i>
-                            </div>
-                            <div class="action-content">
-                                <h3 class="action-title">Company Jobs</h3>
-                                <p class="action-description">Browse side projects from companies</p>
-                            </div>
-                            <div class="action-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </a>
-
-                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-subscription" class="action-card">
+                        <a href="upgrade.php" class="action-card">
                             <div class="action-icon">
                                 <i class="fas fa-crown"></i>
                             </div>
@@ -155,7 +142,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                             </div>
                         </a>
 
-                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-earnings" class="action-card">
+                        <a href="earnings.php" class="action-card">
                             <div class="action-icon">
                                 <i class="fas fa-chart-line"></i>
                             </div>
@@ -168,13 +155,26 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                             </div>
                         </a>
 
-                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-profile" class="action-card">
+                        <a href="profile.php" class="action-card">
                             <div class="action-icon">
                                 <i class="fas fa-user-edit"></i>
                             </div>
                             <div class="action-content">
                                 <h3 class="action-title">Update Profile</h3>
                                 <p class="action-description">Edit your skills and availability</p>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </a>
+
+                        <a href="support.php" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-headset"></i>
+                            </div>
+                            <div class="action-content">
+                                <h3 class="action-title">Get Support</h3>
+                                <p class="action-description">Contact our support team</p>
                             </div>
                             <div class="action-arrow">
                                 <i class="fas fa-arrow-right"></i>
@@ -187,7 +187,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                 <section class="activity-section">
                     <div class="section-header">
                         <h2 class="section-title">Recent Activity</h2>
-                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-my-jobs" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+                        <a href="my-jobs.php" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
                     </div>
 
                     <div class="activity-list">
@@ -267,8 +267,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
         </div>
     </div>
 
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/welcome.js"></script>
+    <script src="../../../assets/javascript/common/common.js"></script>
+    <script src="../../../assets/javascript/repairer/welcome.js"></script>
 </body>
 </html>
-
