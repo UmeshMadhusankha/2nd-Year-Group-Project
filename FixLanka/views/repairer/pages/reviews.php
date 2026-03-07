@@ -12,11 +12,12 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Reviews - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../../../assets/css/common/global.css">
-    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
-    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
-    <link rel="stylesheet" href="../../../assets/css/repairer/reviews.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/topbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/repairer-pages.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/reviews.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -25,10 +26,10 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
     <!-- Dashboard Container -->
     <div class="dashboard-container">
         <!-- Include Topbar -->
-        <?php include '../common/topbar.php'; ?>
+        <?php require_once __DIR__ . '/../common/topbar.php'; ?>
 
         <!-- Include Sidebar -->
-        <?php include '../common/sidebar.php'; ?>
+        <?php require_once __DIR__ . '/../common/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content-wrapper">
@@ -44,15 +45,10 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
                             <div class="page-header-stats">
                                 <div class="rating-overview">
                                     <div class="overall-rating">
-                                        <span class="rating-number">4.4</span>
-                                        <div class="rating-stars">
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star-half-alt"></i>
+                                        <span class="rating-number" id="overallRatingNumber">—</span>
+                                        <div class="rating-stars" id="overallRatingStars">
                                         </div>
-                                        <span class="rating-count">Based on 5 reviews</span>
+                                        <span class="rating-count" id="reviewCountLabel">Loading...</span>
                                     </div>
                                 </div>
                             </div>
@@ -67,7 +63,7 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
                                     <i class="fas fa-star"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <h3 class="stat-number">5</h3>
+                                    <h3 class="stat-number" id="totalReviewsCount">—</h3>
                                     <p class="stat-label">Total Reviews</p>
                                 </div>
                             </div>
@@ -77,7 +73,7 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
                                     <i class="fas fa-thumbs-up"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <h3 class="stat-number">80%</h3>
+                                    <h3 class="stat-number" id="positiveReviewsRate">—</h3>
                                     <p class="stat-label">Positive Reviews</p>
                                 </div>
                             </div>
@@ -87,7 +83,7 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
                                     <i class="fas fa-reply"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <h3 class="stat-number">40%</h3>
+                                    <h3 class="stat-number" id="responseRate">—</h3>
                                     <p class="stat-label">Response Rate</p>
                                 </div>
                             </div>
@@ -97,7 +93,7 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
                                     <i class="fas fa-clock"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <h3 class="stat-number">1.5</h3>
+                                    <h3 class="stat-number" id="avgResponseTime">—</h3>
                                     <p class="stat-label">Avg Response Time (hours)</p>
                                 </div>
                             </div>
@@ -151,257 +147,13 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
                     <section class="reviews-section">
                         <div class="section-header">
                             <h2 class="section-title">Customer Reviews</h2>
-                            <span class="section-subtitle">5 reviews total</span>
+                            <span class="section-subtitle" id="reviewsSubtitle">Loading...</span>
                         </div>
 
-                        <div class="reviews-list">
-                            <!-- Review Item 1 -->
-                            <div class="review-item" data-rating="5" data-response="responded">
-                                <div class="review-header">
-                                    <div class="reviewer-info">
-                                        <div class="reviewer-avatar">
-                                            <i class="fas fa-user"></i>
-                                        </div>
-                                        <div class="reviewer-details">
-                                            <h4 class="reviewer-name">Sarah Fernando</h4>
-                                            <span class="review-job">Kitchen Sink Repair</span>
-                                        </div>
-                                    </div>
-                                    <div class="review-meta">
-                                        <div class="star-rating">
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <span class="rating-number">5.0</span>
-                                        </div>
-                                        <span class="review-date">2 days ago</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="review-content">
-                                    <p class="review-text">
-                                        "Excellent service! John arrived on time and fixed my kitchen sink perfectly. 
-                                        Very professional and cleaned up after the work. The pricing was fair and transparent. 
-                                        I would definitely recommend him to others and will use his services again."
-                                    </p>
-                                </div>
-
-                                <div class="review-response responded">
-                                    <div class="response-header">
-                                        <i class="fas fa-reply"></i>
-                                        <span>Your Response</span>
-                                    </div>
-                                    <p class="response-text">
-                                        "Thank you so much for the wonderful feedback, Sarah! I'm glad I could help with your kitchen sink. 
-                                        Customer satisfaction is my top priority. Looking forward to helping you with any future repairs!"
-                                    </p>
-                                    <span class="response-date">1 day ago</span>
-                                </div>
-
-                                <div class="review-actions">
-                                    <button class="btn btn-secondary" onclick="editResponse(1)">
-                                        <i class="fas fa-edit"></i>
-                                        Edit Response
-                                    </button>
-                                    <button class="btn btn-outline" onclick="shareReview(1)">
-                                        <i class="fas fa-share"></i>
-                                        Share
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Review Item 2 -->
-                            <div class="review-item" data-rating="4" data-response="pending">
-                                <div class="review-header">
-                                    <div class="reviewer-info">
-                                        <div class="reviewer-avatar">
-                                            <i class="fas fa-user"></i>
-                                        </div>
-                                        <div class="reviewer-details">
-                                            <h4 class="reviewer-name">Priya Wickramasinghe</h4>
-                                            <span class="review-job">Air Conditioning Repair</span>
-                                        </div>
-                                    </div>
-                                    <div class="review-meta">
-                                        <div class="star-rating">
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star"></i>
-                                            <span class="rating-number">4.0</span>
-                                        </div>
-                                        <span class="review-date">3 days ago</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="review-content">
-                                    <p class="review-text">
-                                        "Good service overall. The AC is working well now. John was knowledgeable and explained 
-                                        the issue clearly. Only minor complaint is that he arrived about 15 minutes late, 
-                                        but he called ahead to inform me. Would use again."
-                                    </p>
-                                </div>
-
-                                <div class="review-actions">
-                                    <button class="btn btn-primary respond-btn" onclick="openRespondModal(2, 'Priya Wickramasinghe')">
-                                        <i class="fas fa-reply"></i>
-                                        Respond
-                                    </button>
-                                    <button class="btn btn-outline" onclick="shareReview(2)">
-                                        <i class="fas fa-share"></i>
-                                        Share
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Review Item 3 -->
-                            <div class="review-item" data-rating="5" data-response="responded">
-                                <div class="review-header">
-                                    <div class="reviewer-info">
-                                        <div class="reviewer-avatar">
-                                            <i class="fas fa-user"></i>
-                                        </div>
-                                        <div class="reviewer-details">
-                                            <h4 class="reviewer-name">Nimal Perera</h4>
-                                            <span class="review-job">Washing Machine Repair</span>
-                                        </div>
-                                    </div>
-                                    <div class="review-meta">
-                                        <div class="star-rating">
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <span class="rating-number">5.0</span>
-                                        </div>
-                                        <span class="review-date">1 week ago</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="review-content">
-                                    <p class="review-text">
-                                        "Outstanding work! My washing machine was making terrible noises and not draining properly. 
-                                        John diagnosed the problem quickly and had it fixed within an hour. Very reasonable price and 
-                                        gave me maintenance tips. Highly recommended!"
-                                    </p>
-                                </div>
-
-                                <div class="review-response responded">
-                                    <div class="response-header">
-                                        <i class="fas fa-reply"></i>
-                                        <span>Your Response</span>
-                                    </div>
-                                    <p class="response-text">
-                                        "Thank you for the great review, Nimal! I'm happy the washing machine is working perfectly now. 
-                                        Don't hesitate to reach out if you need any appliance repairs in the future!"
-                                    </p>
-                                    <span class="response-date">6 days ago</span>
-                                </div>
-
-                                <div class="review-actions">
-                                    <button class="btn btn-secondary" onclick="editResponse(3)">
-                                        <i class="fas fa-edit"></i>
-                                        Edit Response
-                                    </button>
-                                    <button class="btn btn-outline" onclick="shareReview(3)">
-                                        <i class="fas fa-share"></i>
-                                        Share
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Review Item 4 -->
-                            <div class="review-item" data-rating="3" data-response="pending">
-                                <div class="review-header">
-                                    <div class="reviewer-info">
-                                        <div class="reviewer-avatar">
-                                            <i class="fas fa-user"></i>
-                                        </div>
-                                        <div class="reviewer-details">
-                                            <h4 class="reviewer-name">Kamala Silva</h4>
-                                            <span class="review-job">Bathroom Plumbing Fix</span>
-                                        </div>
-                                    </div>
-                                    <div class="review-meta">
-                                        <div class="star-rating">
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <span class="rating-number">3.0</span>
-                                        </div>
-                                        <span class="review-date">1 week ago</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="review-content">
-                                    <p class="review-text">
-                                        "The plumbing issue was fixed, but it took longer than expected. John had to come back 
-                                        the next day for additional parts. The final result is good, but the communication 
-                                        could have been better about the timeline."
-                                    </p>
-                                </div>
-
-                                <div class="review-actions">
-                                    <button class="btn btn-primary respond-btn" onclick="openRespondModal(4, 'Kamala Silva')">
-                                        <i class="fas fa-reply"></i>
-                                        Respond
-                                    </button>
-                                    <button class="btn btn-outline" onclick="shareReview(4)">
-                                        <i class="fas fa-share"></i>
-                                        Share
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Review Item 5 -->
-                            <div class="review-item" data-rating="5" data-response="pending">
-                                <div class="review-header">
-                                    <div class="reviewer-info">
-                                        <div class="reviewer-avatar">
-                                            <i class="fas fa-user"></i>
-                                        </div>
-                                        <div class="reviewer-details">
-                                            <h4 class="reviewer-name">Ruwan Jayawardana</h4>
-                                            <span class="review-job">Electrical Outlet Installation</span>
-                                        </div>
-                                    </div>
-                                    <div class="review-meta">
-                                        <div class="star-rating">
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <i class="fas fa-star filled"></i>
-                                            <span class="rating-number">5.0</span>
-                                        </div>
-                                        <span class="review-date">2 weeks ago</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="review-content">
-                                    <p class="review-text">
-                                        "Perfect electrical work! John installed new outlets in my home office quickly and safely. 
-                                        He explained everything he was doing and made sure I was satisfied with the placement. 
-                                        Great attention to detail and very professional manner."
-                                    </p>
-                                </div>
-
-                                <div class="review-actions">
-                                    <button class="btn btn-primary respond-btn" onclick="openRespondModal(5, 'Ruwan Jayawardana')">
-                                        <i class="fas fa-reply"></i>
-                                        Respond
-                                    </button>
-                                    <button class="btn btn-outline" onclick="shareReview(5)">
-                                        <i class="fas fa-share"></i>
-                                        Share
-                                    </button>
-                                </div>
+                        <div class="reviews-list" id="reviewsList">
+                            <div class="loading-state" style="text-align:center;padding:40px;color:var(--text-secondary)">
+                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                <p style="margin-top:12px">Loading reviews...</p>
                             </div>
                         </div>
                     </section>
@@ -449,7 +201,8 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
         </div>
     </div>
 
-    <script src="../../../assets/javascript/common/common.js"></script>
-    <script src="../../../assets/javascript/repairer/reviews.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/reviews.js"></script>
 </body>
 </html>
+

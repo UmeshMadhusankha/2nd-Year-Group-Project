@@ -1,680 +1,620 @@
-// ================================================
-// MY JOBS PAGE JAVASCRIPT
-// ================================================
+﻿/**
+ * my-jobs.js   Repairer "My Jobs" page
+ * All data loaded from api/repairer-jobs.php (no mock data).
+ */
 
-document.addEventListener('DOMContentLoaded', function() {
+// ===== GLOBALS =====
+const repairerId = window.CURRENT_REPAIRER_ID || 0;
+const BASE_URL   = window.BASE_URL || '/2nd-Year-Group-Project/FixLanka/';
+
+let cachedJobs    = [];   // full list from API
+let currentFilter = 'all';
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', function () {
     initializeMyJobsPage();
 });
 
 function initializeMyJobsPage() {
     initializeFilterTabs();
-    initializeStatusSelects();
     initializeSortFilter();
-    updateJobCounts();
+    initializeSearch();
+    initializeCalendar();
+    loadJobs();
 }
 
-// ===== FILTER TABS FUNCTIONALITY ===== 
+// ===== FILTER TABS =====
 function initializeFilterTabs() {
-    const filterTabs = document.querySelectorAll('.filter-tab');
-    const jobsList = document.querySelector('.jobs-list');
-    
-    filterTabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            const filter = this.getAttribute('data-filter');
-            
-            // Update active tab
-            filterTabs.forEach(t => t.classList.remove('active'));
+    const tabs = document.querySelectorAll('.filter-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function () {
+            tabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
-            
-            // Apply filter
-            applyJobFilter(filter);
-            
-            // Update job counts display
-            updateFilteredJobCount(filter);
+            currentFilter = this.getAttribute('data-filter') || 'all';
+            renderJobs(cachedJobs, currentFilter);
+            updateSectionSubtitle(currentFilter);
         });
     });
 }
 
-function applyJobFilter(filter) {
-    const jobItems = document.querySelectorAll('.job-item');
-    const jobsList = document.querySelector('.jobs-list');
-    
-    // Remove existing filter classes
-    jobsList.classList.remove('filter-active', 'filter-completed');
-    
-    jobItems.forEach(item => {
-        if (filter === 'all') {
-            item.style.display = 'flex';
-        } else if (filter === 'active') {
-            jobsList.classList.add('filter-active');
-            if (['active', 'in-progress', 'on-hold', 'scheduled'].includes(item.getAttribute('data-status'))) {
-                item.style.display = 'flex';
-            } else {
-                item.style.display = 'none';
-            }
-        } else if (filter === 'paid') {
-            jobsList.classList.add('filter-paid');
-            if (['complete', 'paid', 'completed'].includes(item.getAttribute('data-status'))) {
-                item.style.display = 'flex';
-            } else {
-                item.style.display = 'none';
-            }
-        } else if (filter === 'cancelled') {
-            jobsList.classList.add('filter-cancelled');
-            if (item.getAttribute('data-status') === 'cancelled') {
-                item.style.display = 'flex';
-            } else {
-                item.style.display = 'none';
-            }
-        }
-    });
-}
-
-function updateFilteredJobCount(filter) {
-    const sectionSubtitle = document.querySelector('.section-subtitle');
-    const activeJobs = document.querySelectorAll('.job-item[data-status="active"], .job-item[data-status="in-progress"], .job-item[data-status="on-hold"], .job-item[data-status="scheduled"]').length;
-    const completedJobs = document.querySelectorAll('.job-item[data-status="complete"], .job-item[data-status="paid"], .job-item[data-status="completed"]').length;
-    const cancelledJobs = document.querySelectorAll('.job-item[data-status="cancelled"]').length;
-    const totalJobs = activeJobs + completedJobs + cancelledJobs;
-    
-    let count = 0;
-    let label = '';
-    
-    switch(filter) {
-        case 'all':
-            count = totalJobs;
-            label = 'jobs found';
-            break;
-        case 'active':
-            count = activeJobs;
-            label = 'active jobs';
-            break;
-        case 'paid':
-            count = completedJobs;
-            label = 'paid jobs';
-            break;
-        case 'cancelled':
-            count = cancelledJobs;
-            label = 'cancelled jobs';
-            break;
-    }
-    
-    sectionSubtitle.textContent = `${count} ${label}`;
-}
-
-function updateJobCounts() {
-    const activeJobs = document.querySelectorAll('.job-item[data-status="active"], .job-item[data-status="in-progress"], .job-item[data-status="on-hold"], .job-item[data-status="scheduled"]').length;
-    const completedJobs = document.querySelectorAll('.job-item[data-status="complete"], .job-item[data-status="paid"], .job-item[data-status="completed"]').length;
-    const cancelledJobs = document.querySelectorAll('.job-item[data-status="cancelled"]').length;
-    const totalJobs = activeJobs + completedJobs + cancelledJobs;
-    
-    // Update header stats
-    const headerStats = document.querySelectorAll('.header-stat-number');
-    if (headerStats.length >= 2) {
-        headerStats[0].textContent = activeJobs;
-        headerStats[1].textContent = totalJobs;
-    }
-    
-    // Update tab counts
-    const tabCounts = document.querySelectorAll('.tab-count');
-    if (tabCounts.length >= 4) {
-        tabCounts[0].textContent = totalJobs; // All jobs
-        tabCounts[1].textContent = activeJobs; // Active jobs
-        tabCounts[2].textContent = completedJobs; // Paid jobs
-        tabCounts[3].textContent = cancelledJobs; // Cancelled jobs
-    }
-}
-
-// ===== STATUS SELECT FUNCTIONALITY =====
-function initializeStatusSelects() {
-    const statusSelects = document.querySelectorAll('.status-select');
-    
-    statusSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            const jobItem = this.closest('.job-item');
-            const jobId = jobItem.querySelector('.job-title').textContent;
-            
-            console.log(`Status changed for "${jobId}" to: ${this.value}`);
-            
-            // Here you would typically send an API request to update the status
-            // For now, we'll just show a confirmation
-            if (this.value === 'complete') {
-                if (confirm('Mark this job as complete? Customer will be notified.')) {
-                    markJobAsComplete(jobItem);
-                } else {
-                    // Reset to previous value
-                    this.value = 'in-progress';
-                }
-            } else if (this.value === 'paid') {
-                if (confirm('Mark this job as paid? This will finalize the job.')) {
-                    markJobAsPaid(jobItem);
-                } else {
-                    // Reset to previous value
-                    this.value = this.previousValue || 'complete';
-                }
-            }
-        });
-        
-        // Store previous value for reset functionality
-        select.addEventListener('focus', function() {
-            this.previousValue = this.value;
-        });
-    });
-}
-
-function markJobAsComplete(jobItem) {
-    // Update the job item to complete state
-    jobItem.setAttribute('data-status', 'complete');
-    
-    // Update the status badge
-    const statusBadge = jobItem.querySelector('.job-status-badge');
-    statusBadge.className = 'job-status-badge complete';
-    statusBadge.innerHTML = '<i class="fas fa-check-circle"></i>Complete';
-    
-    // Update the date to show completion
-    const jobDate = jobItem.querySelector('.job-date span');
-    jobDate.textContent = 'Completed just now';
-    
-    // Update the status select options
-    const statusSelect = jobItem.querySelector('.status-select');
-    statusSelect.innerHTML = `
-        <option value="complete" selected>Complete</option>
-        <option value="paid">Paid</option>
-    `;
-    
-    // Update counts
-    updateJobCounts();
-    
-    // Show success message
-    showNotification('Job marked as complete! Awaiting payment.', 'success');
-}
-
-function markJobAsPaid(jobItem) {
-    // Update the job item to paid state
-    jobItem.setAttribute('data-status', 'paid');
-    
-    // Update the status badge
-    const statusBadge = jobItem.querySelector('.job-status-badge');
-    statusBadge.className = 'job-status-badge paid';
-    statusBadge.innerHTML = '<i class="fas fa-credit-card"></i>Paid';
-    
-    // Replace actions with completion info
-    const jobActions = jobItem.querySelector('.job-actions');
-    jobActions.innerHTML = `
-        <div class="completion-info">
-            <span class="completed-label">
-                <i class="fas fa-check"></i>
-                Completed & Paid
-            </span>
-        </div>
-        <button class="btn btn-secondary" onclick="viewJobDetails('${Date.now()}')">
-            <i class="fas fa-eye"></i>
-            View Details
-        </button>
-        <button class="btn btn-outline" onclick="downloadInvoice('${Date.now()}')">
-            <i class="fas fa-download"></i>
-            Invoice
-        </button>
-    `;
-    
-    // Update the date to show payment completion
-    const jobDate = jobItem.querySelector('.job-date span');
-    jobDate.textContent = 'Paid just now';
-    
-    // Update counts
-    updateJobCounts();
-    
-    // Show success message
-    showNotification('Job payment received! Job completed successfully.', 'success');
-}
-
-// ===== CANCEL JOB FUNCTIONALITY =====
-function cancelJob(button, jobId) {
-    const jobItem = button.closest('.job-item');
-    const jobTitle = jobItem.querySelector('.job-title').textContent;
-    
-    // Show confirmation dialog with reason
-    const reason = prompt(`Are you sure you want to cancel the job "${jobTitle}"?\n\nPlease provide a reason for cancellation:`);
-    
-    if (reason && reason.trim() !== '') {
-        // Update the job item to cancelled state
-        jobItem.setAttribute('data-status', 'cancelled');
-        
-        // Update the status badge
-        const statusBadge = jobItem.querySelector('.job-status-badge');
-        statusBadge.className = 'job-status-badge cancelled';
-        statusBadge.innerHTML = '<i class="fas fa-times-circle"></i>Cancelled';
-        
-        // Update the date to show cancellation
-        const jobDate = jobItem.querySelector('.job-date span');
-        jobDate.textContent = 'Cancelled just now';
-        
-        // Replace actions with cancellation info
-        const jobActions = jobItem.querySelector('.job-actions');
-        jobActions.innerHTML = `
-            <div class="cancellation-info">
-                <span class="cancelled-label">
-                    <i class="fas fa-times-circle"></i>
-                    Job Cancelled
-                </span>
-                <span class="cancel-reason">Reason: ${reason}</span>
-            </div>
-            <button class="btn btn-secondary" onclick="viewJobDetails(${jobId})">
-                <i class="fas fa-eye"></i>
-                View Details
-            </button>
-        `;
-        
-        // Update counts
-        updateJobCounts();
-        
-        // Get current active filter
-        const activeFilter = document.querySelector('.filter-tab.active');
-        if (activeFilter) {
-            const filter = activeFilter.getAttribute('data-filter');
-            updateFilteredJobCount(filter);
-            
-            // If we're on 'active' filter, hide the cancelled job
-            if (filter === 'active') {
-                jobItem.style.display = 'none';
-            }
-        }
-        
-        // Show success message
-        showNotification('Job cancelled successfully. Customer will be notified.', 'warning');
-        
-        // Log the cancellation (in production, this would be an API call)
-        console.log(`Job ${jobId} cancelled. Reason: ${reason}`);
-    } else if (reason !== null) {
-        // User clicked OK but didn't provide a reason
-        alert('Please provide a reason for cancellation.');
-    }
-    // If reason is null, user clicked Cancel, so do nothing
-}
-
-function markJobAsCompleted(jobItem) {
-    // Update the job item to completed state
-    jobItem.setAttribute('data-status', 'completed');
-    
-    // Update the status badge
-    const statusBadge = jobItem.querySelector('.job-status-badge');
-    statusBadge.className = 'job-status-badge completed';
-    statusBadge.innerHTML = '<i class="fas fa-check-circle"></i>Completed';
-    
-    // Replace actions with completion info
-    const jobActions = jobItem.querySelector('.job-actions');
-    jobActions.innerHTML = `
-        <div class="completion-info">
-            <span class="completed-label">
-                <i class="fas fa-check"></i>
-                Completed & Paid
-            </span>
-        </div>
-        <button class="btn btn-secondary" onclick="viewJobDetails('${Date.now()}')">
-            <i class="fas fa-eye"></i>
-            View Details
-        </button>
-        <button class="btn btn-outline" onclick="downloadInvoice('${Date.now()}')">
-            <i class="fas fa-download"></i>
-            Invoice
-        </button>
-    `;
-    
-    // Update the date to show completion
-    const jobDate = jobItem.querySelector('.job-date span');
-    jobDate.textContent = 'Completed just now';
-    
-    // Update counts
-    updateJobCounts();
-    
-    // Show success message
-    showNotification('Job marked as completed successfully!', 'success');
-}
-
-// ===== SORT FUNCTIONALITY =====
+// ===== SORT =====
 function initializeSortFilter() {
     const sortFilter = document.getElementById('sort-filter');
-    
-    sortFilter.addEventListener('change', function() {
-        const sortBy = this.value;
-        sortJobs(sortBy);
-    });
+    if (sortFilter) {
+        sortFilter.addEventListener('change', function () {
+            sortJobs(this.value);
+        });
+    }
 }
 
 function sortJobs(sortBy) {
-    const jobsList = document.querySelector('.jobs-list');
-    const jobItems = Array.from(jobsList.querySelectorAll('.job-item'));
-    
-    jobItems.sort((a, b) => {
-        switch(sortBy) {
-            case 'newest':
-                // Sort by newest first (reverse chronological)
-                return getJobDate(b) - getJobDate(a);
-            case 'oldest':
-                // Sort by oldest first (chronological)
-                return getJobDate(a) - getJobDate(b);
-            case 'status':
-                // Sort by status (active first, then completed)
-                const statusA = a.getAttribute('data-status');
-                const statusB = b.getAttribute('data-status');
-                if (statusA === statusB) return 0;
-                return statusA === 'active' ? -1 : 1;
-            case 'amount':
-                // Sort by amount (highest first)
-                return getJobAmount(b) - getJobAmount(a);
-            default:
-                return 0;
-        }
-    });
-    
-    // Re-append sorted items
-    jobItems.forEach(item => jobsList.appendChild(item));
-    
-    console.log(`Jobs sorted by: ${sortBy}`);
+    const list = cachedJobs.slice();
+    switch (sortBy) {
+        case 'newest':
+            list.sort((a, b) => new Date(b.dateSubmitted) - new Date(a.dateSubmitted));
+            break;
+        case 'oldest':
+            list.sort((a, b) => new Date(a.dateSubmitted) - new Date(b.dateSubmitted));
+            break;
+        case 'status':
+            const order = { active: 0, completed: 1, paid: 2, cancelled: 3 };
+            list.sort((a, b) => (order[a.ui_status] || 9) - (order[b.ui_status] || 9));
+            break;
+        case 'amount':
+            list.sort((a, b) => parseFloat(b.quoteAmount || 0) - parseFloat(a.quoteAmount || 0));
+            break;
+    }
+    cachedJobs = list;
+    renderJobs(cachedJobs, currentFilter);
 }
 
-function getJobDate(jobItem) {
-    // This is a simplified date extraction
-    // In a real application, you'd have actual date data
-    const dateText = jobItem.querySelector('.job-date span').textContent;
-    if (dateText.includes('today')) return new Date();
-    if (dateText.includes('yesterday')) return new Date(Date.now() - 86400000);
-    if (dateText.includes('2 days ago')) return new Date(Date.now() - 172800000);
-    if (dateText.includes('3 days ago')) return new Date(Date.now() - 259200000);
-    if (dateText.includes('1 week ago')) return new Date(Date.now() - 604800000);
-    return new Date(Date.now() - Math.random() * 2629746000); // Random date within last month
-}
-
-function getJobAmount(jobItem) {
-    const amountText = jobItem.querySelector('.amount').textContent;
-    // Extract number from "LKR 2,500" format
-    return parseInt(amountText.replace(/[^\d]/g, '')) || 0;
-}
-
-// ===== JOB ACTIONS =====
-function updateJobStatus(jobId) {
-    console.log(`Updating status for job ID: ${jobId}`);
-    
-    // Get the job item
-    const jobItem = document.querySelector(`[data-job-id="${jobId}"]`) || 
-                    document.querySelectorAll('.job-item')[jobId - 1];
-    
-    if (!jobItem) {
-        showNotification('Job not found!', 'error');
+// ===== LOAD JOBS FROM API =====
+async function loadJobs() {
+    if (!repairerId) {
+        showEmptyState('Not logged in. Please refresh the page.');
         return;
     }
-    
-    const statusSelect = jobItem.querySelector('.status-select');
-    const newStatus = statusSelect.value;
-    
-    // Simulate API call
-    showNotification('Updating job status...', 'info');
-    
-    setTimeout(() => {
-        if (newStatus === 'completed') {
-            markJobAsCompleted(jobItem);
-        } else {
-            showNotification(`Job status updated to: ${newStatus}`, 'success');
+
+    showLoadingState();
+
+    try {
+        const res  = await fetch(`${BASE_URL}api/repairer-jobs.php?action=list&repairer_id=${repairerId}`);
+        const data = await res.json();
+
+        if (!data.success) {
+            showEmptyState('Failed to load jobs: ' + (data.message || 'Unknown error'));
+            return;
         }
-    }, 1000);
-}
 
-function viewJobDetails(jobId) {
-    console.log(`Viewing details for job ID: ${jobId}`);
-    
-    // In a real application, this would open a modal or navigate to a details page
-    showNotification('Opening job details...', 'info');
-    
-    // Simulate navigation
-    setTimeout(() => {
-        alert(`Job Details for ID: ${jobId}\n\nThis would open a detailed view of the job with:\n- Full job description\n- Customer contact information\n- Progress timeline\n- Messages and updates\n- Payment information`);
-    }, 500);
-}
+        cachedJobs = data.jobs || [];
+        renderJobs(cachedJobs, currentFilter);
+        updateJobCounts();
+        renderCalendar();
+        renderUpcomingEvents();
 
-function downloadInvoice(jobId) {
-    console.log(`Downloading invoice for job ID: ${jobId}`);
-    
-    showNotification('Generating invoice...', 'info');
-    
-    // Simulate invoice generation and download
-    setTimeout(() => {
-        showNotification('Invoice downloaded successfully!', 'success');
-        
-        // In a real application, this would trigger an actual file download
-        console.log(`Invoice for job ${jobId} would be downloaded as PDF`);
-    }, 1500);
-}
-
-function loadMoreJobs() {
-    console.log('Loading more jobs...');
-    
-    const loadMoreBtn = document.querySelector('.load-more-btn');
-    const originalText = loadMoreBtn.innerHTML;
-    
-    // Show loading state
-    loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-    loadMoreBtn.disabled = true;
-    
-    // Simulate API call
-    setTimeout(() => {
-        // Reset button
-        loadMoreBtn.innerHTML = originalText;
-        loadMoreBtn.disabled = false;
-        
-        // Add some demo jobs
-        addDemoJobs();
-        
-        showNotification('3 more jobs loaded!', 'success');
-    }, 2000);
-}
-
-function addDemoJobs() {
-    const jobsList = document.querySelector('.jobs-list');
-    const loadMoreSection = document.querySelector('.load-more-section');
-    
-    const demoJobs = [
-        {
-            title: 'Water Heater Repair',
-            customer: 'Ananda Wickramasinghe',
-            location: 'Kottawa, Western Province',
-            date: 'Completed 2 weeks ago',
-            amount: 'LKR 3,200',
-            status: 'completed'
-        },
-        {
-            title: 'Door Lock Installation',
-            customer: 'Sunil Fernando',
-            location: 'Panadura, Western Province', 
-            date: 'Started 4 hours ago',
-            amount: 'LKR 1,200',
-            status: 'active'
-        },
-        {
-            title: 'Garden Light Setup',
-            customer: 'Mala Perera',
-            location: 'Moratuwa, Western Province',
-            date: 'Completed 10 days ago',
-            amount: 'LKR 2,800',
-            status: 'completed'
-        }
-    ];
-    
-    demoJobs.forEach((job, index) => {
-        const jobElement = createJobElement(job, Date.now() + index);
-        jobsList.insertBefore(jobElement, loadMoreSection);
-    });
-    
-    // Update counts
-    updateJobCounts();
-}
-
-function createJobElement(job, jobId) {
-    const jobElement = document.createElement('div');
-    jobElement.className = `job-item ${job.status}-job`;
-    jobElement.setAttribute('data-status', job.status);
-    
-    const statusBadge = job.status === 'active' 
-        ? '<div class="job-status-badge active"><i class="fas fa-play-circle"></i>Active</div>'
-        : '<div class="job-status-badge completed"><i class="fas fa-check-circle"></i>Completed</div>';
-    
-    const actions = job.status === 'active'
-        ? `
-            <select class="status-select">
-                <option value="in-progress" selected>In Progress</option>
-                <option value="on-hold">On Hold</option>
-                <option value="completed">Mark Complete</option>
-            </select>
-            <button class="btn btn-secondary" onclick="viewJobDetails('${jobId}')">
-                <i class="fas fa-eye"></i>
-                View Details
-            </button>
-            <button class="btn btn-primary update-status-btn" onclick="updateJobStatus('${jobId}')">
-                <i class="fas fa-sync"></i>
-                Update Status
-            </button>
-        `
-        : `
-            <div class="completion-info">
-                <span class="completed-label">
-                    <i class="fas fa-check"></i>
-                    Completed & Paid
-                </span>
-            </div>
-            <button class="btn btn-secondary" onclick="viewJobDetails('${jobId}')">
-                <i class="fas fa-eye"></i>
-                View Details
-            </button>
-            <button class="btn btn-outline" onclick="downloadInvoice('${jobId}')">
-                <i class="fas fa-download"></i>
-                Invoice
-            </button>
-        `;
-    
-    jobElement.innerHTML = `
-        <div class="job-info">
-            <div class="job-header">
-                <h3 class="job-title">${job.title}</h3>
-                ${statusBadge}
-            </div>
-            <div class="job-details">
-                <div class="job-customer">
-                    <i class="fas fa-user"></i>
-                    <span>${job.customer}</span>
-                </div>
-                <div class="job-location">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <span>${job.location}</span>
-                </div>
-                <div class="job-date">
-                    <i class="fas fa-calendar"></i>
-                    <span>${job.date}</span>
-                </div>
-                <div class="job-amount">
-                    <i class="fas fa-money-bill"></i>
-                    <span class="amount">${job.amount}</span>
-                </div>
-            </div>
-        </div>
-        <div class="job-actions">
-            ${actions}
-        </div>
-    `;
-    
-    return jobElement;
-}
-
-// ===== UTILITY FUNCTIONS =====
-function showNotification(message, type = 'info') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        border-radius: 8px;
-        color: white;
-        font-weight: 500;
-        z-index: 10000;
-        max-width: 300px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        transform: translateX(100%);
-        transition: transform 0.3s ease;
-    `;
-    
-    // Set background color based on type
-    switch(type) {
-        case 'success':
-            notification.style.background = '#10b981';
-            break;
-        case 'error':
-            notification.style.background = '#ef4444';
-            break;
-        case 'warning':
-            notification.style.background = '#f59e0b';
-            break;
-        default:
-            notification.style.background = '#3b82f6';
+    } catch (err) {
+        console.error('loadJobs error:', err);
+        showEmptyState('Could not connect to the server. Please try again.');
     }
-    
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    // Animate in
-    setTimeout(() => {
-        notification.style.transform = 'translateX(0)';
-    }, 100);
-    
-    // Remove after delay
-    setTimeout(() => {
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
-    }, 3000);
 }
 
-// ===== SEARCH FUNCTIONALITY =====
+// ===== RENDER JOBS =====
+function renderJobs(jobs, filter) {
+    const container = document.getElementById('jobsList');
+    if (!container) return;
+
+    const filtered = filter === 'all'
+        ? jobs
+        : jobs.filter(j => j.ui_status === filter);
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="text-align:center;padding:3rem;">
+                <i class="fas fa-briefcase" style="font-size:3rem;color:#ccc;margin-bottom:1rem;"></i>
+                <p style="color:#888;">No ${filter === 'all' ? '' : filter + ' '}jobs found.</p>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = filtered.map(job => createJobCard(job)).join('');
+    updateSectionSubtitle(filter);
+}
+
+function createJobCard(job) {
+    const uiStatus = job.ui_status || 'active';
+    const jobStatus = job.job_status || 'accepted';
+    const badgeMap = {
+        active:    { icon: 'play-circle',     label: 'Active' },
+        completed: { icon: 'clipboard-check', label: 'Completed' },
+        paid:      { icon: 'credit-card',     label: 'Paid' },
+        cancelled: { icon: 'times-circle',    label: 'Cancelled' },
+    };
+    const badge = badgeMap[uiStatus] || badgeMap.active;
+
+    const customerName = `${job.customer_first_name || ''} ${job.customer_last_name || ''}`.trim() || 'Unknown Customer';
+    const location     = [job.district, job.address].filter(Boolean).join(', ') || '';
+    const dateLabel    = formatDateRelative(job.dateSubmitted);
+    const amount       = job.quoteAmount ? `LKR ${parseFloat(job.quoteAmount).toLocaleString()}` : '';
+
+    // Sub-status indicator for active jobs
+    let subStatusHtml = '';
+    if (uiStatus === 'active') {
+        if (jobStatus === 'accepted') {
+            subStatusHtml = `<div class="job-sub-status accepted"><i class="fas fa-handshake"></i> Accepted &mdash; Ready to Start</div>`;
+        } else if (jobStatus === 'in_progress') {
+            subStatusHtml = `<div class="job-sub-status in-progress"><i class="fas fa-tools"></i> Work In Progress</div>`;
+        }
+    }
+
+    let actionsHtml = '';
+    if (uiStatus === 'active') {
+        if (jobStatus === 'accepted') {
+            // Freshly accepted — repairer can start work
+            actionsHtml = `
+                <button class="btn btn-primary" onclick="startWork(${job.request_id})">
+                    <i class="fas fa-play"></i> Start Work
+                </button>
+                <button class="btn btn-secondary" onclick="viewJobDetails(${job.quote_id})">
+                    <i class="fas fa-eye"></i> View Details
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="cancelJob(${job.request_id})">
+                    <i class="fas fa-times"></i> Cancel
+                </button>`;
+        } else {
+            // Work in progress — repairer can mark complete
+            actionsHtml = `
+                <button class="btn btn-success" onclick="markComplete(${job.request_id})">
+                    <i class="fas fa-check"></i> Mark Complete
+                </button>
+                <button class="btn btn-secondary" onclick="viewJobDetails(${job.quote_id})">
+                    <i class="fas fa-eye"></i> View Details
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="cancelJob(${job.request_id})">
+                    <i class="fas fa-times"></i> Cancel
+                </button>`;
+        }
+    } else if (uiStatus === 'completed') {
+        actionsHtml = `
+            <div class="completion-info">
+                <span class="completed-label"><i class="fas fa-hourglass-half"></i> Awaiting Payment</span>
+            </div>
+            <button class="btn btn-secondary" onclick="viewJobDetails(${job.quote_id})">
+                <i class="fas fa-eye"></i> View Details
+            </button>`;
+    } else if (uiStatus === 'paid') {
+        actionsHtml = `
+            <div class="completion-info">
+                <span class="completed-label paid-label"><i class="fas fa-check-circle"></i> Completed &amp; Paid</span>
+            </div>
+            <button class="btn btn-secondary" onclick="viewJobDetails(${job.quote_id})">
+                <i class="fas fa-eye"></i> View Details
+            </button>`;
+    } else {
+        // Cancelled
+        actionsHtml = `
+            <div class="cancellation-info">
+                <span class="cancelled-label"><i class="fas fa-times-circle"></i> Cancelled</span>
+            </div>
+            <button class="btn btn-secondary" onclick="viewJobDetails(${job.quote_id})">
+                <i class="fas fa-eye"></i> View Details
+            </button>`;
+    }
+
+    return `
+        <div class="job-item ${uiStatus}-job" data-status="${uiStatus}" data-quote-id="${job.quote_id}">
+            <div class="job-info">
+                <div class="job-header">
+                    <h3 class="job-title">${escapeHtml(job.job_title || '')}</h3>
+                    <div class="job-status-badge ${uiStatus}">
+                        <i class="fas fa-${badge.icon}"></i>${badge.label}
+                    </div>
+                </div>
+                ${subStatusHtml}
+                <div class="job-details">
+                    <div class="job-customer"><i class="fas fa-user"></i><span>${escapeHtml(customerName)}</span></div>
+                    <div class="job-location"><i class="fas fa-map-marker-alt"></i><span>${escapeHtml(location)}</span></div>
+                    <div class="job-date"><i class="fas fa-calendar"></i><span>${dateLabel}</span></div>
+                    <div class="job-amount"><i class="fas fa-money-bill"></i><span class="amount">${amount}</span></div>
+                </div>
+            </div>
+            <div class="job-actions">${actionsHtml}</div>
+        </div>`;
+}
+
+// ===== STATUS UPDATE ACTIONS =====
+async function apiUpdateStatus(requestId, newStatus) {
+    try {
+        const res  = await fetch(`${BASE_URL}api/repairer-jobs.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'update-status', request_id: requestId, status: newStatus, repairer_id: repairerId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showNotification('Job status updated!', 'success');
+            await loadJobs();
+        } else {
+            showNotification(data.message || 'Failed to update status', 'error');
+        }
+    } catch (err) {
+        showNotification('Network error while updating status', 'error');
+    }
+}
+
+async function startWork(requestId) {
+    if (!confirm('Start working on this job? The customer will be notified.')) return;
+    await apiUpdateStatus(requestId, 'in_progress');
+}
+
+async function markComplete(requestId) {
+    if (!confirm('Mark this job as complete? The customer will be notified.')) return;
+    await apiUpdateStatus(requestId, 'completed');
+}
+
+async function cancelJob(requestId) {
+    if (!confirm('Are you sure you want to cancel this job? This action cannot be undone.')) return;
+    await apiUpdateStatus(requestId, 'cancelled');
+}
+
+// ===== VIEW JOB DETAILS MODAL =====
+function viewJobDetails(quoteId) {
+    const job = cachedJobs.find(j => parseInt(j.quote_id) === parseInt(quoteId));
+    if (!job) {
+        showNotification('Job details not found', 'error');
+        return;
+    }
+
+    const uiStatus = job.ui_status || 'active';
+    const iconMap  = { active: 'tools', completed: 'clipboard-check', paid: 'check-circle', cancelled: 'times-circle' };
+    const labelMap = { active: 'Active', completed: 'Completed', paid: 'Paid', cancelled: 'Cancelled' };
+
+    const customerName = `${job.customer_first_name || ''} ${job.customer_last_name || ''}`.trim() || 'Unknown';
+    const amount       = job.quoteAmount ? parseFloat(job.quoteAmount) : 0;
+    const platformFee  = (amount * 0.15).toFixed(2);
+    const tax          = (amount * 0.05).toFixed(2);
+    const earnings     = (amount - parseFloat(platformFee) - parseFloat(tax)).toFixed(2);
+
+    setText('modal-job-title',    job.job_title || '');
+    const statusEl = document.getElementById('modal-job-status');
+    if (statusEl) {
+        statusEl.innerHTML = `<i class="fas fa-${iconMap[uiStatus]}"></i> ${labelMap[uiStatus]}`;
+        statusEl.className = `job-detail-status ${uiStatus}`;
+    }
+    setText('modal-job-amount',      `LKR ${amount.toLocaleString()}`);
+    setText('modal-customer-name',   customerName);
+    setText('modal-customer-phone',  '');
+    setText('modal-customer-email',  job.customer_email || '');
+    setText('modal-job-location',    [job.district, job.address].filter(Boolean).join(', ') || '');
+    setText('modal-job-started',     job.dateSubmitted ? new Date(job.dateSubmitted).toLocaleDateString() : '');
+    setText('modal-job-completion',  job.finish_date || '');
+    setText('modal-job-id',          `#JOB-${String(job.request_id).padStart(7, '0')}`);
+    setText('modal-job-category',    job.category_name || '');
+    setText('modal-job-description', job.job_description || '');
+    setText('modal-service-charge',  `LKR ${amount.toLocaleString()}`);
+    setText('modal-platform-fee',    `LKR ${parseFloat(platformFee).toLocaleString()}`);
+    setText('modal-tax',             `LKR ${parseFloat(tax).toLocaleString()}`);
+    setText('modal-total-amount',    `LKR ${amount.toLocaleString()}`);
+    setText('modal-earnings',        `LKR ${parseFloat(earnings).toLocaleString()}`);
+
+    const timelineEl = document.getElementById('modal-timeline');
+    if (timelineEl) {
+        timelineEl.innerHTML = buildTimeline(job).map(s => `
+            <div class="timeline-item ${s.status}">
+                <div class="timeline-icon"><i class="fas fa-${s.icon}"></i></div>
+                <div class="timeline-content">
+                    <div class="timeline-title">${s.title}</div>
+                    <div class="timeline-date">${s.date}</div>
+                </div>
+            </div>`).join('');
+    }
+
+    const primaryBtn = document.getElementById('modal-primary-action');
+    if (primaryBtn) {
+        const jobStatus = job.job_status || 'accepted';
+        if (uiStatus === 'active' && jobStatus === 'accepted') {
+            primaryBtn.innerHTML = '<i class="fas fa-play"></i> Start Work';
+            primaryBtn.className = 'btn btn-primary';
+            primaryBtn.style.display = '';
+            primaryBtn.onclick = async () => {
+                if (confirm('Start working on this job? The customer will be notified.')) {
+                    await apiUpdateStatus(job.request_id, 'in_progress');
+                    closeJobDetailsModal();
+                }
+            };
+        } else if (uiStatus === 'active') {
+            primaryBtn.innerHTML = '<i class="fas fa-check"></i> Mark as Complete';
+            primaryBtn.className = 'btn btn-success';
+            primaryBtn.style.display = '';
+            primaryBtn.onclick = async () => {
+                if (confirm('Mark this job as complete? The customer will be notified.')) {
+                    await apiUpdateStatus(job.request_id, 'completed');
+                    closeJobDetailsModal();
+                }
+            };
+        } else {
+            primaryBtn.style.display = 'none';
+        }
+    }
+
+    const modal = document.getElementById('jobDetailsModal');
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function buildTimeline(job) {
+    const steps = [];
+    steps.push({ title: 'Quote Submitted', date: formatDate(job.dateSubmitted), status: 'completed', icon: 'check' });
+    steps.push({ title: 'Quote Accepted',  date: formatDate(job.dateSubmitted), status: 'completed', icon: 'check' });
+
+    const js = job.job_status;
+    if (js === 'in_progress' || js === 'completed' || js === 'cancelled') {
+        steps.push({ title: 'Work Started', date: '', status: 'completed', icon: 'tools' });
+    } else {
+        steps.push({ title: 'Work Started', date: 'Pending', status: 'pending', icon: 'clock' });
+    }
+
+    if (js === 'completed') {
+        steps.push({ title: 'Work Completed', date: '', status: 'completed', icon: 'clipboard-check' });
+        if (job.payment_status === 'completed') {
+            steps.push({ title: 'Payment Received', date: formatDate(job.paymentDate), status: 'completed', icon: 'credit-card' });
+        } else {
+            steps.push({ title: 'Awaiting Payment', date: 'Pending', status: 'active', icon: 'hourglass-half' });
+        }
+    } else if (js === 'cancelled') {
+        steps.push({ title: 'Job Cancelled', date: '', status: 'cancelled', icon: 'times-circle' });
+    } else {
+        steps.push({ title: 'Pending Completion', date: job.finish_date || '', status: 'pending', icon: 'clock' });
+    }
+
+    return steps;
+}
+
+function closeJobDetailsModal() {
+    const modal = document.getElementById('jobDetailsModal');
+    if (modal) modal.classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('jobDetailsModal');
+    if (modal) {
+        modal.addEventListener('click', e => { if (e.target === modal) closeJobDetailsModal(); });
+    }
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeJobDetailsModal();
+    });
+});
+
+// ===== JOB COUNTS / HEADER STATS =====
+async function updateJobCounts() {
+    if (!repairerId) return;
+    try {
+        const res  = await fetch(`${BASE_URL}api/repairer-jobs.php?action=stats&repairer_id=${repairerId}`);
+        const data = await res.json();
+        if (!data.success) return;
+
+        // Header stats
+        setText('headerActiveJobs', data.active);
+        setText('headerAwaitingPayment', data.completed);
+        setText('headerTotalJobs', data.total);
+
+        // Tab counts
+        setText('tabCountAll', data.total);
+        setText('tabCountActive', data.active);
+        setText('tabCountCompleted', data.completed);
+        setText('tabCountPaid', data.paid);
+        setText('tabCountCancelled', data.cancelled);
+    } catch (err) {
+        console.warn('updateJobCounts error:', err);
+    }
+}
+
+// ===== SECTION SUBTITLE =====
+function updateSectionSubtitle(filter) {
+    const subtitle = document.querySelector('.section-subtitle');
+    if (!subtitle) return;
+    const filtered = filter === 'all' ? cachedJobs : cachedJobs.filter(j => j.ui_status === filter);
+    const labelMap = {
+        all:       'total jobs',
+        active:    'active jobs',
+        completed: 'completed jobs awaiting payment',
+        paid:      'paid jobs',
+        cancelled: 'cancelled jobs',
+    };
+    subtitle.textContent = `${filtered.length} ${labelMap[filter] || 'jobs'}`;
+}
+
+// ===== SEARCH =====
 function initializeSearch() {
-    const searchInput = document.querySelector('.search-box input');
-    
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            searchJobs(searchTerm);
+    const input = document.querySelector('.search-box input');
+    if (input) {
+        input.addEventListener('input', function () {
+            const term = this.value.toLowerCase().trim();
+            if (term === '') {
+                renderJobs(cachedJobs, currentFilter);
+                return;
+            }
+            const filtered = cachedJobs.filter(j => {
+                const name = `${j.customer_first_name || ''} ${j.customer_last_name || ''}`.toLowerCase();
+                return (j.job_title || '').toLowerCase().includes(term) ||
+                       name.includes(term) ||
+                       (j.district || '').toLowerCase().includes(term) ||
+                       (j.address  || '').toLowerCase().includes(term);
+            });
+            renderJobs(filtered, currentFilter);
         });
     }
 }
 
-function searchJobs(searchTerm) {
-    const jobItems = document.querySelectorAll('.job-item');
-    
-    jobItems.forEach(item => {
-        const title = item.querySelector('.job-title').textContent.toLowerCase();
-        const customer = item.querySelector('.job-customer span').textContent.toLowerCase();
-        const location = item.querySelector('.job-location span').textContent.toLowerCase();
-        
-        const matches = title.includes(searchTerm) || 
-                       customer.includes(searchTerm) || 
-                       location.includes(searchTerm);
-        
-        item.style.display = matches || searchTerm === '' ? 'flex' : 'none';
-    });
-    
-    // Update count based on visible items
-    const visibleJobs = document.querySelectorAll('.job-item[style*="flex"], .job-item:not([style*="none"])').length;
-    const sectionSubtitle = document.querySelector('.section-subtitle');
-    
-    if (searchTerm) {
-        sectionSubtitle.textContent = `${visibleJobs} jobs found for "${searchTerm}"`;
-    } else {
-        // Reset to current filter
-        const activeTab = document.querySelector('.filter-tab.active');
-        if (activeTab) {
-            updateFilteredJobCount(activeTab.getAttribute('data-filter'));
-        }
+// ===== LOADING / EMPTY STATE =====
+function showLoadingState() {
+    const c = document.getElementById('jobsList');
+    if (c) c.innerHTML = `
+        <div class="loading-state" style="text-align:center;padding:3rem;">
+            <i class="fas fa-spinner fa-spin" style="font-size:2rem;color:#0891b2;"></i>
+            <p style="margin-top:1rem;color:#666;">Loading jobs</p>
+        </div>`;
+}
+
+function showEmptyState(message) {
+    const c = document.getElementById('jobsList');
+    if (c) c.innerHTML = `
+        <div class="empty-state" style="text-align:center;padding:3rem;">
+            <i class="fas fa-briefcase" style="font-size:3rem;color:#ccc;margin-bottom:1rem;"></i>
+            <p style="color:#888;">${escapeHtml(message)}</p>
+        </div>`;
+}
+
+// ===== CALENDAR =====
+let currentDate  = new Date();
+let currentMonth = currentDate.getMonth();
+let currentYear  = currentDate.getFullYear();
+
+function initializeCalendar() {
+    const prevBtn = document.getElementById('prev-month');
+    const nextBtn = document.getElementById('next-month');
+    if (prevBtn && nextBtn) {
+        prevBtn.addEventListener('click', () => {
+            currentMonth--;
+            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            renderCalendar();
+        });
+        nextBtn.addEventListener('click', () => {
+            currentMonth++;
+            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            renderCalendar();
+        });
+        renderCalendar();
+        renderUpcomingEvents();
     }
+}
+
+function calendarEventsFromJobs() {
+    return cachedJobs
+        .filter(j => j.finish_date && j.ui_status !== 'cancelled')
+        .map(j => ({ date: j.finish_date, title: j.job_title, type: 'job' }));
+}
+
+function renderCalendar() {
+    const calendarDays     = document.getElementById('calendar-days');
+    const monthYearDisplay = document.getElementById('current-month-year');
+    if (!calendarDays || !monthYearDisplay) return;
+
+    calendarDays.innerHTML = '';
+
+    const monthNames = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December'];
+    monthYearDisplay.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+    const firstDay    = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysInPrev  = new Date(currentYear, currentMonth, 0).getDate();
+    const today       = new Date();
+    const jobEvents   = calendarEventsFromJobs();
+
+    for (let i = firstDay - 1; i >= 0; i--) {
+        calendarDays.appendChild(createDayElement(daysInPrev - i, 'prev-month'));
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+        const el = createDayElement(day, 'current-month');
+        if (day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()) {
+            el.classList.add('today');
+        }
+        const ds = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        if (jobEvents.some(e => e.date === ds)) el.classList.add('has-event');
+        calendarDays.appendChild(el);
+    }
+    const remaining = 42 - calendarDays.children.length;
+    for (let d = 1; d <= remaining; d++) {
+        calendarDays.appendChild(createDayElement(d, 'next-month'));
+    }
+}
+
+function createDayElement(day, monthClass) {
+    const el = document.createElement('div');
+    el.className = `calendar-day ${monthClass}`;
+    el.textContent = day;
+    return el;
+}
+
+function renderUpcomingEvents() {
+    const list = document.getElementById('upcoming-events-list');
+    if (!list) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const events = calendarEventsFromJobs()
+        .filter(e => new Date(e.date) >= today)
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(0, 5);
+
+    if (events.length === 0) {
+        list.innerHTML = '<div class="no-events-message">No upcoming events</div>';
+        return;
+    }
+
+    const mns = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    list.innerHTML = events.map(e => {
+        const d  = new Date(e.date);
+        const ds = `${mns[d.getMonth()]} ${d.getDate()}`;
+        return `
+            <div class="event-item">
+                <div class="event-date-badge">${ds}</div>
+                <div class="event-details">
+                    <div class="event-title">${escapeHtml(e.title)}</div>
+                    <div class="event-time"><i class="fas fa-briefcase"></i> Finish by</div>
+                </div>
+            </div>`;
+    }).join('');
+}
+
+// ===== UTILITY =====
+function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    try {
+        return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (e) { return dateStr; }
+}
+
+function formatDateRelative(dateStr) {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7)  return `${days} days ago`;
+    if (days < 30) return `${Math.floor(days / 7)} week${days >= 14 ? 's' : ''} ago`;
+    return formatDate(dateStr);
+}
+
+function showNotification(message, type) {
+    type = type || 'info';
+    const n = document.createElement('div');
+    n.style.cssText = 'position:fixed;top:20px;right:20px;padding:15px 20px;border-radius:8px;' +
+        'color:#fff;font-weight:500;z-index:10000;max-width:300px;' +
+        'box-shadow:0 4px 12px rgba(0,0,0,.15);transform:translateX(100%);transition:transform .3s ease;';
+    const bg = { success: '#10b981', error: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
+    n.style.background = bg[type] || bg.info;
+    n.textContent = message;
+    document.body.appendChild(n);
+    setTimeout(() => { n.style.transform = 'translateX(0)'; }, 100);
+    setTimeout(() => {
+        n.style.transform = 'translateX(100%)';
+        setTimeout(() => { if (n.parentNode) n.parentNode.removeChild(n); }, 300);
+    }, 3000);
 }

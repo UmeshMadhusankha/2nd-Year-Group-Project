@@ -1,4 +1,4 @@
-// ================================================
+﻿// ================================================
 // REVIEWS PAGE JAVASCRIPT
 // ================================================
 
@@ -303,24 +303,6 @@ function initializeResponses() {
 
 // ===== ACTION HANDLERS =====
 function initializeActions() {
-    // Share buttons
-    const shareBtns = document.querySelectorAll('.share-btn');
-    shareBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const reviewItem = this.closest('.review-item');
-            shareReview(reviewItem);
-        });
-    });
-
-    // Report buttons
-    const reportBtns = document.querySelectorAll('.report-btn');
-    reportBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const reviewItem = this.closest('.review-item');
-            reportReview(reviewItem);
-        });
-    });
-
     // Load more button
     const loadMoreBtn = document.querySelector('.load-more-btn');
     if (loadMoreBtn) {
@@ -328,54 +310,218 @@ function initializeActions() {
     }
 }
 
-function shareReview(reviewItem) {
-    const customerName = reviewItem.querySelector('.reviewer-name').textContent;
-    const rating = reviewItem.dataset.rating;
-    const reviewText = reviewItem.querySelector('.review-text').textContent;
+// Function to open respond modal
+function openRespondModal(reviewId, customerName) {
+    const modal = document.getElementById('respondModal');
+    const customerNameSpan = document.getElementById('modalCustomerName');
+    const responseText = document.getElementById('responseText');
+    const charCount = document.getElementById('charCount');
+    const modalTitle = modal ? modal.querySelector('.modal-title') : null;
     
-    const shareText = `Check out this ${rating}-star review from ${customerName}: "${reviewText.substring(0, 100)}..."`;
-    
-    if (navigator.share) {
-        navigator.share({
-            title: 'Customer Review - FixLanka',
-            text: shareText,
-            url: window.location.href
-        }).then(() => {
-            showNotification('Review shared successfully!', 'success');
-        }).catch(() => {
-            copyToClipboard(shareText);
-        });
-    } else {
-        copyToClipboard(shareText);
-    }
-}
+    if (modal) {
+        // Reset modal title
+        if (modalTitle) {
+            modalTitle.textContent = 'Respond to Review';
+        }
+        
+        // Update customer info
+        if (customerNameSpan) {
+            customerNameSpan.textContent = customerName;
+        }
 
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        showNotification('Review text copied to clipboard!', 'success');
-    }).catch(() => {
-        showNotification('Unable to copy to clipboard', 'error');
-    });
-}
-
-function reportReview(reviewItem) {
-    const customerName = reviewItem.querySelector('.reviewer-name').textContent;
-    
-    if (confirm(`Are you sure you want to report the review from ${customerName}? This action will flag the review for moderation.`)) {
-        // Simulate API call
-        setTimeout(() => {
-            showNotification('Review reported successfully. Our team will investigate.', 'success');
-            
-            // Add reported indicator
-            const reportBtn = reviewItem.querySelector('.report-btn');
-            if (reportBtn) {
-                reportBtn.innerHTML = '<i class="fas fa-check"></i> Reported';
-                reportBtn.disabled = true;
-                reportBtn.classList.add('btn-secondary');
-                reportBtn.classList.remove('btn-outline');
+        // Clear previous response
+        if (responseText) {
+            responseText.value = '';
+            if (charCount) {
+                charCount.textContent = '0';
             }
-        }, 1000);
+        }
+
+        // Store review ID for later use
+        modal.dataset.reviewId = reviewId;
+
+        // Show modal with class
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        // Focus on textarea
+        setTimeout(() => {
+            if (responseText) {
+                responseText.focus();
+            }
+        }, 100);
     }
+}
+
+// Function to close respond modal
+function closeRespondModal() {
+    const modal = document.getElementById('respondModal');
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+}
+
+// Function to send response
+function sendResponse() {
+    const responseText = document.getElementById('responseText');
+    
+    if (!responseText || !responseText.value.trim()) {
+        showNotification('Please enter a response before sending', 'error');
+        return;
+    }
+
+    if (responseText.value.length > 500) {
+        showNotification('Response exceeds 500 character limit', 'error');
+        return;
+    }
+
+    // Simulate sending response
+    showNotification('Response sent successfully!', 'success');
+    closeRespondModal();
+    
+    // Update stats
+    updateStats();
+}
+
+// Function to edit existing response
+function editResponse(reviewId) {
+    
+    
+    const reviewItems = document.querySelectorAll('.review-item');
+    
+    let reviewItem = null;
+    let customerName = '';
+    let existingResponseText = '';
+    
+    // Find the review item by matching the index (reviewId 1 = index 0, reviewId 2 = index 1, etc.)
+    reviewItems.forEach((item, index) => {
+        
+        if (index + 1 === reviewId) {
+            reviewItem = item;
+            const nameElement = item.querySelector('.reviewer-name');
+            customerName = nameElement ? nameElement.textContent.trim() : '';
+            
+            const responseElement = item.querySelector('.response-text');
+            
+            if (responseElement) {
+                existingResponseText = responseElement.textContent.trim();
+                
+                // Remove quotes if present and clean up whitespace
+                existingResponseText = existingResponseText
+                    .replace(/^["']|["']$/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                
+            }
+        }
+    });
+    
+    
+    
+    
+    if (!reviewItem) {
+        console.error('Review item not found for ID:', reviewId);
+        showNotification('Could not find review to edit', 'error');
+        return;
+    }
+    
+    // Open modal with existing response
+    const modal = document.getElementById('respondModal');
+    const customerNameSpan = document.getElementById('modalCustomerName');
+    const responseText = document.getElementById('responseText');
+    const charCount = document.getElementById('charCount');
+    const modalTitle = modal ? modal.querySelector('.modal-title') : null;
+    
+    if (modal) {
+        
+        // Update modal title
+        if (modalTitle) {
+            modalTitle.textContent = 'Edit Response';
+        }
+        
+        // Update customer info
+        if (customerNameSpan) {
+            customerNameSpan.textContent = customerName;
+        }
+
+        // Set existing response
+        if (responseText) {
+            responseText.value = existingResponseText;
+            if (charCount) {
+                charCount.textContent = existingResponseText.length.toString();
+            }
+        }
+
+        // Store review ID for later use
+        modal.dataset.reviewId = reviewId;
+
+        // Show modal with class
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        // Focus on textarea
+        setTimeout(() => {
+            if (responseText) {
+                responseText.focus();
+                // Move cursor to end
+                responseText.setSelectionRange(responseText.value.length, responseText.value.length);
+            }
+        }, 100);
+    } else {
+        console.error('Modal not found!');
+        showNotification('Could not open edit modal', 'error');
+    }
+}
+
+// Character counter for response textarea
+document.addEventListener('DOMContentLoaded', function() {
+    const responseText = document.getElementById('responseText');
+    const charCount = document.getElementById('charCount');
+    
+    if (responseText && charCount) {
+        responseText.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+            
+            // Change color based on character count
+            if (this.value.length > 450) {
+                charCount.style.color = '#ef4444';
+            } else if (this.value.length > 400) {
+                charCount.style.color = '#f59e0b';
+            } else {
+                charCount.style.color = 'inherit';
+            }
+        });
+    }
+    
+    // Close modal on overlay click
+    const modal = document.getElementById('respondModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeRespondModal();
+            }
+        });
+    }
+    
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('respondModal');
+            if (modal && modal.classList.contains('show')) {
+                closeRespondModal();
+            }
+        }
+    });
+});
+
+// Function to reset filters
+function resetFilters() {
+    document.getElementById('rating-filter').value = 'all';
+    document.getElementById('response-filter').value = 'all';
+    document.getElementById('sort-filter').value = 'newest';
+    applyFilters();
+    showNotification('Filters reset successfully', 'success');
 }
 
 // ===== DATA LOADING =====
@@ -484,40 +630,11 @@ function createReviewElement(review, id) {
             <p class="review-text">${review.text}</p>
         </div>
         <div class="review-actions">
-            <button class="btn btn-primary respond-btn">
+            <button class="btn btn-primary respond-btn" onclick="openRespondModal('review-${id}', '${review.name}')">
                 <i class="fas fa-reply"></i> Respond
-            </button>
-            <button class="btn btn-outline share-btn">
-                <i class="fas fa-share-alt"></i> Share
-            </button>
-            <button class="btn btn-outline report-btn">
-                <i class="fas fa-flag"></i> Report
             </button>
         </div>
     `;
-
-    // Add event listeners to new elements
-    const respondBtn = reviewDiv.querySelector('.respond-btn');
-    const shareBtn = reviewDiv.querySelector('.share-btn');
-    const reportBtn = reviewDiv.querySelector('.report-btn');
-
-    if (respondBtn) {
-        respondBtn.addEventListener('click', function() {
-            openModal(`review-${id}`, review.name, review.job);
-        });
-    }
-
-    if (shareBtn) {
-        shareBtn.addEventListener('click', function() {
-            shareReview(reviewDiv);
-        });
-    }
-
-    if (reportBtn) {
-        reportBtn.addEventListener('click', function() {
-            reportReview(reviewDiv);
-        });
-    }
 
     return reviewDiv;
 }
