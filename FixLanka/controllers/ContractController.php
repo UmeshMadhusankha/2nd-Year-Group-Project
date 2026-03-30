@@ -283,10 +283,31 @@ class ContractController {
             $data['status'] = $data['status'] ?? 'draft';
             $data['user_signature'] = $data['user_signature'] ?? '';
             $data['company_signature'] = $data['company_signature'] ?? '';
+            $data['company_id'] = $companyId;
 
             $contractId = $this->model->create($data);
 
             if ($contractId) {
+                // Save milestones if provided
+                if (isset($data['milestones']) && is_array($data['milestones'])) {
+                    $this->model->updateMilestones($contractId, $data['milestones']);
+                }
+
+                // If asked to send to customer immediately
+                if (isset($data['send_to_customer']) && $data['send_to_customer']) {
+                    $this->model->markAsSent($contractId, $companyId);
+                }
+
+                // Update quotation and job request statuses if they exist
+                if (isset($data['quotation_id']) && $data['quotation_id']) {
+                    $qStmt = $this->pdo->prepare("UPDATE companyquotation SET status = 'successful' WHERE quotation_id = ?");
+                    $qStmt->execute([$data['quotation_id']]);
+                }
+                if (isset($data['job_request_id']) && $data['job_request_id']) {
+                    $rStmt = $this->pdo->prepare("UPDATE jobrequest SET status = 'in_progress' WHERE request_id = ?");
+                    $rStmt->execute([$data['job_request_id']]);
+                }
+
                 echo json_encode([
                     'success' => true,
                     'message' => 'Contract created successfully',
@@ -776,17 +797,24 @@ class ContractController {
                     q.warranty_period,
                     q.payment_terms,
                     q.additional_terms,
-                    r_loc.address as location,
-                    r_loc.district,
+                    r.address as location,
+                    r.district,
                     r.title as request_title,
                     u.user_id as customer_id,
                     u.f_name as customer_fname,
                     u.l_name as customer_lname,
-                    u.email as customer_email
+                    u.email as customer_email,
+                    u.address as customer_address,
+                    u.district as customer_district,
+                    comp.name as company_name,
+                    comp.registration_no as company_registration,
+                    comp.address as company_address,
+                    comp.contact_no as company_contact,
+                    comp.email as company_email
                 FROM companyquotation q
                 INNER JOIN jobrequest r ON q.request_id = r.request_id
-                LEFT JOIN location r_loc ON r.location_id = r_loc.location_id
                 INNER JOIN user u ON r.user_id = u.user_id
+                LEFT JOIN company comp ON q.company_id = comp.company_id
                 LEFT JOIN contract c ON c.quotation_id = q.quotation_id
                 WHERE q.status = 'accepted'
                 AND (q.company_id = ? OR (q.company_id IS NULL AND q.user_id = ?))

@@ -40,12 +40,13 @@ class UserQuotesController {
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
         $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
         $status = isset($_GET['status']) && $_GET['status'] !== '' ? (string)$_GET['status'] : null;
+        $requestId = isset($_GET['request_id']) ? (int)$_GET['request_id'] : null;
 
         if ($limit <= 0) $limit = 20;
         if ($limit > 50) $limit = 50;
         if ($offset < 0) $offset = 0;
 
-        $quotes = $this->model->getUserQuotes((int)$user['id'], $limit, $offset, $status);
+        $quotes = $this->model->getUserQuotes((int)$user['id'], $limit, $offset, $status, $requestId);
         $pendingCount = $this->model->getUserPendingCount((int)$user['id']);
 
         echo json_encode([

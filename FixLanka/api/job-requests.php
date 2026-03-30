@@ -64,8 +64,8 @@ function getAvailableJobs() {
                     jr.title,
                     jr.description,
                     jr.status,
-                    l.district,
-                    l.address,
+                    jr.district,
+                    jr.address,
                     jr.service_provider_type,
                     jr.urgency,
                     jr.finish_date,
@@ -79,10 +79,9 @@ function getAvailableJobs() {
                         WHEN jr.finish_date < CURDATE() THEN 1 
                         ELSE 0 
                     END as is_expired
-                FROM JobRequest jr
-                LEFT JOIN location l ON jr.location_id = l.location_id
-                LEFT JOIN Category c ON jr.category_id = c.category_id
-                LEFT JOIN User u ON jr.user_id = u.user_id
+                FROM jobrequest jr
+                LEFT JOIN category c ON jr.category_id = c.category_id
+                LEFT JOIN user u ON jr.user_id = u.user_id
                 WHERE jr.status = 'pending'
                 AND jr.finish_date >= CURDATE()";
         
@@ -100,7 +99,7 @@ function getAvailableJobs() {
         }
         
         if ($district) {
-            $sql .= " AND l.district = ?";
+            $sql .= " AND jr.district = ?";
             $params[] = $district;
         }
         

@@ -346,20 +346,28 @@ foreach ($jobRequests as $job) {
         </div>
     </div>
 
-    <!-- Quotes Modal -->
+    <!-- Quotes List Modal -->
     <div id="quotesModal" class="modal-overlay">
-        <div class="modal-container" style="max-width: 800px; width: 90%;">
+        <div class="modal-container" style="max-width:680px;width:90%;">
             <div class="modal-header">
-                <h2 class="modal-title">Received Quotations</h2>
-                <button class="modal-close" onclick="closeQuotesModal()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h2 class="modal-title"><i class="fas fa-file-invoice-dollar" style="color:#0abab5;margin-right:8px"></i>Received Quotations</h2>
+                <button class="modal-close" onclick="closeQuotesModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-content" style="padding:0;">
+                <div id="quotesList" style="max-height:70vh;overflow-y:auto;padding:16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quote Detail Modal (2nd level) -->
+    <div id="quoteDetailModal" class="modal-overlay" style="z-index:1200;">
+        <div class="modal-container" style="max-width:600px;width:90%;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#0abab5,#059090);">
+                <h2 class="modal-title" style="color:#fff;"><i class="fas fa-receipt" style="margin-right:8px"></i>Quote Details</h2>
+                <button class="modal-close" onclick="closeQuoteDetail()" style="color:#fff;"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-content">
-                <div id="quotesList" class="quotes-list">
-                    <!-- Quotes will be loaded here -->
-                    <div class="text-center p-4" style="text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
-                </div>
+                <div id="quoteDetailBody"></div>
             </div>
         </div>
     </div>
@@ -484,7 +492,221 @@ foreach ($jobRequests as $job) {
             setTimeout(() => alert.remove(), 300);
         });
     }, 5000);
+    // ─── View Quotes ────────────────────────────────────────────────────────
+    // Cache for quotes per requestId so we can open detail without re-fetching
+    const _quotesCache = {};
+
+    function viewQuotes(requestId) {
+        const modal = document.getElementById('quotesModal');
+        const list  = document.getElementById('quotesList');
+        if (!modal || !list) return;
+
+        list.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280"><i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top:12px">Loading quotations...</p></div>';
+        modal.classList.add('show');
+
+        fetch(`/2nd-Year-Group-Project/FixLanka/api/user-quotes.php?action=list&request_id=${requestId}&limit=50`)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    list.innerHTML = `<div style="text-align:center;padding:30px;color:#ef4444"><i class="fas fa-exclamation-circle"></i> ${escapeQH(data.message || 'Failed to load quotations.')}</div>`;
+                    return;
+                }
+                const quotes = data.quotes || [];
+                _quotesCache[requestId] = quotes;
+
+                if (!quotes.length) {
+                    list.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280"><i class="fas fa-file-invoice-dollar fa-2x"></i><p style="margin-top:14px">No quotations received yet for this job.</p></div>';
+                    return;
+                }
+
+                list.innerHTML = `
+                    <p style="margin:0 0 12px;color:#6b7280;font-size:13px">${quotes.length} quotation${quotes.length !== 1 ? 's' : ''} received — click any row to view full details</p>
+                    ${quotes.map((q, i) => renderQuoteListRow(q, i, requestId)).join('')}`;
+            })
+            .catch(() => {
+                list.innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444"><i class="fas fa-exclamation-circle"></i> Network error. Please try again.</div>';
+            });
+    }
+
+    // Compact list row — clicking opens detail popup
+    function renderQuoteListRow(q, index, requestId) {
+        const colors  = { pending:'#f59e0b', accepted:'#22c55e', rejected:'#ef4444' };
+        const color   = colors[q.status] || '#6b7280';
+        const label   = q.status ? q.status.charAt(0).toUpperCase() + q.status.slice(1) : '—';
+        const amount  = parseFloat(q.amount || 0).toLocaleString();
+        const rating  = parseFloat(q.provider_rating || 0).toFixed(1);
+        const initial = (q.provider_name || 'R')[0].toUpperCase();
+        const days    = q.estimated_days ? `${q.estimated_days}d` : '—';
+
+        return `
+        <div onclick="openQuoteDetail(${requestId}, ${index})"
+             style="display:flex;align-items:center;gap:14px;padding:14px 16px;margin-bottom:10px;border:1px solid #e5e7eb;
+                    border-radius:12px;background:#fff;cursor:pointer;transition:box-shadow .15s,border-color .15s;
+                    box-shadow:0 1px 3px rgba(0,0,0,.05)"
+             onmouseover="this.style.borderColor='#0abab5';this.style.boxShadow='0 4px 12px rgba(10,186,181,.15)'"
+             onmouseout="this.style.borderColor='#e5e7eb';this.style.boxShadow='0 1px 3px rgba(0,0,0,.05)'">
+
+            <!-- Avatar -->
+            <div style="flex-shrink:0;width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#0abab5,#059090);
+                        display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:17px">
+                ${initial}
+            </div>
+
+            <!-- Name + type + rating -->
+            <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:15px;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeQH(q.provider_name || 'Unknown')}</div>
+                <div style="font-size:12px;color:#6b7280;margin-top:2px">${escapeQH(q.provider_type || 'Individual')} &nbsp;·&nbsp; <i class="fas fa-clock"></i> ${days} &nbsp;·&nbsp; <i class="fas fa-star" style="color:#f59e0b"></i> ${rating}</div>
+            </div>
+
+            <!-- Amount + status -->
+            <div style="text-align:right;flex-shrink:0">
+                <div style="font-size:17px;font-weight:800;color:#0abab5">LKR ${amount}</div>
+                <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;
+                             background:${color}18;color:${color};border:1px solid ${color}">${label}</span>
+            </div>
+
+            <!-- Chevron -->
+            <div style="flex-shrink:0;color:#9ca3af;font-size:13px"><i class="fas fa-chevron-right"></i></div>
+        </div>`;
+    }
+
+    // Detail popup
+    function openQuoteDetail(requestId, index) {
+        const q = (_quotesCache[requestId] || [])[index];
+        if (!q) return;
+        const body = document.getElementById('quoteDetailBody');
+        if (!body) return;
+
+        const colors  = { pending:'#f59e0b', accepted:'#22c55e', rejected:'#ef4444' };
+        const color   = colors[q.status] || '#6b7280';
+        const label   = q.status ? q.status.charAt(0).toUpperCase() + q.status.slice(1) : '—';
+        const amount  = parseFloat(q.amount || 0).toLocaleString();
+        const rating  = parseFloat(q.provider_rating || 0).toFixed(1);
+        const days    = q.estimated_days ? `${q.estimated_days} day${q.estimated_days != 1 ? 's' : ''}` : '—';
+        const warranty= q.warranty_period ? `${q.warranty_period} months` : 'None';
+        const mats    = q.materials_included == 1 ? '<span style="color:#22c55e"><i class="fas fa-check-circle"></i> Included</span>' : '<span style="color:#ef4444"><i class="fas fa-times-circle"></i> Not Included</span>';
+        const validUntil = q.valid_until ? new Date(q.valid_until).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}) : '—';
+        const submittedOn = q.created_at ? new Date(q.created_at).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}) : '—';
+        const initial = (q.provider_name || 'R')[0].toUpperCase();
+        const isPending = q.status === 'pending';
+
+        // Detail grid construction
+        let detailCells = [
+            detailCell('fas fa-clock','Estimated Duration', days),
+            detailCell('fas fa-tools','Materials','', mats),
+            detailCell('fas fa-shield-alt','Valid For (Warranty)', warranty),
+            detailCell('fas fa-calendar-alt','Submitted On', submittedOn),
+            detailCell('fas fa-tag','Job Title', escapeQH(q.job_title || '—'))
+        ];
+
+        // Add company-specific detailed fields if available
+        if (q.source === 'company') {
+            const formatCurr = (val) => val ? 'LKR ' + parseFloat(val).toLocaleString() : '—';
+            
+            detailCells.push(
+                detailCell('fas fa-user-hard-hat', 'Labor Cost', formatCurr(q.labor_cost)),
+                detailCell('fas fa-box-open', 'Material Cost', formatCurr(q.material_cost)),
+                detailCell('fas fa-truck', 'Transport Cost', formatCurr(q.transport_cost)),
+                detailCell('fas fa-plus-circle', 'Other Charges', formatCurr(q.other_charges)),
+                detailCell('fas fa-money-check-alt', 'Pricing Type', escapeQH(q.pricing_type ? q.pricing_type.replace(/_/g, ' ') : '—').replace(/\b\w/g, l => l.toUpperCase())),
+                detailCell('fas fa-wallet', 'Payment Method', escapeQH(q.payment_method ? q.payment_method.replace(/_/g, ' ') : '—').replace(/\b\w/g, l => l.toUpperCase())),
+                detailCell('fas fa-file-contract', 'Payment Terms', escapeQH(q.payment_terms || '—')),
+                detailCell('fas fa-calendar-week', 'Work Schedule', escapeQH(q.work_schedule_type ? q.work_schedule_type.replace(/_/g, ' ') : '—').replace(/\b\w/g, l => l.toUpperCase()))
+            );
+        }
+
+        const detailGridHtml = detailCells.join('');
+
+        body.innerHTML = `
+        <!-- Provider header -->
+        <div style="display:flex;align-items:center;gap:14px;padding:20px;background:#f9fafb;border-bottom:1px solid #e5e7eb">
+            <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0abab5,#059090);
+                        display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;flex-shrink:0">${initial}</div>
+            <div style="flex:1">
+                <div style="font-size:18px;font-weight:700;color:#111827">${escapeQH(q.provider_name || 'Unknown Repairer')}</div>
+                <div style="font-size:13px;color:#6b7280;margin-top:2px">
+                    <i class="fas fa-user-tag"></i> ${escapeQH(q.provider_type || 'Individual')}
+                    &nbsp;&nbsp;<i class="fas fa-star" style="color:#f59e0b"></i> ${rating} rating
+                </div>
+            </div>
+            <div style="text-align:right">
+                <div style="font-size:24px;font-weight:800;color:#0abab5">LKR ${amount}</div>
+                <span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;
+                             background:${color}18;color:${color};border:1px solid ${color}">${label}</span>
+            </div>
+        </div>
+
+        <!-- Detail grid -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
+            ${detailGridHtml}
+        </div>
+
+        <!-- Message -->
+        ${q.message ? '<div style="margin:0;padding:16px 20px;border-top:1px solid #e5e7eb"><div style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af;margin-bottom:8px">Message from Provider</div><div style="background:#f0fdfc;border-left:3px solid #0abab5;border-radius:0 8px 8px 0;padding:12px 14px;font-size:14px;color:#374151;line-height:1.6"><i class=\'fas fa-comment-dots\' style=\'color:#0abab5;margin-right:6px\'></i>' + escapeQH(q.message) + '</div></div>' : ''}
+
+        <!-- Actions -->
+        <div style="padding:16px 20px;border-top:1px solid #e5e7eb;display:flex;gap:10px;justify-content:flex-end;">
+            <button onclick="closeQuoteDetail()"
+                    style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;padding:9px 18px;cursor:pointer;font-weight:600">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </button>
+            ${isPending ? '<button onclick="acceptQuote(\'' + q.source + '\', ' + q.quote_id + ', ' + requestId + ')" style="background:#22c55e;color:#fff;border:none;border-radius:8px;padding:9px 20px;cursor:pointer;font-weight:700;"><i class=\'fas fa-check\'></i> Accept This Quote</button>' : ''}
+        </div>`;
+
+        document.getElementById('quoteDetailModal').classList.add('show');
+    }
+
+    function detailCell(icon, label, value, rawHtml) {
+        return `<div style="padding:14px 20px;border-bottom:1px solid #f3f4f6;border-right:1px solid #f3f4f6">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af;margin-bottom:4px"><i class="${icon}" style="margin-right:4px"></i>${label}</div>
+            <div style="font-size:15px;font-weight:600;color:#111827">${rawHtml || escapeQH(value)}</div>
+        </div>`;
+    }
+
+    function escapeQH(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function acceptQuote(source, quoteId, requestId) {
+        if (!confirm('Accept this quote? All other quotes for this job will be rejected and the job will be assigned to this provider.')) return;
+        fetch('/2nd-Year-Group-Project/FixLanka/api/user-quotes.php?action=respond', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source, quote_id: quoteId, decision: 'accepted' })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                closeQuoteDetail();
+                closeQuotesModal();
+                alert('Quote accepted! The job has been assigned to the provider.');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Failed to accept quote.'));
+            }
+        })
+        .catch(() => alert('Network error. Please try again.'));
+    }
+
+    function closeQuoteDetail() {
+        document.getElementById('quoteDetailModal').classList.remove('show');
+    }
+
+    function closeQuotesModal() {
+        closeQuoteDetail();
+        document.getElementById('quotesModal').classList.remove('show');
+    }
+
+    document.getElementById('quotesModal').addEventListener('click', function(e) {
+        if (e.target === this) closeQuotesModal();
+    });
+    document.getElementById('quoteDetailModal').addEventListener('click', function(e) {
+        if (e.target === this) closeQuoteDetail();
+    });
+
     </script>
+
 
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/job-history.js"></script>
 </body>

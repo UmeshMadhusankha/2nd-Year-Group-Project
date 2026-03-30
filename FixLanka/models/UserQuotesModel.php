@@ -26,29 +26,34 @@ class UserQuotesModel {
         return $this->companyQuotationHasCompanyId;
     }
 
-    public function getUserQuotes(int $userId, int $limit = 20, int $offset = 0, ?string $status = null): array {
+    public function getUserQuotes(int $userId, int $limit = 20, int $offset = 0, ?string $status = null, ?int $requestId = null): array {
         $limit = max(1, min(50, (int)$limit));
         $offset = max(0, (int)$offset);
 
-        // IMPORTANT: PDO MySQL can throw "Invalid parameter number" when the same
-        // named placeholder is used multiple times (when emulation is off). Use
-        // distinct placeholders for each occurrence.
         $params = [
             ':user_id_repairer' => $userId,
-            ':user_id_company' => $userId,
+            ':user_id_company'  => $userId,
         ];
         $statusSqlRepairer = '';
-        $statusSqlCompany = '';
+        $statusSqlCompany  = '';
         if ($status !== null) {
             $params[':status_repairer'] = $status;
-            $params[':status_company'] = $status;
+            $params[':status_company']  = $status;
             $statusSqlRepairer = ' AND rq.status = :status_repairer ';
-            $statusSqlCompany = ' AND cq.status = :status_company ';
+            $statusSqlCompany  = ' AND cq.status = :status_company ';
         }
 
-        $hasCompanyId = $this->companyQuotationHasCompanyId();
+        $requestSqlRepairer = '';
+        $requestSqlCompany  = '';
+        if ($requestId !== null) {
+            $params[':request_id_repairer'] = $requestId;
+            $params[':request_id_company']  = $requestId;
+            $requestSqlRepairer = ' AND rq.request_id = :request_id_repairer ';
+            $requestSqlCompany  = ' AND cq.request_id = :request_id_company ';
+        }
 
-        $companyJoinSql = $hasCompanyId ? "LEFT JOIN company c ON cq.company_id = c.company_id" : "";
+        $hasCompanyId          = $this->companyQuotationHasCompanyId();
+        $companyJoinSql        = $hasCompanyId ? "LEFT JOIN company c ON cq.company_id = c.company_id" : "";
         $companyProviderNameSql = $hasCompanyId ? "COALESCE(c.name, 'Company')" : "'Company'";
 
         $sql = "
@@ -65,12 +70,29 @@ class UserQuotesModel {
                     CONCAT(r.f_name, ' ', r.l_name) AS provider_name,
                     'Individual' AS provider_type,
                     r.profilePicture AS provider_avatar,
-                    r.ratings AS provider_rating
+                    r.ratings AS provider_rating,
+                    rq.estimatedDays AS estimated_days,
+                    rq.warrantyPeriod AS warranty_period,
+                    rq.materialsIncluded AS materials_included,
+                    rq.message AS message,
+                    rq.validUntil AS valid_until,
+                    -- Company specific fields padded with NULL
+                    NULL AS labor_cost,
+                    NULL AS material_cost,
+                    NULL AS transport_cost,
+                    NULL AS other_charges,
+                    NULL AS budget_type,
+                    NULL AS payment_terms,
+                    NULL AS payment_method,
+                    NULL AS pricing_type,
+                    NULL AS hourly_rate,
+                    NULL AS work_schedule_type
                 FROM repairerquote rq
                 INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
                 INNER JOIN repairer r ON rq.repairer_id = r.repairer_id
                 WHERE jr.user_id = :user_id_repairer
                 $statusSqlRepairer
+                $requestSqlRepairer
 
                 UNION ALL
 
@@ -86,12 +108,29 @@ class UserQuotesModel {
                     $companyProviderNameSql AS provider_name,
                     'Company' AS provider_type,
                     NULL AS provider_avatar,
-                    NULL AS provider_rating
+                    NULL AS provider_rating,
+                    cq.estimated_duration AS estimated_days,
+                    cq.warranty_period AS warranty_period,
+                    1 AS materials_included, -- Companies are expected to list material cost, assumed included if quote provided
+                    cq.description AS message,
+                    NULL AS valid_until, -- companyquotation doesn't have an expiration date yet
+                    -- Company specific fields
+                    cq.labor_cost AS labor_cost,
+                    cq.material_cost AS material_cost,
+                    cq.transport_cost AS transport_cost,
+                    cq.other_charges AS other_charges,
+                    cq.budget_type AS budget_type,
+                    cq.payment_terms AS payment_terms,
+                    cq.payment_method AS payment_method,
+                    cq.pricing_type AS pricing_type,
+                    cq.hourly_rate AS hourly_rate,
+                    cq.work_schedule_type AS work_schedule_type
                 FROM companyquotation cq
                 INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
                 $companyJoinSql
                 WHERE cq.user_id = :user_id_company
                 $statusSqlCompany
+                $requestSqlCompany
             ) q
             ORDER BY q.created_at DESC
             LIMIT :limit OFFSET :offset
@@ -137,40 +176,77 @@ class UserQuotesModel {
             return false;
         }
 
-        if ($source === 'repairer') {
-            $sql = "
-                UPDATE repairerquote rq
-                INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
-                SET rq.status = :status
-                WHERE rq.quote_id = :quote_id
-                  AND jr.user_id = :user_id
-                  AND rq.status = 'pending'
-            ";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':status', $decision, PDO::PARAM_STR);
-            $stmt->bindValue(':quote_id', $quoteId, PDO::PARAM_INT);
-            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->rowCount() > 0;
-        }
+        try {
+            $this->pdo->beginTransaction();
 
-        if ($source === 'company') {
-            $sql = "
-                UPDATE companyquotation cq
-                INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
-                SET cq.status = :status
-                WHERE cq.quotation_id = :quote_id
-                  AND cq.user_id = :user_id
-                  AND cq.status = 'pending'
-            ";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':status', $decision, PDO::PARAM_STR);
-            $stmt->bindValue(':quote_id', $quoteId, PDO::PARAM_INT);
-            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->rowCount() > 0;
-        }
+            // First, find the request_id to ensure ownership and for subsequent updates
+            $requestId = null;
+            if ($source === 'repairer') {
+                $checkSql = "SELECT rq.request_id FROM repairerquote rq INNER JOIN jobrequest jr ON rq.request_id = jr.request_id WHERE rq.quote_id = :quote_id AND jr.user_id = :user_id";
+            } else {
+                $checkSql = "SELECT cq.request_id FROM companyquotation cq INNER JOIN jobrequest jr ON cq.request_id = jr.request_id WHERE cq.quotation_id = :quote_id AND cq.user_id = :user_id";
+            }
+            
+            $stmt = $this->pdo->prepare($checkSql);
+            $stmt->execute([':quote_id' => $quoteId, ':user_id' => $userId]);
+            $requestId = $stmt->fetchColumn();
 
-        return false;
+            if (!$requestId) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            // Update the target quote
+            if ($source === 'repairer') {
+                $updateSql = "UPDATE repairerquote SET status = :status WHERE quote_id = :quote_id AND status = 'pending'";
+            } else {
+                $updateSql = "UPDATE companyquotation SET status = :status WHERE quotation_id = :quote_id AND status = 'pending'";
+            }
+            
+            $stmt = $this->pdo->prepare($updateSql);
+            $stmt->execute([':status' => $decision, ':quote_id' => $quoteId]);
+            
+            if ($stmt->rowCount() === 0) {
+                $this->pdo->rollBack();
+                return false; // Quote not found or not pending
+            }
+
+            // If the decision is 'accepted', we need to reject competing quotes and update the job request
+            if ($decision === 'accepted') {
+                // Reject other pending company quotations for this request
+                $rejectCompanySql = "UPDATE companyquotation SET status = 'rejected' WHERE request_id = :request_id AND status = 'pending' AND quotation_id != :exclude_id";
+                // Reject other pending repairer quotes for this request
+                $rejectRepairerSql = "UPDATE repairerquote SET status = 'rejected' WHERE request_id = :request_id AND status = 'pending' AND quote_id != :exclude_id_rep";
+
+                if ($source === 'company') {
+                    $stmtCompany = $this->pdo->prepare($rejectCompanySql);
+                    $stmtCompany->execute([':request_id' => $requestId, ':exclude_id' => $quoteId]);
+                    
+                    $stmtRepairer = $this->pdo->prepare("UPDATE repairerquote SET status = 'rejected' WHERE request_id = :request_id AND status = 'pending'");
+                    $stmtRepairer->execute([':request_id' => $requestId]);
+                } else {
+                    $stmtCompany = $this->pdo->prepare("UPDATE companyquotation SET status = 'rejected' WHERE request_id = :request_id AND status = 'pending'");
+                    $stmtCompany->execute([':request_id' => $requestId]);
+                    
+                    $stmtRepairer = $this->pdo->prepare($rejectRepairerSql);
+                    $stmtRepairer->execute([':request_id' => $requestId, ':exclude_id_rep' => $quoteId]);
+                }
+
+                // Update job request status to accepted
+                $updateJobSql = "UPDATE jobrequest SET status = 'accepted' WHERE request_id = :request_id";
+                $stmtJob = $this->pdo->prepare($updateJobSql);
+                $stmtJob->execute([':request_id' => $requestId]);
+            }
+
+            $this->pdo->commit();
+            return true;
+
+        } catch (Exception $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log("Error in respondToQuote: " . $e->getMessage());
+            return false;
+        }
     }
 }

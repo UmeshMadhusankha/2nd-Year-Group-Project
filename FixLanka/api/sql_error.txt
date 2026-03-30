@@ -1,0 +1,29 @@
+Error creating enhanced quotation: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`fix_lanka`.`companyquotation`, CONSTRAINT `companyquotation_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE)
+Array
+(
+    [request_id] => 28
+    [user_id] => 9998
+    [title] => Test Sink Repair
+    [description] => Based on your request:
+
+Fix the kitchen sink
+
+We will provide the following services:
+
+    [labor_cost] => 5000
+    [material_cost] => 0
+    [transport_cost] => 500
+    [other_charges] => 0
+    [total_amount] => 5500
+    [start_date] => 2026-03-11
+    [completion_date] => 2026-04-01
+    [estimated_duration] => 21
+    [payment_terms] => 50% Advance, 50% on Completion
+    [warranty_period] => 6_months
+    [additional_terms] => 
+    [budget_type] => fixed
+    [payment_method] => 50-50
+    [pricing_type] => fixed_price
+    [hourly_rate] => 
+    [spending_cap_multiplier] => 1.5
+)

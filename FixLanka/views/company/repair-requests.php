@@ -50,6 +50,11 @@ if (!$userId) {
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
+
+    <!-- Expose PHP session data to JavaScript -->
+    <script>
+        window.CURRENT_USER_ID = <?php echo intval($userId); ?>;
+    </script>
 </head>
 
 <body>

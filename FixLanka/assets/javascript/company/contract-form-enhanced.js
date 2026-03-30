@@ -581,13 +581,22 @@
 
         // Parties (basic)
         setText('partyClientName', `${q.customer_fname} ${q.customer_lname}`);
+        setText('partyClientAddress', q.customer_address || '—');
         setText('partyClientEmail', q.customer_email || '—');
+        setText('partyClientDistrict', q.customer_district || '—');
         setVal('clientName', `${q.customer_fname} ${q.customer_lname}`);
         setVal('clientEmail', q.customer_email || '');
 
+        // Company Details
+        setText('partyCompanyName', q.company_name || '—');
+        setText('partyCompanyReg', q.company_registration || '—');
+        setText('partyCompanyAddress', q.company_address || '—');
+        setText('partyCompanyContact', `${q.company_contact || ''} / ${q.company_email || ''}`);
+
+
         // Project
         setVal('projectTitle', q.title || '');
-        setVal('projectLocation', q.location || '');
+        setVal('projectLocation', `${q.location || ''}, ${q.district || ''}`);
         setVal('projectDescription', q.description || '');
         setVal('scopeDescription', q.description || '');
 
@@ -1160,7 +1169,7 @@
                 method = 'POST';
             } else {
                 // CREATE new contract from quotation
-                url = `${ENHANCED_API}?action=create`;
+                url = `/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=create`;
                 payload.send_to_customer = true;
                 method = 'POST';
             }
@@ -1230,7 +1239,10 @@
         const data = {
             quotation_id: getVal('selectedQuotationId'),
             request_id: getVal('selectedRequestId'),
+            job_request_id: getVal('selectedRequestId'),
+            project_id: getVal('selectedRequestId'),
             customer_id: getVal('customerId'),
+            contract_date: new Date().toISOString().split('T')[0],
 
             // Project
             project_title: getVal('projectTitle'),

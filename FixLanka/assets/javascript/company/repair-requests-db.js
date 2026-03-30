@@ -1374,6 +1374,17 @@ function getInitials(firstName, lastName) {
 }
 
 /**
+ * Get initials from full name string
+ */
+function getInitialsFromFullName(fullName) {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/);
+    const first = parts[0] ? parts[0].charAt(0).toUpperCase() : '';
+    const last = parts.length > 1 ? parts[parts.length - 1].charAt(0).toUpperCase() : '';
+    return first + last;
+}
+
+/**
  * Format date
  */
 function formatDate(dateString) {
@@ -1551,7 +1562,7 @@ function renderDirectRequests(requests) {
  * @returns {string} HTML string
  */
 function createDirectRequestRow(request) {
-    const initials = getInitials(request.customer_fname, request.customer_lname);
+    const initials = getInitialsFromFullName(request.customer_name || '');
     const statusClass = request.status === 'accepted' ? 'accepted' :
         request.status === 'rejected' ? 'rejected' : 'pending';
     const statusIcon = request.status === 'accepted' ? 'check' :
