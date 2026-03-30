@@ -53,26 +53,22 @@ class RepairerQuote {
      */
     public function getAll($filters = []) {
         try {
-            $sql = "SELECT rq.*,
+            $sql = "SELECT rq.*, 
                            jr.title as job_title,
                            jr.description as job_description,
-                           jr.district,
-                           jr.address,
+                           jr_loc.district,
+                           jr_loc.address,
                            jr.urgency,
                            jr.finish_date,
-                           jr.created_at as job_posted_date,
+                           jr.dateCreated as job_posted_date,
                            c.name as category_name,
                            u.f_name as customer_first_name,
-                           u.l_name as customer_last_name,
-                           r.f_name as repairer_first_name,
-                           r.l_name as repairer_last_name,
-                           r.profilePicture as repairer_photo,
-                           r.ratings as repairer_rating
-                    FROM repairerquote rq
-                    LEFT JOIN jobrequest jr ON rq.request_id = jr.request_id
-                    LEFT JOIN category c ON jr.category_id = c.category_id
-                    LEFT JOIN user u ON jr.user_id = u.user_id
-                    LEFT JOIN repairer r ON rq.repairer_id = r.repairer_id
+                           u.l_name as customer_last_name
+                    FROM RepairerQuote rq
+                    LEFT JOIN JobRequest jr ON rq.request_id = jr.request_id
+                    LEFT JOIN location jr_loc ON jr.location_id = jr_loc.location_id
+                    LEFT JOIN Category c ON jr.category_id = c.category_id
+                    LEFT JOIN User u ON jr.user_id = u.user_id
                     WHERE 1=1";
             
             $params = [];
@@ -118,28 +114,24 @@ class RepairerQuote {
     public function getById($quoteId) {
         try {
             $stmt = $this->pdo->prepare("
-                SELECT rq.*,
+                SELECT rq.*, 
                        jr.title as job_title,
                        jr.description as job_description,
-                       jr.district,
-                       jr.address,
+                       jr_loc.district,
+                       jr_loc.address,
                        jr.urgency,
                        jr.finish_date,
                        jr.photos as job_photos,
-                       jr.created_at as job_posted_date,
+                       jr.dateCreated as job_posted_date,
                        c.name as category_name,
                        u.f_name as customer_first_name,
                        u.l_name as customer_last_name,
-                       u.email as customer_email,
-                       r.f_name as repairer_first_name,
-                       r.l_name as repairer_last_name,
-                       r.profilePicture as repairer_photo,
-                       r.ratings as repairer_rating
-                FROM repairerquote rq
-                LEFT JOIN jobrequest jr ON rq.request_id = jr.request_id
-                LEFT JOIN category c ON jr.category_id = c.category_id
-                LEFT JOIN user u ON jr.user_id = u.user_id
-                LEFT JOIN repairer r ON rq.repairer_id = r.repairer_id
+                       u.email as customer_email
+                FROM RepairerQuote rq
+                LEFT JOIN JobRequest jr ON rq.request_id = jr.request_id
+                LEFT JOIN location jr_loc ON jr.location_id = jr_loc.location_id
+                LEFT JOIN Category c ON jr.category_id = c.category_id
+                LEFT JOIN User u ON jr.user_id = u.user_id
                 WHERE rq.quote_id = ?
             ");
             
