@@ -50,7 +50,7 @@ unset($_SESSION['error']);
                         <input type="checkbox" name="remember">
                         Remember me
                     </label>
-                    <a href="/forgot-password" class="forgot-link">Forgot Password?</a>
+                    <a href="/2nd-Year-Group-Project/FixLanka/forgot-password" class="forgot-link">Forgot Password?</a>
                 </div>
                 
                 <button type="submit" class="login-submit-btn">Login</button>

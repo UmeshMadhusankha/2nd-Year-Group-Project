@@ -1240,7 +1240,6 @@
             quotation_id: getVal('selectedQuotationId'),
             request_id: getVal('selectedRequestId'),
             job_request_id: getVal('selectedRequestId'),
-            project_id: getVal('selectedRequestId'),
             customer_id: getVal('customerId'),
             contract_date: new Date().toISOString().split('T')[0],
 

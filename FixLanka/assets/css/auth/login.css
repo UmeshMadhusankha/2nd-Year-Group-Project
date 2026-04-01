@@ -55,6 +55,26 @@ body {
     font-size: 14px;
 }
 
+.error-message {
+    background: #fdecea;
+    color: #b42318;
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    border: 1px solid rgba(180, 35, 24, 0.25);
+}
+
+.success-message {
+    background: #e7f7ee;
+    color: #1b6b3d;
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    border: 1px solid rgba(27, 107, 61, 0.25);
+}
+
 .login-form {
     display: flex;
     flex-direction: column;

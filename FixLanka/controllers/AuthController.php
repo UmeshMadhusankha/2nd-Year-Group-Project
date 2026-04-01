@@ -13,6 +13,83 @@ class AuthController {
     public function showLoginPage() {
         require_once __DIR__ . '/../views/auth/login.php';
     }
+
+    public function showForgotPasswordPage() {
+        require_once __DIR__ . '/../views/auth/forgot-password.php';
+    }
+
+    /**
+     * Forgot password (temporary): resets password using only email + new password.
+     * No OTP / token verification is performed.
+     */
+    public function resetPasswordWithoutVerification() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->showForgotPasswordPage();
+            return;
+        }
+
+        $email = trim($_POST['email'] ?? '');
+        $newPassword = $_POST['new_password'] ?? '';
+
+        if (empty($email) || empty($newPassword)) {
+            $_SESSION['error'] = 'Email and new password are required';
+            $_SESSION['prefill_email'] = $email;
+            header('Location: /2nd-Year-Group-Project/FixLanka/forgot-password');
+            exit;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['error'] = 'Invalid email format';
+            $_SESSION['prefill_email'] = $email;
+            header('Location: /2nd-Year-Group-Project/FixLanka/forgot-password');
+            exit;
+        }
+
+        if (strlen($newPassword) < 6) {
+            $_SESSION['error'] = 'Password must be at least 6 characters long';
+            $_SESSION['prefill_email'] = $email;
+            header('Location: /2nd-Year-Group-Project/FixLanka/forgot-password');
+            exit;
+        }
+
+        try {
+            $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+
+            $updated = false;
+
+            // NOTE: we intentionally update the first matching account.
+            $updated = $updated || $this->updatePasswordByEmail('user', $email, $newHash);
+            $updated = $updated || $this->updatePasswordByEmail('Admin', $email, $newHash);
+            $updated = $updated || $this->updatePasswordByEmail('Moderator', $email, $newHash);
+            $updated = $updated || $this->updatePasswordByEmail('company', $email, $newHash);
+            $updated = $updated || $this->updatePasswordByEmail('repairer', $email, $newHash);
+
+            if (!$updated) {
+                $_SESSION['error'] = 'No account found with that email';
+                $_SESSION['prefill_email'] = $email;
+                header('Location: /2nd-Year-Group-Project/FixLanka/forgot-password');
+                exit;
+            }
+
+            $_SESSION['success'] = 'Password updated successfully. Please login.';
+            header('Location: /2nd-Year-Group-Project/FixLanka/login');
+            exit;
+        } catch (PDOException $e) {
+            $_SESSION['error'] = 'Failed to update password. Please try again.';
+            $_SESSION['prefill_email'] = $email;
+            error_log('Forgot password error: ' . $e->getMessage());
+            header('Location: /2nd-Year-Group-Project/FixLanka/forgot-password');
+            exit;
+        }
+    }
+
+    private function updatePasswordByEmail($table, $email, $hash) {
+        // Table is whitelisted by our own calls above.
+        $sql = "UPDATE {$table} SET password = ? WHERE email = ?";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$hash, $email]);
+        return $stmt->rowCount() > 0;
+    }
     
     public function login() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

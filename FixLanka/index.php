@@ -21,6 +21,16 @@ switch ($request) {
             $controller->showLoginPage();
         }
         break;
+
+    case '/forgot-password':
+        require_once __DIR__ . '/controllers/AuthController.php';
+        $controller = new AuthController();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $controller->resetPasswordWithoutVerification();
+        } else {
+            $controller->showForgotPasswordPage();
+        }
+        break;
     
     case '/signup':
         require_once __DIR__ . '/views/auth/signup.php';

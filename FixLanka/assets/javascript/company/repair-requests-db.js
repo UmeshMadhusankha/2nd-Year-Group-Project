@@ -47,6 +47,12 @@ let companyDefaults = null;
 let editingQuotationId = null;
 
 /**
+ * Prevents duplicate work schedule event bindings
+ * @type {boolean}
+ */
+let workScheduleInitialized = false;
+
+/**
  * DOM element references (initialized after DOM load)
  */
 let quotationModal;
@@ -655,13 +661,9 @@ function openQuotationModal(requestId) {
 
     document.getElementById('estimated-completion-date').value = completionDate.toISOString().split('T')[0];
 
-    // 5. Auto-calculate and fill Estimated Duration
-    const estStartDate = new Date(document.getElementById('estimated-start-date').value);
-    const estCompletionDate = new Date(document.getElementById('estimated-completion-date').value);
-    const durationDays = Math.ceil((estCompletionDate - estStartDate) / (1000 * 60 * 60 * 24));
-    if (durationDays > 0) {
-        document.getElementById('estimated-duration').value = durationDays;
-    }
+    // 5. Auto-calculate daily hours and duration (respects work schedule type)
+    updateDailyWorkHours();
+    autoCalculateDuration();
 
     // 6. Auto-fill Payment Method from company defaults (linked to payment structure)
     if (companyDefaults?.default_payment_terms) {
@@ -1274,6 +1276,7 @@ function autoCalculateDuration() {
     const startDateInput = document.getElementById('estimated-start-date');
     const completionDateInput = document.getElementById('estimated-completion-date');
     const durationInput = document.getElementById('estimated-duration');
+    const scheduleType = document.getElementById('work-schedule-type')?.value || 'weekdays_only';
 
     if (startDateInput && completionDateInput && durationInput) {
         const startDate = new Date(startDateInput.value);
@@ -1297,17 +1300,40 @@ function autoCalculateDuration() {
             completionDateInput.value = fixedCompletion.toISOString().split('T')[0];
 
             // Recalculate with fixed date
-            const fixedDuration = Math.ceil((fixedCompletion - startDate) / (1000 * 60 * 60 * 24));
+            const fixedDuration = calculateWorkingDaysBetweenDates(startDate, fixedCompletion, scheduleType);
             durationInput.value = fixedDuration;
             durationInput.classList.remove('error');
+            calculateTotalWorkHours();
+            updateSchedulePreview();
             return;
         }
 
-        // Calculate duration (in days)
-        const durationDays = Math.ceil((completionDate - startDate) / (1000 * 60 * 60 * 24));
+        // Calculate duration (in working days) based on schedule type
+        let durationDays = calculateWorkingDaysBetweenDates(startDate, completionDate, scheduleType);
 
-        // Warn if duration is 0 (same day completion)
-        if (durationDays === 0) {
+        // Backend requires duration > 0. If the chosen range contains no working days for this schedule,
+        // adjust completion date forward until at least 1 working day exists.
+        if (durationDays <= 0) {
+            const adjustedCompletion = new Date(completionDate);
+            let guard = 0;
+            while (durationDays <= 0 && guard < 31) {
+                adjustedCompletion.setDate(adjustedCompletion.getDate() + 1);
+                durationDays = calculateWorkingDaysBetweenDates(startDate, adjustedCompletion, scheduleType);
+                guard++;
+            }
+
+            if (guard > 0) {
+                completionDateInput.value = adjustedCompletion.toISOString().split('T')[0];
+                showToast('Selected date range has no working days for this schedule. Completion date adjusted.', 'warning', 4000);
+            }
+
+            if (durationDays <= 0) {
+                durationDays = 1;
+            }
+        }
+
+        // Warn if start and completion are the same day
+        if (startDateInput.value === completionDateInput.value) {
             showToast('Same-day completion selected. Are you sure?', 'warning', 3000);
         }
 
@@ -1318,6 +1344,10 @@ function autoCalculateDuration() {
 
         durationInput.value = durationDays;
         durationInput.classList.remove('error');
+
+        // Duration affects total hours + preview
+        calculateTotalWorkHours();
+        updateSchedulePreview();
     }
 }
 
@@ -1743,7 +1773,15 @@ if (document.readyState === 'loading') {
  * Sets up event listeners and default values for work schedule fields
  */
 function initializeWorkSchedule() {
+    if (workScheduleInitialized) {
+        return;
+    }
+    workScheduleInitialized = true;
+
     console.log('🔧 Initializing work schedule features...');
+
+    const startTimeField = document.getElementById('work-start-time');
+    const endTimeField = document.getElementById('work-end-time');
 
     // Auto-update working days based on schedule type
     const scheduleTypeSelect = document.getElementById('work-schedule-type');
@@ -1777,6 +1815,7 @@ function initializeWorkSchedule() {
             }
 
             // Recalculate total hours and update preview
+            autoCalculateDuration();
             calculateTotalWorkHours();
             updateSchedulePreview();
         });
@@ -1802,19 +1841,42 @@ function initializeWorkSchedule() {
         });
     }
 
-    // Auto-calculate total work hours when relevant fields change
-    const fieldsForCalculation = ['estimated-duration', 'working-days-per-week', 'daily-work-hours'];
-    fieldsForCalculation.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('input', calculateTotalWorkHours);
-        }
-    });
+    // Auto-calculate daily hours when time fields change
+    if (startTimeField) {
+        startTimeField.addEventListener('change', () => {
+            updateDailyWorkHours();
+            calculateTotalWorkHours();
+            updateSchedulePreview();
+        });
+        startTimeField.addEventListener('input', () => {
+            updateDailyWorkHours();
+            calculateTotalWorkHours();
+        });
+    }
+    if (endTimeField) {
+        endTimeField.addEventListener('change', () => {
+            updateDailyWorkHours();
+            calculateTotalWorkHours();
+            updateSchedulePreview();
+        });
+        endTimeField.addEventListener('input', () => {
+            updateDailyWorkHours();
+            calculateTotalWorkHours();
+        });
+    }
+
+    // Auto-calculate total work hours when duration changes (duration is auto-calculated)
+    const durationField = document.getElementById('estimated-duration');
+    if (durationField) {
+        durationField.addEventListener('input', calculateTotalWorkHours);
+        durationField.addEventListener('change', calculateTotalWorkHours);
+    }
 
     // Update preview when any schedule field changes
     const fieldsForPreview = [
         'work-schedule-type', 'working-days-per-week', 'daily-work-hours',
-        'work-start-time', 'work-end-time', 'overtime-available', 'overtime-rate'
+        'work-start-time', 'work-end-time', 'overtime-available', 'overtime-rate',
+        'estimated-start-date', 'estimated-completion-date', 'estimated-duration'
     ];
     fieldsForPreview.forEach(fieldId => {
         const field = document.getElementById(fieldId);
@@ -1825,10 +1887,101 @@ function initializeWorkSchedule() {
     });
 
     // Initial calculation and preview
+    updateDailyWorkHours();
+    autoCalculateDuration();
     calculateTotalWorkHours();
     updateSchedulePreview();
 
     console.log('✅ Work schedule features initialized');
+}
+
+function parseTimeToMinutes(timeString) {
+    if (!timeString || typeof timeString !== 'string') return null;
+    const [hoursStr, minutesStr] = timeString.split(':');
+    const hours = Number(hoursStr);
+    const minutes = Number(minutesStr);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+    return hours * 60 + minutes;
+}
+
+function updateDailyWorkHours() {
+    const startTime = document.getElementById('work-start-time')?.value;
+    const endTime = document.getElementById('work-end-time')?.value;
+    const dailyHoursField = document.getElementById('daily-work-hours');
+
+    if (!dailyHoursField) return;
+    if (!startTime || !endTime) {
+        dailyHoursField.value = '';
+        dailyHoursField.classList.remove('error');
+        return;
+    }
+
+    const startMinutes = parseTimeToMinutes(startTime);
+    const endMinutes = parseTimeToMinutes(endTime);
+
+    if (startMinutes === null || endMinutes === null) {
+        dailyHoursField.value = '';
+        dailyHoursField.classList.add('error');
+        return;
+    }
+
+    const diffMinutes = endMinutes - startMinutes;
+    if (diffMinutes <= 0) {
+        dailyHoursField.value = '';
+        dailyHoursField.classList.add('error');
+        showToast('End time must be after start time!', 'error', 3000);
+        return;
+    }
+
+    dailyHoursField.classList.remove('error');
+    dailyHoursField.value = (diffMinutes / 60).toFixed(2);
+}
+
+function isWorkingDayForScheduleType(dayOfWeek, scheduleType) {
+    // dayOfWeek: 0=Sunday, 1=Monday, ..., 6=Saturday
+    switch (scheduleType) {
+        case 'weekdays_only':
+            return dayOfWeek >= 1 && dayOfWeek <= 5;
+        case 'weekends_included':
+            return dayOfWeek >= 1 && dayOfWeek <= 6;
+        case 'all_days':
+        case 'custom':
+        default:
+            return true;
+    }
+}
+
+function calculateWorkingDaysBetweenDates(startDate, endDate, scheduleType) {
+    // Counts working days in [startDate, endDate] (inclusive)
+    // i.e., start=2026-04-03, end=2026-04-06 => 4 days (if all are working days)
+    if (!(startDate instanceof Date) || !(endDate instanceof Date)) return 0;
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 0;
+
+    const startUtc = new Date(Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()));
+    const endUtc = new Date(Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()));
+    if (endUtc < startUtc) return 0;
+
+    // Custom schedule: approximate working days using the provided working-days-per-week value
+    if (scheduleType === 'custom') {
+        const workingDaysPerWeek = parseFloat(document.getElementById('working-days-per-week')?.value) || 5;
+        const totalCalendarDays = Math.floor((endUtc - startUtc) / (1000 * 60 * 60 * 24)) + 1;
+        const fullWeeks = Math.floor(totalCalendarDays / 7);
+        const remainderDays = totalCalendarDays % 7;
+        const estimatedWorkingDays = (fullWeeks * workingDaysPerWeek) + Math.min(remainderDays, workingDaysPerWeek);
+        return Math.max(0, Math.round(estimatedWorkingDays));
+    }
+
+    let count = 0;
+    const current = new Date(startUtc);
+    while (current <= endUtc) {
+        const dow = current.getUTCDay();
+        if (isWorkingDayForScheduleType(dow, scheduleType)) {
+            count++;
+        }
+        current.setUTCDate(current.getUTCDate() + 1);
+    }
+    return count;
 }
 
 /**
@@ -1837,18 +1990,13 @@ function initializeWorkSchedule() {
  */
 function calculateTotalWorkHours() {
     const estimatedDuration = parseFloat(document.getElementById('estimated-duration')?.value) || 0;
-    const workingDaysPerWeek = parseFloat(document.getElementById('working-days-per-week')?.value) || 5;
-    const dailyWorkHours = parseFloat(document.getElementById('daily-work-hours')?.value) || 8;
+    const dailyWorkHours = parseFloat(document.getElementById('daily-work-hours')?.value) || 0;
 
     const totalHoursField = document.getElementById('total-work-hours');
     const laborHoursField = document.getElementById('labor-quantity'); // Hourly labor pricing field
 
-    if (estimatedDuration > 0 && totalHoursField) {
-        // Convert calendar days to work days
-        // Formula: (calendar_days / 7) * working_days_per_week * hours_per_day
-        const weeksNeeded = Math.ceil(estimatedDuration / 7);
-        const totalWorkDays = weeksNeeded * workingDaysPerWeek;
-        const totalHours = (totalWorkDays * dailyWorkHours).toFixed(2);
+    if (estimatedDuration > 0 && dailyWorkHours > 0 && totalHoursField) {
+        const totalHours = (estimatedDuration * dailyWorkHours).toFixed(2);
 
         // Update work schedule total hours
         totalHoursField.value = totalHours;
@@ -1858,10 +2006,10 @@ function calculateTotalWorkHours() {
             laborHoursField.value = totalHours;
             // Trigger change event to recalculate labor cost
             laborHoursField.dispatchEvent(new Event('input', { bubbles: true }));
-            console.log(`� Auto-filled hourly labor hours: ${totalHours}`);
+            console.log(`✅ Auto-filled hourly labor hours: ${totalHours}`);
         }
 
-        console.log(`�📊 Total work hours calculated: ${totalHours} (${weeksNeeded} weeks × ${workingDaysPerWeek} days × ${dailyWorkHours} hrs)`);
+        console.log(`📊 Total work hours calculated: ${totalHours} (${estimatedDuration} days × ${dailyWorkHours} hrs)`);
     } else if (totalHoursField) {
         totalHoursField.value = '';
         if (laborHoursField) {

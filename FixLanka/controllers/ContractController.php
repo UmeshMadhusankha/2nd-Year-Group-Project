@@ -267,27 +267,124 @@ class ContractController {
             }
 
             $data = json_decode(file_get_contents('php://input'), true);
-            
-            // Validate required fields
-            $requiredFields = ['project_id', 'total_budget', 'start_date', 'contract_date'];
-            foreach ($requiredFields as $field) {
-                if (!isset($data[$field]) || empty($data[$field])) {
-                    http_response_code(400);
-                    echo json_encode(['success' => false, 'message' => "Field '$field' is required"]);
-                    return;
-                }
+
+            if (!is_array($data)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid JSON payload']);
+                return;
             }
 
-            // Set defaults
-            $data['milestone_plan'] = $data['milestone_plan'] ?? true;
-            $data['status'] = $data['status'] ?? 'draft';
-            $data['user_signature'] = $data['user_signature'] ?? '';
-            $data['company_signature'] = $data['company_signature'] ?? '';
-            $data['company_id'] = $companyId;
+            // Start transaction so project+contract are consistent
+            $this->pdo->beginTransaction();
 
-            $contractId = $this->model->create($data);
+            try {
+                // If project_id is missing or not a valid project for this company, create a project from the accepted quotation
+                $projectId = $data['project_id'] ?? null;
+                $projectIdValid = false;
+                if (!empty($projectId) && is_numeric($projectId)) {
+                    $pStmt = $this->pdo->prepare("SELECT project_id FROM project WHERE project_id = ? AND company_id = ? LIMIT 1");
+                    $pStmt->execute([(int)$projectId, $companyId]);
+                    $projectIdValid = (bool)$pStmt->fetch(PDO::FETCH_ASSOC);
+                }
 
-            if ($contractId) {
+                if (!$projectIdValid) {
+                    $quotationId = $data['quotation_id'] ?? null;
+                    if (empty($quotationId) || !is_numeric($quotationId)) {
+                        throw new Exception("project_id is invalid; quotation_id is required to create a project");
+                    }
+
+                    $qStmt = $this->pdo->prepare("
+                        SELECT q.*, 
+                               jr.user_id AS customer_id,
+                               jr.request_id,
+                               jr.title AS request_title,
+                               jr.description AS request_description,
+                               jr.address,
+                               jr.district
+                        FROM companyquotation q
+                        INNER JOIN jobrequest jr ON q.request_id = jr.request_id
+                        WHERE q.quotation_id = ?
+                          AND q.status = 'accepted'
+                          AND q.company_id = ?
+                        LIMIT 1
+                    ");
+                    $qStmt->execute([(int)$quotationId, $companyId]);
+                    $quotation = $qStmt->fetch(PDO::FETCH_ASSOC);
+
+                    if (!$quotation) {
+                        throw new Exception('Quotation not found, not accepted, or not authorized');
+                    }
+
+                    $resolvedProjectTitle = trim($data['project_title'] ?? '') !== '' ? trim($data['project_title']) : ($quotation['title'] ?? $quotation['request_title'] ?? 'Project');
+                    $resolvedProjectDescription = trim($data['project_description'] ?? '') !== '' ? trim($data['project_description']) : ($quotation['description'] ?? $quotation['request_description'] ?? null);
+                    $resolvedProjectLocation = trim($data['project_location'] ?? '') !== ''
+                        ? trim($data['project_location'])
+                        : trim(($quotation['address'] ?? '') . (isset($quotation['district']) ? (', ' . $quotation['district']) : ''));
+                    if ($resolvedProjectLocation === '') {
+                        $resolvedProjectLocation = $quotation['district'] ?? 'N/A';
+                    }
+
+                    $resolvedTotalBudget = isset($data['total_budget']) && $data['total_budget'] !== '' ? (float)$data['total_budget'] : (float)$quotation['total_amount'];
+                    $resolvedStartDate = !empty($data['start_date']) ? $data['start_date'] : ($quotation['start_date'] ?? null);
+                    $resolvedEndDate = !empty($data['end_date']) ? $data['end_date'] : ($quotation['completion_date'] ?? null);
+
+                    $projStmt = $this->pdo->prepare("
+                        INSERT INTO project (
+                            company_id, customer_id, title, description, project_type, location,
+                            budget, start_date, end_date, status, progress
+                        ) VALUES (
+                            ?, ?, ?, ?, ?, ?,
+                            ?, ?, ?, 'planned', 0
+                        )
+                    ");
+                    $projStmt->execute([
+                        $companyId,
+                        $quotation['customer_id'],
+                        $resolvedProjectTitle,
+                        $resolvedProjectDescription,
+                        (isset($data['project_type']) && trim($data['project_type']) !== '' ? trim($data['project_type']) : null),
+                        $resolvedProjectLocation,
+                        $resolvedTotalBudget,
+                        $resolvedStartDate,
+                        $resolvedEndDate
+                    ]);
+
+                    $projectId = (int)$this->pdo->lastInsertId();
+
+                    // Hydrate contract payload from quotation where useful
+                    $data['project_id'] = $projectId;
+                    $data['customer_id'] = $data['customer_id'] ?? $quotation['customer_id'];
+                    $data['job_request_id'] = $data['job_request_id'] ?? $quotation['request_id'];
+                    $data['quotation_id'] = $data['quotation_id'] ?? (int)$quotationId;
+                    $data['project_title'] = $data['project_title'] ?? $resolvedProjectTitle;
+                    $data['project_location'] = $data['project_location'] ?? $resolvedProjectLocation;
+                    $data['project_description'] = $data['project_description'] ?? $resolvedProjectDescription;
+                    $data['end_date'] = $data['end_date'] ?? $resolvedEndDate;
+                }
+            
+                // Validate required fields (project_id will exist after the quotation fallback above)
+                $requiredFields = ['project_id', 'customer_id', 'total_budget', 'start_date', 'contract_date'];
+                foreach ($requiredFields as $field) {
+                    if (!isset($data[$field]) || $data[$field] === null || $data[$field] === '') {
+                        throw new Exception("Field '$field' is required");
+                    }
+                }
+
+                // Set defaults
+                $data['milestone_plan'] = isset($data['milestone_plan']) ? (int)((bool)$data['milestone_plan']) : 1;
+                $data['status'] = $data['status'] ?? 'draft';
+                $data['user_signature'] = (isset($data['user_signature']) && $data['user_signature'] !== '') ? $data['user_signature'] : 'PENDING';
+                $data['company_signature'] = (isset($data['company_signature']) && $data['company_signature'] !== '') ? $data['company_signature'] : 'PENDING';
+                $data['company_id'] = $companyId;
+                $data['amount_pending'] = (isset($data['amount_pending']) && $data['amount_pending'] !== '') ? (float)$data['amount_pending'] : (float)$data['total_budget'];
+                $data['payment_status'] = $data['payment_status'] ?? 'pending';
+
+                $contractId = $this->model->create($data);
+
+                if (!$contractId) {
+                    throw new Exception('Failed to create contract');
+                }
+
                 // Save milestones if provided
                 if (isset($data['milestones']) && is_array($data['milestones'])) {
                     $this->model->updateMilestones($contractId, $data['milestones']);
@@ -301,21 +398,26 @@ class ContractController {
                 // Update quotation and job request statuses if they exist
                 if (isset($data['quotation_id']) && $data['quotation_id']) {
                     $qStmt = $this->pdo->prepare("UPDATE companyquotation SET status = 'successful' WHERE quotation_id = ?");
-                    $qStmt->execute([$data['quotation_id']]);
+                    $qStmt->execute([(int)$data['quotation_id']]);
                 }
                 if (isset($data['job_request_id']) && $data['job_request_id']) {
                     $rStmt = $this->pdo->prepare("UPDATE jobrequest SET status = 'in_progress' WHERE request_id = ?");
-                    $rStmt->execute([$data['job_request_id']]);
+                    $rStmt->execute([(int)$data['job_request_id']]);
                 }
+
+                $this->pdo->commit();
 
                 echo json_encode([
                     'success' => true,
                     'message' => 'Contract created successfully',
                     'contract_id' => $contractId
                 ]);
-            } else {
-                http_response_code(500);
-                echo json_encode(['success' => false, 'message' => 'Failed to create contract']);
+
+            } catch (Exception $inner) {
+                if ($this->pdo->inTransaction()) {
+                    $this->pdo->rollBack();
+                }
+                throw $inner;
             }
 
         } catch (Exception $e) {
@@ -1095,6 +1197,18 @@ class ContractController {
             $quotationId = $_POST['quotation_id'] ?? null;
             $startDate = $_POST['start_date'] ?? null;
             $endDate = $_POST['end_date'] ?? null;
+            $projectTitle = trim($_POST['project_title'] ?? '');
+            $projectLocation = trim($_POST['project_location'] ?? '');
+            $projectDescription = trim($_POST['project_description'] ?? '');
+            $projectType = trim($_POST['project_type'] ?? '');
+            $totalBudget = $_POST['total_budget'] ?? null;
+            $budgetType = $_POST['budget_type'] ?? null;
+            $budgetMin = $_POST['budget_min'] ?? null;
+            $budgetMax = $_POST['budget_max'] ?? null;
+            $paymentMethod = $_POST['payment_method'] ?? null;
+            $pricingType = $_POST['pricing_type'] ?? null;
+            $hourlyRate = $_POST['hourly_rate'] ?? null;
+            $spendingCap = $_POST['spending_cap'] ?? null;
             
             if (!$quotationId || !$startDate || !$endDate) {
                 http_response_code(400);
@@ -1108,7 +1222,7 @@ class ContractController {
             $pdo->beginTransaction();
             
             try {
-                // Get quotation details
+                // Get quotation + request details
                 $stmt = $pdo->prepare("
                     SELECT q.*, r.user_id as customer_id, r.request_id
                     FROM companyquotation q
@@ -1123,6 +1237,79 @@ class ContractController {
                 if (!$quotation) {
                     throw new Exception('Quotation not found or not authorized');
                 }
+
+                // Prevent duplicates
+                $checkStmt = $pdo->prepare("SELECT contract_id FROM contract WHERE quotation_id = ? LIMIT 1");
+                $checkStmt->execute([$quotationId]);
+                if ($checkStmt->fetch(PDO::FETCH_ASSOC)) {
+                    throw new Exception('Contract already exists for this quotation');
+                }
+
+                // Get job request details for defaults (title/location/description)
+                $reqStmt = $pdo->prepare("SELECT title, description, address, district FROM jobrequest WHERE request_id = ?");
+                $reqStmt->execute([$quotation['request_id']]);
+                $request = $reqStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+                // Normalize/derive values
+                $resolvedProjectTitle = $projectTitle !== '' ? $projectTitle : ($request['title'] ?? $quotation['title'] ?? 'Project');
+                $resolvedProjectDescription = $projectDescription !== ''
+                    ? $projectDescription
+                    : ($request['description'] ?? $quotation['description'] ?? null);
+                $resolvedProjectLocation = $projectLocation !== ''
+                    ? $projectLocation
+                    : trim(($request['address'] ?? '') . (isset($request['district']) ? (', ' . $request['district']) : ''));
+                if ($resolvedProjectLocation === '') {
+                    $resolvedProjectLocation = $request['district'] ?? 'N/A';
+                }
+
+                $resolvedTotalBudget = $totalBudget !== null && $totalBudget !== '' ? (float)$totalBudget : (float)$quotation['total_amount'];
+                $resolvedBudgetType = $budgetType ?: ($quotation['budget_type'] ?? 'fixed');
+                $resolvedBudgetMin = ($budgetMin !== null && $budgetMin !== '')
+                    ? (float)$budgetMin
+                    : ((isset($quotation['budget_min']) && $quotation['budget_min'] !== '' && $quotation['budget_min'] !== null) ? (float)$quotation['budget_min'] : null);
+                $resolvedBudgetMax = ($budgetMax !== null && $budgetMax !== '')
+                    ? (float)$budgetMax
+                    : ((isset($quotation['budget_max']) && $quotation['budget_max'] !== '' && $quotation['budget_max'] !== null) ? (float)$quotation['budget_max'] : null);
+                $resolvedPaymentMethod = $paymentMethod ?: ($quotation['payment_method'] ?? 'milestone_based');
+                $resolvedPricingType = $pricingType ?: ($quotation['pricing_type'] ?? 'fixed_price');
+                $resolvedHourlyRate = ($hourlyRate !== null && $hourlyRate !== '')
+                    ? (float)$hourlyRate
+                    : ((isset($quotation['hourly_rate']) && $quotation['hourly_rate'] !== '' && $quotation['hourly_rate'] !== null) ? (float)$quotation['hourly_rate'] : null);
+
+                $resolvedSpendingCap = null;
+                if ($resolvedPricingType === 'time_and_material') {
+                    if ($spendingCap !== null && $spendingCap !== '') {
+                        $resolvedSpendingCap = (float)$spendingCap;
+                    } else {
+                        $resolvedSpendingCap = $resolvedTotalBudget * 1.10;
+                    }
+                }
+
+                $milestonePlan = ($resolvedPaymentMethod === 'milestone_based') ? 1 : 0;
+
+                // Create the linked project first (required by contract.project_id FK)
+                $projStmt = $pdo->prepare("
+                    INSERT INTO project (
+                        company_id, customer_id, title, description, project_type, location,
+                        budget, start_date, end_date, status, progress
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, 'planned', 0
+                    )
+                ");
+                $projStmt->execute([
+                    $companyId,
+                    $quotation['customer_id'],
+                    $resolvedProjectTitle,
+                    $resolvedProjectDescription,
+                    ($projectType !== '' ? $projectType : null),
+                    $resolvedProjectLocation,
+                    $resolvedTotalBudget,
+                    $startDate,
+                    $endDate
+                ]);
+
+                $projectId = $pdo->lastInsertId();
                 
                 // Generate contract number
                 $contractNumber = $this->generateContractNumber();
@@ -1130,15 +1317,25 @@ class ContractController {
                 // Create contract
                 $stmt = $pdo->prepare("
                     INSERT INTO contract (
-                        contract_number, quotation_id, company_id, customer_id, job_request_id,
+                        contract_number, quotation_id, company_id, customer_id, job_request_id, project_id,
+                        project_title, project_location, project_description,
+                        milestone_plan,
                         total_budget, budget_type, budget_min, budget_max,
                         payment_method, pricing_type, hourly_rate, spending_cap,
-                        start_date, end_date, status, terms_accepted
+                        start_date, end_date, contract_date,
+                        user_signature, company_signature,
+                        amount_pending, payment_status,
+                        status, terms_accepted
                     ) VALUES (
-                        ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?,
+                        ?,
                         ?, ?, ?, ?,
                         ?, ?, ?, ?,
-                        ?, ?, 'draft', FALSE
+                        ?, ?, ?,
+                        ?, ?,
+                        ?, 'pending',
+                        'draft', FALSE
                     )
                 ");
                 
@@ -1148,24 +1345,33 @@ class ContractController {
                     $companyId,
                     $quotation['customer_id'],
                     $quotation['request_id'],
-                    $quotation['total_amount'],
-                    $quotation['budget_type'] ?? 'fixed',
-                    $quotation['budget_min'],
-                    $quotation['budget_max'],
-                    $quotation['payment_method'] ?? 'milestone_based',
-                    $quotation['pricing_type'] ?? 'fixed_price',
-                    $quotation['hourly_rate'],
-                    $quotation['total_amount'] * 1.10, // spending cap
+                    $projectId,
+                    $resolvedProjectTitle,
+                    $resolvedProjectLocation,
+                    $resolvedProjectDescription,
+                    $milestonePlan,
+                    $resolvedTotalBudget,
+                    $resolvedBudgetType,
+                    $resolvedBudgetMin,
+                    $resolvedBudgetMax,
+                    $resolvedPaymentMethod,
+                    $resolvedPricingType,
+                    $resolvedHourlyRate,
+                    $resolvedSpendingCap,
                     $startDate,
-                    $endDate
+                    $endDate,
+                    date('Y-m-d'),
+                    'PENDING',
+                    'PENDING',
+                    $resolvedTotalBudget
                 ]);
                 
                 $contractId = $pdo->lastInsertId();
                 
                 // Generate and insert milestones
                 $milestones = $this->generateMilestones(
-                    $quotation['total_amount'],
-                    $quotation['payment_method'] ?? 'milestone_based',
+                    $resolvedTotalBudget,
+                    $resolvedPaymentMethod,
                     $startDate,
                     $endDate
                 );
@@ -1205,10 +1411,14 @@ class ContractController {
                 // Update quotation status
                 $stmt = $pdo->prepare("
                     UPDATE companyquotation 
-                    SET status = 'contract_created' 
+                    SET status = 'successful' 
                     WHERE quotation_id = ?
                 ");
                 $stmt->execute([$quotationId]);
+
+                // Update job request status
+                $stmt = $pdo->prepare("UPDATE jobrequest SET status = 'in_progress' WHERE request_id = ?");
+                $stmt->execute([$quotation['request_id']]);
                 
                 // Commit transaction
                 $pdo->commit();

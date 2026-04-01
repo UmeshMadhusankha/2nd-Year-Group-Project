@@ -399,40 +399,6 @@ if (!$userId) {
                         </div>
                     </div>
 
-                    <!-- Timeline Section -->
-                    <div class="form-section">
-                        <h3 class="form-section-title">
-                            <i class="fas fa-calendar-alt"></i>
-                            Project Timeline
-                        </h3>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label" for="estimated-start-date">
-                                    Estimated Start Date <span class="required">*</span>
-                                </label>
-                                <input type="date" id="estimated-start-date" name="estimated_start_date" 
-                                    class="form-input" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="estimated-completion-date">
-                                    Estimated Completion Date <span class="required">*</span>
-                                </label>
-                                <input type="date" id="estimated-completion-date" name="estimated_completion_date" 
-                                    class="form-input" required>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="estimated-duration">
-                                Estimated Duration (Days) <span class="required">*</span>
-                            </label>
-                            <input type="number" id="estimated-duration" name="estimated_duration" 
-                                class="form-input" placeholder="e.g., 5" min="1" max="365" required>
-                            <small class="form-hint">Number of calendar days to complete the project</small>
-                        </div>
-                    </div>
-
                     <!-- ============================================================ -->
                     <!-- ⭐ NEW: Work Schedule Specifications (Supervisor Requirement) -->
                     <!-- ============================================================ -->
@@ -480,8 +446,9 @@ if (!$userId) {
                                     Daily Work Hours <span class="required">*</span>
                                 </label>
                                 <input type="number" id="daily-work-hours" name="daily_work_hours" 
-                                    class="form-input" min="0.5" max="24" step="0.5" value="8.00" required>
-                                <small class="form-hint">Hours per working day</small>
+                                    class="form-input" min="0" max="24" step="0.5" value="8.00" required readonly
+                                    style="background-color: #f8f9fa; cursor: not-allowed;">
+                                <small class="form-hint">Auto-calculated from Start Time and End Time</small>
                             </div>
 
                             <!-- Work Start Time -->
@@ -517,7 +484,7 @@ if (!$userId) {
                                     style="background-color: #f8f9fa; cursor: not-allowed;">
                                 <small class="form-hint">
                                     <i class="fas fa-info-circle"></i>
-                                    Auto-calculated: (Duration ÷ 7 weeks) × Working Days/Week × Hours/Day
+                                    Auto-calculated: Estimated Duration (Days) × Daily Work Hours
                                 </small>
                             </div>
 
@@ -573,6 +540,41 @@ if (!$userId) {
                                     <i class="fas fa-arrow-up"></i> Fill in the fields above to see your work schedule preview
                                 </p>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Section -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-calendar-alt"></i>
+                            Project Timeline
+                        </h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="estimated-start-date">
+                                    Estimated Start Date <span class="required">*</span>
+                                </label>
+                                <input type="date" id="estimated-start-date" name="estimated_start_date" 
+                                    class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="estimated-completion-date">
+                                    Estimated Completion Date <span class="required">*</span>
+                                </label>
+                                <input type="date" id="estimated-completion-date" name="estimated_completion_date" 
+                                    class="form-input" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="estimated-duration">
+                                Estimated Duration (Days) <span class="required">*</span>
+                            </label>
+                            <input type="number" id="estimated-duration" name="estimated_duration" 
+                                class="form-input" placeholder="e.g., 5" min="1" max="365" required readonly
+                                style="background-color: #f8f9fa; cursor: not-allowed;">
+                            <small class="form-hint">Auto-calculated from the date range and Work Schedule Type (excludes weekends for Weekdays Only)</small>
                         </div>
                     </div>
 
