@@ -87,7 +87,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch data
 try {
     $model = new NotificationModel($pdo);
-    $recentNotifications = $model->getRecentNotifications(5);
+
+    $sessionUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    $sessionRole = isset($_SESSION['user_role']) ? (string)$_SESSION['user_role'] : 'all';
+    // Notification recipient_type enum doesn't include 'moderator' in the base schema.
+    // Moderators should at least see global broadcasts.
+    $recipientType = in_array($sessionRole, ['user', 'repairer', 'company', 'all'], true) ? $sessionRole : 'all';
+
+    $recentNotifications = $model->getRecentNotifications($sessionUserId, $recipientType, 5);
     $stats = $model->getNotificationStats();
 } catch (Exception $e) {
     error_log("Error: " . $e->getMessage());
@@ -296,6 +303,11 @@ $templates = getNotificationTemplates() ?? [];
                                             $statusClass = 'badge-sent';
                                             if ($n['status'] === 'pending') $statusClass = 'badge-pending';
                                             if ($n['status'] === 'failed') $statusClass = 'badge-failed';
+
+                                            $displayDateRaw = $n['send_date'] ?? ($n['created_at'] ?? null);
+                                            if ($displayDateRaw === null && isset($n['date'], $n['time'])) {
+                                                $displayDateRaw = $n['date'] . ' ' . $n['time'];
+                                            }
                                         ?>
                                         <div class="notification-item">
                                             <div class="notification-header">
@@ -311,7 +323,9 @@ $templates = getNotificationTemplates() ?? [];
                                             <div class="notification-meta">
                                                 <div class="flex items-center space-x-4">
                                                     <span>To: <?php echo htmlspecialchars($displayRecipient); ?></span>
-                                                    <span><?php echo date('M d, Y H:i', strtotime($n['send_date'])); ?></span>
+                                                    <span>
+                                                        <?php echo $displayDateRaw ? date('M d, Y H:i', strtotime((string)$displayDateRaw)) : ''; ?>
+                                                    </span>
                                                 </div>
                                             </div>
                                             

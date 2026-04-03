@@ -99,7 +99,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
         <div class="dashboard-main">
             <?php renderPageHeader($basePath, 'Static Content Management', 'Edit and manage website content'); ?>
 
-            <main style="margin-top: 5rem;" class="static-content-content">
+            <main class="dashboard-content">
                 <div class="space-y-6">
                     <div>
                         <h2 class="text-3xl font-bold tracking-tight text-foreground">Static Content Management</h2>
@@ -107,7 +107,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                     </div>
 
                     <?php if ($message): ?>
-                        <div class="success-message">
+                        <div class="alert alert-success">
                             <?php echo htmlspecialchars($message); ?>
                         </div>
                     <?php endif; ?>
@@ -117,90 +117,99 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                         $publishedCount = count(array_filter($contentSections, fn($section) => $section['status'] === 'Published'));
                         $draftCount = count(array_filter($contentSections, fn($section) => $section['status'] === 'Draft'));
 
-                        renderCard('Total Sections', count($contentSections), 'Content sections', 'file-text', 'text-blue-600');
-                        renderCard('Published', $publishedCount, 'Live content', 'check-circle', 'text-green-600');
-                        renderCard('Drafts', $draftCount, 'Unpublished content', 'edit', 'text-yellow-600');
-                        renderCard('Last Updated', '2 days ago', 'Most recent change', 'clock', 'text-purple-600');
+                        renderCard('Total Sections', count($contentSections), 'Content sections', 'file-text', 'blue');
+                        renderCard('Published', $publishedCount, 'Live content', 'check-circle', 'green');
+                        renderCard('Drafts', $draftCount, 'Unpublished content', 'edit', 'yellow');
+                        renderCard('Last Updated', '2 days ago', 'Most recent change', 'clock', 'purple');
                         ?>
                     </div>
 
-                    <div class="content-sections">
-                        <div class="p-6">
+                    <div class="rounded-lg border bg-card">
+                        <div class="p-6 border-b">
                             <h3 class="text-lg font-medium text-foreground">Content Sections</h3>
                             <p class="text-sm text-muted-foreground">Manage all static content sections of the website</p>
                         </div>
 
-                        <div class="divide-y divide-border">
+                        <div class="divide-y">
                             <?php foreach ($contentSections as $section): ?>
-                                <div class="content-section" data-section-id="<?php echo $section['id']; ?>">
-                                    <div class="content-section-header">
-                                        <div class="content-section-info">
-                                            <div class="content-section-title">
-                                                <h4><?php echo $section['title']; ?></h4>
-                                                <span class="status-badge <?php echo strtolower($section['status']); ?>" data-status>
-                                                    <?php echo $section['status']; ?>
-                                                </span>
+                                <div class="p-6 flex items-start justify-between gap-3" data-section-id="<?php echo $section['id']; ?>">
+                                    <div class="flex-1">
+                                        <div class="flex items-start justify-between gap-3 mb-3">
+                                            <div>
+                                                <h4 class="text-lg font-semibold text-foreground"><?php echo $section['title']; ?></h4>
+                                                <p class="text-sm text-muted-foreground"><?php echo $section['description']; ?></p>
                                             </div>
-                                            <p class="text-sm text-muted-foreground mb-3"><?php echo $section['description']; ?></p>
-                                            <div class="content-preview">
-                                                <p data-content><?php echo htmlspecialchars($section['content']); ?></p>
-                                            </div>
-                                            <p class="text-xs text-muted-foreground">Last updated: <?php echo $section['lastUpdated']; ?></p>
+                                            <?php
+                                            $isPublished = ($section['status'] === 'Published');
+                                            $badgeClass = $isPublished ? 'badge badge-default' : 'badge badge-secondary';
+                                            ?>
+                                            <span class="<?php echo $badgeClass; ?>" data-status><?php echo htmlspecialchars($section['status']); ?></span>
                                         </div>
-                                        <div class="content-actions">
+
+                                        <div class="content-preview">
+                                            <p data-content><?php echo htmlspecialchars($section['content']); ?></p>
+                                        </div>
+                                        <p class="text-xs text-muted-foreground">Last updated: <?php echo $section['lastUpdated']; ?></p>
+                                    </div>
+
+                                    <div class="content-actions flex gap-2">
+                                        <button
+                                            onclick="editContent('<?php echo $section['id']; ?>', '<?php echo addslashes($section['title']); ?>', '<?php echo addslashes($section['content']); ?>', '<?php echo $section['status']; ?>')"
+                                            class="btn btn-secondary">
+                                            <i data-lucide="edit" class="h-4 w-4"></i>
+                                            Edit
+                                        </button>
+                                        <?php if ($section['status'] === 'Draft'): ?>
                                             <button
-                                                onclick="editContent('<?php echo $section['id']; ?>', '<?php echo addslashes($section['title']); ?>', '<?php echo addslashes($section['content']); ?>', '<?php echo $section['status']; ?>')"
+                                                onclick="confirmPublish('<?php echo $section['id']; ?>', '<?php echo addslashes($section['title']); ?>')"
+                                                class="btn btn-primary">
+                                                <i data-lucide="upload" class="h-4 w-4"></i>
+                                                Publish
+                                            </button>
+                                        <?php else: ?>
+                                            <button
+                                                onclick="confirmUnpublish('<?php echo $section['id']; ?>', '<?php echo addslashes($section['title']); ?>')"
                                                 class="btn btn-secondary">
-                                                <i data-lucide="edit" class="h-4 w-4"></i>
-                                                Edit
+                                                <i data-lucide="archive" class="h-4 w-4"></i>
+                                                Unpublish
                                             </button>
-                                            <?php if ($section['status'] === 'Draft'): ?>
-                                                <button
-                                                    onclick="confirmPublish('<?php echo $section['id']; ?>', '<?php echo addslashes($section['title']); ?>')"
-                                                    class="btn btn-primary">
-                                                    <i data-lucide="upload" class="h-4 w-4"></i>
-                                                    Publish
-                                                </button>
-                                            <?php else: ?>
-                                                <button
-                                                    onclick="confirmUnpublish('<?php echo $section['id']; ?>', '<?php echo addslashes($section['title']); ?>')"
-                                                    class="btn btn-secondary">
-                                                    <i data-lucide="archive" class="h-4 w-4"></i>
-                                                    Unpublish
-                                                </button>
-                                            <?php endif; ?>
-                                            <button
-                                                onclick="confirmDelete('<?php echo $section['id']; ?>', '<?php echo addslashes($section['title']); ?>')"
-                                                class="btn btn-danger">
-                                                <i data-lucide="trash-2" class="h-4 w-4"></i>
-                                                Delete
-                                            </button>
-                                        </div>
+                                        <?php endif; ?>
+                                        <button
+                                            onclick="confirmDelete('<?php echo $section['id']; ?>', '<?php echo addslashes($section['title']); ?>')"
+                                            class="btn btn-danger">
+                                            <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                            Delete
+                                        </button>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
                         </div>
                     </div>
 
-                    <div class="quick-actions">
-                        <div class="p-6">
-                            <h3 class="text-lg font-medium text-foreground">Quick Actions</h3>
-                            <p class="text-sm text-muted-foreground">Common content management tasks</p>
-
-                            <div class="quick-actions-grid">
-                                <button class="quick-action-btn" onclick="addNewSection()">
-                                    <i data-lucide="plus" class="mr-2 h-4 w-4"></i>
-                                    Add New Section
-                                </button>
-                                <button class="quick-action-btn" onclick="bulkPublish()">
-                                    <i data-lucide="upload" class="mr-2 h-4 w-4"></i>
-                                    Bulk Publish
-                                </button>
-                                <button class="quick-action-btn" onclick="exportContent()">
-                                    <i data-lucide="download" class="mr-2 h-4 w-4"></i>
-                                    Export Content
-                                </button>
-                            </div>
+                    <div class="section-card">
+                        <h3 class="section-title">Quick Actions</h3>
+                        <div class="quick-actions-grid">
+                            <button class="action-card action-teal" type="button" onclick="addNewSection()">
+                                <div class="stat-icon"><i data-lucide="plus"></i></div>
+                                <div>
+                                    <div class="text-lg font-semibold text-foreground">Add New Section</div>
+                                    <div class="text-sm text-muted-foreground">Create a new content section</div>
+                                </div>
+                            </button>
+                            <button class="action-card action-green" type="button" onclick="bulkPublish()">
+                                <div class="stat-icon"><i data-lucide="upload"></i></div>
+                                <div>
+                                    <div class="text-lg font-semibold text-foreground">Bulk Publish</div>
+                                    <div class="text-sm text-muted-foreground">Publish all draft content</div>
+                                </div>
+                            </button>
+                            <button class="action-card action-blue" type="button" onclick="exportContent()">
+                                <div class="stat-icon"><i data-lucide="download"></i></div>
+                                <div>
+                                    <div class="text-lg font-semibold text-foreground">Export Content</div>
+                                    <div class="text-sm text-muted-foreground">Download content for backup</div>
+                                </div>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -316,7 +325,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
 
                         if (statusBadge) {
                             statusBadge.textContent = newStatus;
-                            statusBadge.className = `status-badge ${newStatus.toLowerCase()}`;
+                            statusBadge.className = newStatus === 'Published' ? 'badge badge-default' : 'badge badge-secondary';
                         }
 
                         // Update action buttons based on new status
@@ -510,13 +519,13 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                 });
 
                 function showSuccessMessage(message) {
-                    const existingMessage = document.querySelector('.success-message');
+                    const existingMessage = document.querySelector('.alert');
                     if (existingMessage) {
                         existingMessage.remove();
                     }
 
                     const messageDiv = document.createElement('div');
-                    messageDiv.className = 'success-message';
+                    messageDiv.className = 'alert alert-success';
                     messageDiv.textContent = message;
 
                     const container = document.querySelector('.space-y-6');

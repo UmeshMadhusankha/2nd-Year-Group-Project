@@ -80,7 +80,7 @@ $pageDescription = 'Monitor and manage submitted advertisements';
         <div class="dashboard-main">
             <?php renderPageHeader($basePath, 'Advertisement Review', 'Monitor and manage submitted advertisements (Admin Oversight)'); ?>
 
-            <main style="margin-top: 5rem;" class="ads-content">
+            <main style="margin-top: 5rem;" class="dashboard-content ads-content">
                 <div class="content-wrapper">
                     <?php if ($message): ?>
                     <div class="message-alert <?php echo $messageType; ?>">

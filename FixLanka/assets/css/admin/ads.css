@@ -24,19 +24,7 @@ body {
     min-height: 100vh;
 }
 
-.dashboard-container aside,
-.dashboard-container .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    width: 250px;
-    z-index: 100;
-    overflow-y: auto;
-}
-
 .dashboard-main {
-    margin-left: 250px;
     flex: 1;
     min-height: 100vh;
     padding: 0;
