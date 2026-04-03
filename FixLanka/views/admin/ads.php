@@ -9,6 +9,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+if (!headers_sent()) {
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Cache-Control: post-check=0, pre-check=0', false);
+    header('Pragma: no-cache');
+    header('Expires: 0');
+}
+
 require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
@@ -59,6 +66,8 @@ $pageDescription = 'Monitor and manage submitted advertisements';
 <html lang="en">
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin/ads.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
@@ -142,19 +151,21 @@ $pageDescription = 'Monitor and manage submitted advertisements';
                         <div class="p-6">
                             <form method="GET" id="filterForm" class="space-y-4">
                                 <div class="grid gap-4 grid-cols-6">
-                                    <div>
+                                    <div class="col-span-2">
                                         <label class="block text-sm font-medium mb-2">Status</label>
                                         <select name="status" class="form-select w-full">
                                             <option value="">All Status</option>
                                             <option value="pending" <?php echo ($filters['status'] === 'pending') ? 'selected' : ''; ?>>Pending</option>
                                             <option value="approved" <?php echo ($filters['status'] === 'approved') ? 'selected' : ''; ?>>Approved</option>
+                                            <option value="scheduled" <?php echo ($filters['status'] === 'scheduled') ? 'selected' : ''; ?>>Scheduled</option>
                                             <option value="rejected" <?php echo ($filters['status'] === 'rejected') ? 'selected' : ''; ?>>Rejected</option>
                                             <option value="active" <?php echo ($filters['status'] === 'active') ? 'selected' : ''; ?>>Active</option>
+                                            <option value="expired" <?php echo ($filters['status'] === 'expired') ? 'selected' : ''; ?>>Expired</option>
                                             <option value="suspended" <?php echo ($filters['status'] === 'suspended') ? 'selected' : ''; ?>>Suspended</option>
                                         </select>
                                     </div>
 
-                                    <div>
+                                    <div class="col-span-2">
                                         <label class="block text-sm font-medium mb-2">Type</label>
                                         <select name="type" class="form-select w-full">
                                             <option value="">All Types</option>
@@ -164,7 +175,7 @@ $pageDescription = 'Monitor and manage submitted advertisements';
                                         </select>
                                     </div>
 
-                                    <div>
+                                    <div class="col-span-2">
                                         <label class="block text-sm font-medium mb-2">Moderator</label>
                                         <select name="moderator" class="form-select w-full">
                                             <option value="">All Moderators</option>
@@ -175,18 +186,6 @@ $pageDescription = 'Monitor and manage submitted advertisements';
                                             </option>
                                             <?php endforeach; ?>
                                         </select>
-                                    </div>
-
-                                    <div class="col-span-2">
-                                        <label class="block text-sm font-medium mb-2">Search</label>
-                                        <input type="text" name="search" value="<?php echo htmlspecialchars($filters['search']); ?>" 
-                                               placeholder="Search ads..." class="form-input w-full">
-                                    </div>
-
-                                    <div class="flex items-end">
-                                        <button type="submit" id="filterBtn" class="filter-button">
-                                            <i class="fas fa-filter"></i> <span>Filter</span>
-                                        </button>
                                     </div>
                                 </div>
                             </form>
@@ -216,6 +215,7 @@ $pageDescription = 'Monitor and manage submitted advertisements';
                                         </tr>
                                         <?php else: ?>
                                             <?php foreach ($adsData as $ad): ?>
+                                            <?php $displayStatus = $ad['computed_status'] ?? $ad['status']; ?>
                                             <tr>
                                                 <td class="font-mono">#<?php echo $ad['ad_id']; ?></td>
                                                 <td class="font-medium"><?php echo htmlspecialchars($ad['title']); ?></td>
@@ -223,8 +223,8 @@ $pageDescription = 'Monitor and manage submitted advertisements';
                                                 <td><span class="type-badge"><?php echo ucfirst($ad['type']); ?></span></td>
                                                 <td>LKR <?php echo number_format($ad['budget'], 2); ?></td>
                                                 <td>
-                                                    <span class="badge status-<?php echo strtolower($ad['status']); ?>">
-                                                        <?php echo ucfirst($ad['status']); ?>
+                                                    <span class="badge status-<?php echo strtolower($displayStatus); ?>">
+                                                        <?php echo ucfirst($displayStatus); ?>
                                                         <?php if ($ad['is_override']): ?>
                                                         <i class="fas fa-shield-alt" title="Admin Override"></i>
                                                         <?php endif; ?>
@@ -255,144 +255,151 @@ $pageDescription = 'Monitor and manage submitted advertisements';
                 </div>
             </main>
 
-            <!-- Admin Review Modal -->
+            <!-- Admin Review Modal (match Moderator UI) -->
             <?php if ($advertisement && is_array($advertisement)): ?>
-            <div id="reviewModal" class="modal-bg">
-                <div class="modal-box">
-                    <a href="/2nd-Year-Group-Project/FixLanka/views/admin/ads.php" class="close-btn">×</a>
-                    <h2 class="modal-title">Advertisement Details (Admin View)</h2>
-                    
-                    <div class="modal-content">
-                        <div class="detail-row">
-                            <span class="detail-label">Advertisement ID:</span>
-                            <span class="detail-value">#<?php echo $advertisement['ad_id']; ?></span>
+            <div id="reviewModal" class="modal-bg" role="presentation">
+                <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle" tabindex="-1">
+                    <a href="/2nd-Year-Group-Project/FixLanka/views/admin/ads.php" class="close-btn" aria-label="Close dialog">×</a>
+
+                    <div class="review-modal-header">
+                        <div class="review-modal-title">
+                            <h2 id="reviewModalTitle">Advertisement Review</h2>
+                            <p class="review-modal-subtitle">
+                                ID #<?php echo (int)$advertisement['ad_id']; ?>
+                                <span class="review-dot">•</span>
+                                Submitted <?php echo date('M d, Y H:i', strtotime($advertisement['submission_date'])); ?>
+                            </p>
                         </div>
+                        <div class="review-modal-status">
+                            <?php $displayStatus = $advertisement['computed_status'] ?? $advertisement['status']; ?>
+                            <span class="badge status-<?php echo strtolower($displayStatus); ?>">
+                                <?php echo ucfirst($displayStatus); ?>
+                                <?php if (!empty($advertisement['is_override'])): ?>
+                                    <i class="fas fa-shield-alt" title="Admin Override"></i>
+                                <?php endif; ?>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="review-media">
+                        <?php if (!empty($advertisement['image_url'])): ?>
+                            <img
+                                class="review-media-img"
+                                src="<?php echo htmlspecialchars($advertisement['image_url']); ?>"
+                                alt="Advertisement media preview"
+                                loading="lazy"
+                            />
+                        <?php else: ?>
+                            <div class="review-media-empty">
+                                <i class="fa-solid fa-image"></i>
+                                <div>
+                                    <div class="review-media-empty-title">No media uploaded</div>
+                                    <div class="review-media-empty-subtitle">This advertisement has no image.</div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div id="modalContent" class="review-details">
                         <div class="detail-row">
-                            <span class="detail-label">Title:</span>
+                            <span class="detail-label">Title</span>
                             <span class="detail-value"><?php echo htmlspecialchars($advertisement['title']); ?></span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Description:</span>
+                            <span class="detail-label">Description</span>
                             <span class="detail-value"><?php echo htmlspecialchars($advertisement['description'] ?? 'No description'); ?></span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Provider:</span>
+                            <span class="detail-label">Provider</span>
                             <span class="detail-value"><?php echo htmlspecialchars($advertisement['provider_name'] ?? 'Unknown'); ?></span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Contact Email:</span>
+                            <span class="detail-label">Contact Email</span>
                             <span class="detail-value"><?php echo htmlspecialchars($advertisement['contact_email'] ?? $advertisement['provider_email'] ?? 'N/A'); ?></span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Contact Phone:</span>
+                            <span class="detail-label">Contact Phone</span>
                             <span class="detail-value"><?php echo htmlspecialchars($advertisement['contact_phone'] ?? $advertisement['provider_phone'] ?? 'N/A'); ?></span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Type:</span>
+                            <span class="detail-label">Type</span>
                             <span class="detail-value"><?php echo ucfirst($advertisement['type']); ?></span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Budget:</span>
-                            <span class="detail-value">LKR <?php echo number_format($advertisement['budget'], 2); ?></span>
+                            <span class="detail-label">Budget</span>
+                            <span class="detail-value">LKR <?php echo number_format((float)$advertisement['budget'], 2); ?></span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Current Status:</span>
+                            <span class="detail-label">Reviewed By</span>
                             <span class="detail-value">
-                                <span class="badge status-<?php echo strtolower($advertisement['status']); ?>">
-                                    <?php echo ucfirst($advertisement['status']); ?>
-                                </span>
+                                <?php echo !empty($advertisement['moderator_name'])
+                                    ? htmlspecialchars($advertisement['moderator_name']) . (!empty($advertisement['moderator_email']) ? ' (' . htmlspecialchars($advertisement['moderator_email']) . ')' : '')
+                                    : 'Not yet reviewed'; ?>
                             </span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Reviewed By (Moderator):</span>
-                            <span class="detail-value">
-                                <?php echo $advertisement['moderator_name'] ? htmlspecialchars($advertisement['moderator_name']) . ' (' . htmlspecialchars($advertisement['moderator_email']) . ')' : 'Not yet reviewed'; ?>
-                            </span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Moderator Notes:</span>
+                            <span class="detail-label">Moderator Notes</span>
                             <span class="detail-value"><?php echo htmlspecialchars($advertisement['moderator_notes'] ?? 'No notes'); ?></span>
                         </div>
-                        <?php if ($advertisement['is_override']): ?>
+                        <?php if (!empty($advertisement['is_override'])): ?>
                         <div class="detail-row">
-                            <span class="detail-label">Admin Override:</span>
-                            <span class="detail-value" style="color: #dc2626; font-weight: 600;">
-                                <i class="fas fa-shield-alt"></i> YES
-                            </span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Override Reason:</span>
+                            <span class="detail-label">Override Reason</span>
                             <span class="detail-value"><?php echo htmlspecialchars($advertisement['override_reason'] ?? 'No reason provided'); ?></span>
                         </div>
                         <?php endif; ?>
-                        <div class="detail-row">
-                            <span class="detail-label">Submitted:</span>
-                            <span class="detail-value"><?php echo date('M d, Y H:i', strtotime($advertisement['submission_date'])); ?></span>
-                        </div>
                     </div>
 
-                    <!-- Admin Actions -->
-                    <div class="admin-actions">
-                        <?php 
-                        $currentStatus = strtolower($advertisement['status']);
-                        $requiresOverride = $controller->requiresOverride($currentStatus);
-                        ?>
+                    <?php $currentStatus = strtolower($advertisement['computed_status'] ?? $advertisement['status'] ?? ''); ?>
 
-                        <?php if ($currentStatus === 'pending'): ?>
-                        <form method="POST" class="action-form">
-                            <input type="hidden" name="ad_id" value="<?php echo $advertisement['ad_id']; ?>">
-                            <input type="hidden" name="is_override" value="false">
-                            
-                            <div class="form-group">
-                                <label>Admin Notes:</label>
-                                <textarea name="reason" rows="3" placeholder="Add optional notes..." class="form-textarea"></textarea>
-                            </div>
+                    <?php if ($currentStatus === 'pending'): ?>
+                    <form method="POST" class="review-form">
+                        <input type="hidden" name="ad_id" value="<?php echo (int)$advertisement['ad_id']; ?>">
+                        <input type="hidden" name="is_override" value="false">
 
-                            <div class="button-group">
-                                <button type="submit" name="action" value="approve" class="approve-btn">
-                                    <i class="fas fa-check"></i> Approve
-                                </button>
-                                <button type="submit" name="action" value="reject" class="reject-btn">
-                                    <i class="fas fa-times"></i> Reject
-                                </button>
-                                <button type="submit" name="action" value="suspend" class="suspend-btn">
-                                    <i class="fas fa-ban"></i> Suspend
-                        </button>
-                            </div>
-                        </form>
-
-                        <?php elseif ($currentStatus === 'rejected' || $currentStatus === 'suspended'): ?>
-                        <div class="override-section">
-                            <div class="override-warning">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                <strong>Override Required:</strong> This advertisement is <?php echo $currentStatus; ?>. Admin override is necessary to change status.
-                            </div>
-                            
-                            <form method="POST" class="action-form" onsubmit="return confirm('⚠️ ADMIN OVERRIDE: Are you sure you want to override the current <?php echo $currentStatus; ?> status? This action will be logged.');">
-                                <input type="hidden" name="ad_id" value="<?php echo $advertisement['ad_id']; ?>">
-                                <input type="hidden" name="is_override" value="true">
-                                
-                                <div class="form-group">
-                                    <label><strong>Override Reason (Required):</strong></label>
-                                    <textarea name="reason" rows="3" required placeholder="Explain why you are overriding this decision..." class="form-textarea"></textarea>
-                                </div>
-
-                                <div class="button-group">
-                                    <button type="submit" name="action" value="approve" class="override-btn">
-                                        <i class="fas fa-shield-alt"></i> Override & Approve
-                                    </button>
-                                </div>
-                            </form>
+                        <div class="review-notes">
+                            <label class="review-notes-label" for="reviewNotes">Admin notes (optional)</label>
+                            <textarea id="reviewNotes" name="reason" rows="3" placeholder="Add optional notes..." class="review-notes-input"></textarea>
                         </div>
 
-                        <?php else: ?>
-                        <div class="info-section">
-                            <p><strong>Status:</strong> This advertisement is currently <strong><?php echo $currentStatus; ?></strong>.</p>
-                            <p>Admin can perform lifecycle management actions here (activate, pause, schedule, etc.).</p>
+                        <div class="modal-actions">
+                            <button type="submit" name="action" value="approve" class="action-btn success">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            <button type="submit" name="action" value="reject" class="action-btn danger">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                            <button type="submit" name="action" value="suspend" class="action-btn warning">
+                                <i class="fas fa-ban"></i> Suspend
+                            </button>
                         </div>
-                        <?php endif; ?>
+                    </form>
+
+                    <?php elseif ($currentStatus === 'rejected' || $currentStatus === 'suspended'): ?>
+                    <div class="review-note">
+                        <strong>Override required:</strong> This advertisement is <?php echo htmlspecialchars($currentStatus); ?>. Admin override is necessary to approve.
                     </div>
 
+                    <form method="POST" class="review-form" onsubmit="return confirm('⚠️ ADMIN OVERRIDE: Are you sure you want to override the current <?php echo $currentStatus; ?> status? This action will be logged.');">
+                        <input type="hidden" name="ad_id" value="<?php echo (int)$advertisement['ad_id']; ?>">
+                        <input type="hidden" name="is_override" value="true">
+
+                        <div class="review-notes">
+                            <label class="review-notes-label" for="overrideReason">Override reason (required)</label>
+                            <textarea id="overrideReason" name="reason" rows="3" required placeholder="Explain why you are overriding this decision..." class="review-notes-input"></textarea>
+                        </div>
+
+                        <div class="modal-actions">
+                            <button type="submit" name="action" value="approve" class="action-btn primary">
+                                <i class="fas fa-shield-alt"></i> Override & Approve
+                            </button>
+                        </div>
+                    </form>
+
+                    <?php else: ?>
+                    <div class="review-note">
+                        <strong>Status:</strong> This advertisement is currently <strong><?php echo htmlspecialchars($currentStatus); ?></strong>.
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php endif; ?>
@@ -402,11 +409,17 @@ $pageDescription = 'Monitor and manage submitted advertisements';
 
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js?v=<?php echo time(); ?>"></script>
     <script>
-        document.getElementById('filterForm').addEventListener('submit', function(e) {
-            var btn = document.getElementById('filterBtn');
-            btn.classList.add('loading');
-            btn.querySelector('span').textContent = 'Filtering...';
-        });
+        // Auto-apply filters (Status/Type/Moderator)
+        (function () {
+            var form = document.getElementById('filterForm');
+            if (!form) return;
+            var selects = form.querySelectorAll('select[name="status"], select[name="type"], select[name="moderator"]');
+            selects.forEach(function (el) {
+                el.addEventListener('change', function () {
+                    form.submit();
+                });
+            });
+        })();
     </script>
 </body>
 </html>

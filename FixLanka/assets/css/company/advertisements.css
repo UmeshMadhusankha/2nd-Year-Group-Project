@@ -1405,6 +1405,7 @@
 
 .form-group input[type="text"],
 .form-group input[type="url"],
+.form-group input[type="date"],
 .form-group input[type="datetime-local"],
 .form-group select,
 .form-group textarea {
@@ -1426,6 +1427,61 @@
     box-shadow: 0 0 0 4px rgba(10, 186, 181, 0.15);
     background: rgba(255, 255, 255, 1);
     transform: translateY(-1px);
+}
+
+/* Inline validation (wizard) */
+.form-group .field-error,
+.upload-section .field-error,
+.schedule-dates .field-error {
+    margin-top: 0.35rem;
+    font-size: 0.825rem;
+    color: var(--danger-color);
+    font-weight: 500;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.form-group .field-error::before,
+.upload-section .field-error::before,
+.schedule-dates .field-error::before {
+    content: '!';
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    color: currentColor;
+    font-weight: 700;
+    font-size: 0.7rem;
+    line-height: 14px;
+    text-align: center;
+}
+
+.form-group input.is-invalid,
+.form-group select.is-invalid,
+.form-group textarea.is-invalid {
+    border-color: var(--danger-color) !important;
+    box-shadow: none;
+    background: rgba(255, 255, 255, 1);
+}
+
+.upload-area.is-invalid {
+    border-color: var(--danger-color) !important;
+    box-shadow: none;
+}
+
+@supports (color: color-mix(in srgb, black, white)) {
+    .form-group input.is-invalid,
+    .form-group select.is-invalid,
+    .form-group textarea.is-invalid,
+    .upload-area.is-invalid {
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-color) 12%, transparent);
+    }
 }
 
 .form-group small {
@@ -1510,9 +1566,34 @@
 
 .schedule-dates {
     background: var(--bg-secondary);
-    padding: 1.5rem;
+    padding: 1.25rem;
     border-radius: 12px;
     margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.schedule-dates .form-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+}
+
+.schedule-dates input[type="date"] {
+    min-height: 44px;
+}
+
+.schedule-dates small {
+    margin-top: 0.25rem;
+}
+
+.schedule-dates #scheduleDurationText {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+    .schedule-dates .form-row {
+        grid-template-columns: 1fr;
+    }
 }
 
 .info-box {

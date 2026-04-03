@@ -1,6 +1,8 @@
 <?php
 require_once '../config/session.php';
 require_once '../models/CompanyModel.php';
+require_once '../config/database.php';
+require_once 'helpers.php';
 
 // Set JSON header
 header('Content-Type: application/json');
@@ -14,7 +16,21 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'company') {
 
 // Initialize Model
 $companyModel = new CompanyModel();
-$companyId = $_SESSION['user_id']; 
+$userId = (int)($_SESSION['user_id'] ?? 0);
+$companyId = $_SESSION['company_id'] ?? null;
+
+// Fallback: resolve company_id from user_id
+if (!$companyId && $userId > 0) {
+    $companyData = getCompanyByUserId($pdo, $userId);
+    if ($companyData && isset($companyData['company_id'])) {
+        $companyId = (int)$companyData['company_id'];
+    }
+}
+
+// Last fallback for legacy sessions
+if (!$companyId) {
+    $companyId = $userId;
+}
 
 // Handle GET Request (Fetch All Settings Data)
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

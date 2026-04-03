@@ -275,7 +275,7 @@ $pageDescription = 'Review and moderate advertisement-related reports';
     </div>
 
     <script>
-        const mockReportsData = <?= json_encode($reportsData) ?>;
+        const mockReportsData = <?= (json_encode($reportsData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '[]') ?>;
         let currentPage = 1;
         let allReports = [];
         let currentReport = null;
@@ -355,10 +355,14 @@ $pageDescription = 'Review and moderate advertisement-related reports';
                 'approved': 'badge-approved',
                 'active': 'badge-active',
                 'inactive': 'badge-inactive',
+                'scheduled': 'badge-investigating',
+                'expired': 'badge-rejected',
+                'paused': 'badge-suspended',
                 'suspended': 'badge-suspended',
                 'deleted': 'badge-deleted',
                 'pending': 'badge-pending',
-                'rejected': 'badge-rejected'
+                'rejected': 'badge-rejected',
+                'unknown': 'badge-pending'
             };
 
             const priorityClasses = {
@@ -396,7 +400,7 @@ $pageDescription = 'Review and moderate advertisement-related reports';
                     <td><span class="report-description">${escapeHtml(report.description.substring(0, 50))}${report.description.length > 50 ? '...' : ''}</span></td>
                     <td><span class="badge ${priorityClasses[report.priority]}">${report.priority}</span></td>
                     <td><span class="badge ${statusClasses[report.status]}">${report.status}</span></td>
-                    <td><span class="badge ${adStatusClasses[report.ad_status]}">${report.ad_status}</span></td>
+                    <td><span class="badge ${adStatusClasses[report.ad_status] || 'badge-pending'}">${report.ad_status}</span></td>
                     <td>${new Date(report.submitted_date).toLocaleDateString()}</td>
                     <td>
                         <button onclick="manageReport(${report.id})" class="btn-manage">

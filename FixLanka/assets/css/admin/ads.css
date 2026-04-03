@@ -417,6 +417,12 @@ body {
     border: 1px solid #3b82f6;
 }
 
+.status-scheduled {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #3b82f6;
+}
+
 .status-active {
     background: #d1fae5;
     color: #065f46;
@@ -424,6 +430,12 @@ body {
 }
 
 .status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+}
+
+.status-expired {
     background: #fee2e2;
     color: #991b1b;
     border: 1px solid #ef4444;
@@ -750,4 +762,232 @@ body {
     border-collapse: collapse;
     background: white;
     table-layout: auto;   /* rows size to content, not truncated */
+}
+
+.table-wrapper .table {
+    min-width: 900px;
+}
+
+/* =====================================================
+     Shared Review Modal (match Moderator UI)
+     ===================================================== */
+
+.modal-bg {
+    background: rgba(0, 0, 0, 0.65);
+    background: color-mix(in srgb, var(--secondary-color) 70%, transparent);
+    backdrop-filter: blur(10px);
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-box {
+    background: var(--bg-card);
+    padding: var(--spacing-xl);
+    width: 720px;
+    max-width: 90%;
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xl);
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: slideUp 0.4s ease;
+    border-top: 4px solid var(--primary-color);
+}
+
+.review-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--spacing-lg);
+    padding-right: 44px;
+    margin-bottom: var(--spacing-lg);
+}
+
+.review-modal-title h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.review-modal-subtitle {
+    margin: 8px 0 0;
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.review-dot {
+    margin: 0 8px;
+    color: var(--text-light);
+}
+
+.review-modal-status .badge {
+    white-space: nowrap;
+}
+
+.close-btn {
+    right: 16px;
+    top: 16px;
+    font-size: 28px;
+    color: var(--text-muted);
+    width: 35px;
+    height: 35px;
+    border-radius: 999px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.close-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    transform: rotate(90deg);
+}
+
+.review-media {
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    margin-bottom: var(--spacing-lg);
+}
+
+.review-media-img {
+    width: 100%;
+    height: auto;
+    max-height: 280px;
+    object-fit: cover;
+    display: block;
+}
+
+.review-media-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-xl);
+    color: var(--text-muted);
+}
+
+.review-media-empty i {
+    font-size: 24px;
+    color: var(--primary-color);
+}
+
+.review-media-empty-title {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.review-media-empty-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+}
+
+.detail-row {
+    display: flex;
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--primary-color);
+    transition: all 0.3s ease;
+}
+
+.detail-row:hover {
+    transform: translateX(5px);
+    box-shadow: var(--shadow-md);
+}
+
+.detail-label {
+    font-weight: 700;
+    width: 160px;
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 160px;
+}
+
+.detail-value {
+    flex: 1;
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+}
+
+.modal-actions {
+    margin-top: 30px;
+    display: flex;
+    gap: 12px;
+    padding-top: 25px;
+    border-top: 1px solid var(--border-color);
+}
+
+.review-note {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.review-form {
+    margin-top: var(--spacing-lg);
+}
+
+.review-notes-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 700;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+}
+
+.review-notes-input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    outline: none;
+    transition: box-shadow var(--transition-normal), border-color var(--transition-normal);
+}
+
+.review-notes-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 18%, transparent);
+}
+
+/* Add a minimal warning variant for Suspend */
+.action-btn.warning {
+    background: var(--warning-color);
+    color: white;
+    border-color: var(--warning-color);
+    box-shadow: 0 4px 15px color-mix(in srgb, var(--warning-color) 35%, transparent);
+}
+
+.action-btn.warning:hover {
+    background: var(--warning-dark);
+    border-color: var(--warning-dark);
+    box-shadow: 0 8px 25px color-mix(in srgb, var(--warning-dark) 40%, transparent);
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .modal-actions {
+        flex-direction: column;
+    }
+
+    .detail-row {
+        flex-direction: column;
+    }
+
+    .detail-label {
+        width: 100%;
+        min-width: 0;
+        margin-bottom: 8px;
+    }
 }

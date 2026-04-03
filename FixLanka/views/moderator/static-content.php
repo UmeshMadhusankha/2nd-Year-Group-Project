@@ -84,6 +84,10 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
     <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
+    <!-- Page Styles -->
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/dashboard.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/static-content.css?v=<?php echo time(); ?>">
+
 </head>
 
 <body class="bg-foreground text-background">
@@ -93,8 +97,6 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
     <div class="dashboard-container">
         <?php renderModeratorSidebar($currentPath, $basePath); ?>
         <div class="dashboard-main">
-            <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/static-content.css">
-
             <?php renderPageHeader($basePath, 'Static Content Management', 'Edit and manage website content'); ?>
 
             <main style="margin-top: 5rem;" class="static-content-content">

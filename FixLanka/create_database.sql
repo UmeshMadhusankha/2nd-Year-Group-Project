@@ -62,7 +62,7 @@ CREATE TABLE `advertisement` (
   `budget` decimal(10,2) NOT NULL,
   `submission_date` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `status` enum('pending','approved','active','expired','rejected') DEFAULT 'pending',
+  `status` enum('pending','approved','scheduled','active','paused','inactive','suspended','expired','rejected') DEFAULT 'pending',
   PRIMARY KEY (`ad_id`),
   KEY `idx_provider` (`provider_id`,`provider_type`),
   KEY `idx_status` (`status`),
@@ -82,6 +82,55 @@ CREATE TABLE `adschedule` (
   KEY `idx_dates` (`start_date`,`end_date`),
   CONSTRAINT `adschedule_ibfk_1` FOREIGN KEY (`ad_id`) REFERENCES `advertisement` (`ad_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Advertisement Reports (User/Provider reports against ads)
+CREATE TABLE `adreport` (
+  `report_id` int(11) NOT NULL AUTO_INCREMENT,
+  `ad_id` int(11) NOT NULL,
+  `reporter_type` enum('user','repairer','company') NOT NULL DEFAULT 'user',
+  `reporter_id` int(11) DEFAULT NULL,
+  `issue_type` enum(
+    'inappropriate_content',
+    'misleading_information',
+    'spam',
+    'privacy_violation',
+    'copyright_infringement',
+    'fraud',
+    'other'
+  ) NOT NULL DEFAULT 'other',
+  `description` text NOT NULL,
+  `priority` enum('low','medium','high','critical') NOT NULL DEFAULT 'low',
+  `status` enum('pending','investigating','resolved','dismissed','escalated') NOT NULL DEFAULT 'pending',
+  `moderator_notes` text DEFAULT NULL,
+  `evidence` varchar(500) DEFAULT NULL,
+  `handled_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`report_id`),
+  KEY `idx_ad` (`ad_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_priority` (`priority`),
+  CONSTRAINT `adreport_ibfk_1` FOREIGN KEY (`ad_id`) REFERENCES `advertisement` (`ad_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Ad Rotation Settings (Moderator controlled)
+CREATE TABLE `adrotationsettings` (
+  `setting_id` int(11) NOT NULL AUTO_INCREMENT,
+  `banner_seconds` int(11) NOT NULL DEFAULT 30,
+  `featured_seconds` int(11) NOT NULL DEFAULT 60,
+  `sponsored_seconds` int(11) NOT NULL DEFAULT 90,
+  `banner_capacity` int(11) NOT NULL DEFAULT 5,
+  `featured_capacity` int(11) NOT NULL DEFAULT 3,
+  `sponsored_capacity` int(11) NOT NULL DEFAULT 8,
+  `updated_by` int(11) DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`setting_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `adrotationsettings` (
+  banner_seconds, featured_seconds, sponsored_seconds,
+  banner_capacity, featured_capacity, sponsored_capacity
+) VALUES (30, 60, 90, 5, 3, 8);
 
 -- Company
 CREATE TABLE `company` (
