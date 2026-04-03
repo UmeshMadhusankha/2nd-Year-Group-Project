@@ -53,6 +53,17 @@ class AdReportModel
         return $stmt->rowCount() > 0;
     }
 
+    public function suspendAdvertisement(int $adId): bool
+    {
+        if (!$this->tableExists('advertisement')) {
+            throw new RuntimeException('advertisement table not found.');
+        }
+
+        $stmt = $this->pdo->prepare("UPDATE advertisement SET status = 'suspended' WHERE ad_id = :id");
+        $stmt->execute([':id' => $adId]);
+        return $stmt->rowCount() > 0;
+    }
+
     public function isReady(): bool
     {
         return $this->tableExists('advertisement') && $this->tableExists('adreport');
@@ -203,6 +214,29 @@ class AdReportModel
         $sql = "
             UPDATE adreport
             SET status = 'escalated',
+                moderator_notes = :notes,
+                handled_by = :handled_by
+            WHERE report_id = :id
+            LIMIT 1
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':notes' => $moderatorNotes,
+            ':handled_by' => $handledBy,
+            ':id' => $reportId,
+        ]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function resolveReport(int $reportId, string $moderatorNotes, ?int $handledBy): bool
+    {
+        if (!$this->tableExists('adreport')) {
+            throw new RuntimeException('adreport table not found. Please apply the latest database schema updates.');
+        }
+
+        $sql = "
+            UPDATE adreport
+            SET status = 'resolved',
                 moderator_notes = :notes,
                 handled_by = :handled_by
             WHERE report_id = :id

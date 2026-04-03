@@ -21,6 +21,11 @@ class AdReportController
             return;
         }
 
+        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'moderator') {
+            $this->setMessage('Unauthorized. Moderator access required.', 'error');
+            return;
+        }
+
         $action = $_POST['action'] ?? '';
         $adId = (int)($_POST['ad_id'] ?? 0);
         $reportId = (int)($_POST['report_id'] ?? 0);
@@ -50,8 +55,12 @@ class AdReportController
                     if ($adId <= 0) {
                         throw new InvalidArgumentException('Advertisement ID is required.');
                     }
-                    $changed = $this->model->markAdvertisementExpired($adId);
-                    $this->setMessage($changed ? 'Advertisement marked as expired.' : 'No advertisement updated.', $changed ? 'success' : 'error');
+                    $changed = $this->model->suspendAdvertisement($adId);
+                    if ($changed && $reportId > 0) {
+                        $notes = $moderatorNotes !== '' ? $moderatorNotes : 'Advertisement suspended based on report.';
+                        $this->model->resolveReport($reportId, $notes, $handledBy);
+                    }
+                    $this->setMessage($changed ? 'Advertisement suspended.' : 'No advertisement updated.', $changed ? 'success' : 'error');
                     break;
                 case 'delete_ad':
                     if ($adId <= 0) {
