@@ -275,7 +275,7 @@ $pageDescription = 'Review and moderate advertisement-related reports';
     </div>
 
     <script>
-        const mockReportsData = <?= json_encode($reportsData) ?>;
+        const mockReportsData = <?= (json_encode($reportsData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '[]') ?>;
         let currentPage = 1;
         let allReports = [];
         let currentReport = null;

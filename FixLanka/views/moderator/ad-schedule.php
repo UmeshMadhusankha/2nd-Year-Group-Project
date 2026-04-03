@@ -84,6 +84,16 @@ $pageTitle = 'Ad Scheduling';
                         </div>
                     <?php endif; ?>
 
+                    <?php if (!empty($setupIssues)): ?>
+                        <div class="message-box message-error">
+                            <span class="message-icon">⚠️</span>
+                            <span class="message-text">
+                                Scheduling data is not available because the database setup is incomplete:
+                                <?php echo htmlspecialchars(implode(' | ', $setupIssues)); ?>
+                            </span>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="grid gap-4 grid-cols-4">
                         <?php
                         renderCard('Total', $stats['total'] ?? 0, 'All schedules', 'calendar', 'blue');
@@ -95,7 +105,7 @@ $pageTitle = 'Ad Scheduling';
 
                     <div class="bg-card rounded-lg border p-6">
                         <h3 class="text-lg font-medium mb-4">Filters</h3>
-                        <form method="GET" action="">
+                        <form method="GET" action="" id="filterForm">
                             <div class="grid grid-cols-4 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium mb-2">Placement</label>
@@ -119,11 +129,7 @@ $pageTitle = 'Ad Scheduling';
                                     <label class="block text-sm font-medium mb-2">Search</label>
                                     <input type="text" name="search" value="<?php echo htmlspecialchars($filters['search']); ?>" placeholder="Search ads..." class="form-input w-full">
                                 </div>
-                                <div class="flex items-end gap-2">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fa-solid fa-filter w-4 h-4 mr-2"></i>
-                                        Apply
-                                    </button>
+                                <div class="flex items-end">
                                     <a href="?" class="btn btn-secondary">Clear</a>
                                 </div>
                             </div>
@@ -136,6 +142,7 @@ $pageTitle = 'Ad Scheduling';
                                 <h3 class="text-lg font-semibold">Scheduled Advertisements</h3>
                                 <p class="text-sm text-muted-foreground">Total: <?php echo count($scheduledAds); ?> schedules</p>
                             </div>
+                            <div class="scheduled-ads-scroll">
                             <table class="table">
                                 <thead>
                                     <tr>
@@ -152,6 +159,9 @@ $pageTitle = 'Ad Scheduling';
                                             <td colspan="5" class="text-center py-8">
                                                 <i class="fa-solid fa-calendar-xmark w-12 h-12 mx-auto mb-2 text-muted-foreground"></i>
                                                 <p>No scheduled advertisements found</p>
+                                                <?php if (!empty($availableAds)): ?>
+                                                    <p class="text-sm text-muted-foreground" style="margin-top: .5rem;">Approved ads available: <?php echo count($availableAds); ?> — click “Schedule Ad” to add one.</p>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php else: ?>
@@ -191,6 +201,7 @@ $pageTitle = 'Ad Scheduling';
                                     <?php endif; ?>
                                 </tbody>
                             </table>
+                            </div>
                         </div>
 
                         <div class="sidebar-cards">
@@ -259,6 +270,64 @@ $pageTitle = 'Ad Scheduling';
                                     <?php endforeach; ?>
                                 </div>
                             </div>
+
+                            <div class="rotation-settings-card">
+                                <div class="p-6">
+                                    <h3 class="text-lg font-semibold mb-4">Ad Rotation Settings</h3>
+                                    <p class="text-sm text-muted-foreground" style="margin-top: -10px; margin-bottom: 12px;">
+                                        Controls how long each ad stays visible (seconds) and how many ads can share the same time window (capacity).
+                                    </p>
+
+                                    <form method="POST">
+                                        <input type="hidden" name="action" value="update_rotation_settings">
+
+                                        <div class="rotation-grid">
+                                            <div class="rotation-row">
+                                                <div class="rotation-label">Banner</div>
+                                                <div>
+                                                    <label class="rotation-field-label">Seconds per ad</label>
+                                                    <input type="number" min="0" max="600" name="banner_seconds" class="form-input w-full" value="<?php echo (int)($rotationSettings['banner_seconds'] ?? 30); ?>">
+                                                </div>
+                                                <div>
+                                                    <label class="rotation-field-label">Max concurrent</label>
+                                                    <input type="number" min="0" max="100" name="banner_capacity" class="form-input w-full" value="<?php echo (int)($rotationSettings['banner_capacity'] ?? 5); ?>">
+                                                    <div class="rotation-help">0 = unlimited</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="rotation-row">
+                                                <div class="rotation-label">Featured</div>
+                                                <div>
+                                                    <label class="rotation-field-label">Seconds per ad</label>
+                                                    <input type="number" min="0" max="600" name="featured_seconds" class="form-input w-full" value="<?php echo (int)($rotationSettings['featured_seconds'] ?? 60); ?>">
+                                                </div>
+                                                <div>
+                                                    <label class="rotation-field-label">Max concurrent</label>
+                                                    <input type="number" min="0" max="100" name="featured_capacity" class="form-input w-full" value="<?php echo (int)($rotationSettings['featured_capacity'] ?? 3); ?>">
+                                                    <div class="rotation-help">0 = unlimited</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="rotation-row">
+                                                <div class="rotation-label">Sponsored</div>
+                                                <div>
+                                                    <label class="rotation-field-label">Seconds per ad</label>
+                                                    <input type="number" min="0" max="600" name="sponsored_seconds" class="form-input w-full" value="<?php echo (int)($rotationSettings['sponsored_seconds'] ?? 90); ?>">
+                                                </div>
+                                                <div>
+                                                    <label class="rotation-field-label">Max concurrent</label>
+                                                    <input type="number" min="0" max="100" name="sponsored_capacity" class="form-input w-full" value="<?php echo (int)($rotationSettings['sponsored_capacity'] ?? 8); ?>">
+                                                    <div class="rotation-help">0 = unlimited</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="rotation-actions">
+                                            <button type="submit" class="btn btn-primary w-full">Save</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -279,21 +348,30 @@ $pageTitle = 'Ad Scheduling';
                                     <select name="ad_id" id="ad_id" class="form-select w-full" required>
                                         <option value="">-- Select Approved Ad --</option>
                                         <?php foreach ($availableAds as $ad): ?>
-                                            <option value="<?php echo $ad['ad_id']; ?>" <?php echo $ad['is_scheduled'] ? 'disabled' : ''; ?>>
+                                            <option
+                                                value="<?php echo $ad['ad_id']; ?>"
+                                                <?php echo $ad['is_scheduled'] ? 'disabled' : ''; ?>
+                                                data-campaign-start="<?php echo htmlspecialchars((string)($ad['start_date'] ?? '')); ?>"
+                                                data-campaign-end="<?php echo htmlspecialchars((string)($ad['end_date'] ?? '')); ?>"
+                                            >
                                                 <?php echo htmlspecialchars($ad['title']); ?> (<?php echo ucfirst($ad['type']); ?>) 
                                                 <?php echo $ad['is_scheduled'] ? '- Already Scheduled' : ''; ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
+                                    <p id="campaignRangeHint" class="text-sm text-muted-foreground" style="margin-top: 6px;"></p>
                                 </div>
+                                <input type="hidden" name="start_date" id="start_date">
+                                <input type="hidden" name="end_date" id="end_date">
+
                                 <div class="grid grid-cols-2 gap-4">
                                     <div class="form-group">
-                                        <label>Start Date *</label>
-                                        <input type="date" name="start_date" id="start_date" class="form-input w-full" min="<?php echo date('Y-m-d'); ?>" required>
+                                        <label>Start Date</label>
+                                        <input type="text" id="start_date_display" class="form-input w-full" readonly placeholder="Select an advertisement">
                                     </div>
                                     <div class="form-group">
-                                        <label>End Date *</label>
-                                        <input type="date" name="end_date" id="end_date" class="form-input w-full" min="<?php echo date('Y-m-d'); ?>" required>
+                                        <label>End Date</label>
+                                        <input type="text" id="end_date_display" class="form-input w-full" readonly placeholder="Select an advertisement">
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
@@ -327,14 +405,18 @@ $pageTitle = 'Ad Scheduling';
                             <input type="hidden" name="action" value="update_schedule">
                             <input type="hidden" name="schedule_id" id="edit_schedule_id">
                             <div class="modal-body">
+                                <p id="editCampaignRangeHint" class="text-sm text-muted-foreground" style="margin-top: 0; margin-bottom: 10px;"></p>
+                                <input type="hidden" name="start_date" id="edit_start_date">
+                                <input type="hidden" name="end_date" id="edit_end_date">
+
                                 <div class="grid grid-cols-2 gap-4">
                                     <div class="form-group">
-                                        <label>Start Date *</label>
-                                        <input type="date" name="start_date" id="edit_start_date" class="form-input w-full" min="<?php echo date('Y-m-d'); ?>" required>
+                                        <label>Start Date</label>
+                                        <input type="text" id="edit_start_date_display" class="form-input w-full" readonly>
                                     </div>
                                     <div class="form-group">
-                                        <label>End Date *</label>
-                                        <input type="date" name="end_date" id="edit_end_date" class="form-input w-full" min="<?php echo date('Y-m-d'); ?>" required>
+                                        <label>End Date</label>
+                                        <input type="text" id="edit_end_date_display" class="form-input w-full" readonly>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
@@ -358,6 +440,19 @@ $pageTitle = 'Ad Scheduling';
             </div>
 
             <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js?v=<?php echo time(); ?>"></script>
+            <script>
+                // Auto-apply filters (Placement/Status). Search applies on Enter.
+                (function () {
+                    var form = document.getElementById('filterForm');
+                    if (!form) return;
+                    var selects = form.querySelectorAll('select[name="placement"], select[name="status"]');
+                    selects.forEach(function (el) {
+                        el.addEventListener('change', function () {
+                            form.submit();
+                        });
+                    });
+                })();
+            </script>
         </div>
     </div>
 </body>

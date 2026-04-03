@@ -747,10 +747,20 @@ $mockAdReports = [
  */
 function getAdReports() {
     global $mockAdReports;
-    
-    // Filter to ensure ONLY advertisement category reports
-    return array_filter($mockAdReports, function($report) {
-        return isset($report['category']) && $report['category'] === 'advertisement';
-    });
+
+    if (!is_array($mockAdReports)) {
+        $mockAdReports = [];
+    }
+
+    // Filter to ensure ONLY advertisement category reports.
+    // Some mock rows may not include a `category`; default those to `advertisement`.
+    return array_values(array_filter($mockAdReports, function ($report) {
+        if (!is_array($report)) {
+            return false;
+        }
+
+        $category = $report['category'] ?? 'advertisement';
+        return $category === 'advertisement';
+    }));
 }
         

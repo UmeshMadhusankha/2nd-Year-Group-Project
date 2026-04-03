@@ -27,7 +27,8 @@ try {
     error_log("Database Connection Error: " . $e->getMessage());
     
     // If this is an API call, return JSON
-    if (strpos($_SERVER['REQUEST_URI'], '/api/') !== false) {
+    $requestUri = (string)($_SERVER['REQUEST_URI'] ?? '');
+    if ($requestUri !== '' && strpos($requestUri, '/api/') !== false) {
         header('Content-Type: application/json');
         http_response_code(500);
         echo json_encode([

@@ -453,6 +453,16 @@ $userData = getUserData();
         document.addEventListener('DOMContentLoaded', () => {
             // Tab Logic
             const tabBtns = document.querySelectorAll('.tab-btn');
+            const setActiveTab = (tabId) => {
+                if (!tabId) return;
+                tabBtns.forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+                const content = document.getElementById(tabId);
+                if (btn) btn.classList.add('active');
+                if (content) content.classList.add('active');
+            };
+
             tabBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
                     tabBtns.forEach(b => b.classList.remove('active'));
@@ -462,6 +472,28 @@ $userData = getUserData();
                     document.getElementById(tabId).classList.add('active');
                 });
             });
+
+            // Optional deep-link: settings.php?tab=billing or settings.php#billing-tab
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const tabParam = (params.get('tab') || '').trim();
+                const hash = (window.location.hash || '').replace('#', '').trim();
+                let requested = '';
+                if (tabParam) {
+                    requested = tabParam.endsWith('-tab') ? tabParam : (tabParam + '-tab');
+                    if (tabParam === 'billing') requested = 'billing-tab';
+                    if (tabParam === 'security') requested = 'security-tab';
+                    if (tabParam === 'notifications') requested = 'notifications-tab';
+                } else if (hash) {
+                    requested = hash;
+                    if (hash === 'billing') requested = 'billing-tab';
+                }
+                if (requested) {
+                    setActiveTab(requested);
+                }
+            } catch (e) {
+                // Ignore URL parsing issues
+            }
 
             // Fetch Settings Data
             fetchSettings();
@@ -987,6 +1019,25 @@ $userData = getUserData();
             if (!this.dataset.loaded) {
                 loadBillingData();
                 this.dataset.loaded = 'true';
+            }
+        });
+
+        // If opened via deep-link to billing, load immediately
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const tabParam = (params.get('tab') || '').trim();
+                const hash = (window.location.hash || '').replace('#', '').trim();
+                const wantsBilling = tabParam === 'billing' || tabParam === 'billing-tab' || hash === 'billing' || hash === 'billing-tab';
+                if (!wantsBilling) return;
+
+                const billingBtn = document.querySelector('[data-tab="billing-tab"]');
+                if (billingBtn && !billingBtn.dataset.loaded) {
+                    loadBillingData();
+                    billingBtn.dataset.loaded = 'true';
+                }
+            } catch (e) {
+                // Ignore URL parsing issues
             }
         });
 

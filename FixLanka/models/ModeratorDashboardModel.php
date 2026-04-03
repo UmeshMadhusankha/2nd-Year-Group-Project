@@ -11,6 +11,15 @@ class ModeratorDashboardModel
     private $pdo;
     private $activityLog;
 
+    private const APPROVED_STATUSES = [
+        'approved',
+        'scheduled',
+        'paused',
+        'inactive',
+        'suspended',
+        'expired',
+    ];
+
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
@@ -32,9 +41,8 @@ class ModeratorDashboardModel
         $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM User WHERE DATE(created_at) = CURDATE()");
         $stats['new_users_today'] = $stmt->fetch()['count'] ?? 0;
 
-        // Active Ads (approved or active status)
-        $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM Advertisement WHERE status IN ('approved', 'active')");
-        $stats['active_ads'] = $stmt->fetch()['count'] ?? 0;
+        // Active Ads (computed: currently within the scheduled daily time window)
+        $stats['active_ads'] = $this->countAdsRunningNow();
 
         // Ads Approved Today (from activity logs)
         $stmt = $this->pdo->query("SELECT COUNT(*) as count FROM system_activity_logs WHERE activity_type = 'ad_approved' AND DATE(created_at) = CURDATE()");
@@ -104,7 +112,9 @@ class ModeratorDashboardModel
         try {
             $stmt = $this->pdo->query("SELECT COUNT(*) as total FROM Advertisement");
             $total = $stmt->fetch()['total'] ?? 0;
-            $stmt = $this->pdo->query("SELECT COUNT(*) as approved FROM Advertisement WHERE status IN ('approved', 'active')");
+            $placeholders = implode(',', array_fill(0, count(self::APPROVED_STATUSES), '?'));
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) as approved FROM Advertisement WHERE LOWER(status) IN ($placeholders)");
+            $stmt->execute(self::APPROVED_STATUSES);
             $approved = $stmt->fetch()['approved'] ?? 0;
             $overview['ad_approvals'] = $total > 0 ? round(($approved / $total) * 100) : 0;
         } catch (PDOException $e) {
@@ -230,5 +240,37 @@ class ModeratorDashboardModel
         }
 
         return $counts;
+    }
+
+    private function countAdsRunningNow(): int
+    {
+        // "Active" is computed (not persisted):
+        // - must have a schedule
+        // - now is within schedule date range
+        // - now is within schedule daily time window
+        // - advertisement must not be in a non-display status
+        try {
+            $sql = "
+                SELECT COUNT(*)
+                FROM advertisement a
+                INNER JOIN (
+                    SELECT s1.*
+                    FROM adschedule s1
+                    INNER JOIN (
+                        SELECT ad_id, MAX(schedule_id) AS latest_schedule_id
+                        FROM adschedule
+                        GROUP BY ad_id
+                    ) s2 ON s2.latest_schedule_id = s1.schedule_id
+                ) s ON s.ad_id = a.ad_id
+                WHERE LOWER(a.status) NOT IN ('pending','rejected','suspended','inactive','paused','expired')
+                  AND CURDATE() BETWEEN s.start_date AND s.end_date
+                  AND CURTIME() BETWEEN COALESCE(s.start_time, '00:00:00') AND COALESCE(s.end_time, '23:59:59')
+            ";
+            $stmt = $this->pdo->query($sql);
+            return (int)($stmt->fetchColumn() ?? 0);
+        } catch (Throwable $e) {
+            error_log('Error counting active ads: ' . $e->getMessage());
+            return 0;
+        }
     }
 }
