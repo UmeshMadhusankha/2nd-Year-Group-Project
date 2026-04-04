@@ -66,15 +66,55 @@ document.addEventListener('DOMContentLoaded', function () {
  * Load all projects for the current company
  */
 async function loadProjects() {
+    const showInlineState = (message, type = 'empty') => {
+        const tableBody = document.getElementById('projects-table-body');
+        const cardContainer = document.getElementById('projects-card-container');
+
+        const icon = type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-inbox';
+        const safeMessage = escapeHtml(message || (type === 'error' ? 'Failed to load projects' : 'No projects found'));
+
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="no-data">
+                        <i class="${icon}"></i>
+                        <p>${safeMessage}</p>
+                    </td>
+                </tr>
+            `;
+        }
+
+        if (cardContainer) {
+            cardContainer.innerHTML = `
+                <div class="no-data-card">
+                    <i class="${icon}"></i>
+                    <p>${safeMessage}</p>
+                </div>
+            `;
+        }
+    };
+
     try {
         showLoader();
 
-        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/projects.php?company_id=${currentCompanyId}`);
+        // Avoid infinite "loading" UI when the server hangs
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        const response = await fetch(
+            `/2nd-Year-Group-Project/FixLanka/api/projects.php?company_id=${encodeURIComponent(currentCompanyId)}`,
+            { signal: controller.signal }
+        );
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             const errorText = await response.text();
             console.error('Server error:', errorText);
             showToast(`Server Error (${response.status})`, 'error');
+            projectsData = [];
+            filteredProjects = [];
+            showInlineState('Failed to load projects', 'error');
             hideLoader();
             return;
         }
@@ -88,12 +128,23 @@ async function loadProjects() {
             updateCounts();
         } else {
             showToast(result.message || 'Failed to load projects', 'error');
+            projectsData = [];
+            filteredProjects = [];
+            showInlineState(result.message || 'Failed to load projects', 'error');
+            updateCounts();
         }
 
         hideLoader();
     } catch (error) {
         console.error('Error loading projects:', error);
-        showToast('Failed to load projects. Please try again.', 'error');
+        const isTimeout = error && (error.name === 'AbortError');
+        const msg = isTimeout
+            ? 'Request timed out while loading projects'
+            : 'Failed to load projects. Please try again.';
+        showToast(msg, 'error');
+        projectsData = [];
+        filteredProjects = [];
+        showInlineState(msg, 'error');
         hideLoader();
     }
 }

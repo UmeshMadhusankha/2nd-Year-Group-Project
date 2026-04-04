@@ -17,9 +17,22 @@ $userData = getUserData();
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/repair-requests.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        window.CURRENT_USER_ID = <?php echo intval($userData['id'] ?? 0); ?>;
+        window.REPAIR_REQUESTS_WIDGET_CONFIG = {
+            enabled: true,
+            mode: 'dashboard',
+            loadRequests: false,
+            loadQuotations: false,
+            showCounts: false
+        };
+    </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/dashboard.js"></script>
+    <script defer src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/repair-requests-db.js"></script>
 </head>
 
 <body>
@@ -47,10 +60,8 @@ $userData = getUserData();
                         </div>
                         <div class="kpi-content">
                             <h3>Active Projects</h3>
-                            <p class="kpi-value">12</p>
-                            <span class="kpi-trend positive">
-                                <i class="fas fa-arrow-up"></i> +2 this week
-                            </span>
+                            <p class="kpi-value" id="kpiActiveProjects">—</p>
+                            <span class="kpi-trend" id="kpiActiveProjectsTrend"></span>
                         </div>
                     </div>
 
@@ -60,10 +71,8 @@ $userData = getUserData();
                         </div>
                         <div class="kpi-content">
                             <h3>Pending Requests</h3>
-                            <p class="kpi-value">8</p>
-                            <span class="kpi-trend negative">
-                                <i class="fas fa-arrow-down"></i> -3 from yesterday
-                            </span>
+                            <p class="kpi-value" id="kpiPendingRequests">—</p>
+                            <span class="kpi-trend" id="kpiPendingRequestsTrend"></span>
                         </div>
                     </div>
 
@@ -73,10 +82,8 @@ $userData = getUserData();
                         </div>
                         <div class="kpi-content">
                             <h3>Total Earnings</h3>
-                            <p class="kpi-value">LKR 450K</p>
-                            <span class="kpi-trend positive">
-                                <i class="fas fa-arrow-up"></i> +15% this month
-                            </span>
+                            <p class="kpi-value" id="kpiTotalEarnings">—</p>
+                            <span class="kpi-trend" id="kpiTotalEarningsTrend"></span>
                         </div>
                     </div>
 
@@ -86,10 +93,8 @@ $userData = getUserData();
                         </div>
                         <div class="kpi-content">
                             <h3>Average Rating</h3>
-                            <p class="kpi-value">4.8</p>
-                            <span class="kpi-trend positive">
-                                <i class="fas fa-arrow-up"></i> +0.2 this month
-                            </span>
+                            <p class="kpi-value" id="kpiAverageRating">—</p>
+                            <span class="kpi-trend" id="kpiAverageRatingTrend"></span>
                         </div>
                     </div>
                 </div>
@@ -101,18 +106,28 @@ $userData = getUserData();
                         <div class="panel-header">
                             <h2><i class="fas fa-tools"></i> Repair Requests</h2>
                             <div class="panel-header-actions">
-                                <div class="request-tabs">
-                                    <button class="tab-button active" data-tab="direct"><i class="fas fa-user-tie"></i>
-                                        Direct Requests</button>
-                                    <button class="tab-button" data-tab="public"><i class="fas fa-globe"></i> Public
-                                        Requests</button>
-                                </div>
-                                <a href="/2nd-Year-Group-Project/FixLanka/company-repair-requests" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
+                                <a href="/2nd-Year-Group-Project/FixLanka/views/company/repair-requests.php" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
                             </div>
                         </div>
 
-                        <div class="requests-list" id="requestsList">
-                            <!-- Request cards will be populated by JavaScript -->
+                        <section class="requests-tabs" style="margin-top: var(--spacing-md);">
+                            <nav class="tab-nav">
+                                <button class="tab-button active" data-tab="public" type="button">
+                                    <i class="fas fa-globe"></i>
+                                    Public Requests
+                                </button>
+                                <button class="tab-button" data-tab="direct" type="button">
+                                    <i class="fas fa-inbox"></i>
+                                    Direct Requests
+                                </button>
+                            </nav>
+                        </section>
+
+                        <div class="requests-table-container" id="requestsList">
+                            <div class="loading-state" style="text-align: center; padding: 2rem;">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; opacity: 0.5;"></i>
+                                <p style="color: var(--text-secondary); margin-top: 1rem;">Loading requests...</p>
+                            </div>
                         </div>
                     </div>
 
@@ -144,14 +159,7 @@ $userData = getUserData();
 
                         <div class="upcoming-events">
                             <h4><i class="fas fa-clock"></i> Upcoming Events</h4>
-                            <div class="event-item">
-                                <div class="event-date">Aug 27</div>
-                                <div class="event-title">Team Meeting</div>
-                            </div>
-                            <div class="event-item">
-                                <div class="event-date">Aug 30</div>
-                                <div class="event-title">Project Deadline</div>
-                            </div>
+                            <div id="upcomingEventsList"></div>
                         </div>
                     </div>
                     <!-- Project Overview Section -->
@@ -169,58 +177,7 @@ $userData = getUserData();
                             </div>
                         </div>
 
-                        <div class="projects-list">
-                            <div class="project-item">
-                                <div class="project-info">
-                                    <h4>Air Conditioner Repair – Colombo</h4>
-                                    <p><strong>Client:</strong> John Perera</p>
-                                    <span class="project-date">Due: Aug 25, 2025</span>
-                                </div>
-                                <div class="project-details">
-                                    <div class="project-status in-progress">In Progress</div>
-                                    <div class="project-progress">
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: 60%;"></div>
-                                        </div>
-                                        <span class="progress-text">60%</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="project-item">
-                                <div class="project-info">
-                                    <h4>Plumbing Fix – Kandy</h4>
-                                    <p><strong>Client:</strong> Saman Silva</p>
-                                    <span class="project-date">Completed: Aug 10, 2025</span>
-                                </div>
-                                <div class="project-details">
-                                    <div class="project-status completed">Completed</div>
-                                    <div class="project-progress">
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: 100%;"></div>
-                                        </div>
-                                        <span class="progress-text">100%</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="project-item">
-                                <div class="project-info">
-                                    <h4>Electrical Wiring – Galle</h4>
-                                    <p><strong>Client:</strong> Modern Apartments</p>
-                                    <span class="project-date">Starts: Sep 1, 2025</span>
-                                </div>
-                                <div class="project-details">
-                                    <div class="project-status pending">Pending</div>
-                                    <div class="project-progress">
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: 0%;"></div>
-                                        </div>
-                                        <span class="progress-text">0%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="projects-list" id="dashboardProjectsList"></div>
                     </div>
 
                     <!-- Contracts Panel -->
@@ -229,52 +186,7 @@ $userData = getUserData();
                             <h2><i class="fas fa-handshake"></i> Contracts</h2>
                             <a href="/2nd-Year-Group-Project/FixLanka/company-contracts" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
                         </div>
-                        <div class="contracts-list">
-                            <div class="contract-item">
-                                <div class="contract-info">
-                                    <h4>Office Renovation</h4>
-                                    <p>ABC Corporation</p>
-                                    <span class="contract-date">Started: Aug 15, 2025</span>
-                                </div>
-                                <div class="contract-details">
-                                    <div class="contract-status active">Active</div>
-                                    <div class="contract-value">LKR 250K</div>
-                                </div>
-                            </div>
-                            <div class="contract-item">
-                                <div class="contract-info">
-                                    <h4>Home Repair</h4>
-                                    <p>John Smith</p>
-                                    <span class="contract-date">Pending: Aug 20, 2025</span>
-                                </div>
-                                <div class="contract-details">
-                                    <div class="contract-status pending">Pending</div>
-                                    <div class="contract-value">LKR 75K</div>
-                                </div>
-                            </div>
-                            <div class="contract-item">
-                                <div class="contract-info">
-                                    <h4>Plumbing Maintenance</h4>
-                                    <p>Green Valley Resort</p>
-                                    <span class="contract-date">Started: Aug 18, 2025</span>
-                                </div>
-                                <div class="contract-details">
-                                    <div class="contract-status active">Active</div>
-                                    <div class="contract-value">LKR 180K</div>
-                                </div>
-                            </div>
-                            <div class="contract-item">
-                                <div class="contract-info">
-                                    <h4>Electrical Wiring</h4>
-                                    <p>Modern Apartments</p>
-                                    <span class="contract-date">Starts: Sep 1, 2025</span>
-                                </div>
-                                <div class="contract-details">
-                                    <div class="contract-status upcoming">Upcoming</div>
-                                    <div class="contract-value">LKR 320K</div>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="contracts-list" id="dashboardContractsList"></div>
                     </div>
 
                     <!-- Payments Panel with Income Overview -->
@@ -285,32 +197,7 @@ $userData = getUserData();
                                 <h3><i class="fas fa-credit-card"></i> Recent Payments</h3>
                                 <a href="/2nd-Year-Group-Project/FixLanka/company-payments" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
                             </div>
-                            <div class="payments-list">
-                                <div class="payment-item">
-                                    <div class="payment-info">
-                                        <h4>Payment Received</h4>
-                                        <p>ABC Corporation</p>
-                                    </div>
-                                    <div class="payment-amount positive">+LKR 125K</div>
-                                    <div class="payment-date">Aug 23</div>
-                                </div>
-                                <div class="payment-item">
-                                    <div class="payment-info">
-                                        <h4>Material Cost</h4>
-                                        <p>Hardware Store</p>
-                                    </div>
-                                    <div class="payment-amount negative">-LKR 15K</div>
-                                    <div class="payment-date">Aug 22</div>
-                                </div>
-                                <div class="payment-item">
-                                    <div class="payment-info">
-                                        <h4>Service Payment</h4>
-                                        <p>Johnson Residence</p>
-                                    </div>
-                                    <div class="payment-amount positive">+LKR 85K</div>
-                                    <div class="payment-date">Aug 21</div>
-                                </div>
-                            </div>
+                            <div class="payments-list" id="dashboardPaymentsList"></div>
                         </div>
 
                         <!-- Income Overview Section -->
@@ -325,37 +212,21 @@ $userData = getUserData();
                             </div>
 
                             <div class="income-chart-container">
-                                <div class="income-chart" id="incomeChart">
-                                    <div class="chart-bar" data-value="45K" style="height: 60%;"></div>
-                                    <div class="chart-bar" data-value="62K" style="height: 80%;"></div>
-                                    <div class="chart-bar" data-value="38K" style="height: 50%;"></div>
-                                    <div class="chart-bar" data-value="75K" style="height: 100%;"></div>
-                                    <div class="chart-bar" data-value="52K" style="height: 70%;"></div>
-                                    <div class="chart-bar" data-value="68K" style="height: 90%;"></div>
-                                    <div class="chart-bar" data-value="41K" style="height: 55%;"></div>
-                                </div>
-                                <div class="chart-labels">
-                                    <div class="chart-label">Mon</div>
-                                    <div class="chart-label">Tue</div>
-                                    <div class="chart-label">Wed</div>
-                                    <div class="chart-label">Thu</div>
-                                    <div class="chart-label">Fri</div>
-                                    <div class="chart-label">Sat</div>
-                                    <div class="chart-label">Sun</div>
-                                </div>
+                                <div class="income-chart" id="incomeChart"></div>
+                                <div class="chart-labels" id="incomeChartLabels"></div>
                             </div>
 
                             <div class="income-summary">
                                 <div class="summary-item">
-                                    <div class="summary-value">LKR 381K</div>
+                                    <div class="summary-value" id="incomeSummaryTotal">—</div>
                                     <div class="summary-label">Total Income</div>
                                 </div>
                                 <div class="summary-item">
-                                    <div class="summary-value">LKR 54K</div>
+                                    <div class="summary-value" id="incomeSummaryAvg">—</div>
                                     <div class="summary-label">Avg Daily</div>
                                 </div>
                                 <div class="summary-item">
-                                    <div class="summary-value">+18%</div>
+                                    <div class="summary-value" id="incomeSummaryGrowth">—</div>
                                     <div class="summary-label">Growth</div>
                                 </div>
                             </div>
@@ -409,8 +280,8 @@ $userData = getUserData();
                                     <div class="workforce-title">
                                         <h4>Carpenters</h4>
                                         <div class="workforce-availability" id="carpenters-count">
-                                            <span class="available-count">8</span>
-                                            <span class="total-count">/ 12 Total</span>
+                                            <span class="available-count" data-workforce-active="carpenter">—</span>
+                                            <span class="total-count" data-workforce-total="carpenter">/ — Total</span>
                                         </div>
                                     </div>
                                 </div>
@@ -418,17 +289,17 @@ $userData = getUserData();
                                 <div class="workforce-progress">
                                     <div class="progress-label">
                                         <span>Availability Ratio</span>
-                                        <span class="progress-percentage">67%</span>
+                                        <span class="progress-percentage" data-workforce-ratio="carpenter">—%</span>
                                     </div>
-                                    <div class="progress-bar" role="progressbar" aria-valuenow="67" aria-valuemin="0" aria-valuemax="100" aria-label="Carpenter availability ratio">
-                                        <div class="progress-fill" style="width: 67%"></div>
+                                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Carpenter availability ratio" data-workforce-bar="carpenter">
+                                        <div class="progress-fill" style="width: 0%" data-workforce-fill="carpenter"></div>
                                     </div>
                                 </div>
 
                                 <div class="workforce-details">
                                     <div class="detail-item">
                                         <i class="fas fa-star" aria-hidden="true"></i>
-                                        <span>4.8 Rating</span>
+                                        <span data-workforce-rating="carpenter">— Rating</span>
                                     </div>
                                     <div class="detail-item">
                                         <i class="fas fa-shield-alt" aria-hidden="true"></i>
@@ -436,7 +307,7 @@ $userData = getUserData();
                                     </div>
                                 </div>
 
-                                <div class="availability-badge available">Available</div>
+                                <div class="availability-badge" data-workforce-badge="carpenter">—</div>
 
                                 <div class="workforce-actions" role="group" aria-label="Carpenter workforce actions">
                                     <button class="action-btn primary" type="button" 
@@ -456,8 +327,8 @@ $userData = getUserData();
                                     <div class="workforce-title">
                                         <h4>Electricians</h4>
                                         <div class="workforce-availability" id="electricians-count">
-                                            <span class="available-count">5</span>
-                                            <span class="total-count">/ 8 Total</span>
+                                            <span class="available-count" data-workforce-active="electrician">—</span>
+                                            <span class="total-count" data-workforce-total="electrician">/ — Total</span>
                                         </div>
                                     </div>
                                 </div>
@@ -465,17 +336,17 @@ $userData = getUserData();
                                 <div class="workforce-progress">
                                     <div class="progress-label">
                                         <span>Availability Ratio</span>
-                                        <span class="progress-percentage">63%</span>
+                                        <span class="progress-percentage" data-workforce-ratio="electrician">—%</span>
                                     </div>
-                                    <div class="progress-bar" role="progressbar" aria-valuenow="63" aria-valuemin="0" aria-valuemax="100" aria-label="Electrician availability ratio">
-                                        <div class="progress-fill" style="width: 63%"></div>
+                                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Electrician availability ratio" data-workforce-bar="electrician">
+                                        <div class="progress-fill" style="width: 0%" data-workforce-fill="electrician"></div>
                                     </div>
                                 </div>
 
                                 <div class="workforce-details">
                                     <div class="detail-item">
                                         <i class="fas fa-star" aria-hidden="true"></i>
-                                        <span>4.9 Rating</span>
+                                        <span data-workforce-rating="electrician">— Rating</span>
                                     </div>
                                     <div class="detail-item">
                                         <i class="fas fa-shield-alt" aria-hidden="true"></i>
@@ -483,7 +354,7 @@ $userData = getUserData();
                                     </div>
                                 </div>
 
-                                <div class="availability-badge available">Available</div>
+                                <div class="availability-badge" data-workforce-badge="electrician">—</div>
 
                                 <div class="workforce-actions" role="group" aria-label="Electrician workforce actions">
                                     <button class="action-btn primary" type="button" 
@@ -503,8 +374,8 @@ $userData = getUserData();
                                     <div class="workforce-title">
                                         <h4>Plumbers</h4>
                                         <div class="workforce-availability" id="plumbers-count">
-                                            <span class="available-count">3</span>
-                                            <span class="total-count">/ 6 Total</span>
+                                            <span class="available-count" data-workforce-active="plumber">—</span>
+                                            <span class="total-count" data-workforce-total="plumber">/ — Total</span>
                                         </div>
                                     </div>
                                 </div>
@@ -512,17 +383,17 @@ $userData = getUserData();
                                 <div class="workforce-progress">
                                     <div class="progress-label">
                                         <span>Availability Ratio</span>
-                                        <span class="progress-percentage">50%</span>
+                                        <span class="progress-percentage" data-workforce-ratio="plumber">—%</span>
                                     </div>
-                                    <div class="progress-bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" aria-label="Plumber availability ratio">
-                                        <div class="progress-fill" style="width: 50%"></div>
+                                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Plumber availability ratio" data-workforce-bar="plumber">
+                                        <div class="progress-fill" style="width: 0%" data-workforce-fill="plumber"></div>
                                     </div>
                                 </div>
 
                                 <div class="workforce-details">
                                     <div class="detail-item">
                                         <i class="fas fa-star" aria-hidden="true"></i>
-                                        <span>4.7 Rating</span>
+                                        <span data-workforce-rating="plumber">— Rating</span>
                                     </div>
                                     <div class="detail-item">
                                         <i class="fas fa-shield-alt" aria-hidden="true"></i>
@@ -530,7 +401,7 @@ $userData = getUserData();
                                     </div>
                                 </div>
 
-                                <div class="availability-badge limited">Limited</div>
+                                <div class="availability-badge" data-workforce-badge="plumber">—</div>
 
                                 <div class="workforce-actions" role="group" aria-label="Plumber workforce actions">
                                     <button class="action-btn primary" type="button" 
@@ -550,8 +421,8 @@ $userData = getUserData();
                                     <div class="workforce-title">
                                         <h4>Painters</h4>
                                         <div class="workforce-availability" id="painters-count">
-                                            <span class="available-count">4</span>
-                                            <span class="total-count">/ 7 Total</span>
+                                            <span class="available-count" data-workforce-active="painter">—</span>
+                                            <span class="total-count" data-workforce-total="painter">/ — Total</span>
                                         </div>
                                     </div>
                                 </div>
@@ -559,17 +430,17 @@ $userData = getUserData();
                                 <div class="workforce-progress">
                                     <div class="progress-label">
                                         <span>Availability Ratio</span>
-                                        <span class="progress-percentage">57%</span>
+                                        <span class="progress-percentage" data-workforce-ratio="painter">—%</span>
                                     </div>
-                                    <div class="progress-bar" role="progressbar" aria-valuenow="57" aria-valuemin="0" aria-valuemax="100" aria-label="Painter availability ratio">
-                                        <div class="progress-fill" style="width: 57%"></div>
+                                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Painter availability ratio" data-workforce-bar="painter">
+                                        <div class="progress-fill" style="width: 0%" data-workforce-fill="painter"></div>
                                     </div>
                                 </div>
 
                                 <div class="workforce-details">
                                     <div class="detail-item">
                                         <i class="fas fa-star" aria-hidden="true"></i>
-                                        <span>4.6 Rating</span>
+                                        <span data-workforce-rating="painter">— Rating</span>
                                     </div>
                                     <div class="detail-item">
                                         <i class="fas fa-shield-alt" aria-hidden="true"></i>
@@ -577,7 +448,7 @@ $userData = getUserData();
                                     </div>
                                 </div>
 
-                                <div class="availability-badge available">Available</div>
+                                <div class="availability-badge" data-workforce-badge="painter">—</div>
 
                                 <div class="workforce-actions" role="group" aria-label="Painter workforce actions">
                                     <button class="action-btn primary" type="button" 
@@ -595,30 +466,7 @@ $userData = getUserData();
                             <h2><i class="fas fa-comments"></i> Customer Feedback</h2>
                             <a href="/2nd-Year-Group-Project/FixLanka/company-reviews" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
                         </div>
-                        <div class="feedback-list">
-                            <div class="feedback-item">
-                                <div class="feedback-rating">
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                </div>
-                                <p>"Excellent work on kitchen repair!"</p>
-                                <span class="feedback-customer">- Sarah Johnson</span>
-                            </div>
-                            <div class="feedback-item">
-                                <div class="feedback-rating">
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="far fa-star"></i>
-                                </div>
-                                <p>"Good service, quick response time"</p>
-                                <span class="feedback-customer">- Mike Wilson</span>
-                            </div>
-                        </div>
+                        <div class="feedback-list" id="dashboardFeedbackList"></div>
                     </div>
 
                     <!-- Issues & Support -->
@@ -627,29 +475,14 @@ $userData = getUserData();
                             <h2><i class="fas fa-life-ring"></i> Issues & Support</h2>
                             <a href="/2nd-Year-Group-Project/FixLanka/company-support" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
                         </div>
-                        <div class="support-tickets">
-                            <div class="ticket-item high">
-                                <div class="ticket-priority">High</div>
-                                <div class="ticket-info">
-                                    <h4>Payment Issue</h4>
-                                    <p>Customer unable to process payment</p>
-                                </div>
-                                <div class="ticket-status">Open</div>
-                            </div>
-                            <div class="ticket-item medium">
-                                <div class="ticket-priority">Medium</div>
-                                <div class="ticket-info">
-                                    <h4>Schedule Conflict</h4>
-                                    <p>Worker availability issue</p>
-                                </div>
-                                <div class="ticket-status">In Progress</div>
-                            </div>
-                        </div>
+                        <div class="support-tickets" id="dashboardSupportTickets"></div>
                     </div>
                 </section>
     </div>
     </main>
     </div>
+
+    <?php include __DIR__ . '/partials/repair-requests-modals.php'; ?>
 
     <!-- Project Start Options Modal -->
     <div class="project-start-modal" id="projectStartModal">

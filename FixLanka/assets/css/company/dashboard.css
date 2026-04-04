@@ -2755,6 +2755,13 @@ select option:disabled {
   font-weight: 500;
 }
 
+.empty-state {
+  padding: var(--spacing-md);
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: var(--font-size-sm);
+}
+
 .ticket-item {
   display: flex;
   align-items: center;

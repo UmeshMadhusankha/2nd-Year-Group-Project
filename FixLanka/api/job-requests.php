@@ -54,9 +54,10 @@ function getAvailableJobs() {
         $sort = isset($_GET['sort']) ? $_GET['sort'] : 'newest';
         $request_id = isset($_GET['request_id']) ? intval($_GET['request_id']) : null;
         
-        // Base query - get pending job requests with related data
-        // IMPORTANT: Filter out expired PUBLIC requests (finish_date < today)
-        // This keeps the marketplace clean - companies don't need to see expired public opportunities
+        // Base query
+        // Default behavior: get pending, non-expired requests (marketplace view).
+        // When request_id is provided, return that request even if it's not pending/expired
+        // so detail views/modals can still open historical requests.
         $sql = "SELECT 
                     jr.request_id,
                     jr.user_id,
@@ -83,8 +84,7 @@ function getAvailableJobs() {
                 LEFT JOIN location l ON jr.location_id = l.location_id
                 LEFT JOIN Category c ON jr.category_id = c.category_id
                 LEFT JOIN User u ON jr.user_id = u.user_id
-                WHERE jr.status = 'pending'
-                AND jr.finish_date >= CURDATE()";
+                WHERE 1=1";
         
         $params = [];
         
@@ -92,6 +92,9 @@ function getAvailableJobs() {
         if ($request_id) {
             $sql .= " AND jr.request_id = ?";
             $params[] = $request_id;
+        } else {
+            // Marketplace defaults
+            $sql .= " AND jr.status = 'pending' AND jr.finish_date >= CURDATE()";
         }
         
         if ($category) {

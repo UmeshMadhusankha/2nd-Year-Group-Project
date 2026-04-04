@@ -257,4 +257,82 @@ class NotificationModel
              throw $e;
         }
     }
+
+    /**
+     * Get unread notification count for specific user and type
+     */
+    public function getUnreadNotificationCount($user_id, $user_type)
+    {
+        try {
+            $sql = "
+                SELECT COUNT(*)
+                FROM Notification
+                WHERE
+                    (
+                        (recipient_id = :user_id AND recipient_type = :user_type)
+                        OR (recipient_id IS NULL AND recipient_type = :user_type)
+                        OR (recipient_type = 'all')
+                    )
+                    AND (is_read = 0 OR is_read IS NULL)
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+            $stmt->bindValue(':user_type', $user_type, PDO::PARAM_STR);
+            $stmt->execute();
+
+            return (int)$stmt->fetchColumn();
+        } catch (PDOException $e) {
+            if (strpos($e->getMessage(), 'Unknown column') !== false) {
+                return 0;
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Mark all notifications as read that are visible to this user.
+     */
+    public function markAllRead($user_id, $user_type)
+    {
+        try {
+            $sql = "
+                UPDATE Notification
+                SET is_read = 1
+                WHERE
+                    (
+                        (recipient_id = :user_id AND recipient_type = :user_type)
+                        OR (recipient_id IS NULL AND recipient_type = :user_type)
+                        OR (recipient_type = 'all')
+                    )
+            ";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':user_id', (int)$user_id, PDO::PARAM_INT);
+            $stmt->bindValue(':user_type', $user_type, PDO::PARAM_STR);
+            $stmt->execute();
+            return $stmt->rowCount();
+        } catch (PDOException $e) {
+            if (strpos($e->getMessage(), 'Unknown column') !== false) {
+                return 0;
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Mark a single notification as read.
+     */
+    public function markRead($notification_id)
+    {
+        try {
+            $stmt = $this->pdo->prepare("UPDATE Notification SET is_read = 1 WHERE notification_id = ?");
+            $stmt->execute([(int)$notification_id]);
+            return $stmt->rowCount();
+        } catch (PDOException $e) {
+            if (strpos($e->getMessage(), 'Unknown column') !== false) {
+                return 0;
+            }
+            throw $e;
+        }
+    }
 }

@@ -16,6 +16,18 @@ require_once __DIR__ . '/../controllers/NotificationController.php';
 
 header('Content-Type: application/json');
 
+// Support JSON request bodies (frontend uses application/json)
+$rawBody = file_get_contents('php://input');
+$jsonBody = [];
+if (!empty($rawBody)) {
+    $decoded = json_decode($rawBody, true);
+    if (is_array($decoded)) {
+        $jsonBody = $decoded;
+        // Merge into $_POST so controller code that expects $_POST still works
+        $_POST = array_merge($_POST, $jsonBody);
+    }
+}
+
 // Get the action from request
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 error_log("[API] Action: " . $action);
@@ -45,6 +57,24 @@ switch ($action) {
 
     case 'count':
         $controller->getNotificationCount();
+        break;
+
+    case 'mark_all_read':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->markAllRead();
+        break;
+
+    case 'mark_read':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->markRead();
         break;
     
     case 'add':

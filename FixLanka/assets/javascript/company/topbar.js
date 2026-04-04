@@ -355,7 +355,7 @@ async function toggleNotificationDropdown() {
       </div>
     </div>
     <div class="notification-footer">
-      <a href="/2nd-Year-Group-Project/FixLanka/views/company/support.php">View All Notifications</a>
+            <a href="/2nd-Year-Group-Project/FixLanka/views/company/notifications.php">View All Notifications</a>
     </div>
   `;
 

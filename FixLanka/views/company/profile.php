@@ -58,13 +58,9 @@ $userData = getUserData();
                         <i class="fas fa-credit-card"></i>
                         <span>Payment & Banking</span>
                     </button>
-                    <button class="tab-btn" data-tab="password-tab">
-                        <i class="fas fa-lock"></i>
-                        <span>Change Password</span>
-                    </button>
-                    <button class="tab-btn" data-tab="password-tab">
-                        <i class="fas fa-lock"></i>
-                        <span>Change Password</span>
+                    <button class="tab-btn" data-tab="subscription-tab">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Subscription</span>
                     </button>
                 </div>
 
@@ -494,64 +490,87 @@ $userData = getUserData();
                         </div>
                     </div>
 
-                    <!-- Change Password Tab -->
-                    <div class="tab-content" id="password-tab">
+                    <!-- Subscription Tab -->
+                    <div class="tab-content" id="subscription-tab">
                         <div class="settings-section">
-                            <h2 class="section-title">Change Password</h2>
-                            <p class="section-description">Ensure your account stays secure by using a strong password</p>
+                            <h2 class="section-title">Subscription Plan</h2>
 
-                            <div class="form-group">
-                                <label for="currentPassword">Current Password *</label>
-                                <div class="password-input">
-                                    <input type="password" id="currentPassword" placeholder="Enter current password">
-                                    <button class="toggle-password" type="button">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="newPassword">New Password *</label>
-                                <div class="password-input">
-                                    <input type="password" id="newPassword" placeholder="Enter new password">
-                                    <button class="toggle-password" type="button">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                                <div class="password-strength" id="passwordStrength">
-                                    <div class="strength-bar">
-                                        <div class="strength-fill"></div>
+                            <div class="current-plan-card">
+                                <div class="plan-header">
+                                    <div class="plan-info">
+                                        <h3>Loading...</h3>
+                                        <p>Fetching subscription details...</p>
                                     </div>
-                                    <span class="strength-text">Password strength: <span id="strengthLevel">-</span></span>
+                                    <div class="plan-price">
+                                        <span class="price">LKR 0</span>
+                                        <span class="period">/month</span>
+                                    </div>
+                                </div>
+                                <div class="plan-features">
+                                    <!-- Features will be populated dynamically -->
+                                </div>
+                                <div class="plan-actions">
+                                    <button class="btn-secondary" id="subscriptionChangePlanBtn">Change Plan</button>
+                                    <button class="action-btn danger" id="subscriptionCancelBtn">Cancel Subscription</button>
                                 </div>
                             </div>
 
-                            <div class="form-group">
-                                <label for="confirmPassword">Confirm New Password *</label>
-                                <div class="password-input">
-                                    <input type="password" id="confirmPassword" placeholder="Confirm new password">
-                                    <button class="toggle-password" type="button">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
+                            <div class="billing-info">
+                                <div class="info-item">
+                                    <span class="label">Billing Period:</span>
+                                    <span class="value">Loading...</span>
                                 </div>
-                            </div>
-
-                            <div class="password-requirements">
-                                <h4>Password Requirements:</h4>
-                                <ul>
-                                    <li id="req-length"><i class="fas fa-times-circle"></i> At least 8 characters</li>
-                                    <li id="req-uppercase"><i class="fas fa-times-circle"></i> One uppercase letter</li>
-                                    <li id="req-lowercase"><i class="fas fa-times-circle"></i> One lowercase letter</li>
-                                    <li id="req-number"><i class="fas fa-times-circle"></i> One number</li>
-                                    <li id="req-special"><i class="fas fa-times-circle"></i> One special character</li>
-                                </ul>
+                                <div class="info-item">
+                                    <span class="label">Next Billing Date:</span>
+                                    <span class="value">Loading...</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="label">Payment Method:</span>
+                                    <span class="value">Loading...</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="form-actions">
-                            <button class="btn-secondary" id="cancelPasswordBtn">Cancel</button>
-                            <button class="btn-primary" id="savePasswordBtn">
-                                <i class="fas fa-lock"></i> Change Password
+                        <div class="settings-section">
+                            <h2 class="section-title">Payment Methods</h2>
+
+                            <div id="payment-methods-container">
+                                <p style="text-align: center; color: var(--text-secondary); padding: 20px;">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading payment methods...
+                                </p>
+                            </div>
+
+                            <button class="btn-add-card" id="addCardBtn">
+                                <i class="fas fa-plus"></i> Add Payment Method
+                            </button>
+                        </div>
+
+                        <div class="settings-section">
+                            <h2 class="section-title">Billing History</h2>
+
+                            <div class="billing-history">
+                                <table class="history-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Invoice</th>
+                                            <th>Date</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="5" style="text-align: center; padding: 30px; color: var(--text-secondary);">
+                                                <i class="fas fa-spinner fa-spin"></i> Loading billing history...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <button class="btn-secondary" id="viewAllInvoicesBtn">
+                                View All Invoices
                             </button>
                         </div>
                     </div>
@@ -1014,6 +1033,93 @@ $userData = getUserData();
         </main>
     </div>
 
+    <!-- Add Payment Method Modal (Subscription) -->
+    <div class="modal" id="addPaymentModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-credit-card"></i> Add Payment Method</h3>
+                <button class="modal-close" onclick="closeAddCardModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addPaymentForm">
+                <div class="form-group">
+                    <label for="cardType">Card Type <span class="required">*</span></label>
+                    <select id="cardType" name="card_type" required>
+                        <option value="">Select card type</option>
+                        <option value="visa">Visa</option>
+                        <option value="mastercard">Mastercard</option>
+                        <option value="amex">American Express</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="cardNumber">Card Number <span class="required">*</span></label>
+                    <input type="text" id="cardNumber" name="card_number" placeholder="1234 5678 9012 3456" maxlength="19" required>
+                    <small class="form-hint">Only the last 4 digits will be stored</small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cardHolder">Cardholder Name <span class="required">*</span></label>
+                        <input type="text" id="cardHolder" name="card_holder" placeholder="John Doe" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="expiryMonth">Expiry Month <span class="required">*</span></label>
+                        <select id="expiryMonth" name="expiry_month" required>
+                            <option value="">MM</option>
+                            <option value="01">01</option>
+                            <option value="02">02</option>
+                            <option value="03">03</option>
+                            <option value="04">04</option>
+                            <option value="05">05</option>
+                            <option value="06">06</option>
+                            <option value="07">07</option>
+                            <option value="08">08</option>
+                            <option value="09">09</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="expiryYear">Expiry Year <span class="required">*</span></label>
+                        <select id="expiryYear" name="expiry_year" required>
+                            <option value="">YYYY</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cvv">CVV <span class="required">*</span></label>
+                        <input type="password" id="cvv" name="cvv" placeholder="123" maxlength="4" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="billingAddress">Billing Address <span class="required">*</span></label>
+                    <textarea id="billingAddress" name="billing_address" rows="3" placeholder="Enter billing address" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="makePrimary" name="make_primary">
+                        <span>Set as primary payment method</span>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeAddCardModal()">Cancel</button>
+                    <button type="submit" class="btn-primary" id="submitPaymentBtn">
+                        <i class="fas fa-save"></i> Add Payment Method
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
@@ -1080,76 +1186,7 @@ $userData = getUserData();
             }
         });
 
-        // Password Toggle
-        document.querySelectorAll('.toggle-password').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const input = btn.previousElementSibling;
-                const icon = btn.querySelector('i');
-                
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    icon.classList.remove('fa-eye');
-                    icon.classList.add('fa-eye-slash');
-                } else {
-                    input.type = 'password';
-                    icon.classList.remove('fa-eye-slash');
-                    icon.classList.add('fa-eye');
-                }
-            });
-        });
-
-        // Password Strength Checker
-        const newPasswordInput = document.getElementById('newPassword');
-        newPasswordInput?.addEventListener('input', (e) => {
-            const password = e.target.value;
-            let strength = 0;
-            const requirements = {
-                length: password.length >= 8,
-                uppercase: /[A-Z]/.test(password),
-                lowercase: /[a-z]/.test(password),
-                number: /[0-9]/.test(password),
-                special: /[^A-Za-z0-9]/.test(password)
-            };
-
-            // Update requirements checklist
-            Object.keys(requirements).forEach(req => {
-                const elem = document.getElementById(`req-${req}`);
-                if (elem) {
-                    if (requirements[req]) {
-                        elem.classList.add('met');
-                        elem.querySelector('i').classList.remove('fa-times-circle');
-                        elem.querySelector('i').classList.add('fa-check-circle');
-                        strength++;
-                    } else {
-                        elem.classList.remove('met');
-                        elem.querySelector('i').classList.remove('fa-check-circle');
-                        elem.querySelector('i').classList.add('fa-times-circle');
-                    }
-                }
-            });
-
-            // Update strength bar
-            const strengthFill = document.querySelector('.strength-fill');
-            const strengthLevel = document.getElementById('strengthLevel');
-            
-            if (password.length === 0) {
-                strengthFill.style.width = '0%';
-                strengthFill.className = 'strength-fill';
-                strengthLevel.textContent = '-';
-            } else if (strength <= 2) {
-                strengthFill.style.width = '33%';
-                strengthFill.className = 'strength-fill weak';
-                strengthLevel.textContent = 'Weak';
-            } else if (strength <= 4) {
-                strengthFill.style.width = '66%';
-                strengthFill.className = 'strength-fill medium';
-                strengthLevel.textContent = 'Medium';
-            } else {
-                strengthFill.style.width = '100%';
-                strengthFill.className = 'strength-fill strong';
-                strengthLevel.textContent = 'Strong';
-            }
-        });
+        // Change Password moved to Settings page
 
         // Mock Save Buttons Removed - Real logic implemented below
 
@@ -1338,9 +1375,6 @@ $userData = getUserData();
             // Save Company Profile
             document.getElementById('saveCompanyBtn').addEventListener('click', saveCompanyProfile);
             
-            // Change Password
-            document.getElementById('savePasswordBtn').addEventListener('click', changePassword);
-            
             // Add Bank Account Toggle
             document.getElementById('addBankAccountBtn').addEventListener('click', () => {
                document.getElementById('bankAccountForm').style.display = 'block';
@@ -1416,38 +1450,387 @@ $userData = getUserData();
             }
         }
 
-        async function changePassword() {
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
+        // ==================== SUBSCRIPTION (PROFILE TAB) ====================
+        const SUBSCRIPTION_PLANS = {
+            free: {
+                name: 'Free',
+                price: 0,
+                features: ['5 requests/month', '1 team member', 'Email support', 'Basic analytics']
+            },
+            basic: {
+                name: 'Basic',
+                price: 2500,
+                features: ['50 requests/month', '3 team members', 'Chat support', 'Standard analytics']
+            },
+            professional: {
+                name: 'Professional',
+                price: 5000,
+                features: ['Unlimited requests', '10 team members', 'Priority support', 'Advanced analytics']
+            },
+            enterprise: {
+                name: 'Enterprise',
+                price: 10000,
+                features: ['Everything + Custom features', 'Unlimited team', '24/7 support', 'API access']
+            }
+        };
 
-            if (newPassword !== confirmPassword) {
-                alert('New passwords do not match');
+        function subscriptionNotify(message) {
+            alert(message);
+        }
+
+        function subscriptionFormatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
+        }
+
+        async function loadSubscriptionData() {
+            try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/settings.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'get_billing_data' })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    populateSubscriptionData(result.data);
+                } else {
+                    subscriptionNotify(result.message || 'Failed to load subscription data');
+                }
+            } catch (error) {
+                console.error('Error loading subscription data:', error);
+                subscriptionNotify('Error loading subscription data');
+            }
+        }
+
+        function populateSubscriptionData(data) {
+            const root = document.getElementById('subscription-tab');
+            if (!root) return;
+
+            if (data.subscription) {
+                const sub = data.subscription;
+                const plan = SUBSCRIPTION_PLANS[sub.plan_name] || SUBSCRIPTION_PLANS.free;
+
+                const planInfoH3 = root.querySelector('.plan-info h3');
+                const planInfoP = root.querySelector('.plan-info p');
+                const planPrice = root.querySelector('.plan-price .price');
+                const planPeriod = root.querySelector('.plan-price .period');
+
+                if (planInfoH3) planInfoH3.textContent = plan.name + ' Plan';
+                if (planInfoP) planInfoP.textContent = 'Perfect for ' + (sub.plan_name === 'enterprise' ? 'large' : sub.plan_name === 'professional' ? 'growing' : 'small') + ' businesses';
+                if (planPrice) planPrice.textContent = 'LKR ' + parseFloat(sub.plan_price).toLocaleString();
+                if (planPeriod) planPeriod.textContent = '/' + sub.billing_period;
+
+                const featuresContainer = root.querySelector('.plan-features');
+                if (featuresContainer) {
+                    featuresContainer.innerHTML = plan.features.map(feature => `
+                        <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>${feature}</span>
+                        </div>
+                    `).join('');
+                }
+
+                const billingPeriodValue = root.querySelector('.billing-info .info-item:nth-child(1) .value');
+                const nextBillingValue = root.querySelector('.billing-info .info-item:nth-child(2) .value');
+                if (billingPeriodValue) {
+                    billingPeriodValue.textContent = sub.billing_period.charAt(0).toUpperCase() + sub.billing_period.slice(1);
+                }
+                if (nextBillingValue) {
+                    nextBillingValue.textContent = subscriptionFormatDate(sub.next_billing_date);
+                }
+            }
+
+            displaySubscriptionPaymentMethods(data.payment_methods || []);
+            displaySubscriptionBillingHistory(data.billing_history || []);
+        }
+
+        function displaySubscriptionPaymentMethods(methods) {
+            const root = document.getElementById('subscription-tab');
+            if (!root) return;
+
+            const container = root.querySelector('#payment-methods-container');
+            if (!container) return;
+
+            if (!methods || methods.length === 0) {
+                container.innerHTML = `
+                    <p style="text-align: center; color: var(--text-secondary); padding: 20px;">
+                        <i class="fas fa-credit-card"></i><br>
+                        No payment methods added yet
+                    </p>
+                `;
                 return;
             }
 
-            try {
-                 const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-profile.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'change_password',
-                        current_password: currentPassword,
-                        new_password: newPassword
-                    })
-                });
-                const result = await response.json();
-                alert(result.message);
-                if(result.success) {
-                     document.getElementById('currentPassword').value = '';
-                     document.getElementById('newPassword').value = '';
-                     document.getElementById('confirmPassword').value = '';
+            container.innerHTML = '';
+
+            methods.forEach(method => {
+                const cardHtml = `
+                    <div class="payment-method-card ${method.is_primary ? 'active' : ''}" data-id="${method.payment_method_id}">
+                        <div class="card-icon">
+                            <i class="fab fa-cc-${method.card_type}"></i>
+                        </div>
+                        <div class="card-info">
+                            <h4>${method.card_type.charAt(0).toUpperCase() + method.card_type.slice(1)} ending in ${method.last_four_digits}</h4>
+                            <p>Expires ${method.expiry_month}/${method.expiry_year}</p>
+                        </div>
+                        ${method.is_primary ?
+                            '<div class="card-badge"><span class="badge-primary">Primary</span></div>' :
+                            `<button class="btn-set-primary" onclick="setPrimaryPayment(${method.payment_method_id})">Set as Primary</button>`
+                        }
+                        <button class="btn-icon" title="Remove" onclick="removePaymentMethod(${method.payment_method_id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHtml);
+            });
+
+            const primary = methods.find(m => m.is_primary);
+            if (primary) {
+                const paymentMethodValue = root.querySelector('.billing-info .info-item:nth-child(3) .value');
+                if (paymentMethodValue) {
+                    paymentMethodValue.textContent = `•••• ${primary.last_four_digits} (${primary.card_type.charAt(0).toUpperCase() + primary.card_type.slice(1)})`;
                 }
-            } catch (error) {
-                 console.error('Error changing password:', error);
-                 alert('Failed to change password');
             }
         }
+
+        function displaySubscriptionBillingHistory(history) {
+            const root = document.getElementById('subscription-tab');
+            if (!root) return;
+
+            const tbody = root.querySelector('.history-table tbody');
+            if (!tbody) return;
+
+            if (!history || history.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 30px; color: var(--text-secondary);">
+                            <i class="fas fa-receipt"></i><br>
+                            No billing history available
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = history.map(invoice => `
+                <tr>
+                    <td>${invoice.invoice_id}</td>
+                    <td>${subscriptionFormatDate(invoice.date)}</td>
+                    <td>LKR ${parseFloat(invoice.amount).toLocaleString()}</td>
+                    <td><span class="status-badge ${invoice.status}">${invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}</span></td>
+                    <td>
+                        <button class="btn-icon" title="Download" onclick="downloadInvoice('${invoice.invoice_id}')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="btn-icon" title="View" onclick="viewInvoice('${invoice.invoice_id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function setPrimaryPayment(paymentMethodId) {
+            try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/settings.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'set_primary_payment', payment_method_id: paymentMethodId })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    subscriptionNotify('Primary payment method updated');
+                    loadSubscriptionData();
+                } else {
+                    subscriptionNotify(result.message || 'Failed to update primary payment method');
+                }
+            } catch (error) {
+                console.error('Error setting primary payment:', error);
+                subscriptionNotify('Failed to update primary payment method');
+            }
+        }
+
+        async function removePaymentMethod(paymentMethodId) {
+            if (!confirm('Are you sure you want to remove this payment method?')) return;
+
+            try {
+                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/settings.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'remove_payment_method', payment_method_id: paymentMethodId })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    subscriptionNotify('Payment method removed');
+                    loadSubscriptionData();
+                } else {
+                    subscriptionNotify(result.message || 'Failed to remove payment method');
+                }
+            } catch (error) {
+                console.error('Error removing payment method:', error);
+                subscriptionNotify('Failed to remove payment method');
+            }
+        }
+
+        function downloadInvoice(invoiceId) {
+            subscriptionNotify('Invoice download feature coming soon');
+            console.log('Download invoice:', invoiceId);
+        }
+
+        function viewInvoice(invoiceId) {
+            subscriptionNotify('Invoice view feature coming soon');
+            console.log('View invoice:', invoiceId);
+        }
+
+        function openAddCardModal() {
+            const modal = document.getElementById('addPaymentModal');
+            const form = document.getElementById('addPaymentForm');
+            const yearSelect = document.getElementById('expiryYear');
+            const currentYear = new Date().getFullYear();
+            if (yearSelect) {
+                yearSelect.innerHTML = '<option value="">YYYY</option>';
+                for (let i = 0; i < 15; i++) {
+                    const year = currentYear + i;
+                    yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+                }
+            }
+            form?.reset();
+            modal?.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAddCardModal() {
+            const modal = document.getElementById('addPaymentModal');
+            modal?.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const subscriptionBtn = document.querySelector('[data-tab="subscription-tab"]');
+            subscriptionBtn?.addEventListener('click', function () {
+                if (!this.dataset.loaded) {
+                    loadSubscriptionData();
+                    this.dataset.loaded = 'true';
+                }
+            });
+
+            document.getElementById('subscriptionChangePlanBtn')?.addEventListener('click', () => {
+                subscriptionNotify('Plan change feature coming soon');
+            });
+
+            document.getElementById('subscriptionCancelBtn')?.addEventListener('click', async () => {
+                if (!confirm('Are you sure you want to cancel your subscription? You will lose access to premium features.')) return;
+                try {
+                    const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/settings.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'cancel_subscription' })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        subscriptionNotify('Subscription cancelled successfully');
+                        loadSubscriptionData();
+                    } else {
+                        subscriptionNotify(result.message || 'Failed to cancel subscription');
+                    }
+                } catch (error) {
+                    console.error('Error cancelling subscription:', error);
+                    subscriptionNotify('Failed to cancel subscription');
+                }
+            });
+
+            document.getElementById('addCardBtn')?.addEventListener('click', openAddCardModal);
+
+            document.getElementById('addPaymentModal')?.addEventListener('click', (e) => {
+                if (e.target === e.currentTarget || e.target.classList.contains('modal-backdrop')) {
+                    closeAddCardModal();
+                }
+            });
+
+            const cardNumber = document.getElementById('cardNumber');
+            cardNumber?.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\s/g, '');
+                let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+                e.target.value = formattedValue;
+            });
+            cardNumber?.addEventListener('keypress', (e) => {
+                if (!/[0-9]/.test(e.key) && e.key !== 'Backspace') {
+                    e.preventDefault();
+                }
+            });
+            document.getElementById('cvv')?.addEventListener('keypress', (e) => {
+                if (!/[0-9]/.test(e.key) && e.key !== 'Backspace') {
+                    e.preventDefault();
+                }
+            });
+
+            document.getElementById('addPaymentForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = document.getElementById('submitPaymentBtn');
+                const cardNumberRaw = (document.getElementById('cardNumber')?.value || '').replace(/\s/g, '');
+                const cardType = document.getElementById('cardType')?.value || '';
+                const cardHolder = (document.getElementById('cardHolder')?.value || '').trim();
+                const expiryMonth = document.getElementById('expiryMonth')?.value || '';
+                const expiryYear = document.getElementById('expiryYear')?.value || '';
+                const cvv = document.getElementById('cvv')?.value || '';
+                const billingAddress = (document.getElementById('billingAddress')?.value || '').trim();
+                const makePrimary = !!document.getElementById('makePrimary')?.checked;
+
+                if (!cardType) return subscriptionNotify('Please select a card type');
+                if (cardNumberRaw.length < 13 || cardNumberRaw.length > 19) return subscriptionNotify('Please enter a valid card number');
+                if (!cardHolder) return subscriptionNotify('Please enter cardholder name');
+                if (!expiryMonth || !expiryYear) return subscriptionNotify('Please select expiry date');
+
+                const currentDate = new Date();
+                const expiryDate = new Date(parseInt(expiryYear), parseInt(expiryMonth) - 1);
+                if (expiryDate < currentDate) return subscriptionNotify('Card has expired');
+                if (cvv.length < 3 || cvv.length > 4) return subscriptionNotify('Please enter a valid CVV');
+                if (!billingAddress) return subscriptionNotify('Please enter billing address');
+
+                const lastFourDigits = cardNumberRaw.slice(-4);
+                submitBtn?.classList.add('loading');
+                if (submitBtn) submitBtn.disabled = true;
+
+                try {
+                    const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/settings.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'add_payment_method',
+                            payment_method: {
+                                card_type: cardType,
+                                last_four_digits: lastFourDigits,
+                                card_holder_name: cardHolder,
+                                expiry_month: expiryMonth,
+                                expiry_year: expiryYear,
+                                billing_address: billingAddress,
+                                is_primary: makePrimary ? 1 : 0
+                            }
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        subscriptionNotify('Payment method added successfully');
+                        closeAddCardModal();
+                        await loadSubscriptionData();
+                    } else {
+                        subscriptionNotify(data.message || 'Failed to add payment method');
+                    }
+                } catch (error) {
+                    console.error('Error adding payment method:', error);
+                    subscriptionNotify('An error occurred. Please try again.');
+                } finally {
+                    submitBtn?.classList.remove('loading');
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+            });
+        });
 
         async function fetchBankAccounts() {
              try {
