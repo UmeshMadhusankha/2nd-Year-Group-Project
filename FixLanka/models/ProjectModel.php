@@ -98,12 +98,12 @@ class Project
                         u.f_name as customer_first_name,
                         u.l_name as customer_last_name,
                         u.email as customer_email,
-                        u_loc.address as customer_address,
+                        u.address as customer_address,
+                        u.district as customer_district,
                         c.name as company_name,
                         ct.contract_id
                     FROM Project p
                     LEFT JOIN User u ON p.customer_id = u.user_id
-                    LEFT JOIN location u_loc ON u.location_id = u_loc.location_id
                     LEFT JOIN Company c ON p.company_id = c.company_id
                     LEFT JOIN Contract ct ON p.project_id = ct.project_id
                     WHERE 1=1";
@@ -176,15 +176,14 @@ class Project
                         u.f_name as customer_first_name,
                         u.l_name as customer_last_name,
                         u.email as customer_email,
-                        u.phoneNumber as customer_phone,
-                        u_loc.address as customer_address,
+                        u.address as customer_address,
+                        u.district as customer_district,
                         c.name as company_name,
                         c.email as company_email,
                         c.contact_no as company_contact,
                         ct.contract_id
                     FROM Project p
                     LEFT JOIN User u ON p.customer_id = u.user_id
-                    LEFT JOIN location u_loc ON u.location_id = u_loc.location_id
                     LEFT JOIN Company c ON p.company_id = c.company_id
                     LEFT JOIN Contract ct ON p.project_id = ct.project_id
                     WHERE p.project_id = :project_id";

@@ -23,6 +23,18 @@
 const currentCompanyId = window.CURRENT_USER_ID || null;
 
 /**
+ * Optional widget config (used when embedding Repair Requests UI inside other pages, e.g. dashboard)
+ * @type {object|null}
+ */
+const repairRequestsWidgetConfig = window.REPAIR_REQUESTS_WIDGET_CONFIG || null;
+
+/**
+ * True when this script runs in embedded widget mode
+ * @type {boolean}
+ */
+const isWidgetMode = Boolean(repairRequestsWidgetConfig && repairRequestsWidgetConfig.enabled);
+
+/**
  * Array of available job requests
  * @type {Array}
  */
@@ -59,6 +71,12 @@ let quotationModal;
 let quotationForm;
 let requestDetailsModal;
 
+/**
+ * Pending action requested via URL params (repair-requests.php?request_id=...&action=quote|details)
+ * @type {{requestId:number, action:'quote'|'details'|null}|null}
+ */
+let pendingUrlAction = null;
+
 // ================================================================
 // INITIALIZATION
 // ================================================================
@@ -82,21 +100,45 @@ document.addEventListener('DOMContentLoaded', function () {
     quotationForm = document.getElementById('quotation-form');
     requestDetailsModal = document.getElementById('request-details-modal');
 
+    // Capture URL-driven actions (only used on full page)
+    if (!isWidgetMode) {
+        const params = new URLSearchParams(window.location.search || '');
+        const requestId = Number(params.get('request_id') || params.get('requestId') || 0);
+        const actionRaw = String(params.get('action') || '').toLowerCase();
+        const action = (actionRaw === 'quote' || actionRaw === 'details') ? actionRaw : null;
+        if (requestId > 0 && action) {
+            pendingUrlAction = { requestId, action };
+        }
+    }
 
-    initializeTabs();
-    initializeViewToggle();
-    initializeFilters();
-    initializeModal();
-    initializeCostCalculator();
-    initializeDateValidation();
+
+    // Full-page-only UI (tabs / filters / view toggles)
+    if (!isWidgetMode) {
+        initializeTabs();
+        initializeViewToggle();
+        initializeFilters();
+    }
+
+    // Shared UI (modals + pricing + date validation)
+    if (quotationModal && quotationForm && requestDetailsModal) {
+        initializeModal();
+        initializeCostCalculator();
+        initializeDateValidation();
+    }
 
     // Load company defaults for auto-filling
     loadCompanyDefaults();
 
     // Load initial data from API
+    const shouldLoadRequests = !isWidgetMode || (repairRequestsWidgetConfig.loadRequests !== false);
+    if (shouldLoadRequests) {
+        loadAvailableRequests();
+    }
 
-    loadAvailableRequests();
-    loadSubmittedQuotations();
+    const shouldLoadQuotations = !isWidgetMode || (repairRequestsWidgetConfig.loadQuotations !== false);
+    if (shouldLoadQuotations) {
+        loadSubmittedQuotations();
+    }
 });
 
 // ================================================================
@@ -125,15 +167,64 @@ async function loadAvailableRequests() {
         const result = await response.json();
 
         if (result.success) {
-            availableRequests = result.data || [];
+            availableRequests = (result.data || []).map(r => ({
+                ...r,
+                created_at: r.created_at || r.dateCreated || null
+            }));
+
+            if (isWidgetMode) {
+                const limit = Number(repairRequestsWidgetConfig.limit || 0);
+                availableRequests = [...availableRequests].sort((a, b) => {
+                    const dateDiff = (new Date(b.created_at || 0)) - (new Date(a.created_at || 0));
+                    if (dateDiff !== 0) return dateDiff;
+                    return Number(b.request_id || 0) - Number(a.request_id || 0);
+                });
+                if (limit > 0) {
+                    availableRequests = availableRequests.slice(0, limit);
+                }
+            }
+
             renderAvailableRequests();
-            updateRequestCounts();
+
+            // If the page was opened with a request action, apply it after data load
+            if (!isWidgetMode) {
+                await applyPendingUrlAction();
+            }
+
+            const shouldShowCounts = !isWidgetMode || (repairRequestsWidgetConfig.showCounts !== false);
+            if (shouldShowCounts) {
+                updateRequestCounts();
+            }
         } else {
             showToast(result.message || result.error || 'Failed to load job requests', 'error');
         }
     } catch (error) {
         console.error('Error loading job requests:', error);
         showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function applyPendingUrlAction() {
+    if (!pendingUrlAction) return;
+    const { requestId, action } = pendingUrlAction;
+    pendingUrlAction = null;
+
+    // Ensure data exists (fallback by id) then open requested modal
+    if (action === 'quote') {
+        await openQuotationModal(requestId);
+    } else {
+        await viewRequestDetails(requestId);
+    }
+
+    // Clean URL so refresh doesn't reopen
+    try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('request_id');
+        url.searchParams.delete('requestId');
+        url.searchParams.delete('action');
+        window.history.replaceState({}, document.title, url.toString());
+    } catch {
+        // ignore
     }
 }
 
@@ -212,7 +303,17 @@ async function loadCompanyDefaults() {
  * Render available job requests
  */
 function renderAvailableRequests() {
-    const container = document.querySelector('.requests-grid');
+    const containerSelector = (isWidgetMode && repairRequestsWidgetConfig && repairRequestsWidgetConfig.containerSelector)
+        ? repairRequestsWidgetConfig.containerSelector
+        : '.requests-grid';
+    const container = document.querySelector(containerSelector);
+
+    if (!container) {
+        // In widget mode, the host page may intentionally not provide a render container.
+        if (isWidgetMode) return;
+        console.warn('Requests container not found:', containerSelector);
+        return;
+    }
 
     if (!availableRequests || availableRequests.length === 0) {
         container.innerHTML = `
@@ -564,12 +665,14 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
  * @param {number} requestId - The ID of the job request to create a quotation for
  * @returns {void}
  */
-function openQuotationModal(requestId) {
+async function openQuotationModal(requestId) {
     editingQuotationId = null;
     quotationForm.reset();
 
-    // Find the requested job request
-    const request = availableRequests.find(r => r.request_id === requestId);
+    // Find the requested job request (fallback to fetch-by-id when not preloaded)
+    await ensureRequestLoaded(requestId);
+
+    const request = availableRequests.find(r => Number(r.request_id) === Number(requestId));
     if (!request) {
         showToast('Request not found', 'error');
         return;
@@ -1064,8 +1167,10 @@ function closeQuotationModal() {
 /**
  * View request details
  */
-function viewRequestDetails(requestId) {
-    const request = availableRequests.find(r => r.request_id === requestId);
+async function viewRequestDetails(requestId) {
+    await ensureRequestLoaded(requestId);
+
+    const request = availableRequests.find(r => Number(r.request_id) === Number(requestId));
     if (!request) {
         showToast('Request not found', 'error');
         return;
@@ -1101,6 +1206,47 @@ function viewRequestDetails(requestId) {
 function closeRequestDetailsModal() {
     requestDetailsModal.classList.remove('active');
     document.body.style.overflow = '';
+}
+
+/**
+ * Ensure a request is available in `availableRequests` for modal rendering.
+ * On full page, requests are usually preloaded. On dashboard, we may only have the request_id.
+ *
+ * @param {number} requestId
+ * @returns {void|Promise<void>}
+ */
+async function ensureRequestLoaded(requestId) {
+    const id = Number(requestId);
+    if (!id) return false;
+    if (availableRequests.some(r => Number(r.request_id) === id)) return true;
+
+    // Fetch by id from API and cache it
+    try {
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-requests.php?request_id=${encodeURIComponent(id)}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server Error (${response.status}): ${errorText.substring(0, 200)}`);
+        }
+
+        const result = await response.json();
+        const row = (result && result.success && Array.isArray(result.data) && result.data.length > 0)
+            ? result.data[0]
+            : null;
+
+        if (!row) return false;
+
+        // Normalize created_at + photos field
+        row.created_at = row.created_at || row.dateCreated || null;
+        if (row.photos && typeof row.photos === 'string') {
+            row.photos = row.photos.split(',');
+        }
+
+        availableRequests.push(row);
+        return true;
+    } catch (error) {
+        console.error('Error fetching request by id:', error);
+        return false;
+    }
 }
 
 // ================================================================

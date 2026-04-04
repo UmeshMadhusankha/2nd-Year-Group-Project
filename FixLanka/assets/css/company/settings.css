@@ -61,9 +61,7 @@ body {
 .main-content {
     flex: 1;
     margin: 0 0 0 var(--sidebar-width);
-    margin-top: var(--header-height);
     transition: margin var(--transition-normal);
-    min-height: calc(100vh - var(--header-height));
     display: flex;
     flex-direction: column;
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
@@ -73,6 +71,8 @@ body {
     padding-top: var(--spacing-lg);
     border-radius: var(--border-radius-xl);
     position: fixed;
+    top: var(--header-height);
+    bottom: 0;
 }
 
 /* Sidebar toggle functionality */
@@ -94,8 +94,8 @@ body {
     margin: 0 var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
     padding: var(--spacing-xl);
     overflow: hidden;
-    flex: 1;
-    max-height: calc(100vh - var(--header-height) - 180px);
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
 }
 

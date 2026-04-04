@@ -52,6 +52,7 @@ $pageInfo = [
     'workforce' => ['title' => 'Workforce', 'slogan' => 'Manage your team and freelancers all in one place'],
     'repair-requests' => ['title' => 'Repair Requests', 'slogan' => 'Manage customer repair requests - view public opportunities and handle direct requests'],
     'requests' => ['title' => 'Repair Requests', 'slogan' => 'Manage customer repair requests - view public opportunities and handle direct requests'],
+  'notifications' => ['title' => 'Notifications', 'slogan' => 'View all your company notifications'],
     'support' => ['title' => 'Help & Support', 'slogan' => 'Get help and manage customer support tickets'],
     'contracts' => ['title' => 'Contracts', 'slogan' => 'Manage agreements and legal documents'],
     'payments' => ['title' => 'Payment Reports', 'slogan' => 'Income payments and expense tracking for your repair services'],

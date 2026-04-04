@@ -231,9 +231,9 @@ class CompanyModel {
      * Get all active sessions for a user
      */
     public function getActiveSessions($userId) {
-        $sql = "SELECT session_id, device_type, browser, os, ip_address, location, 
-                       last_activity, is_current, created_at, user_agent
-                FROM user_sessions 
+        $sql = "SELECT session_id, device_type, browser, os, ip_address,
+                       last_activity, is_current, user_agent
+                FROM user_sessions
                 WHERE user_id = ? AND user_role = 'company'
                 ORDER BY last_activity DESC";
         $stmt = $this->pdo->prepare($sql);

@@ -20,6 +20,11 @@
   --primary-dark: #08908c;
   --secondary-color: #0a2e33;
   --accent-color: #2a515c;
+
+   /* RGB helpers (for rgba() usage) */
+   --primary-rgb: 10, 186, 181;
+   --secondary-rgb: 10, 46, 51;
+   --accent-rgb: 42, 81, 92;
   
   /* Status Colors */
   --success-color: #10b981;
@@ -34,6 +39,12 @@
   --info-color: #1285c7;
   --info-dark: #1e40af;
   --info-darker: #1e3a8a;
+
+   /* RGB helpers (for rgba() usage) */
+   --success-rgb: 16, 185, 129;
+   --warning-rgb: 245, 158, 11;
+   --danger-rgb: 211, 38, 38;
+   --info-rgb: 18, 133, 199;
   
   /* Additional Theme Colors for Banners & Special Elements */
   --pink-color: #ec4899;
