@@ -136,11 +136,17 @@ class CompanyQuotation
                 c.name as category_name,
                 u.f_name as customer_fname,
                 u.l_name as customer_lname,
-                u.email as customer_email
+                u.email as customer_email,
+                ct.contract_id as contract_id,
+                ct.sent_to_customer as contract_sent_to_customer,
+                ct.sent_at as contract_sent_at,
+                ct.status as contract_status,
+                ct.customer_response as contract_customer_response
             FROM companyquotation cq
             INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
             INNER JOIN user u ON jr.user_id = u.user_id
             LEFT JOIN category c ON jr.category_id = c.category_id
+            LEFT JOIN contract ct ON ct.quotation_id = cq.quotation_id
             WHERE 1=1";
 
             $params = [];
@@ -202,11 +208,17 @@ class CompanyQuotation
                 c.name as category_name,
                 u.f_name as customer_fname,
                 u.l_name as customer_lname,
-                u.email as customer_email
+                u.email as customer_email,
+                ct.contract_id as contract_id,
+                ct.sent_to_customer as contract_sent_to_customer,
+                ct.sent_at as contract_sent_at,
+                ct.status as contract_status,
+                ct.customer_response as contract_customer_response
             FROM companyquotation cq
             INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
             INNER JOIN user u ON jr.user_id = u.user_id
             LEFT JOIN category c ON jr.category_id = c.category_id
+            LEFT JOIN contract ct ON ct.quotation_id = cq.quotation_id
             WHERE cq.quotation_id = :quotation_id";
 
             $stmt = $this->pdo->prepare($sql);

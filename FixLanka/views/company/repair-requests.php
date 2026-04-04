@@ -256,7 +256,7 @@ if (!$userId) {
                         <div class="log-items" id="successful-contracts-list">
                             <div class="empty-state" style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">
                                 <i class="fas fa-inbox" style="font-size: 2rem; opacity: 0.5; margin-bottom: var(--spacing-sm);"></i>
-                                <p>No successful contracts yet.</p>
+                                <p>No completed projects yet.</p>
                             </div>
                         </div>
                     </div>

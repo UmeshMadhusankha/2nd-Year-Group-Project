@@ -130,6 +130,7 @@ try {
         INNER JOIN jobrequest jr ON jr.request_id = cq.request_id
         INNER JOIN category c ON c.category_id = jr.category_id
         INNER JOIN user u ON u.user_id = jr.user_id
+        WHERE jr.finish_date >= CURDATE()
         ORDER BY jr.dateCreated DESC
         LIMIT 5
         ");
@@ -189,6 +190,7 @@ try {
                 INNER JOIN jobrequest jr ON jr.request_id = cq.request_id
                 INNER JOIN category c ON c.category_id = jr.category_id
                 INNER JOIN user u ON u.user_id = jr.user_id
+                WHERE jr.finish_date >= CURDATE()
                 ORDER BY jr.created_at DESC
                 LIMIT 5
             ");
@@ -243,6 +245,7 @@ try {
         INNER JOIN user u ON u.user_id = jr.user_id
                 WHERE (jr.service_provider_type = 'company' OR jr.service_provider_type = 'both')
           AND jr.status = 'pending'
+                    AND jr.finish_date >= CURDATE()
           AND NOT EXISTS (
               SELECT 1 FROM companyquotation cq
               WHERE cq.request_id = jr.request_id AND cq.company_id = ?
@@ -285,6 +288,7 @@ try {
                 INNER JOIN user u ON u.user_id = jr.user_id
                                 WHERE (jr.service_provider_type = 'company' OR jr.service_provider_type = 'both')
                   AND jr.status = 'pending'
+                                    AND jr.finish_date >= CURDATE()
                   AND NOT EXISTS (
                       SELECT 1 FROM companyquotation cq
                       WHERE cq.request_id = jr.request_id AND cq.company_id = ?

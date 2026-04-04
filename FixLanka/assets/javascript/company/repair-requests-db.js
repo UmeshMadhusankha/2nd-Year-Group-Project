@@ -257,6 +257,8 @@ async function loadSubmittedQuotations() {
 
             renderSubmittedQuotations();
             updateQuotationCounts();
+            // Successful Contracts section should show completed projects (not contracts)
+            loadCompletedProjectsForLogs();
         } else {
             showToast(result.message || result.error || 'Failed to load quotations', 'error');
         }
@@ -443,9 +445,15 @@ function renderSubmittedQuotations() {
     }
 
     const pending = submittedQuotations.filter(q => q.status === 'pending');
-    const accepted = submittedQuotations.filter(q => q.status === 'accepted');
+    const isContractSent = (q) => {
+        const sent = q?.contract_sent_to_customer ?? q?.sent_to_customer ?? 0;
+        return Number(sent) === 1;
+    };
+
+    // Accepted section should also include items where a contract was already sent
+    const accepted = submittedQuotations.filter(q => q.status === 'accepted' || isContractSent(q));
     const rejected = submittedQuotations.filter(q => q.status === 'rejected');
-    const successful = submittedQuotations.filter(q => q.status === 'successful');
+    // NOTE: Successful Contracts UI is now driven by completed projects, not quotations.
     const draft = []; // Draft quotations would need separate handling
 
 
@@ -457,7 +465,7 @@ function renderSubmittedQuotations() {
     if (pendingCount) pendingCount.textContent = pending.length;
     if (acceptedCount) acceptedCount.textContent = accepted.length;
     if (rejectedCount) rejectedCount.textContent = rejected.length;
-    if (successfulCount) successfulCount.textContent = successful.length;
+    if (successfulCount) successfulCount.textContent = '0';
     if (draftCount) draftCount.textContent = draft.length;
 
     // Render pending quotations
@@ -519,21 +527,17 @@ function renderSubmittedQuotations() {
         }
     }
 
-    // Render successful contracts
+    // Successful contracts list is rendered by loadCompletedProjectsForLogs()
     if (successfulList) {
-        if (successful.length === 0) {
-            successfulList.innerHTML = `
-                <div class="quotations-empty-state">
-                    <div class="empty-state-icon successful">
-                        <i class="fas fa-trophy"></i>
-                    </div>
-                    <h3 class="empty-state-title">No Completed Contracts</h3>
-                    <p class="empty-state-text">Successfully completed contracts will be displayed here.</p>
+        successfulList.innerHTML = `
+            <div class="quotations-empty-state">
+                <div class="empty-state-icon successful">
+                    <i class="fas fa-spinner fa-spin"></i>
                 </div>
-            `;
-        } else {
-            successfulList.innerHTML = successful.map(q => createQuotationLogItem(q, false, false, true)).join('');
-        }
+                <h3 class="empty-state-title">Loading Completed Projects...</h3>
+                <p class="empty-state-text">Please wait while we fetch your completed projects.</p>
+            </div>
+        `;
     }
 
     // Render draft quotations
@@ -551,6 +555,145 @@ function renderSubmittedQuotations() {
 }
 
 /**
+ * Load completed projects and render them in the "Successful Contracts" section.
+ * This section is intended to show completed projects (not contract cards).
+ */
+async function loadCompletedProjectsForLogs() {
+    const successfulList = document.getElementById('successful-contracts-list');
+    const successfulCount = document.getElementById('successful-contracts-count');
+
+    if (!successfulList) return;
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        const response = await fetch(
+            `/2nd-Year-Group-Project/FixLanka/api/projects.php?company_id=${encodeURIComponent(currentCompanyId)}&status=completed`,
+            { signal: controller.signal }
+        );
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Completed projects API error:', errorText);
+            successfulList.innerHTML = `
+                <div class="quotations-empty-state">
+                    <div class="empty-state-icon rejected">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <h3 class="empty-state-title">Failed to load completed projects</h3>
+                    <p class="empty-state-text">Please try again later.</p>
+                </div>
+            `;
+            if (successfulCount) successfulCount.textContent = '0';
+            return;
+        }
+
+        const result = await response.json();
+        const projects = (result && result.success && Array.isArray(result.data)) ? result.data : [];
+
+        if (successfulCount) successfulCount.textContent = String(projects.length);
+
+        if (projects.length === 0) {
+            successfulList.innerHTML = `
+                <div class="quotations-empty-state">
+                    <div class="empty-state-icon successful">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <h3 class="empty-state-title">No Completed Projects</h3>
+                    <p class="empty-state-text">Completed projects with positive outcomes will be displayed here.</p>
+                </div>
+            `;
+            return;
+        }
+
+        successfulList.innerHTML = projects.map(p => createCompletedProjectLogItem(p)).join('');
+    } catch (error) {
+        console.error('Error loading completed projects:', error);
+        successfulList.innerHTML = `
+            <div class="quotations-empty-state">
+                <div class="empty-state-icon rejected">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <h3 class="empty-state-title">Failed to load completed projects</h3>
+                <p class="empty-state-text">Please try again later.</p>
+            </div>
+        `;
+        if (successfulCount) successfulCount.textContent = '0';
+    }
+}
+
+function createCompletedProjectLogItem(project) {
+    const title = project.title || 'Completed Project';
+    const projectId = project.project_id || project.id || '';
+    const customerName = `${project.customer_first_name || ''} ${project.customer_last_name || ''}`.trim() || 'Customer';
+
+    // Show an approximate month label (prefer end_date, else start_date)
+    const dateSource = project.end_date || project.start_date || null;
+    let formattedDate = '-';
+    if (dateSource) {
+        const d = new Date(dateSource);
+        formattedDate = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    }
+
+    const amountValue = (project.final_cost != null ? project.final_cost : project.budget);
+    const amount = (amountValue != null && amountValue !== '')
+        ? parseFloat(amountValue).toFixed(2)
+        : null;
+
+    return `
+        <div class="quotation-card successful">
+            <div class="quotation-card-main">
+                <div class="quotation-card-left">
+                    <div class="quotation-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="quotation-info-section">
+                        <div class="quotation-header-top">
+                            <h4 class="quotation-title">${escapeHtml(title)}</h4>
+                            <span class="status-badge success"><i class="fas fa-check"></i> Completed</span>
+                        </div>
+                        <div class="quotation-meta">
+                            <span class="meta-item">
+                                <i class="fas fa-hashtag"></i>
+                                Project ${escapeHtml(String(projectId))}
+                            </span>
+                            <span class="meta-separator">&bull;</span>
+                            <span class="meta-item">
+                                <i class="fas fa-user"></i>
+                                ${escapeHtml(customerName)}
+                            </span>
+                            <span class="meta-separator">&bull;</span>
+                            <span class="meta-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                ${formattedDate}
+                            </span>
+                        </div>
+                        ${amount !== null ? `
+                        <div class="quotation-amount-inline">
+                            <span class="amount-label">Total Amount:</span>
+                            <span class="amount-value">LKR ${formatNumber(amount)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <div class="quotation-card-right">
+                    <div class="quotation-actions-vertical">
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/company/projects.php" class="action-btn small success">
+                            <i class="fas fa-project-diagram"></i>
+                            View Projects
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
  * Create quotation log item HTML
  */
 function createQuotationLogItem(quotation, isAccepted = false, isRejected = false, isSuccessful = false) {
@@ -563,6 +706,8 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
     let statusBadge = '';
     let cardClass = 'quotation-card';
 
+    const contractSent = Number(quotation?.contract_sent_to_customer ?? quotation?.sent_to_customer ?? 0) === 1;
+
     if (isSuccessful) {
         iconClass = 'fas fa-check-circle';
         statusBadge = '<span class="status-badge success"><i class="fas fa-check"></i> Completed</span>';
@@ -572,8 +717,10 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
         statusBadge = '<span class="status-badge danger"><i class="fas fa-times"></i> Rejected</span>';
         cardClass += ' rejected';
     } else if (isAccepted) {
-        iconClass = 'fas fa-file-check';
-        statusBadge = '<span class="status-badge info"><i class="fas fa-handshake"></i> Accepted</span>';
+        iconClass = contractSent ? 'fas fa-paper-plane' : 'fas fa-file-check';
+        statusBadge = contractSent
+            ? '<span class="status-badge info"><i class="fas fa-paper-plane"></i> Contract Sent</span>'
+            : '<span class="status-badge info"><i class="fas fa-handshake"></i> Accepted</span>';
         cardClass += ' accepted';
     } else {
         statusBadge = '<span class="status-badge warning"><i class="fas fa-clock"></i> Pending</span>';
@@ -1667,23 +1814,55 @@ window.closeRequestDetailsModal = closeRequestDetailsModal;
  * Load and render direct requests (future feature)
  * Currently shows empty state as direct requests are not yet implemented
  */
-function loadDirectRequests() {
+async function loadDirectRequests() {
     const emptyState = document.getElementById('direct-requests-empty');
     const table = document.getElementById('direct-requests-table');
 
-    // For now, always show empty state
-    // Future: Fetch from API when direct requests feature is implemented
-    if (emptyState) {
-        emptyState.style.display = 'block';
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-direct-requests.php?limit=100');
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Direct requests API error:', errorText);
+            // Fail closed: show empty state
+            if (emptyState) emptyState.style.display = 'block';
+            if (table) table.style.display = 'none';
+            updateDirectRequestsCount(0);
+            return;
+        }
+
+        const result = await response.json();
+        if (!result || !result.success) {
+            if (emptyState) emptyState.style.display = 'block';
+            if (table) table.style.display = 'none';
+            updateDirectRequestsCount(0);
+            return;
+        }
+
+        const rows = Array.isArray(result.data) ? result.data : [];
+
+        const normalizeStatus = (quoteStatus) => {
+            const s = String(quoteStatus || 'pending').toLowerCase();
+            if (s === 'successful') return 'completed';
+            if (s === 'accepted') return 'accepted';
+            if (s === 'rejected') return 'rejected';
+            return 'pending';
+        };
+
+        const directRequests = rows.map(r => ({
+            ...r,
+            created_at: r.created_at || r.dateCreated || null,
+            status: r.status || normalizeStatus(r.quote_status),
+            customer_name: r.customer_name || `${r.customer_fname || ''} ${r.customer_lname || ''}`.trim()
+        }));
+
+        renderDirectRequests(directRequests);
+    } catch (error) {
+        console.error('Error loading direct requests:', error);
+        if (emptyState) emptyState.style.display = 'block';
+        if (table) table.style.display = 'none';
+        updateDirectRequestsCount(0);
     }
-    if (table) {
-        table.style.display = 'none';
-    }
-
-    // Set count to 0
-    updateDirectRequestsCount(0);
-
-
 }
 
 /**
@@ -1738,16 +1917,24 @@ function renderDirectRequests(requests) {
  * @returns {string} HTML string
  */
 function createDirectRequestRow(request) {
-    const initials = getInitialsFromFullName(request.customer_name || '');
-    const statusClass = request.status === 'accepted' ? 'accepted' :
-        request.status === 'rejected' ? 'rejected' : 'pending';
-    const statusIcon = request.status === 'accepted' ? 'check' :
-        request.status === 'rejected' ? 'times' : 'clock';
+    const customerName = request.customer_name
+        || `${request.customer_fname || ''} ${request.customer_lname || ''}`.trim()
+        || request.customer
+        || 'Customer';
+    const initials = getInitialsFromFullName(customerName);
+
+    const rawStatus = String(request.status || 'pending').toLowerCase();
+    const statusClass = rawStatus === 'accepted' ? 'accepted' :
+        rawStatus === 'rejected' ? 'rejected' :
+            rawStatus === 'completed' ? 'accepted' : 'pending';
+    const statusIcon = rawStatus === 'accepted' ? 'check' :
+        rawStatus === 'rejected' ? 'times' :
+            rawStatus === 'completed' ? 'check-double' : 'clock';
 
     // Check if expired
-    const deadline = new Date(request.finish_date);
+    const deadline = request.finish_date ? new Date(request.finish_date) : null;
     const today = new Date();
-    const isExpired = deadline < today;
+    const isExpired = deadline ? (deadline < today) : false;
 
     return `
         <tr data-request-id="${request.request_id}">
@@ -1755,7 +1942,7 @@ function createDirectRequestRow(request) {
                 <div>
                     <h5>${escapeHtml(request.title)}</h5>
                     <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
-                        #REQ-${request.request_id} &bull; ${escapeHtml(request.category_name || 'General')}
+                        #REQ-${request.request_id} &bull; ${escapeHtml(request.category_name || request.category || 'General')}
                     </p>
                 </div>
             </td>
@@ -1763,29 +1950,31 @@ function createDirectRequestRow(request) {
                 <div class="table-customer">
                     <div class="table-customer-avatar">${initials}</div>
                     <div class="table-customer-info">
-                        <h5>${escapeHtml(request.customer_fname + ' ' + request.customer_lname)}</h5>
-                        <p>${escapeHtml(request.customer_email || 'No email')}</p>
+                        <h5>${escapeHtml(customerName)}</h5>
+                        <p>${escapeHtml(request.customer_email || request.email || 'No email')}</p>
                     </div>
                 </div>
             </td>
             <td>${formatDate(request.created_at)}</td>
             <td>
-                ${isExpired
-            ? `<span style="color: var(--danger-color); font-weight: 600;">
+                ${deadline
+            ? (isExpired
+                ? `<span style="color: var(--danger-color); font-weight: 600;">
                          <i class="fas fa-exclamation-triangle"></i> Expired
                        </span>`
-            : formatDate(request.finish_date)
+                : formatDate(request.finish_date))
+            : '-'
         }
             </td>
             <td>
                 <span class="status-badge ${statusClass}">
                     <i class="fas fa-${statusIcon}"></i>
-                    ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                    ${rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)}
                 </span>
             </td>
             <td>
                 <div class="table-actions">
-                    ${request.status === 'pending' && !isExpired ? `
+                    ${rawStatus === 'pending' && !isExpired ? `
                         <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
@@ -1798,7 +1987,7 @@ function createDirectRequestRow(request) {
                             <i class="fas fa-times"></i>
                             <span>Decline</span>
                         </button>
-                    ` : request.status === 'accepted' ? `
+                    ` : rawStatus === 'accepted' ? `
                         <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
                             <i class="fas fa-file-contract"></i>
                             <span>View Contract</span>
