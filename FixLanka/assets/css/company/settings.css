@@ -57,6 +57,13 @@ body {
     position: relative;
 }
 
+.settings-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
 /* Main Content - matching dashboard */
 .main-content {
     flex: 1;
@@ -99,38 +106,124 @@ body {
     overflow-y: auto;
 }
 
-/* Settings header with title and save button */
-.settings-header {
+/* PAGE HEADER WRAPPER - matching other pages (e.g., Reviews) */
+.settings-page .page-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-xl) var(--spacing-lg);
-    margin: 0;
-    margin-bottom: var(--spacing-lg);
-    background: transparent;
-    border: none;
+    flex-direction: column;
+    backdrop-filter: blur(20px);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-xl);
+    margin: 0 var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
+    color: white;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(10, 186, 181, 0.1) 0%, rgba(42, 81, 92, 0.1) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.settings-header .header-left h1 {
+.settings-page .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(10, 186, 181, 0.1) 0%, transparent 70%);
+    transform: translate(100px, -100px);
+}
+
+.settings-page .page-header .header-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-page .page-header .header-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--spacing-xl);
+    flex-wrap: wrap;
+    margin-bottom: var(--spacing-lg);
+    width: 100%;
+}
+
+.settings-page .page-header .title-section {
+    flex: 1;
+    min-width: 0;
+}
+
+.settings-page .page-header .title-section h1 {
     font-size: var(--font-size-3xl);
-    font-weight: 700;
     color: white;
+    font-weight: 700;
     margin: 0 0 var(--spacing-sm) 0;
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: var(--spacing-md);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.settings-header .header-left h1 i {
+.settings-page .page-header .title-section h1 i {
     font-size: var(--font-size-2xl);
 }
 
-.settings-header .subtitle {
-    color: rgba(255, 255, 255, 0.95);
-    font-size: var(--font-size-base);
+.settings-page .page-header .subtitle {
+    font-size: var(--font-size-lg);
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
     margin: 0;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.settings-page .page-header .header-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+    flex-shrink: 0;
+}
+
+.settings-page .page-header .action-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
+/* BREADCRUMBS */
+.settings-page .page-header .breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: fit-content;
+}
+
+.settings-page .page-header .breadcrumbs a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: var(--transition-normal);
+}
+
+.settings-page .page-header .breadcrumbs a:hover {
+    color: rgba(255, 255, 255, 1);
+}
+
+.settings-page .page-header .breadcrumbs .separator {
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0 var(--spacing-xs);
+}
+
+.settings-page .page-header .breadcrumbs .current {
+    color: rgba(255, 255, 255, 1);
+    font-weight: 500;
 }
 
 /* Save all button in header */

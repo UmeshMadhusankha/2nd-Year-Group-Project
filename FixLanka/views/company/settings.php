@@ -30,21 +30,34 @@ $userData = getUserData();
             <!-- Header Component -->
             <?php include 'topbar.php'; ?>
 
-            <!-- Settings Header -->
-            <div class="settings-header">
-                <div class="header-left">
-                    <h1><i class="fas fa-cog"></i> Settings</h1>
-                    <p class="subtitle">Manage notifications and account security</p>
-                </div>
-                <div class="header-right">
-                    <button class="btn-save-all" id="saveAllBtn" type="button">
-                        <i class="fas fa-save"></i> Save All Changes
-                    </button>
-                </div>
-            </div>
+            <section class="settings-page">
+                <!-- Page Header -->
+                <header class="page-header">
+                    <div class="header-content">
+                        <div class="header-main">
+                            <div class="title-section">
+                                <h1><i class="fas fa-cog"></i> Settings</h1>
+                                <p class="subtitle">Manage notifications and account security</p>
+                            </div>
+                            <div class="header-actions">
+                                <div class="action-buttons">
+                                    <button class="btn-save-all" id="saveAllBtn" type="button">
+                                        <i class="fas fa-save"></i> Save All Changes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
 
-            <!-- Settings Content -->
-            <div class="settings-container">
+                        <div class="breadcrumbs">
+                            <a href="/2nd-Year-Group-Project/FixLanka/views/company/dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                            <span class="separator">/</span>
+                            <span class="current">Settings</span>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Settings Content -->
+                <div class="settings-container">
                 <!-- Settings Navigation Tabs -->
                 <div class="settings-tabs">
                     <button class="tab-btn active" data-tab="notifications-tab" type="button">
@@ -289,7 +302,8 @@ $userData = getUserData();
 
                     </div>
                 </div>
-            </div>
+                </div>
+            </section>
         </main>
     </div>
 
