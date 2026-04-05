@@ -5,13 +5,14 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: var(--font-family-primary);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    color: var(--text-primary);
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
+    padding: var(--spacing-xl);
 }
 
 .signup-container {
@@ -32,10 +33,11 @@ body {
 }
 
 .signup-card {
-    background: white;
-    border-radius: 20px;
-    padding: 40px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    background: var(--bg-card);
+    border-radius: var(--border-radius-xl);
+    padding: var(--spacing-2xl);
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border-color);
 }
 
 .signup-header {
@@ -44,21 +46,21 @@ body {
 }
 
 .signup-header h1 {
-    font-size: 28px;
-    color: #333;
-    margin-bottom: 10px;
-    font-weight: 600;
+    font-size: var(--font-size-2xl);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+    font-weight: 700;
 }
 
 .signup-header p {
-    color: #666;
-    font-size: 14px;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
 }
 
 .signup-form {
     display: none;
     flex-direction: column;
-    gap: 20px;
+    gap: var(--spacing-lg);
 }
 
 .signup-form.active {
@@ -78,34 +80,39 @@ body {
 }
 
 .form-group label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #333;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 .form-group input {
     padding: 12px 15px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family-primary);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
     outline: none;
 }
 
 .form-group textarea,
 .form-group select {
     padding: 12px 15px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-sm);
+    transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
     outline: none;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family-primary);
+    background: var(--bg-primary);
+    color: var(--text-primary);
 }
 
 .form-group select {
     cursor: pointer;
-    background-color: white;
+    background-color: var(--bg-primary);
 }
 
 .form-group textarea {
@@ -115,29 +122,29 @@ body {
 
 .form-group input[type="file"] {
     padding: 8px;
-    border: 2px dashed #e0e0e0;
-    background: #f9f9f9;
+    border: 2px dashed var(--border-color);
+    background: var(--bg-secondary);
 }
 
 .form-group input[type="file"]:hover {
-    border-color: #667eea;
-    background: #f0f0ff;
+    border-color: var(--primary-color);
+    background: rgba(var(--primary-rgb), 0.08);
 }
 
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
 }
 
 .form-group input::placeholder {
-    color: #999;
+    color: var(--text-light);
 }
 
 .password-hint {
     font-size: 12px;
-    color: #999;
+    color: var(--text-muted);
     margin-top: -4px;
 }
 
@@ -150,19 +157,19 @@ body {
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    font-size: 14px;
-    color: #666;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
 }
 
 .checkbox-label input[type="checkbox"] {
     width: 18px;
     height: 18px;
     cursor: pointer;
-    accent-color: #667eea;
+    accent-color: var(--primary-color);
 }
 
 .checkbox-label a {
-    color: #667eea;
+    color: var(--primary-color);
     text-decoration: none;
     font-weight: 500;
 }
@@ -172,25 +179,8 @@ body {
 }
 
 .signup-submit-btn {
-    padding: 14px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-top: 10px;
-}
-
-.signup-submit-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-}
-
-.signup-submit-btn:active {
-    transform: translateY(0);
+    width: 100%;
+    margin-top: var(--spacing-sm);
 }
 
 .signup-submit-btn:disabled {
@@ -203,31 +193,31 @@ body {
     text-align: center;
     margin-top: 25px;
     padding-top: 20px;
-    border-top: 1px solid #e0e0e0;
-    font-size: 14px;
-    color: #666;
+    border-top: 1px solid var(--border-color);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
 }
 
 .login-link a {
-    color: #667eea;
+    color: var(--primary-color);
     text-decoration: none;
     font-weight: 600;
-    transition: color 0.3s ease;
+    transition: color var(--transition-normal);
 }
 
 .login-link a:hover {
-    color: #764ba2;
+    color: var(--primary-hover);
     text-decoration: underline;
 }
 
 .error-message {
-    background: #fee;
-    color: #c33;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    margin-bottom: 20px;
-    border-left: 4px solid #c33;
+    background: rgba(var(--danger-rgb), 0.08);
+    color: var(--danger-color);
+    padding: 12px 14px;
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid rgba(var(--danger-rgb), 0.25);
 }
 
 /* Responsive Design */
@@ -237,7 +227,7 @@ body {
     }
     
     .signup-header h1 {
-        font-size: 24px;
+        font-size: var(--font-size-xl);
     }
     
     .form-row {
@@ -247,35 +237,8 @@ body {
 
 /* Role Selection Buttons */
 .role-buttons {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 30px;
-    justify-content: center;
-}
-
-.role-btn {
-    flex: 1;
-    padding: 12px 20px;
-    background: #f0f0f0;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    color: #666;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.role-btn:hover {
-    background: #e0e0e0;
-    border-color: #ccc;
-}
-
-.role-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-color: #667eea;
-    color: white;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    width: fit-content;
+    margin: 0 auto var(--spacing-xl);
 }
 
 /* Checkbox Groups for Districts and Business Types */
@@ -284,18 +247,18 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 10px;
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
     max-height: 200px;
     overflow-y: auto;
-    background: #f9f9f9;
+    background: var(--bg-secondary);
 }
 
 .checkbox-group label {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 14px;
+    font-size: var(--font-size-sm);
     cursor: pointer;
     padding: 5px;
     border-radius: 4px;
@@ -303,7 +266,7 @@ body {
 }
 
 .checkbox-group label:hover {
-    background: #eee;
+    background: var(--bg-hover);
 }
 
 .checkbox-group input[type="checkbox"] {
@@ -315,7 +278,7 @@ body {
 /* Responsive adjustments for role buttons */
 @media (max-width: 768px) {
     .role-buttons {
-        flex-direction: column;
+        width: 100%;
     }
     
     .checkbox-group {

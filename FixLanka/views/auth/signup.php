@@ -19,6 +19,8 @@ unset($_SESSION['error']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - Fix Lanka</title>
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/auth/signup.css">
 </head>
 <body>
@@ -30,10 +32,10 @@ unset($_SESSION['error']);
             </div>
             
             <!-- Role Selection Buttons -->
-            <div class="role-buttons">
-                <button type="button" class="role-btn active" data-role="user">User</button>
-                <button type="button" class="role-btn" data-role="repairer">Repairer</button>
-                <button type="button" class="role-btn" data-role="company">Company</button>
+            <div class="view-toggle-group role-buttons">
+                <button type="button" class="view-toggle role-btn active" data-role="user">User</button>
+                <button type="button" class="view-toggle role-btn" data-role="repairer">Repairer</button>
+                <button type="button" class="view-toggle role-btn" data-role="company">Company</button>
             </div>
             
             <?php if (!empty($error)): ?>
@@ -85,7 +87,7 @@ unset($_SESSION['error']);
                     </label>
                 </div>
                 
-                <button type="submit" class="signup-submit-btn">Create User Account</button>
+                <button type="submit" class="action-btn primary large signup-submit-btn">Create User Account</button>
             </form>
             
             <!-- REPAIRER REGISTRATION FORM -->
@@ -201,7 +203,7 @@ unset($_SESSION['error']);
                     </label>
                 </div>
                 
-                <button type="submit" class="signup-submit-btn">Create Repairer Account</button>
+                <button type="submit" class="action-btn primary large signup-submit-btn">Create Repairer Account</button>
             </form>
             
             <!-- COMPANY REGISTRATION FORM -->
@@ -322,7 +324,7 @@ unset($_SESSION['error']);
                     </label>
                 </div>
                 
-                <button type="submit" class="signup-submit-btn">Create Company Account</button>
+                <button type="submit" class="action-btn primary large signup-submit-btn">Create Company Account</button>
             </form>
             
             <div class="login-link">

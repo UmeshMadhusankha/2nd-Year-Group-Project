@@ -99,9 +99,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (confirmPasswordInput) {
             confirmPasswordInput.addEventListener('input', function() {
                 if (this.value !== passwordInput.value) {
-                    this.style.borderColor = '#ff4444';
+                    this.style.borderColor = 'var(--danger-color)';
                 } else {
-                    this.style.borderColor = '#44ff44';
+                    this.style.borderColor = 'var(--success-color)';
                 }
             });
         }
@@ -118,16 +118,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (password.length === 0) {
                 hint.textContent = 'At least 6 characters';
-                hint.style.color = '#666';
+                hint.style.color = 'var(--text-secondary)';
             } else if (password.length < 6) {
                 hint.textContent = 'Too short';
-                hint.style.color = '#e74c3c';
+                hint.style.color = 'var(--danger-color)';
             } else if (password.length < 8) {
                 hint.textContent = 'Good';
-                hint.style.color = '#f39c12';
+                hint.style.color = 'var(--warning-color)';
             } else {
                 hint.textContent = 'Strong';
-                hint.style.color = '#27ae60';
+                hint.style.color = 'var(--success-color)';
             }
         });
     });
