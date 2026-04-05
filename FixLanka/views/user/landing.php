@@ -13,6 +13,7 @@ $isLoggedIn = isLoggedIn();
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/landing.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/navbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/repairer-profile-popup.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/listed-job-request-popup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -218,6 +219,9 @@ $isLoggedIn = isLoggedIn();
 
     <!-- Repairer Profile Popup -->
     <?php include 'repairer-profile-popup.php'; ?>
+
+    <!-- Listed Job Request Popup -->
+    <?php include 'listed-job-request-popup.php'; ?>
 
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/landing.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/company-profile-popup.js"></script>
