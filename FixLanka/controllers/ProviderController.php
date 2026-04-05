@@ -9,6 +9,9 @@ class ProviderController {
     
     public function __construct() {
         global $pdo;
+        if (!($pdo instanceof PDO)) {
+            $pdo = getDatabaseConnection();
+        }
         $this->repairerModel = new Repairer($pdo);
         $this->companyModel = new Company($pdo);
     }

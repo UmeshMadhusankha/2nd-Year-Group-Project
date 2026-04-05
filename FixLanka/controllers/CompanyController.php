@@ -7,6 +7,9 @@ class CompanyController {
 
     public function __construct() {
         global $pdo;
+        if (!($pdo instanceof PDO)) {
+            $pdo = getDatabaseConnection();
+        }
         $this->companyModel = new Company($pdo);
     }
 

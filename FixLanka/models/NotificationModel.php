@@ -1,12 +1,16 @@
 <?php
 // NotificationModel.php - Handles all database operations for Notification table
+require_once __DIR__ . '/../config/database.php';
 
 class NotificationModel
 {
     private $pdo;
 
-    public function __construct($pdo)
+    public function __construct($pdo = null)
     {
+        if (!($pdo instanceof PDO)) {
+            $pdo = getDatabaseConnection();
+        }
         $this->pdo = $pdo;
     }
 
