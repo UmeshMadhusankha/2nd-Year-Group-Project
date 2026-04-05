@@ -67,11 +67,11 @@
             <div class="company-modal-actions">
                 <button class="btn-primary" type="button" onclick="requestCompanyQuoteFromModal()">
                     <i class="fas fa-file-invoice"></i>
-                    Request Quote
+                    Request for a New Job
                 </button>
                 <button class="btn-secondary" type="button" onclick="sendCompanyRepairRequest()">
                     <i class="fas fa-tools"></i>
-                    Send Repair Request
+                    Request for a Listed Job
                 </button>
                 <button class="btn-outline" type="button" onclick="closeCompanyModal()">
                     <i class="fas fa-times"></i>
