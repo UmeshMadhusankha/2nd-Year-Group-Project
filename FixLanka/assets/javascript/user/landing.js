@@ -7,7 +7,8 @@ const API_ENDPOINTS = Object.freeze({
     providerSearch: `${APP_BASE}/api/user/loadLandingProviders.php`,
     companies: `${APP_BASE}/api/companies.php`,
     listedJobs: `${APP_BASE}/api/user/listed-job-requests.php`,
-    directRequestQuotes: `${APP_BASE}/api/user/direct-request-quotes.php`
+    directRequestQuotes: `${APP_BASE}/api/user/direct-request-quotes.php`,
+    directJobRequests: `${APP_BASE}/api/user/direct-job-requests.php`
 });
 
 /*
@@ -67,6 +68,19 @@ const listedJobRequestSubmitBtn = document.getElementById('listedJobRequestSubmi
 const listedJobRequestList = document.getElementById('listedJobRequestList');
 const listedJobRequestError = document.getElementById('listedJobRequestError');
 const listedJobRequestProviderTypeLabel = document.getElementById('listedJobRequestProviderTypeLabel');
+const directJobRequestModal = document.getElementById('directJobRequestModal');
+const directJobRequestCloseBtn = document.getElementById('directJobRequestCloseBtn');
+const directJobRequestCancelBtn = document.getElementById('directJobRequestCancelBtn');
+const directJobRequestForm = document.getElementById('directJobRequestForm');
+const directJobRequestError = document.getElementById('directJobRequestError');
+const directJobRequestSuccess = document.getElementById('directJobRequestSuccess');
+const directJobRequestProviderLabel = document.getElementById('directJobRequestProviderLabel');
+const directJobProviderId = document.getElementById('directJobProviderId');
+const directJobProviderType = document.getElementById('directJobProviderType');
+const directJobFinishDate = document.getElementById('directJobFinishDate');
+const directJobPhotos = document.getElementById('directJobPhotos');
+const directJobPhotoPreview = document.getElementById('directJobPhotoPreview');
+const directJobRequestSubmitBtn = document.getElementById('directJobRequestSubmitBtn');
 
 // Active grid pointer (used by loader + no-results helpers)
 let providersGrid = repairersGrid;
@@ -80,6 +94,10 @@ let currentProviderType = 'repairers';
 const landingRepairersById = new Map();
 let selectedListedJobRequestId = null;
 let listedJobRequestContext = {
+    providerId: null,
+    providerType: null
+};
+let directJobRequestContext = {
     providerId: null,
     providerType: null
 };
@@ -114,8 +132,188 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeProfileDropdown();
     initializeProviderTabs();
     initializeListedJobRequestModal();
+    initializeDirectJobRequestModal();
     loadInitialProviders();
 });
+
+function initializeDirectJobRequestModal() {
+    if (!directJobRequestModal || !directJobRequestForm) return;
+
+    if (directJobRequestCloseBtn) {
+        directJobRequestCloseBtn.addEventListener('click', closeDirectJobRequestModal);
+    }
+
+    if (directJobRequestCancelBtn) {
+        directJobRequestCancelBtn.addEventListener('click', closeDirectJobRequestModal);
+    }
+
+    directJobRequestModal.addEventListener('click', (event) => {
+        if (event.target === directJobRequestModal) {
+            closeDirectJobRequestModal();
+        }
+    });
+
+    directJobRequestForm.addEventListener('submit', submitDirectJobRequest);
+
+    if (directJobFinishDate) {
+        const today = new Date().toISOString().split('T')[0];
+        directJobFinishDate.setAttribute('min', today);
+    }
+
+    if (directJobPhotos && directJobPhotoPreview) {
+        directJobPhotos.addEventListener('change', () => {
+            const file = directJobPhotos.files && directJobPhotos.files[0] ? directJobPhotos.files[0] : null;
+            directJobPhotoPreview.textContent = file ? `Selected: ${file.name}` : '';
+        });
+    }
+}
+
+function closeDirectJobRequestModal() {
+    if (!directJobRequestModal || !directJobRequestForm) return;
+
+    directJobRequestModal.classList.remove('show');
+    directJobRequestModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+
+    directJobRequestForm.reset();
+    directJobRequestContext = { providerId: null, providerType: null };
+
+    if (directJobProviderId) directJobProviderId.value = '';
+    if (directJobProviderType) directJobProviderType.value = '';
+    if (directJobPhotoPreview) directJobPhotoPreview.textContent = '';
+
+    if (directJobRequestError) {
+        directJobRequestError.style.display = 'none';
+        directJobRequestError.textContent = '';
+    }
+    if (directJobRequestSuccess) {
+        directJobRequestSuccess.style.display = 'none';
+        directJobRequestSuccess.textContent = '';
+    }
+
+    if (directJobRequestSubmitBtn) {
+        directJobRequestSubmitBtn.disabled = false;
+        directJobRequestSubmitBtn.textContent = 'Request';
+    }
+}
+
+function openDirectJobRequestModal(providerType, providerId) {
+    if (!directJobRequestModal || !directJobRequestForm) {
+        alert('New job request popup is not available right now.');
+        return;
+    }
+
+    const normalizedType = normalizeProviderType(providerType) === 'company' ? 'company' : 'individual';
+    const numericProviderId = Number(providerId);
+
+    if (!Number.isFinite(numericProviderId) || numericProviderId <= 0) {
+        alert('Invalid provider selection. Please reopen the profile and try again.');
+        return;
+    }
+
+    // Close profile popups first as requested.
+    if (normalizedType === 'company' && typeof window.closeCompanyModal === 'function') {
+        window.closeCompanyModal();
+    }
+    if (normalizedType === 'individual' && typeof window.closeRepairerProfile === 'function') {
+        window.closeRepairerProfile();
+    }
+
+    directJobRequestContext = {
+        providerId: numericProviderId,
+        providerType: normalizedType
+    };
+
+    directJobRequestForm.reset();
+    if (directJobProviderId) directJobProviderId.value = String(numericProviderId);
+    if (directJobProviderType) directJobProviderType.value = normalizedType;
+    if (directJobRequestProviderLabel) {
+        directJobRequestProviderLabel.textContent = normalizedType === 'company' ? 'this company' : 'this repairer';
+    }
+
+    if (directJobFinishDate) {
+        const today = new Date().toISOString().split('T')[0];
+        directJobFinishDate.setAttribute('min', today);
+    }
+
+    if (directJobPhotoPreview) directJobPhotoPreview.textContent = '';
+
+    if (directJobRequestError) {
+        directJobRequestError.style.display = 'none';
+        directJobRequestError.textContent = '';
+    }
+    if (directJobRequestSuccess) {
+        directJobRequestSuccess.style.display = 'none';
+        directJobRequestSuccess.textContent = '';
+    }
+
+    if (directJobRequestSubmitBtn) {
+        directJobRequestSubmitBtn.disabled = false;
+        directJobRequestSubmitBtn.textContent = 'Request';
+    }
+
+    directJobRequestModal.classList.add('show');
+    directJobRequestModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+}
+
+async function submitDirectJobRequest(event) {
+    event.preventDefault();
+
+    if (!directJobRequestForm) return;
+    if (!directJobRequestContext.providerId || !directJobRequestContext.providerType) return;
+
+    const formData = new FormData(directJobRequestForm);
+    formData.set('provider_id', String(directJobRequestContext.providerId));
+    formData.set('provider_type', directJobRequestContext.providerType);
+
+    if (directJobRequestError) {
+        directJobRequestError.style.display = 'none';
+        directJobRequestError.textContent = '';
+    }
+    if (directJobRequestSuccess) {
+        directJobRequestSuccess.style.display = 'none';
+        directJobRequestSuccess.textContent = '';
+    }
+
+    if (directJobRequestSubmitBtn) {
+        directJobRequestSubmitBtn.disabled = true;
+        directJobRequestSubmitBtn.textContent = 'Requesting...';
+    }
+
+    try {
+        const response = await fetch(API_ENDPOINTS.directJobRequests, {
+            method: 'POST',
+            body: formData,
+            headers: { 'Accept': 'application/json' }
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result?.success) {
+            throw new Error(result?.message || `Failed to create direct job request (${response.status})`);
+        }
+
+        if (directJobRequestSuccess) {
+            directJobRequestSuccess.textContent = result.message || 'Direct job request created successfully.';
+            directJobRequestSuccess.style.display = 'block';
+        }
+
+        setTimeout(() => {
+            closeDirectJobRequestModal();
+        }, 700);
+    } catch (error) {
+        console.error('Failed to submit direct job request:', error);
+        if (directJobRequestError) {
+            directJobRequestError.textContent = error.message || 'Failed to create direct request. Please try again.';
+            directJobRequestError.style.display = 'block';
+        }
+    } finally {
+        if (directJobRequestSubmitBtn) {
+            directJobRequestSubmitBtn.disabled = false;
+            directJobRequestSubmitBtn.textContent = 'Request';
+        }
+    }
+}
 
 function initializeListedJobRequestModal() {
     if (!listedJobRequestModal) return;
@@ -1071,15 +1269,12 @@ function sendRepairRequest(type, providerId) {
 
 // Request Company Quote Function (Placeholder)
 function requestCompanyQuote(companyId) {
-    
-    alert('Request Company Quote feature will be implemented soon!');
-    // TODO: Implement company quote request functionality
+    openDirectJobRequestModal('company', companyId);
 }
 
 // Request Repairer Quote / New Job Function (Placeholder)
 function requestRepairerQuote(repairerId) {
-    alert(`Request new job feature for this repairer will be implemented soon!\n\nRepairer ID: ${repairerId || 'Unknown'}`);
-    // TODO: Implement new job request flow for a specific repairer
+    openDirectJobRequestModal('individual', repairerId);
 }
 
 // Console log for debugging
