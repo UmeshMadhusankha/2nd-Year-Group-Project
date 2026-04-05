@@ -365,345 +365,346 @@ function sortEarningsTable(sortBy, direction = 'desc') {
         // Extract number from "LKR 2,500" format
         return parseInt(amountText.replace(/[^\d]/g, '')) || 0;
     }
+}
 
-    // ===== SEARCH FUNCTIONALITY =====
-    function initializeSearch() {
-        const searchInput = document.querySelector('.search-box input');
+// ===== SEARCH FUNCTIONALITY =====
+function initializeSearch() {
+    const searchInput = document.querySelector('.search-box input');
 
-        if (searchInput) {
-            searchInput.addEventListener('input', function () {
-                const searchTerm = this.value.toLowerCase();
-                searchEarnings(searchTerm);
-            });
-        }
-    }
-
-    function searchEarnings(searchTerm) {
-        const earningsRows = document.querySelectorAll('.earnings-row');
-        let visibleCount = 0;
-
-        earningsRows.forEach(row => {
-            const jobTitle = row.querySelector('.job-title').textContent.toLowerCase();
-            const customerName = row.querySelector('.customer-name').textContent.toLowerCase();
-            const customerLocation = row.querySelector('.customer-location').textContent.toLowerCase();
-            const category = row.querySelector('.job-category').textContent.toLowerCase();
-
-            const matches = jobTitle.includes(searchTerm) ||
-                customerName.includes(searchTerm) ||
-                customerLocation.includes(searchTerm) ||
-                category.includes(searchTerm);
-
-            if (matches || searchTerm === '') {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            const searchTerm = this.value.toLowerCase();
+            searchEarnings(searchTerm);
         });
+    }
+}
 
-        // Update count
-        const sectionSubtitle = document.querySelector('.section-subtitle');
-        if (searchTerm) {
-            sectionSubtitle.textContent = `${visibleCount} payments found for "${searchTerm}"`;
+function searchEarnings(searchTerm) {
+    const earningsRows = document.querySelectorAll('.earnings-row');
+    let visibleCount = 0;
+
+    earningsRows.forEach(row => {
+        const jobTitle = row.querySelector('.job-title').textContent.toLowerCase();
+        const customerName = row.querySelector('.customer-name').textContent.toLowerCase();
+        const customerLocation = row.querySelector('.customer-location').textContent.toLowerCase();
+        const category = row.querySelector('.job-category').textContent.toLowerCase();
+
+        const matches = jobTitle.includes(searchTerm) ||
+            customerName.includes(searchTerm) ||
+            customerLocation.includes(searchTerm) ||
+            category.includes(searchTerm);
+
+        if (matches || searchTerm === '') {
+            row.style.display = '';
+            visibleCount++;
         } else {
-            sectionSubtitle.textContent = '18 payments this month';
+            row.style.display = 'none';
         }
+    });
+
+    // Update count
+    const sectionSubtitle = document.querySelector('.section-subtitle');
+    if (searchTerm) {
+        sectionSubtitle.textContent = `${visibleCount} payments found for "${searchTerm}"`;
+    } else {
+        sectionSubtitle.textContent = '18 payments this month';
+    }
+}
+
+// ===== EARNINGS ACTIONS =====
+function viewEarningDetails(earningId) {
+
+    // Find the earning data
+    const earning = earningsData.customer.find(e => e.id === earningId);
+    if (!earning) {
+        showNotification('Earning details not found', 'error');
+        return;
     }
 
-    // ===== EARNINGS ACTIONS =====
-    function viewEarningDetails(earningId) {
+    // Update status banner
+    const statusBanner = document.getElementById('earningStatusBanner');
+    const statusIcon = document.getElementById('earningStatusIcon');
+    const statusTitle = document.getElementById('earningStatusTitle');
+    const statusMessage = document.getElementById('earningStatusMessage');
 
-        // Find the earning data
-        const earning = earningsData.customer.find(e => e.id === earningId);
-        if (!earning) {
-            showNotification('Earning details not found', 'error');
-            return;
-        }
+    statusBanner.className = 'earning-status-banner';
+    if (earning.status === 'paid') {
+        statusBanner.classList.add('paid');
+        statusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+        statusTitle.textContent = 'Payment Received';
+        statusMessage.textContent = 'This payment has been successfully received';
+    } else {
+        statusBanner.classList.add('pending');
+        statusIcon.innerHTML = '<i class="fas fa-clock"></i>';
+        statusTitle.textContent = 'Payment Pending';
+        statusMessage.textContent = 'Awaiting payment from customer';
+    }
 
-        // Update status banner
-        const statusBanner = document.getElementById('earningStatusBanner');
-        const statusIcon = document.getElementById('earningStatusIcon');
-        const statusTitle = document.getElementById('earningStatusTitle');
-        const statusMessage = document.getElementById('earningStatusMessage');
+    // Populate job information
+    document.getElementById('earningJobTitle').textContent = earning.jobTitle;
+    document.getElementById('earningCategory').textContent = earning.category;
+    document.getElementById('earningDate').textContent = formatDateDisplay(earning.date);
+    document.getElementById('earningDuration').textContent = earning.duration;
 
-        statusBanner.className = 'earning-status-banner';
-        if (earning.status === 'paid') {
-            statusBanner.classList.add('paid');
-            statusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
-            statusTitle.textContent = 'Payment Received';
-            statusMessage.textContent = 'This payment has been successfully received';
-        } else {
-            statusBanner.classList.add('pending');
-            statusIcon.innerHTML = '<i class="fas fa-clock"></i>';
-            statusTitle.textContent = 'Payment Pending';
-            statusMessage.textContent = 'Awaiting payment from customer';
-        }
+    // Populate customer information
+    document.getElementById('earningCustomerName').textContent = earning.customerName;
+    document.getElementById('earningLocation').textContent = earning.location;
+    document.getElementById('earningContact').textContent = earning.contact;
 
-        // Populate job information
-        document.getElementById('earningJobTitle').textContent = earning.jobTitle;
-        document.getElementById('earningCategory').textContent = earning.category;
-        document.getElementById('earningDate').textContent = formatDateDisplay(earning.date);
-        document.getElementById('earningDuration').textContent = earning.duration;
+    // Populate rating
+    const ratingEl = document.getElementById('earningRating');
+    if (earning.rating > 0) {
+        const stars = Array(5).fill(0).map((_, i) =>
+            `< i class= "fas fa-star" style = "color: ${i < earning.rating ? '#f39c12' : '#ddd'};" ></i > `
+        ).join('');
+        ratingEl.innerHTML = `${stars} <span style="margin-left: 8px;">${earning.rating.toFixed(1)}</span>`;
+    } else {
+        ratingEl.innerHTML = '<span style="color: var(--text-secondary);">No rating yet</span>';
+    }
 
-        // Populate customer information
-        document.getElementById('earningCustomerName').textContent = earning.customerName;
-        document.getElementById('earningLocation').textContent = earning.location;
-        document.getElementById('earningContact').textContent = earning.contact;
+    // Populate payment breakdown
+    document.getElementById('earningServiceFee').textContent = `LKR ${earning.serviceFee.toLocaleString()} `;
+    document.getElementById('earningPlatformFee').textContent = `- LKR ${earning.platformFee.toLocaleString()} `;
+    document.getElementById('earningMaterialsCost').textContent = `LKR ${earning.materialsCost.toLocaleString()} `;
+    document.getElementById('earningTotalEarned').innerHTML = `< strong > LKR ${earning.totalEarned.toLocaleString()}</strong > `;
 
-        // Populate rating
-        const ratingEl = document.getElementById('earningRating');
-        if (earning.rating > 0) {
-            const stars = Array(5).fill(0).map((_, i) =>
-                `< i class= "fas fa-star" style = "color: ${i < earning.rating ? '#f39c12' : '#ddd'};" ></i > `
-            ).join('');
-            ratingEl.innerHTML = `${stars} <span style="margin-left: 8px;">${earning.rating.toFixed(1)}</span>`;
-        } else {
-            ratingEl.innerHTML = '<span style="color: var(--text-secondary);">No rating yet</span>';
-        }
+    // Populate payment information
+    document.getElementById('earningPaymentMethod').textContent = earning.paymentMethod;
+    document.getElementById('earningTransactionId').textContent = earning.transactionId;
+    document.getElementById('earningPaymentDate').textContent = earning.status === 'paid'
+        ? `${formatDateDisplay(earning.date)} - ${earning.completedTime} `
+        : 'Pending';
 
-        // Populate payment breakdown
-        document.getElementById('earningServiceFee').textContent = `LKR ${earning.serviceFee.toLocaleString()} `;
-        document.getElementById('earningPlatformFee').textContent = `- LKR ${earning.platformFee.toLocaleString()} `;
-        document.getElementById('earningMaterialsCost').textContent = `LKR ${earning.materialsCost.toLocaleString()} `;
-        document.getElementById('earningTotalEarned').innerHTML = `< strong > LKR ${earning.totalEarned.toLocaleString()}</strong > `;
+    const paymentStatusBadge = document.getElementById('earningPaymentStatus');
+    paymentStatusBadge.textContent = earning.status.charAt(0).toUpperCase() + earning.status.slice(1);
+    paymentStatusBadge.className = `status - badge ${earning.status} `;
 
-        // Populate payment information
-        document.getElementById('earningPaymentMethod').textContent = earning.paymentMethod;
-        document.getElementById('earningTransactionId').textContent = earning.transactionId;
-        document.getElementById('earningPaymentDate').textContent = earning.status === 'paid'
-            ? `${formatDateDisplay(earning.date)} - ${earning.completedTime} `
-            : 'Pending';
+    // Populate description
+    document.getElementById('earningDescription').textContent = earning.description;
 
-        const paymentStatusBadge = document.getElementById('earningPaymentStatus');
-        paymentStatusBadge.textContent = earning.status.charAt(0).toUpperCase() + earning.status.slice(1);
-        paymentStatusBadge.className = `status - badge ${earning.status} `;
-
-        // Populate description
-        document.getElementById('earningDescription').textContent = earning.description;
-
-        // Populate timeline
-        const timelineEl = document.getElementById('earningTimeline');
-        timelineEl.innerHTML = '';
-        earning.timeline.forEach(item => {
-            const timelineItem = document.createElement('div');
-            timelineItem.className = 'timeline-item';
-            timelineItem.innerHTML = `
+    // Populate timeline
+    const timelineEl = document.getElementById('earningTimeline');
+    timelineEl.innerHTML = '';
+    earning.timeline.forEach(item => {
+        const timelineItem = document.createElement('div');
+        timelineItem.className = 'timeline-item';
+        timelineItem.innerHTML = `
         < div class="timeline-marker" ></div >
             <div class="timeline-content">
                 <h5>${item.event}</h5>
                 <p>${item.date} at ${item.time}</p>
             </div>
     `;
-            timelineEl.appendChild(timelineItem);
-        });
+        timelineEl.appendChild(timelineItem);
+    });
 
-        // Show/hide reminder button
-        const reminderBtn = document.getElementById('drawerReminderBtn');
-        reminderBtn.style.display = earning.status === 'pending' ? 'inline-flex' : 'none';
-        reminderBtn.onclick = () => sendReminder(earning.id);
+    // Show/hide reminder button
+    const reminderBtn = document.getElementById('drawerReminderBtn');
+    reminderBtn.style.display = earning.status === 'pending' ? 'inline-flex' : 'none';
+    reminderBtn.onclick = () => sendReminder(earning.id);
 
-        // Store earning ID for invoice download
-        document.getElementById('earningDetailsDrawer').dataset.earningId = earning.id;
+    // Store earning ID for invoice download
+    document.getElementById('earningDetailsDrawer').dataset.earningId = earning.id;
 
-        // Open drawer
-        document.getElementById('earningDetailsDrawer').classList.add('active');
-    }
+    // Open drawer
+    document.getElementById('earningDetailsDrawer').classList.add('active');
+}
 
-    function closeEarningDetailsDrawer() {
-        document.getElementById('earningDetailsDrawer').classList.remove('active');
-    }
+function closeEarningDetailsDrawer() {
+    document.getElementById('earningDetailsDrawer').classList.remove('active');
+}
 
-    function downloadInvoiceFromDrawer() {
-        const earningId = document.getElementById('earningDetailsDrawer').dataset.earningId;
-        downloadInvoice(parseInt(earningId));
-    }
+function downloadInvoiceFromDrawer() {
+    const earningId = document.getElementById('earningDetailsDrawer').dataset.earningId;
+    downloadInvoice(parseInt(earningId));
+}
 
-    function sendReminderFromDrawer() {
-        const earningId = document.getElementById('earningDetailsDrawer').dataset.earningId;
-        sendReminder(parseInt(earningId));
-    }
+function sendReminderFromDrawer() {
+    const earningId = document.getElementById('earningDetailsDrawer').dataset.earningId;
+    sendReminder(parseInt(earningId));
+}
 
-    function formatDateDisplay(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        });
-    }
+function formatDateDisplay(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+}
 
-    function downloadInvoice(earningId) {
+function downloadInvoice(earningId) {
 
-        showNotification('Generating invoice...', 'info');
+    showNotification('Generating invoice...', 'info');
 
-        // Simulate invoice generation and download
+    // Simulate invoice generation and download
+    setTimeout(() => {
+        showNotification('Invoice downloaded successfully!', 'success');
+
+    }, 1500);
+}
+
+function sendReminder(earningId) {
+
+    if (confirm('Send payment reminder to customer? This will notify them about the pending payment.')) {
+        showNotification('Sending payment reminder...', 'info');
+
         setTimeout(() => {
-            showNotification('Invoice downloaded successfully!', 'success');
+            showNotification('Payment reminder sent successfully!', 'success');
 
-        }, 1500);
+            // Update the UI to show reminder was sent
+            const row = document.querySelector(`[onclick = "sendReminder(${earningId})"]`).closest('tr');
+            const dateSecondary = row.querySelector('.date-secondary');
+            dateSecondary.textContent = 'Reminder sent today';
+        }, 1000);
     }
+}
 
-    function sendReminder(earningId) {
+function checkStatus(earningId) {
 
-        if (confirm('Send payment reminder to customer? This will notify them about the pending payment.')) {
-            showNotification('Sending payment reminder...', 'info');
+    showNotification('Checking payment status...', 'info');
 
-            setTimeout(() => {
-                showNotification('Payment reminder sent successfully!', 'success');
+    // Simulate status check
+    setTimeout(() => {
+        const statuses = ['processing', 'paid', 'pending'];
+        const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
 
-                // Update the UI to show reminder was sent
-                const row = document.querySelector(`[onclick = "sendReminder(${earningId})"]`).closest('tr');
-                const dateSecondary = row.querySelector('.date-secondary');
-                dateSecondary.textContent = 'Reminder sent today';
-            }, 1000);
+        if (newStatus === 'paid') {
+            // Update the row to show paid status
+            const row = document.querySelector(`[onclick = "checkStatus(${earningId})"]`).closest('tr');
+            updatePaymentStatus(row, 'paid');
+            showNotification('Payment received! Status updated to Paid.', 'success');
+        } else {
+            showNotification(`Status checked: Still ${newStatus} `, 'info');
         }
+    }, 1500);
+}
+
+function updatePaymentStatus(row, status) {
+    const statusCell = row.querySelector('.payment-status');
+
+    statusCell.className = `payment - status ${status} `;
+
+    switch (status) {
+        case 'paid':
+            statusCell.innerHTML = '<i class="fas fa-check-circle"></i>Paid';
+            break;
+        case 'pending':
+            statusCell.innerHTML = '<i class="fas fa-clock"></i>Pending';
+            break;
+        case 'processing':
+            statusCell.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Processing';
+            break;
     }
 
-    function checkStatus(earningId) {
+    // Update row data attribute
+    row.setAttribute('data-status', status);
 
-        showNotification('Checking payment status...', 'info');
+    // Update summary if needed
+    updateEarningsSummary();
+}
 
-        // Simulate status check
-        setTimeout(() => {
-            const statuses = ['processing', 'paid', 'pending'];
-            const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
+function loadMoreEarnings() {
 
-            if (newStatus === 'paid') {
-                // Update the row to show paid status
-                const row = document.querySelector(`[onclick = "checkStatus(${earningId})"]`).closest('tr');
-                updatePaymentStatus(row, 'paid');
-                showNotification('Payment received! Status updated to Paid.', 'success');
-            } else {
-                showNotification(`Status checked: Still ${newStatus} `, 'info');
-            }
-        }, 1500);
-    }
+    const loadMoreBtn = document.querySelector('.load-more-btn');
+    const originalText = loadMoreBtn.innerHTML;
 
-    function updatePaymentStatus(row, status) {
-        const statusCell = row.querySelector('.payment-status');
+    // Show loading state
+    loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    loadMoreBtn.disabled = true;
 
-        statusCell.className = `payment - status ${status} `;
+    // Simulate API call
+    setTimeout(() => {
+        // Reset button
+        loadMoreBtn.innerHTML = originalText;
+        loadMoreBtn.disabled = false;
 
-        switch (status) {
-            case 'paid':
-                statusCell.innerHTML = '<i class="fas fa-check-circle"></i>Paid';
-                break;
-            case 'pending':
-                statusCell.innerHTML = '<i class="fas fa-clock"></i>Pending';
-                break;
-            case 'processing':
-                statusCell.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Processing';
-                break;
+        // Add some demo earnings
+        addDemoEarnings();
+
+        showNotification('5 more earnings loaded!', 'success');
+    }, 2000);
+}
+
+function addDemoEarnings() {
+    const tbody = document.querySelector('.earnings-table tbody');
+
+    const demoEarnings = [
+        {
+            date: 'Aug 23, 2025',
+            relative: '9 days ago',
+            job: 'Water Heater Repair',
+            category: 'Plumbing',
+            customer: 'Ananda Wickramasinghe',
+            location: 'Kottawa',
+            amount: 'LKR 3,200',
+            status: 'paid'
+        },
+        {
+            date: 'Aug 22, 2025',
+            relative: '10 days ago',
+            job: 'Door Lock Installation',
+            category: 'General',
+            customer: 'Sunil Fernando',
+            location: 'Panadura',
+            amount: 'LKR 1,200',
+            status: 'paid'
+        },
+        {
+            date: 'Aug 20, 2025',
+            relative: '12 days ago',
+            job: 'Garden Light Setup',
+            category: 'Electrical',
+            customer: 'Mala Perera',
+            location: 'Moratuwa',
+            amount: 'LKR 2,800',
+            status: 'pending'
+        },
+        {
+            date: 'Aug 18, 2025',
+            relative: '2 weeks ago',
+            job: 'Roof Leak Fix',
+            category: 'General',
+            customer: 'Buddhika Rathnayake',
+            location: 'Gampaha',
+            amount: 'LKR 4,500',
+            status: 'paid'
+        },
+        {
+            date: 'Aug 15, 2025',
+            relative: '2 weeks ago',
+            job: 'Kitchen Cabinet Repair',
+            category: 'Carpentry',
+            customer: 'Dilani Jayasuriya',
+            location: 'Kelaniya',
+            amount: 'LKR 3,800',
+            status: 'paid'
         }
+    ];
 
-        // Update row data attribute
-        row.setAttribute('data-status', status);
+    demoEarnings.forEach((earning, index) => {
+        const row = createEarningRow(earning, Date.now() + index);
+        tbody.appendChild(row);
+    });
 
-        // Update summary if needed
-        updateEarningsSummary();
-    }
+    // Update count
+    const visibleRows = document.querySelectorAll('.earnings-row:not([style*="none"])').length;
+    document.querySelector('.section-subtitle').textContent = `${visibleRows} payments this month`;
+}
 
-    function loadMoreEarnings() {
+function createEarningRow(earning, earningId) {
+    const row = document.createElement('tr');
+    row.className = 'earnings-row';
+    row.setAttribute('data-status', earning.status);
 
-        const loadMoreBtn = document.querySelector('.load-more-btn');
-        const originalText = loadMoreBtn.innerHTML;
+    const statusIcon = earning.status === 'paid'
+        ? '<i class="fas fa-check-circle"></i>'
+        : earning.status === 'pending'
+            ? '<i class="fas fa-clock"></i>'
+            : '<i class="fas fa-spinner fa-spin"></i>';
 
-        // Show loading state
-        loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-        loadMoreBtn.disabled = true;
-
-        // Simulate API call
-        setTimeout(() => {
-            // Reset button
-            loadMoreBtn.innerHTML = originalText;
-            loadMoreBtn.disabled = false;
-
-            // Add some demo earnings
-            addDemoEarnings();
-
-            showNotification('5 more earnings loaded!', 'success');
-        }, 2000);
-    }
-
-    function addDemoEarnings() {
-        const tbody = document.querySelector('.earnings-table tbody');
-
-        const demoEarnings = [
-            {
-                date: 'Aug 23, 2025',
-                relative: '9 days ago',
-                job: 'Water Heater Repair',
-                category: 'Plumbing',
-                customer: 'Ananda Wickramasinghe',
-                location: 'Kottawa',
-                amount: 'LKR 3,200',
-                status: 'paid'
-            },
-            {
-                date: 'Aug 22, 2025',
-                relative: '10 days ago',
-                job: 'Door Lock Installation',
-                category: 'General',
-                customer: 'Sunil Fernando',
-                location: 'Panadura',
-                amount: 'LKR 1,200',
-                status: 'paid'
-            },
-            {
-                date: 'Aug 20, 2025',
-                relative: '12 days ago',
-                job: 'Garden Light Setup',
-                category: 'Electrical',
-                customer: 'Mala Perera',
-                location: 'Moratuwa',
-                amount: 'LKR 2,800',
-                status: 'pending'
-            },
-            {
-                date: 'Aug 18, 2025',
-                relative: '2 weeks ago',
-                job: 'Roof Leak Fix',
-                category: 'General',
-                customer: 'Buddhika Rathnayake',
-                location: 'Gampaha',
-                amount: 'LKR 4,500',
-                status: 'paid'
-            },
-            {
-                date: 'Aug 15, 2025',
-                relative: '2 weeks ago',
-                job: 'Kitchen Cabinet Repair',
-                category: 'Carpentry',
-                customer: 'Dilani Jayasuriya',
-                location: 'Kelaniya',
-                amount: 'LKR 3,800',
-                status: 'paid'
-            }
-        ];
-
-        demoEarnings.forEach((earning, index) => {
-            const row = createEarningRow(earning, Date.now() + index);
-            tbody.appendChild(row);
-        });
-
-        // Update count
-        const visibleRows = document.querySelectorAll('.earnings-row:not([style*="none"])').length;
-        document.querySelector('.section-subtitle').textContent = `${visibleRows} payments this month`;
-    }
-
-    function createEarningRow(earning, earningId) {
-        const row = document.createElement('tr');
-        row.className = 'earnings-row';
-        row.setAttribute('data-status', earning.status);
-
-        const statusIcon = earning.status === 'paid'
-            ? '<i class="fas fa-check-circle"></i>'
-            : earning.status === 'pending'
-                ? '<i class="fas fa-clock"></i>'
-                : '<i class="fas fa-spinner fa-spin"></i>';
-
-        const actions = earning.status === 'paid'
-            ? `
+    const actions = earning.status === 'paid'
+        ? `
         < button class="btn btn-sm btn-outline" onclick = "viewEarningDetails('${earningId}')" >
             <i class="fas fa-eye"></i>
             </button >
@@ -711,8 +712,8 @@ function sortEarningsTable(sortBy, direction = 'desc') {
             <i class="fas fa-download"></i>
         </button>
     `
-            : earning.status === 'pending'
-                ? `
+        : earning.status === 'pending'
+            ? `
         < button class="btn btn-sm btn-outline" onclick = "viewEarningDetails('${earningId}')" >
             <i class="fas fa-eye"></i>
             </button >
@@ -720,7 +721,7 @@ function sortEarningsTable(sortBy, direction = 'desc') {
             <i class="fas fa-bell"></i>
         </button>
     `
-                : `
+            : `
         < button class="btn btn-sm btn-outline" onclick = "viewEarningDetails('${earningId}')" >
             <i class="fas fa-eye"></i>
             </button >
@@ -729,7 +730,7 @@ function sortEarningsTable(sortBy, direction = 'desc') {
         </button>
     `;
 
-        row.innerHTML = `
+    row.innerHTML = `
         < td class="date-cell" >
             <div class="date-info">
                 <span class="date-primary">${earning.date}</span>
@@ -762,44 +763,44 @@ function sortEarningsTable(sortBy, direction = 'desc') {
         </td>
     `;
 
-        return row;
-    }
+    return row;
+}
 
-    // ===== SUMMARY UPDATES =====
-    function updateEarningsSummary() {
-        const allRows = document.querySelectorAll('.earnings-row');
-        const paidRows = document.querySelectorAll('.earnings-row[data-status="paid"]');
-        const pendingRows = document.querySelectorAll('.earnings-row[data-status="pending"]');
+// ===== SUMMARY UPDATES =====
+function updateEarningsSummary() {
+    const allRows = document.querySelectorAll('.earnings-row');
+    const paidRows = document.querySelectorAll('.earnings-row[data-status="paid"]');
+    const pendingRows = document.querySelectorAll('.earnings-row[data-status="pending"]');
 
-        let totalEarnings = 0;
-        let monthlyEarnings = 0;
-        let pendingAmount = 0;
+    let totalEarnings = 0;
+    let monthlyEarnings = 0;
+    let pendingAmount = 0;
 
-        allRows.forEach(row => {
-            const amount = getAmountValue(row);
-            const status = row.getAttribute('data-status');
-            const dateText = row.querySelector('.date-primary').textContent;
+    allRows.forEach(row => {
+        const amount = getAmountValue(row);
+        const status = row.getAttribute('data-status');
+        const dateText = row.querySelector('.date-primary').textContent;
 
-            if (status === 'paid') {
-                totalEarnings += amount;
-                if (dateText.includes('Sep') || dateText.includes('Aug')) {
-                    monthlyEarnings += amount;
-                }
-            } else if (status === 'pending') {
-                pendingAmount += amount;
+        if (status === 'paid') {
+            totalEarnings += amount;
+            if (dateText.includes('Sep') || dateText.includes('Aug')) {
+                monthlyEarnings += amount;
             }
-        });
+        } else if (status === 'pending') {
+            pendingAmount += amount;
+        }
+    });
 
-        // Update summary cards (simplified)
+    // Update summary cards (simplified)
 
-    }
+}
 
-    // ===== UTILITY FUNCTIONS =====
-    function showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `notification notification - ${type} `;
-        notification.style.cssText = `
+// ===== UTILITY FUNCTIONS =====
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification - ${type} `;
+    notification.style.cssText = `
     position: fixed;
     top: 20px;
     right: 20px;
@@ -814,36 +815,36 @@ function sortEarningsTable(sortBy, direction = 'desc') {
     transition: transform 0.3s ease;
     `;
 
-        // Set background color based on type
-        switch (type) {
-            case 'success':
-                notification.style.background = '#10b981';
-                break;
-            case 'error':
-                notification.style.background = '#ef4444';
-                break;
-            case 'warning':
-                notification.style.background = '#f59e0b';
-                break;
-            default:
-                notification.style.background = '#3b82f6';
-        }
-
-        notification.textContent = message;
-        document.body.appendChild(notification);
-
-        // Animate in
-        setTimeout(() => {
-            notification.style.transform = 'translateX(0)';
-        }, 100);
-
-        // Remove after delay
-        setTimeout(() => {
-            notification.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, 3000);
+    // Set background color based on type
+    switch (type) {
+        case 'success':
+            notification.style.background = '#10b981';
+            break;
+        case 'error':
+            notification.style.background = '#ef4444';
+            break;
+        case 'warning':
+            notification.style.background = '#f59e0b';
+            break;
+        default:
+            notification.style.background = '#3b82f6';
     }
+
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    // Animate in
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+
+    // Remove after delay
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
