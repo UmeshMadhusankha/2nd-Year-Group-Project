@@ -439,7 +439,7 @@ foreach ($jobRequests as $job) {
     const jobsPostedBtn = document.getElementById('jobsPostedBtn');
     const quotesReceivedBtn = document.getElementById('quotesReceivedBtn');
     const jobsFilterTabs = document.getElementById('jobsFilterTabs');
-    const jobsContainer = document.querySelector('.jobs-container');
+    const jobsContainerEl = document.querySelector('.jobs-container');
     const quotesReceivedSection = document.getElementById('quotesReceivedSection');
     const quotesReceivedList = document.getElementById('quotesReceivedList');
     const quotesReceivedPill = document.getElementById('quotesReceivedPill');
@@ -563,7 +563,7 @@ foreach ($jobRequests as $job) {
         quotesReceivedBtn.classList.toggle('active', !showJobs);
 
         if (jobsFilterTabs) jobsFilterTabs.style.display = showJobs ? 'flex' : 'none';
-        if (jobsContainer) jobsContainer.style.display = showJobs ? '' : 'none';
+        if (jobsContainerEl) jobsContainerEl.style.display = showJobs ? '' : 'none';
         if (quotesReceivedSection) quotesReceivedSection.style.display = showJobs ? 'none' : 'block';
 
         if (!showJobs) {
