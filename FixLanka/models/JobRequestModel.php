@@ -55,6 +55,26 @@ class JobRequest {
             return [];
         }
     }
+
+    /**
+     * READ - Get all direct job requests by user
+     */
+    public function getAllDirectByUser($userId) {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT djr.*, c.name as category_name
+                FROM directjobrequest djr
+                LEFT JOIN Category c ON djr.category_id = c.category_id
+                WHERE djr.user_id = ?
+                ORDER BY djr.date_created DESC
+            ");
+            $stmt->execute([$userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error getting direct job requests: " . $e->getMessage());
+            return [];
+        }
+    }
     
     /**
      * READ - Get single job request by ID

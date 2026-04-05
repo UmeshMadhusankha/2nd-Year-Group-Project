@@ -8,6 +8,31 @@ if (!isset($jobRequests)) {
     $jobRequests = [];
 }
 
+if (!isset($directJobRequests)) {
+    $directJobRequests = [];
+}
+
+$allJobRequests = [];
+
+foreach ($jobRequests as $job) {
+    $job['request_type'] = 'regular';
+    $job['posted_date'] = $job['dateCreated'] ?? ($job['date_created'] ?? null);
+    $allJobRequests[] = $job;
+}
+
+foreach ($directJobRequests as $job) {
+    $job['request_type'] = 'direct';
+    $job['service_provider_type'] = $job['service_provider_type'] ?? ($job['provider_type'] ?? 'individual');
+    $job['posted_date'] = $job['date_created'] ?? ($job['dateCreated'] ?? null);
+    $allJobRequests[] = $job;
+}
+
+usort($allJobRequests, function ($a, $b) {
+    $dateA = strtotime($a['posted_date'] ?? '1970-01-01 00:00:00');
+    $dateB = strtotime($b['posted_date'] ?? '1970-01-01 00:00:00');
+    return $dateB <=> $dateA;
+});
+
 $success = $_SESSION['success'] ?? '';
 $error = $_SESSION['error'] ?? '';
 unset($_SESSION['success'], $_SESSION['error']);
@@ -18,7 +43,7 @@ $inProgressCount = 0;
 $completedCount = 0;
 $cancelledCount = 0;
 
-foreach ($jobRequests as $job) {
+foreach ($allJobRequests as $job) {
     switch ($job['status']) {
         case 'pending':
             $pendingCount++;
@@ -89,7 +114,7 @@ foreach ($jobRequests as $job) {
 
                     <div class="filter-tabs" id="jobsFilterTabs">
                         <button class="filter-tab active" data-status="all">
-                            All Jobs <span class="tab-count"><?php echo count($jobRequests); ?></span>
+                            All Jobs <span class="tab-count"><?php echo count($allJobRequests); ?></span>
                         </button>
                         <button class="filter-tab" data-status="pending">
                             Pending <span class="tab-count"><?php echo $pendingCount; ?></span>
@@ -112,40 +137,54 @@ foreach ($jobRequests as $job) {
 
             <!-- Jobs Container -->
             <div class="jobs-container">
-                <?php if (empty($jobRequests)): ?>
+                <?php if (empty($allJobRequests)): ?>
                     <div class="empty-state">
                         <div class="empty-icon">
                             <i class="fas fa-inbox"></i>
                         </div>
                         <h2 class="empty-title">No Job Requests Yet</h2>
-                        <p class="empty-description">You haven't posted any job requests. Start by posting your first job!</p>
+                        <p class="empty-description">You haven't posted any standard or direct job requests yet. Start by posting your first job!</p>
                         <a href="/2nd-Year-Group-Project/FixLanka/post-job" class="post-job-btn">
                             <i class="fas fa-plus"></i> Post Your First Job
                         </a>
                     </div>
                 <?php else: ?>
-                    <?php foreach ($jobRequests as $job): ?>
+                    <?php foreach ($allJobRequests as $job): ?>
                         <?php
                         $statusClass = strtolower($job['status']);
-                        $isPending = $job['status'] === 'pending';
+                        $isDirectRequest = ($job['request_type'] ?? 'regular') === 'direct';
+                        $isPending = $job['status'] === 'pending' && !$isDirectRequest;
                         $statusLabel = ucfirst(str_replace('_', ' ', $job['status']));
+                        $providerType = str_replace(',', ', ', (string)($job['service_provider_type'] ?? 'individual'));
+                        $providerType = ucwords(str_replace('_', ' ', $providerType));
+                        $postedDate = $job['posted_date'] ?? null;
+                        $title = $job['title'] ?? ($job['category_name'] ?? 'Job Request');
                         ?>
-                        <div class="job-card" data-status="<?php echo $job['status']; ?>">
+                        <div class="job-card <?php echo $isDirectRequest ? 'direct-job-card' : ''; ?>" data-status="<?php echo $job['status']; ?>" data-request-type="<?php echo $job['request_type']; ?>">
                             <div class="job-card-header">
                                 <div>
-                                    <h3 class="job-title"><?php echo htmlspecialchars($job['category_name'] ?? 'Job Request'); ?></h3>
+                                    <h3 class="job-title"><?php echo htmlspecialchars($title); ?></h3>
                                     <p class="job-date">
                                         <i class="fas fa-calendar-alt"></i> 
-                                        Posted on <?php echo date('F j, Y \a\t g:i A', strtotime($job['dateCreated'])); ?>
+                                        Posted on <?php echo $postedDate ? date('F j, Y \a\t g:i A', strtotime($postedDate)) : 'N/A'; ?>
                                     </p>
                                 </div>
                                 <div class="job-badges">
-                                    <span class="job-badge badge-status status-<?php echo $statusClass; ?>">
+                                    <?php if ($isDirectRequest): ?>
+                                        <span class="job-badge badge-direct-request">
+                                            <i class="fas fa-location-arrow"></i> Direct Request
+                                        </span>
+                                        <span class="job-badge badge-status status-<?php echo $statusClass; ?>">
                                         <?php echo $statusLabel; ?>
                                     </span>
-                                    <span class="job-badge badge-urgency urgency-<?php echo $job['urgency']; ?>">
-                                        <i class="fas fa-bolt"></i> <?php echo ucfirst($job['urgency']); ?>
-                                    </span>
+                                    <?php else: ?>
+                                        <span class="job-badge badge-status status-<?php echo $statusClass; ?>">
+                                            <?php echo $statusLabel; ?>
+                                        </span>
+                                        <span class="job-badge badge-urgency urgency-<?php echo $job['urgency']; ?>">
+                                            <i class="fas fa-bolt"></i> <?php echo ucfirst($job['urgency']); ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
 
@@ -163,7 +202,7 @@ foreach ($jobRequests as $job) {
                                     <i class="fas fa-user-tie"></i>
                                     <div>
                                         <span class="detail-label">Provider Type</span>
-                                        <span class="detail-value"><?php echo ucfirst($job['service_provider_type']); ?></span>
+                                        <span class="detail-value"><?php echo htmlspecialchars($providerType); ?></span>
                                     </div>
                                 </div>
                                 <div class="job-detail">
@@ -198,6 +237,10 @@ foreach ($jobRequests as $job) {
                                             <i class="fas fa-trash-alt"></i> Delete
                                         </button>
                                     </form>
+                                <?php elseif ($isDirectRequest): ?>
+                                    <span class="read-only-badge direct-read-only-badge">
+                                        <i class="fas fa-paper-plane"></i> Direct job request submitted
+                                    </span>
                                 <?php else: ?>
                                     <!-- Read-only indicator for non-pending jobs -->
                                     <span class="read-only-badge">
