@@ -6,7 +6,8 @@ const APP_BASE = '/2nd-Year-Group-Project/FixLanka';
 const API_ENDPOINTS = Object.freeze({
     providerSearch: `${APP_BASE}/api/user/loadLandingProviders.php`,
     companies: `${APP_BASE}/api/companies.php`,
-    listedJobs: `${APP_BASE}/api/user/listed-job-requests.php`
+    listedJobs: `${APP_BASE}/api/user/listed-job-requests.php`,
+    directRequestQuotes: `${APP_BASE}/api/user/direct-request-quotes.php`
 });
 
 /*
@@ -261,18 +262,55 @@ function renderListedJobRequestOptions(jobs) {
     listedJobRequestList.innerHTML = html;
 }
 
-function submitListedJobRequest() {
+async function submitListedJobRequest() {
     if (!Number.isFinite(selectedListedJobRequestId) || selectedListedJobRequestId <= 0) return;
     if (!listedJobRequestContext.providerType || !listedJobRequestContext.providerId) return;
 
-    alert(
-        `Listed-job request submission will be implemented next.\n\n` +
-        `Job Request ID: ${selectedListedJobRequestId}\n` +
-        `Provider Type: ${listedJobRequestContext.providerType}\n` +
-        `Provider ID: ${listedJobRequestContext.providerId}`
-    );
+    if (listedJobRequestSubmitBtn) {
+        listedJobRequestSubmitBtn.disabled = true;
+        listedJobRequestSubmitBtn.textContent = 'Requesting...';
+    }
 
-    closeListedJobRequestModal();
+    if (listedJobRequestError) {
+        listedJobRequestError.style.display = 'none';
+        listedJobRequestError.textContent = '';
+    }
+
+    try {
+        const payload = {
+            provider_type: listedJobRequestContext.providerType,
+            request_id: selectedListedJobRequestId,
+            provider_id: listedJobRequestContext.providerId
+        };
+
+        const response = await fetch(API_ENDPOINTS.directRequestQuotes, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result?.success) {
+            throw new Error(result?.message || `Failed to submit request (${response.status})`);
+        }
+
+        alert(result.message || 'Request sent successfully.');
+        closeListedJobRequestModal();
+    } catch (error) {
+        console.error('Failed to submit listed-job request:', error);
+        if (listedJobRequestError) {
+            listedJobRequestError.textContent = error.message || 'Failed to send request. Please try again.';
+            listedJobRequestError.style.display = 'block';
+        }
+    } finally {
+        if (listedJobRequestSubmitBtn) {
+            listedJobRequestSubmitBtn.textContent = 'Request';
+            listedJobRequestSubmitBtn.disabled = !Number.isFinite(selectedListedJobRequestId) || selectedListedJobRequestId <= 0;
+        }
+    }
 }
 
 // Mobile Menu Functionality
