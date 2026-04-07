@@ -39,6 +39,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let originalFormData = {};
     let currentProfileData = null;
 
+    // Skills tags
+    const skillsInput = document.getElementById('skillsInput');
+    const skillsTagsContainer = document.getElementById('skillsTags');
+    let skillsTags = [];
+
     // ── Init ──
     init();
 
@@ -129,6 +134,55 @@ document.addEventListener('DOMContentLoaded', function () {
         // Topbar dropdown name + email
         syncTopbarName(data.full_name || (data.f_name + ' ' + data.l_name));
         syncTopbarEmail(data.email || '');
+
+        // Skills
+        setSkillsFromData(data.skills);
+        renderSkillsTags();
+    }
+
+    function setSkillsFromData(skillsValue) {
+        if (Array.isArray(skillsValue)) {
+            skillsTags = normalizeTags(skillsValue);
+            return;
+        }
+        const raw = (skillsValue || '').toString();
+        skillsTags = normalizeTags(raw.split(',').map(s => s.trim()).filter(Boolean));
+    }
+
+    function normalizeTags(tags) {
+        const seen = new Set();
+        const out = [];
+        (tags || []).forEach(t => {
+            const cleaned = (t || '').toString().trim().replace(/\s+/g, ' ');
+            if (!cleaned) return;
+            const key = cleaned.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            out.push(cleaned);
+        });
+        return out;
+    }
+
+    function renderSkillsTags() {
+        if (!skillsTagsContainer) return;
+
+        const html = skillsTags.map((tag, idx) => {
+            const removeBtn = isEditing
+                ? `<button type="button" class="skill-tag-remove" data-idx="${idx}" aria-label="Remove ${escapeHtml(tag)}">×</button>`
+                : '';
+            return `<span class="skill-tag">${escapeHtml(tag)}${removeBtn}</span>`;
+        }).join('');
+
+        skillsTagsContainer.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+        return (str || '').toString()
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
     function renderRatingStars(rating) {
@@ -181,6 +235,12 @@ document.addEventListener('DOMContentLoaded', function () {
         districtCheckboxes.forEach(function (cb) { cb.removeAttribute('disabled'); });
         if (sundayClosedCheckbox) sundayClosedCheckbox.removeAttribute('disabled');
 
+        if (skillsInput) {
+            skillsInput.removeAttribute('readonly');
+            skillsInput.classList.add('editable');
+        }
+        renderSkillsTags();
+
         editProfileBtn.style.display = 'none';
         saveChangesBtn.style.display = 'inline-flex';
         cancelChangesBtn.style.display = 'inline-flex';
@@ -194,6 +254,13 @@ document.addEventListener('DOMContentLoaded', function () {
         formSelects.forEach(function (sel) { sel.setAttribute('disabled', 'disabled'); sel.classList.remove('editable'); });
         districtCheckboxes.forEach(function (cb) { cb.setAttribute('disabled', 'disabled'); });
         if (sundayClosedCheckbox) sundayClosedCheckbox.setAttribute('disabled', 'disabled');
+
+        if (skillsInput) {
+            skillsInput.setAttribute('readonly', 'readonly');
+            skillsInput.classList.remove('editable');
+            skillsInput.value = '';
+        }
+        renderSkillsTags();
 
         editProfileBtn.style.display = 'inline-flex';
         saveChangesBtn.style.display = 'none';
@@ -220,7 +287,8 @@ document.addEventListener('DOMContentLoaded', function () {
             category_id: document.getElementById('service-category').value || null,
             districts: selectedDistricts.join(', '),
             availability: document.getElementById('availability').value,
-            about: currentProfileData ? (currentProfileData.about || '') : ''
+            about: currentProfileData ? (currentProfileData.about || '') : '',
+            skills: skillsTags.join(', ')
         };
 
         // Loading state
@@ -257,8 +325,35 @@ document.addEventListener('DOMContentLoaded', function () {
     function handleCancelChanges(e) {
         e.preventDefault();
         restoreOriginalFormData();
+        if (currentProfileData) {
+            setSkillsFromData(currentProfileData.skills);
+            renderSkillsTags();
+        }
         exitEditMode();
         showNotification('Changes cancelled.', 'info');
+    }
+
+    function handleSkillsKeydown(e) {
+        if (!isEditing) return;
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+
+        const val = (skillsInput.value || '').trim();
+        if (!val) return;
+
+        skillsTags = normalizeTags(skillsTags.concat([val]));
+        skillsInput.value = '';
+        renderSkillsTags();
+    }
+
+    function handleSkillsTagClick(e) {
+        const btn = e.target.closest('.skill-tag-remove');
+        if (!btn) return;
+        if (!isEditing) return;
+        const idx = parseInt(btn.getAttribute('data-idx'), 10);
+        if (Number.isNaN(idx)) return;
+        skillsTags.splice(idx, 1);
+        renderSkillsTags();
     }
 
     /* ──────────────────────────────────────────────
@@ -495,6 +590,13 @@ document.addEventListener('DOMContentLoaded', function () {
         editProfileBtn.addEventListener('click', toggleEditMode);
         saveChangesBtn.addEventListener('click', handleSaveChanges);
         cancelChangesBtn.addEventListener('click', handleCancelChanges);
+
+        if (skillsInput) {
+            skillsInput.addEventListener('keydown', handleSkillsKeydown);
+        }
+        if (skillsTagsContainer) {
+            skillsTagsContainer.addEventListener('click', handleSkillsTagClick);
+        }
         profileForm.addEventListener('submit', function (e) {
             e.preventDefault();
             if (isEditing) handleSaveChanges(e);

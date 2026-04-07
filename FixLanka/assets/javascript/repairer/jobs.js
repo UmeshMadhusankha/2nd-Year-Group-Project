@@ -14,6 +14,70 @@ let cachedAssignments = [];
 let cachedMessages = [];
 
 // ================================================
+// HELPERS
+// ================================================
+
+function normalizeApplicationStatus(status) {
+    const s = (status || 'pending').toString().toLowerCase();
+    if (s === 'approved') return 'accepted';
+    if (s === 'declined') return 'rejected';
+    return s;
+}
+
+async function fetchMyApplicationForPosting(postingId) {
+    const params = new URLSearchParams({
+        action: 'check',
+        repairer_id: currentRepairerId,
+        posting_id: postingId
+    });
+
+    const res = await fetch(`${API_BASE}/repairer-job-applications.php?${params}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Failed to check application status');
+    return data;
+}
+
+async function updateJobDetailsApplyState(postingId) {
+    const applyBtn = document.getElementById('jobApplyBtn');
+    const drawer = document.getElementById('jobDetailsDrawer');
+    if (!applyBtn || !drawer) return;
+
+    // Default state
+    applyBtn.disabled = false;
+    applyBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Apply Now';
+    drawer.dataset.applied = '0';
+    drawer.dataset.appStatus = '';
+
+    try {
+        const check = await fetchMyApplicationForPosting(postingId);
+        const applied = !!check.applied;
+        const statusRaw = check.application?.app_status;
+        const status = normalizeApplicationStatus(statusRaw);
+
+        drawer.dataset.applied = applied ? '1' : '0';
+        drawer.dataset.appStatus = status || '';
+
+        if (applied) {
+            applyBtn.disabled = true;
+            const label = status === 'accepted'
+                ? 'Accepted'
+                : status === 'rejected'
+                    ? 'Applied (Rejected)'
+                    : 'Applied (Pending)';
+            const icon = status === 'accepted'
+                ? 'fa-check-circle'
+                : status === 'rejected'
+                    ? 'fa-times-circle'
+                    : 'fa-clock';
+            applyBtn.innerHTML = `<i class="fas ${icon}"></i> ${label}`;
+        }
+    } catch (e) {
+        // Non-blocking: keep Apply enabled if check fails
+        console.warn('updateJobDetailsApplyState:', e);
+    }
+}
+
+// ================================================
 // INITIALIZATION
 // ================================================
 
@@ -100,7 +164,8 @@ function createJobCard(job) {
     card.dataset.category = (job.category || '').toLowerCase();
     card.onclick = () => viewJobDetails(job.posting_id);
 
-    const priority      = (job.priority_level || 'medium').toLowerCase();
+    const priorityRaw   = job.priority_level ?? job.priorityLevel;
+    const priority      = ((priorityRaw ?? 'medium') + '').toLowerCase();
     const priorityLabel = priority.charAt(0).toUpperCase() + priority.slice(1);
     const badgeClass    = priority === 'urgent' ? 'urgent' : 'active';
     const avatar        = getCompanyInitials(job.company_name);
@@ -149,7 +214,6 @@ async function viewJobDetails(postingId) {
         }
     }
 
-    const expMap = { entry: 'Entry Level', junior: 'Junior (1-2 yrs)', mid: 'Mid Level (3-5 yrs)', senior: 'Senior (5+ yrs)', expert: 'Expert (8+ yrs)' };
     const budget = `LKR ${Number(job.min_budget).toLocaleString()} - ${Number(job.max_budget).toLocaleString()}/hr`;
 
     document.getElementById('jobCompanyAvatar').textContent    = getCompanyInitials(job.company_name);
@@ -161,11 +225,14 @@ async function viewJobDetails(postingId) {
     document.getElementById('jobCategory').textContent         = (job.category || '').toUpperCase();
     document.getElementById('jobEmploymentType').textContent   = job.employment_type || '';
     document.getElementById('jobBudget').textContent           = budget;
-    document.getElementById('jobExperience').textContent       = expMap[job.min_experience] || job.min_experience || '';
-    document.getElementById('jobPriority').textContent         = job.priority_level || '';
-    document.getElementById('jobDeadline').textContent         = job.application_deadline ? formatDate(job.application_deadline) : 'No deadline';
+    const priorityRaw = job.priority_level ?? job.priorityLevel;
+    const deadlineRaw = job.application_deadline ?? job.applicationDeadline;
+
+    document.getElementById('jobExperience').textContent       = formatMinExperience(job.min_experience);
+    document.getElementById('jobPriority').textContent         = formatPriorityLevel(priorityRaw);
+    document.getElementById('jobDeadline').textContent         = isValidDateString(deadlineRaw) ? formatDate(deadlineRaw) : 'No deadline';
     document.getElementById('jobDescription').textContent      = job.description || '';
-    document.getElementById('jobLocationRequirements').textContent = job.location_requirements || 'None specified';
+    document.getElementById('jobLocationRequirements').textContent = (job.location_requirements ?? job.locationRequirements) || 'None specified';
 
     const statusBadge = document.getElementById('jobStatusBadge');
     const status = job.status || 'open';
@@ -174,7 +241,8 @@ async function viewJobDetails(postingId) {
 
     const skillsContainer = document.getElementById('jobSkillsTags');
     skillsContainer.innerHTML = '';
-    const skills = job.required_skills ? job.required_skills.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const skillsRaw = job.required_skills ?? job.requiredSkills;
+    const skills = skillsRaw ? skillsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
     skills.forEach(skill => {
         const tag = document.createElement('span');
         tag.className   = 'skill-tag';
@@ -184,6 +252,9 @@ async function viewJobDetails(postingId) {
 
     document.getElementById('jobDetailsDrawer').dataset.jobId = postingId;
     document.getElementById('jobDetailsDrawer').classList.add('active');
+
+    // Disable Apply button if already applied
+    updateJobDetailsApplyState(postingId);
 }
 
 function closeJobDetailsDrawer() {
@@ -194,6 +265,19 @@ function openApplicationForm() {
     const postingId = document.getElementById('jobDetailsDrawer').dataset.jobId;
     const job = cachedJobPostings.find(j => j.posting_id == postingId);
     if (!job) return;
+
+    // Prevent re-apply UX: if already applied, do not open the form
+    const drawer = document.getElementById('jobDetailsDrawer');
+    if (drawer && drawer.dataset.applied === '1') {
+        const st = normalizeApplicationStatus(drawer.dataset.appStatus);
+        const msg = st === 'accepted'
+            ? 'This job has already accepted your application.'
+            : st === 'rejected'
+                ? 'You already applied for this job (rejected).'
+                : 'You already applied for this job.';
+        showNotification(msg, 'info');
+        return;
+    }
 
     const budget = `LKR ${Number(job.min_budget).toLocaleString()} - ${Number(job.max_budget).toLocaleString()}/hr`;
     document.getElementById('applyingJobTitle').textContent    = job.title;
@@ -340,7 +424,7 @@ function createApplicationCard(app) {
     card.dataset.appId = app.app_id;
     card.onclick = () => viewApplicationDetails(app.app_id);
 
-    const status    = (app.app_status || 'pending').toLowerCase();
+    const status    = normalizeApplicationStatus(app.app_status);
     const iconClass = status === 'accepted' ? 'accepted' : status === 'rejected' ? 'rejected' : 'pending';
     const icon      = status === 'accepted' ? 'fa-check-circle' : status === 'rejected' ? 'fa-times-circle' : 'fa-clock';
     const budget    = `LKR ${Number(app.min_budget).toLocaleString()} - ${Number(app.max_budget).toLocaleString()}/hr`;
@@ -368,7 +452,7 @@ function viewApplicationDetails(appId) {
     const app = cachedApplications.find(a => a.app_id == appId);
     if (!app) return;
 
-    const status = (app.app_status || 'pending').toLowerCase();
+    const status = normalizeApplicationStatus(app.app_status);
     const statusBanner  = document.getElementById('appStatusBanner');
     const statusIcon    = document.getElementById('appStatusIcon');
     const statusTitle   = document.getElementById('appStatusTitle');
@@ -651,19 +735,19 @@ async function loadAssignments() {
         </div>`;
 
     try {
-        const res  = await fetch(`${API_BASE}/repairer-jobs.php?action=list&repairer_id=${currentRepairerId}`);
+        const res  = await fetch(`${API_BASE}/freelancer-assignments.php?action=list_for_repairer&repairer_id=${currentRepairerId}`);
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'Failed to load assignments');
 
-        cachedAssignments = data.jobs || [];
+        cachedAssignments = data.offers || [];
         assignmentsList.innerHTML = '';
 
         if (cachedAssignments.length === 0) {
             assignmentsList.innerHTML = `
                 <div style="text-align:center; padding:60px 20px; color:var(--text-secondary);">
                     <i class="fas fa-clipboard-list" style="font-size:64px; opacity:0.3; margin-bottom:16px;"></i>
-                    <h3>No Job Assignments</h3>
-                    <p>Your accepted repair job assignments will appear here.</p>
+                    <h3>No Job Offers</h3>
+                    <p>When a company assigns you to a project, the offer will appear here.</p>
                 </div>`;
         } else {
             cachedAssignments.forEach(a => assignmentsList.appendChild(createAssignmentCard(a)));
@@ -686,91 +770,179 @@ async function loadAssignments() {
 
 function createAssignmentCard(assignment) {
     const card = document.createElement('div');
-    const ui_status = (assignment.ui_status || 'active').toLowerCase();
-    const isUrgent  = (assignment.urgency || '').toLowerCase() === 'urgent';
+    const status = (assignment.status || 'offered').toLowerCase();
+    card.className = 'assignment-card';
+    card.onclick   = () => viewAssignmentDetails(assignment.assignment_id);
 
-    card.className = `assignment-card${isUrgent ? ' urgent' : ''}`;
-    card.onclick   = () => viewAssignmentDetails(assignment.request_id);
+    const statusClassMap = {
+        offered: 'pending',
+        accepted: 'accepted',
+        declined: 'rejected',
+        cancelled: 'rejected',
+        in_progress: 'in-progress',
+        completed: 'completed'
+    };
+    const statusLabelMap = {
+        offered: 'Offered',
+        accepted: 'Accepted',
+        declined: 'Declined',
+        cancelled: 'Cancelled',
+        in_progress: 'In Progress',
+        completed: 'Completed'
+    };
 
-    const urgencyClass = isUrgent ? 'urgent' : 'normal';
-    const urgencyLabel = isUrgent ? 'Urgent' : 'Normal';
-    const statusClass  = (ui_status === 'completed' || ui_status === 'paid') ? 'completed' : ui_status === 'cancelled' ? 'rejected' : 'in-progress';
-    const statusLabel  = ui_status === 'paid' ? 'Paid' : ui_status.charAt(0).toUpperCase() + ui_status.slice(1);
-    const dueDate      = assignment.finish_date ? `Due ${formatDate(assignment.finish_date)}` : `Posted ${getRelativeTime(assignment.job_posted_date)}`;
-    const customerName = `${assignment.customer_first_name || ''} ${assignment.customer_last_name || ''}`.trim() || 'Customer';
+    const statusClass = statusClassMap[status] || 'pending';
+    const statusLabel = statusLabelMap[status] || (status.charAt(0).toUpperCase() + status.slice(1));
+
+    const title = assignment.project_title || 'Project Assignment';
+    const companyName = assignment.company_name || 'Company';
+    const dueDate = assignment.deadline_date ? `Deadline ${formatDate(assignment.deadline_date)}` : '';
+    const rate = assignment.rate_or_price !== undefined && assignment.rate_or_price !== null ? Number(assignment.rate_or_price) : 0;
+    const pricingModel = (assignment.pricing_model || 'hourly').toLowerCase();
+    const pricingLabel = pricingModel === 'fixed' ? `LKR ${rate.toLocaleString()}` : `LKR ${rate.toLocaleString()}/hr`;
 
     card.innerHTML = `
         <div class="assignment-header">
             <div class="assignment-info">
-                <h4>${assignment.job_title || 'Assignment'}</h4>
-                <p class="assignment-company"><i class="fas fa-user"></i> ${customerName}</p>
+                <h4>${title}</h4>
+                <p class="assignment-company"><i class="fas fa-building"></i> ${companyName}</p>
             </div>
-            <span class="priority-badge ${urgencyClass}">${urgencyLabel}</span>
+            <span class="status-badge ${statusClass}">${statusLabel}</span>
         </div>
         <div class="assignment-details">
             <div class="assignment-detail">
                 <i class="fas fa-map-marker-alt"></i>
-                <span>${assignment.district || '—'}</span>
-            </div>
-            <div class="assignment-detail">
-                <i class="fas fa-tag"></i>
-                <span>${assignment.category_name || '—'}</span>
+                <span>${assignment.project_location || '—'}</span>
             </div>
             <div class="assignment-detail">
                 <i class="fas fa-calendar"></i>
-                <span>${dueDate}</span>
+                <span>${dueDate || '—'}</span>
+            </div>
+            <div class="assignment-detail">
+                <i class="fas fa-play"></i>
+                <span>${assignment.start_date ? `Start ${formatDate(assignment.start_date)}` : '—'}</span>
             </div>
             <div class="assignment-detail">
                 <i class="fas fa-coins"></i>
-                <span>LKR ${Number(assignment.quoteAmount || 0).toLocaleString()}</span>
+                <span>${pricingLabel}</span>
             </div>
-        </div>
-        <div style="margin-top:var(--spacing-md); padding-top:var(--spacing-md); border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
-            <span class="status-badge ${statusClass}">${statusLabel}</span>
-            <span style="font-size:var(--font-size-xs); color:var(--text-secondary);">${assignment.estimatedDays ? assignment.estimatedDays + ' day(s)' : ''}</span>
         </div>
     `;
     return card;
 }
 
 function viewAssignmentDetails(requestId) {
-    const assignment = cachedAssignments.find(a => a.request_id == requestId);
-    if (!assignment) {
-        document.getElementById('assignmentDetailsDrawer').classList.add('active');
-        return;
-    }
+    const assignment = cachedAssignments.find(a => a.assignment_id == requestId);
+    if (!assignment) return;
 
     const el = id => document.getElementById(id);
-    const customerName = `${assignment.customer_first_name || ''} ${assignment.customer_last_name || ''}`.trim() || 'Customer';
-    const location     = [assignment.address, assignment.district].filter(Boolean).join(', ');
+    const companyName = assignment.company_name || 'Company';
+    const title = assignment.project_title || 'Project Assignment';
+    const pricingModel = (assignment.pricing_model || 'hourly').toLowerCase();
+    const rate = assignment.rate_or_price !== undefined && assignment.rate_or_price !== null ? Number(assignment.rate_or_price) : 0;
 
-    if (el('assignmentTitle'))       el('assignmentTitle').textContent       = assignment.job_title || '';
-    if (el('assignmentCompany'))     el('assignmentCompany').textContent     = customerName;
-    if (el('assignmentDate'))        el('assignmentDate').textContent        = assignment.job_posted_date ? formatDate(assignment.job_posted_date) : '—';
+    if (el('assignmentTitle'))       el('assignmentTitle').textContent       = title;
+    if (el('assignmentCompany'))     el('assignmentCompany').textContent     = companyName;
+    if (el('assignmentDate'))        el('assignmentDate').textContent        = assignment.start_date ? formatDate(assignment.start_date) : '—';
     if (el('assignmentTime'))        el('assignmentTime').textContent        = '—';
-    if (el('assignmentLocation'))    el('assignmentLocation').textContent    = location || '—';
-    if (el('estimatedHours'))        el('estimatedHours').textContent        = assignment.estimatedDays ? `${assignment.estimatedDays} day(s)` : '—';
-    if (el('assignmentPriority'))    el('assignmentPriority').textContent    = assignment.urgency || '—';
-    if (el('assignmentDescription')) el('assignmentDescription').textContent = assignment.job_description || '';
+    if (el('assignmentLocation'))    el('assignmentLocation').textContent    = assignment.project_location || '—';
+    if (el('estimatedHours'))        el('estimatedHours').textContent        = assignment.estimated_hours ? `${assignment.estimated_hours} hr` : '—';
+    if (el('assignmentPriority'))    el('assignmentPriority').textContent    = pricingModel === 'fixed' ? 'Fixed Price' : 'Hourly';
 
-    const statusSelect = el('jobStatus');
-    if (statusSelect) {
-        const ui = assignment.ui_status || 'active';
-        const map = { active: 'assigned', 'in-progress': 'in-progress', completed: 'completed', paid: 'completed', cancelled: 'assigned' };
-        statusSelect.value = map[ui] || 'assigned';
+    const descParts = [];
+    if (pricingModel === 'fixed') {
+        descParts.push(`Price: LKR ${rate.toLocaleString()}`);
+    } else {
+        descParts.push(`Rate: LKR ${rate.toLocaleString()}/hr`);
     }
+    if (assignment.deadline_date) descParts.push(`Deadline: ${formatDate(assignment.deadline_date)}`);
+    if (assignment.notes) descParts.push(`Notes: ${assignment.notes}`);
+    if (el('assignmentDescription')) el('assignmentDescription').textContent = descParts.join(' • ');
 
+    const status = (assignment.status || 'offered').toLowerCase();
     const statusBadge = el('assignmentStatus');
     if (statusBadge) {
-        const ui = assignment.ui_status || 'active';
-        const sc = (ui === 'completed' || ui === 'paid') ? 'completed' : 'in-progress';
-        const sl = ui === 'paid' ? 'Paid' : ui.charAt(0).toUpperCase() + ui.slice(1);
-        statusBadge.textContent = sl;
-        statusBadge.className   = `status-badge ${sc}`;
+        const statusClassMap = {
+            offered: 'pending',
+            accepted: 'accepted',
+            declined: 'rejected',
+            cancelled: 'rejected',
+            in_progress: 'in-progress',
+            completed: 'completed'
+        };
+        const statusLabelMap = {
+            offered: 'Offered',
+            accepted: 'Accepted',
+            declined: 'Declined',
+            cancelled: 'Cancelled',
+            in_progress: 'In Progress',
+            completed: 'Completed'
+        };
+        statusBadge.textContent = statusLabelMap[status] || status;
+        statusBadge.className   = `status-badge ${statusClassMap[status] || 'pending'}`;
     }
 
-    document.getElementById('assignmentDetailsDrawer').dataset.requestId = requestId;
-    document.getElementById('assignmentDetailsDrawer').classList.add('active');
+    // Hide customer-job progress controls for offers
+    const updateSection = document.getElementById('assignmentUpdateSection');
+    const notesSection  = document.getElementById('assignmentNotesSection');
+    if (updateSection) updateSection.style.display = 'none';
+    if (notesSection)  notesSection.style.display  = 'none';
+
+    const acceptBtn  = document.getElementById('assignmentAcceptBtn');
+    const declineBtn = document.getElementById('assignmentDeclineBtn');
+    const showOfferActions = status === 'offered';
+    if (acceptBtn)  acceptBtn.style.display  = showOfferActions ? 'inline-flex' : 'none';
+    if (declineBtn) declineBtn.style.display = showOfferActions ? 'inline-flex' : 'none';
+
+    const drawer = document.getElementById('assignmentDetailsDrawer');
+    drawer.dataset.assignmentId = assignment.assignment_id;
+    drawer.classList.add('active');
+}
+
+async function acceptCurrentOffer() {
+    const drawer = document.getElementById('assignmentDetailsDrawer');
+    const assignmentId = parseInt(drawer?.dataset?.assignmentId || 0);
+    if (!assignmentId) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/freelancer-assignments.php?action=accept`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ assignment_id: assignmentId, repairer_id: currentRepairerId })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed to accept offer');
+
+        showNotification('Offer accepted', 'success');
+        closeAssignmentDetailsDrawer();
+        loadAssignments();
+    } catch (err) {
+        showNotification(err.message || 'Failed to accept offer', 'error');
+    }
+}
+
+async function declineCurrentOffer() {
+    const drawer = document.getElementById('assignmentDetailsDrawer');
+    const assignmentId = parseInt(drawer?.dataset?.assignmentId || 0);
+    if (!assignmentId) return;
+
+    if (!confirm('Decline this offer?')) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/freelancer-assignments.php?action=decline`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ assignment_id: assignmentId, repairer_id: currentRepairerId })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed to decline offer');
+
+        showNotification('Offer declined', 'success');
+        closeAssignmentDetailsDrawer();
+        loadAssignments();
+    } catch (err) {
+        showNotification(err.message || 'Failed to decline offer', 'error');
+    }
 }
 
 function closeAssignmentDetailsDrawer() {
@@ -931,29 +1103,27 @@ function updateContractStats() {
 
     // Contract stats from cachedContracts (accepted applications to company job postings)
     const activeContracts   = cachedContracts.length;
-    const completedJobCount = cachedAssignments.filter(a => a.ui_status === 'completed' || a.ui_status === 'paid').length;
-    const totalEarned       = cachedAssignments
-        .filter(a => a.ui_status === 'paid')
-        .reduce((sum, a) => sum + Number(a.payment_amount || 0), 0);
-    const pendingEarned     = cachedAssignments
-        .filter(a => a.ui_status === 'completed')
-        .reduce((sum, a) => sum + Number(a.quoteAmount || 0), 0);
+    const completedJobCount = 0;
+    const totalEarned       = 0;
+    const pendingEarned     = 0;
 
     if (el('activeContractsCount'))  el('activeContractsCount').textContent  = activeContracts;
     if (el('totalContractEarnings')) el('totalContractEarnings').textContent = `LKR ${totalEarned.toLocaleString()}`;
     if (el('pendingPayments'))       el('pendingPayments').textContent       = `LKR ${pendingEarned.toLocaleString()}`;
     if (el('completedJobsCount'))    el('completedJobsCount').textContent    = completedJobCount;
 
-    // Assignment stats from cachedAssignments (customer-side repair jobs)
-    const activeAssign    = cachedAssignments.filter(a => a.ui_status === 'active').length;
-    const pendingAssign   = cachedAssignments.filter(a => (a.job_status || '') === 'pending').length;
-    const completedAssign = completedJobCount;
-    const totalDays       = cachedAssignments.reduce((sum, a) => sum + (parseInt(a.estimatedDays) || 0), 0);
+    // Offer stats from cachedAssignments (freelancer_assignments)
+    const offeredCount   = cachedAssignments.filter(a => (a.status || '').toLowerCase() === 'offered').length;
+    const acceptedCount  = cachedAssignments.filter(a => ['accepted', 'in_progress'].includes((a.status || '').toLowerCase())).length;
+    const completedCount = cachedAssignments.filter(a => (a.status || '').toLowerCase() === 'completed').length;
+    const totalHours     = cachedAssignments
+        .filter(a => ['accepted', 'in_progress'].includes((a.status || '').toLowerCase()))
+        .reduce((sum, a) => sum + (parseFloat(a.estimated_hours) || 0), 0);
 
-    if (el('activeAssignmentsCount')) el('activeAssignmentsCount').textContent = activeAssign;
-    if (el('pendingAssignments'))     el('pendingAssignments').textContent     = pendingAssign;
-    if (el('completedAssignments'))   el('completedAssignments').textContent   = completedAssign;
-    if (el('totalHours'))             el('totalHours').textContent             = `${totalDays}d`;
+    if (el('activeAssignmentsCount')) el('activeAssignmentsCount').textContent = acceptedCount;
+    if (el('pendingAssignments'))     el('pendingAssignments').textContent     = offeredCount;
+    if (el('completedAssignments'))   el('completedAssignments').textContent   = completedCount;
+    if (el('totalHours'))             el('totalHours').textContent             = `${totalHours}h`;
 
     if (el('unreadMessagesCount')) el('unreadMessagesCount').textContent = 0;
     if (el('totalThreads'))        el('totalThreads').textContent        = 0;
@@ -968,8 +1138,8 @@ function updateContractStats() {
 
     const assignmentsBadge = el('assignmentsBadge');
     if (assignmentsBadge) {
-        assignmentsBadge.textContent   = activeAssign;
-        assignmentsBadge.style.display = activeAssign > 0 ? 'inline-block' : 'none';
+        assignmentsBadge.textContent   = offeredCount;
+        assignmentsBadge.style.display = offeredCount > 0 ? 'inline-block' : 'none';
     }
 
     const messagesBadge = el('messagesBadge');
@@ -994,12 +1164,26 @@ function switchTab(tabName) {
     }
 }
 
-function switchMainTab(tabName) {
-    // Update main tab buttons
-    document.querySelectorAll('.tabs-container > .tabs > .tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
+function switchMainTab(tabName, evt) {
+    // Support both inline onclick and programmatic calls (e.g. after submit)
+    const buttons = Array.from(document.querySelectorAll('.tabs-container > .tabs > .tab-btn'));
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    const e = evt || (typeof window !== 'undefined' ? window.event : undefined);
+    let activeBtn = e && (e.currentTarget || e.target) ? (e.currentTarget || e.target) : null;
+
+    if (!activeBtn) {
+        const tn = String(tabName || '').toLowerCase();
+        activeBtn = buttons.find(b => {
+            const onclick = (b.getAttribute('onclick') || '').toLowerCase();
+            const text = (b.textContent || '').trim().toLowerCase();
+            return onclick.includes(`switchmaintab('${tn}'`) || onclick.includes(`switchmaintab(\"${tn}\"`) || text.includes(tn);
+        }) || null;
+    }
+
+    if (activeBtn && activeBtn.classList) {
+        activeBtn.classList.add('active');
+    }
 
     // Update main tab content
     document.querySelectorAll('.content-wrapper > .tab-content').forEach(content => {
@@ -1085,8 +1269,62 @@ function toggleAvailabilityStatus() {
 // UTILITY FUNCTIONS
 // ================================================
 
+function normalizeDateValue(value) {
+    if (value === null || value === undefined) return null;
+    const str = String(value).trim();
+    if (!str) return null;
+    if (str === '0000-00-00' || str === '0000-00-00 00:00:00') return null;
+
+    // Handle MySQL DATETIME/TIMESTAMP strings: "YYYY-MM-DD HH:MM:SS" (optionally with fractional seconds)
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(str)) {
+        return str.replace(' ', 'T');
+    }
+
+    return str;
+}
+
+function isValidDateString(value) {
+    const normalized = normalizeDateValue(value);
+    if (!normalized) return false;
+    const date = new Date(normalized);
+    return !Number.isNaN(date.getTime());
+}
+
+function formatPriorityLevel(value) {
+    const normalized = (value || 'medium').toString().trim().toLowerCase();
+    const labels = {
+        low: 'Low',
+        medium: 'Medium',
+        high: 'High',
+        urgent: 'Urgent'
+    };
+    return labels[normalized] || 'Medium';
+}
+
+function formatMinExperience(value) {
+    if (value === null || value === undefined || value === '') return 'Not specified';
+
+    const legacyMap = {
+        entry: 'Entry Level (0-1 years)',
+        junior: 'Junior (1-3 years)',
+        mid: 'Mid Level (3-5 years)',
+        senior: 'Senior (5-10 years)',
+        expert: 'Expert (10+ years)'
+    };
+
+    const raw = value.toString().trim();
+    if (legacyMap[raw]) return legacyMap[raw];
+
+    const years = Number(raw);
+    if (!Number.isFinite(years)) return raw;
+    if (years <= 0) return 'No experience required';
+    return `${years}+ year${years === 1 ? '' : 's'}`;
+}
+
 function getRelativeTime(dateString) {
-    const date = new Date(dateString);
+    const normalized = normalizeDateValue(dateString) || dateString;
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return '';
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -1099,7 +1337,8 @@ function getRelativeTime(dateString) {
 }
 
 function formatDate(dateString) {
-    const date = new Date(dateString);
+    const normalized = normalizeDateValue(dateString);
+    const date = new Date(normalized || dateString);
     return date.toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',

@@ -13,7 +13,7 @@
 // ================================================================
 
 // Get current company ID from session (passed from PHP)
-const currentCompanyId = window.CURRENT_COMPANY_ID || null;
+var currentCompanyId = window.CURRENT_COMPANY_ID || window.CURRENT_USER_ID || window.currentCompanyId || null;
 
 // Store projects data
 let projectsData = [];

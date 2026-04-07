@@ -20,7 +20,8 @@
  * Current company user ID (retrieved from PHP session)
  * @type {number|null}
  */
-const currentCompanyId = window.CURRENT_USER_ID || null;
+// NOTE: Use var to avoid redeclaration errors when multiple company scripts are loaded together.
+var currentCompanyId = window.CURRENT_USER_ID || window.CURRENT_COMPANY_ID || window.currentCompanyId || null;
 
 /**
  * Optional widget config (used when embedding Repair Requests UI inside other pages, e.g. dashboard)

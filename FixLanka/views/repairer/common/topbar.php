@@ -1,7 +1,7 @@
 <!-- Header/Topbar Component -->
 <?php
 // Load profile picture for the topbar avatar
-$topbarAvatarUrl = '/2nd-Year-Group-Project/FixLanka/assets/images/common/user.png';
+$topbarAvatarUrl = '/2nd-Year-Group-Project/FixLanka/assets/images/user.png';
 if (isset($_SESSION['user_id'])) {
     try {
         require_once __DIR__ . '/../../../config/database.php';

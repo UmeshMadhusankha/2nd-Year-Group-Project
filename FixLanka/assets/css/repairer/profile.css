@@ -426,6 +426,42 @@
   cursor: not-allowed;
 }
 
+/* ===== SKILLS TAG INPUT ===== */
+.skills-tag-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.skill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: linear-gradient(135deg, rgba(10, 186, 181, 0.10), rgba(10, 186, 181, 0.05));
+  border: 1px solid rgba(10, 186, 181, 0.30);
+  color: var(--primary-color);
+  padding: 4px 10px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.skill-tag-remove {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  line-height: 1;
+  padding: 0;
+}
+
 /* Form Validation Styles */
 .form-input.error,
 .form-select.error {

@@ -3,7 +3,10 @@
  * Connects the workforce.php frontend to api/freelancers.php
  */
 
-const FREELANCERS_API_URL = '/2nd-Year-Group-Project/FixLanka/api/freelancers.php';
+// Workforce "Available Freelancers" should show the company's freelance contractors
+// (repairers recruited via job postings), not the company's permanent employees.
+const COMPANY_EMPLOYEES_API_URL = '/2nd-Year-Group-Project/FixLanka/api/company-employees.php';
+const REPAIRER_APPLICATIONS_API_URL = '/2nd-Year-Group-Project/FixLanka/api/repairer-applications.php';
 let freelancersList = [];
 
 /**
@@ -16,7 +19,8 @@ async function loadFreelancers() {
     }
 
     try {
-        const response = await fetch(`${FREELANCERS_API_URL}?company_id=${currentCompanyId}`);
+        // Fetch only freelance contractors for this company
+        const response = await fetch(`${COMPANY_EMPLOYEES_API_URL}?company_id=${currentCompanyId}&employment_type=freelance&order_by=created_at&order_dir=DESC`);
 
         if (!response.ok) {
             throw new Error('Failed to fetch freelancers');
@@ -24,23 +28,100 @@ async function loadFreelancers() {
 
         const data = await response.json();
 
-        if (data.success) {
-            freelancersList = data.freelancers || [];
-            renderFreelancersList(freelancersList);
-        } else {
-            console.error('API Error:', data.error);
+        // company-employees API returns an array
+        const rows = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
+        let normalized = rows.map(normalizeCompanyFreelancer);
+
+        // Fallback: if onboarding rows are missing/misclassified, show accepted recruits
+        // directly from approved applications.
+        if (!normalized || normalized.length === 0) {
+            const approved = await fetchApprovedApplicationsAsFreelancers();
+            if (approved.length > 0) {
+                normalized = approved;
+            }
         }
+
+        // De-duplicate by repairer_id
+        const seen = new Set();
+        freelancersList = (normalized || []).filter(fr => {
+            const key = String(fr.repairer_id || fr.id || '');
+            if (!key) return false;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+
+        renderFreelancersList(freelancersList);
+        updateFreelancersPreview(freelancersList);
 
     } catch (error) {
         console.error('Error loading freelancers:', error);
     }
 }
 
+async function fetchApprovedApplicationsAsFreelancers() {
+    try {
+        const url = `${REPAIRER_APPLICATIONS_API_URL}?action=list&company_id=${currentCompanyId}&status=approved`;
+        const resp = await fetch(url);
+        if (!resp.ok) return [];
+        const data = await resp.json();
+        if (!data || !data.success || !Array.isArray(data.applications)) return [];
+
+        return data.applications.map(app => {
+            return {
+                id: app.repairer_id,
+                employee_id: null,
+                repairer_id: app.repairer_id,
+                first_name: app.first_name || '',
+                last_name: app.last_name || '',
+                email: app.email || '',
+                phone: app.phone || '',
+                specialty: app.specialty || 'General',
+                experience_years: Number(app.experience_years || 0),
+                hourly_rate: Number(app.expected_rate || app.hourly_rate || 0),
+                rating: Number(app.rating || 0),
+                profile_photo: app.profile_photo || null,
+                avatar: null,
+                status: 'Available'
+            };
+        });
+    } catch (e) {
+        console.warn('Fallback approved-applications fetch failed:', e);
+        return [];
+    }
+}
+
+function normalizeCompanyFreelancer(row) {
+    const hourlyRate = Number(row.hourly_rate || row.applicant_hourly_rate || 0);
+    const rating = Number(row.rating || 0);
+    const statusRaw = (row.status || 'active').toLowerCase();
+    const status = statusRaw === 'active' ? 'Available' : 'Unavailable';
+
+    return {
+        // workforce-friendly shape
+        id: row.employee_id || row.repairer_id,
+        employee_id: row.employee_id,
+        repairer_id: row.repairer_id,
+        first_name: row.first_name || '',
+        last_name: row.last_name || '',
+        email: row.email || '',
+        phone: row.phone || '',
+        specialty: row.specialty || 'General',
+        experience_years: Number(row.experience_years || 0),
+        hourly_rate: hourlyRate,
+        rating: rating,
+        profile_photo: row.profile_photo || null,
+        avatar: row.avatar || null,
+        status: status
+    };
+}
+
 /**
  * Render freelancers grid in the UI
  */
 function renderFreelancersList(freelancers) {
-    const container = document.getElementById('freelancersGrid');
+    // workforce.php uses `.freelancer-list`; other pages may use `#freelancersGrid`
+    const container = document.querySelector('.freelancer-list') || document.getElementById('freelancersGrid');
     if (!container) return;
 
     container.innerHTML = '';
@@ -72,10 +153,7 @@ function renderFreelancersList(freelancers) {
             }
         }
 
-        const isHired = freelancer.is_hired == 1;
-        const buttonHtml = isHired ?
-            `<button class="btn btn-outline" style="width:100%" disabled>Already Hired</button>` :
-            `<button class="btn btn-primary" style="width:100%" onclick="openAssignJobDrawer(${freelancer.repairer_id})">Offer Job</button>`;
+        const buttonHtml = `<button class="btn btn-primary" style="width:100%" onclick="openAssignJobDrawer(${freelancer.repairer_id})">Assign Job</button>`;
 
         const avatarHtml = freelancer.profile_photo ?
             `<img src="/2nd-Year-Group-Project/FixLanka/${freelancer.profile_photo}" alt="${freelancer.first_name}" class="freelancer-avatar">` :
@@ -103,7 +181,7 @@ function renderFreelancersList(freelancers) {
                 <div class="stat">
                     <div class="stat-value">${freelancer.rating}</div>
                     <div class="stat-label">
-                        <div class="rating-stars" style="color: #ffc107; font-size: 10px;">
+                        <div class="rating-stars">
                             ${ratingHtml}
                         </div>
                     </div>
@@ -119,6 +197,45 @@ function renderFreelancersList(freelancers) {
         `;
         container.appendChild(card);
     });
+}
+
+function updateFreelancersPreview(freelancers) {
+    // Dashboard preview card elements exist only on workforce.php
+    const availableEl = document.getElementById('freelancersAvailable');
+    const activeEl = document.getElementById('freelancersActive');
+    const freeEl = document.getElementById('freelancersFree');
+    const topEl = document.getElementById('topFreelancersPreview');
+
+    if (availableEl) availableEl.textContent = String(freelancers.length || 0);
+    if (activeEl) activeEl.textContent = String(freelancers.length || 0);
+    if (freeEl) freeEl.textContent = String(freelancers.length || 0);
+
+    if (topEl) {
+        topEl.innerHTML = '';
+        if (!freelancers || freelancers.length === 0) {
+            topEl.innerHTML = '<p style="color:#718096; font-size:12px; padding: 12px 0;">No freelancers available yet</p>';
+            return;
+        }
+
+        const top = [...freelancers]
+            .sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0))
+            .slice(0, 3);
+
+        topEl.innerHTML = top.map(fr => {
+            const initials = (fr.first_name?.charAt(0) || '') + (fr.last_name?.charAt(0) || '');
+            return `
+                <div class="freelancer-item" style="display:flex; align-items:center; gap:10px; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.06);">
+                    <div class="application-avatar" style="width:32px; height:32px; border-radius:999px; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.06); font-weight: 600;">
+                        ${initials.toUpperCase()}
+                    </div>
+                    <div style="display:flex; flex-direction:column; min-width:0;">
+                        <span style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${fr.first_name} ${fr.last_name}</span>
+                        <span style="font-size:12px; color:#718096;">${fr.specialty || 'General'} • ${Number(fr.rating || 0).toFixed(1)}★</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
 }
 
 /**
@@ -190,36 +307,33 @@ window.openAssignJobDrawer = async function (freelancerId) {
         updateAssignmentCost();
     }
 
-    // Load jobs dynamically
+    // Load projects dynamically
     const jobSelect = document.getElementById('assignJobSelect');
     if (jobSelect && currentCompanyId) {
         try {
-            jobSelect.innerHTML = '<option value="">Loading jobs...</option>';
-            const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-postings.php?company_id=${currentCompanyId}`);
+            jobSelect.innerHTML = '<option value="">Loading projects...</option>';
+            const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/projects.php?company_id=${currentCompanyId}`);
             const result = await response.json();
 
-            jobSelect.innerHTML = '<option value="">-- Select a job --</option>';
-            if (result.success && result.postings) {
-                result.postings.forEach(job => {
-                    if (job.status !== 'closed' && job.status !== 'filled') {
-                        const option = document.createElement('option');
-                        option.value = job.posting_id;
-                        option.textContent = `${job.title} (${job.category})`;
-                        jobSelect.appendChild(option);
-                    }
+            jobSelect.innerHTML = '<option value="">-- Select a project --</option>';
+            if (result.success && Array.isArray(result.data)) {
+                result.data.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.project_id;
+                    option.textContent = `${project.title} (${project.status || '—'})`;
+                    jobSelect.appendChild(option);
                 });
             }
         } catch (error) {
-            console.error('Error loading jobs for select:', error);
-            jobSelect.innerHTML = '<option value="">Error loading jobs</option>';
+            console.error('Error loading projects for select:', error);
+            jobSelect.innerHTML = '<option value="">Error loading projects</option>';
         }
     }
 
     // Open drawer
     const drawer = document.getElementById('assignJobDrawer');
     if (drawer) {
-        drawer.style.display = 'block';
-        setTimeout(() => drawer.classList.add('active'), 10);
+        drawer.classList.add('active');
     }
 };
 
@@ -228,10 +342,10 @@ window.closeAssignJobDrawer = function () {
     if (drawer) {
         drawer.classList.remove('active');
         setTimeout(() => {
-            drawer.style.display = 'none';
-            document.getElementById('assignJobForm').reset();
+            const form = document.getElementById('assignJobForm');
+            if (form) form.reset();
             currentAssignFreelancerId = null;
-        }, 300);
+        }, 150);
     }
 };
 

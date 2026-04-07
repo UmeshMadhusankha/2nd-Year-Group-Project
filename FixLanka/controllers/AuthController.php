@@ -9,6 +9,18 @@ class AuthController {
         global $pdo;
         $this->pdo = $pdo;
     }
+
+    private function columnExists($table, $column) {
+        try {
+            $stmt = $this->pdo->prepare(
+                'SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1'
+            );
+            $stmt->execute([$table, $column]);
+            return (bool) $stmt->fetchColumn();
+        } catch (Exception $e) {
+            return false;
+        }
+    }
     
     public function showLoginPage() {
         require_once __DIR__ . '/../views/auth/login.php';
@@ -295,6 +307,7 @@ class AuthController {
         $category_id = $_POST['category_id'] ?? '';
         $districts = $_POST['districts'] ?? [];
         $about = trim($_POST['about'] ?? '');
+        $experienceInitialYears = intval($_POST['experience_initial_years'] ?? 0);
         
         // Validation
         if (empty($f_name) || empty($l_name) || empty($email) || empty($password) || 
@@ -327,6 +340,12 @@ class AuthController {
             header('Location: /2nd-Year-Group-Project/FixLanka/signup');
             exit;
         }
+
+        if ($experienceInitialYears < 0 || $experienceInitialYears > 50) {
+            $_SESSION['error'] = 'Please enter a valid initial experience (0 to 50 years)';
+            header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+            exit;
+        }
         
         try {
             // Check email uniqueness
@@ -354,13 +373,32 @@ class AuthController {
             
             // Hash password
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            
-            // Insert into repairer table using correct column names
-            $stmt = $this->pdo->prepare("
-                INSERT INTO repairer (f_name, l_name, email, password, phoneNumber, about, profilePicture, category_id, districts, availability) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')
-            ");
-            $stmt->execute([$f_name, $l_name, $email, $hashedPassword, $phoneNumber, $about, $profilePicture, $category_id, $districtsText]);
+
+            // Insert into repairer table with column fallbacks (older DBs may use camelCase)
+            $profileCol = $this->columnExists('repairer', 'profile_picture') ? 'profile_picture' : ($this->columnExists('repairer', 'profilePicture') ? 'profilePicture' : null);
+            $experienceYearsCol = $this->columnExists('repairer', 'experience_years') ? 'experience_years' : ($this->columnExists('repairer', 'experienceYears') ? 'experienceYears' : null);
+            $experienceInitialCol = $this->columnExists('repairer', 'experience_initial_years') ? 'experience_initial_years' : ($this->columnExists('repairer', 'experienceInitialYears') ? 'experienceInitialYears' : null);
+
+            $columns = ['f_name', 'l_name', 'email', 'password', 'phoneNumber', 'about', 'category_id', 'districts', 'availability'];
+            $values = [$f_name, $l_name, $email, $hashedPassword, $phoneNumber, $about, $category_id, $districtsText, 'available'];
+
+            if ($profileCol) {
+                $columns[] = $profileCol;
+                $values[] = $profilePicture;
+            }
+            if ($experienceInitialCol) {
+                $columns[] = $experienceInitialCol;
+                $values[] = $experienceInitialYears;
+            }
+            if ($experienceYearsCol) {
+                $columns[] = $experienceYearsCol;
+                $values[] = $experienceInitialYears;
+            }
+
+            $placeholders = implode(',', array_fill(0, count($columns), '?'));
+            $sql = 'INSERT INTO repairer (' . implode(',', $columns) . ') VALUES (' . $placeholders . ')';
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($values);
             
             $repairerId = $this->pdo->lastInsertId();
 

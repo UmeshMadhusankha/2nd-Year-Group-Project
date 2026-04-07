@@ -112,7 +112,8 @@ class RepairerController {
                 'category_id' => $input['category_id'] ?? null,
                 'districts'   => $input['districts'] ?? '',
                 'availability'=> $input['availability'] ?? 'available',
-                'about'       => $input['about'] ?? ''
+                'about'       => $input['about'] ?? '',
+                'skills'      => $this->normalizeSkills($input['skills'] ?? '')
             ];
 
             $result = $this->repairerModel->updateProfile($repairerId, $data);
@@ -142,6 +143,21 @@ class RepairerController {
             echo json_encode(['success' => false, 'message' => 'An error occurred while updating profile']);
         }
         exit;
+    }
+
+    private function normalizeSkills($skills): string {
+        if (is_array($skills)) {
+            $skills = implode(', ', array_map('strval', $skills));
+        }
+
+        $skills = trim((string)$skills);
+        $skills = preg_replace('/\s+/', ' ', $skills) ?? '';
+
+        if (strlen($skills) > 1000) {
+            $skills = substr($skills, 0, 1000);
+        }
+
+        return $skills;
     }
 
     /**

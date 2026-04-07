@@ -52,15 +52,48 @@ class CompanyEmployeeModel {
      */
     public function getAll($companyId, $filters = []) {
         try {
-            $query = "SELECT ce.*, r.f_name as first_name, r.l_name as last_name, u.email, u.contact_no as phone,
-                             c.name as specialty, r.experience_years, r.average_rating as rating,
-                             r.hourly_rate as applicant_hourly_rate, u.profile_pic as profile_photo
+                 $query = "SELECT ce.*, r.f_name as first_name, r.l_name as last_name, r.email, r.phoneNumber as phone,
+                         c.name as specialty, r.experience_years, r.ratings as rating,
+                         r.hourly_rate as applicant_hourly_rate, r.profile_picture as profile_photo
                       FROM company_employees ce
-                      LEFT JOIN Repairer r ON ce.repairer_id = r.repairer_id
-                      LEFT JOIN Category c ON r.category_id = c.category_id
-                      LEFT JOIN User u ON r.user_id = u.user_id
+                      LEFT JOIN repairer r ON ce.repairer_id = r.repairer_id
+                      LEFT JOIN category c ON r.category_id = c.category_id
                       WHERE ce.company_id = :company_id";
             $params = ['company_id' => $companyId];
+
+            // Filter by employment type.
+            // By default, exclude freelance contractors from "Company Employees" views.
+            $employmentTypes = null;
+            if (isset($filters['employment_type']) && $filters['employment_type'] !== null && $filters['employment_type'] !== '') {
+                $employmentTypes = $filters['employment_type'];
+                if (!is_array($employmentTypes)) {
+                    $employmentTypes = array_filter(array_map('trim', explode(',', (string)$employmentTypes)));
+                }
+            }
+
+            if ($employmentTypes && count($employmentTypes) > 0) {
+                $placeholders = [];
+                $requested = array_map('strtolower', array_values($employmentTypes));
+
+                foreach (array_values($employmentTypes) as $idx => $etype) {
+                    $ph = ":etype_$idx";
+                    $placeholders[] = $ph;
+                    $params[ltrim($ph, ':')] = $etype;
+                }
+
+                // Legacy compatibility: previously, job-posting recruits were inserted with job_title='Freelancer'
+                // but could have been saved with employment_type != 'freelance'. When requesting freelance,
+                // include those legacy rows.
+                $legacyFreelancerClause = in_array('freelance', $requested, true)
+                    ? " OR (ce.job_title IS NOT NULL AND LOWER(ce.job_title) = 'freelancer')"
+                    : '';
+
+                $query .= " AND (ce.employment_type IN (" . implode(',', $placeholders) . "){$legacyFreelancerClause})";
+            } else {
+                // Default: permanent staff only (exclude freelance contractors).
+                // Also exclude legacy job-posting recruits labeled as job_title='Freelancer'.
+                $query .= " AND ce.employment_type IN ('full_time','part_time') AND (ce.job_title IS NULL OR LOWER(ce.job_title) <> 'freelancer')";
+            }
             
             // Filter by specialty
             if (!empty($filters['specialty'])) {
@@ -76,13 +109,27 @@ class CompanyEmployeeModel {
             
             // Search by name
             if (!empty($filters['search'])) {
-                $query .= " AND (r.f_name LIKE :search OR r.l_name LIKE :search OR u.email LIKE :search)";
+                $query .= " AND (r.f_name LIKE :search OR r.l_name LIKE :search OR r.email LIKE :search)";
                 $params['search'] = '%' . $filters['search'] . '%';
             }
             
             // Order by
-            $orderBy = $filters['order_by'] ?? 'ce.created_at';
-            $orderDir = $filters['order_dir'] ?? 'DESC';
+            $orderKey = $filters['order_by'] ?? 'created_at';
+            $orderDir = strtoupper($filters['order_dir'] ?? 'DESC');
+            if (!in_array($orderDir, ['ASC', 'DESC'], true)) {
+                $orderDir = 'DESC';
+            }
+
+            $allowedOrder = [
+                'created_at' => 'ce.created_at',
+                'updated_at' => 'ce.updated_at',
+                'hired_date' => 'ce.hired_date',
+                'rating' => 'r.ratings',
+                'hourly_rate' => 'ce.hourly_rate',
+                'first_name' => 'r.f_name',
+                'last_name' => 'r.l_name'
+            ];
+            $orderBy = $allowedOrder[$orderKey] ?? 'ce.created_at';
             $query .= " ORDER BY {$orderBy} {$orderDir}";
             
             $stmt = $this->db->prepare($query);
@@ -104,13 +151,12 @@ class CompanyEmployeeModel {
     public function getById($employeeId) {
         try {
             $stmt = $this->db->prepare("
-                SELECT ce.*, r.f_name as first_name, r.l_name as last_name, u.email, u.contact_no as phone,
-                       c.name as specialty, r.experience_years, r.average_rating as rating,
-                       r.hourly_rate as applicant_hourly_rate, u.profile_pic as profile_photo
+                SELECT ce.*, r.f_name as first_name, r.l_name as last_name, r.email, r.phoneNumber as phone,
+                       c.name as specialty, r.experience_years, r.ratings as rating,
+                       r.hourly_rate as applicant_hourly_rate, r.profile_picture as profile_photo
                 FROM company_employees ce
-                LEFT JOIN Repairer r ON ce.repairer_id = r.repairer_id
-                LEFT JOIN Category c ON r.category_id = c.category_id
-                LEFT JOIN User u ON r.user_id = u.user_id
+                LEFT JOIN repairer r ON ce.repairer_id = r.repairer_id
+                LEFT JOIN category c ON r.category_id = c.category_id
                 WHERE ce.employee_id = :employee_id
             ");
             $stmt->execute(['employee_id' => $employeeId]);
@@ -128,15 +174,14 @@ class CompanyEmployeeModel {
     public function getBySpecialty($companyId, $specialty) {
         try {
             $stmt = $this->db->prepare("
-                SELECT ce.*, r.f_name as first_name, r.l_name as last_name, u.email, u.contact_no as phone,
-                       c.name as specialty, r.experience_years, r.average_rating as rating,
-                       r.hourly_rate as applicant_hourly_rate, u.profile_pic as profile_photo
+                SELECT ce.*, r.f_name as first_name, r.l_name as last_name, r.email, r.phoneNumber as phone,
+                       c.name as specialty, r.experience_years, r.ratings as rating,
+                       r.hourly_rate as applicant_hourly_rate, r.profile_picture as profile_photo
                 FROM company_employees ce
-                LEFT JOIN Repairer r ON ce.repairer_id = r.repairer_id
-                LEFT JOIN Category c ON r.category_id = c.category_id
-                LEFT JOIN User u ON r.user_id = u.user_id
+                LEFT JOIN repairer r ON ce.repairer_id = r.repairer_id
+                LEFT JOIN category c ON r.category_id = c.category_id
                 WHERE ce.company_id = :company_id AND c.name = :specialty
-                ORDER BY r.average_rating DESC
+                ORDER BY r.ratings DESC
             ");
             $stmt->execute([
                 'company_id' => $companyId,
@@ -155,8 +200,37 @@ class CompanyEmployeeModel {
     /**
      * Get employee statistics from StaffSummary
      */
-    public function getStatistics($companyId) {
+    public function getStatistics($companyId, $filters = []) {
         try {
+            // Filter by employment type (default: staff only)
+            $employmentTypes = null;
+            if (isset($filters['employment_type']) && $filters['employment_type'] !== null && $filters['employment_type'] !== '') {
+                $employmentTypes = $filters['employment_type'];
+                if (!is_array($employmentTypes)) {
+                    $employmentTypes = array_filter(array_map('trim', explode(',', (string)$employmentTypes)));
+                }
+            }
+
+            $employmentWhere = '';
+            $params = ['company_id' => $companyId];
+            if ($employmentTypes && count($employmentTypes) > 0) {
+                $placeholders = [];
+                $requested = array_map('strtolower', array_values($employmentTypes));
+                foreach (array_values($employmentTypes) as $idx => $etype) {
+                    $ph = ":stype_$idx";
+                    $placeholders[] = $ph;
+                    $params[ltrim($ph, ':')] = $etype;
+                }
+
+                $legacyFreelancerClause = in_array('freelance', $requested, true)
+                    ? " OR (ce.job_title IS NOT NULL AND LOWER(ce.job_title) = 'freelancer')"
+                    : '';
+
+                $employmentWhere = " AND (ce.employment_type IN (" . implode(',', $placeholders) . "){$legacyFreelancerClause})";
+            } else {
+                $employmentWhere = " AND ce.employment_type IN ('full_time','part_time') AND (ce.job_title IS NULL OR LOWER(ce.job_title) <> 'freelancer')";
+            }
+
             // Get summary by specialty
             $stmt = $this->db->prepare("
                 SELECT 
@@ -164,18 +238,18 @@ class CompanyEmployeeModel {
                     COUNT(*) as total_count,
                     SUM(CASE WHEN ce.status = 'active' THEN 1 ELSE 0 END) as active_count,
                     SUM(CASE WHEN ce.status = 'inactive' THEN 1 ELSE 0 END) as inactive_count,
-                    AVG(r.average_rating) as avg_rating,
+                    AVG(r.ratings) as avg_rating,
                     AVG(ce.hourly_rate) as avg_hourly_rate,
                     MIN(ce.hourly_rate) as min_hourly_rate,
                     MAX(ce.hourly_rate) as max_hourly_rate
                 FROM company_employees ce
-                LEFT JOIN Repairer r ON ce.repairer_id = r.repairer_id
-                LEFT JOIN Category c ON r.category_id = c.category_id
-                WHERE ce.company_id = :company_id
+                LEFT JOIN repairer r ON ce.repairer_id = r.repairer_id
+                LEFT JOIN category c ON r.category_id = c.category_id
+                WHERE ce.company_id = :company_id {$employmentWhere}
                 GROUP BY c.name
                 ORDER BY c.name
             ");
-            $stmt->execute(['company_id' => $companyId]);
+            $stmt->execute($params);
             $specialties = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             // Get overall totals
@@ -185,13 +259,13 @@ class CompanyEmployeeModel {
                     SUM(CASE WHEN ce.status = 'active' THEN 1 ELSE 0 END) as active_employees,
                     SUM(CASE WHEN ce.status = 'inactive' THEN 1 ELSE 0 END) as inactive_employees,
                     SUM(CASE WHEN ce.status = 'suspended' THEN 1 ELSE 0 END) as on_leave_employees,
-                    AVG(r.average_rating) as avg_rating,
+                    AVG(r.ratings) as avg_rating,
                     AVG(ce.hourly_rate) as avg_hourly_rate
                 FROM company_employees ce
-                LEFT JOIN Repairer r ON ce.repairer_id = r.repairer_id
-                WHERE ce.company_id = :company_id
+                LEFT JOIN repairer r ON ce.repairer_id = r.repairer_id
+                WHERE ce.company_id = :company_id {$employmentWhere}
             ");
-            $stmt->execute(['company_id' => $companyId]);
+            $stmt->execute($params);
             $totals = $stmt->fetch(PDO::FETCH_ASSOC);
             
             return [
