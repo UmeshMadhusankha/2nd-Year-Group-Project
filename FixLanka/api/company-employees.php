@@ -8,6 +8,14 @@
  * @version 1.0.0
  */
 
+// Ensure this endpoint never emits HTML/PHP notices into the response body.
+// Frontend fetch handlers expect valid JSON.
+ini_set('display_errors', '0');
+ini_set('html_errors', '0');
+ini_set('log_errors', '1');
+
+ob_start();
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
@@ -20,6 +28,18 @@ $employeeModel = new CompanyEmployeeModel($pdo);
 
 // Get request method
 $method = $_SERVER['REQUEST_METHOD'];
+
+function respondJson($payload, int $statusCode = 200): void {
+    http_response_code($statusCode);
+
+    // Drop any prior output (warnings, whitespace) to keep JSON parseable.
+    if (ob_get_length() !== false) {
+        ob_clean();
+    }
+
+    echo json_encode($payload);
+    exit;
+}
 
 // Handle different HTTP methods
 switch ($method) {
@@ -36,8 +56,7 @@ switch ($method) {
         handleDelete($employeeModel);
         break;
     default:
-        http_response_code(405);
-        echo json_encode(['error' => 'Method not allowed']);
+        respondJson(['error' => 'Method not allowed'], 405);
         break;
 }
 
@@ -48,8 +67,7 @@ function handleGet($model) {
     // Get statistics
     if (isset($_GET['action']) && $_GET['action'] === 'stats') {
         if (!isset($_GET['company_id'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Company ID is required']);
+            respondJson(['error' => 'Company ID is required'], 400);
             return;
         }
 
@@ -59,7 +77,7 @@ function handleGet($model) {
         }
 
         $stats = $model->getStatistics($_GET['company_id'], $filters);
-        echo json_encode($stats);
+        respondJson($stats);
         return;
     }
     
@@ -67,18 +85,16 @@ function handleGet($model) {
     if (isset($_GET['employee_id'])) {
         $employee = $model->getById($_GET['employee_id']);
         if ($employee) {
-            echo json_encode($employee);
+            respondJson($employee);
         } else {
-            http_response_code(404);
-            echo json_encode(['error' => 'Employee not found']);
+            respondJson(['error' => 'Employee not found'], 404);
         }
         return;
     }
     
     // Get all employees with filters
     if (!isset($_GET['company_id'])) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Company ID is required']);
+        respondJson(['error' => 'Company ID is required'], 400);
         return;
     }
     
@@ -95,7 +111,7 @@ function handleGet($model) {
     }
     
     $employees = $model->getAll($_GET['company_id'], $filters);
-    echo json_encode($employees);
+    respondJson($employees);
 }
 
 /**
@@ -105,30 +121,72 @@ function handlePost($model) {
     $data = json_decode(file_get_contents('php://input'), true);
     
     if (!$data) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid JSON data']);
+        respondJson(['error' => 'Invalid JSON data'], 400);
         return;
+    }
+
+    // Reduce staff counts (staffsummary) by specialty.
+    // Used by Workforce "Reduce Staff" drawer where staff are managed as counts.
+    if (isset($data['action']) && $data['action'] === 'reduce_staff') {
+        if (!isset($data['company_id']) || !isset($data['reductions']) || !is_array($data['reductions'])) {
+            respondJson(['success' => false, 'message' => 'Company ID and reductions array required'], 400);
+        }
+
+        try {
+            $result = $model->reduceStaffSummary($data['company_id'], $data['reductions']);
+            respondJson($result);
+        } catch (Throwable $e) {
+            respondJson(['success' => false, 'message' => 'Failed to reduce staff: ' . $e->getMessage()], 500);
+        }
     }
     
     // Bulk add
     if (isset($data['bulk']) && $data['bulk'] === true) {
         if (!isset($data['company_id']) || !isset($data['employees'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Company ID and employees array required']);
+            respondJson(['error' => 'Company ID and employees array required'], 400);
             return;
         }
-        
-        $result = $model->bulkAdd($data['company_id'], $data['employees']);
-        echo json_encode($result);
-        return;
+
+        if (!is_array($data['employees'])) {
+            respondJson(['error' => 'Employees must be an array'], 400);
+        }
+
+        // Heuristic:
+        // - If payload includes repairer_id, treat as roster bulk-add to company_employees.
+        // - Else if payload includes specialty, treat as staff-summary bulk-add to staffsummary.
+        $first = null;
+        foreach ($data['employees'] as $emp) {
+            if (is_array($emp)) {
+                $first = $emp;
+                break;
+            }
+        }
+
+        try {
+            if ($first && array_key_exists('repairer_id', $first)) {
+                $result = $model->bulkAdd($data['company_id'], $data['employees']);
+                respondJson($result);
+            }
+
+            if ($first && array_key_exists('specialty', $first)) {
+                $result = $model->bulkAddStaffSummary($data['company_id'], $data['employees']);
+                respondJson($result);
+            }
+
+            respondJson([
+                'success' => false,
+                'message' => 'Invalid bulk payload. Provide either repairer_id (roster) or specialty (staff summary).'
+            ], 400);
+        } catch (Throwable $e) {
+            respondJson(['success' => false, 'message' => 'Bulk add failed: ' . $e->getMessage()], 500);
+        }
     }
     
     // Validate required fields
     $required = ['company_id', 'repairer_id'];
     foreach ($required as $field) {
         if (!isset($data[$field]) || empty($data[$field])) {
-            http_response_code(400);
-            echo json_encode(['error' => "Field '{$field}' is required"]);
+            respondJson(['error' => "Field '{$field}' is required"], 400);
             return;
         }
     }
@@ -136,12 +194,10 @@ function handlePost($model) {
     $result = $model->create($data);
     
     if ($result['success']) {
-        http_response_code(201);
+        respondJson($result, 201);
     } else {
-        http_response_code(500);
+        respondJson($result, 500);
     }
-    
-    echo json_encode($result);
 }
 
 /**
@@ -149,29 +205,26 @@ function handlePost($model) {
  */
 function handlePut($model) {
     if (!isset($_GET['employee_id'])) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Employee ID is required']);
+        respondJson(['error' => 'Employee ID is required'], 400);
         return;
     }
     
     $data = json_decode(file_get_contents('php://input'), true);
     
     if (!$data) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid JSON data']);
+        respondJson(['error' => 'Invalid JSON data'], 400);
         return;
     }
     
     // Update status only
     if (isset($_GET['action']) && $_GET['action'] === 'status') {
         if (!isset($data['status'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Status is required']);
+            respondJson(['error' => 'Status is required'], 400);
             return;
         }
         
         $result = $model->updateStatus($_GET['employee_id'], $data['status']);
-        echo json_encode($result);
+        respondJson($result);
         return;
     }
     
@@ -179,14 +232,13 @@ function handlePut($model) {
     $required = ['job_title'];
     foreach ($required as $field) {
         if (!isset($data[$field]) || empty($data[$field])) {
-            http_response_code(400);
-            echo json_encode(['error' => "Field '{$field}' is required"]);
+            respondJson(['error' => "Field '{$field}' is required"], 400);
             return;
         }
     }
     
     $result = $model->update($_GET['employee_id'], $data);
-    echo json_encode($result);
+    respondJson($result);
 }
 
 /**
@@ -194,11 +246,10 @@ function handlePut($model) {
  */
 function handleDelete($model) {
     if (!isset($_GET['employee_id'])) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Employee ID is required']);
+        respondJson(['error' => 'Employee ID is required'], 400);
         return;
     }
     
     $result = $model->delete($_GET['employee_id']);
-    echo json_encode($result);
+    respondJson($result);
 }

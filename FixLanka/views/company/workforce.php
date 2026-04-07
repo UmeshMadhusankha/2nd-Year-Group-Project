@@ -4203,8 +4203,18 @@ if (!$companyId) {
                         employees: employees
                     })
                 });
-                
-                const result = await response.json();
+
+                const raw = await response.text();
+                let result;
+                try {
+                    result = raw ? JSON.parse(raw) : null;
+                } catch (e) {
+                    throw new Error('Server returned a non-JSON response. Check `FixLanka/api/company-employees.php` for PHP errors.');
+                }
+
+                if (!response.ok) {
+                    throw new Error((result && (result.message || result.error)) || 'Failed to add employees');
+                }
                 
                 if (result.success) {
                     return true;
@@ -4726,40 +4736,70 @@ if (!$companyId) {
             const apiUrl = '/2nd-Year-Group-Project/FixLanka/api/company-employees.php';
             
             try {
-                // Process each reduction category
-                for (const reduction of reductionData) {
-                    // Get employees by specialty
-                    const response = await fetch(`${apiUrl}?company_id=${companyId}&specialty=${encodeURIComponent(reduction.skillCategory)}`);
-                    
+                // 1) Preferred: reduce staffsummary counts (works with bulk staff add flow).
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'reduce_staff',
+                            company_id: companyId,
+                            reductions: reductionData
+                        })
+                    });
+
+                    const raw = await response.text();
+                    let result;
+                    try {
+                        result = raw ? JSON.parse(raw) : null;
+                    } catch (e) {
+                        throw new Error('Server returned a non-JSON response while reducing staff.');
+                    }
+
                     if (!response.ok) {
-                        throw new Error(`Failed to fetch ${reduction.skillCategory} employees`);
+                        throw new Error((result && (result.message || result.error)) || 'Failed to reduce staff');
                     }
-                    
-                    const employees = await response.json();
-                    
-                    if (!employees || employees.length === 0) {
-                        throw new Error(`No ${reduction.skillCategory} employees found`);
+
+                    if (!result || !result.success) {
+                        throw new Error((result && result.message) || 'Failed to reduce staff');
                     }
-                    
-                    if (employees.length < reduction.reductionQuantity) {
-                        throw new Error(`Only ${employees.length} ${reduction.skillCategory} employees available`);
+
+                    return true;
+                } catch (summaryError) {
+                    // 2) Fallback: reduce by deleting roster entries (legacy behavior).
+                    // This keeps existing companies (who never used staffsummary) working.
+                    const msg = (summaryError && summaryError.message) ? summaryError.message : '';
+                    const canFallback = msg.includes('No staff found') || msg.includes('staff') || msg.includes('specialty');
+                    if (!canFallback) {
+                        throw summaryError;
                     }
-                    
-                    // Delete the first N employees
-                    const employeesToDelete = employees.slice(0, reduction.reductionQuantity);
-                    
-                    for (const emp of employeesToDelete) {
-                        const deleteResponse = await fetch(`${apiUrl}?employee_id=${emp.employee_id}`, {
-                            method: 'DELETE'
-                        });
-                        
-                        if (!deleteResponse.ok) {
-                            throw new Error(`Failed to delete employee ${emp.employee_id}`);
+
+                    for (const reduction of reductionData) {
+                        const listResp = await fetch(`${apiUrl}?company_id=${companyId}&specialty=${encodeURIComponent(reduction.skillCategory)}`);
+                        if (!listResp.ok) {
+                            throw new Error(`Failed to fetch ${reduction.skillCategory} employees`);
+                        }
+                        const employees = await listResp.json();
+                        if (!employees || employees.length === 0) {
+                            throw new Error(`No ${reduction.skillCategory} employees found`);
+                        }
+                        if (employees.length < reduction.reductionQuantity) {
+                            throw new Error(`Only ${employees.length} ${reduction.skillCategory} employees available`);
+                        }
+
+                        const employeesToDelete = employees.slice(0, reduction.reductionQuantity);
+                        for (const emp of employeesToDelete) {
+                            const delResp = await fetch(`${apiUrl}?employee_id=${emp.employee_id}`, { method: 'DELETE' });
+                            if (!delResp.ok) {
+                                throw new Error(`Failed to delete employee ${emp.employee_id}`);
+                            }
                         }
                     }
+
+                    return true;
                 }
-                
-                return true;
             } catch (error) {
                 console.error('Error reducing staff:', error);
                 throw error.message || 'Failed to reduce staff';

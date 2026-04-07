@@ -202,6 +202,13 @@ class CompanyEmployeeModel {
      */
     public function getStatistics($companyId, $filters = []) {
         try {
+            // Prefer staffsummary if present (used by workforce "bulk add/reduce by numbers" flows).
+            // Fallback to aggregating company_employees when summary table is empty.
+            $summaryStats = $this->getStaffSummaryStatistics($companyId);
+            if ($summaryStats !== null) {
+                return $summaryStats;
+            }
+
             // Filter by employment type (default: staff only)
             $employmentTypes = null;
             if (isset($filters['employment_type']) && $filters['employment_type'] !== null && $filters['employment_type'] !== '') {
@@ -286,6 +293,80 @@ class CompanyEmployeeModel {
                     'avg_hourly_rate' => 0
                 ]
             ];
+        }
+    }
+
+    /**
+     * Get staff statistics from staffsummary table if available.
+     * Returns null when no summary rows exist for the company.
+     */
+    private function getStaffSummaryStatistics($companyId) {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM staffsummary WHERE company_id = :company_id ORDER BY specialty");
+            $stmt->execute(['company_id' => $companyId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (!$rows || count($rows) === 0) {
+                return null;
+            }
+
+            $totals = [
+                'total_employees' => 0,
+                'active_employees' => 0,
+                'inactive_employees' => 0,
+                'on_leave_employees' => 0,
+                'avg_rating' => 0,
+                'avg_hourly_rate' => 0
+            ];
+
+            $weightedRatingSum = 0.0;
+            $weightedRateSum = 0.0;
+            $weightTotal = 0.0;
+
+            foreach ($rows as $r) {
+                $tc = (int)($r['total_count'] ?? 0);
+                $ac = (int)($r['active_count'] ?? 0);
+                $ic = (int)($r['inactive_count'] ?? 0);
+                $ar = (float)($r['avg_rating'] ?? 0);
+                $ahr = (float)($r['avg_hourly_rate'] ?? 0);
+
+                $totals['total_employees'] += $tc;
+                $totals['active_employees'] += $ac;
+                $totals['inactive_employees'] += $ic;
+
+                if ($tc > 0) {
+                    $weightedRatingSum += $ar * $tc;
+                    $weightedRateSum += $ahr * $tc;
+                    $weightTotal += $tc;
+                }
+            }
+
+            if ($weightTotal > 0) {
+                $totals['avg_rating'] = $weightedRatingSum / $weightTotal;
+                $totals['avg_hourly_rate'] = $weightedRateSum / $weightTotal;
+            }
+
+            // Normalize rows to match the API shape used by the frontend.
+            $specialties = array_map(function ($r) {
+                return [
+                    'specialty' => $r['specialty'] ?? '',
+                    'total_count' => (int)($r['total_count'] ?? 0),
+                    'active_count' => (int)($r['active_count'] ?? 0),
+                    'inactive_count' => (int)($r['inactive_count'] ?? 0),
+                    'avg_rating' => (float)($r['avg_rating'] ?? 0),
+                    'avg_hourly_rate' => (float)($r['avg_hourly_rate'] ?? 0),
+                    'min_hourly_rate' => (float)($r['min_hourly_rate'] ?? 0),
+                    'max_hourly_rate' => (float)($r['max_hourly_rate'] ?? 0),
+                ];
+            }, $rows);
+
+            return [
+                'specialties' => $specialties,
+                'totals' => $totals
+            ];
+        } catch (PDOException $e) {
+            error_log("Error fetching staffsummary statistics: " . $e->getMessage());
+            return null;
         }
     }
     
@@ -457,6 +538,287 @@ class CompanyEmployeeModel {
             return [
                 'success' => false,
                 'message' => 'Failed to add employees: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Bulk add staff counts into staffsummary table.
+     * Expected input rows may include: specialty, hourly_rate, status.
+     */
+    public function bulkAddStaffSummary($companyId, $employees) {
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return ['success' => false, 'message' => 'Invalid company_id'];
+        }
+
+        if (!is_array($employees) || count($employees) === 0) {
+            return ['success' => false, 'message' => 'Employees array is required'];
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            // Aggregate by specialty.
+            $bySpecialty = [];
+            foreach ($employees as $idx => $emp) {
+                if (!is_array($emp)) {
+                    continue;
+                }
+
+                $specialty = trim((string)($emp['specialty'] ?? $emp['skillCategory'] ?? ''));
+                if ($specialty === '') {
+                    throw new InvalidArgumentException('Missing specialty in row ' . ($idx + 1));
+                }
+
+                $status = strtolower(trim((string)($emp['status'] ?? 'active')));
+                $hourlyRate = isset($emp['hourly_rate']) ? (float)$emp['hourly_rate'] : 0.0;
+
+                if (!isset($bySpecialty[$specialty])) {
+                    $bySpecialty[$specialty] = [
+                        'total' => 0,
+                        'active' => 0,
+                        'inactive' => 0,
+                        'sum_rates' => 0.0,
+                        'min_rate' => null,
+                        'max_rate' => null,
+                    ];
+                }
+
+                $bySpecialty[$specialty]['total'] += 1;
+                if ($status === 'inactive') {
+                    $bySpecialty[$specialty]['inactive'] += 1;
+                } else {
+                    $bySpecialty[$specialty]['active'] += 1;
+                }
+
+                if ($hourlyRate > 0) {
+                    $bySpecialty[$specialty]['sum_rates'] += $hourlyRate;
+                    $bySpecialty[$specialty]['min_rate'] = $bySpecialty[$specialty]['min_rate'] === null
+                        ? $hourlyRate
+                        : min($bySpecialty[$specialty]['min_rate'], $hourlyRate);
+                    $bySpecialty[$specialty]['max_rate'] = $bySpecialty[$specialty]['max_rate'] === null
+                        ? $hourlyRate
+                        : max($bySpecialty[$specialty]['max_rate'], $hourlyRate);
+                }
+            }
+
+            $stmtSelect = $this->db->prepare(
+                "SELECT * FROM staffsummary WHERE company_id = :company_id AND specialty = :specialty FOR UPDATE"
+            );
+            $stmtInsert = $this->db->prepare(
+                "INSERT INTO staffsummary (
+                    company_id, specialty, total_count, active_count, inactive_count,
+                    avg_rating, avg_hourly_rate, min_hourly_rate, max_hourly_rate
+                ) VALUES (
+                    :company_id, :specialty, :total_count, :active_count, :inactive_count,
+                    0, :avg_hourly_rate, :min_hourly_rate, :max_hourly_rate
+                )"
+            );
+            $stmtUpdate = $this->db->prepare(
+                "UPDATE staffsummary SET
+                    total_count = :total_count,
+                    active_count = :active_count,
+                    inactive_count = :inactive_count,
+                    avg_hourly_rate = :avg_hourly_rate,
+                    min_hourly_rate = :min_hourly_rate,
+                    max_hourly_rate = :max_hourly_rate
+                 WHERE company_id = :company_id AND specialty = :specialty"
+            );
+
+            $addedTotal = 0;
+            foreach ($bySpecialty as $specialty => $agg) {
+                $addedTotal += (int)$agg['total'];
+
+                $stmtSelect->execute(['company_id' => $companyId, 'specialty' => $specialty]);
+                $existing = $stmtSelect->fetch(PDO::FETCH_ASSOC);
+
+                $addTotal = (int)$agg['total'];
+                $addActive = (int)$agg['active'];
+                $addInactive = (int)$agg['inactive'];
+                $sumRates = (float)$agg['sum_rates'];
+                $minRate = $agg['min_rate'] === null ? 0.0 : (float)$agg['min_rate'];
+                $maxRate = $agg['max_rate'] === null ? 0.0 : (float)$agg['max_rate'];
+
+                if (!$existing) {
+                    $avgRate = $addTotal > 0 ? ($sumRates / max(1, $addTotal)) : 0.0;
+                    $stmtInsert->execute([
+                        'company_id' => $companyId,
+                        'specialty' => $specialty,
+                        'total_count' => $addTotal,
+                        'active_count' => $addActive,
+                        'inactive_count' => $addInactive,
+                        'avg_hourly_rate' => $avgRate,
+                        'min_hourly_rate' => $minRate,
+                        'max_hourly_rate' => $maxRate,
+                    ]);
+                    continue;
+                }
+
+                $oldTotal = (int)($existing['total_count'] ?? 0);
+                $oldActive = (int)($existing['active_count'] ?? 0);
+                $oldInactive = (int)($existing['inactive_count'] ?? 0);
+                $oldAvgRate = (float)($existing['avg_hourly_rate'] ?? 0);
+                $oldMinRate = (float)($existing['min_hourly_rate'] ?? 0);
+                $oldMaxRate = (float)($existing['max_hourly_rate'] ?? 0);
+
+                $newTotal = $oldTotal + $addTotal;
+                $newActive = $oldActive + $addActive;
+                $newInactive = $oldInactive + $addInactive;
+
+                // Weighted average by headcount.
+                $oldRateSum = $oldAvgRate * $oldTotal;
+                $newAvgRate = $newTotal > 0 ? (($oldRateSum + $sumRates) / $newTotal) : 0.0;
+
+                $newMinRate = $oldMinRate;
+                if ($newMinRate <= 0 && $minRate > 0) {
+                    $newMinRate = $minRate;
+                } elseif ($minRate > 0) {
+                    $newMinRate = min($newMinRate, $minRate);
+                }
+
+                $newMaxRate = $oldMaxRate;
+                if ($maxRate > 0) {
+                    $newMaxRate = max($newMaxRate, $maxRate);
+                }
+
+                $stmtUpdate->execute([
+                    'company_id' => $companyId,
+                    'specialty' => $specialty,
+                    'total_count' => $newTotal,
+                    'active_count' => $newActive,
+                    'inactive_count' => $newInactive,
+                    'avg_hourly_rate' => $newAvgRate,
+                    'min_hourly_rate' => $newMinRate,
+                    'max_hourly_rate' => $newMaxRate,
+                ]);
+            }
+
+            $this->db->commit();
+
+            return [
+                'success' => true,
+                'added' => $addedTotal,
+                'total' => count($employees),
+                'message' => "Successfully added {$addedTotal} staff members"
+            ];
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error bulk adding staffsummary: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Failed to add staff: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Reduce staff counts in staffsummary.
+     * Accepts array entries with either {specialty, quantity} or {skillCategory, reductionQuantity}.
+     */
+    public function reduceStaffSummary($companyId, $reductions) {
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return ['success' => false, 'message' => 'Invalid company_id'];
+        }
+
+        if (!is_array($reductions) || count($reductions) === 0) {
+            return ['success' => false, 'message' => 'Reductions array is required'];
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            $stmtSelect = $this->db->prepare(
+                "SELECT * FROM staffsummary WHERE company_id = :company_id AND specialty = :specialty FOR UPDATE"
+            );
+            $stmtUpdate = $this->db->prepare(
+                "UPDATE staffsummary SET
+                    total_count = :total_count,
+                    active_count = :active_count,
+                    inactive_count = :inactive_count,
+                    avg_hourly_rate = :avg_hourly_rate,
+                    min_hourly_rate = :min_hourly_rate,
+                    max_hourly_rate = :max_hourly_rate
+                 WHERE company_id = :company_id AND specialty = :specialty"
+            );
+
+            $reducedTotal = 0;
+            foreach ($reductions as $idx => $r) {
+                if (!is_array($r)) {
+                    continue;
+                }
+
+                $specialty = trim((string)($r['specialty'] ?? $r['skillCategory'] ?? ''));
+                $qty = (int)($r['quantity'] ?? $r['reductionQuantity'] ?? 0);
+
+                if ($specialty === '' || $qty <= 0) {
+                    throw new InvalidArgumentException('Invalid reduction entry at row ' . ($idx + 1));
+                }
+
+                $stmtSelect->execute(['company_id' => $companyId, 'specialty' => $specialty]);
+                $existing = $stmtSelect->fetch(PDO::FETCH_ASSOC);
+                if (!$existing) {
+                    throw new RuntimeException("No staff found for specialty '{$specialty}'");
+                }
+
+                $oldTotal = (int)($existing['total_count'] ?? 0);
+                $oldActive = (int)($existing['active_count'] ?? 0);
+                $oldInactive = (int)($existing['inactive_count'] ?? 0);
+                $oldAvgRate = (float)($existing['avg_hourly_rate'] ?? 0);
+                $oldMinRate = (float)($existing['min_hourly_rate'] ?? 0);
+                $oldMaxRate = (float)($existing['max_hourly_rate'] ?? 0);
+
+                if ($qty > $oldTotal) {
+                    throw new RuntimeException("Cannot reduce {$qty}; only {$oldTotal} available in '{$specialty}'");
+                }
+
+                $newTotal = $oldTotal - $qty;
+
+                // Reduce active first (best-effort), then inactive.
+                $activeReduced = min($oldActive, $qty);
+                $remainingToReduce = $qty - $activeReduced;
+                $inactiveReduced = min($oldInactive, $remainingToReduce);
+
+                $newActive = $oldActive - $activeReduced;
+                $newInactive = $oldInactive - $inactiveReduced;
+
+                // Keep rate stats as-is unless the row becomes empty.
+                $newAvgRate = $oldAvgRate;
+                $newMinRate = $oldMinRate;
+                $newMaxRate = $oldMaxRate;
+                if ($newTotal <= 0) {
+                    $newAvgRate = 0.0;
+                    $newMinRate = 0.0;
+                    $newMaxRate = 0.0;
+                }
+
+                $stmtUpdate->execute([
+                    'company_id' => $companyId,
+                    'specialty' => $specialty,
+                    'total_count' => $newTotal,
+                    'active_count' => $newActive,
+                    'inactive_count' => $newInactive,
+                    'avg_hourly_rate' => $newAvgRate,
+                    'min_hourly_rate' => $newMinRate,
+                    'max_hourly_rate' => $newMaxRate,
+                ]);
+
+                $reducedTotal += $qty;
+            }
+
+            $this->db->commit();
+            return [
+                'success' => true,
+                'reduced' => $reducedTotal,
+                'message' => "Successfully reduced {$reducedTotal} staff members"
+            ];
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error reducing staffsummary: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Failed to reduce staff: ' . $e->getMessage()
             ];
         }
     }

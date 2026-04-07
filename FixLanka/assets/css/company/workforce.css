@@ -763,7 +763,7 @@
     margin: 0;
 }
 
-.category-stats {
+.category-card > .category-stats {
     padding: var(--spacing-lg);
     display: flex;
     flex-direction: column;
@@ -802,7 +802,7 @@
     color: var(--text-secondary);
 }
 
-.category-actions {
+.category-card > .category-actions {
     padding: var(--spacing-md);
     background: var(--bg-secondary);
     display: flex;
@@ -821,6 +821,7 @@
     font-size: var(--font-size-2xl);
     color: var(--text-white);
     flex-shrink: 0;
+    background: var(--primary-color);
 }
 
 .category-icon.plumbing {
@@ -874,6 +875,50 @@
 .avg-rating i {
     color: var(--warning-color);
     font-size: 12px;
+}
+
+/* Clean summary cards (used by company-employees-db.js) */
+.category-card--summary {
+    padding: var(--spacing-lg);
+    overflow: visible;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+}
+
+.category-card--summary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.category-card--summary .category-icon {
+    width: 56px;
+    height: 56px;
+    font-size: var(--font-size-xl);
+}
+
+.category-card--summary .category-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.category-card--summary .category-info h3 {
+    margin: 0;
+}
+
+.category-card--summary .category-stats {
+    display: flex;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-sm);
+}
+
+.category-card--summary .category-meta {
+    justify-content: space-between;
+    margin-top: var(--spacing-sm);
+}
+
+.category-card--summary .hourly-range {
+    white-space: nowrap;
 }
 
 /* Freelancer List */
