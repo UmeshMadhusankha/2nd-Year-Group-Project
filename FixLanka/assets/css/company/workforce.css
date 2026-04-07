@@ -975,7 +975,6 @@
     align-items: flex-start;
     padding: 28px;
     background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
-    border-bottom: 1px solid var(--border-color);
     gap: 16px;
 }
 
@@ -9783,7 +9782,6 @@ textarea.form-control {
     gap: var(--spacing-md);
     padding: var(--spacing-lg);
     background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
 }
 
 .freelancer-card .freelancer-stats .stat {
@@ -9816,7 +9814,6 @@ textarea.form-control {
 .freelancer-card .freelancer-skills {
     padding: var(--spacing-md) var(--spacing-lg);
     background: var(--bg-card);
-    border-bottom: 1px solid var(--border-color);
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-sm);

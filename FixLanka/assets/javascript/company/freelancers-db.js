@@ -9,6 +9,79 @@ const COMPANY_EMPLOYEES_API_URL = '/2nd-Year-Group-Project/FixLanka/api/company-
 const REPAIRER_APPLICATIONS_API_URL = '/2nd-Year-Group-Project/FixLanka/api/repairer-applications.php';
 let freelancersList = [];
 
+// Remember the current filter so it can be re-applied after re-render.
+window.__freelancerFilterState = window.__freelancerFilterState || { key: 'status', value: 'all' };
+
+function applyFreelancerFilterToDom(filterKey, filterValue) {
+    const key = (filterKey || 'status').toString().toLowerCase();
+    const value = (filterValue || 'all').toString().toLowerCase();
+
+    const cards = document.querySelectorAll('.freelancer-list .freelancer-card, #freelancersGrid .freelancer-card');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        let shouldShow = true;
+
+        if (key === 'status') {
+            const cardStatus = (card.dataset.status || '').toString().toLowerCase();
+            const isAssigned = (card.dataset.assigned || '0') === '1';
+
+            if (value === 'all') {
+                shouldShow = true;
+            } else if (value === 'assigned') {
+                shouldShow = isAssigned || cardStatus === 'assigned';
+            } else {
+                shouldShow = cardStatus === value;
+            }
+        }
+
+        card.style.display = shouldShow ? '' : 'none';
+        if (shouldShow) visibleCount++;
+    });
+
+    // Empty state (only for workforce.php grid)
+    const container = document.querySelector('.freelancer-list') || document.getElementById('freelancersGrid');
+    if (!container) return;
+
+    const existingEmpty = container.querySelector('.empty-state[data-filter-empty="1"]');
+    if (visibleCount === 0) {
+        if (!existingEmpty) {
+            const empty = document.createElement('div');
+            empty.className = 'empty-state';
+            empty.dataset.filterEmpty = '1';
+            empty.style.gridColumn = '1 / -1';
+            empty.style.textAlign = 'center';
+            empty.style.padding = '60px 20px';
+            empty.innerHTML = `
+                <i class="fas fa-filter" style="font-size: 48px; color: #d1d5db; margin-bottom: 15px;"></i>
+                <h3 style="color: #6b7280; margin-bottom: 8px;">No freelancers found</h3>
+                <p style="color: #9ca3af;">No ${value === 'all' ? '' : value} freelancers at the moment</p>
+            `;
+            container.appendChild(empty);
+        }
+    } else if (existingEmpty) {
+        existingEmpty.remove();
+    }
+}
+
+// Called by inline onclick in workforce.php
+window.applyFreelancerFilter = function (filterKey, filterValue, buttonEl) {
+    const key = (filterKey || 'status').toString().toLowerCase();
+    const value = (filterValue || 'all').toString().toLowerCase();
+    window.__freelancerFilterState = { key, value };
+
+    const tabs = document.querySelectorAll('.freelancer-filter-tabs .tab-btn');
+    if (tabs && tabs.length) {
+        tabs.forEach(btn => btn.classList.remove('active'));
+
+        // Prefer the passed element; fallback to a matching data-filter-value button.
+        const toActivate = buttonEl || document.querySelector(`.freelancer-filter-tabs .tab-btn[data-filter-value="${CSS.escape(value)}"]`);
+        if (toActivate) toActivate.classList.add('active');
+    }
+
+    applyFreelancerFilterToDom(key, value);
+};
+
 /**
  * Load all freelancers available to the company
  */
@@ -161,6 +234,9 @@ function renderFreelancersList(freelancers) {
 
         const card = document.createElement('div');
         card.className = 'freelancer-card';
+        card.dataset.status = (freelancer.status || '').toString().toLowerCase();
+        // Placeholder until we wire assignments into this list.
+        card.dataset.assigned = '0';
         card.innerHTML = `
             <div class="freelancer-header">
                 ${avatarHtml}
@@ -197,6 +273,10 @@ function renderFreelancersList(freelancers) {
         `;
         container.appendChild(card);
     });
+
+    // Re-apply the selected tab filter after re-render.
+    const state = window.__freelancerFilterState || { key: 'status', value: 'all' };
+    applyFreelancerFilterToDom(state.key, state.value);
 }
 
 function updateFreelancersPreview(freelancers) {

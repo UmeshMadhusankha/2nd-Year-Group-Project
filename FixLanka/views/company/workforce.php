@@ -296,16 +296,16 @@ if (!$companyId) {
 
                         <!-- Freelancer Filters -->
                         <div class="freelancer-filter-tabs">
-                            <button class="tab-btn active" onclick="applyFreelancerFilter('status', 'all', this)">
+                            <button class="tab-btn active" data-filter-key="status" data-filter-value="all" onclick="applyFreelancerFilter(this.dataset.filterKey, this.dataset.filterValue, this)">
                                 <i class="fas fa-list"></i> All Freelancers
                             </button>
-                            <button class="tab-btn" onclick="applyFreelancerFilter('status', 'Available', this)">
+                            <button class="tab-btn" data-filter-key="status" data-filter-value="available" onclick="applyFreelancerFilter(this.dataset.filterKey, this.dataset.filterValue, this)">
                                 <i class="fas fa-check-circle"></i> Available
                             </button>
-                            <button class="tab-btn" onclick="applyFreelancerFilter('status', 'Busy', this)">
+                            <button class="tab-btn" data-filter-key="status" data-filter-value="busy" onclick="applyFreelancerFilter(this.dataset.filterKey, this.dataset.filterValue, this)">
                                 <i class="fas fa-clock"></i> Busy
                             </button>
-                            <button class="tab-btn" onclick="applyFreelancerFilter('status', 'assigned', this)">
+                            <button class="tab-btn" data-filter-key="status" data-filter-value="assigned" onclick="applyFreelancerFilter(this.dataset.filterKey, this.dataset.filterValue, this)">
                                 <i class="fas fa-briefcase"></i> Assigned
                             </button>
                         </div>
