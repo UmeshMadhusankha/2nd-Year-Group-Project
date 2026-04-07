@@ -339,7 +339,7 @@ function createMessageElement(message) {
     if (message.isSupport) {
         avatarDiv.innerHTML = '<div class="support-avatar"><i class="fas fa-headset"></i></div>';
     } else {
-        avatarDiv.innerHTML = '<img src="../common/user.png" alt="You" class="avatar-img">';
+        avatarDiv.innerHTML = '<img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="You" class="avatar-img">';
     }
 
     const contentDiv = document.createElement('div');

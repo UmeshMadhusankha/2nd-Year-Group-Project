@@ -52,8 +52,13 @@ function handleGet($model) {
             echo json_encode(['error' => 'Company ID is required']);
             return;
         }
-        
-        $stats = $model->getStatistics($_GET['company_id']);
+
+        $filters = [];
+        if (isset($_GET['employment_type'])) {
+            $filters['employment_type'] = $_GET['employment_type'];
+        }
+
+        $stats = $model->getStatistics($_GET['company_id'], $filters);
         echo json_encode($stats);
         return;
     }
@@ -84,6 +89,10 @@ function handleGet($model) {
         'order_by' => $_GET['order_by'] ?? 'created_at',
         'order_dir' => $_GET['order_dir'] ?? 'DESC'
     ];
+
+    if (isset($_GET['employment_type'])) {
+        $filters['employment_type'] = $_GET['employment_type'];
+    }
     
     $employees = $model->getAll($_GET['company_id'], $filters);
     echo json_encode($employees);

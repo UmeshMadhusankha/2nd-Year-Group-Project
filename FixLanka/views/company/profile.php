@@ -120,6 +120,14 @@ $userData = getUserData();
                                 <textarea id="companyDescription" rows="4" placeholder="Tell us about your company..."></textarea>
                             </div>
 
+                            <div class="form-group">
+                                <label>Skills / Services (Tags)</label>
+                                <div class="skills-tag-input">
+                                    <div class="skill-tags" id="companySkillsTags"></div>
+                                    <input type="text" id="companySkillsInput" placeholder="Type a skill and press Enter">
+                                </div>
+                            </div>
+
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="website">Website</label>
@@ -1407,6 +1415,7 @@ $userData = getUserData();
                     document.getElementById('registrationNumber').value = data.registration_no || '';
                     document.getElementById('taxId').value = data.tax_id || '';
                     document.getElementById('companyDescription').value = data.description || '';
+                    setCompanySkillsFromData(data.skills);
                     document.getElementById('website').value = data.website || '';
                     // document.getElementById('establishedYear').value = data.established_year || ''; // Not in DB yet
                     
@@ -1421,6 +1430,73 @@ $userData = getUserData();
             }
         }
 
+        let companySkillsTags = [];
+        const companySkillsInput = document.getElementById('companySkillsInput');
+        const companySkillsTagsEl = document.getElementById('companySkillsTags');
+
+        function normalizeTags(tags) {
+            const seen = new Set();
+            const out = [];
+            (tags || []).forEach(t => {
+                const cleaned = (t || '').toString().trim().replace(/\s+/g, ' ');
+                if (!cleaned) return;
+                const key = cleaned.toLowerCase();
+                if (seen.has(key)) return;
+                seen.add(key);
+                out.push(cleaned);
+            });
+            return out;
+        }
+
+        function escapeHtml(str) {
+            return (str || '').toString()
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function setCompanySkillsFromData(skillsValue) {
+            if (Array.isArray(skillsValue)) {
+                companySkillsTags = normalizeTags(skillsValue);
+            } else {
+                const raw = (skillsValue || '').toString();
+                companySkillsTags = normalizeTags(raw.split(',').map(s => s.trim()).filter(Boolean));
+            }
+            renderCompanySkillsTags();
+        }
+
+        function renderCompanySkillsTags() {
+            if (!companySkillsTagsEl) return;
+            companySkillsTagsEl.innerHTML = companySkillsTags.map((tag, idx) => {
+                return `<span class="skill-tag">${escapeHtml(tag)}<button type="button" class="skill-tag-remove" data-idx="${idx}">×</button></span>`;
+            }).join('');
+        }
+
+        if (companySkillsInput) {
+            companySkillsInput.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                const val = (companySkillsInput.value || '').trim();
+                if (!val) return;
+                companySkillsTags = normalizeTags(companySkillsTags.concat([val]));
+                companySkillsInput.value = '';
+                renderCompanySkillsTags();
+            });
+        }
+
+        if (companySkillsTagsEl) {
+            companySkillsTagsEl.addEventListener('click', (e) => {
+                const btn = e.target.closest('.skill-tag-remove');
+                if (!btn) return;
+                const idx = parseInt(btn.getAttribute('data-idx'), 10);
+                if (Number.isNaN(idx)) return;
+                companySkillsTags.splice(idx, 1);
+                renderCompanySkillsTags();
+            });
+        }
+
         async function saveCompanyProfile() {
             const data = {
                 action: 'update_profile',
@@ -1429,6 +1505,7 @@ $userData = getUserData();
                 registration_no: document.getElementById('registrationNumber').value,
                 tax_id: document.getElementById('taxId').value,
                 description: document.getElementById('companyDescription').value,
+                skills: companySkillsTags.join(', '),
                 website: document.getElementById('website').value,
                 email: document.getElementById('email').value,
                 contact_no: document.getElementById('phone').value,

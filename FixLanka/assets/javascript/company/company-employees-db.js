@@ -8,7 +8,7 @@
  */
 
 // Get company ID from global scope
-const currentCompanyId = window.CURRENT_COMPANY_ID || null;
+var currentCompanyId = window.CURRENT_COMPANY_ID || window.CURRENT_USER_ID || window.currentCompanyId || null;
 
 // API endpoint
 const API_URL = '/2nd-Year-Group-Project/FixLanka/api/company-employees.php';

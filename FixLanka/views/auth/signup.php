@@ -153,6 +153,12 @@ unset($_SESSION['error']);
                         <option value="20">Window Installation</option>
                     </select>
                 </div>
+
+                <div class="form-group">
+                    <label for="experience_initial_years">Initial Experience (Years) *</label>
+                    <input type="number" id="experience_initial_years" name="experience_initial_years" required min="0" max="50" step="1" placeholder="e.g. 1">
+                    <small class="password-hint">Enter your existing experience before using FixLanka</small>
+                </div>
                 
                 <div class="form-group">
                     <label>Service Districts * (Select at least one)</label>

@@ -74,11 +74,12 @@ class CompanyModel {
             'name', 'contact_no', 'description', 
             'website', 'city', 'province', 'postal_code', 
             'facebook', 'instagram', 'linkedin', 'twitter',
-            'alternate_phone', 'whatsapp'
+            'alternate_phone', 'whatsapp',
+            'skills'
         ];
 
         foreach ($data as $key => $value) {
-            if (in_array($key, $allowedFields)) {
+            if (in_array($key, $allowedFields, true) && $this->columnExists('Company', (string)$key)) {
                 $fields[] = "$key = ?";
                 $values[] = $value;
             }
@@ -93,6 +94,29 @@ class CompanyModel {
 
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute($values);
+    }
+
+    private function columnExists(string $table, string $column): bool {
+        try {
+            $stmt = $this->pdo->prepare('
+                SELECT 1
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = ?
+                  AND COLUMN_NAME = ?
+                LIMIT 1
+            ');
+
+            // Try the given table name first, then a lowercase fallback (for mixed usage).
+            $stmt->execute([$table, $column]);
+            if ($stmt->fetchColumn()) {
+                return true;
+            }
+            $stmt->execute([strtolower($table), $column]);
+            return (bool)$stmt->fetchColumn();
+        } catch (Throwable $e) {
+            return false;
+        }
     }
 
     // Change Password
@@ -454,6 +478,192 @@ class CompanyModel {
                 LIMIT 1";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([$companyId]);
+    }
+}
+
+/**
+ * Provider-search compatible Company model.
+ * Some parts of the app expect a `Company` class (not `CompanyModel`) with list/detail APIs.
+ */
+class Company {
+    private PDO $pdo;
+    private ?bool $hasSkillsColumn = null;
+
+    public function __construct(PDO $pdo) {
+        $this->pdo = $pdo;
+    }
+
+    public function getFeatured(int $limit = 10, int $offset = 0): array {
+        try {
+            $skillsSelect = $this->hasSkills() ? 'c.skills,' : "'' AS skills,";
+
+            $stmt = $this->pdo->prepare("
+                SELECT
+                    c.company_id,
+                    c.name,
+                    c.email,
+                    c.contact_no,
+                    c.description,
+                    $skillsSelect
+                    c.rating AS ratings,
+                    c.districts,
+                    c.date_of_joined,
+                    'company' AS provider_type
+                FROM company c
+                WHERE COALESCE(c.is_deleted, 0) = 0
+                ORDER BY c.rating DESC
+                LIMIT ? OFFSET ?
+            ");
+            $stmt->execute([$limit, $offset]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('Error getting featured companies: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getAll(array $filters = [], int $limit = 20, int $offset = 0): array {
+        try {
+            $skillsSelect = $this->hasSkills() ? 'c.skills,' : "'' AS skills,";
+
+            $sql = "
+                SELECT
+                    c.company_id,
+                    c.name,
+                    c.email,
+                    c.contact_no,
+                    c.description,
+                    $skillsSelect
+                    c.rating AS ratings,
+                    c.districts,
+                    c.date_of_joined,
+                    'company' AS provider_type
+                FROM company c
+                WHERE COALESCE(c.is_deleted, 0) = 0
+            ";
+
+            $params = [];
+
+            if (!empty($filters['min_rating'])) {
+                $sql .= ' AND c.rating >= ?';
+                $params[] = $filters['min_rating'];
+            }
+
+            if (!empty($filters['service_area'])) {
+                $sql .= ' AND c.districts LIKE ?';
+                $params[] = '%' . $filters['service_area'] . '%';
+            }
+
+            if (!empty($filters['q'])) {
+                $q = (string)$filters['q'];
+                $like = '%' . $q . '%';
+
+                if ($this->hasSkills()) {
+                    $sql .= ' AND (c.name LIKE ? OR c.description LIKE ? OR c.skills LIKE ?)';
+                    array_push($params, $like, $like, $like);
+                } else {
+                    $sql .= ' AND (c.name LIKE ? OR c.description LIKE ?)';
+                    array_push($params, $like, $like);
+                }
+            }
+
+            $sql .= ' ORDER BY c.rating DESC LIMIT ? OFFSET ?';
+            $params[] = $limit;
+            $params[] = $offset;
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('Error getting all companies: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getById(int $companyId) {
+        try {
+            $skillsSelect = $this->hasSkills() ? 'c.skills,' : "'' AS skills,";
+
+            $stmt = $this->pdo->prepare("
+                SELECT
+                    c.company_id,
+                    c.name,
+                    c.email,
+                    c.contact_no,
+                    c.description,
+                    $skillsSelect
+                    c.rating AS ratings,
+                    c.districts,
+                    c.address,
+                    c.website,
+                    c.date_of_joined,
+                    'company' AS provider_type
+                FROM company c
+                WHERE c.company_id = ? AND COALESCE(c.is_deleted, 0) = 0
+                LIMIT 1
+            ");
+            $stmt->execute([$companyId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('Error getting company: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getCount(array $filters = []): int {
+        try {
+            $sql = 'SELECT COUNT(*) AS total FROM company c WHERE COALESCE(c.is_deleted, 0) = 0';
+            $params = [];
+
+            if (!empty($filters['min_rating'])) {
+                $sql .= ' AND c.rating >= ?';
+                $params[] = $filters['min_rating'];
+            }
+            if (!empty($filters['service_area'])) {
+                $sql .= ' AND c.districts LIKE ?';
+                $params[] = '%' . $filters['service_area'] . '%';
+            }
+            if (!empty($filters['q'])) {
+                $q = (string)$filters['q'];
+                $like = '%' . $q . '%';
+                if ($this->hasSkills()) {
+                    $sql .= ' AND (c.name LIKE ? OR c.description LIKE ? OR c.skills LIKE ?)';
+                    array_push($params, $like, $like, $like);
+                } else {
+                    $sql .= ' AND (c.name LIKE ? OR c.description LIKE ?)';
+                    array_push($params, $like, $like);
+                }
+            }
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)($row['total'] ?? 0);
+        } catch (PDOException $e) {
+            error_log('Error getting company count: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    private function hasSkills(): bool {
+        if ($this->hasSkillsColumn !== null) {
+            return $this->hasSkillsColumn;
+        }
+        try {
+            $stmt = $this->pdo->prepare('
+                SELECT 1
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = "company"
+                  AND COLUMN_NAME = "skills"
+                LIMIT 1
+            ');
+            $stmt->execute();
+            $this->hasSkillsColumn = (bool)$stmt->fetchColumn();
+        } catch (Throwable $e) {
+            $this->hasSkillsColumn = false;
+        }
+        return $this->hasSkillsColumn;
     }
 }
 ?>

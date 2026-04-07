@@ -66,6 +66,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Validate file upload for repairer (if provided)
             if (role === 'repairer') {
+                const expInput = this.querySelector('input[name="experience_initial_years"]');
+                if (expInput) {
+                    const exp = Number(expInput.value);
+                    if (!Number.isFinite(exp) || exp < 0 || exp > 50) {
+                        e.preventDefault();
+                        alert('Please enter a valid initial experience (0 to 50 years)');
+                        return false;
+                    }
+                }
+
                 const fileInput = this.querySelector('input[name="profile_picture"]');
                 if (fileInput && fileInput.files.length > 0) {
                     const file = fileInput.files[0];

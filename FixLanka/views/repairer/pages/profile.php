@@ -68,7 +68,7 @@ if (!$userId) {
                             <div class="profile-left-column">
                                 <div class="profile-photo-section">
                                     <div class="profile-photo-container">
-                                        <img src="../common/user.png" alt="Profile Photo" class="profile-photo" id="profile-photo">
+                                        <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Profile Photo" class="profile-photo" id="profile-photo">
                                         <div class="profile-photo-overlay">
                                             <button class="photo-upload-btn" id="photo-upload-btn">
                                                 <i class="fas fa-camera"></i>
@@ -167,6 +167,14 @@ if (!$userId) {
                                                     <option value="19">Insulation</option>
                                                     <option value="20">Window Installation</option>
                                                 </select>
+                                            </div>
+
+                                            <div class="form-group form-group-full">
+                                                <label class="form-label">Skills (Tags)</label>
+                                                <div class="skills-tag-input">
+                                                    <div class="skill-tags" id="skillsTags"></div>
+                                                    <input type="text" id="skillsInput" class="form-input" placeholder="Type a skill and press Enter" readonly>
+                                                </div>
                                             </div>
                                             <div class="form-group form-group-full">
                                                 <label class="form-label">Working Districts</label>

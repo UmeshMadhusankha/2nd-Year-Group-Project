@@ -146,6 +146,7 @@ CREATE TABLE `company` (
   `districts` text DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
+  `skills` text DEFAULT NULL,
   `rating` decimal(3,2) DEFAULT 0.00,
   `date_of_joined` timestamp NOT NULL DEFAULT current_timestamp(),
   `is_deleted` tinyint(1) DEFAULT 0,
@@ -266,8 +267,12 @@ CREATE TABLE `repairer` (
   `phoneNumber` varchar(20) DEFAULT NULL,
   `about` text DEFAULT NULL,
   `profile_picture` varchar(500) DEFAULT NULL,
+  `experience_initial_years` int(11) NOT NULL DEFAULT 0,
+  `experience_years` int(11) NOT NULL DEFAULT 0,
+  `hourly_rate` decimal(10,2) NOT NULL DEFAULT 0.00,
   `ratings` decimal(3,2) DEFAULT 0.00,
   `completed_jobs_count` int(11) DEFAULT 0,
+  `skills` text DEFAULT NULL,
   `districts` text DEFAULT NULL,
   `availability` enum('available','busy','unavailable') DEFAULT 'available',
   `joined_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -1273,8 +1278,8 @@ ADD COLUMN `escrow_enabled` TINYINT(1) DEFAULT 0 AFTER `payment_method`;
 -- PHASE 4 ADDITIONS: Workforce System
 -- =====================================================================
 
--- 1. Job Postings Table
-CREATE TABLE IF NOT EXISTS `job_postings` (
+-- 1. Company Job Post Table
+CREATE TABLE IF NOT EXISTS `companyjobpost` (
   `posting_id` int(11) NOT NULL AUTO_INCREMENT,
   `company_id` int(11) NOT NULL,
   `title` varchar(255) NOT NULL,
@@ -1284,10 +1289,14 @@ CREATE TABLE IF NOT EXISTS `job_postings` (
   `description` text NOT NULL,
   `requirements` text,
   `min_experience` int(11) NOT NULL DEFAULT 0,
+  `priority_level` enum('low','medium','high','urgent') NOT NULL DEFAULT 'medium',
   `min_budget` decimal(10,2) NOT NULL,
   `max_budget` decimal(10,2) NOT NULL,
   `location` varchar(255) NOT NULL,
   `location_id` int(11) DEFAULT NULL,
+  `location_requirements` text DEFAULT NULL,
+  `required_skills` text DEFAULT NULL,
+  `application_deadline` date DEFAULT NULL,
   `status` enum('draft','open','closed','filled') DEFAULT 'open',
   `created_at` timestamp DEFAULT current_timestamp(),
   `updated_at` timestamp DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -1307,7 +1316,8 @@ CREATE TABLE IF NOT EXISTS `repairer_applications` (
   `applied_date` timestamp DEFAULT current_timestamp(),
   `updated_at` timestamp DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`application_id`),
-  FOREIGN KEY (`job_posting_id`) REFERENCES `job_postings` (`posting_id`) ON DELETE CASCADE,
+  UNIQUE KEY `uniq_posting_repairer` (`job_posting_id`,`repairer_id`),
+  FOREIGN KEY (`job_posting_id`) REFERENCES `companyjobpost` (`posting_id`) ON DELETE CASCADE,
   FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -1351,4 +1361,25 @@ CREATE TABLE IF NOT EXISTS `freelancer_assignments` (
   FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE,
   FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE SET NULL,
   FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 5. Repairer Work History (Portfolio)
+-- Stores completed work entries for a repairer (company access is read-only via APIs)
+CREATE TABLE IF NOT EXISTS `repairer_work_history` (
+  `history_id` int(11) NOT NULL AUTO_INCREMENT,
+  `repairer_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `summary` text DEFAULT NULL,
+  `category_id` int(11) DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `hours_worked` decimal(6,2) DEFAULT NULL,
+  `rating` decimal(3,2) DEFAULT NULL,
+  `attachments_json` text DEFAULT NULL,
+  `source` enum('manual','platform') NOT NULL DEFAULT 'manual',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`history_id`),
+  KEY `idx_repairer` (`repairer_id`),
+  KEY `idx_completed` (`completed_at`),
+  CONSTRAINT `repairer_work_history_ibfk_1` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE,
+  CONSTRAINT `repairer_work_history_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
