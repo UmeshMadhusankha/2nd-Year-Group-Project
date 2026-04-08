@@ -1160,6 +1160,7 @@ CREATE TABLE `contract_chats` (
     `contract_id` INT NOT NULL,
     `sender_type` ENUM('company', 'customer') NOT NULL,
     `sender_id` INT NOT NULL,
+  `message_type` ENUM('text', 'system') DEFAULT 'text',
     `message` TEXT NOT NULL,
     `attachment_type` ENUM('text', 'image', 'document', 'pdf') DEFAULT 'text',
     `attachment_url` VARCHAR(500) NULL,
@@ -1173,6 +1174,25 @@ CREATE TABLE `contract_chats` (
     INDEX `idx_contract_sender` (`contract_id`, `sender_type`),
     INDEX `idx_unread` (`is_read`, `created_at`),
     INDEX `idx_created` (`created_at` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Contract Change Requests Table
+-- Customer can request adjustments; company can accept/reject.
+CREATE TABLE `contract_change_requests` (
+  `change_request_id` INT AUTO_INCREMENT PRIMARY KEY,
+  `contract_id` INT NOT NULL,
+  `requested_by_customer_id` INT NOT NULL,
+  `request_text` TEXT NOT NULL,
+  `proposed_changes_json` LONGTEXT NULL,
+  `original_snapshot_json` LONGTEXT NULL,
+  `status` ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
+  `responded_by_company_id` INT NULL,
+  `response_note` TEXT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `responded_at` DATETIME NULL,
+  FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
+  INDEX `idx_contract_status` (`contract_id`, `status`),
+  INDEX `idx_created_at` (`created_at` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Contract Notifications Table

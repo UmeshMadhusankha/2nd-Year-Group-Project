@@ -712,7 +712,7 @@
 
 /* Dropdown Items */
 .dropdown-item {
-    padding: var(--spacing-md) var(--spacing-lg);
+    padding: var(--spacing-sm) var(--spacing-lg);
     text-decoration: none;
     color: var(--text-secondary);
     font-weight: 500;

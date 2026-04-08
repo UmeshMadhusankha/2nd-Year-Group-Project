@@ -8,6 +8,125 @@ class ContractModel {
     }
 
     /**
+     * Get all contracts for a specific customer (user) with company details.
+     */
+    public function getAllForCustomer($customerId) {
+        $query = "SELECT 
+                    c.contract_id,
+                    c.project_id,
+                    c.contract_number,
+                    c.total_budget,
+                    c.start_date,
+                    c.end_date,
+                    c.contract_date,
+                    c.status as contract_status,
+                    c.milestone_plan,
+                    c.payment_method,
+                    c.budget_type,
+                    c.sent_to_customer,
+                    c.sent_at,
+                    c.customer_response,
+                    c.customer_response_at,
+                    c.terms_accepted,
+                    c.project_title,
+                    c.project_description,
+                    c.project_location,
+                    c.progress_percentage,
+                    c.company_id,
+                    c.chat_active,
+                    comp.name as company_name,
+                    (
+                        SELECT COUNT(*) 
+                        FROM contract_milestone cm 
+                        WHERE cm.contract_id = c.contract_id
+                    ) as total_milestones,
+                    (
+                        SELECT COUNT(*) 
+                        FROM contract_milestone cm 
+                        WHERE cm.contract_id = c.contract_id AND cm.status = 'approved'
+                    ) as completed_milestones
+                FROM contract c
+                LEFT JOIN company comp ON c.company_id = comp.company_id
+                WHERE c.customer_id = :customer_id
+                ORDER BY c.contract_date DESC";
+
+        try {
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(':customer_id', (int)$customerId, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // Backward compatibility: if contract_milestone doesn't exist yet
+            $fallback = "SELECT 
+                    c.contract_id,
+                    c.project_id,
+                    c.contract_number,
+                    c.total_budget,
+                    c.start_date,
+                    c.end_date,
+                    c.contract_date,
+                    c.status as contract_status,
+                    c.milestone_plan,
+                    c.payment_method,
+                    c.budget_type,
+                    c.sent_to_customer,
+                    c.sent_at,
+                    c.customer_response,
+                    c.customer_response_at,
+                    c.terms_accepted,
+                    c.project_title,
+                    c.project_description,
+                    c.project_location,
+                    c.progress_percentage,
+                    c.company_id,
+                    c.chat_active,
+                    comp.name as company_name,
+                    0 as total_milestones,
+                    0 as completed_milestones
+                FROM contract c
+                LEFT JOIN company comp ON c.company_id = comp.company_id
+                WHERE c.customer_id = :customer_id
+                ORDER BY c.contract_date DESC";
+
+            $stmt = $this->conn->prepare($fallback);
+            $stmt->bindValue(':customer_id', (int)$customerId, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+    }
+
+    /**
+     * Get contract by ID for a specific customer (user) with all details.
+     */
+    public function getByIdForCustomer($contractId, $customerId) {
+        $query = "SELECT 
+                    c.*,
+                    u.user_id as customer_id,
+                    u.f_name as customer_fname,
+                    u.l_name as customer_lname,
+                    u.email as customer_email,
+                    u.address as customer_address,
+                    u.district as customer_district,
+                    comp.company_id,
+                    comp.name as company_name,
+                    comp.registration_no as company_registration_no,
+                    c_loc.address as company_address,
+                    comp.contact_no as company_contact,
+                    comp.email as company_email
+                FROM contract c
+                LEFT JOIN user u ON c.customer_id = u.user_id
+                LEFT JOIN company comp ON c.company_id = comp.company_id
+                LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
+                WHERE c.contract_id = :contract_id AND c.customer_id = :customer_id";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':contract_id', (int)$contractId, PDO::PARAM_INT);
+        $stmt->bindValue(':customer_id', (int)$customerId, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Get all contracts with project and customer details
      */
     public function getAll($companyId = null) {

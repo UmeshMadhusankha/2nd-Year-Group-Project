@@ -12,6 +12,19 @@ error_log("[API] REQUEST_URI: " . $_SERVER['REQUEST_URI']);
 
 session_start();
 
+// Support JSON POST bodies (frontend uses fetch + application/json)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
+    if (stripos($contentType, 'application/json') !== false) {
+        $raw = file_get_contents('php://input');
+        $json = json_decode($raw, true);
+        if (is_array($json)) {
+            // Merge into $_POST so downstream controller methods can fall back to it
+            $_POST = array_merge($_POST, $json);
+        }
+    }
+}
+
 error_log("[API] Session user_id: " . ($_SESSION['user_id'] ?? 'NOT SET'));
 error_log("[API] Session user_role: " . ($_SESSION['user_role'] ?? 'NOT SET'));
 
@@ -35,11 +48,21 @@ try {
 switch ($action) {
     case 'list':
     case 'getAll':
-        $controller->getAllContracts();
+        $role = $_SESSION['user_role'] ?? null;
+        if ($role === 'company') {
+            $controller->getAllContracts();
+        } else {
+            $controller->getCustomerContracts();
+        }
         break;
     
     case 'get':
-        $controller->getContract();
+        $role = $_SESSION['user_role'] ?? null;
+        if ($role === 'company') {
+            $controller->getContract();
+        } else {
+            $controller->getCustomerContract();
+        }
         break;
     
     case 'stats':
@@ -351,6 +374,35 @@ switch ($action) {
         $user_id = $_SESSION['user_id'] ?? null;
         $reason = $_POST['reason'] ?? null;
         $controller->rejectTimeEntry($entry_id, $contract_id, $user_id, $reason);
+        break;
+
+    // ========================================
+    // CONTRACT CHANGE REQUESTS
+    // ========================================
+    case 'list_contract_changes':
+        $controller->listContractChangeRequests();
+        break;
+
+    case 'get_contract_change_preview':
+        $controller->getContractChangePreview();
+        break;
+
+    case 'request_contract_change':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->requestContractChange();
+        break;
+
+    case 'respond_contract_change':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->respondContractChange();
         break;
     
     default:
