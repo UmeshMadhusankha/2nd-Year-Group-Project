@@ -21,6 +21,48 @@ class AuthController {
             return false;
         }
     }
+
+    private function normalizeCategoryName($name) {
+        $name = trim((string)$name);
+        $name = preg_replace('/\s+/', ' ', $name);
+        return $name;
+    }
+
+    private function findOrCreateCategoryIdByName($rawName) {
+        $name = $this->normalizeCategoryName($rawName);
+        if ($name === '') {
+            throw new InvalidArgumentException('Category name is required');
+        }
+
+        // DB column is VARCHAR(100)
+        if (function_exists('mb_strlen') && mb_strlen($name) > 100) {
+            $name = mb_substr($name, 0, 100);
+        } elseif (strlen($name) > 100) {
+            $name = substr($name, 0, 100);
+        }
+
+        $stmt = $this->pdo->prepare('SELECT category_id FROM category WHERE LOWER(name) = LOWER(?) LIMIT 1');
+        $stmt->execute([$name]);
+        $row = $stmt->fetch();
+        if ($row && isset($row['category_id'])) {
+            return (int)$row['category_id'];
+        }
+
+        try {
+            $insert = $this->pdo->prepare('INSERT INTO category (name) VALUES (?)');
+            $insert->execute([$name]);
+            return (int)$this->pdo->lastInsertId();
+        } catch (PDOException $e) {
+            // If another request inserted the same category concurrently, re-fetch.
+            $stmt = $this->pdo->prepare('SELECT category_id FROM category WHERE LOWER(name) = LOWER(?) LIMIT 1');
+            $stmt->execute([$name]);
+            $row = $stmt->fetch();
+            if ($row && isset($row['category_id'])) {
+                return (int)$row['category_id'];
+            }
+            throw $e;
+        }
+    }
     
     public function showLoginPage() {
         require_once __DIR__ . '/../views/auth/login.php';
@@ -129,6 +171,19 @@ class AuthController {
                 $_SESSION['user_name'] = $user['f_name'] . ' ' . $user['l_name'];
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['user_role'] = 'user';
+
+                if (class_exists('AuditLogger')) {
+                    AuditLogger::log(
+                        $this->pdo,
+                        'auth.login_success',
+                        ['role' => 'user'],
+                        'user',
+                        (string)$user['user_id'],
+                        200,
+                        (int)$user['user_id'],
+                        'user'
+                    );
+                }
                 
                 header('Location: /2nd-Year-Group-Project/FixLanka/');
                 exit;
@@ -144,6 +199,19 @@ class AuthController {
                 $_SESSION['user_name'] = $admin['username'];
                 $_SESSION['user_email'] = $admin['email'];
                 $_SESSION['user_role'] = 'admin';
+
+                if (class_exists('AuditLogger')) {
+                    AuditLogger::log(
+                        $this->pdo,
+                        'auth.login_success',
+                        ['role' => 'admin'],
+                        'admin',
+                        (string)$admin['username'],
+                        200,
+                        null,
+                        'admin'
+                    );
+                }
                 
                 header('Location: /2nd-Year-Group-Project/FixLanka/admin-dashboard');
                 exit;
@@ -159,6 +227,19 @@ class AuthController {
                 $_SESSION['user_name'] = $moderator['username'];
                 $_SESSION['user_email'] = $moderator['email'];
                 $_SESSION['user_role'] = 'moderator';
+
+                if (class_exists('AuditLogger')) {
+                    AuditLogger::log(
+                        $this->pdo,
+                        'auth.login_success',
+                        ['role' => 'moderator'],
+                        'moderator',
+                        (string)$moderator['moderator_id'],
+                        200,
+                        (int)$moderator['moderator_id'],
+                        'moderator'
+                    );
+                }
                 
                 header('Location: /2nd-Year-Group-Project/FixLanka/moderator-dashboard');
                 exit;
@@ -174,6 +255,19 @@ class AuthController {
                 $_SESSION['user_name'] = $company['name'];
                 $_SESSION['user_email'] = $company['email'];
                 $_SESSION['user_role'] = 'company';
+
+                if (class_exists('AuditLogger')) {
+                    AuditLogger::log(
+                        $this->pdo,
+                        'auth.login_success',
+                        ['role' => 'company'],
+                        'company',
+                        (string)$company['company_id'],
+                        200,
+                        (int)$company['company_id'],
+                        'company'
+                    );
+                }
                 
                 header('Location: /2nd-Year-Group-Project/FixLanka/company-dashboard');
                 exit;
@@ -189,17 +283,54 @@ class AuthController {
                 $_SESSION['user_name'] = $repairer['f_name'] . ' ' . $repairer['l_name'];
                 $_SESSION['user_email'] = $repairer['email'];
                 $_SESSION['user_role'] = 'repairer';
+
+                if (class_exists('AuditLogger')) {
+                    AuditLogger::log(
+                        $this->pdo,
+                        'auth.login_success',
+                        ['role' => 'repairer'],
+                        'repairer',
+                        (string)$repairer['repairer_id'],
+                        200,
+                        (int)$repairer['repairer_id'],
+                        'repairer'
+                    );
+                }
                 
                 header('Location: /2nd-Year-Group-Project/FixLanka/repairer-welcome');
                 exit;
             }
             
             // If no match found in any table
+            if (class_exists('AuditLogger')) {
+                AuditLogger::log(
+                    $this->pdo,
+                    'auth.login_failed',
+                    ['email_hash' => hash('sha256', strtolower($email))],
+                    null,
+                    null,
+                    401,
+                    null,
+                    null
+                );
+            }
             $_SESSION['error'] = 'Invalid email or password';
             header('Location: /2nd-Year-Group-Project/FixLanka/login');
             exit;
             
         } catch (PDOException $e) {
+            if (class_exists('AuditLogger')) {
+                AuditLogger::log(
+                    $this->pdo,
+                    'auth.login_error',
+                    ['email_hash' => hash('sha256', strtolower($email))],
+                    null,
+                    null,
+                    500,
+                    null,
+                    null
+                );
+            }
             $_SESSION['error'] = 'Login failed. Please try again.';
             error_log("Login error: " . $e->getMessage());
             header('Location: /2nd-Year-Group-Project/FixLanka/login');
@@ -285,6 +416,19 @@ class AuthController {
             $_SESSION['user_email'] = $email;
             $_SESSION['user_role'] = 'user';
             $_SESSION['success'] = 'Account created successfully!';
+
+            if (class_exists('AuditLogger')) {
+                AuditLogger::log(
+                    $this->pdo,
+                    'auth.register',
+                    ['role' => 'user'],
+                    'user',
+                    (string)$userId,
+                    201,
+                    (int)$userId,
+                    'user'
+                );
+            }
             
             header('Location: /2nd-Year-Group-Project/FixLanka/');
             exit;
@@ -305,16 +449,32 @@ class AuthController {
         $password = $_POST['password'] ?? '';
         $confirm_password = $_POST['confirm_password'] ?? '';
         $category_id = $_POST['category_id'] ?? '';
+        $category_custom = trim($_POST['category_custom'] ?? '');
         $districts = $_POST['districts'] ?? [];
         $about = trim($_POST['about'] ?? '');
         $experienceInitialYears = intval($_POST['experience_initial_years'] ?? 0);
         
         // Validation
         if (empty($f_name) || empty($l_name) || empty($email) || empty($password) || 
-            empty($phoneNumber) || empty($category_id) || empty($about)) {
+            empty($phoneNumber) || empty($about)) {
             $_SESSION['error'] = 'All required fields must be filled';
             header('Location: /2nd-Year-Group-Project/FixLanka/signup');
             exit;
+        }
+
+        // Resolve category: existing selection or custom name ("Other")
+        if ($category_id === 'other' || ($category_id === '' && $category_custom !== '')) {
+            if ($category_custom === '') {
+                $_SESSION['error'] = 'Please enter your service category';
+                header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+                exit;
+            }
+        } else {
+            if ($category_id === '' || !ctype_digit((string)$category_id) || (int)$category_id <= 0) {
+                $_SESSION['error'] = 'Please select a valid service category';
+                header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+                exit;
+            }
         }
         
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -348,6 +508,20 @@ class AuthController {
         }
         
         try {
+            // Determine final category_id
+            if ($category_id === 'other' || ($category_id === '' && $category_custom !== '')) {
+                $category_id = $this->findOrCreateCategoryIdByName($category_custom);
+            } else {
+                $category_id = (int)$category_id;
+                $catCheck = $this->pdo->prepare('SELECT category_id FROM category WHERE category_id = ?');
+                $catCheck->execute([$category_id]);
+                if (!$catCheck->fetch()) {
+                    $_SESSION['error'] = 'Please select a valid service category';
+                    header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+                    exit;
+                }
+            }
+
             // Check email uniqueness
             $stmt = $this->pdo->prepare("SELECT repairer_id FROM repairer WHERE email = ?");
             $stmt->execute([$email]);
@@ -422,6 +596,7 @@ class AuthController {
     private function registerCompany() {
         $name = trim($_POST['name'] ?? '');
         $business_type = $_POST['business_type'] ?? [];
+        $business_type_other = trim($_POST['business_type_other'] ?? '');
         $registration_no = trim($_POST['registration_no'] ?? '');
         $tax_id = trim($_POST['tax_id'] ?? '');
         $address = trim($_POST['address'] ?? '');
@@ -463,6 +638,19 @@ class AuthController {
             $_SESSION['error'] = 'Please select at least one business type';
             header('Location: /2nd-Year-Group-Project/FixLanka/signup');
             exit;
+        }
+
+        // If "Other" is selected, require and store the typed business type.
+        if (in_array('Other', $business_type, true)) {
+            if ($business_type_other === '') {
+                $_SESSION['error'] = 'Please enter your business type';
+                header('Location: /2nd-Year-Group-Project/FixLanka/signup');
+                exit;
+            }
+            $business_type = array_values(array_filter($business_type, function ($t) {
+                return $t !== 'Other';
+            }));
+            $business_type[] = $business_type_other;
         }
         
         if (empty($districts) || !is_array($districts)) {
@@ -572,6 +760,19 @@ class AuthController {
         // Start session if not started
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
+        }
+
+        if (class_exists('AuditLogger')) {
+            AuditLogger::log(
+                $this->pdo,
+                'auth.logout',
+                ['role' => $_SESSION['user_role'] ?? null],
+                null,
+                null,
+                200,
+                $_SESSION['user_id'] ?? null,
+                $_SESSION['user_role'] ?? null
+            );
         }
         
         // Unset all session variables

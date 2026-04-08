@@ -35,7 +35,8 @@ body {
     flex: 1;
     margin-left: var(--sidebar-width);
     margin-top: var(--header-height);
-    padding: var(--spacing-xl);
+    /* Reduce the visual gap under the fixed topbar while keeping side padding */
+    padding: var(--spacing-md) var(--spacing-xl) var(--spacing-xl);
     transition: margin-left var(--transition-normal);
     height: calc(100vh - var(--header-height));
     overflow-y: auto;

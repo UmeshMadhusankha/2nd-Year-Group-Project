@@ -1,89 +1,69 @@
-<!-- Header/Topbar Component -->
 <?php
-// Load profile picture for the topbar avatar
-$topbarAvatarUrl = '/2nd-Year-Group-Project/FixLanka/assets/images/user.png';
-if (isset($_SESSION['user_id'])) {
+/**
+ * Repairer topbar wrapper -> shared topbar
+ */
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once __DIR__ . '/../../../config/database.php';
+require_once __DIR__ . '/../../shared/topbar.php';
+
+$repairerId = (int)($_SESSION['user_id'] ?? 0);
+$userName = (string)($_SESSION['user_name'] ?? 'Repairer');
+$userEmail = (string)($_SESSION['user_email'] ?? '');
+
+$avatarUrl = '/2nd-Year-Group-Project/FixLanka/assets/images/user.png';
+if ($repairerId > 0) {
     try {
-        require_once __DIR__ . '/../../../config/database.php';
-        $avatarStmt = $pdo->prepare("SELECT profilePicture FROM repairer WHERE repairer_id = ? LIMIT 1");
-        $avatarStmt->execute([(int)$_SESSION['user_id']]);
+        $avatarStmt = $pdo->prepare('SELECT profilePicture FROM repairer WHERE repairer_id = ? LIMIT 1');
+        $avatarStmt->execute([$repairerId]);
         $avatarRow = $avatarStmt->fetch(PDO::FETCH_ASSOC);
         if ($avatarRow && !empty($avatarRow['profilePicture'])) {
-            $topbarAvatarUrl = '/2nd-Year-Group-Project/FixLanka/' . $avatarRow['profilePicture'];
+            $avatarUrl = '/2nd-Year-Group-Project/FixLanka/' . ltrim((string)$avatarRow['profilePicture'], '/');
         }
-    } catch (Exception $e) {
-        // Silently fall back to default avatar
+    } catch (Throwable $e) {
+        // keep default avatar
     }
 }
-?>
-<header class="header">
-    <div class="header-left">
-        <label for="sidebar-toggle" class="sidebar-toggle">
-            <i class="fas fa-bars"></i>
-        </label>
-        <div class="logo">
-            <img src="/2nd-Year-Group-Project/FixLanka/assets/images/fixlanka.png" alt="FixLanka" class="logo-image">
-        </div>
-        <div class="page-info">
-            <h1 class="page-title"><?php echo isset($pageTitle) ? $pageTitle : 'Dashboard'; ?></h1>
-            <p class="page-subtitle"><?php echo isset($pageSubtitle) ? $pageSubtitle : 'Welcome to FixLanka'; ?></p>
-        </div>
-    </div>
-    <div class="header-right">
-        <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" placeholder="<?php echo isset($searchPlaceholder) ? $searchPlaceholder : 'Search...'; ?>">
-        </div>
-        <div class="notification-bell">
-            <i class="fas fa-bell"></i>
-            <span class="notification-badge" id="notificationBadge">0</span>
-            <div class="notification-dropdown">
-                <div class="notification-dropdown-header">
-                    <h4 class="notification-dropdown-title">Notifications</h4>
-                    <a href="#" class="mark-all-read">Mark all as read</a>
-                </div>
-                <ul class="notification-dropdown-list" id="notificationList">
-                </ul>
-                <div class="notification-dropdown-footer">
-                    <a href="#" class="view-all-notifications"></a>
-                </div>
-            </div>
-        </div>
-        <div class="profile-menu">
-            <img src="<?php echo htmlspecialchars($topbarAvatarUrl); ?>" alt="Profile" class="profile-avatar">
-            <div class="profile-dropdown">
-                <div class="profile-dropdown-header">
-                    <h4 class="profile-dropdown-name"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'User'); ?></h4>
-                    <p class="profile-dropdown-email"><?php echo htmlspecialchars($_SESSION['user_email'] ?? ''); ?></p>
-                </div>
-                <ul class="profile-dropdown-menu">
-                    <li class="profile-dropdown-item">
-                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-profile" class="profile-dropdown-link">
-                            <i class="fas fa-user"></i>
-                            <span>My Profile</span>
-                        </a>
-                    </li>
-                    <li class="profile-dropdown-item">
-                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-settings" class="profile-dropdown-link">
-                            <i class="fas fa-cog"></i>
-                            <span>Settings</span>
-                        </a>
-                    </li>
-                    <li class="profile-dropdown-item">
-                        <a href="/2nd-Year-Group-Project/FixLanka/repairer-upgrade" class="profile-dropdown-link">
-                            <i class="fas fa-crown"></i>
-                            <span>Upgrade</span>
-                        </a>
-                    </li>
-                    <li class="profile-dropdown-divider"></li>
-                    <li class="profile-dropdown-item">
-                        <a href="/2nd-Year-Group-Project/FixLanka/logout" class="profile-dropdown-link logout" data-action="logout">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span>Logout</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</header>
+
+$resolvedTitle = isset($pageTitle) && $pageTitle !== '' ? (string)$pageTitle : 'Dashboard';
+$resolvedSubtitle = isset($pageSubtitle) && $pageSubtitle !== ''
+    ? (string)$pageSubtitle
+    : (isset($searchPlaceholder) && $searchPlaceholder !== '' ? (string)$searchPlaceholder : 'Welcome to FixLanka');
+$resolvedSearchPlaceholder = isset($searchPlaceholder) && $searchPlaceholder !== ''
+    ? (string)$searchPlaceholder
+    : 'Search jobs, clients, locations...';
+
+renderSharedTopbar([
+    'role' => 'repairer',
+    'userId' => $repairerId,
+    'userName' => $userName,
+    'userEmail' => $userEmail,
+    'avatarUrl' => $avatarUrl,
+    'pageTitle' => $resolvedTitle,
+    'pageSlogan' => $resolvedSubtitle,
+    'searchPlaceholder' => $resolvedSearchPlaceholder,
+    'searchCategories' => [
+        ['value' => 'all', 'label' => 'All'],
+        ['value' => 'jobs', 'label' => 'Jobs'],
+        ['value' => 'companies', 'label' => 'Companies'],
+        ['value' => 'earnings', 'label' => 'Earnings'],
+        ['value' => 'reviews', 'label' => 'Reviews']
+    ],
+    'notificationsPageUrl' => '/2nd-Year-Group-Project/FixLanka/repairer-notifications',
+    'profileLinks' => [
+        ['href' => '/2nd-Year-Group-Project/FixLanka/repairer-profile', 'label' => 'My Profile', 'icon' => 'fas fa-user'],
+        ['href' => '/2nd-Year-Group-Project/FixLanka/repairer-settings', 'label' => 'Settings', 'icon' => 'fas fa-cog'],
+        ['href' => '/2nd-Year-Group-Project/FixLanka/repairer-upgrade', 'label' => 'Upgrade', 'icon' => 'fas fa-crown']
+    ],
+    'quickSearchLinks' => [
+        ['title' => 'Welcome', 'subtitle' => 'Repairer dashboard', 'url' => '/2nd-Year-Group-Project/FixLanka/repairer-welcome', 'icon' => 'fa-home'],
+        ['title' => 'Available Jobs', 'subtitle' => 'Open opportunities', 'url' => '/2nd-Year-Group-Project/FixLanka/repairer-available-jobs', 'icon' => 'fa-briefcase'],
+        ['title' => 'My Jobs', 'subtitle' => 'Current and completed tasks', 'url' => '/2nd-Year-Group-Project/FixLanka/repairer-my-jobs', 'icon' => 'fa-hammer'],
+        ['title' => 'Company Jobs', 'subtitle' => 'Contracted company work', 'url' => '/2nd-Year-Group-Project/FixLanka/repairer-company-jobs', 'icon' => 'fa-building'],
+        ['title' => 'Earnings', 'subtitle' => 'Income history', 'url' => '/2nd-Year-Group-Project/FixLanka/repairer-earnings', 'icon' => 'fa-wallet'],
+        ['title' => 'Reviews', 'subtitle' => 'Performance feedback', 'url' => '/2nd-Year-Group-Project/FixLanka/repairer-reviews', 'icon' => 'fa-star']
+    ]
+]);

@@ -5,61 +5,46 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . '/../../../includes/admin-modarator/auth.php';
+require_once __DIR__ . '/../../shared/topbar.php';
 
 function renderPageHeader($basePath, $title, $pageSubtitle = null, $currentPage = null, $searchPlaceholder = 'Search...')
 {
     $user = getCurrentUser();
-    $userName = $user ? htmlspecialchars($user['name']) : 'Guest';
-    $userEmail = $user ? htmlspecialchars($user['email'] ?? 'guest@fixlanka.com') : 'guest@fixlanka.com';
-    $userAvatar = $user['avatar'] ?? '../../assets/images/admin-moderator/placeholder-user.jpg'; // default avatar
+    $userName = $user ? (string)$user['name'] : 'Guest';
+    $userEmail = $user ? (string)($user['email'] ?? 'guest@fixlanka.com') : 'guest@fixlanka.com';
+    $userAvatar = $user['avatar'] ?? '/2nd-Year-Group-Project/FixLanka/assets/images/admin-moderator/placeholder-user.jpg';
 
-    // Default values
-    $pageSubtitle = $pageSubtitle ?: 'Welcome to FixLanka';
     $pageTitle = $title ?: 'Dashboard';
+    $pageSubtitle = $pageSubtitle ?: 'Welcome to FixLanka';
 
-    echo '<!-- Header/Topbar Component -->';
-    echo '<header class="header">';
-
-    // Left side (logo, menu, title)
-    echo '<div class="header-left">';
-    echo '<label for="sidebar-toggle" class="sidebar-toggle"><i class="fas fa-bars"></i></label>';
-    echo '<div class="logo">';
-    echo '<img src="/2nd-Year-Group-Project/FixLanka/assets/images/admin-moderator/logo.jpg" alt="FixLanka" class="logo-image">';
-    echo '</div>';
-    echo '<div class="page-info">';
-    echo '<h1 class="page-title">' . $pageTitle . '</h1>';
-    echo '<p class="page-subtitle">' . $pageSubtitle . '</p>';
-    echo '</div>';
-    echo '</div>';
-
-    // Right side (search, notifications, profile)
-    echo '<div class="header-right">';
-    echo '<div class="search-box">';
-    echo '<i class="fas fa-search"></i>';
-    echo '<input type="text" placeholder="' . htmlspecialchars($searchPlaceholder) . '">';
-    echo '</div>';
-
-    echo '<div class="notification-bell">';
-    echo '<i class="fas fa-bell"></i>';
-    echo '<span class="notification-badge">3</span>';
-    echo '</div>';
-
-    echo '<div class="profile-menu">';
-    echo '<img src="' . htmlspecialchars($userAvatar) . '" alt="' . $userName . '" class="profile-avatar">';
-    echo '<div class="profile-dropdown">';
-    echo '<div class="profile-dropdown-header">';
-    echo '<h4 class="profile-dropdown-name">' . $userName . '</h4>';
-    echo '<p class="profile-dropdown-email">' . $userEmail . '</p>';
-    echo '</div>';
-    echo '<ul class="profile-dropdown-menu">';
-    echo '<li class="profile-dropdown-item"><a href="/2nd-Year-Group-Project/FixLanka/moderator-dashboard" class="profile-dropdown-link"><i class="fas fa-user"></i><span>My Profile</span></a></li>';
-    echo '<li class="profile-dropdown-item"><a href="/2nd-Year-Group-Project/FixLanka/moderator-dashboard" class="profile-dropdown-link"><i class="fas fa-cog"></i><span>Settings</span></a></li>';
-    echo '<li class="profile-dropdown-divider"></li>';
-    echo '<li class="profile-dropdown-item"><a href="/2nd-Year-Group-Project/FixLanka/logout" class="profile-dropdown-link logout" data-action="logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>';
-    echo '</ul>';
-    echo '</div>';
-    echo '</div>'; // profile-menu
-    echo '</div>'; // header-right
-
-    echo '</header>';
+    renderSharedTopbar([
+        'role' => 'moderator',
+        'userId' => (int)($user['id'] ?? ($_SESSION['user_id'] ?? 0)),
+        'userName' => $userName,
+        'userEmail' => $userEmail,
+        'avatarUrl' => $userAvatar,
+        'pageTitle' => $pageTitle,
+        'pageSlogan' => $pageSubtitle,
+        'searchPlaceholder' => $searchPlaceholder,
+        'searchCategories' => [
+            ['value' => 'all', 'label' => 'All'],
+            ['value' => 'ads', 'label' => 'Ads'],
+            ['value' => 'reports', 'label' => 'Reports'],
+            ['value' => 'accounts', 'label' => 'Accounts'],
+            ['value' => 'notifications', 'label' => 'Notifications']
+        ],
+        'notificationsPageUrl' => '/2nd-Year-Group-Project/FixLanka/views/moderator/notifications.php',
+        'profileLinks' => [
+            ['href' => '/2nd-Year-Group-Project/FixLanka/moderator-dashboard', 'label' => 'My Profile', 'icon' => 'fas fa-user'],
+            ['href' => '/2nd-Year-Group-Project/FixLanka/moderator-dashboard', 'label' => 'Settings', 'icon' => 'fas fa-cog']
+        ],
+        'quickSearchLinks' => [
+            ['title' => 'Moderator Dashboard', 'subtitle' => 'Activity overview', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-dashboard', 'icon' => 'fa-gauge-high'],
+            ['title' => 'Advertisement Review', 'subtitle' => 'Review submissions', 'url' => '/2nd-Year-Group-Project/FixLanka/views/moderator/ads.php', 'icon' => 'fa-rectangle-ad'],
+            ['title' => 'Ad Scheduling', 'subtitle' => 'Schedule ad runs', 'url' => '/2nd-Year-Group-Project/FixLanka/views/moderator/ad-schedule.php', 'icon' => 'fa-calendar-days'],
+            ['title' => 'Account Moderation', 'subtitle' => 'Moderate accounts', 'url' => '/2nd-Year-Group-Project/FixLanka/views/moderator/account-moderation.php', 'icon' => 'fa-user-shield'],
+            ['title' => 'Financial Reports', 'subtitle' => 'Revenue reports', 'url' => '/2nd-Year-Group-Project/FixLanka/views/moderator/finance.php', 'icon' => 'fa-chart-column'],
+            ['title' => 'Notifications', 'subtitle' => 'Manage notifications', 'url' => '/2nd-Year-Group-Project/FixLanka/views/moderator/notifications.php', 'icon' => 'fa-bell']
+        ]
+    ]);
 }

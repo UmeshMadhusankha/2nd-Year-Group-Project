@@ -143,13 +143,25 @@
   border-color: rgb(var(--fixlanka-primary));
 }
 
-.notification-action-btn.edit-btn:hover {
+.notification-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+
+.notification-action-btn:disabled:hover {
+  background-color: transparent;
+  border-color: rgb(var(--border));
+  color: rgb(var(--foreground));
+}
+
+.notification-action-btn.edit-btn:hover:not(:disabled) {
   background-color: rgba(59, 130, 246, 0.1);
   border-color: #3b82f6;
   color: #3b82f6;
 }
 
-.notification-action-btn.delete-btn:hover {
+.notification-action-btn.delete-btn:hover:not(:disabled) {
   background-color: rgba(239, 68, 68, 0.1);
   border-color: #ef4444;
   color: #ef4444;
@@ -469,6 +481,26 @@
   margin-top: 1rem;
 }
 
+.recent-notifications-list {
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+}
+
+.recent-notifications-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.recent-notifications-list::-webkit-scrollbar-track {
+  background: rgb(var(--muted));
+  border-radius: 8px;
+}
+
+.recent-notifications-list::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 8px;
+}
+
 .space-y-6 > * + * {
   margin-top: 1.5rem;
 }
@@ -481,6 +513,10 @@
 @media (max-width: 640px) {
   .notifications-content {
     padding: 1rem;
+  }
+
+  .recent-notifications-list {
+    max-height: 420px;
   }
 
   .notification-item {

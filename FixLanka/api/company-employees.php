@@ -125,6 +125,29 @@ function handlePost($model) {
         return;
     }
 
+    // Offboard a system-hired freelancer (job-post/application recruit)
+    if (isset($data['action']) && $data['action'] === 'offboard_freelancer') {
+        if (!isset($data['company_id']) || !isset($data['repairer_id'])) {
+            respondJson(['success' => false, 'message' => 'Company ID and repairer ID are required'], 400);
+            return;
+        }
+
+        $reason = trim((string)($data['reason'] ?? ''));
+        if ($reason === '') {
+            respondJson(['success' => false, 'message' => 'Layoff reason is required'], 400);
+            return;
+        }
+
+        $result = $model->offboardFreelancerByRepairer((int)$data['company_id'], (int)$data['repairer_id'], $reason);
+        if (!empty($result['success'])) {
+            respondJson($result, 200);
+            return;
+        }
+
+        respondJson($result, 400);
+        return;
+    }
+
     // Reduce staff counts (staffsummary) by specialty.
     // Used by Workforce "Reduce Staff" drawer where staff are managed as counts.
     if (isset($data['action']) && $data['action'] === 'reduce_staff') {

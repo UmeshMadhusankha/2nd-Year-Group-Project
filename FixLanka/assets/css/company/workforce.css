@@ -9905,3 +9905,102 @@ textarea.form-control {
 .freelancer-card .btn:active {
     transform: translateY(0);
 }
+
+/* Layoff Freelancer Drawer */
+#freelancerLayoffOverlay {
+    z-index: 1200;
+}
+
+#freelancerLayoffOverlay .layoff-drawer-panel {
+    width: min(92vw, 640px);
+    max-width: 640px;
+    height: auto;
+    max-height: 90vh;
+    margin: 0;
+    transform: translateY(24px);
+}
+
+#freelancerLayoffOverlay.active .layoff-drawer-panel {
+    transform: translateY(0);
+}
+
+#freelancerLayoffOverlay .layoff-drawer-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-xl);
+}
+
+#freelancerLayoffOverlay .layoff-helper-text {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-base);
+    line-height: 1.5;
+}
+
+#freelancerLayoffOverlay .layoff-label {
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+#freelancerLayoffOverlay .layoff-label span {
+    color: var(--danger-color);
+}
+
+#freelancerLayoffOverlay .layoff-reason-input {
+    width: 100%;
+    min-height: 130px;
+    resize: vertical;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 12px 14px;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    background: var(--bg-card);
+    transition: all var(--transition-normal);
+}
+
+#freelancerLayoffOverlay .layoff-reason-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
+}
+
+#freelancerLayoffOverlay .layoff-error-text {
+    display: none;
+    margin: 0;
+    color: var(--danger-color);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+}
+
+#freelancerLayoffOverlay .layoff-drawer-actions {
+    padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
+    justify-content: flex-end;
+    gap: var(--spacing-md);
+}
+
+#freelancerLayoffOverlay .layoff-drawer-actions .btn {
+    min-width: 140px;
+}
+
+@media (max-width: 768px) {
+    #freelancerLayoffOverlay .layoff-drawer-panel {
+        width: calc(100vw - 24px);
+        margin: 12px;
+    }
+
+    #freelancerLayoffOverlay .layoff-drawer-content,
+    #freelancerLayoffOverlay .layoff-drawer-actions {
+        padding: var(--spacing-lg);
+    }
+
+    #freelancerLayoffOverlay .layoff-drawer-actions {
+        flex-direction: column-reverse;
+    }
+
+    #freelancerLayoffOverlay .layoff-drawer-actions .btn {
+        width: 100%;
+    }
+}

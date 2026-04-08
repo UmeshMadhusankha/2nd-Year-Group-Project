@@ -244,6 +244,11 @@
     /* Styling */
     font-size: 12px !important;
     color: #9ca3af !important;
+    background: transparent !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 
     /* Size */
@@ -438,6 +443,11 @@
 .notification-bell:hover {
     background: var(--bg-tertiary);
 }
+
+
+/* ============================================
+   NOTIFICATION DETAILS MODAL
+   ============================================ */
 
 .notification-bell i {
     font-size: var(--font-size-lg);

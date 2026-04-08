@@ -6,3 +6,211 @@
 [2026-04-05 18:07:34] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
 [2026-04-05 18:07:34] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
 [2026-04-05 18:07:34] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:07:33] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:07:33] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:07:33] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:07:33] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:29:06] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:29:06] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:29:06] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:29:06] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:32:32] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:32:32] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:32:32] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:32:32] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:32:40] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:32:40] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:32:40] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:32:40] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:32:47] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:32:47] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:32:47] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:32:47] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:33:00] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:33:00] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:33:00] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:33:00] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:35:28] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:35:28] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:35:28] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:35:28] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:35:33] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:35:33] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:35:33] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:35:33] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:35:37] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:35:37] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:35:37] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:35:37] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:36:06] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:36:06] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:36:06] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:36:06] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:36:43] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:36:43] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:36:43] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:36:43] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:41:33] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:41:33] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:41:33] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:41:33] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:41:40] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:41:40] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:41:40] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:41:40] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:58:07] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:58:07] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:58:07] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:58:07] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:58:07] company-dashboard calendar_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT project_id, title, start_date, end_date
+            FR...' at line 1
+[2026-04-07 15:58:07] company-dashboard calendar_milestones: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT
+                p.project_id,
+                p.title...' at line 1
+[2026-04-07 15:58:40] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:58:40] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:58:40] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 15:58:40] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 15:58:40] company-dashboard calendar_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT project_id, title, start_date, end_date
+            FR...' at line 1
+[2026-04-07 15:58:40] company-dashboard calendar_milestones: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT
+                p.project_id,
+                p.title...' at line 1
+[2026-04-07 19:27:21] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 19:27:21] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 19:27:21] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 19:27:21] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 19:27:21] company-dashboard calendar_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT project_id, title, start_date, end_date
+            FR...' at line 1
+[2026-04-07 19:27:21] company-dashboard calendar_milestones: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT
+                p.project_id,
+                p.title...' at line 1
+[2026-04-07 19:27:25] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 19:27:25] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 19:27:25] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 19:27:25] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 19:27:25] company-dashboard calendar_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT project_id, title, start_date, end_date
+            FR...' at line 1
+[2026-04-07 19:27:25] company-dashboard calendar_milestones: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT
+                p.project_id,
+                p.title...' at line 1
+[2026-04-07 19:50:18] company-dashboard kpi_active_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+                        SELECT COUNT(DISTINCT p.project_id) AS cnt
+      ...' at line 1
+[2026-04-07 19:50:18] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 19:50:18] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 19:50:18] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 19:50:18] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 19:50:18] company-dashboard calendar_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT project_id, title, start_date, end_date
+            FR...' at line 1
+[2026-04-07 19:50:18] company-dashboard calendar_milestones: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT
+                p.project_id,
+                p.title...' at line 1
+[2026-04-07 19:50:57] company-dashboard kpi_active_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+                        SELECT COUNT(DISTINCT p.project_id) AS cnt
+      ...' at line 1
+[2026-04-07 19:50:57] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 19:50:57] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 19:50:57] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 19:50:57] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 19:50:57] company-dashboard calendar_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT project_id, title, start_date, end_date
+            FR...' at line 1
+[2026-04-07 19:50:57] company-dashboard calendar_milestones: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT
+                p.project_id,
+                p.title...' at line 1
+[2026-04-07 19:50:59] company-dashboard kpi_active_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+                        SELECT COUNT(DISTINCT p.project_id) AS cnt
+      ...' at line 1
+[2026-04-07 19:50:59] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 19:50:59] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 19:50:59] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 19:50:59] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 19:50:59] company-dashboard calendar_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT project_id, title, start_date, end_date
+            FR...' at line 1
+[2026-04-07 19:50:59] company-dashboard calendar_milestones: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT
+                p.project_id,
+                p.title...' at line 1
+[2026-04-07 20:03:18] company-dashboard kpi_active_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+                        SELECT COUNT(DISTINCT p.project_id) AS cnt
+      ...' at line 1
+[2026-04-07 20:03:18] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 20:03:18] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 20:03:18] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 20:03:18] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 20:03:18] company-dashboard calendar_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT project_id, title, start_date, end_date
+            FR...' at line 1
+[2026-04-07 20:03:18] company-dashboard calendar_milestones: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT
+                p.project_id,
+                p.title...' at line 1
+[2026-04-07 20:21:40] company-dashboard kpi_active_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+                        SELECT COUNT(DISTINCT p.project_id) AS cnt
+      ...' at line 1
+[2026-04-07 20:21:40] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 20:21:40] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 20:21:40] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-07 20:21:40] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-07 20:21:40] company-dashboard calendar_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT project_id, title, start_date, end_date
+            FR...' at line 1
+[2026-04-07 20:21:40] company-dashboard calendar_milestones: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT
+                p.project_id,
+                p.title...' at line 1
+[2026-04-08 06:52:32] company-dashboard kpi_active_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+                        SELECT COUNT(DISTINCT p.project_id) AS cnt
+      ...' at line 1
+[2026-04-08 06:52:32] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-08 06:52:32] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-08 06:52:32] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-08 06:52:32] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-08 06:52:32] company-dashboard calendar_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT project_id, title, start_date, end_date
+            FR...' at line 1
+[2026-04-08 06:52:32] company-dashboard calendar_milestones: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT
+                p.project_id,
+                p.title...' at line 1
+[2026-04-08 06:52:44] company-dashboard kpi_active_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+                        SELECT COUNT(DISTINCT p.project_id) AS cnt
+      ...' at line 1
+[2026-04-08 06:52:44] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-08 06:52:44] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-08 06:52:44] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-08 06:52:44] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-08 06:52:44] company-dashboard calendar_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT project_id, title, start_date, end_date
+            FR...' at line 1
+[2026-04-08 06:52:44] company-dashboard calendar_milestones: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT
+                p.project_id,
+                p.title...' at line 1
+[2026-04-08 07:10:48] company-dashboard kpi_active_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+                        SELECT COUNT(DISTINCT p.project_id) AS cnt
+      ...' at line 1
+[2026-04-08 07:10:48] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-08 07:10:48] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-08 07:10:48] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-08 07:10:48] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-08 07:10:48] company-dashboard calendar_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT project_id, title, start_date, end_date
+            FR...' at line 1
+[2026-04-08 07:10:48] company-dashboard calendar_milestones: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT
+                p.project_id,
+                p.title...' at line 1

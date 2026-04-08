@@ -207,7 +207,20 @@ function handlePost()
         $input = json_decode(file_get_contents('php://input'), true);
         if (isset($input['contract_id'])) {
             $contractId = intval($input['contract_id']);
-            $result = $projectModel->startFromContract($contractId);
+
+            $employeeIds = $input['employee_ids'] ?? [];
+            if (!is_array($employeeIds)) {
+                $employeeIds = [];
+            }
+            $employeeIds = array_values(array_unique(array_filter(array_map('intval', $employeeIds), fn($v) => $v > 0)));
+
+            $freelancerAssignmentIds = $input['freelancer_assignment_ids'] ?? [];
+            if (!is_array($freelancerAssignmentIds)) {
+                $freelancerAssignmentIds = [];
+            }
+            $freelancerAssignmentIds = array_values(array_unique(array_filter(array_map('intval', $freelancerAssignmentIds), fn($v) => $v > 0)));
+
+            $result = $projectModel->startFromContract($contractId, $employeeIds, $freelancerAssignmentIds);
             echo json_encode($result);
             return;
         } else {

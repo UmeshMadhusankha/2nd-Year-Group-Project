@@ -336,7 +336,7 @@ async function updateEmployeeStatus(employeeId, status) {
  * Delete employee
  */
 async function deleteEmployee(employeeId) {
-    if (!confirm('Are you sure you want to remove this employee?')) {
+    if (!confirm('Are you sure you want to offboard this employee? They will be removed from active workforce but history will be kept.')) {
         return false;
     }
     
@@ -348,7 +348,7 @@ async function deleteEmployee(employeeId) {
         const result = await response.json();
         
         if (result.success) {
-            showToast('Employee removed successfully', 'success');
+            showToast('Employee offboarded successfully', 'success');
             await loadEmployeesData();
             return true;
         } else {

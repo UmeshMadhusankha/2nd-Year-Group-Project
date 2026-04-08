@@ -57,11 +57,33 @@ try {
 
     // KPI: Active projects
     try {
-        $activeStatuses = ['planned', 'in_progress', 'on_hold'];
-        $inPlaceholders = implode(',', array_fill(0, count($activeStatuses), '?'));
-        $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt FROM project WHERE company_id = ? AND status IN ($inPlaceholders)");
-        $stmt->execute(array_merge([$companyId], $activeStatuses));
-        $activeProjects = (int)($stmt->fetch(PDO::FETCH_ASSOC)['cnt'] ?? 0);
+                // IMPORTANT: Don't count 'planned' projects unless the customer has accepted/signed the contract.
+                // This avoids showing projects as active when the contract is only sent but not accepted.
+                $stmt = $pdo->prepare("\
+                        SELECT COUNT(DISTINCT p.project_id) AS cnt
+                        FROM project p
+                        WHERE p.company_id = ?
+                            AND (
+                                p.status IN ('in_progress','on_hold')
+                                OR (
+                                        p.status = 'planned'
+                                        AND EXISTS (
+                                                SELECT 1
+                                                FROM contract c
+                                                WHERE c.project_id = p.project_id
+                                                    AND c.company_id = p.company_id
+                                                    AND (
+                                                        c.customer_response = 'accepted'
+                                                        OR c.terms_accepted = 1
+                                                        OR c.signed_at IS NOT NULL
+                                                        OR c.status IN ('active','in_progress','milestone_pending')
+                                                    )
+                                        )
+                                )
+                            )
+                ");
+                $stmt->execute([$companyId]);
+                $activeProjects = (int)($stmt->fetch(PDO::FETCH_ASSOC)['cnt'] ?? 0);
     } catch (PDOException $e) {
         logDashboardSectionError('kpi_active_projects', $e);
     }
@@ -333,7 +355,22 @@ try {
             u.l_name
         FROM project p
         INNER JOIN user u ON u.user_id = p.customer_id
-        WHERE p.company_id = ?
+                WHERE p.company_id = ?
+                    AND (
+                        p.status <> 'planned'
+                        OR EXISTS (
+                                SELECT 1
+                                FROM contract c
+                                WHERE c.project_id = p.project_id
+                                    AND c.company_id = p.company_id
+                                    AND (
+                                        c.customer_response = 'accepted'
+                                        OR c.terms_accepted = 1
+                                        OR c.signed_at IS NOT NULL
+                                        OR c.status IN ('active','in_progress','milestone_pending')
+                                    )
+                        )
+                    )
         ORDER BY p.project_id DESC
         LIMIT 5
         ");
@@ -352,6 +389,103 @@ try {
     } catch (PDOException $e) {
         logDashboardSectionError('projects_recent', $e);
         $projects = [];
+    }
+
+    // Calendar: System events (project start/end + milestones)
+    $calendarSystemEvents = [];
+    try {
+        // Project start/end dates (keep it bounded to avoid heavy payloads)
+        $stmt = $pdo->prepare("\
+            SELECT project_id, title, start_date, end_date
+            FROM project
+            WHERE company_id = ?
+              AND (start_date IS NOT NULL OR end_date IS NOT NULL)
+            ORDER BY project_id DESC
+            LIMIT 50
+        ");
+        $stmt->execute([$companyId]);
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $projectId = (int)($row['project_id'] ?? 0);
+            $projectTitle = $row['title'] ?? '';
+            $startDate = $row['start_date'] ?? null;
+            $endDate = $row['end_date'] ?? null;
+
+            if (!empty($startDate)) {
+                $calendarSystemEvents[] = [
+                    'id' => 'sys-project-start-' . $projectId,
+                    'date' => $startDate,
+                    'title' => 'Project Start: ' . $projectTitle,
+                    'description' => 'Project start date',
+                    'time' => 'All day',
+                    'type' => 'system',
+                    'is_system' => true,
+                    'project_id' => $projectId
+                ];
+            }
+
+            if (!empty($endDate)) {
+                $calendarSystemEvents[] = [
+                    'id' => 'sys-project-end-' . $projectId,
+                    'date' => $endDate,
+                    'title' => 'Project End: ' . $projectTitle,
+                    'description' => 'Project end date',
+                    'time' => 'All day',
+                    'type' => 'system',
+                    'is_system' => true,
+                    'project_id' => $projectId
+                ];
+            }
+        }
+    } catch (PDOException $e) {
+        logDashboardSectionError('calendar_projects', $e);
+    }
+
+    try {
+        // Milestone due dates (new table)
+        $stmt = $pdo->prepare("\
+            SELECT
+                p.project_id,
+                p.title AS project_title,
+                m.milestone_id,
+                m.title AS milestone_title,
+                m.description AS milestone_description,
+                m.due_date,
+                m.status
+            FROM contract c
+            INNER JOIN project p ON p.project_id = c.project_id
+            INNER JOIN contract_milestone m ON m.contract_id = c.contract_id
+            WHERE c.company_id = ?
+              AND m.due_date IS NOT NULL
+            ORDER BY m.due_date ASC
+        ");
+        $stmt->execute([$companyId]);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $milestoneId = (int)($row['milestone_id'] ?? 0);
+            $projectId = (int)($row['project_id'] ?? 0);
+            $milestoneTitle = $row['milestone_title'] ?? ('Milestone #' . $milestoneId);
+            $projectTitle = $row['project_title'] ?? '';
+            $dueDate = $row['due_date'] ?? null;
+
+            if (empty($dueDate)) {
+                continue;
+            }
+
+            $calendarSystemEvents[] = [
+                'id' => 'sys-milestone-' . $milestoneId,
+                'date' => $dueDate,
+                'title' => 'Milestone: ' . $milestoneTitle,
+                'description' => 'Project: ' . $projectTitle,
+                'time' => 'All day',
+                'type' => 'system',
+                'is_system' => true,
+                'project_id' => $projectId,
+                'milestone_id' => $milestoneId,
+                'status' => $row['status'] ?? null
+            ];
+        }
+    } catch (PDOException $e) {
+        logDashboardSectionError('calendar_milestones', $e);
     }
 
     $contracts = [];
@@ -733,6 +867,9 @@ try {
                 'public' => $publicRequests
             ],
             'projects' => $projects,
+            'calendar' => [
+                'system_events' => $calendarSystemEvents
+            ],
             'contracts' => $contracts,
             'payments' => $payments,
             'workforce' => $workforce,

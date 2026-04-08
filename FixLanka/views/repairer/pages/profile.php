@@ -15,6 +15,19 @@ if (!$userId) {
     header('Location: /2nd-Year-Group-Project/FixLanka/login');
     exit;
 }
+
+// Load service categories for the category dropdown (DB-driven)
+$serviceCategories = [];
+try {
+    require_once __DIR__ . '/../../../config/database.php';
+    if (isset($pdo)) {
+        $stmt = $pdo->query('SELECT category_id, name FROM category ORDER BY name');
+        $serviceCategories = $stmt->fetchAll();
+    }
+} catch (Exception $e) {
+    // Non-fatal: dropdown will still render the placeholder.
+    error_log('Failed to load service categories for repairer profile: ' . $e->getMessage());
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -25,7 +38,7 @@ if (!$userId) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/topbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/profile.css">
 </head>
@@ -146,27 +159,17 @@ if (!$userId) {
                                                 <label for="service-category" class="form-label">Service Category</label>
                                                 <select id="service-category" name="service-category" class="form-select" disabled>
                                                     <option value="">Select Category</option>
-                                                    <option value="1">Plumbing</option>
-                                                    <option value="2">Electrical</option>
-                                                    <option value="3">HVAC</option>
-                                                    <option value="4">Cleaning</option>
-                                                    <option value="5">Carpentry</option>
-                                                    <option value="6">Painting</option>
-                                                    <option value="7">Appliance Repair</option>
-                                                    <option value="8">Roofing</option>
-                                                    <option value="9">Landscaping</option>
-                                                    <option value="10">Pest Control</option>
-                                                    <option value="11">Home Security</option>
-                                                    <option value="12">Interior Design</option>
-                                                    <option value="13">Flooring</option>
-                                                    <option value="14">Masonry</option>
-                                                    <option value="15">Welding</option>
-                                                    <option value="16">Glass & Mirror</option>
-                                                    <option value="17">Tile Work</option>
-                                                    <option value="18">Drywall</option>
-                                                    <option value="19">Insulation</option>
-                                                    <option value="20">Window Installation</option>
+                                                    <?php foreach ($serviceCategories as $cat): ?>
+                                                        <option value="<?php echo htmlspecialchars((string)$cat['category_id']); ?>">
+                                                            <?php echo htmlspecialchars((string)$cat['name']); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
                                                 </select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="service-category-name" class="form-label">Service Category (Current)</label>
+                                                <input type="text" id="service-category-name" class="form-input" value="" readonly>
                                             </div>
 
                                             <div class="form-group form-group-full">

@@ -15,7 +15,7 @@
  */
 
 // Start session and verify authentication
-require_once '../../config/session.php';
+require_once __DIR__ . '/../../config/session.php';
 requireRole('company');
 
 // Retrieve logged-in user data from session

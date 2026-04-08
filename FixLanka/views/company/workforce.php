@@ -9,7 +9,7 @@
  */
 
 // Start session and verify authentication
-require_once '../../config/session.php';
+require_once __DIR__ . '/../../config/session.php';
 requireRole('company');
 
 // Retrieve logged-in user data from session
@@ -1188,7 +1188,7 @@ if (!$companyId) {
 
             try {
                 // Load applications preview
-                const appResponse = await fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-applications.php?action=list&company_id=${companyId}`);
+                const appResponse = await fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-applications.php?action=list&company_id=${companyId}&status=pending`);
                 if (appResponse.ok) {
                     const appData = await appResponse.json();
                     if (appData && appData.success) {
@@ -1213,11 +1213,16 @@ if (!$companyId) {
 
         // Update applications preview in dashboard
         function updateApplicationsPreview(applications) {
+            const pendingApplications = (Array.isArray(applications) ? applications : []).filter(app => {
+                const status = String(app.status || 'pending').toLowerCase();
+                return status === 'pending' || status === 'new';
+            });
+
             // Update counts
-            const total = Array.isArray(applications) ? applications.length : 0;
+            const total = pendingApplications.length;
             const today = new Date().toDateString();
-            const newToday = (Array.isArray(applications) ? applications : []).filter(app => new Date(app.applied_date).toDateString() === today).length;
-            const reviewed = (Array.isArray(applications) ? applications : []).filter(app => app.status === 'reviewed').length;
+            const newToday = pendingApplications.filter(app => new Date(app.applied_date).toDateString() === today).length;
+            const reviewed = pendingApplications.filter(app => app.status === 'reviewed').length;
 
             document.getElementById('applicationCount').textContent = total;
             document.getElementById('newTodayCount').textContent = newToday;
@@ -1225,13 +1230,13 @@ if (!$companyId) {
 
             // Update recent applications list
             const listContainer = document.getElementById('recentApplicationsList');
-            if (applications.length === 0) {
+            if (pendingApplications.length === 0) {
                 listContainer.innerHTML = '<p style="text-align: center; color: #718096; padding: 20px;">No applications yet</p>';
                 return;
             }
 
             // Sort by date and get latest 3
-            const recentApps = applications
+            const recentApps = pendingApplications
                 .sort((a, b) => new Date(b.applied_date) - new Date(a.applied_date))
                 .slice(0, 3);
 
@@ -1239,7 +1244,7 @@ if (!$companyId) {
                 const daysAgo = Math.floor((new Date() - new Date(app.applied_date)) / (1000 * 60 * 60 * 24));
                 const timeText = daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`;
                 const initials = (app.first_name?.charAt(0) || '') + (app.last_name?.charAt(0) || '');
-                const statusClass = app.status === 'pending' ? 'pending' : (app.status === 'reviewed' ? 'reviewed' : 'new');
+                const statusClass = app.status === 'pending' ? 'pending' : 'new';
 
                 return `
                     <div class="application-item">
@@ -1509,10 +1514,24 @@ if (!$companyId) {
             const container = document.querySelector('.applications-list');
             container.innerHTML = '';
 
-            applicationsData.forEach(application => {
+            const pendingApplications = applicationsData.filter(application => {
+                const status = String(application.status || 'pending').toLowerCase();
+                return status === 'pending' || status === 'new';
+            });
+
+            pendingApplications.forEach(application => {
                 const item = createApplicationItem(application);
                 container.appendChild(item);
             });
+
+            if (pendingApplications.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fas fa-inbox" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px;"></i>
+                        <p>No pending applications</p>
+                    </div>
+                `;
+            }
         }
 
         // Create application item
@@ -4777,7 +4796,7 @@ if (!$companyId) {
                     }
 
                     for (const reduction of reductionData) {
-                        const listResp = await fetch(`${apiUrl}?company_id=${companyId}&specialty=${encodeURIComponent(reduction.skillCategory)}`);
+                        const listResp = await fetch(`${apiUrl}?company_id=${companyId}&specialty=${encodeURIComponent(reduction.skillCategory)}&status=active`);
                         if (!listResp.ok) {
                             throw new Error(`Failed to fetch ${reduction.skillCategory} employees`);
                         }

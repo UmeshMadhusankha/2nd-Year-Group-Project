@@ -1,4 +1,6 @@
 <?php
+
+require_once __DIR__ . '/SystemNotificationService.php';
 /**
  * CompanyEmployee Model
  * 
@@ -10,9 +12,34 @@
 
 class CompanyEmployeeModel {
     private $db;
+    private SystemNotificationService $notifier;
     
     public function __construct($database) {
         $this->db = $database;
+        $this->notifier = new SystemNotificationService($database);
+    }
+
+    private function getCompanyName(int $companyId): string
+    {
+        try {
+            $stmt = $this->db->prepare('SELECT name FROM company WHERE company_id = ? LIMIT 1');
+            $stmt->execute([$companyId]);
+            $name = $stmt->fetchColumn();
+            return $name ? (string)$name : 'Company'; 
+        } catch (Throwable $e) {
+            return 'Company';
+        }
+    }
+
+    private function safeRollback(): void
+    {
+        try {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+        } catch (Throwable $e) {
+            error_log('Rollback skipped: ' . $e->getMessage());
+        }
     }
     
     /**
@@ -43,6 +70,16 @@ class CompanyEmployeeModel {
         $employee['hourly_rate'] = (float) $employee['hourly_rate'];
         $employee['rating'] = (float) $employee['rating'];
         $employee['experience_years'] = (int) $employee['experience_years'];
+
+        if (array_key_exists('success_rate_pct', $employee)) {
+            $employee['success_rate_pct'] = ($employee['success_rate_pct'] === null) ? null : (int)$employee['success_rate_pct'];
+        }
+        if (array_key_exists('assignments_completed_count', $employee)) {
+            $employee['assignments_completed_count'] = (int)($employee['assignments_completed_count'] ?? 0);
+        }
+        if (array_key_exists('assignments_finished_count', $employee)) {
+            $employee['assignments_finished_count'] = (int)($employee['assignments_finished_count'] ?? 0);
+        }
         
         return $employee;
     }
@@ -54,10 +91,25 @@ class CompanyEmployeeModel {
         try {
                  $query = "SELECT ce.*, r.f_name as first_name, r.l_name as last_name, r.email, r.phoneNumber as phone,
                          c.name as specialty, r.experience_years, r.ratings as rating,
-                         r.hourly_rate as applicant_hourly_rate, r.profile_picture as profile_photo
+                         r.hourly_rate as applicant_hourly_rate, r.profile_picture as profile_photo,
+                         fas.completed_count AS assignments_completed_count,
+                         fas.finished_count AS assignments_finished_count,
+                         CASE
+                           WHEN fas.finished_count > 0 THEN ROUND((fas.completed_count / fas.finished_count) * 100)
+                           ELSE NULL
+                         END AS success_rate_pct
                       FROM company_employees ce
                       LEFT JOIN repairer r ON ce.repairer_id = r.repairer_id
                       LEFT JOIN category c ON r.category_id = c.category_id
+                      LEFT JOIN (
+                          SELECT
+                              company_id,
+                              repairer_id,
+                              SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_count,
+                              SUM(CASE WHEN status IN ('completed','cancelled') THEN 1 ELSE 0 END) AS finished_count
+                          FROM freelancer_assignments
+                          GROUP BY company_id, repairer_id
+                      ) fas ON fas.company_id = ce.company_id AND fas.repairer_id = ce.repairer_id
                       WHERE ce.company_id = :company_id";
             $params = ['company_id' => $companyId];
 
@@ -153,10 +205,25 @@ class CompanyEmployeeModel {
             $stmt = $this->db->prepare("
                 SELECT ce.*, r.f_name as first_name, r.l_name as last_name, r.email, r.phoneNumber as phone,
                        c.name as specialty, r.experience_years, r.ratings as rating,
-                       r.hourly_rate as applicant_hourly_rate, r.profile_picture as profile_photo
+                       r.hourly_rate as applicant_hourly_rate, r.profile_picture as profile_photo,
+                       fas.completed_count AS assignments_completed_count,
+                       fas.finished_count AS assignments_finished_count,
+                       CASE
+                         WHEN fas.finished_count > 0 THEN ROUND((fas.completed_count / fas.finished_count) * 100)
+                         ELSE NULL
+                       END AS success_rate_pct
                 FROM company_employees ce
                 LEFT JOIN repairer r ON ce.repairer_id = r.repairer_id
                 LEFT JOIN category c ON r.category_id = c.category_id
+                LEFT JOIN (
+                    SELECT
+                        company_id,
+                        repairer_id,
+                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_count,
+                        SUM(CASE WHEN status IN ('completed','cancelled') THEN 1 ELSE 0 END) AS finished_count
+                    FROM freelancer_assignments
+                    GROUP BY company_id, repairer_id
+                ) fas ON fas.company_id = ce.company_id AND fas.repairer_id = ce.repairer_id
                 WHERE ce.employee_id = :employee_id
             ");
             $stmt->execute(['employee_id' => $employeeId]);
@@ -375,6 +442,61 @@ class CompanyEmployeeModel {
      */
     public function create($data) {
         try {
+            // Re-hire flow: if the same repairer already exists for this company,
+            // reactivate/update instead of failing on unique(company_id, repairer_id).
+            $existingStmt = $this->db->prepare("SELECT employee_id, status FROM company_employees WHERE company_id = :company_id AND repairer_id = :repairer_id LIMIT 1");
+            $existingStmt->execute([
+                'company_id' => $data['company_id'],
+                'repairer_id' => $data['repairer_id']
+            ]);
+            $existing = $existingStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                if (($existing['status'] ?? '') === 'active') {
+                    return [
+                        'success' => false,
+                        'message' => 'Employee is already active in this company'
+                    ];
+                }
+
+                $rehireStmt = $this->db->prepare("
+                    UPDATE company_employees SET
+                        job_title = :job_title,
+                        employment_type = :employment_type,
+                        status = 'active',
+                        hired_date = :hire_date,
+                        hourly_rate = :hourly_rate,
+                        notes = :notes
+                    WHERE employee_id = :employee_id
+                ");
+
+                $rehireStmt->execute([
+                    'employee_id' => (int)$existing['employee_id'],
+                    'job_title' => $data['job_title'] ?? null,
+                    'employment_type' => $data['employment_type'] ?? 'freelance',
+                    'hire_date' => $data['hire_date'] ?? date('Y-m-d'),
+                    'hourly_rate' => $data['hourly_rate'] ?? null,
+                    'notes' => $data['notes'] ?? null
+                ]);
+
+                $companyId = (int)$data['company_id'];
+                $repairerId = (int)$data['repairer_id'];
+                $companyName = $this->getCompanyName($companyId);
+                $this->notifier->notify(
+                    'You are re-hired',
+                    "{$companyName} has re-hired you.",
+                    'repairer',
+                    $repairerId,
+                    ['role' => 'company', 'id' => $companyId, 'name' => $companyName]
+                );
+
+                return [
+                    'success' => true,
+                    'employee_id' => (int)$existing['employee_id'],
+                    'message' => 'Employee re-hired successfully'
+                ];
+            }
+
             $stmt = $this->db->prepare("
                 INSERT INTO company_employees (
                     company_id, repairer_id, job_title, employment_type,
@@ -395,6 +517,17 @@ class CompanyEmployeeModel {
                 'hourly_rate' => $data['hourly_rate'] ?? null,
                 'notes' => $data['notes'] ?? null
             ]);
+
+            $companyId = (int)$data['company_id'];
+            $repairerId = (int)$data['repairer_id'];
+            $companyName = $this->getCompanyName($companyId);
+            $this->notifier->notify(
+                'You are hired',
+                "{$companyName} has hired you.",
+                'repairer',
+                $repairerId,
+                ['role' => 'company', 'id' => $companyId, 'name' => $companyName]
+            );
             
             return [
                 'success' => true,
@@ -482,21 +615,181 @@ class CompanyEmployeeModel {
     /**
      * Delete employee
      */
-    public function delete($employeeId) {
+    public function delete($employeeId, ?string $reason = null) {
         try {
-            $stmt = $this->db->prepare("DELETE FROM company_employees WHERE employee_id = :employee_id");
+            $this->db->beginTransaction();
+
+            $reason = trim((string)$reason);
+
+            $lookup = $this->db->prepare("SELECT company_id, repairer_id FROM company_employees WHERE employee_id = :employee_id LIMIT 1");
+            $lookup->execute(['employee_id' => $employeeId]);
+            $row = $lookup->fetch(PDO::FETCH_ASSOC);
+
+            // Soft offboarding: keep worker history/ratings and mark as inactive.
+            $stmt = $this->db->prepare("
+                UPDATE company_employees
+                SET status = 'inactive'
+                WHERE employee_id = :employee_id
+            ");
             $stmt->execute(['employee_id' => $employeeId]);
+
+            if ($stmt->rowCount() <= 0) {
+                    $this->safeRollback();
+                return [
+                    'success' => false,
+                    'message' => 'Employee not found'
+                ];
+            }
+
+            if ($reason !== '') {
+                $reasonStmt = $this->db->prepare("
+                    UPDATE company_employees
+                    SET notes = TRIM(CONCAT(COALESCE(notes, ''), CASE WHEN COALESCE(notes, '') = '' THEN '' ELSE '\n' END, 'Offboard reason: ', :reason))
+                    WHERE employee_id = :employee_id
+                ");
+                $reasonStmt->execute([
+                    'employee_id' => $employeeId,
+                    'reason' => $reason
+                ]);
+            }
+
+            // Remove active project assignments for offboarded staff if the legacy
+            // assignment table exists. This is best-effort only; the layoff itself
+            // should not fail when the table is absent.
+            try {
+                $cleanup = $this->db->prepare("
+                    DELETE pea FROM project_employee_assignments pea
+                    INNER JOIN project p ON p.project_id = pea.project_id
+                    WHERE pea.employee_id = :employee_id
+                      AND p.status IN ('planned','in_progress','on_hold')
+                ");
+                $cleanup->execute(['employee_id' => $employeeId]);
+            } catch (PDOException $cleanupError) {
+                error_log('Skipping project_employee_assignments cleanup: ' . $cleanupError->getMessage());
+            }
+
+            if ($row) {
+                $companyId = (int)($row['company_id'] ?? 0);
+                $repairerId = (int)($row['repairer_id'] ?? 0);
+                if ($companyId > 0 && $repairerId > 0) {
+                    $companyName = $this->getCompanyName($companyId);
+                    $this->notifier->notify(
+                        'Employment ended',
+                        $reason !== ''
+                            ? "{$companyName} has ended your employment. Reason: {$reason}"
+                            : "{$companyName} has ended your employment.",
+                        'repairer',
+                        $repairerId,
+                        ['role' => 'company', 'id' => $companyId, 'name' => $companyName]
+                    );
+                }
+            }
+
+            $this->db->commit();
             
             return [
                 'success' => true,
-                'message' => 'Employee deleted successfully'
+                'message' => 'Employee offboarded successfully'
             ];
             
         } catch (PDOException $e) {
+                $this->safeRollback();
             error_log("Error deleting employee: " . $e->getMessage());
             return [
                 'success' => false,
                 'message' => 'Failed to delete employee: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Offboard a freelancer recruited via job postings/applications.
+     * This targets only freelance/legacy-freelancer roster rows.
+     */
+    public function offboardFreelancerByRepairer($companyId, $repairerId, ?string $reason = null) {
+        $companyId = (int)$companyId;
+        $repairerId = (int)$repairerId;
+
+        if ($companyId <= 0 || $repairerId <= 0) {
+            return [
+                'success' => false,
+                'message' => 'Invalid company or repairer id'
+            ];
+        }
+
+        try {
+                        $stmt = $this->db->prepare("
+                                SELECT employee_id
+                                FROM company_employees
+                                WHERE company_id = :company_id
+                                    AND repairer_id = :repairer_id
+                                    AND status = 'active'
+                                    AND (employment_type = 'freelance' OR (job_title IS NOT NULL AND LOWER(job_title) = 'freelancer'))
+                                ORDER BY employee_id DESC
+                                LIMIT 1
+                        ");
+            $stmt->execute([
+                'company_id' => $companyId,
+                'repairer_id' => $repairerId
+            ]);
+
+            $employeeId = (int)($stmt->fetchColumn() ?: 0);
+
+            $appStmt = $this->db->prepare("
+                SELECT ra.application_id
+                FROM repairer_applications ra
+                INNER JOIN companyjobpost jp ON jp.posting_id = ra.job_posting_id
+                WHERE jp.company_id = :company_id
+                  AND ra.repairer_id = :repairer_id
+                  AND ra.status = 'approved'
+                ORDER BY ra.application_id DESC
+                LIMIT 1
+            ");
+            $appStmt->execute([
+                'company_id' => $companyId,
+                'repairer_id' => $repairerId
+            ]);
+            $applicationId = (int)($appStmt->fetchColumn() ?: 0);
+
+            if ($employeeId <= 0 && $applicationId <= 0) {
+                return [
+                    'success' => false,
+                    'message' => 'No active system-hired freelancer found for this repairer'
+                ];
+            }
+
+            $result = ['success' => true, 'message' => 'Freelancer offboarded successfully'];
+
+            if ($employeeId > 0) {
+                $result = $this->delete($employeeId, $reason);
+                if (empty($result['success'])) {
+                    return $result;
+                }
+            }
+
+            if ($applicationId > 0) {
+                $rejectStmt = $this->db->prepare("
+                    UPDATE repairer_applications ra
+                    INNER JOIN companyjobpost jp ON jp.posting_id = ra.job_posting_id
+                    SET ra.status = 'rejected',
+                        ra.rejection_reason = :reason
+                    WHERE jp.company_id = :company_id
+                      AND ra.repairer_id = :repairer_id
+                      AND ra.status = 'approved'
+                ");
+                $rejectStmt->execute([
+                    'company_id' => $companyId,
+                    'repairer_id' => $repairerId,
+                    'reason' => $reason !== '' ? $reason : 'Offboarded by company'
+                ]);
+            }
+
+            return $result;
+        } catch (PDOException $e) {
+            error_log("Error offboarding freelancer: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Failed to offboard freelancer: ' . $e->getMessage()
             ];
         }
     }
