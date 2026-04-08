@@ -254,12 +254,12 @@ foreach ($allJobRequests as $job) {
             </div>
 
             <div class="quotes-received-section" id="quotesReceivedSection" style="display: none;">
+                <div class="quotes-received-header">
+                    <h2 class="quotes-received-title">Received Quotes For Your Jobs</h2>
+                    <p class="quotes-received-subtitle">Quotes from individual repairers and companies for jobs you published.</p>
+                </div>
                 <div class="quotes-received-list" id="quotesReceivedList">
-                    <div class="quote-item">
-                        <div class="quote-details">
-                            <span class="quote-job">Loading quotes...</span>
-                        </div>
-                    </div>
+                    <div class="quote-empty-state">Loading quotes...</div>
                 </div>
             </div>
         </div>
@@ -502,6 +502,34 @@ foreach ($allJobRequests as $job) {
         return `LKR ${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
     }
 
+    function formatDateTime(value) {
+        if (!value) return 'N/A';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return 'N/A';
+        return d.toLocaleString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+    }
+
+    function formatDateOnly(value) {
+        if (!value) return 'N/A';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return 'N/A';
+        return d.toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
+    function readableStatus(status) {
+        return String(status || 'pending').replaceAll('_', ' ');
+    }
+
     async function fetchQuotesJson(url, options) {
         const res = await fetch(url, { credentials: 'same-origin', ...(options || {}) });
         const text = await res.text();
@@ -531,31 +559,73 @@ foreach ($allJobRequests as $job) {
         }
     }
 
-    function renderQuoteItem(q) {
+    function renderQuoteCard(q) {
         const providerName = q.provider_name || (q.source === 'company' ? 'Company' : 'Repairer');
-        const providerTypeLabel = q.source === 'company' ? 'Company' : 'Individual';
+        const providerTypeLabel = q.provider_type || (q.source === 'company' ? 'Company' : 'Individual');
         const jobTitle = q.job_title || 'Job';
-        const amount = formatMoney(q.amount);
+        const categoryName = q.category_name || 'General';
+        const quoteAmount = formatMoney(q.amount);
         const canRespond = q.status === 'pending';
+        const quoteStatus = readableStatus(q.status);
+
+        const repairerExtras = q.source === 'repairer'
+            ? `
+                <div class="quote-meta-item"><strong>Estimated Days:</strong> ${escapeHtml(q.estimated_days ?? 'N/A')}</div>
+                <div class="quote-meta-item"><strong>Warranty (days):</strong> ${escapeHtml(q.warranty_period ?? 'N/A')}</div>
+                <div class="quote-meta-item"><strong>Valid Until:</strong> ${escapeHtml(formatDateOnly(q.valid_until))}</div>
+                <div class="quote-meta-item"><strong>Materials Included:</strong> ${q.materials_included == 1 ? 'Yes' : 'No'}</div>
+            `
+            : '';
+
+        const companyExtras = q.source === 'company'
+            ? `
+                <div class="quote-meta-item"><strong>Labor:</strong> ${escapeHtml(formatMoney(q.labor_cost))}</div>
+                <div class="quote-meta-item"><strong>Materials:</strong> ${escapeHtml(formatMoney(q.material_cost))}</div>
+                <div class="quote-meta-item"><strong>Transport:</strong> ${escapeHtml(formatMoney(q.transport_cost))}</div>
+                <div class="quote-meta-item"><strong>Other:</strong> ${escapeHtml(formatMoney(q.other_charges))}</div>
+                <div class="quote-meta-item"><strong>Start Date:</strong> ${escapeHtml(formatDateOnly(q.company_start_date))}</div>
+                <div class="quote-meta-item"><strong>Completion Date:</strong> ${escapeHtml(formatDateOnly(q.company_completion_date))}</div>
+            `
+            : '';
+
+        const messageBlock = q.quote_message
+            ? `<p class="quote-message">${escapeHtml(q.quote_message)}</p>`
+            : '';
 
         return `
-            <div class="quote-item" data-source="${escapeHtml(q.source)}" data-quote-id="${escapeHtml(q.quote_id)}">
+            <article class="quote-item" data-source="${escapeHtml(q.source)}" data-quote-id="${escapeHtml(q.quote_id)}">
+                <div class="quote-card-top">
+                    <div>
+                        <h3 class="quote-job-title">${escapeHtml(jobTitle)}</h3>
+                        <p class="quote-job-meta">Posted: ${escapeHtml(formatDateTime(q.job_posted_at))} | Category: ${escapeHtml(categoryName)}</p>
+                    </div>
+                    <span class="quote-status-pill quote-status-${escapeHtml(String(q.status || 'pending').toLowerCase())}">${escapeHtml(quoteStatus)}</span>
+                </div>
+
                 <div class="quote-provider">
-                    <img src="${escapeHtml(q.provider_avatar || 'https://via.placeholder.com/40')}" alt="Provider" class="provider-avatar">
+                    <img src="${escapeHtml(q.provider_avatar || 'https://via.placeholder.com/48')}" alt="Provider" class="provider-avatar">
                     <div class="provider-info">
                         <span class="provider-name">${escapeHtml(providerName)}</span>
                         <span class="provider-type">${escapeHtml(providerTypeLabel)}</span>
                     </div>
+                    <div class="quote-price">${escapeHtml(quoteAmount)}</div>
                 </div>
-                <div class="quote-details">
-                    <span class="quote-amount">${escapeHtml(amount)}</span>
-                    <span class="quote-job">${escapeHtml(jobTitle)}</span>
+
+                <div class="quote-meta-grid">
+                    <div class="quote-meta-item"><strong>Quote Sent:</strong> ${escapeHtml(formatDateTime(q.created_at))}</div>
+                    <div class="quote-meta-item"><strong>Job Status:</strong> ${escapeHtml(readableStatus(q.job_status))}</div>
+                    <div class="quote-meta-item"><strong>Requested Provider Type:</strong> ${escapeHtml(q.job_provider_preference || 'N/A')}</div>
+                    ${repairerExtras}
+                    ${companyExtras}
                 </div>
+
+                ${messageBlock}
+
                 <div class="quote-actions">
                     <button class="btn-success-sm" ${canRespond ? '' : 'disabled'} onclick="handleQuoteAction('accepted','${escapeHtml(q.source)}',${escapeHtml(q.quote_id)})">Accept</button>
                     <button class="btn-outline-sm" ${canRespond ? '' : 'disabled'} onclick="handleQuoteAction('rejected','${escapeHtml(q.source)}',${escapeHtml(q.quote_id)})">Decline</button>
                 </div>
-            </div>
+            </article>
         `;
     }
 
@@ -563,37 +633,25 @@ foreach ($allJobRequests as $job) {
         if (!quotesReceivedList) return;
 
         quotesReceivedList.innerHTML = `
-            <div class="quote-item">
-                <div class="quote-details">
-                    <span class="quote-job">Loading quotes...</span>
-                </div>
-            </div>
+            <div class="quote-empty-state">Loading quotes...</div>
         `;
 
         try {
-            const data = await fetchQuotesJson(`${USER_QUOTES_API}?action=summary&limit=100`);
+            const data = await fetchQuotesJson(`${USER_QUOTES_API}?action=list&limit=50&offset=0`);
             const quotes = Array.isArray(data.quotes) ? data.quotes : [];
             setQuotesPill(parseInt(data.pending_count, 10) || 0);
 
             if (quotes.length === 0) {
                 quotesReceivedList.innerHTML = `
-                    <div class="quote-item">
-                        <div class="quote-details">
-                            <span class="quote-job">No quotes received yet</span>
-                        </div>
-                    </div>
+                    <div class="quote-empty-state">No quotes received yet for your jobs</div>
                 `;
                 return;
             }
 
-            quotesReceivedList.innerHTML = quotes.map(renderQuoteItem).join('');
+            quotesReceivedList.innerHTML = quotes.map(renderQuoteCard).join('');
         } catch (e) {
             quotesReceivedList.innerHTML = `
-                <div class="quote-item">
-                    <div class="quote-details">
-                        <span class="quote-job">Failed to load quotes</span>
-                    </div>
-                </div>
+                <div class="quote-empty-state">Failed to load quotes</div>
             `;
             setQuotesPill(0);
         }

@@ -8,6 +8,9 @@ class UserQuotesController {
 
     public function __construct() {
         global $pdo;
+        if (!($pdo instanceof PDO)) {
+            $pdo = getDatabaseConnection();
+        }
         $this->model = new UserQuotesModel($pdo);
     }
 

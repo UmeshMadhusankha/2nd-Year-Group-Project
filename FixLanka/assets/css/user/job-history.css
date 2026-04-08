@@ -2000,40 +2000,100 @@ body > * {
 }
 
 .quotes-received-section {
-    background: var(--bg-card);
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-tertiary) 100%);
     border-radius: var(--border-radius-lg);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-lg);
-    padding: var(--spacing-lg);
+    padding: var(--spacing-xl);
+}
+
+.quotes-received-header {
+    margin-bottom: var(--spacing-lg);
+}
+
+.quotes-received-title {
+    margin: 0;
+    font-size: var(--font-size-2xl);
+    color: var(--text-primary);
+}
+
+.quotes-received-subtitle {
+    margin: var(--spacing-xs) 0 0;
+    color: var(--text-muted);
 }
 
 .quotes-received-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     gap: var(--spacing-md);
 }
 
 .quote-item {
-    display: grid;
-    grid-template-columns: 1.4fr 1fr auto;
+    display: flex;
+    flex-direction: column;
     gap: var(--spacing-md);
-    align-items: center;
-    padding: var(--spacing-md);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background: var(--bg-tertiary);
+    padding: var(--spacing-lg);
+    border: 1px solid rgba(10, 186, 181, 0.2);
+    border-radius: var(--border-radius-lg);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-md);
+}
+
+.quote-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+}
+
+.quote-job-title {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    color: var(--text-primary);
+    line-height: 1.35;
+}
+
+.quote-job-meta {
+    margin: var(--spacing-xs) 0 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+}
+
+.quote-status-pill {
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.quote-status-pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: #b45309;
+}
+
+.quote-status-accepted,
+.quote-status-successful {
+    background: rgba(34, 197, 94, 0.15);
+    color: #15803d;
+}
+
+.quote-status-rejected,
+.quote-status-expired {
+    background: rgba(239, 68, 68, 0.15);
+    color: #b91c1c;
 }
 
 .quote-provider {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
     min-width: 0;
 }
 
 .provider-avatar {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid var(--primary-color);
@@ -2058,24 +2118,67 @@ body > * {
     color: var(--text-muted);
 }
 
-.quote-details {
-    display: flex;
-    flex-direction: column;
-}
-
-.quote-amount {
+.quote-price {
+    margin-left: auto;
+    font-size: var(--font-size-xl);
     font-weight: 700;
     color: var(--primary-color);
 }
 
-.quote-job {
+.quote-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px var(--spacing-md);
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--bg-tertiary);
+}
+
+.quote-meta-item {
     color: var(--text-secondary);
     font-size: var(--font-size-sm);
+}
+
+.quote-meta-item strong {
+    color: var(--text-primary);
+}
+
+.quote-message {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    background: rgba(10, 186, 181, 0.05);
+    border-left: 3px solid var(--primary-color);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.quote-empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--text-muted);
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius);
+    border: 1px dashed var(--border-color);
+    background: var(--bg-tertiary);
 }
 
 .quote-actions {
     display: flex;
     gap: var(--spacing-sm);
+    justify-content: flex-end;
+    margin-top: auto;
+}
+
+.btn-success-sm,
+.btn-outline-sm {
+    border-radius: var(--border-radius-sm);
+    padding: 8px 12px;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
 }
 
 .btn-success-sm,
@@ -2125,11 +2228,29 @@ body > * {
         justify-content: center;
     }
 
-    .quote-item {
+    .quotes-received-list {
+        grid-template-columns: 1fr;
+    }
+
+    .quote-card-top {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .quote-provider {
+        flex-wrap: wrap;
+    }
+
+    .quote-price {
+        margin-left: 0;
+    }
+
+    .quote-meta-grid {
         grid-template-columns: 1fr;
     }
 
     .quote-actions {
         justify-content: flex-start;
+        flex-wrap: wrap;
     }
 }
