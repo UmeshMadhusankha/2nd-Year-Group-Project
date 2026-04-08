@@ -9,8 +9,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     initializeSidebar();
     initializeSearch();
-    initializeNotifications();
-    initializeProfileMenu();
+
+    // Shared topbar may manage notifications/profile menu. Avoid double-binding when flagged.
+    const hasSharedTopbar = Boolean(window.__sharedTopbarInitialized);
+
+    if (!hasSharedTopbar) {
+        initializeNotifications();
+        initializeProfileMenu();
+    }
 });
 
 /**
@@ -237,9 +243,10 @@ function updateNotificationBadge() {
  */
 function initializeProfileMenu() {
     const profileMenu = document.querySelector('.profile-menu');
+    const profileTrigger = profileMenu ? profileMenu.querySelector('.profile-trigger') : null;
     
-    if (profileMenu) {
-        profileMenu.addEventListener('click', function(e) {
+    if (profileMenu && profileTrigger) {
+        profileTrigger.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             toggleProfileMenu();
@@ -263,8 +270,16 @@ function initializeProfileMenu() {
         const dropdownLinks = profileMenu.querySelectorAll('.profile-dropdown-link');
         dropdownLinks.forEach(link => {
             link.addEventListener('click', function(e) {
+                const action = this.getAttribute('data-action');
+
                 e.stopPropagation();
-                handleProfileMenuAction(this.getAttribute('data-action'));
+
+                if (action) {
+                    e.preventDefault();
+                    handleProfileMenuAction(action);
+                } else {
+                    closeProfileMenu();
+                }
             });
         });
     }

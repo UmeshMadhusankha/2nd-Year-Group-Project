@@ -43,7 +43,7 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/repairer-pages.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/available-jobs.css">
@@ -142,6 +142,11 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                 Available Jobs
                                 <span class="tab-badge" id="available-jobs-badge">0</span>
                             </button>
+                            <button class="tab-button" data-tab="direct-jobs">
+                                <i class="fas fa-bullseye"></i>
+                                Direct Jobs
+                                <span class="tab-badge" id="direct-jobs-badge">0</span>
+                            </button>
                             <button class="tab-button" data-tab="submitted-quotes">
                                 <i class="fas fa-file-invoice"></i>
                                 My Quotations
@@ -169,6 +174,24 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                         </section>
                     </div>
                     <!-- End Available Jobs Tab -->
+
+                    <!-- Tab Content: Direct Jobs -->
+                    <div class="tab-content" id="direct-jobs-tab">
+                        <section class="jobs-section">
+                            <div class="section-header">
+                                <h2 class="section-title">Direct Jobs</h2>
+                                <span class="section-subtitle" id="direct-jobs-count">Loading...</span>
+                            </div>
+
+                            <div class="jobs-grid" id="direct-jobs-grid-container">
+                                <div class="loading-state">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <p>Loading direct jobs...</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                    <!-- End Direct Jobs Tab -->
 
                     <!-- Tab Content: Submitted Quotations -->
                     <div class="tab-content" id="submitted-quotes-tab">

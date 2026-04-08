@@ -45,12 +45,9 @@ renderSharedTopbar([
     'pageTitle' => $resolvedTitle,
     'pageSlogan' => $resolvedSubtitle,
     'searchPlaceholder' => $resolvedSearchPlaceholder,
+    // Keep repairer topbar search simple (no category dropdown/custom-options UI).
     'searchCategories' => [
-        ['value' => 'all', 'label' => 'All'],
-        ['value' => 'jobs', 'label' => 'Jobs'],
-        ['value' => 'companies', 'label' => 'Companies'],
-        ['value' => 'earnings', 'label' => 'Earnings'],
-        ['value' => 'reviews', 'label' => 'Reviews']
+        ['value' => 'all', 'label' => 'Search']
     ],
     'notificationsPageUrl' => '/2nd-Year-Group-Project/FixLanka/repairer-notifications',
     'profileLinks' => [
