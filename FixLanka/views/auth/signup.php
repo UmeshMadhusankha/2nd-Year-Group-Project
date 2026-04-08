@@ -1,6 +1,7 @@
 <?php
 // filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\views\auth\signup.php
 require_once __DIR__ . '/../../config/session.php';
+require_once __DIR__ . '/../../config/database.php';
 
 // Redirect if already logged in
 if (isLoggedIn()) {
@@ -11,6 +12,18 @@ if (isLoggedIn()) {
 // Get error message if exists
 $error = $_SESSION['error'] ?? '';
 unset($_SESSION['error']);
+
+// Load service categories (for Repairer signup)
+$serviceCategories = [];
+try {
+    if (isset($pdo)) {
+        $stmt = $pdo->query('SELECT category_id, name FROM category ORDER BY name');
+        $serviceCategories = $stmt->fetchAll();
+    }
+} catch (Exception $e) {
+    // Non-fatal: fallback to empty list; backend still accepts custom category.
+    error_log('Failed to load categories for signup: ' . $e->getMessage());
+}
 ?>
 
 <!DOCTYPE html>
@@ -131,27 +144,19 @@ unset($_SESSION['error']);
                     <label for="category_id">Service Category *</label>
                     <select id="category_id" name="category_id" required>
                         <option value="">Select a category</option>
-                        <option value="1">Plumbing</option>
-                        <option value="2">Electrical</option>
-                        <option value="3">HVAC</option>
-                        <option value="4">Cleaning</option>
-                        <option value="5">Carpentry</option>
-                        <option value="6">Painting</option>
-                        <option value="7">Appliance Repair</option>
-                        <option value="8">Roofing</option>
-                        <option value="9">Landscaping</option>
-                        <option value="10">Pest Control</option>
-                        <option value="11">Home Security</option>
-                        <option value="12">Interior Design</option>
-                        <option value="13">Flooring</option>
-                        <option value="14">Masonry</option>
-                        <option value="15">Welding</option>
-                        <option value="16">Glass & Mirror</option>
-                        <option value="17">Tile Work</option>
-                        <option value="18">Drywall</option>
-                        <option value="19">Insulation</option>
-                        <option value="20">Window Installation</option>
+                        <?php foreach ($serviceCategories as $cat): ?>
+                            <option value="<?php echo htmlspecialchars((string)$cat['category_id']); ?>">
+                                <?php echo htmlspecialchars((string)$cat['name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                        <option value="other">Other</option>
                     </select>
+                </div>
+
+                <div class="form-group" id="category_other_group" style="display:none;">
+                    <label for="category_custom">Other Category *</label>
+                    <input type="text" id="category_custom" name="category_custom" placeholder="Type your service category">
+                    <small class="password-hint">If it doesn't exist, we'll add it as a new category</small>
                 </div>
 
                 <div class="form-group">
@@ -240,8 +245,13 @@ unset($_SESSION['error']);
                         <label><input type="checkbox" name="business_type[]" value="Masonry"> Masonry</label>
                         <label><input type="checkbox" name="business_type[]" value="Welding"> Welding</label>
                         <label><input type="checkbox" name="business_type[]" value="Construction"> Construction</label>
-                        <label><input type="checkbox" name="business_type[]" value="Other"> Other</label>
+                        <label><input type="checkbox" id="company_business_type_other" name="business_type[]" value="Other"> Other</label>
                     </div>
+                </div>
+
+                <div class="form-group" id="company_business_type_other_group" style="display:none;">
+                    <label for="company_business_type_other_text">Other Business Type *</label>
+                    <input type="text" id="company_business_type_other_text" name="business_type_other" placeholder="Type your business type">
                 </div>
                 
                 <div class="form-row">

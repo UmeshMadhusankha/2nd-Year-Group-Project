@@ -68,8 +68,8 @@ class ContractModel {
                     u.f_name as customer_fname,
                     u.l_name as customer_lname,
                     u.email as customer_email,
-                    u_loc.address as customer_address,
-                    u_loc.district as customer_district,
+                    u.address as customer_address,
+                    u.district as customer_district,
                     comp.company_id,
                     comp.name as company_name,
                     comp.registration_no as company_registration_no,
@@ -78,7 +78,6 @@ class ContractModel {
                     comp.email as company_email
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
-                LEFT JOIN location u_loc ON u.location_id = u_loc.location_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id
                 LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
                 WHERE c.contract_id = :contract_id";

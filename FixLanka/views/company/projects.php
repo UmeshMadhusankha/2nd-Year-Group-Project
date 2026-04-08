@@ -16,7 +16,7 @@
  */
 
 // Start session and verify authentication
-require_once '../../config/session.php';
+require_once __DIR__ . '/../../config/session.php';
 requireRole('company');
 
 // Retrieve logged-in user data from session
@@ -204,6 +204,26 @@ if (!$companyId) {
                         <select id="contract-selector" name="contract_id" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
                             <option value="">Loading available contracts...</option>
                         </select>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label><i class="fas fa-users"></i> Assign Company Employees (Optional)</label>
+                        <p style="margin: 6px 0 10px; color: var(--text-secondary); font-size: 0.9rem;">
+                            Select any employees you want to work on this project.
+                        </p>
+                        <div id="start-project-employees" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; max-height: 180px; overflow: auto;">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;"><i class="fas fa-spinner fa-spin"></i> Loading employees...</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label><i class="fas fa-user-tie"></i> Assign Hired Freelancers (Accepted Offers) (Optional)</label>
+                        <p style="margin: 6px 0 10px; color: var(--text-secondary); font-size: 0.9rem;">
+                            Select accepted freelancer offers to attach to this project.
+                        </p>
+                        <div id="start-project-freelancers" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; max-height: 180px; overflow: auto;">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Select a contract to load freelancers.</div>
+                        </div>
                     </div>
 
                     <div class="form-actions" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">

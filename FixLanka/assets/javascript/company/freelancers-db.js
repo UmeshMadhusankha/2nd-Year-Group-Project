@@ -183,6 +183,7 @@ function normalizeCompanyFreelancer(row) {
         experience_years: Number(row.experience_years || 0),
         hourly_rate: hourlyRate,
         rating: rating,
+        success_rate_pct: (row.success_rate_pct === null || row.success_rate_pct === undefined) ? null : Number(row.success_rate_pct),
         profile_photo: row.profile_photo || null,
         avatar: row.avatar || null,
         status: status
@@ -226,7 +227,10 @@ function renderFreelancersList(freelancers) {
             }
         }
 
-        const buttonHtml = `<button class="btn btn-primary" style="width:100%" onclick="openAssignJobDrawer(${freelancer.repairer_id})">Assign Job</button>`;
+        const buttonHtml = `
+            <button class="btn btn-primary" style="width:100%" onclick="openAssignJobDrawer(${freelancer.repairer_id})">Assign Job</button>
+            <button class="btn btn-outline" style="width:100%; border-color:#e11d48; color:#e11d48;" onclick="layoffFreelancer(${freelancer.repairer_id})">Layoff</button>
+        `;
 
         const avatarHtml = freelancer.profile_photo ?
             `<img src="/2nd-Year-Group-Project/FixLanka/${freelancer.profile_photo}" alt="${freelancer.first_name}" class="freelancer-avatar">` :
@@ -251,7 +255,7 @@ function renderFreelancersList(freelancers) {
                     <div class="stat-label">Rate</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-value">98%</div>
+                    <div class="stat-value">${Number.isFinite(Number(freelancer.success_rate_pct)) ? `${Number(freelancer.success_rate_pct)}%` : '—'}</div>
                     <div class="stat-label">Success</div>
                 </div>
                 <div class="stat">
@@ -500,4 +504,148 @@ window.handleJobAssignment = async function (event) {
     }
 
     return false;
+};
+
+function notifyLayoff(message, type = 'info') {
+    if (typeof window.showNotification === 'function') {
+        window.showNotification(message, type);
+        return;
+    }
+    console.log(`[${type}] ${message}`);
+}
+
+function ensureLayoffModal() {
+    let overlay = document.getElementById('freelancerLayoffOverlay');
+    if (overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.id = 'freelancerLayoffOverlay';
+    overlay.className = 'drawer-overlay';
+    overlay.innerHTML = `
+        <div class="drawer-panel layoff-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="layoffDrawerTitle">
+            <div class="drawer-header">
+                <h3 id="layoffDrawerTitle"><i class="fas fa-user-minus"></i> Layoff Freelancer</h3>
+                <button type="button" class="close-drawer" aria-label="Close" onclick="closeLayoffFreelancerDrawer()">&times;</button>
+            </div>
+            <div class="drawer-content layoff-drawer-content">
+                <p id="layoffFreelancerName" class="layoff-helper-text"></p>
+                <label for="layoffReasonInput" class="layoff-label">Reason for layoff <span>*</span></label>
+                <textarea id="layoffReasonInput" rows="5" class="layoff-reason-input" placeholder="Enter the reason for layoff..."></textarea>
+                <p id="layoffReasonError" class="layoff-error-text">Please enter a reason before continuing.</p>
+            </div>
+            <div class="drawer-actions layoff-drawer-actions">
+                <button type="button" class="btn btn-outline" onclick="closeLayoffFreelancerDrawer()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmLayoffBtn" onclick="submitLayoffFreelancer()">Confirm Layoff</button>
+            </div>
+        </div>
+    `;
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            window.closeLayoffFreelancerDrawer();
+        }
+    });
+
+    document.body.appendChild(overlay);
+    return overlay;
+}
+
+let pendingLayoffRepairerId = null;
+
+window.closeLayoffFreelancerDrawer = function () {
+    const overlay = document.getElementById('freelancerLayoffOverlay');
+    if (!overlay) return;
+
+    overlay.classList.remove('active');
+    pendingLayoffRepairerId = null;
+
+    const input = document.getElementById('layoffReasonInput');
+    const err = document.getElementById('layoffReasonError');
+    if (input) input.value = '';
+    if (err) err.style.display = 'none';
+};
+
+window.submitLayoffFreelancer = async function () {
+    const repairerIdNum = Number(pendingLayoffRepairerId || 0);
+    const reasonInput = document.getElementById('layoffReasonInput');
+    const reasonErr = document.getElementById('layoffReasonError');
+    const confirmBtn = document.getElementById('confirmLayoffBtn');
+
+    const reason = (reasonInput?.value || '').trim();
+    if (!reason) {
+        if (reasonErr) reasonErr.style.display = 'block';
+        return;
+    }
+    if (reasonErr) reasonErr.style.display = 'none';
+
+    if (!currentCompanyId || !repairerIdNum) {
+        notifyLayoff('Unable to process layoff request. Missing company or repairer id.', 'error');
+        return;
+    }
+
+    try {
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        }
+
+        const response = await fetch(COMPANY_EMPLOYEES_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action: 'offboard_freelancer',
+                company_id: Number(currentCompanyId),
+                repairer_id: repairerIdNum,
+                reason
+            })
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || result.error || 'Failed to lay off freelancer');
+        }
+
+        notifyLayoff('Freelancer laid off successfully.', 'success');
+        window.closeLayoffFreelancerDrawer();
+        await loadFreelancers();
+        if (typeof loadDashboardPreviews === 'function') {
+            await loadDashboardPreviews();
+        }
+    } catch (error) {
+        console.error('Error laying off freelancer:', error);
+        notifyLayoff(`Layoff failed: ${error.message || 'Unknown error'}`, 'error');
+    } finally {
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm Layoff';
+        }
+    }
+};
+
+window.layoffFreelancer = async function (repairerId) {
+    const repairerIdNum = Number(repairerId || 0);
+    if (!currentCompanyId || !repairerIdNum) {
+        notifyLayoff('Unable to process layoff request. Missing company or repairer id.', 'error');
+        return;
+    }
+
+    const freelancer = freelancersList.find(f => Number(f.repairer_id) === repairerIdNum);
+    const fullName = freelancer ? `${freelancer.first_name} ${freelancer.last_name}`.trim() : 'this freelancer';
+
+    pendingLayoffRepairerId = repairerIdNum;
+    const overlay = ensureLayoffModal();
+    const nameEl = document.getElementById('layoffFreelancerName');
+    const input = document.getElementById('layoffReasonInput');
+    const err = document.getElementById('layoffReasonError');
+    if (nameEl) {
+        nameEl.textContent = `You are about to lay off ${fullName}. Please provide the reason.`;
+    }
+    if (input) {
+        input.value = '';
+        setTimeout(() => input.focus(), 0);
+    }
+    if (err) err.style.display = 'none';
+    overlay.classList.add('active');
 };

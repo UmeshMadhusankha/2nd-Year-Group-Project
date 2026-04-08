@@ -221,6 +221,73 @@ class Repairer {
     }
 
     /**
+     * Get finished job outcomes for a repairer from the core `job` table.
+     * Success rate is computed from finished outcomes only: completed vs cancelled.
+     */
+    public function getPlatformJobOutcomeStats(int $repairerId): array {
+        try {
+            $stmt = $this->pdo->prepare('
+                SELECT
+                    SUM(CASE WHEN j.status = \'completed\' THEN 1 ELSE 0 END) AS completed_count,
+                    SUM(CASE WHEN j.status = \'cancelled\' THEN 1 ELSE 0 END) AS cancelled_count
+                FROM job j
+                WHERE j.fixer_id = ?
+            ');
+            $stmt->execute([$repairerId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            $completed = (int)($row['completed_count'] ?? 0);
+            $cancelled = (int)($row['cancelled_count'] ?? 0);
+
+            return [
+                'completed' => $completed,
+                'cancelled' => $cancelled,
+                'total_finished' => $completed + $cancelled,
+            ];
+        } catch (PDOException $e) {
+            error_log('Error getting platform job outcome stats: ' . $e->getMessage());
+            return ['completed' => 0, 'cancelled' => 0, 'total_finished' => 0];
+        }
+    }
+
+    /**
+     * Get finished outcomes for a repairer from workforce `freelancer_assignments`.
+     * By default this aggregates across all companies; pass $companyId to scope.
+     */
+    public function getFreelancerAssignmentOutcomeStats(int $repairerId, ?int $companyId = null): array {
+        try {
+            $sql = '
+                SELECT
+                    SUM(CASE WHEN fa.status = \'completed\' THEN 1 ELSE 0 END) AS completed_count,
+                    SUM(CASE WHEN fa.status = \'cancelled\' THEN 1 ELSE 0 END) AS cancelled_count
+                FROM freelancer_assignments fa
+                WHERE fa.repairer_id = ?
+            ';
+            $params = [$repairerId];
+            if ($companyId !== null) {
+                $sql .= ' AND fa.company_id = ?';
+                $params[] = $companyId;
+            }
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            $completed = (int)($row['completed_count'] ?? 0);
+            $cancelled = (int)($row['cancelled_count'] ?? 0);
+
+            return [
+                'completed' => $completed,
+                'cancelled' => $cancelled,
+                'total_finished' => $completed + $cancelled,
+            ];
+        } catch (PDOException $e) {
+            error_log('Error getting freelancer assignment outcome stats: ' . $e->getMessage());
+            return ['completed' => 0, 'cancelled' => 0, 'total_finished' => 0];
+        }
+    }
+
+    /**
      * Update repairer profile details.
      */
     public function updateProfile($repairerId, $data) {

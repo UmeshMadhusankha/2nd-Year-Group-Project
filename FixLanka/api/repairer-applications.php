@@ -11,6 +11,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 // Include required files
 require_once '../config/database.php';
+require_once '../models/SystemNotificationService.php';
 
 // Get request method
 $method = $_SERVER['REQUEST_METHOD'];
@@ -513,6 +514,22 @@ function approveApplication($db) {
                 $appDetails['repairer_id'],
                 $appDetails['expected_rate']
             ]);
+
+            try {
+                $notifier = new SystemNotificationService($db);
+                $companyStmt = $db->prepare("SELECT name FROM company WHERE company_id = ? LIMIT 1");
+                $companyStmt->execute([(int)$appDetails['company_id']]);
+                $companyName = (string)($companyStmt->fetchColumn() ?: 'Company');
+                $notifier->notify(
+                    'Application approved',
+                    "{$companyName} approved your application and hired you.",
+                    'repairer',
+                    (int)$appDetails['repairer_id'],
+                    ['role' => 'company', 'id' => (int)$appDetails['company_id'], 'name' => $companyName]
+                );
+            } catch (Throwable $e) {
+                error_log('Failed to send approve notification: ' . $e->getMessage());
+            }
         }
 
         $db->commit();
@@ -552,11 +569,37 @@ function rejectApplication($db) {
     }
     
     try {
+        $detailSql = "SELECT jp.company_id, ra.repairer_id
+                      FROM repairer_applications ra
+                      JOIN companyjobpost jp ON ra.job_posting_id = jp.posting_id
+                      WHERE ra.application_id = ?";
+        $detailStmt = $db->prepare($detailSql);
+        $detailStmt->execute([$application_id]);
+        $appDetails = $detailStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
         $sql = "UPDATE repairer_applications 
                 SET status = 'rejected', rejection_reason = ? 
                 WHERE application_id = ?";
         $stmt = $db->prepare($sql);
         $stmt->execute([$reason, $application_id]);
+
+        if ($appDetails) {
+            try {
+                $notifier = new SystemNotificationService($db);
+                $companyStmt = $db->prepare("SELECT name FROM company WHERE company_id = ? LIMIT 1");
+                $companyStmt->execute([(int)$appDetails['company_id']]);
+                $companyName = (string)($companyStmt->fetchColumn() ?: 'Company');
+                $notifier->notify(
+                    'Application rejected',
+                    "{$companyName} rejected your application." . (!empty($reason) ? ' Reason: ' . $reason : ''),
+                    'repairer',
+                    (int)$appDetails['repairer_id'],
+                    ['role' => 'company', 'id' => (int)$appDetails['company_id'], 'name' => $companyName]
+                );
+            } catch (Throwable $e) {
+                error_log('Failed to send reject notification: ' . $e->getMessage());
+            }
+        }
         
         echo json_encode([
             'success' => true,

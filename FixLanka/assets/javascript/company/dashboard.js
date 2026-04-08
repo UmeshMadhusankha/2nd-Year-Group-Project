@@ -5,6 +5,7 @@ const calendarState = {
     currentDate: new Date(),
     selectedDate: null,
     events: [],
+    systemEvents: [],
     viewMode: 'month'
 };
 
@@ -512,10 +513,12 @@ function addBaseModalStyles() {
             justify-content: center;
             z-index: 10000;
             opacity: 0;
+            pointer-events: none;
             transition: opacity 0.3s ease;
         }
         .modal-overlay.active {
             opacity: 1;
+            pointer-events: auto;
         }
         .modal-content {
             background: white;
@@ -826,6 +829,38 @@ function loadCalendarEvents() {
     }
 }
 
+function setSystemCalendarEvents(systemEvents) {
+    if (!Array.isArray(systemEvents)) {
+        calendarState.systemEvents = [];
+        return;
+    }
+
+    calendarState.systemEvents = systemEvents.map(event => {
+        let eventDate;
+        if (typeof event.date === 'string') {
+            const parts = event.date.split('T')[0].split('-');
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            eventDate = new Date(year, month, day);
+        } else {
+            eventDate = new Date(event.date);
+        }
+
+        return {
+            ...event,
+            is_system: true,
+            date: eventDate,
+            time: event.time || 'All day',
+            type: event.type || 'system'
+        };
+    });
+}
+
+function getAllCalendarEvents() {
+    return [...calendarState.systemEvents, ...calendarState.events];
+}
+
 function saveCalendarEvents() {
     try {
         localStorage.setItem('fixlanka_calendar_events', JSON.stringify(calendarState.events));
@@ -984,7 +1019,20 @@ function showDateModal(dateStr, message, events) {
     modal.id = 'dateModal';
     modal.className = 'modal-overlay active';
 
-    const eventsHTML = events.map(event => `
+    const eventsHTML = events.map(event => {
+        const canEdit = !event.is_system;
+        const actionsHTML = canEdit ? `
+            <div class="event-actions">
+                <button onclick="editEvent('${event.id}')" class="action-btn secondary">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button onclick="deleteEvent('${event.id}')" class="action-btn danger">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        ` : '';
+
+        return `
         <div class="event-item ${event.type}">
             <div class="event-header">
                 <h4>${event.title}</h4>
@@ -994,16 +1042,10 @@ function showDateModal(dateStr, message, events) {
             ${event.client ? `<div class="event-meta">Client: ${event.client}</div>` : ''}
             ${event.location ? `<div class="event-meta">Location: ${event.location}</div>` : ''}
             ${event.participants ? `<div class="event-meta">Participants: ${event.participants.join(', ')}</div>` : ''}
-            <div class="event-actions">
-                <button onclick="editEvent('${event.id}')" class="action-btn secondary">
-                    <i class="fas fa-edit"></i> Edit
-                </button>
-                <button onclick="deleteEvent('${event.id}')" class="action-btn danger">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
-            </div>
+            ${actionsHTML}
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     modal.innerHTML = `
         <div class="modal-content date-modal">
@@ -1041,10 +1083,12 @@ function showDateModal(dateStr, message, events) {
                 justify-content: center;
                 z-index: 10000;
                 opacity: 0;
+                pointer-events: none;
                 transition: opacity 0.3s ease;
             }
             .modal-overlay.active {
                 opacity: 1;
+                pointer-events: auto;
             }
             .modal-content {
                 background: white;
@@ -1240,6 +1284,28 @@ function showDateModal(dateStr, message, events) {
         document.head.appendChild(styles);
     }
 
+    // Click outside to close
+    modal.addEventListener('mousedown', (e) => {
+        if (e.target === modal) {
+            closeDateModal();
+        }
+    });
+
+    // Escape to close (installed once)
+    if (!window.__fixlankaDashboardModalEsc) {
+        window.__fixlankaDashboardModalEsc = true;
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            if (document.getElementById('eventFormModal')) {
+                closeEventForm();
+                return;
+            }
+            if (document.getElementById('dateModal')) {
+                closeDateModal();
+            }
+        });
+    }
+
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
 }
@@ -1396,6 +1462,13 @@ function showEventForm(date = null, event = null) {
 
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
+
+    // Click outside to close
+    modal.addEventListener('mousedown', (e) => {
+        if (e.target === modal) {
+            closeEventForm();
+        }
+    });
 }
 
 function closeEventForm() {
@@ -1464,10 +1537,22 @@ function editEvent(eventId) {
     if (event) {
         closeDateModal();
         showEventForm(event.date, event);
+        return;
+    }
+
+    const systemEvent = calendarState.systemEvents.find(e => e.id === eventId);
+    if (systemEvent) {
+        showNotification('System events cannot be edited', 'info');
     }
 }
 
 function deleteEvent(eventId) {
+    const systemEvent = calendarState.systemEvents.find(e => e.id === eventId);
+    if (systemEvent) {
+        showNotification('System events cannot be deleted', 'info');
+        return;
+    }
+
     if (confirm('Are you sure you want to delete this event?')) {
         calendarState.events = calendarState.events.filter(e => e.id !== eventId);
         saveCalendarEvents();
@@ -1482,8 +1567,9 @@ function updateUpcomingEvents() {
     if (!upcomingContainer) return;
 
     const today = new Date();
-    const upcomingEvents = calendarState.events
-        .filter(event => event.date >= today)
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const upcomingEvents = getAllCalendarEvents()
+        .filter(event => event.date >= todayStart)
         .sort((a, b) => a.date - b.date)
         .slice(0, 3);
 
@@ -1607,7 +1693,7 @@ function navigateDate(currentDate, days) {
 
 // Utility Functions
 function getEventsForDate(date) {
-    return calendarState.events.filter(event =>
+    return getAllCalendarEvents().filter(event =>
         event.date.toDateString() === date.toDateString()
     );
 }
@@ -1990,6 +2076,10 @@ async function loadDashboardData(chartPeriodOverride) {
 
         dashboardData = json.data;
 
+        // Merge read-only system events (projects/milestones) into calendar
+        setSystemCalendarEvents(dashboardData?.calendar?.system_events || []);
+        updateCalendarDisplay();
+
         renderKPIs(dashboardData.kpis);
         renderProjects(dashboardData.projects);
         renderContracts(dashboardData.contracts);
@@ -2151,41 +2241,93 @@ function renderIncomeChart(incomeChart) {
 function renderWorkforce(workforce) {
     if (!Array.isArray(workforce)) workforce = [];
 
-    const byKey = {};
-    workforce.forEach(w => {
-        const key = normalizeWorkforceKey(w.specialty);
-        if (!key) return;
-        byKey[key] = w;
-    });
+    const grid = document.getElementById('workforceGrid');
+    if (!grid) return;
 
-    ['carpenter', 'electrician', 'plumber', 'painter'].forEach(key => {
-        const row = byKey[key] || { total: 0, active: 0, avg_rating: 0 };
+    const categoryFilter = document.getElementById('workforceCategoryFilter');
+    if (categoryFilter) {
+        categoryFilter.innerHTML = '<option value="">All Categories</option>';
+    }
+
+    if (workforce.length === 0) {
+        grid.innerHTML = '<div class="empty-state">No workforce categories found.</div>';
+        return;
+    }
+
+    // Stable sort by specialty name
+    const sorted = [...workforce].sort((a, b) => String(a.specialty || '').localeCompare(String(b.specialty || ''), undefined, { sensitivity: 'base' }));
+
+    const cards = sorted.map(row => {
+        const specialtyName = String(row.specialty || '');
+        const key = workforceSlug(specialtyName);
         const total = Number(row.total || 0);
         const active = Number(row.active || 0);
         const ratio = total > 0 ? Math.round((active / total) * 100) : 0;
+        const avgRating = Number(row.avg_rating || 0);
 
-        const activeEl = document.querySelector(`[data-workforce-active="${key}"]`);
-        const totalEl = document.querySelector(`[data-workforce-total="${key}"]`);
-        const ratioEl = document.querySelector(`[data-workforce-ratio="${key}"]`);
-        const fillEl = document.querySelector(`[data-workforce-fill="${key}"]`);
-        const barEl = document.querySelector(`[data-workforce-bar="${key}"]`);
-        const ratingEl = document.querySelector(`[data-workforce-rating="${key}"]`);
-        const badgeEl = document.querySelector(`[data-workforce-badge="${key}"]`);
+        const badge = ratio >= 60
+            ? { cls: 'available', text: 'Available' }
+            : (ratio >= 30 ? { cls: 'limited', text: 'Limited' } : { cls: 'offline', text: 'Offline' });
 
-        if (activeEl) activeEl.textContent = active;
-        if (totalEl) totalEl.textContent = `/ ${total} Total`;
-        if (ratioEl) ratioEl.textContent = `${ratio}%`;
-        if (fillEl) fillEl.style.width = `${ratio}%`;
-        if (barEl) barEl.setAttribute('aria-valuenow', String(ratio));
-        if (ratingEl) ratingEl.textContent = `${Number(row.avg_rating || 0).toFixed(1)} Rating`;
+        const icon = getWorkforceIconClass(specialtyName);
+        const href = `/2nd-Year-Group-Project/FixLanka/company-workforce#${encodeURIComponent(key)}`;
 
-        if (badgeEl) {
-            const badge = ratio >= 60 ? { cls: 'available', text: 'Available' } : (ratio >= 30 ? { cls: 'limited', text: 'Limited' } : { cls: 'offline', text: 'Offline' });
-            badgeEl.classList.remove('available', 'limited', 'offline');
-            badgeEl.classList.add(badge.cls);
-            badgeEl.textContent = badge.text;
+        if (categoryFilter && key) {
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = specialtyName;
+            categoryFilter.appendChild(opt);
         }
-    });
+
+        return `
+            <div class="workforce-item" data-category="${escapeHtml(key)}">
+                <div class="workforce-header">
+                    <div class="workforce-icon">
+                        <i class="fas ${escapeHtml(icon)}"></i>
+                    </div>
+                    <div class="workforce-title">
+                        <h4>${escapeHtml(specialtyName)}</h4>
+                        <div class="workforce-availability">
+                            <span class="available-count">${active}</span>
+                            <span class="total-count">/ ${total} Total</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workforce-progress">
+                    <div class="progress-label">
+                        <span>Availability Ratio</span>
+                        <span class="progress-percentage">${ratio}%</span>
+                    </div>
+                    <div class="progress-bar" role="progressbar" aria-valuenow="${ratio}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(specialtyName)} availability ratio">
+                        <div class="progress-fill" style="width: ${ratio}%"></div>
+                    </div>
+                </div>
+
+                <div class="workforce-details">
+                    <div class="detail-item">
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <span>${avgRating.toFixed(1)} Rating</span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                        <span>Verified</span>
+                    </div>
+                </div>
+
+                <div class="availability-badge ${badge.cls}">${badge.text}</div>
+
+                <div class="workforce-actions" role="group" aria-label="${escapeHtml(specialtyName)} workforce actions">
+                    <button class="action-btn primary" type="button" onclick="window.location.href='${href}'">
+                        <i class="fas fa-eye icon-left" aria-hidden="true"></i>
+                        <span class="btn-text">View All</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    grid.innerHTML = cards;
 }
 
 function renderFeedback(feedback) {
@@ -2269,13 +2411,27 @@ function formatDateShort(dateStr) {
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function normalizeWorkforceKey(specialty) {
-    const s = (specialty || '').toLowerCase();
-    if (s.includes('carp')) return 'carpenter';
-    if (s.includes('elect')) return 'electrician';
-    if (s.includes('plumb')) return 'plumber';
-    if (s.includes('paint')) return 'painter';
-    return null;
+function workforceSlug(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9\-]/g, '')
+        .replace(/\-+/g, '-')
+        .replace(/^\-+|\-+$/g, '')
+        || 'category';
+}
+
+function getWorkforceIconClass(specialty) {
+    const s = String(specialty || '').toLowerCase();
+    if (s.includes('carp')) return 'fa-hammer';
+    if (s.includes('elect')) return 'fa-bolt';
+    if (s.includes('plumb')) return 'fa-wrench';
+    if (s.includes('paint')) return 'fa-paint-brush';
+    if (s.includes('mason') || s.includes('brick')) return 'fa-trowel';
+    if (s.includes('tile')) return 'fa-border-all';
+    if (s.includes('ac') || s.includes('hvac')) return 'fa-fan';
+    return 'fa-user-cog';
 }
 
 function getEarningsBarHeight(series, amount) {

@@ -113,8 +113,12 @@ async function loadApplications() {
 
         if (data.success) {
             const applications = (data.applications || []).map(normalizeApplication);
-            window.__applicationsCache = applications;
-            renderApplications(applications);
+            const pendingApplications = applications.filter(app => {
+                const status = String(app.status || app.app_status || 'pending').toLowerCase();
+                return status === 'pending' || status === 'new';
+            });
+            window.__applicationsCache = pendingApplications;
+            renderApplications(pendingApplications);
         } else {
             console.error('API Error:', data.error);
         }
@@ -128,13 +132,18 @@ function renderApplications(applications) {
     const listContainer = document.querySelector('.applications-list');
     const tableBody = document.getElementById('applicationsTableBody');
 
+    const pendingApplications = (applications || []).filter(app => {
+        const status = String(app.status || app.app_status || 'pending').toLowerCase();
+        return status === 'pending' || status === 'new';
+    });
+
     if (listContainer) {
-        renderApplicationsCards(listContainer, applications);
+        renderApplicationsCards(listContainer, pendingApplications);
         return;
     }
 
     if (tableBody) {
-        renderApplicationsTable(applications);
+        renderApplicationsTable(pendingApplications);
     }
 }
 
@@ -157,7 +166,8 @@ function renderApplicationsCards(container, applications) {
         card.className = 'application-card';
         card.style.cursor = 'pointer';
         // Map DB statuses to the tab filters used in workforce.php
-        card.dataset.status = app.status === 'pending' ? 'new' : app.status;
+        const normalizedStatus = String(app.status || app.app_status || 'pending').toLowerCase();
+        card.dataset.status = normalizedStatus === 'pending' ? 'new' : normalizedStatus;
 
         const initials = `${(app.firstName || '').charAt(0)}${(app.lastName || '').charAt(0)}`.toUpperCase();
 

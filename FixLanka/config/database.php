@@ -22,6 +22,17 @@ try {
             PDO::ATTR_EMULATE_PREPARES => false
         ]
     );
+
+    // System audit logging (best-effort)
+    // - Only logs /FixLanka/api/* requests (and only GETs with explicit action)
+    // - Never breaks the request if logging fails
+    require_once __DIR__ . '/../includes/AuditLogger.php';
+    if (class_exists('AuditLogger')) {
+        // Only attempt if session is available (most APIs start session before loading controllers)
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            AuditLogger::autoLogApiRequest($pdo);
+        }
+    }
 } catch (PDOException $e) {
     // Log error and return JSON error response
     error_log("Database Connection Error: " . $e->getMessage());

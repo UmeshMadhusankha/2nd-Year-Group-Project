@@ -64,6 +64,83 @@ body {
     min-height: 0;
 }
 
+/* =====================================
+   Profile Header (My Profile page)
+   Note: Profile page uses `.header-left/.header-right` which also exist in topbar.css.
+   These scoped rules prevent the topbar layout from leaking into the page content.
+   ===================================== */
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-xl);
+    /* Slightly taller header */
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    margin: var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
+    border-radius: var(--border-radius-xl);
+    color: var(--text-white);
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.12) 0%, rgba(var(--accent-rgb), 0.12) 100%);
+    border: none;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.settings-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.10) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(110px, -110px);
+}
+
+.settings-header .header-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+    min-width: 0;
+    height: auto;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.settings-header .header-left h1 {
+    margin: 0;
+    font-size: var(--font-size-3xl);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.settings-header .subtitle {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    opacity: 0.9;
+    letter-spacing: 0.2px;
+}
+
+.settings-header .header-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+.settings-header .btn-save-all {
+    white-space: nowrap;
+}
+
 /* Main Content - matching dashboard */
 .main-content {
     flex: 1;
@@ -75,7 +152,8 @@ body {
     overflow: hidden;
     width: calc(100% - var(--sidebar-width));
     box-sizing: border-box;
-    padding-top: var(--spacing-lg);
+    /* Keep content snug under the fixed topbar */
+    padding-top: 0;
     border-radius: var(--border-radius-xl);
     position: fixed;
     top: var(--header-height);

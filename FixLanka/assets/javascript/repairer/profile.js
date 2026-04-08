@@ -51,6 +51,23 @@ document.addEventListener('DOMContentLoaded', function () {
         loadProfileData();
         addEventListeners();
     }
+    function syncCategoryNameFromSelect() {
+        var catSelect = document.getElementById('service-category');
+        var catNameInput = document.getElementById('service-category-name');
+        if (!catNameInput) return;
+
+        if (currentProfileData && (currentProfileData.category_name || '').toString().trim() && (!isEditing)) {
+            catNameInput.value = (currentProfileData.category_name || '').toString().trim();
+            return;
+        }
+
+        if (catSelect && catSelect.selectedOptions && catSelect.selectedOptions.length) {
+            var optText = (catSelect.selectedOptions[0].textContent || '').trim();
+            catNameInput.value = (catSelect.value ? optText : '—');
+        } else {
+            catNameInput.value = '—';
+        }
+    }
 
     /* ──────────────────────────────────────────────
        READ – Load profile from server
@@ -107,10 +124,14 @@ document.addEventListener('DOMContentLoaded', function () {
         if (jobsCompleted) jobsCompleted.textContent = data.completedJobsCount || 0;
 
         var successRate = document.getElementById('profileSuccessRate');
-        if (successRate) successRate.textContent = data.completedJobsCount > 0 ? '98%' : '—';
+        if (successRate) {
+            var pct = data.successRatePct;
+            var num = (pct === null || pct === undefined) ? NaN : Number(pct);
+            successRate.textContent = Number.isFinite(num) ? (Math.round(num) + '%') : '—';
+        }
 
         var responseTime = document.getElementById('profileResponseTime');
-        if (responseTime) responseTime.textContent = data.completedJobsCount > 0 ? '< 1 hour' : '—';
+        if (responseTime) responseTime.textContent = '—';
 
         // ── Right column form fields ──
         setVal('full-name', data.full_name || (data.f_name + ' ' + data.l_name));
@@ -119,6 +140,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var catSelect = document.getElementById('service-category');
         if (catSelect && data.category_id) catSelect.value = data.category_id;
+
+        var catNameInput = document.getElementById('service-category-name');
+        if (catNameInput) {
+            var nameFromApi = (data.category_name || '').toString().trim();
+            if (nameFromApi) {
+                catNameInput.value = nameFromApi;
+            } else if (catSelect && catSelect.selectedOptions && catSelect.selectedOptions.length) {
+                var optText = (catSelect.selectedOptions[0].textContent || '').trim();
+                catNameInput.value = (catSelect.value ? optText : '—');
+            } else {
+                catNameInput.value = '—';
+            }
+        }
 
         // Districts
         if (data.districts) {
@@ -185,6 +219,15 @@ document.addEventListener('DOMContentLoaded', function () {
             .replace(/'/g, '&#039;');
     }
 
+    // Keep category name field in sync with dropdown
+    (function wireCategorySelectSync() {
+        var catSelect = document.getElementById('service-category');
+        if (!catSelect) return;
+        catSelect.addEventListener('change', function () {
+            syncCategoryNameFromSelect();
+        });
+    })();
+
     function renderRatingStars(rating) {
         var container = document.getElementById('profileRatingStars');
         if (!container) return;
@@ -235,6 +278,8 @@ document.addEventListener('DOMContentLoaded', function () {
         districtCheckboxes.forEach(function (cb) { cb.removeAttribute('disabled'); });
         if (sundayClosedCheckbox) sundayClosedCheckbox.removeAttribute('disabled');
 
+        syncCategoryNameFromSelect();
+
         if (skillsInput) {
             skillsInput.removeAttribute('readonly');
             skillsInput.classList.add('editable');
@@ -254,6 +299,8 @@ document.addEventListener('DOMContentLoaded', function () {
         formSelects.forEach(function (sel) { sel.setAttribute('disabled', 'disabled'); sel.classList.remove('editable'); });
         districtCheckboxes.forEach(function (cb) { cb.setAttribute('disabled', 'disabled'); });
         if (sundayClosedCheckbox) sundayClosedCheckbox.setAttribute('disabled', 'disabled');
+
+        syncCategoryNameFromSelect();
 
         if (skillsInput) {
             skillsInput.setAttribute('readonly', 'readonly');

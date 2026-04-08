@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!listEl) return;
 
+    let currentNotifications = [];
+    let clickHandlerBound = false;
+
     async function fetchNotifications() {
         try {
             const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/notifications.php?action=list&user_id=${companyId}&user_type=${userType}&limit=100`);
@@ -17,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const notifications = Array.isArray(data.notifications) ? data.notifications : [];
+            currentNotifications = notifications;
 
             if (notifications.length === 0) {
                 listEl.innerHTML = `
@@ -28,21 +32,38 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            // Update "last seen" timestamp so bell indicator clears after visiting this page.
+            markCompanyNotificationsSeenFromList(companyId, notifications);
+
             listEl.innerHTML = notifications.map((notif) => renderNotificationItem(notif)).join('');
 
-            // Bind click handlers to mark single notification as read
-            listEl.querySelectorAll('[data-notification-id]').forEach((item) => {
-                item.addEventListener('click', async function () {
+            // Bind ONE delegated click handler (more reliable than binding per-item).
+            if (!clickHandlerBound) {
+                clickHandlerBound = true;
+                listEl.addEventListener('click', async function (e) {
+                    const item = e.target.closest('[data-notification-id]');
+                    if (!item || !listEl.contains(item)) return;
+
                     const notificationId = parseInt(item.getAttribute('data-notification-id') || '0', 10);
                     if (!notificationId) return;
 
+                    const notif = currentNotifications.find((n) => String(n.notification_id) === String(notificationId));
+                    if (notif) {
+                        if (typeof window.openCompanyNotificationDetailsModal === 'function') {
+                            window.openCompanyNotificationDetailsModal(notif);
+                        } else {
+                            openLocalNotificationDetailsModal(notif);
+                        }
+                    }
+
+                    // Best-effort: mark read in backend if supported.
                     await markRead(notificationId);
                     item.classList.remove('unread');
                     if (typeof window.refreshNotifications === 'function') {
                         window.refreshNotifications();
                     }
                 });
-            });
+            }
         } catch (error) {
             console.error('Error loading notifications page:', error);
             listEl.innerHTML = `
@@ -52,6 +73,134 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
             `;
         }
+    }
+
+    function closeLocalNotificationDetailsModal() {
+        const existing = document.getElementById('companyNotificationDetailsModal');
+        if (existing) existing.remove();
+        document.body.style.overflow = '';
+        document.removeEventListener('keydown', onLocalModalKeyDown);
+    }
+
+    function onLocalModalKeyDown(e) {
+        if (e.key === 'Escape') closeLocalNotificationDetailsModal();
+    }
+
+    function openLocalNotificationDetailsModal(notification) {
+        if (!notification || typeof notification !== 'object') return;
+
+        closeLocalNotificationDetailsModal();
+
+        const title = notification.title || 'Notification';
+        const message = notification.message || '';
+        const createdAt = notification.created_at || notification.send_date || '';
+
+        const overlay = document.createElement('div');
+        overlay.className = 'notification-details-overlay';
+        overlay.id = 'companyNotificationDetailsModal';
+        overlay.innerHTML = `
+            <div class="notification-details-modal" role="dialog" aria-modal="true" aria-label="Notification details">
+                <div class="notification-details-header">
+                    <h3 class="notification-details-title">${safeText(title)}</h3>
+                    <button type="button" class="notification-details-close" aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="notification-details-body">
+                    <div class="notification-details-meta">${safeText(createdAt ? timeAgo(createdAt) : '')}</div>
+                    <p class="notification-details-message">${safeText(String(message))}</p>
+                </div>
+                <div class="notification-details-footer">
+                    <button type="button" class="btn btn-secondary notification-details-close-btn">Close</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+
+        // If CSS didn't apply (cached/old), force minimal inline styles so the modal is still usable.
+        try {
+            const overlayPos = window.getComputedStyle(overlay).position;
+            if (overlayPos !== 'fixed') {
+                overlay.style.cssText = [
+                    'position:fixed',
+                    'inset:0',
+                    'background:rgba(0,0,0,0.35)',
+                    'z-index:10001',
+                    'display:flex',
+                    'align-items:center',
+                    'justify-content:center',
+                    'padding:20px'
+                ].join(';');
+            }
+
+            const modal = overlay.querySelector('.notification-details-modal');
+            if (modal) {
+                const bg = window.getComputedStyle(modal).backgroundColor;
+                if (bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent') {
+                    modal.style.cssText = [
+                        'width:520px',
+                        'max-width:100%',
+                        'background:rgba(255,255,255,0.98)',
+                        'border-radius:16px',
+                        'overflow:hidden',
+                        'box-shadow:0 10px 40px -10px rgba(0,0,0,0.2),0 0 0 1px rgba(0,0,0,0.06)'
+                    ].join(';');
+                }
+            }
+        } catch {
+            // ignore
+        }
+        overlay.querySelectorAll('.notification-details-close, .notification-details-close-btn')
+            .forEach((btn) => btn.addEventListener('click', closeLocalNotificationDetailsModal));
+
+        overlay.addEventListener('click', function (e) {
+            const modal = overlay.querySelector('.notification-details-modal');
+            if (modal && !modal.contains(e.target)) closeLocalNotificationDetailsModal();
+        });
+
+        document.addEventListener('keydown', onLocalModalKeyDown);
+    }
+
+    function getCompanyNotificationsStorageKey(companyId) {
+        return `fixlanka:company:${companyId}:notificationsLastSeenAt`;
+    }
+
+    function setCompanyNotificationsLastSeenMs(companyId, ms) {
+        try {
+            const iso = new Date(ms).toISOString();
+            localStorage.setItem(getCompanyNotificationsStorageKey(companyId), iso);
+        } catch {
+            // ignore
+        }
+    }
+
+    function getNotificationTimeMs(notif) {
+        if (!notif || typeof notif !== 'object') return 0;
+        const candidates = [notif.created_at, notif.send_date];
+        for (const value of candidates) {
+            if (!value) continue;
+            const ms = Date.parse(value);
+            if (Number.isFinite(ms)) return ms;
+        }
+        if (notif.date && notif.time) {
+            const ms = Date.parse(`${notif.date} ${notif.time}`);
+            if (Number.isFinite(ms)) return ms;
+        }
+        return 0;
+    }
+
+    function markCompanyNotificationsSeenFromList(companyId, notifications) {
+        const times = (Array.isArray(notifications) ? notifications : [])
+            .map(getNotificationTimeMs)
+            .filter((t) => Number.isFinite(t) && t > 0);
+        if (times.length === 0) {
+            setCompanyNotificationsLastSeenMs(companyId, Date.now());
+            return;
+        }
+        const latest = Math.max(...times);
+        setCompanyNotificationsLastSeenMs(companyId, latest);
     }
 
     function safeText(value) {
@@ -90,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="notification-content">
                     <h5>${safeText(notif.title || 'Notification')}</h5>
                     <p>${safeText(notif.message || '')}</p>
-                    <span class="notification-time">${safeText(timeAgo(notif.created_at))}</span>
+                    <span class="notification-time">${safeText(timeAgo(notif.created_at || notif.send_date))}</span>
                 </div>
             </div>
         `;

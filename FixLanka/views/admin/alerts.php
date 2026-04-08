@@ -14,6 +14,8 @@ require_once __DIR__ . '/../../controllers/AdminAlertController.php';
 
 $basePath = '';
 $currentPath = 'alerts';
+$currentUser = function_exists('getCurrentUser') ? getCurrentUser() : null;
+$currentUserRole = strtolower((string)($currentUser['role'] ?? ($_SESSION['user_role'] ?? 'admin')));
 
 // ✅ VIEW ONLY FETCHES DATA - NO POST HANDLING
 try {
@@ -69,7 +71,7 @@ $alertTemplates = [
 ];
 
 // Get page title and description
-$pageTitle = 'Send Alerts - FixLanka Admin';
+$pageTitle = 'Notifications - FixLanka Admin';
 $pageDescription = 'Broadcast important messages to users across the platform';
 ?>
 <!DOCTYPE html>
@@ -91,7 +93,7 @@ $pageDescription = 'Broadcast important messages to users across the platform';
         <?php renderAdminSidebar($currentPath, $basePath); ?>
         
         <div class="dashboard-main">
-            <?php renderPageHeader($basePath, 'Send Alerts', 'Broadcast important messages to users across the platform'); ?>
+            <?php renderPageHeader($basePath, 'Notifications', 'Broadcast important messages to users across the platform'); ?>
 
             <main class="main-content">
                 <!-- Success/Error Message -->
@@ -107,7 +109,7 @@ $pageDescription = 'Broadcast important messages to users across the platform';
                     <!-- Send Alert Card -->
                     <div class="section-card">
                         <div class="section-header">
-                            <h3 class="section-title">
+                                <h3 class="section-title">
                                 <i class="fa-solid fa-paper-plane"></i>
                                 Send Notification
                             </h3>
@@ -165,7 +167,7 @@ $pageDescription = 'Broadcast important messages to users across the platform';
                     <!-- Recent Notifications Card -->
                     <div class="section-card">
                         <div class="section-header">
-                            <h3 class="section-title">
+                                        <h3 class="section-title">
                                 <i class="fa-solid fa-clock"></i>
                                 Recent Notifications
                             </h3>
@@ -174,8 +176,11 @@ $pageDescription = 'Broadcast important messages to users across the platform';
 
                         <div class="alerts-list" id="alertsList">
                             <?php if (!empty($recentAlerts)): ?>
-                                <?php foreach ($recentAlerts as $alert): ?>
-                                <div class="alert-item" id="alert-<?= $alert['alert_id'] ?>" data-alert='<?= json_encode($alert) ?>'>
+                                        <?php foreach ($recentAlerts as $alert): ?>
+                                        <?php $creatorLabel = !empty($alert['created_by']) ? htmlspecialchars((string)$alert['created_by']) : 'Admin'; ?>
+                                        <?php $isAdminCreated = strtolower((string)($alert['created_by_role'] ?? '')) === 'admin'; ?>
+                                        <?php $lockEdit = ($currentUserRole === 'moderator' && $isAdminCreated); ?>
+                                    <div class="alert-item" id="alert-<?= $alert['alert_id'] ?>" data-alert='<?= json_encode($alert) ?>' data-lock-edit="<?= $lockEdit ? '1' : '0' ?>">
                                     <div class="alert-header">
                                         <div class="alert-message"><?= htmlspecialchars($alert['message']) ?></div>
                                     </div>
@@ -183,17 +188,18 @@ $pageDescription = 'Broadcast important messages to users across the platform';
                                         <div style="display: flex; gap: 0.5rem; align-items: center;">
                                             <span class="badge badge-<?= strtolower($alert['status']) ?>"><?= $alert['status'] ?></span>
                                             <span><?= htmlspecialchars($alert['target_role']) ?></span>
+                                                    <span>Created by: <?= $creatorLabel ?></span>
                                         </div>
                                         <span><?= date('M j, Y', strtotime($alert['created_at'])) ?></span>
                                     </div>
                                     <div class="alert-footer">
                                         <span class="badge badge-<?= strtolower($alert['priority']) ?>"><?= ucfirst($alert['priority']) ?></span>
                                         <div class="alert-actions">
-                                            <button onclick="editAlert(<?= $alert['alert_id'] ?>)" class="notification-action-btn edit-btn">
+                                            <button onclick="editAlert(<?= $alert['alert_id'] ?>)" class="notification-action-btn edit-btn" <?php echo $lockEdit ? 'disabled title="Admin-created notifications cannot be edited by moderators"' : ''; ?>>
                                                 <i class="fa-solid fa-pencil"></i>
                                                 Edit
                                             </button>
-                                            <button onclick="deleteAlert(<?= $alert['alert_id'] ?>)" class="notification-action-btn delete-btn">
+                                            <button onclick="deleteAlert(<?= $alert['alert_id'] ?>)" class="notification-action-btn delete-btn" <?php echo $lockEdit ? 'disabled title="Admin-created notifications cannot be deleted by moderators"' : ''; ?>>
                                                 <i class="fa-solid fa-trash"></i>
                                                 Delete
                                             </button>
@@ -285,6 +291,11 @@ $pageDescription = 'Broadcast important messages to users across the platform';
         function editAlert(alertId) {
             const alertElement = document.getElementById('alert-' + alertId);
             if (!alertElement) return;
+
+            if (String(alertElement.getAttribute('data-lock-edit') || '0') === '1') {
+                alert('Admin-created notifications cannot be edited by moderators.');
+                return;
+            }
             
             const alertData = JSON.parse(alertElement.getAttribute('data-alert'));
             
@@ -325,6 +336,12 @@ $pageDescription = 'Broadcast important messages to users across the platform';
 
         // ✅ FIXED: Delete Alert Function - submits to correct route
         function deleteAlert(alertId) {
+            const alertElement = document.getElementById('alert-' + alertId);
+            if (alertElement && String(alertElement.getAttribute('data-lock-edit') || '0') === '1') {
+                alert('Admin-created notifications cannot be deleted by moderators.');
+                return;
+            }
+
             if (!confirm('Are you sure you want to delete this alert? This action cannot be undone.')) {
                 return;
             }

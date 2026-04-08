@@ -10,6 +10,11 @@ require_once __DIR__ . '/_components/Header.php';
 require_once __DIR__ . '/../../config/databse.php';
 require_once __DIR__ . '/../../models/NotificationModel.php';
 
+$currentUser = function_exists('getCurrentUser') ? getCurrentUser() : null;
+$currentUserId = (int)($currentUser['id'] ?? ($_SESSION['user_id'] ?? 0));
+$currentUserRole = (string)($currentUser['role'] ?? ($_SESSION['user_role'] ?? 'moderator'));
+$currentUserName = (string)($currentUser['name'] ?? ($_SESSION['user_name'] ?? 'Moderator'));
+
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -37,7 +42,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
                 $recipient_type = $recipientTypeMap[$recipients] ?? 'all';
                 
-                $model->updateNotification($notification_id, $title, $message, $recipient_type);
+                $existing = $model->getNotificationById($notification_id);
+                if (!$existing) {
+                    $_SESSION['error_message'] = 'Notification not found';
+                    break;
+                }
+                if (strtolower($currentUserRole) === 'moderator' && strtolower((string)($existing['created_by_role'] ?? '')) === 'admin') {
+                    $_SESSION['error_message'] = 'Moderator cannot edit notifications created by admin';
+                    break;
+                }
+
+                $model->updateNotification($notification_id, $title, $message, $recipient_type, [
+                    'id' => $currentUserId,
+                    'role' => $currentUserRole,
+                    'name' => $currentUserName,
+                ]);
                 $_SESSION['success_message'] = 'Notification updated!';
                 break;
                 
@@ -49,7 +68,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     break;
                 }
                 
-                $rowsAffected = $model->deleteNotification($notification_id);
+                $existing = $model->getNotificationById($notification_id);
+                if (!$existing) {
+                    $_SESSION['error_message'] = 'Notification not found';
+                    break;
+                }
+                if (strtolower($currentUserRole) === 'moderator' && strtolower((string)($existing['created_by_role'] ?? '')) === 'admin') {
+                    $_SESSION['error_message'] = 'Moderator cannot delete notifications created by admin';
+                    break;
+                }
+
+                $rowsAffected = $model->deleteNotification($notification_id, [
+                    'id' => $currentUserId,
+                    'role' => $currentUserRole,
+                    'name' => $currentUserName,
+                ]);
                 
                 if ($rowsAffected > 0) {
                     $_SESSION['success_message'] = 'Notification deleted!';
@@ -138,6 +171,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                 <th style="padding: 0.75rem; text-align: left;">Title</th>
                                 <th style="padding: 0.75rem; text-align: left;">Message</th>
                                 <th style="padding: 0.75rem; text-align: left;">To</th>
+                                <th style="padding: 0.75rem; text-align: left;">Created By</th>
                                 <th style="padding: 0.75rem; text-align: left;">Status</th>
                                 <th style="padding: 0.75rem; text-align: left;">Date</th>
                                 <th style="padding: 0.75rem; text-align: left;">Actions</th>
@@ -157,6 +191,12 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                         'company' => 'Companies'
                                     ];
                                     $displayRecipient = $recipientDisplay[$n['recipient_type']] ?? $n['recipient_type'];
+                                    $creatorRole = strtolower((string)($n['created_by_role'] ?? ''));
+                                    $creatorName = trim((string)($n['created_by_name'] ?? ''));
+                                    if ($creatorName === '') {
+                                        $creatorName = $creatorRole === 'admin' ? 'Admin' : ($creatorRole === 'moderator' ? 'Moderator' : 'System');
+                                    }
+                                    $isAdminCreated = $creatorRole === 'admin';
                                     
                                     $badgeClass = 'badge-sent';
                                     if ($n['status'] === 'pending') $badgeClass = 'badge-pending';
@@ -169,6 +209,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                         <?php echo htmlspecialchars($n['message']); ?>
                                     </td>
                                     <td style="padding: 0.75rem;"><?php echo $displayRecipient; ?></td>
+                                    <td style="padding: 0.75rem;">Created by: <?php echo htmlspecialchars($creatorName); ?></td>
                                     <td style="padding: 0.75rem;">
                                         <span class="badge <?php echo $badgeClass; ?>">
                                             <?php echo ucfirst($n['status']); ?>
@@ -176,10 +217,10 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                     </td>
                                     <td style="padding: 0.75rem;"><?php echo date('M d, Y', strtotime($n['send_date'])); ?></td>
                                     <td style="padding: 0.75rem;">
-                                        <button onclick="openEditModal(<?php echo htmlspecialchars(json_encode($n)); ?>)" style="background: none; border: none; cursor: pointer; color: #3b82f6; margin-right: 8px;">
+                                        <button onclick="openEditModal(<?php echo htmlspecialchars(json_encode($n)); ?>)" style="background: none; border: none; cursor: <?php echo ($isAdminCreated && $currentUserRole === 'moderator') ? 'not-allowed' : 'pointer'; ?>; color: #3b82f6; margin-right: 8px; opacity: <?php echo ($isAdminCreated && $currentUserRole === 'moderator') ? '0.55' : '1'; ?>;" <?php echo ($isAdminCreated && $currentUserRole === 'moderator') ? 'disabled title="Admin-created notifications cannot be edited by moderators"' : ''; ?>>
                                             <i class="fa-solid fa-pen-to-square h-4 w-4 inline"></i>
                                         </button>
-                                        <button onclick="openDeleteModal(<?php echo $n['notification_id']; ?>)" style="background: none; border: none; cursor: pointer; color: #ef4444;">
+                                        <button onclick="openDeleteModal(<?php echo $n['notification_id']; ?>)" style="background: none; border: none; cursor: <?php echo ($isAdminCreated && $currentUserRole === 'moderator') ? 'not-allowed' : 'pointer'; ?>; color: #ef4444; opacity: <?php echo ($isAdminCreated && $currentUserRole === 'moderator') ? '0.55' : '1'; ?>;" <?php echo ($isAdminCreated && $currentUserRole === 'moderator') ? 'disabled title="Admin-created notifications cannot be deleted by moderators"' : ''; ?>>
                                             <i class="fa-solid fa-trash h-4 w-4 inline"></i>
                                         </button>
                                     </td>
@@ -263,7 +304,13 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     </div>
 
     <script>
+        const currentUserRole = <?php echo json_encode($currentUserRole); ?>;
+
         function openEditModal(n) {
+            if (currentUserRole === 'moderator' && String(n.created_by_role || '').toLowerCase() === 'admin') {
+                alert('Admin-created notifications cannot be edited by moderators.');
+                return;
+            }
             const map = {'all': 'all', 'repairer': 'providers', 'user': 'customers', 'company': 'companies'};
             document.getElementById('editId').value = n.notification_id;
             document.getElementById('editTitle').value = n.title;

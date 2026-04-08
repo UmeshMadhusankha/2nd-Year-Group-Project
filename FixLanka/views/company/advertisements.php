@@ -5,7 +5,7 @@
  */
 
 // Start session and check authentication
-require_once '../../config/session.php';
+require_once __DIR__ . '/../../config/session.php';
 
 // Require company role
 requireRole(['company']);

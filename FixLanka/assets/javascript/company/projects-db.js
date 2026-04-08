@@ -984,6 +984,12 @@ async function openStartProjectModal() {
         selector.innerHTML = '<option value="">Loading available contracts...</option>';
         selector.disabled = true;
 
+        // Load company employees for assignment (staff only)
+        loadStartProjectEmployees();
+
+        // Reset freelancers list until a contract is selected
+        setStartProjectFreelancersLoading(false, 'Select a contract to load freelancers.');
+
         try {
             const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=list');
             const result = await response.json();
@@ -1006,6 +1012,16 @@ async function openStartProjectModal() {
                         selector.appendChild(option);
                     });
                     selector.disabled = false;
+
+                    // Load freelancers when a contract is selected
+                    selector.onchange = () => {
+                        const selectedContractId = selector.value;
+                        if (!selectedContractId) {
+                            setStartProjectFreelancersLoading(false, 'Select a contract to load freelancers.');
+                            return;
+                        }
+                        loadStartProjectFreelancers(selectedContractId);
+                    };
                 }
             } else {
                 selector.innerHTML = '<option value="">Failed to load contracts.</option>';
@@ -1017,6 +1033,165 @@ async function openStartProjectModal() {
 
         projectModal.classList.add('active');
         document.body.style.overflow = 'hidden';
+    }
+}
+
+function setStartProjectEmployeesLoading(isLoading, message) {
+    const container = document.getElementById('start-project-employees');
+    if (!container) return;
+    if (isLoading) {
+        container.innerHTML = `<div style="color: var(--text-secondary); font-size: 0.9rem;"><i class="fas fa-spinner fa-spin"></i> ${message || 'Loading employees...'} </div>`;
+    } else {
+        container.innerHTML = `<div style="color: var(--text-secondary); font-size: 0.9rem;">${message || ''}</div>`;
+    }
+}
+
+function setStartProjectFreelancersLoading(isLoading, message) {
+    const container = document.getElementById('start-project-freelancers');
+    if (!container) return;
+    if (isLoading) {
+        container.innerHTML = `<div style="color: var(--text-secondary); font-size: 0.9rem;"><i class="fas fa-spinner fa-spin"></i> ${message || 'Loading freelancers...'} </div>`;
+    } else {
+        container.innerHTML = `<div style="color: var(--text-secondary); font-size: 0.9rem;">${message || ''}</div>`;
+    }
+}
+
+function renderStartProjectCheckboxList(containerId, items, options) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!items || items.length === 0) {
+        container.innerHTML = `<div style="color: var(--text-secondary); font-size: 0.9rem;">${options.emptyText || 'No items found.'}</div>`;
+        return;
+    }
+
+    const frag = document.createDocumentFragment();
+    items.forEach(item => {
+        const row = document.createElement('label');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '10px';
+        row.style.padding = '8px 6px';
+        row.style.borderBottom = '1px solid var(--border-color)';
+        row.style.cursor = 'pointer';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = options.checkboxName;
+        checkbox.value = String(item.id);
+
+        const textWrap = document.createElement('div');
+        textWrap.style.display = 'flex';
+        textWrap.style.flexDirection = 'column';
+
+        const primary = document.createElement('div');
+        primary.style.fontWeight = '600';
+        primary.style.color = 'var(--text-primary)';
+        primary.textContent = item.primaryText;
+
+        const secondary = document.createElement('div');
+        secondary.style.fontSize = '0.85rem';
+        secondary.style.color = 'var(--text-secondary)';
+        secondary.textContent = item.secondaryText || '';
+
+        textWrap.appendChild(primary);
+        if (item.secondaryText) textWrap.appendChild(secondary);
+
+        row.appendChild(checkbox);
+        row.appendChild(textWrap);
+        frag.appendChild(row);
+    });
+
+    // Remove last border
+    const wrapper = document.createElement('div');
+    wrapper.appendChild(frag);
+    const labels = wrapper.querySelectorAll('label');
+    if (labels.length > 0) {
+        labels[labels.length - 1].style.borderBottom = 'none';
+    }
+
+    container.innerHTML = '';
+    container.appendChild(wrapper);
+}
+
+async function loadStartProjectEmployees() {
+    const companyId = window.CURRENT_COMPANY_ID;
+    if (!companyId) {
+        setStartProjectEmployeesLoading(false, 'Company not found in session.');
+        return;
+    }
+
+    setStartProjectEmployeesLoading(true, 'Loading employees...');
+
+    try {
+        const url = `/2nd-Year-Group-Project/FixLanka/api/company-employees.php?company_id=${encodeURIComponent(companyId)}&employment_type=full_time,part_time&status=active&order_by=created_at&order_dir=DESC`;
+        const response = await fetch(url);
+        const result = await response.json();
+
+        // API returns an array (not wrapped)
+        const employees = Array.isArray(result) ? result : [];
+
+        const items = employees.map(emp => {
+            const name = `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || `Employee #${emp.employee_id}`;
+            const specialty = emp.specialty ? ` • ${emp.specialty}` : '';
+            return {
+                id: emp.employee_id,
+                primaryText: name,
+                secondaryText: `Employee ID: ${emp.employee_id}${specialty}`
+            };
+        });
+
+        renderStartProjectCheckboxList('start-project-employees', items, {
+            checkboxName: 'start_project_employee_ids[]',
+            emptyText: 'No active employees found. Add employees before starting a project.'
+        });
+    } catch (e) {
+        console.error('Error loading start-project employees:', e);
+        setStartProjectEmployeesLoading(false, 'Failed to load employees.');
+    }
+}
+
+async function loadStartProjectFreelancers(contractId) {
+    const companyId = window.CURRENT_COMPANY_ID;
+    if (!companyId) {
+        setStartProjectFreelancersLoading(false, 'Company not found in session.');
+        return;
+    }
+
+    setStartProjectFreelancersLoading(true, 'Loading freelancers...');
+
+    try {
+        const url = `/2nd-Year-Group-Project/FixLanka/api/freelancer-assignments.php?action=list_for_company&company_id=${encodeURIComponent(companyId)}`;
+        const response = await fetch(url);
+        const result = await response.json();
+
+        const rows = (result && result.success && Array.isArray(result.assignments)) ? result.assignments : [];
+
+        const eligible = rows.filter(a => {
+            const accepted = a.status === 'accepted';
+            const notLinkedToProject = !a.project_id;
+            const contractOk = (a.contract_id === null || a.contract_id === undefined || String(a.contract_id) === String(contractId));
+            return accepted && notLinkedToProject && contractOk;
+        });
+
+        const items = eligible.map(a => {
+            const name = `${a.repairer_first_name || ''} ${a.repairer_last_name || ''}`.trim() || `Freelancer #${a.repairer_id}`;
+            const dates = (a.start_date && a.deadline_date) ? ` • ${a.start_date} → ${a.deadline_date}` : '';
+            const pricing = a.pricing_model ? ` • ${a.pricing_model}` : '';
+            return {
+                id: a.assignment_id,
+                primaryText: name,
+                secondaryText: `Offer #${a.assignment_id}${dates}${pricing}`
+            };
+        });
+
+        renderStartProjectCheckboxList('start-project-freelancers', items, {
+            checkboxName: 'start_project_freelancer_assignment_ids[]',
+            emptyText: 'No accepted freelancer offers available for this contract.'
+        });
+    } catch (e) {
+        console.error('Error loading start-project freelancers:', e);
+        setStartProjectFreelancersLoading(false, 'Failed to load freelancers.');
     }
 }
 
@@ -1045,6 +1220,14 @@ async function saveProject(e) {
             return;
         }
 
+        const selectedEmployeeIds = Array.from(document.querySelectorAll('input[name="start_project_employee_ids[]"]:checked'))
+            .map(el => parseInt(el.value, 10))
+            .filter(n => Number.isFinite(n) && n > 0);
+
+        const selectedFreelancerAssignmentIds = Array.from(document.querySelectorAll('input[name="start_project_freelancer_assignment_ids[]"]:checked'))
+            .map(el => parseInt(el.value, 10))
+            .filter(n => Number.isFinite(n) && n > 0);
+
         const submitBtn = document.getElementById('start-project-submit-btn');
         if (submitBtn) {
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
@@ -1056,7 +1239,11 @@ async function saveProject(e) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ contract_id: contractId })
+            body: JSON.stringify({
+                contract_id: contractId,
+                employee_ids: selectedEmployeeIds,
+                freelancer_assignment_ids: selectedFreelancerAssignmentIds
+            })
         });
 
         const result = await response.json();

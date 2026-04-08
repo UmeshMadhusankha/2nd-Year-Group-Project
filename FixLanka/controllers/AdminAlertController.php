@@ -5,11 +5,13 @@
  * Follows strict MVC pattern - NO direct database access, only Model calls
  */
 
-require_once __DIR__ . '/../models/AdminAlertModel.php';
+require_once __DIR__ . '/../config/databse.php';
+require_once __DIR__ . '/../models/NotificationModel.php';
+require_once __DIR__ . '/../includes/admin-modarator/auth.php';
 
 class AdminAlertController {
     private $model;
-    private $currentAdmin;
+    private array $actor = [];
     
     /**
      * Constructor - Initialize model and check authentication
@@ -25,7 +27,8 @@ class AdminAlertController {
         
         // Initialize model
         try {
-            $this->model = new AdminAlertModel();
+            global $pdo;
+            $this->model = new NotificationModel($pdo);
         } catch (Exception $e) {
             $this->handleError("System initialization failed. Please try again.");
         }
@@ -35,13 +38,67 @@ class AdminAlertController {
      * Check if user is authenticated as admin
      */
     private function checkAuthentication() {
-        // TODO: Replace with your actual admin authentication check
-        // For now, assuming admin session is set
-        if (!isset($_SESSION['admin']) || empty($_SESSION['admin'])) {
-            $_SESSION['admin'] = 'admin'; // Default for testing
+        $user = function_exists('getCurrentUser') ? getCurrentUser() : null;
+
+        if ($user) {
+            $this->actor = [
+                'id' => (int)($user['id'] ?? 0),
+                'role' => (string)($user['role'] ?? 'admin'),
+                'name' => (string)($user['name'] ?? 'Admin'),
+            ];
+            return;
         }
-        
-        $this->currentAdmin = $_SESSION['admin'];
+
+        $this->actor = [
+            'id' => (int)($_SESSION['user_id'] ?? 0),
+            'role' => (string)($_SESSION['user_role'] ?? 'admin'),
+            'name' => (string)($_SESSION['user_name'] ?? ($_SESSION['admin'] ?? 'Admin')),
+        ];
+    }
+
+    private function roleToRecipientType(string $targetRole): string {
+        $map = [
+            'all' => 'all',
+            'user' => 'user',
+            'repairer' => 'repairer',
+            'company' => 'company',
+            'moderator' => 'all',
+        ];
+        $key = strtolower(trim($targetRole));
+        return $map[$key] ?? 'all';
+    }
+
+    private function recipientTypeToRole(string $recipientType): string {
+        $map = [
+            'all' => 'All',
+            'user' => 'User',
+            'repairer' => 'Repairer',
+            'company' => 'Company',
+        ];
+        $key = strtolower(trim($recipientType));
+        return $map[$key] ?? 'All';
+    }
+
+    private function mapNotificationToAlert(array $row): array {
+        $createdBy = trim((string)($row['created_by_name'] ?? ''));
+        if ($createdBy === '') {
+            $createdByRole = strtolower((string)($row['created_by_role'] ?? ''));
+            $createdBy = $createdByRole === 'moderator' ? 'Moderator' : ($createdByRole === 'admin' ? 'Admin' : 'System');
+        }
+
+        return [
+            'alert_id' => (int)($row['notification_id'] ?? 0),
+            'notification_id' => (int)($row['notification_id'] ?? 0),
+            'title' => (string)($row['title'] ?? ''),
+            'message' => (string)($row['message'] ?? ''),
+            'target_role' => $this->recipientTypeToRole((string)($row['recipient_type'] ?? 'all')),
+            'recipient_type' => (string)($row['recipient_type'] ?? 'all'),
+            'priority' => 'medium',
+            'status' => (string)($row['status'] ?? 'sent'),
+            'created_by' => $createdBy,
+            'created_by_role' => (string)($row['created_by_role'] ?? ''),
+            'created_at' => (string)($row['created_at'] ?? ($row['send_date'] ?? '')),
+        ];
     }
     
     /**
@@ -127,17 +184,8 @@ class AdminAlertController {
             return;
         }
         
-        // Create alert
-        $alertData = [
-            'title' => $title,
-            'message' => $message,
-            'target_role' => $targetRole,
-            'priority' => $priority,
-            'status' => 'active',
-            'created_by' => $this->currentAdmin
-        ];
-        
-        $alertId = $this->model->createAlert($alertData);
+        $recipientType = $this->roleToRecipientType($targetRole);
+        $alertId = $this->model->createNotification($title, $message, $recipientType, 'sent', $this->actor);
         
         if ($alertId) {
             $this->redirect('success', 'Alert sent successfully!');
@@ -179,10 +227,11 @@ class AdminAlertController {
             }
         }
         
+        $targetRole = null;
         if (isset($_POST['target_role'])) {
             $validRoles = ['User', 'Repairer', 'Company', 'Moderator', 'All'];
             if (in_array($_POST['target_role'], $validRoles)) {
-                $updateData['target_role'] = $_POST['target_role'];
+                $targetRole = $_POST['target_role'];
             }
         }
         
@@ -198,7 +247,19 @@ class AdminAlertController {
             return;
         }
         
-        $result = $this->model->updateAlert($alertId, $updateData);
+        $existing = $this->model->getNotificationById($alertId);
+        if (!$existing) {
+            $this->redirect('error', 'Alert not found');
+            return;
+        }
+
+        $newTitle = (string)($updateData['title'] ?? $existing['title']);
+        $newMessage = (string)($updateData['message'] ?? $existing['message']);
+        $newRecipientType = $targetRole !== null
+            ? $this->roleToRecipientType($targetRole)
+            : (string)($existing['recipient_type'] ?? 'all');
+
+        $result = $this->model->updateNotification($alertId, $newTitle, $newMessage, $newRecipientType, $this->actor);
         
         if ($result) {
             $this->redirect('success', 'Alert updated successfully!');
@@ -223,7 +284,7 @@ class AdminAlertController {
             return;
         }
         
-        $result = $this->model->deleteAlert($alertId);
+        $result = $this->model->deleteNotification($alertId, $this->actor) > 0;
         
         if ($result) {
             $this->redirect('success', 'Alert deleted successfully!');
@@ -248,7 +309,15 @@ class AdminAlertController {
             return;
         }
         
-        $result = $this->model->toggleAlertStatus($alertId);
+        $alert = $this->model->getNotificationById($alertId);
+        if (!$alert) {
+            $this->redirect('error', 'Alert not found');
+            return;
+        }
+
+        $currentStatus = strtolower((string)($alert['status'] ?? 'sent'));
+        $nextStatus = $currentStatus === 'pending' ? 'sent' : 'pending';
+        $result = $this->model->updateNotificationStatus($alertId, $nextStatus);
         
         if ($result) {
             $this->redirect('success', 'Alert status updated!');
@@ -268,11 +337,11 @@ class AdminAlertController {
             return;
         }
         
-        $alert = $this->model->getAlertById($alertId);
+        $alert = $this->model->getNotificationById($alertId);
         
         if ($alert) {
             // Store in session for display
-            $_SESSION['current_alert'] = $alert;
+            $_SESSION['current_alert'] = $this->mapNotificationToAlert($alert);
             $this->redirect();
         } else {
             $this->redirect('error', 'Alert not found');
@@ -283,7 +352,7 @@ class AdminAlertController {
      * List all alerts
      */
     private function listAlerts() {
-        $alerts = $this->model->getAllAlerts();
+        $alerts = array_map([$this, 'mapNotificationToAlert'], $this->model->getAllNotifications());
         $_SESSION['all_alerts'] = $alerts;
         
         // If this is called directly, redirect to view
@@ -295,7 +364,9 @@ class AdminAlertController {
      * @return array Recent alerts
      */
     public function getRecentAlerts() {
-        return $this->model->getRecentAlerts(5);
+        $all = $this->model->getAllNotifications();
+        $mapped = array_map([$this, 'mapNotificationToAlert'], $all);
+        return array_slice($mapped, 0, 5);
     }
     
     /**
@@ -303,7 +374,7 @@ class AdminAlertController {
      * @return array All alerts
      */
     public function getAllAlerts() {
-        return $this->model->getAllAlerts();
+        return array_map([$this, 'mapNotificationToAlert'], $this->model->getAllNotifications());
     }
     
     /**
@@ -311,7 +382,13 @@ class AdminAlertController {
      * @return array Statistics
      */
     public function getStatistics() {
-        return $this->model->getAlertStatistics();
+        $stats = $this->model->getNotificationStats();
+        return [
+            'total' => (int)($stats['total'] ?? 0),
+            'active' => (int)($stats['sent'] ?? 0),
+            'inactive' => (int)($stats['pending'] ?? 0),
+            'failed' => (int)($stats['failed'] ?? 0),
+        ];
     }
     
     /**

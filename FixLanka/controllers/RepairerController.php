@@ -41,6 +41,29 @@ class RepairerController {
                 exit;
             }
 
+            // Compute real success rate from finished outcomes.
+            // - Platform jobs: `job` table (completed vs cancelled)
+            // - Workforce assignments: `freelancer_assignments` (completed vs cancelled)
+            $jobStats = $this->repairerModel->getPlatformJobOutcomeStats($repairerId);
+            $assignmentStats = $this->repairerModel->getFreelancerAssignmentOutcomeStats($repairerId);
+
+            $completedTotal = (int)($jobStats['completed'] ?? 0) + (int)($assignmentStats['completed'] ?? 0);
+            $cancelledTotal = (int)($jobStats['cancelled'] ?? 0) + (int)($assignmentStats['cancelled'] ?? 0);
+            $finishedTotal = $completedTotal + $cancelledTotal;
+            $successRatePct = $finishedTotal > 0 ? (int)round(($completedTotal / $finishedTotal) * 100) : null;
+
+            // Override the profile page's visible "Jobs Completed" with computed value
+            // so it reflects real finished work instead of a stale stored column.
+            $repairer['completedJobsCount'] = $completedTotal;
+            $repairer['successRatePct'] = $successRatePct;
+            $repairer['successStats'] = [
+                'platform_jobs' => $jobStats,
+                'workforce_assignments' => $assignmentStats,
+                'completed_total' => $completedTotal,
+                'cancelled_total' => $cancelledTotal,
+                'finished_total' => $finishedTotal,
+            ];
+
             // Reviews are stored for repairers in `review`
             $summary = $this->repairerModel->getReviewSummary($repairerId);
             $repairer['reviewCount'] = $summary['count'];

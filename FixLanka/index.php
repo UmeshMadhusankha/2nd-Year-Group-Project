@@ -108,6 +108,12 @@ switch ($request) {
     case '/admin-alerts':
         require_once __DIR__ . '/views/admin/alerts.php';
         break;
+
+    case '/admin-alerts-action':
+        require_once __DIR__ . '/controllers/AdminAlertController.php';
+        $controller = new AdminAlertController();
+        $controller->handleRequest();
+        break;
     
     case '/admin-analytics':
         require_once __DIR__ . '/views/admin/analytics.php';
@@ -127,6 +133,10 @@ switch ($request) {
     
     case '/admin-moderators':
         require_once __DIR__ . '/views/admin/moderators.php';
+        break;
+
+    case '/admin-audit-logs':
+        require_once __DIR__ . '/views/admin/audit-logs.php';
         break;
     
     case '/moderator-dashboard':
@@ -208,6 +218,10 @@ switch ($request) {
     
     case '/repairer-support':
         require_once __DIR__ . '/views/repairer/pages/support.php';
+        break;
+
+    case '/repairer-notifications':
+        require_once __DIR__ . '/views/repairer/pages/notifications.php';
         break;
     
     case '/repairer-settings':

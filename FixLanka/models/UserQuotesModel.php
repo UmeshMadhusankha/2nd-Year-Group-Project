@@ -1,11 +1,97 @@
 <?php
 
+require_once __DIR__ . '/SystemNotificationService.php';
+
 class UserQuotesModel {
     private PDO $pdo;
     private ?bool $companyQuotationHasCompanyId = null;
+    private SystemNotificationService $notifier;
 
     public function __construct(PDO $pdo) {
         $this->pdo = $pdo;
+        $this->notifier = new SystemNotificationService($pdo);
+    }
+
+    private function notifyQuoteDecision(string $source, int $quoteId, string $decision, int $requestId): void
+    {
+        try {
+            if ($source === 'company') {
+                $stmt = $this->pdo->prepare("SELECT company_id, title FROM companyquotation WHERE quotation_id = ? LIMIT 1");
+                $stmt->execute([$quoteId]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($row && !empty($row['company_id'])) {
+                    $this->notifier->notify(
+                        $decision === 'accepted' ? 'Quotation accepted' : 'Quotation rejected',
+                        ($decision === 'accepted' ? 'Your quotation' : 'Your quotation') . " for request #{$requestId} was {$decision}.",
+                        'company',
+                        (int)$row['company_id'],
+                        ['role' => 'user', 'name' => 'Customer']
+                    );
+                }
+                return;
+            }
+
+            $stmt = $this->pdo->prepare("SELECT repairer_id FROM repairerquote WHERE quote_id = ? LIMIT 1");
+            $stmt->execute([$quoteId]);
+            $repairerId = (int)$stmt->fetchColumn();
+            if ($repairerId > 0) {
+                $this->notifier->notify(
+                    $decision === 'accepted' ? 'Quotation accepted' : 'Quotation rejected',
+                    "Your quotation for request #{$requestId} was {$decision}.",
+                    'repairer',
+                    $repairerId,
+                    ['role' => 'user', 'name' => 'Customer']
+                );
+            }
+        } catch (Throwable $e) {
+            error_log('notifyQuoteDecision failed: ' . $e->getMessage());
+        }
+    }
+
+    private function notifyCompetingQuotesRejected(int $requestId, string $winnerSource, int $winnerQuoteId): void
+    {
+        try {
+            if ($winnerSource === 'company') {
+                $stmtR = $this->pdo->prepare("SELECT repairer_id FROM repairerquote WHERE request_id = ? AND status = 'rejected'");
+                $stmtR->execute([$requestId]);
+                foreach ($stmtR->fetchAll(PDO::FETCH_COLUMN) as $repairerId) {
+                    $repairerId = (int)$repairerId;
+                    if ($repairerId > 0) {
+                        $this->notifier->notify('Quotation rejected', "Your quotation for request #{$requestId} was rejected.", 'repairer', $repairerId, ['role' => 'user', 'name' => 'Customer']);
+                    }
+                }
+
+                $stmtC = $this->pdo->prepare("SELECT company_id FROM companyquotation WHERE request_id = ? AND status = 'rejected' AND quotation_id <> ?");
+                $stmtC->execute([$requestId, $winnerQuoteId]);
+                foreach ($stmtC->fetchAll(PDO::FETCH_COLUMN) as $companyId) {
+                    $companyId = (int)$companyId;
+                    if ($companyId > 0) {
+                        $this->notifier->notify('Quotation rejected', "Your quotation for request #{$requestId} was rejected.", 'company', $companyId, ['role' => 'user', 'name' => 'Customer']);
+                    }
+                }
+                return;
+            }
+
+            $stmtC = $this->pdo->prepare("SELECT company_id FROM companyquotation WHERE request_id = ? AND status = 'rejected'");
+            $stmtC->execute([$requestId]);
+            foreach ($stmtC->fetchAll(PDO::FETCH_COLUMN) as $companyId) {
+                $companyId = (int)$companyId;
+                if ($companyId > 0) {
+                    $this->notifier->notify('Quotation rejected', "Your quotation for request #{$requestId} was rejected.", 'company', $companyId, ['role' => 'user', 'name' => 'Customer']);
+                }
+            }
+
+            $stmtR = $this->pdo->prepare("SELECT repairer_id FROM repairerquote WHERE request_id = ? AND status = 'rejected' AND quote_id <> ?");
+            $stmtR->execute([$requestId, $winnerQuoteId]);
+            foreach ($stmtR->fetchAll(PDO::FETCH_COLUMN) as $repairerId) {
+                $repairerId = (int)$repairerId;
+                if ($repairerId > 0) {
+                    $this->notifier->notify('Quotation rejected', "Your quotation for request #{$requestId} was rejected.", 'repairer', $repairerId, ['role' => 'user', 'name' => 'Customer']);
+                }
+            }
+        } catch (Throwable $e) {
+            error_log('notifyCompetingQuotesRejected failed: ' . $e->getMessage());
+        }
     }
 
     private function companyQuotationHasCompanyId(): bool {
@@ -236,6 +322,11 @@ class UserQuotesModel {
                 $updateJobSql = "UPDATE jobrequest SET status = 'accepted' WHERE request_id = :request_id";
                 $stmtJob = $this->pdo->prepare($updateJobSql);
                 $stmtJob->execute([':request_id' => $requestId]);
+
+                $this->notifyQuoteDecision($source, $quoteId, 'accepted', (int)$requestId);
+                $this->notifyCompetingQuotesRejected((int)$requestId, $source, $quoteId);
+            } else {
+                $this->notifyQuoteDecision($source, $quoteId, 'rejected', (int)$requestId);
             }
 
             $this->pdo->commit();

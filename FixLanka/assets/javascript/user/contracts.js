@@ -505,13 +505,25 @@
 // =========================================
 window.respondContract = async function (contractId, response) {
     const label = response === 'accepted' ? 'accept' : 'decline';
-    if (!confirm(`Are you sure you want to ${label} this contract?`)) return;
+    if (response === 'accepted') {
+        const msg =
+            "Electronic Signature Confirmation\n\n" +
+            "By clicking OK, you confirm you have read and agree to the contract terms, and you electronically sign this contract in FixLanka.";
+        if (!confirm(msg)) return;
+    } else {
+        if (!confirm(`Are you sure you want to ${label} this contract?`)) return;
+    }
 
     try {
         const res = await fetch(API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'respond', contract_id: contractId, response: response })
+            body: JSON.stringify({
+                action: 'respond',
+                contract_id: contractId,
+                response: response,
+                esign_consent: response === 'accepted'
+            })
         });
         const json = await res.json();
 

@@ -49,7 +49,8 @@ function renderAdminSidebar($currentPath, $basePath)
         ['title' => 'Issues & Reports', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-issues', 'icon' => 'fa-message'],
         ['title' => 'Analytics', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-analytics', 'icon' => 'fa-chart-bar'],
         ['title' => 'Advertisement Review', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-ads', 'icon' => 'fa-desktop'],
-        ['title' => 'Financial Overview', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-finance', 'icon' => 'fa-dollar-sign']
+        ['title' => 'Financial Overview', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-finance', 'icon' => 'fa-dollar-sign'],
+        ['title' => 'Audit Logs', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-audit-logs', 'icon' => 'fa-clipboard-list']
     ];
 
     echo '<!-- Sidebar Component -->';

@@ -2,15 +2,18 @@
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/ContractModel.php';
+require_once __DIR__ . '/../models/SystemNotificationService.php';
 
 class ContractController {
     private $model;
     private $pdo;
+    private $notifier;
 
     public function __construct() {
         global $pdo;
         $this->model = new ContractModel($pdo);
         $this->pdo = $pdo;
+        $this->notifier = new SystemNotificationService($pdo);
     }
 
     /**
@@ -553,6 +556,19 @@ class ContractController {
             $result = $this->model->markAsSent($contractId, $companyId);
 
             if ($result) {
+                $customerId = (int)($contract['customer_id'] ?? 0);
+                $companyId = (int)($contract['company_id'] ?? $companyId);
+                $projectTitle = (string)($contract['project_title'] ?? ('Contract #' . $contractId));
+                if ($customerId > 0) {
+                    $this->notifier->notify(
+                        'Contract sent for review',
+                        "A contract for {$projectTitle} was sent to you for review.",
+                        'user',
+                        $customerId,
+                        ['role' => 'company', 'id' => $companyId, 'name' => 'Company']
+                    );
+                }
+
                 echo json_encode([
                     'success' => true,
                     'message' => 'Contract sent to customer successfully'
@@ -1615,6 +1631,20 @@ class ContractController {
             $dt = new DateTime($d);
             return $dt->format('F d, Y');
         };
+
+        $formatDateTime = function($d) {
+            if (!$d) return '—';
+            $dt = new DateTime($d);
+            return $dt->format('F d, Y g:i A');
+        };
+
+        $customerSignatureMeta = null;
+        if (!empty($contract['customer_signature']) && is_string($contract['customer_signature'])) {
+            $decoded = json_decode($contract['customer_signature'], true);
+            if (is_array($decoded)) {
+                $customerSignatureMeta = $decoded;
+            }
+        }
         
         ob_start();
         ?>
@@ -2052,6 +2082,45 @@ class ContractController {
             </div>
         </div>
         <?php endif; ?>
+        <div class="preview-section">
+            <h4>9. ELECTRONIC SIGNATURES</h4>
+            <div class="preview-grid">
+                <div>
+                    <strong>Client (Customer)</strong>
+                    <span><?php echo htmlspecialchars($clientName); ?></span>
+                    <small><?php echo htmlspecialchars($contract['customer_email'] ?? ''); ?></small>
+                </div>
+                <div>
+                    <strong>Contractor (Company)</strong>
+                    <span><?php echo htmlspecialchars($contract['company_name'] ?? ''); ?></span>
+                    <small><?php echo htmlspecialchars($contract['company_email'] ?? ''); ?></small>
+                </div>
+            </div>
+
+            <div class="preview-grid" style="margin-top: 12px;">
+                <div>
+                    <strong>Customer Signature</strong>
+                    <span><?php echo htmlspecialchars($contract['user_signature'] ?? 'PENDING'); ?></span>
+                    <small>Signed at: <?php echo $formatDateTime($contract['signed_at'] ?? null); ?></small>
+                </div>
+                <div>
+                    <strong>Company Signature</strong>
+                    <span><?php echo htmlspecialchars($contract['company_signature'] ?? 'AUTO_GENERATED'); ?></span>
+                    <small>Created at: <?php echo $formatDateTime($contract['created_at'] ?? null); ?></small>
+                </div>
+            </div>
+
+            <?php if (is_array($customerSignatureMeta) && !empty($customerSignatureMeta['contract_hash'])): ?>
+                <p style="margin-top: 12px; padding: 10px 12px; background: white; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px;">
+                    <strong style="display:block; color:#0f766e; margin-bottom:6px;">Document Hash (SHA-256)</strong>
+                    <?php echo htmlspecialchars($customerSignatureMeta['contract_hash']); ?>
+                </p>
+            <?php endif; ?>
+
+            <p style="margin-top: 12px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px;">
+                By accepting this contract in the FixLanka system, the customer provides an electronic signature indicating agreement to the contract terms.
+            </p>
+        </div>
     </div>
 
     <div class="no-print">
@@ -2097,6 +2166,7 @@ class ContractController {
 
             $contractId = $data['contract_id'] ?? null;
             $response = $data['response'] ?? null;
+            $esignConsentRaw = $data['esign_consent'] ?? null;
 
             if (!$contractId || !$response) {
                 http_response_code(400);
@@ -2104,19 +2174,78 @@ class ContractController {
                 return;
             }
 
+            if ($response === 'accepted') {
+                $esignConsent = filter_var($esignConsentRaw, FILTER_VALIDATE_BOOLEAN);
+                if ($esignConsent !== true) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => 'Electronic signature confirmation is required to accept this contract.']);
+                    return;
+                }
+            }
+
             $this->pdo->beginTransaction();
 
             if ($response === 'accepted') {
+                // Build e-sign metadata (acceptance confirmation acts as signature)
+                $custStmt = $this->pdo->prepare("SELECT f_name, l_name, email FROM user WHERE user_id = ?");
+                $custStmt->execute([$_SESSION['user_id']]);
+                $cust = $custStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+                $signatureName = trim(($cust['f_name'] ?? '') . ' ' . ($cust['l_name'] ?? ''));
+                if ($signatureName === '') {
+                    $signatureName = 'Customer';
+                }
+
+                // Hash core contract fields for tamper-evident audit
+                $hashStmt = $this->pdo->prepare("
+                    SELECT
+                        contract_id, contract_number, quotation_id, company_id, customer_id, job_request_id, project_id,
+                        project_title, project_reference, project_location, project_description,
+                        scope_description, scope_inclusions, scope_exclusions, scope_standards, materials_responsibility,
+                        milestone_plan, total_budget, budget_type, budget_min, budget_max, tax_inclusive, payment_method,
+                        advance_payment_pct, pricing_type, hourly_rate, spending_cap,
+                        start_date, end_date, contract_date, terms_conditions
+                    FROM contract
+                    WHERE contract_id = ? AND customer_id = ?
+                ");
+                $hashStmt->execute([$contractId, $_SESSION['user_id']]);
+                $hashRow = $hashStmt->fetch(PDO::FETCH_ASSOC);
+                if (!$hashRow) {
+                    throw new Exception("Contract not found or not authorized to accept.");
+                }
+
+                $contractHash = hash('sha256', json_encode($hashRow, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+                $signatureMeta = [
+                    'type' => 'accept_confirmation',
+                    'signed_by_user_id' => (int)$_SESSION['user_id'],
+                    'signed_by_name' => $signatureName,
+                    'signed_by_email' => $cust['email'] ?? null,
+                    'signed_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+                    'signed_user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                    'signed_at' => gmdate('c'),
+                    'contract_hash' => $contractHash
+                ];
+
                 // Update contract to active
                 $stmt = $this->pdo->prepare("
                     UPDATE contract 
                     SET status = 'active', 
                         terms_accepted = 1, 
+                        terms_accepted_at = NOW(),
                         customer_response = 'accepted', 
-                        customer_response_at = NOW() 
+                        customer_response_at = NOW(),
+                        user_signature = 'E-SIGNED (ACCEPTED)',
+                        customer_signature = ?,
+                        signed_at = NOW(),
+                        locked = 1
                     WHERE contract_id = ? AND customer_id = ?
                 ");
-                $stmt->execute([$contractId, $_SESSION['user_id']]);
+                $stmt->execute([
+                    json_encode($signatureMeta, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                    $contractId,
+                    $_SESSION['user_id']
+                ]);
 
                 if ($stmt->rowCount() === 0) {
                     throw new Exception("Contract not found or not authorized to accept.");
@@ -2134,6 +2263,45 @@ class ContractController {
 
                 $this->addTimelineEvent($contractId, 'contract_accepted', 'Contract accepted by customer');
 
+                // Audit log entry for e-signing
+                $this->logAuditEvent(
+                    $contractId,
+                    null,
+                    'contract_esigned',
+                    $_SESSION['user_id'],
+                    'customer',
+                    json_encode([
+                        'message' => 'Customer accepted and electronically signed via acceptance confirmation',
+                        'signature' => $signatureMeta
+                    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+                );
+
+                $metaStmt = $this->pdo->prepare("SELECT company_id, customer_id, project_title FROM contract WHERE contract_id = ? LIMIT 1");
+                $metaStmt->execute([$contractId]);
+                $contractMeta = $metaStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+                $companyId = (int)($contractMeta['company_id'] ?? 0);
+                $customerId = (int)($contractMeta['customer_id'] ?? 0);
+                $projectTitle = (string)($contractMeta['project_title'] ?? ('Contract #' . $contractId));
+
+                if ($companyId > 0) {
+                    $this->notifier->notify(
+                        'Contract accepted',
+                        "Customer accepted the contract for {$projectTitle}.",
+                        'company',
+                        $companyId,
+                        ['role' => 'user', 'id' => (int)$_SESSION['user_id'], 'name' => 'Customer']
+                    );
+                }
+                if ($customerId > 0) {
+                    $this->notifier->notify(
+                        'Contract accepted',
+                        "You accepted the contract for {$projectTitle}.",
+                        'user',
+                        $customerId,
+                        ['role' => 'user', 'id' => (int)$_SESSION['user_id'], 'name' => 'Customer']
+                    );
+                }
+
             } else if ($response === 'rejected') {
                 // Reject contract
                 $stmt = $this->pdo->prepare("
@@ -2150,6 +2318,32 @@ class ContractController {
                 }
 
                 $this->addTimelineEvent($contractId, 'contract_rejected', 'Contract rejected by customer');
+
+                $metaStmt = $this->pdo->prepare("SELECT company_id, customer_id, project_title FROM contract WHERE contract_id = ? LIMIT 1");
+                $metaStmt->execute([$contractId]);
+                $contractMeta = $metaStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+                $companyId = (int)($contractMeta['company_id'] ?? 0);
+                $customerId = (int)($contractMeta['customer_id'] ?? 0);
+                $projectTitle = (string)($contractMeta['project_title'] ?? ('Contract #' . $contractId));
+
+                if ($companyId > 0) {
+                    $this->notifier->notify(
+                        'Contract rejected',
+                        "Customer rejected the contract for {$projectTitle}.",
+                        'company',
+                        $companyId,
+                        ['role' => 'user', 'id' => (int)$_SESSION['user_id'], 'name' => 'Customer']
+                    );
+                }
+                if ($customerId > 0) {
+                    $this->notifier->notify(
+                        'Contract rejected',
+                        "You rejected the contract for {$projectTitle}.",
+                        'user',
+                        $customerId,
+                        ['role' => 'user', 'id' => (int)$_SESSION['user_id'], 'name' => 'Customer']
+                    );
+                }
             } else {
                 throw new Exception("Invalid response value: " . $response);
             }
@@ -3703,7 +3897,8 @@ class ContractController {
                     u.f_name as customer_fname,
                     u.l_name as customer_lname,
                     u.email as customer_email,
-                    u_loc.address as customer_address,
+                    u.address as customer_address,
+                    u.district as customer_district,
                     comp.name as company_name,
                     c_loc.address as company_address,
                     comp.contact_no as company_contact,
@@ -3712,7 +3907,6 @@ class ContractController {
                 FROM contract_invoices ci
                 INNER JOIN contract c ON ci.contract_id = c.contract_id
                 LEFT JOIN user u ON c.customer_id = u.user_id
-                LEFT JOIN location u_loc ON u.location_id = u_loc.location_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id
                 LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
                 WHERE ci.invoice_id = ?

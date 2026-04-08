@@ -1,6 +1,11 @@
 -- Database Schema for Home Repair Service Platform
 -- Matches Live Database as of 2026-01-18
 
+-- IMPORTANT
+-- This file DROPS and RE-CREATES the `fix_lanka` database.
+-- If you only want to apply recent additions (like `system_audit_log`) to an existing DB,
+-- DO NOT run the whole file. Instead, run the "MIGRATION ONLY" block at the bottom.
+
 DROP DATABASE IF EXISTS fix_lanka;
 CREATE DATABASE fix_lanka;
 USE fix_lanka;
@@ -644,6 +649,117 @@ CREATE TABLE `contract_payment_history` (
   CONSTRAINT `contract_payment_history_ibfk_4` FOREIGN KEY (`paid_to`) REFERENCES `user` (`user_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- System Audit Log (cross-module activity logging)
+-- Stores high-level audit events for actions performed by any role.
+CREATE TABLE IF NOT EXISTS `system_audit_log` (
+  `audit_id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `request_id` char(36) DEFAULT NULL,
+  `occurred_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `actor_user_id` int(11) DEFAULT NULL,
+  `actor_role` varchar(50) DEFAULT NULL,
+  `action` varchar(150) NOT NULL,
+  `entity_type` varchar(100) DEFAULT NULL,
+  `entity_id` varchar(64) DEFAULT NULL,
+  `http_method` varchar(10) DEFAULT NULL,
+  `endpoint` varchar(255) DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `status_code` int(11) DEFAULT NULL,
+  `details` json DEFAULT NULL,
+  PRIMARY KEY (`audit_id`),
+  KEY `idx_audit_actor_time` (`actor_user_id`, `occurred_at`),
+  KEY `idx_audit_action_time` (`action`, `occurred_at`),
+  KEY `idx_audit_entity` (`entity_type`, `entity_id`),
+  KEY `idx_audit_request` (`request_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Make audit logs append-only (no UPDATE/DELETE allowed)
+DROP TRIGGER IF EXISTS `system_audit_log_no_update`;
+DROP TRIGGER IF EXISTS `system_audit_log_no_delete`;
+
+DELIMITER //
+CREATE TRIGGER `system_audit_log_no_update`
+BEFORE UPDATE ON `system_audit_log`
+FOR EACH ROW
+BEGIN
+  SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'system_audit_log is append-only (updates are not allowed)';
+END//
+
+CREATE TRIGGER `system_audit_log_no_delete`
+BEFORE DELETE ON `system_audit_log`
+FOR EACH ROW
+BEGIN
+  SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'system_audit_log is append-only (deletes are not allowed)';
+END//
+DELIMITER ;
+
+-- =====================================================================
+-- MIGRATION ONLY (SAFE TO RUN ON EXISTING DB)
+-- Apply this block if your current database is missing `system_audit_log`.
+-- =====================================================================
+
+-- Account Moderation Log (SAFE)
+-- Used by the Admin Account Moderation page to persist moderation reason and
+-- suspension end date, especially for tables that don't have those columns.
+CREATE TABLE IF NOT EXISTS `account_moderation_log` (
+  `log_id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_type` varchar(30) NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `action_type` enum('suspend','ban','restore') NOT NULL,
+  `reason` text DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `suspended_until` datetime DEFAULT NULL,
+  `acted_by_role` varchar(30) DEFAULT NULL,
+  `acted_by_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`log_id`),
+  KEY `idx_account_lookup` (`account_type`, `account_id`, `created_at`),
+  KEY `idx_action_type` (`action_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Create the table if it does not exist
+CREATE TABLE IF NOT EXISTS `system_audit_log` (
+  `audit_id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `request_id` char(36) DEFAULT NULL,
+  `occurred_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `actor_user_id` int(11) DEFAULT NULL,
+  `actor_role` varchar(50) DEFAULT NULL,
+  `action` varchar(150) NOT NULL,
+  `entity_type` varchar(100) DEFAULT NULL,
+  `entity_id` varchar(64) DEFAULT NULL,
+  `http_method` varchar(10) DEFAULT NULL,
+  `endpoint` varchar(255) DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `status_code` int(11) DEFAULT NULL,
+  `details` json DEFAULT NULL,
+  PRIMARY KEY (`audit_id`),
+  KEY `idx_audit_actor_time` (`actor_user_id`, `occurred_at`),
+  KEY `idx_audit_action_time` (`action`, `occurred_at`),
+  KEY `idx_audit_entity` (`entity_type`, `entity_id`),
+  KEY `idx_audit_request` (`request_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Ensure append-only triggers exist (recreate safely)
+DROP TRIGGER IF EXISTS `system_audit_log_no_update`;
+DROP TRIGGER IF EXISTS `system_audit_log_no_delete`;
+
+DELIMITER //
+CREATE TRIGGER `system_audit_log_no_update`
+BEFORE UPDATE ON `system_audit_log`
+FOR EACH ROW
+BEGIN
+  SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'system_audit_log is append-only (updates are not allowed)';
+END//
+
+CREATE TRIGGER `system_audit_log_no_delete`
+BEFORE DELETE ON `system_audit_log`
+FOR EACH ROW
+BEGIN
+  SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'system_audit_log is append-only (deletes are not allowed)';
+END//
+DELIMITER ;
+
 -- Legacy Milestones (kept for backward compatibility)
 CREATE TABLE `milestone` (
   `milestone_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -765,6 +881,9 @@ CREATE TABLE `notification` (
   `send_date` timestamp NOT NULL DEFAULT current_timestamp(),
   `recipient_type` enum('user','repairer','company','all') NOT NULL,
   `status` enum('sent','pending','failed') DEFAULT 'pending',
+  `created_by_id` int(11) DEFAULT NULL,
+  `created_by_role` enum('admin','moderator','company','repairer','user') DEFAULT NULL,
+  `created_by_name` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`notification_id`),
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -873,11 +992,14 @@ CREATE TABLE `staffsummary` (
 CREATE TABLE `staticcontent` (
   `content_id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
+  `description` varchar(500) DEFAULT NULL,
   `body` text NOT NULL,
+  `status` enum('Draft','Published') NOT NULL DEFAULT 'Published',
   `last_update` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `content_type` enum('terms','privacy','faq','about','help') NOT NULL,
+  `content_type` enum('terms','privacy','faq','about','help','contact','how_it_works','services','why_choose','support') NOT NULL,
   PRIMARY KEY (`content_id`),
-  KEY `idx_type` (`content_type`)
+  KEY `idx_type` (`content_type`),
+  KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Support Tickets
@@ -1338,6 +1460,18 @@ CREATE TABLE IF NOT EXISTS `company_employees` (
   FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE,
   FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE,
   UNIQUE KEY `unique_company_repairer` (`company_id`,`repairer_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3a. Project Employee Assignments (Company staff per project)
+CREATE TABLE IF NOT EXISTS `project_employee_assignments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `project_id` int(11) NOT NULL,
+  `employee_id` int(11) NOT NULL,
+  `assigned_at` timestamp DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_project_employee` (`project_id`, `employee_id`),
+  FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`employee_id`) REFERENCES `company_employees` (`employee_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4. Freelancer Job Assignments (Job Offers) Table

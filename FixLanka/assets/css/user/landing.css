@@ -1029,6 +1029,19 @@ body {
   line-height: 1.6;
 }
 
+.footer-readmore {
+  display: inline-block;
+  margin-top: var(--spacing-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: var(--font-size-base);
+  transition: var(--transition-normal);
+}
+
+.footer-readmore:hover {
+  color: var(--primary-color);
+}
+
 .footer-contact-info {
   margin-top: var(--spacing-lg);
   display: flex;

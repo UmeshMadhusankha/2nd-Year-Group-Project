@@ -1,6 +1,6 @@
 <?php
 // Start session and verify authentication
-require_once '../../config/session.php';
+require_once __DIR__ . '/../../config/session.php';
 requireRole('company');
 $userData = getUserData();
 ?>
@@ -16,7 +16,7 @@ $userData = getUserData();
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/notifications-page.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/notifications-page.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../assets/css/company/notifications-page.css')); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
@@ -67,7 +67,7 @@ $userData = getUserData();
     <script>
         window.NOTIFICATIONS_PAGE_USER_ID = <?php echo json_encode($userData['id'] ?? 0); ?>;
     </script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/notifications-page.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/notifications-page.js?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../assets/javascript/company/notifications-page.js')); ?>"></script>
 </body>
 
 </html>
