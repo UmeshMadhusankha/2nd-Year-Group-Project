@@ -4,6 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 class UserQuotesModel {
     private PDO $pdo;
     private ?bool $companyQuotationHasCompanyId = null;
+    private ?string $jobRequestActivationStatus = null;
 
     public function __construct(?PDO $connection = null) {
         if (!($connection instanceof PDO)) {
@@ -34,6 +35,30 @@ class UserQuotesModel {
         }
 
         return $this->companyQuotationHasCompanyId;
+    }
+
+    private function getJobRequestActivationStatus(): string {
+        if ($this->jobRequestActivationStatus !== null) {
+            return $this->jobRequestActivationStatus;
+        }
+
+        try {
+            $stmt = $this->pdo->prepare(
+                "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'jobrequest' AND COLUMN_NAME = 'status'"
+            );
+            $stmt->execute();
+            $columnType = strtolower((string)$stmt->fetchColumn());
+
+            if ($columnType !== '' && strpos($columnType, "'active'") !== false) {
+                $this->jobRequestActivationStatus = 'active';
+            } else {
+                $this->jobRequestActivationStatus = 'in_progress';
+            }
+        } catch (Throwable $e) {
+            $this->jobRequestActivationStatus = 'in_progress';
+        }
+
+        return $this->jobRequestActivationStatus;
     }
 
     public function getUserQuotes(int $userId, int $limit = 20, int $offset = 0, ?string $status = null): array {
@@ -191,40 +216,92 @@ class UserQuotesModel {
             return false;
         }
 
-        if ($source === 'repairer') {
-            $sql = "
-                UPDATE repairerquote rq
-                INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
-                SET rq.status = :status
-                WHERE rq.quote_id = :quote_id
-                  AND jr.user_id = :user_id
-                  AND rq.status = 'pending'
-            ";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':status', $decision, PDO::PARAM_STR);
-            $stmt->bindValue(':quote_id', $quoteId, PDO::PARAM_INT);
-            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->rowCount() > 0;
+        if (!in_array($source, ['repairer', 'company'], true)) {
+            return false;
         }
 
-        if ($source === 'company') {
-            $sql = "
-                UPDATE companyquotation cq
-                INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
-                SET cq.status = :status
-                WHERE cq.quotation_id = :quote_id
-                                    AND jr.user_id = :user_id
-                  AND cq.status = 'pending'
-            ";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':status', $decision, PDO::PARAM_STR);
-            $stmt->bindValue(':quote_id', $quoteId, PDO::PARAM_INT);
-            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->rowCount() > 0;
-        }
+        try {
+            $this->pdo->beginTransaction();
 
-        return false;
+            if ($source === 'repairer') {
+                $findSql = "
+                    SELECT rq.request_id
+                    FROM repairerquote rq
+                    INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
+                    WHERE rq.quote_id = :quote_id
+                      AND jr.user_id = :user_id
+                      AND rq.status = 'pending'
+                    LIMIT 1
+                ";
+                $updateSql = "
+                    UPDATE repairerquote rq
+                    INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
+                    SET rq.status = :status
+                    WHERE rq.quote_id = :quote_id
+                      AND jr.user_id = :user_id
+                      AND rq.status = 'pending'
+                ";
+            } else {
+                $findSql = "
+                    SELECT cq.request_id
+                    FROM companyquotation cq
+                    INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
+                    WHERE cq.quotation_id = :quote_id
+                      AND jr.user_id = :user_id
+                      AND cq.status = 'pending'
+                    LIMIT 1
+                ";
+                $updateSql = "
+                    UPDATE companyquotation cq
+                    INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
+                    SET cq.status = :status
+                    WHERE cq.quotation_id = :quote_id
+                      AND jr.user_id = :user_id
+                      AND cq.status = 'pending'
+                ";
+            }
+
+            $findStmt = $this->pdo->prepare($findSql);
+            $findStmt->bindValue(':quote_id', $quoteId, PDO::PARAM_INT);
+            $findStmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            $findStmt->execute();
+            $requestId = (int)$findStmt->fetchColumn();
+
+            if ($requestId <= 0) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            $updateStmt = $this->pdo->prepare($updateSql);
+            $updateStmt->bindValue(':status', $decision, PDO::PARAM_STR);
+            $updateStmt->bindValue(':quote_id', $quoteId, PDO::PARAM_INT);
+            $updateStmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            $updateStmt->execute();
+
+            if ($updateStmt->rowCount() <= 0) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            if ($decision === 'accepted') {
+                $jobStatus = $this->getJobRequestActivationStatus();
+                $jobStmt = $this->pdo->prepare(
+                    "UPDATE jobrequest SET status = :job_status WHERE request_id = :request_id AND user_id = :user_id"
+                );
+                $jobStmt->bindValue(':job_status', $jobStatus, PDO::PARAM_STR);
+                $jobStmt->bindValue(':request_id', $requestId, PDO::PARAM_INT);
+                $jobStmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $jobStmt->execute();
+            }
+
+            $this->pdo->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('Error responding to quote: ' . $e->getMessage());
+            return false;
+        }
     }
 }

@@ -258,6 +258,11 @@ foreach ($allJobRequests as $job) {
                     <h2 class="quotes-received-title">Received Quotes For Your Jobs</h2>
                     <p class="quotes-received-subtitle">Quotes from individual repairers and companies for jobs you published.</p>
                 </div>
+                <div class="quotes-filter-tabs" id="quotesFilterTabs">
+                    <button class="quotes-filter-tab active" type="button" data-quote-status="pending">Pending</button>
+                    <button class="quotes-filter-tab" type="button" data-quote-status="accepted">Accepted</button>
+                    <button class="quotes-filter-tab" type="button" data-quote-status="rejected">Rejected</button>
+                </div>
                 <div class="quotes-received-list" id="quotesReceivedList">
                     <div class="quote-empty-state">Loading quotes...</div>
                 </div>
@@ -486,6 +491,25 @@ foreach ($allJobRequests as $job) {
     const quotesReceivedSection = document.getElementById('quotesReceivedSection');
     const quotesReceivedList = document.getElementById('quotesReceivedList');
     const quotesReceivedPill = document.getElementById('quotesReceivedPill');
+    const quotesFilterTabs = document.querySelectorAll('.quotes-filter-tab');
+    const JOB_HISTORY_VIEW_KEY = 'jobHistory.activeView';
+    let currentQuoteStatusFilter = 'pending';
+
+    function persistMainView(view) {
+        try {
+            sessionStorage.setItem(JOB_HISTORY_VIEW_KEY, view);
+        } catch (e) {
+            // Ignore storage failures (private mode/quota/security settings)
+        }
+
+        const url = new URL(window.location.href);
+        if (view === 'quotes') {
+            url.searchParams.set('view', 'quotes');
+        } else {
+            url.searchParams.delete('view');
+        }
+        window.history.replaceState({}, '', url.toString());
+    }
 
     function escapeHtml(value) {
         return String(value)
@@ -592,6 +616,10 @@ foreach ($allJobRequests as $job) {
             ? `<p class="quote-message">${escapeHtml(q.quote_message)}</p>`
             : '';
 
+        const providerId = Number(q.provider_id);
+        const canNegotiate = Number.isFinite(providerId) && providerId > 0;
+        const negotiateUrl = `/2nd-Year-Group-Project/FixLanka/chat?source=${encodeURIComponent(q.source || '')}&provider_id=${encodeURIComponent(String(providerId || ''))}&request_id=${encodeURIComponent(String(q.request_id || ''))}&quote_id=${encodeURIComponent(String(q.quote_id || ''))}`;
+
         return `
             <article class="quote-item" data-source="${escapeHtml(q.source)}" data-quote-id="${escapeHtml(q.quote_id)}">
                 <div class="quote-card-top">
@@ -623,7 +651,10 @@ foreach ($allJobRequests as $job) {
 
                 <div class="quote-actions">
                     <button class="btn-success-sm" ${canRespond ? '' : 'disabled'} onclick="handleQuoteAction('accepted','${escapeHtml(q.source)}',${escapeHtml(q.quote_id)})">Accept</button>
-                    <button class="btn-outline-sm" ${canRespond ? '' : 'disabled'} onclick="handleQuoteAction('rejected','${escapeHtml(q.source)}',${escapeHtml(q.quote_id)})">Decline</button>
+                    <button class="btn-outline-sm" ${canRespond ? '' : 'disabled'} onclick="handleQuoteAction('rejected','${escapeHtml(q.source)}',${escapeHtml(q.quote_id)})">Reject</button>
+                    <a class="btn-negotiate-sm ${canNegotiate ? '' : 'is-disabled'}" ${canNegotiate ? `href="${negotiateUrl}"` : 'href="#" aria-disabled="true" onclick="return false;"'}>
+                        <i class="fas fa-message"></i> Negotiate
+                    </a>
                 </div>
             </article>
         `;
@@ -637,13 +668,13 @@ foreach ($allJobRequests as $job) {
         `;
 
         try {
-            const data = await fetchQuotesJson(`${USER_QUOTES_API}?action=list&limit=50&offset=0`);
+            const data = await fetchQuotesJson(`${USER_QUOTES_API}?action=list&limit=50&offset=0&status=${encodeURIComponent(currentQuoteStatusFilter)}`);
             const quotes = Array.isArray(data.quotes) ? data.quotes : [];
             setQuotesPill(parseInt(data.pending_count, 10) || 0);
 
             if (quotes.length === 0) {
                 quotesReceivedList.innerHTML = `
-                    <div class="quote-empty-state">No quotes received yet for your jobs</div>
+                    <div class="quote-empty-state">No ${escapeHtml(currentQuoteStatusFilter)} quotes found for your jobs</div>
                 `;
                 return;
             }
@@ -670,6 +701,8 @@ foreach ($allJobRequests as $job) {
         if (!showJobs) {
             loadQuotesReceived();
         }
+
+        persistMainView(showJobs ? 'jobs' : 'quotes');
     }
 
     if (jobsPostedBtn && quotesReceivedBtn) {
@@ -682,13 +715,49 @@ foreach ($allJobRequests as $job) {
         });
     }
 
-    const initialView = new URLSearchParams(window.location.search).get('view');
+    const initialViewFromUrl = new URLSearchParams(window.location.search).get('view');
+    let initialView = initialViewFromUrl;
+
+    if (!initialView) {
+        try {
+            initialView = sessionStorage.getItem(JOB_HISTORY_VIEW_KEY) || 'jobs';
+        } catch (e) {
+            initialView = 'jobs';
+        }
+    }
+
     if (initialView === 'quotes') {
         switchMainView('quotes');
+    } else {
+        switchMainView('jobs');
+    }
+
+    if (quotesFilterTabs && quotesFilterTabs.length) {
+        quotesFilterTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const nextStatus = this.dataset.quoteStatus;
+                if (!nextStatus || nextStatus === currentQuoteStatusFilter) return;
+
+                currentQuoteStatusFilter = nextStatus;
+                quotesFilterTabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                if (quotesReceivedSection && quotesReceivedSection.style.display !== 'none') {
+                    loadQuotesReceived();
+                }
+            });
+        });
     }
 
     window.handleQuoteAction = async function(decision, source, quoteId) {
         try {
+            if (decision === 'rejected') {
+                const confirmed = window.confirm('Are you sure you want to reject this quote?');
+                if (!confirmed) {
+                    return;
+                }
+            }
+
             await fetchQuotesJson(`${USER_QUOTES_API}?action=respond`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
