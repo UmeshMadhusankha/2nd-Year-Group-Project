@@ -992,11 +992,14 @@ CREATE TABLE `staffsummary` (
 CREATE TABLE `staticcontent` (
   `content_id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
+  `description` varchar(500) DEFAULT NULL,
   `body` text NOT NULL,
+  `status` enum('Draft','Published') NOT NULL DEFAULT 'Published',
   `last_update` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `content_type` enum('terms','privacy','faq','about','help') NOT NULL,
+  `content_type` enum('terms','privacy','faq','about','help','contact','how_it_works','services','why_choose','support') NOT NULL,
   PRIMARY KEY (`content_id`),
-  KEY `idx_type` (`content_type`)
+  KEY `idx_type` (`content_type`),
+  KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Support Tickets

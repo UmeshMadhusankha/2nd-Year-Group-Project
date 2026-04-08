@@ -1,8 +1,33 @@
 <?php
 // filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\views\user\landing.php
 require_once __DIR__ . '/../../config/session.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/static_content.php';
 
 $isLoggedIn = isLoggedIn();
+$aboutContent = fixlanka_static_content_for_page($pdo, 'about');
+$landingHeroContent = fixlanka_static_content_for_page($pdo, 'landing_hero');
+
+$heroTitle = 'Find Trusted Service Professionals Near You';
+$heroSubtitle = 'Connect with verified local experts for all your home and business needs';
+if (!empty($landingHeroContent['body'])) {
+    $decoded = json_decode((string)$landingHeroContent['body'], true);
+    if (is_array($decoded)) {
+        $t = trim((string)($decoded['title'] ?? ''));
+        $s = trim((string)($decoded['subtitle'] ?? ''));
+        if ($t !== '') {
+            $heroTitle = $t;
+        }
+        if ($s !== '') {
+            $heroSubtitle = $s;
+        }
+    }
+}
+
+$aboutExcerpt = '';
+if (!empty($aboutContent['body'])) {
+    $aboutExcerpt = fixlanka_static_content_excerpt((string)$aboutContent['body'], 220);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -20,13 +45,13 @@ $isLoggedIn = isLoggedIn();
     <?php include 'navbar.php'; ?>
 
     <!-- Hero Section -->
-    <section class="hero-section">
+    <section class="hero-section" id="hero">
         <div class="hero-container">
             <!-- Hero Banner -->
             <div class="hero-banner">
                 <div class="hero-content">
-                    <h1 class="hero-title">Find Trusted Service Professionals Near You</h1>
-                    <p class="hero-subtitle">Connect with verified local experts for all your home and business needs</p>
+                    <h1 class="hero-title"><?php echo htmlspecialchars($heroTitle, ENT_QUOTES, 'UTF-8'); ?></h1>
+                    <p class="hero-subtitle"><?php echo htmlspecialchars($heroSubtitle, ENT_QUOTES, 'UTF-8'); ?></p>
                 </div>
             </div>
             
@@ -139,7 +164,10 @@ $isLoggedIn = isLoggedIn();
             
             <div class="footer-section footer-about">
                 <h3 class="footer-title">About Us</h3>
-                <p class="footer-text">Fix Lanka was established to bridge the gap between customers and quality service providers in Sri Lanka. Our mission is to make finding trusted professionals simple, fast, and reliable.</p>
+                <?php if ($aboutExcerpt !== ''): ?>
+                    <p class="footer-text"><?php echo htmlspecialchars($aboutExcerpt, ENT_QUOTES, 'UTF-8'); ?></p>
+                    <a class="footer-readmore" href="/2nd-Year-Group-Project/FixLanka/views/user/about-us.php">Read more</a>
+                <?php endif; ?>
             </div>
             
             <div class="footer-section footer-support">
