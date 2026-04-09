@@ -2,6 +2,7 @@
 
 const DEFAULT_APP_BASE = '/2nd-Year-Group-Project/FixLanka';
 const DEBUG_REPAIRER_POPUP = true;
+let activeRepairerId = null;
 
 if (DEBUG_REPAIRER_POPUP) {
     console.log('[RepairerPopup] Script loaded');
@@ -13,6 +14,13 @@ if (DEBUG_REPAIRER_POPUP) {
  * @param {object|null} repairerData - Optional repairer data from landing cache
  */
 function openRepairerProfile(repairerId, repairerData = null) {
+    const numericId = Number(repairerId);
+    if (Number.isFinite(numericId) && numericId > 0) {
+        activeRepairerId = numericId;
+    } else {
+        activeRepairerId = null;
+    }
+
     if (DEBUG_REPAIRER_POPUP) {
         console.groupCollapsed('[RepairerPopup] openRepairerProfile()');
         console.log('repairerId (raw):', repairerId);
@@ -48,6 +56,7 @@ function closeRepairerProfile() {
     if (modal) {
         modal.classList.remove('show');
         document.body.style.overflow = '';
+        activeRepairerId = null;
         if (DEBUG_REPAIRER_POPUP) {
             console.log('[RepairerPopup] closeRepairerProfile(): modal hidden');
         }
@@ -332,8 +341,36 @@ function escapeHtml(text) {
  * Request quote from repairer
  */
 function requestQuote() {
-    alert('Opening quote request form... (This will redirect to post job page in the actual application)');
+    if (!activeRepairerId) {
+        alert('Repairer ID is not available right now. Please reopen the profile and try again.');
+        return;
+    }
+
+    if (typeof window.requestRepairerQuote === 'function') {
+        window.requestRepairerQuote(activeRepairerId);
+        return;
+    }
+
+    alert(`Opening new job request form for repairer #${activeRepairerId}...`);
 }
+
+window.sendRepairerListedJobRequest = function sendRepairerListedJobRequest() {
+    if (!activeRepairerId) {
+        alert('Repairer ID is not available right now. Please reopen the profile and try again.');
+        return;
+    }
+
+    if (typeof window.sendRepairRequest === 'function') {
+        window.sendRepairRequest('repairer', activeRepairerId);
+        return;
+    }
+
+    alert(`Opening listed job request flow for repairer #${activeRepairerId}...`);
+};
+
+window.requestRepairerNewJobRequest = function requestRepairerNewJobRequest() {
+    requestQuote();
+};
 
 // Close modal on ESC key
 document.addEventListener('keydown', function(event) {

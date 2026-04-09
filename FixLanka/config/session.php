@@ -65,6 +65,11 @@ function trackUserSession() {
                 PDO::ATTR_EMULATE_PREPARES => false
             ]
         );
+
+        $tableCheck = $pdo->query("SHOW TABLES LIKE 'user_sessions'");
+        if (!$tableCheck || $tableCheck->fetchColumn() === false) {
+            return false;
+        }
         
         $sessionId = session_id();
         $userId = $_SESSION['user_id'];
@@ -162,6 +167,11 @@ function cleanupOldSessions($daysOld = 30) {
                 PDO::ATTR_EMULATE_PREPARES => false
             ]
         );
+
+        $tableCheck = $pdo->query("SHOW TABLES LIKE 'user_sessions'");
+        if (!$tableCheck || $tableCheck->fetchColumn() === false) {
+            return false;
+        }
         
         $sql = "DELETE FROM user_sessions 
                 WHERE last_activity < DATE_SUB(NOW(), INTERVAL ? DAY)";

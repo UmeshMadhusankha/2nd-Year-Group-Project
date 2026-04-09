@@ -5,7 +5,10 @@
 const APP_BASE = '/2nd-Year-Group-Project/FixLanka';
 const API_ENDPOINTS = Object.freeze({
     providerSearch: `${APP_BASE}/api/user/loadLandingProviders.php`,
-    companies: `${APP_BASE}/api/companies.php`
+    companies: `${APP_BASE}/api/companies.php`,
+    listedJobs: `${APP_BASE}/api/user/listed-job-requests.php`,
+    directRequestQuotes: `${APP_BASE}/api/user/direct-request-quotes.php`,
+    directJobRequests: `${APP_BASE}/api/user/direct-job-requests.php`
 });
 
 /*
@@ -58,6 +61,26 @@ const scrollTrigger = document.getElementById('scrollTrigger');
 const profileAvatar = document.getElementById('profileAvatar');
 const profileDropdown = document.getElementById('profileDropdown');
 const providerTabs = document.querySelectorAll('.provider-tab');
+const listedJobRequestModal = document.getElementById('listedJobRequestModal');
+const listedJobRequestCloseBtn = document.getElementById('listedJobRequestCloseBtn');
+const listedJobRequestCancelBtn = document.getElementById('listedJobRequestCancelBtn');
+const listedJobRequestSubmitBtn = document.getElementById('listedJobRequestSubmitBtn');
+const listedJobRequestList = document.getElementById('listedJobRequestList');
+const listedJobRequestError = document.getElementById('listedJobRequestError');
+const listedJobRequestProviderTypeLabel = document.getElementById('listedJobRequestProviderTypeLabel');
+const directJobRequestModal = document.getElementById('directJobRequestModal');
+const directJobRequestCloseBtn = document.getElementById('directJobRequestCloseBtn');
+const directJobRequestCancelBtn = document.getElementById('directJobRequestCancelBtn');
+const directJobRequestForm = document.getElementById('directJobRequestForm');
+const directJobRequestError = document.getElementById('directJobRequestError');
+const directJobRequestSuccess = document.getElementById('directJobRequestSuccess');
+const directJobRequestProviderLabel = document.getElementById('directJobRequestProviderLabel');
+const directJobProviderId = document.getElementById('directJobProviderId');
+const directJobProviderType = document.getElementById('directJobProviderType');
+const directJobFinishDate = document.getElementById('directJobFinishDate');
+const directJobPhotos = document.getElementById('directJobPhotos');
+const directJobPhotoPreview = document.getElementById('directJobPhotoPreview');
+const directJobRequestSubmitBtn = document.getElementById('directJobRequestSubmitBtn');
 
 // Active grid pointer (used by loader + no-results helpers)
 let providersGrid = repairersGrid;
@@ -69,6 +92,15 @@ let isLoading = false;
 let allProvidersLoaded = false;
 let currentProviderType = 'repairers';
 const landingRepairersById = new Map();
+let selectedListedJobRequestId = null;
+let listedJobRequestContext = {
+    providerId: null,
+    providerType: null
+};
+let directJobRequestContext = {
+    providerId: null,
+    providerType: null
+};
 
 function cacheLandingRepairers(providers) {
     if (!Array.isArray(providers)) return;
@@ -99,8 +131,385 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeLazyLoading();
     initializeProfileDropdown();
     initializeProviderTabs();
+    initializeListedJobRequestModal();
+    initializeDirectJobRequestModal();
     loadInitialProviders();
 });
+
+function initializeDirectJobRequestModal() {
+    if (!directJobRequestModal || !directJobRequestForm) return;
+
+    if (directJobRequestCloseBtn) {
+        directJobRequestCloseBtn.addEventListener('click', closeDirectJobRequestModal);
+    }
+
+    if (directJobRequestCancelBtn) {
+        directJobRequestCancelBtn.addEventListener('click', closeDirectJobRequestModal);
+    }
+
+    directJobRequestModal.addEventListener('click', (event) => {
+        if (event.target === directJobRequestModal) {
+            closeDirectJobRequestModal();
+        }
+    });
+
+    directJobRequestForm.addEventListener('submit', submitDirectJobRequest);
+
+    if (directJobFinishDate) {
+        const today = new Date().toISOString().split('T')[0];
+        directJobFinishDate.setAttribute('min', today);
+    }
+
+    if (directJobPhotos && directJobPhotoPreview) {
+        directJobPhotos.addEventListener('change', () => {
+            const file = directJobPhotos.files && directJobPhotos.files[0] ? directJobPhotos.files[0] : null;
+            directJobPhotoPreview.textContent = file ? `Selected: ${file.name}` : '';
+        });
+    }
+}
+
+function closeDirectJobRequestModal() {
+    if (!directJobRequestModal || !directJobRequestForm) return;
+
+    directJobRequestModal.classList.remove('show');
+    directJobRequestModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+
+    directJobRequestForm.reset();
+    directJobRequestContext = { providerId: null, providerType: null };
+
+    if (directJobProviderId) directJobProviderId.value = '';
+    if (directJobProviderType) directJobProviderType.value = '';
+    if (directJobPhotoPreview) directJobPhotoPreview.textContent = '';
+
+    if (directJobRequestError) {
+        directJobRequestError.style.display = 'none';
+        directJobRequestError.textContent = '';
+    }
+    if (directJobRequestSuccess) {
+        directJobRequestSuccess.style.display = 'none';
+        directJobRequestSuccess.textContent = '';
+    }
+
+    if (directJobRequestSubmitBtn) {
+        directJobRequestSubmitBtn.disabled = false;
+        directJobRequestSubmitBtn.textContent = 'Request';
+    }
+}
+
+function openDirectJobRequestModal(providerType, providerId) {
+    if (!directJobRequestModal || !directJobRequestForm) {
+        alert('New job request popup is not available right now.');
+        return;
+    }
+
+    const normalizedType = normalizeProviderType(providerType) === 'company' ? 'company' : 'individual';
+    const numericProviderId = Number(providerId);
+
+    if (!Number.isFinite(numericProviderId) || numericProviderId <= 0) {
+        alert('Invalid provider selection. Please reopen the profile and try again.');
+        return;
+    }
+
+    // Close profile popups first as requested.
+    if (normalizedType === 'company' && typeof window.closeCompanyModal === 'function') {
+        window.closeCompanyModal();
+    }
+    if (normalizedType === 'individual' && typeof window.closeRepairerProfile === 'function') {
+        window.closeRepairerProfile();
+    }
+
+    directJobRequestContext = {
+        providerId: numericProviderId,
+        providerType: normalizedType
+    };
+
+    directJobRequestForm.reset();
+    if (directJobProviderId) directJobProviderId.value = String(numericProviderId);
+    if (directJobProviderType) directJobProviderType.value = normalizedType;
+    if (directJobRequestProviderLabel) {
+        directJobRequestProviderLabel.textContent = normalizedType === 'company' ? 'this company' : 'this repairer';
+    }
+
+    if (directJobFinishDate) {
+        const today = new Date().toISOString().split('T')[0];
+        directJobFinishDate.setAttribute('min', today);
+    }
+
+    if (directJobPhotoPreview) directJobPhotoPreview.textContent = '';
+
+    if (directJobRequestError) {
+        directJobRequestError.style.display = 'none';
+        directJobRequestError.textContent = '';
+    }
+    if (directJobRequestSuccess) {
+        directJobRequestSuccess.style.display = 'none';
+        directJobRequestSuccess.textContent = '';
+    }
+
+    if (directJobRequestSubmitBtn) {
+        directJobRequestSubmitBtn.disabled = false;
+        directJobRequestSubmitBtn.textContent = 'Request';
+    }
+
+    directJobRequestModal.classList.add('show');
+    directJobRequestModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+}
+
+async function submitDirectJobRequest(event) {
+    event.preventDefault();
+
+    if (!directJobRequestForm) return;
+    if (!directJobRequestContext.providerId || !directJobRequestContext.providerType) return;
+
+    const formData = new FormData(directJobRequestForm);
+    formData.set('provider_id', String(directJobRequestContext.providerId));
+    formData.set('provider_type', directJobRequestContext.providerType);
+
+    if (directJobRequestError) {
+        directJobRequestError.style.display = 'none';
+        directJobRequestError.textContent = '';
+    }
+    if (directJobRequestSuccess) {
+        directJobRequestSuccess.style.display = 'none';
+        directJobRequestSuccess.textContent = '';
+    }
+
+    if (directJobRequestSubmitBtn) {
+        directJobRequestSubmitBtn.disabled = true;
+        directJobRequestSubmitBtn.textContent = 'Requesting...';
+    }
+
+    try {
+        const response = await fetch(API_ENDPOINTS.directJobRequests, {
+            method: 'POST',
+            body: formData,
+            headers: { 'Accept': 'application/json' }
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result?.success) {
+            throw new Error(result?.message || `Failed to create direct job request (${response.status})`);
+        }
+
+        if (directJobRequestSuccess) {
+            directJobRequestSuccess.textContent = result.message || 'Direct job request created successfully.';
+            directJobRequestSuccess.style.display = 'block';
+        }
+
+        setTimeout(() => {
+            closeDirectJobRequestModal();
+        }, 700);
+    } catch (error) {
+        console.error('Failed to submit direct job request:', error);
+        if (directJobRequestError) {
+            directJobRequestError.textContent = error.message || 'Failed to create direct request. Please try again.';
+            directJobRequestError.style.display = 'block';
+        }
+    } finally {
+        if (directJobRequestSubmitBtn) {
+            directJobRequestSubmitBtn.disabled = false;
+            directJobRequestSubmitBtn.textContent = 'Request';
+        }
+    }
+}
+
+function initializeListedJobRequestModal() {
+    if (!listedJobRequestModal) return;
+
+    if (listedJobRequestCloseBtn) {
+        listedJobRequestCloseBtn.addEventListener('click', closeListedJobRequestModal);
+    }
+
+    if (listedJobRequestCancelBtn) {
+        listedJobRequestCancelBtn.addEventListener('click', closeListedJobRequestModal);
+    }
+
+    if (listedJobRequestSubmitBtn) {
+        listedJobRequestSubmitBtn.addEventListener('click', submitListedJobRequest);
+    }
+
+    if (listedJobRequestList) {
+        listedJobRequestList.addEventListener('change', (event) => {
+            const target = event.target;
+            if (!target || target.name !== 'listedJobRequestId') return;
+
+            selectedListedJobRequestId = Number(target.value);
+            if (listedJobRequestSubmitBtn) {
+                listedJobRequestSubmitBtn.disabled = !Number.isFinite(selectedListedJobRequestId) || selectedListedJobRequestId <= 0;
+            }
+        });
+    }
+
+    listedJobRequestModal.addEventListener('click', (event) => {
+        if (event.target === listedJobRequestModal) {
+            closeListedJobRequestModal();
+        }
+    });
+}
+
+function closeListedJobRequestModal() {
+    if (!listedJobRequestModal) return;
+
+    listedJobRequestModal.classList.remove('show');
+    listedJobRequestModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+
+    selectedListedJobRequestId = null;
+    listedJobRequestContext = { providerId: null, providerType: null };
+
+    if (listedJobRequestSubmitBtn) {
+        listedJobRequestSubmitBtn.disabled = true;
+    }
+
+    if (listedJobRequestError) {
+        listedJobRequestError.style.display = 'none';
+        listedJobRequestError.textContent = '';
+    }
+
+    if (listedJobRequestList) {
+        listedJobRequestList.innerHTML = '<p class="listed-job-placeholder">Loading your pending jobs...</p>';
+    }
+}
+
+async function openListedJobRequestModal(providerType, providerId) {
+    if (!listedJobRequestModal || !listedJobRequestList) {
+        alert('Listed-job request popup is not available right now.');
+        return;
+    }
+
+    const normalizedType = normalizeProviderType(providerType) === 'company' ? 'company' : 'individual';
+    const numericProviderId = Number(providerId);
+
+    listedJobRequestContext = {
+        providerId: Number.isFinite(numericProviderId) && numericProviderId > 0 ? numericProviderId : null,
+        providerType: normalizedType
+    };
+
+    selectedListedJobRequestId = null;
+    if (listedJobRequestSubmitBtn) listedJobRequestSubmitBtn.disabled = true;
+
+    if (listedJobRequestProviderTypeLabel) {
+        listedJobRequestProviderTypeLabel.textContent = normalizedType === 'company' ? 'this company' : 'this repairer';
+    }
+
+    if (listedJobRequestError) {
+        listedJobRequestError.style.display = 'none';
+        listedJobRequestError.textContent = '';
+    }
+
+    listedJobRequestList.innerHTML = '<p class="listed-job-placeholder">Loading your pending jobs...</p>';
+
+    listedJobRequestModal.classList.add('show');
+    listedJobRequestModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+
+    try {
+        const params = new URLSearchParams();
+        params.set('provider_type', normalizedType);
+
+        const response = await fetch(`${API_ENDPOINTS.listedJobs}?${params.toString()}`, {
+            headers: { 'Accept': 'application/json' }
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result?.success) {
+            throw new Error(result?.message || `Failed to load pending jobs (${response.status})`);
+        }
+
+        renderListedJobRequestOptions(Array.isArray(result.data) ? result.data : []);
+    } catch (error) {
+        console.error('Failed to load listed job requests:', error);
+        if (listedJobRequestError) {
+            listedJobRequestError.textContent = error.message || 'Failed to load your listed jobs.';
+            listedJobRequestError.style.display = 'block';
+        }
+        listedJobRequestList.innerHTML = '<p class="listed-job-placeholder">Could not load jobs. Please try again.</p>';
+    }
+}
+
+function renderListedJobRequestOptions(jobs) {
+    if (!listedJobRequestList) return;
+
+    if (!jobs.length) {
+        listedJobRequestList.innerHTML = '<p class="listed-job-placeholder">No pending listed jobs match this provider type.</p>';
+        return;
+    }
+
+    const html = jobs.map((job) => {
+        const requestId = Number(job.request_id);
+        const title = escapeHtml(String(job.title || `Job #${requestId}`));
+        const category = escapeHtml(String(job.category_name || 'Uncategorized'));
+        const district = escapeHtml(String(job.district || 'N/A'));
+        const finishDate = escapeHtml(String(job.finish_date || 'N/A'));
+
+        return `
+            <div class="listed-job-item">
+                <label>
+                    <input type="radio" name="listedJobRequestId" value="${requestId}">
+                    <span>
+                        <p class="listed-job-item-title">${title}</p>
+                        <p class="listed-job-item-meta">Category: ${category} | District: ${district} | Finish by: ${finishDate}</p>
+                    </span>
+                </label>
+            </div>
+        `;
+    }).join('');
+
+    listedJobRequestList.innerHTML = html;
+}
+
+async function submitListedJobRequest() {
+    if (!Number.isFinite(selectedListedJobRequestId) || selectedListedJobRequestId <= 0) return;
+    if (!listedJobRequestContext.providerType || !listedJobRequestContext.providerId) return;
+
+    if (listedJobRequestSubmitBtn) {
+        listedJobRequestSubmitBtn.disabled = true;
+        listedJobRequestSubmitBtn.textContent = 'Requesting...';
+    }
+
+    if (listedJobRequestError) {
+        listedJobRequestError.style.display = 'none';
+        listedJobRequestError.textContent = '';
+    }
+
+    try {
+        const payload = {
+            provider_type: listedJobRequestContext.providerType,
+            request_id: selectedListedJobRequestId,
+            provider_id: listedJobRequestContext.providerId
+        };
+
+        const response = await fetch(API_ENDPOINTS.directRequestQuotes, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result?.success) {
+            throw new Error(result?.message || `Failed to submit request (${response.status})`);
+        }
+
+        alert(result.message || 'Request sent successfully.');
+        closeListedJobRequestModal();
+    } catch (error) {
+        console.error('Failed to submit listed-job request:', error);
+        if (listedJobRequestError) {
+            listedJobRequestError.textContent = error.message || 'Failed to send request. Please try again.';
+            listedJobRequestError.style.display = 'block';
+        }
+    } finally {
+        if (listedJobRequestSubmitBtn) {
+            listedJobRequestSubmitBtn.textContent = 'Request';
+            listedJobRequestSubmitBtn.disabled = !Number.isFinite(selectedListedJobRequestId) || selectedListedJobRequestId <= 0;
+        }
+    }
+}
 
 // Mobile Menu Functionality
 function initializeMobileMenu() {
@@ -855,17 +1264,17 @@ function filterByProviderType(type, buttonElement) {
 
 // Send Repair Request Function (Placeholder - No functionality yet)
 function sendRepairRequest(type, providerId) {
-    
-    alert(`Send Repair Request feature will be implemented soon!\n\nProvider Type: ${type}\nProvider ID: ${providerId || 'Current profile'}`);
-    // TODO: Implement repair request functionality
-    // This will redirect to post-job page or open a request form
+    openListedJobRequestModal(type, providerId);
 }
 
 // Request Company Quote Function (Placeholder)
 function requestCompanyQuote(companyId) {
-    
-    alert('Request Company Quote feature will be implemented soon!');
-    // TODO: Implement company quote request functionality
+    openDirectJobRequestModal('company', companyId);
+}
+
+// Request Repairer Quote / New Job Function (Placeholder)
+function requestRepairerQuote(repairerId) {
+    openDirectJobRequestModal('individual', repairerId);
 }
 
 // Console log for debugging
