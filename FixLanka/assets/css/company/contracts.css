@@ -6103,6 +6103,12 @@ input[type="checkbox"]:checked+.checkbox-custom::after {
     color: #dc2626;
 }
 
+.card-action-menu.is-fixed {
+    position: fixed !important;
+    margin: 0 !important;
+    z-index: 20000 !important;
+}
+
 /* === Grid Layout === */
 .contracts-container {
     display: grid;

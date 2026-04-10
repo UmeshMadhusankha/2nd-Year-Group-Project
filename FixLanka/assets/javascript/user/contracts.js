@@ -12,7 +12,30 @@
     let currentReviewMilestoneId = null;
     let lastOpenedContractDetail = null;
 
-    document.addEventListener('DOMContentLoaded', init);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        init();
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.card-action-more') && !e.target.closest('.card-action-menu')) {
+                document.querySelectorAll('.card-action-menu.active').forEach(m => {
+                    m.classList.remove('active');
+                    m.classList.remove('is-fixed');
+                });
+            }
+        });
+
+        // Close menus on scroll to prevent misalignment with fixed positioning
+        window.addEventListener('scroll', closeAllMenus, true);
+        const list = document.getElementById('contractsList');
+        if (list) list.addEventListener('scroll', closeAllMenus, true);
+    });
+
+    function closeAllMenus() {
+        document.querySelectorAll('.card-action-menu.active').forEach(m => {
+            m.classList.remove('active');
+            m.classList.remove('is-fixed');
+        });
+    }
 
     function updateBodyScrollLock() {
         const detailOverlay = document.getElementById('contractDetailOverlay');
@@ -145,7 +168,7 @@
                 openDetail(id);
             });
 
-            card.querySelectorAll('.card-action-btn').forEach(btn => {
+            card.querySelectorAll('.card-action-btn, .card-menu-item').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -154,6 +177,32 @@
                     const parentCard = btn.closest('.contract-card');
                     const id = parentCard ? parentCard.dataset.id : null;
                     if (!id) return;
+
+                    if (action === 'more') {
+                        document.querySelectorAll('.card-action-menu.active').forEach(m => {
+                            if (m.id !== `cardMenu-${id}`) {
+                                m.classList.remove('active');
+                                m.classList.remove('is-fixed');
+                            }
+                        });
+
+                        const menu = document.getElementById(`cardMenu-${id}`);
+                        if (menu) {
+                            const isOpening = !menu.classList.contains('active');
+                            if (isOpening) {
+                                const rect = btn.getBoundingClientRect();
+                                menu.classList.add('is-fixed');
+                                menu.style.top = (rect.bottom + 5) + 'px';
+                                // Align right edge of menu with right edge of button
+                                menu.style.left = 'auto';
+                                menu.style.right = (window.innerWidth - rect.right) + 'px';
+                            } else {
+                                menu.classList.remove('is-fixed');
+                            }
+                            menu.classList.toggle('active');
+                        }
+                        return;
+                    }
 
                     const current = allContracts.find(x => String(x.contract_id) === String(id)) || {};
 
@@ -219,8 +268,10 @@
         const isPendingSignature = ['draft', 'pending_signature'].includes(String(c.status || '')) && !!c.sent_to_customer;
 
         const actions = buildCustomerCardActions({
+            contractId: c.contract_id,
             isPendingSignature,
             canUndo: !!c.undo_available,
+            unreadCount: parseInt(c.unread_messages || c.unread_count || 0)
         });
 
         return `
@@ -284,18 +335,7 @@
                 </div>
             </div>
 
-            <div class="card-progress-section">
-                <div class="card-progress-header">
-                    <span class="card-progress-label">Progress</span>
-                    <span class="card-progress-value">${progress}%</span>
-                </div>
-                <div class="card-progress-track">
-                    <div class="card-progress-fill" style="width: ${progress}%"></div>
-                </div>
-                <div class="card-progress-footer">
-                    <span class="card-days-info"><i class="fas ${daysInfo.icon}"></i> ${esc(daysInfo.text)}</span>
-                </div>
-            </div>
+
 
             <div class="card-actions-row">
                 ${actions}
@@ -358,42 +398,37 @@
         return { text: `${diffDays}d remaining`, icon: 'fa-clock' };
     }
 
-    function buildCustomerCardActions({ isPendingSignature, canUndo }) {
+    function buildCustomerCardActions({ contractId, isPendingSignature, canUndo, unreadCount }) {
         let html = '';
-        html += `
-            <button type="button" class="card-action-btn" data-action="view" title="View details" aria-label="View details">
-                <i class="fas fa-eye"></i>
-            </button>
-        `;
+
+        const unreadIndicator = unreadCount > 0
+            ? '<span class="chat-unread-dot" style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; background: #ef4444; border: 2px solid white; border-radius: 50%; z-index: 10;"></span>'
+            : '';
 
         html += `
-            <button type="button" class="card-action-btn card-action-chat" data-action="chat" title="Chat" aria-label="Chat">
+            <button type="button" class="card-action-btn card-action-chat" data-action="chat" title="Chat" aria-label="Chat" style="position:relative">
                 <i class="fas fa-comments"></i>
+                ${unreadIndicator}
             </button>
         `;
 
         html += `
-            <button type="button" class="card-action-btn" data-action="request" title="Request adjustments" aria-label="Request adjustments">
-                <i class="fas fa-pen"></i>
+            <button type="button" class="card-action-btn card-action-more" data-action="more" title="More Options">
+                <i class="fas fa-ellipsis-v"></i>
             </button>
         `;
+
+        html += `<div class="card-action-menu" id="cardMenu-${contractId}">`;
+
+        html += `<a class="card-menu-item" data-action="request"><i class="fas fa-pen"></i> Request Adjustments</a>`;
 
         if (isPendingSignature) {
-            html += `
-                <button type="button" class="card-action-btn card-action-danger" data-action="decline" title="Decline contract" aria-label="Decline contract">
-                    <i class="fas fa-times"></i>
-                </button>
-                <button type="button" class="card-action-btn card-action-accept" data-action="accept" title="Accept contract" aria-label="Accept contract">
-                    <i class="fas fa-check"></i>
-                </button>
-            `;
+            html += `<a class="card-menu-item" data-action="accept" style="color:var(--success)"><i class="fas fa-check"></i> Accept Contract</a>`;
+            html += `<a class="card-menu-item" data-action="decline" style="color:var(--danger)"><i class="fas fa-times"></i> Decline Contract</a>`;
         } else if (canUndo) {
-            html += `
-                <button type="button" class="card-action-btn card-action-danger" data-action="undo" title="Undo contract" aria-label="Undo contract">
-                    <i class="fas fa-undo"></i>
-                </button>
-            `;
+            html += `<a class="card-menu-item" data-action="undo" style="color:var(--warning)"><i class="fas fa-undo"></i> Undo Contract</a>`;
         }
+        html += `</div>`;
         return html;
     }
 
@@ -770,9 +805,9 @@
     }
 
     // Open shared contract chat widget
-    window.openContractChat = function (contractId, companyName, contractNumber) {
+    window.openContractChat = async function (contractId, companyName, contractNumber) {
         if (typeof ChatWidget === 'undefined') {
-            alert('Chat is not available on this page.');
+            await window.showAlert('Chat is not available on this page.', 'warning');
             return;
         }
         ChatWidget.open(contractId, {
@@ -785,7 +820,7 @@
     window.requestContractAdjustments = async function (contractId) {
         const contract = await _getContractForAdjustment(contractId);
         if (!contract) {
-            alert('Could not load contract details.');
+            await window.showAlert('Could not load contract details.', 'danger', 'Error');
             return;
         }
         _openAdjustModal(contract);
@@ -1151,19 +1186,19 @@
             if (!startDate || !endDate) {
                 _setInputError(document.getElementById('caStartDate'), !startDate);
                 _setInputError(document.getElementById('caEndDate'), !endDate);
-                alert('Please provide a valid start date and end date.');
+                await window.showAlert('Please provide a valid start date and end date.', 'warning');
                 return;
             }
 
             if (new Date(endDate) < new Date(startDate)) {
                 _setInputError(document.getElementById('caStartDate'), true);
                 _setInputError(document.getElementById('caEndDate'), true);
-                alert('End date must be after start date.');
+                await window.showAlert('End date must be after start date.', 'warning');
                 return;
             }
             if (budget != null && (!Number.isFinite(budget) || budget < 0)) {
                 _setInputError(document.getElementById('caBudget'), true);
-                alert('Please enter a valid budget.');
+                await window.showAlert('Please enter a valid budget.', 'warning');
                 return;
             }
 
@@ -1179,11 +1214,11 @@
 
                 // Company-side style validations
                 if (milestones.length < 2) {
-                    alert('Minimum 2 milestones required.');
+                    await window.showAlert('Minimum 2 milestones required.', 'warning');
                     return;
                 }
                 if (milestones.length > 10) {
-                    alert('Maximum 10 milestones allowed.');
+                    await window.showAlert('Maximum 10 milestones allowed.', 'warning');
                     return;
                 }
 
@@ -1226,13 +1261,13 @@
                 });
 
                 if (hasBad) {
-                    alert('Please fix milestone fields (title, due date within range, and valid percentage).');
+                    await window.showAlert('Please fix milestone fields (title, due date within range, and valid percentage).', 'warning');
                     _updateMilestoneTotalsHint();
                     return;
                 }
 
                 if (Math.abs(sumPct - 100) > 0.01) {
-                    alert(`Milestone percentages must total 100% (currently: ${sumPct.toFixed(2)}%).`);
+                    await window.showAlert(`Milestone percentages must total 100% (currently: ${sumPct.toFixed(2)}%).`, 'warning');
                     _updateMilestoneTotalsHint();
                     return;
                 }
@@ -1241,7 +1276,10 @@
                 _recalcMilestoneAmounts();
                 const sumAmt = milestones.reduce((acc, mm) => acc + (Number(mm.amount) || 0), 0);
                 if (budget != null && Number.isFinite(budget) && Math.abs(sumAmt - budget) > 0.05) {
-                    const ok = confirm(`Milestone amounts (Rs. ${sumAmt.toFixed(2)}) do not match the total budget (Rs. ${budget.toFixed(2)}). Send anyway?`);
+                    const ok = await window.showConfirm(
+                        `Milestone amounts (Rs. ${sumAmt.toFixed(2)}) do not match the total budget (Rs. ${budget.toFixed(2)}). Send anyway?`,
+                        { title: 'Amount Check', type: 'warning' }
+                    );
                     if (!ok) return;
                 }
 
@@ -1260,12 +1298,12 @@
             });
             const json = await res.json();
             if (!json.success) {
-                alert(json.message || 'Failed to submit change request');
+                await window.showAlert(json.message || 'Failed to submit change request', 'danger', 'Error');
                 return;
             }
 
             _closeAdjustModal();
-            alert('Adjustment request sent to the company.');
+            await window.showAlert('Adjustment request sent to the company.', 'success', 'Success');
 
             // Open chat so the request is visible immediately
             try {
@@ -1280,7 +1318,7 @@
             }
         } catch (err) {
             console.error('Change request error:', err);
-            alert('Network error. Please try again.');
+            await window.showAlert('Network error. Please try again.', 'danger', 'Error');
         } finally {
             if (submitBtn) submitBtn.disabled = false;
         }
@@ -1418,260 +1456,462 @@
         updateBodyScrollLock();
     }
 
-// =========================================
-// RESPOND TO CONTRACT
-// =========================================
-window.respondContract = async function (contractId, response) {
-    const label = response === 'accepted' ? 'accept' : 'decline';
-    if (response === 'accepted') {
-        const msg =
-            "Electronic Signature Confirmation\n\n" +
-            "By clicking OK, you confirm you have read and agree to the contract terms, and you electronically sign this contract in FixLanka.";
-        if (!confirm(msg)) return;
-    } else {
-        if (!confirm(`Are you sure you want to ${label} this contract?`)) return;
-    }
-
-    try {
-        const res = await fetch(API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'respond',
-                contract_id: contractId,
-                response: response,
-                esign_consent: response === 'accepted'
-            })
-        });
-        const json = await res.json();
-
-        if (json.success) {
-            alert(`Contract ${label}ed successfully!`);
-            closeDetail();
-            loadContracts();
-        } else {
-            alert('Error: ' + json.message);
-        }
-    } catch (err) {
-        console.error('Respond error:', err);
-        alert('Could not process your response. Please try again.');
-    }
-};
-// =========================================
-// UNDO CONTRACT
-// =========================================
-window.undoContract = async function (contractId) {
-    const reason = prompt("Please provide a reason for cancelling this contract:");
-    if (reason === null) return; // User cancelled prompt
-
-    if (reason.trim() === "") {
-        alert("Please provide a reason.");
-        return;
-    }
-
-    if (!confirm("Are you sure you want to cancel this contract? This action cannot be undone and the job request will be reopened.")) return;
-
-    try {
-        // Show loading state
-        const btn = document.querySelector(`button[onclick="undoContract(${contractId})"]`);
-        if (btn) {
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            btn.disabled = true;
+    // =========================================
+    // RESPOND TO CONTRACT
+    // =========================================
+    window.respondContract = async function (contractId, response) {
+        if (response !== 'accepted') {
+            const label = 'decline';
+            showCustomConfirm({
+                title: 'Decline Contract',
+                message: `Are you sure you want to ${label} this contract?`,
+                icon: 'fas fa-times-circle',
+                confirmText: 'Yes, Decline',
+                confirmClass: 'btn-danger',
+                onConfirm: async () => {
+                    try {
+                        const res = await fetch(API, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                action: 'respond',
+                                contract_id: contractId,
+                                response: response
+                            })
+                        });
+                        const json = await res.json();
+                        if (json.success) {
+                            showToast(`Contract ${label}ed successfully!`);
+                            closeDetail();
+                            loadContracts();
+                        } else {
+                            showToast('Error: ' + json.message, 'error');
+                        }
+                    } catch (err) {
+                        console.error('Respond error:', err);
+                        showToast('Could not process your response.', 'error');
+                    }
+                }
+            });
+            return;
         }
 
-        const res = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts/undo', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contract_id: contractId, reason: reason })
-        });
-        const json = await res.json();
+        // Handle Acceptance with Upfront Check
+        try {
+            // Fetch latest contract details to check milestones
+            const res = await fetch(`${API}?action=get&id=${contractId}`);
+            const json = await res.json();
+            if (!json.success) throw new Error(json.message);
 
-        if (json.success) {
-            alert('Contract cancelled successfully.');
-            closeContractDetail();
-            // Reload to refresh lists
-            loadContracts();
-            updateStats(); // Refresh stats too
-        } else {
-            alert('Error: ' + json.message);
+            const contract = json.data;
+            const milestones = contract.milestones || [];
+
+            const contractStartDate = contract.start_date ? contract.start_date.substring(0, 10) : '';
+            const upfrontMilestones = milestones.filter(m => {
+                const milestoneDueDate = m.due_date ? m.due_date.substring(0, 10) : '';
+                return milestoneDueDate <= contractStartDate;
+            });
+            const upfrontAmount = upfrontMilestones.reduce((sum, m) => {
+                const amt = m.payment_amount || m.amount || 0;
+                return sum + Number(amt);
+            }, 0);
+
+            // Robust check: either we have a calculated amount, or the plan itself is explicitly upfront
+            const isUpfrontPlan = ['full_upfront', '30_70', '50_50', 'milestone_based'].includes(contract.payment_method);
+            const needsUpfront = upfrontAmount > 0 || (isUpfrontPlan && contract.payment_method !== 'completion');
+
+            if (needsUpfront) {
+                // Show Payment Modal BEFORE signature confirmation
+                showEscrowPaymentModal(contract, upfrontAmount);
+            } else {
+                // No upfront needed, show signature confirmation directly
+                triggerSignatureConfirmation(contractId, false);
+            }
+        } catch (err) {
+            console.error('Accept error:', err);
+            showToast('Error processing acceptance: ' + err.message, 'error');
+        }
+    };
+
+    /**
+     * Final E-Sign Confirmation Modal
+     */
+    function triggerSignatureConfirmation(contractId, isPayAndAccept = false) {
+        showCustomConfirm({
+            title: 'Electronic Signature Confirmation',
+            message: 'By clicking Confirm, you confirm you have read and agree to the contract terms, and you electronically sign this contract in FixLanka.',
+            icon: 'fas fa-pen-nib',
+            iconClass: 'primary',
+            confirmText: 'Confirm & Sign',
+            onConfirm: async () => {
+                try {
+                    const action = isPayAndAccept ? 'pay_and_accept' : 'respond';
+                    const payload = isPayAndAccept ? { contract_id: contractId } : {
+                        action: 'respond',
+                        contract_id: contractId,
+                        response: 'accepted',
+                        esign_consent: true
+                    };
+
+                    const endpoint = isPayAndAccept ? `${API}?action=pay_and_accept` : API;
+
+                    const acceptRes = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const acceptJson = await acceptRes.json();
+                    if (acceptJson.success) {
+                        showToast(isPayAndAccept ? 'Payment successful and contract signed!' : 'Contract accepted successfully!');
+                        closeDetail();
+                        loadContracts();
+                    } else {
+                        showToast('Error: ' + acceptJson.message, 'error');
+                    }
+                } catch (err) {
+                    console.error('Accept error:', err);
+                    showToast('Could not sign contract.', 'error');
+                }
+            }
+        });
+    }
+
+    /**
+     * Shows a simulated payment modal for the upfront escrow deposit
+     */
+    function showEscrowPaymentModal(contract, amount) {
+        let overlay = document.getElementById('escrowPaymentOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'escrowPaymentOverlay';
+            overlay.className = 'payment-modal-overlay';
+            document.body.appendChild(overlay);
+        }
+
+        // Simple escaping helper
+        const esc = (str) => {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, m => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[m]);
+        };
+
+        overlay.innerHTML = `
+            <div class="payment-modal">
+                <div class="payment-header">
+                    <div class="payment-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h2 class="payment-title">Secure Escrow Deposit</h2>
+                    <p class="payment-desc">Upfront payment required to start <strong>${esc(contract.project_title)}</strong></p>
+                </div>
+
+                <div class="payment-amount-box">
+                    <div class="payment-label">Required Initial Deposit</div>
+                    <div class="payment-value">LKR ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+
+                <div class="payment-info">
+                    <p><i class="fas fa-info-circle"></i> This amount will be held securely in FixLanka's Escrow system and only released to the company when milestones are completed and approved by you.</p>
+                </div>
+
+                <div class="payment-card-sim">
+                    <label>Card Details (Simulated)</label>
+                    <input type="text" placeholder="#### #### #### ####" value="4242 4242 4242 4242" readonly>
+                    <div class="row">
+                        <input type="text" placeholder="MM/YY" value="12/28" readonly>
+                        <input type="text" placeholder="CVC" value="311" readonly>
+                    </div>
+                </div>
+
+                <div class="payment-footer">
+                    <button class="btn btn-secondary" onclick="document.getElementById('escrowPaymentOverlay').classList.remove('show')">Cancel</button>
+                    <button class="btn btn-primary" id="confirmPaymentBtn">
+                        <i class="fas fa-lock"></i> Pay & Proceed
+                    </button>
+                </div>
+            </div>
+        `;
+
+        overlay.classList.add('show');
+
+        const confirmBtn = overlay.querySelector('#confirmPaymentBtn');
+        confirmBtn.onclick = async () => {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            // Artificial delay to simulate processing
+            setTimeout(() => {
+                overlay.classList.remove('show');
+                // Proceed to signature confirmation
+                triggerSignatureConfirmation(contract.contract_id, true);
+            }, 1000);
+        };
+    }
+
+
+    // =========================================
+    // UNDO CONTRACT
+    // =========================================
+    window.undoContract = async function (contractId) {
+        const reason = prompt("Please provide a reason for cancelling this contract:");
+        if (reason === null) return; // User cancelled prompt
+
+        if (reason.trim() === "") {
+            await window.showAlert("Please provide a reason.", "warning");
+            return;
+        }
+
+        const confirmed = await window.showConfirm("Are you sure you want to cancel this contract? This action cannot be undone and the job request will be reopened.", { title: 'Cancel Contract', type: 'danger', confirmText: 'Cancel Contract' });
+        if (!confirmed) return;
+
+        try {
+            // Show loading state
+            const btn = document.querySelector(`button[onclick="undoContract(${contractId})"]`);
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                btn.disabled = true;
+            }
+
+            const res = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts/undo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contract_id: contractId, reason: reason })
+            });
+            const json = await res.json();
+
+            if (json.success) {
+                await window.showAlert('Contract cancelled successfully.', 'success', 'Success');
+                closeContractDetail();
+                // Reload to refresh lists
+                loadContracts();
+                updateStats(); // Refresh stats too
+            } else {
+                await window.showAlert('Error: ' + json.message, 'danger', 'Error');
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-undo"></i> Undo Contract';
+                    btn.disabled = false;
+                }
+            }
+        } catch (err) {
+            console.error('Undo error:', err);
+            await window.showAlert('Could not cancel contract. Please try again.', 'danger', 'Error');
             if (btn) {
                 btn.innerHTML = '<i class="fas fa-undo"></i> Undo Contract';
                 btn.disabled = false;
             }
         }
-    } catch (err) {
-        console.error('Undo error:', err);
-        alert('Could not cancel contract. Please try again.');
-        if (btn) {
-            btn.innerHTML = '<i class="fas fa-undo"></i> Undo Contract';
-            btn.disabled = false;
-        }
+    };
+
+    window.closeContractDetail = closeDetail;
+
+    // =========================================
+    // HELPERS
+    // =========================================
+    function formatCurrency(val) {
+        const num = parseFloat(val) || 0;
+        return 'LKR ' + num.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
-};
 
-window.closeContractDetail = closeDetail;
+    function formatDate(d) {
+        if (!d) return '—';
+        const date = new Date(d);
+        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
 
-// =========================================
-// HELPERS
-// =========================================
-function formatCurrency(val) {
-    const num = parseFloat(val) || 0;
-    return 'LKR ' + num.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+    function formatStatus(s) {
+        if (!s) return 'Draft';
+        return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
 
-function formatDate(d) {
-    if (!d) return '—';
-    const date = new Date(d);
-    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-}
+    function getStatusIcon(s) {
+        const map = {
+            'active': 'fa-check-circle',
+            'in_progress': 'fa-spinner',
+            'pending_signature': 'fa-pen',
+            'draft': 'fa-file-alt',
+            'completed': 'fa-trophy',
+            'terminated': 'fa-ban',
+            'disputed': 'fa-exclamation-triangle'
+        };
+        return map[s] || 'fa-file-contract';
+    }
 
-function formatStatus(s) {
-    if (!s) return 'Draft';
-    return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
+    function formatPaymentMethod(m) {
+        const map = {
+            'full_upfront': 'Full Upfront',
+            'milestone_based': 'Milestone-Based',
+            '50_50': '50/50 Split',
+            '30_70': '30/70 Split',
+            'completion': 'On Completion'
+        };
+        return map[m] || capitalize(m || '');
+    }
 
-function getStatusIcon(s) {
-    const map = {
-        'active': 'fa-check-circle',
-        'in_progress': 'fa-spinner',
-        'pending_signature': 'fa-pen',
-        'draft': 'fa-file-alt',
-        'completed': 'fa-trophy',
-        'terminated': 'fa-ban',
-        'disputed': 'fa-exclamation-triangle'
-    };
-    return map[s] || 'fa-file-contract';
-}
+    // =========================================
+    // PROOF REVIEW
+    // =========================================
+    window.openProofModal = function (milestoneId) {
+        const ms = currentContractMilestones.find(m => m.milestone_id == milestoneId);
+        if (!ms) return;
 
-function formatPaymentMethod(m) {
-    const map = {
-        'full_upfront': 'Full Upfront',
-        'milestone_based': 'Milestone-Based',
-        '50_50': '50/50 Split',
-        '30_70': '30/70 Split',
-        'completion': 'On Completion'
-    };
-    return map[m] || capitalize(m || '');
-}
+        currentReviewMilestoneId = milestoneId;
 
-// =========================================
-// PROOF REVIEW
-// =========================================
-window.openProofModal = function (milestoneId) {
-    const ms = currentContractMilestones.find(m => m.milestone_id == milestoneId);
-    if (!ms) return;
+        const overlay = document.getElementById('proofReviewOverlay');
+        const title = document.getElementById('proofPhaseTitle');
+        const body = document.getElementById('proofReviewBody');
 
-    currentReviewMilestoneId = milestoneId;
+        if (title) title.textContent = ms.title;
 
-    const overlay = document.getElementById('proofReviewOverlay');
-    const title = document.getElementById('proofPhaseTitle');
-    const body = document.getElementById('proofReviewBody');
-
-    if (title) title.textContent = ms.title;
-
-    // Parse proof files
-    let filesHtml = '<p>No files attached.</p>';
-    try {
-        if (ms.proof_files) {
-            const files = JSON.parse(ms.proof_files);
-            if (files && files.length > 0) {
-                filesHtml = '<ul class="proof-files-list">';
-                files.forEach(path => {
-                    const name = path.split('/').pop();
-                    filesHtml += `<li><a href="/2nd-Year-Group-Project/FixLanka/${path}" target="_blank"><i class="fas fa-file-download"></i> ${esc(name)}</a></li>`;
-                });
-                filesHtml += '</ul>';
+        // Parse proof files
+        let filesHtml = '<p>No files attached.</p>';
+        try {
+            if (ms.proof_files) {
+                const files = JSON.parse(ms.proof_files);
+                if (files && files.length > 0) {
+                    filesHtml = '<ul class="proof-files-list">';
+                    files.forEach(path => {
+                        const name = path.split('/').pop();
+                        filesHtml += `<li><a href="/2nd-Year-Group-Project/FixLanka/${path}" target="_blank"><i class="fas fa-file-download"></i> ${esc(name)}</a></li>`;
+                    });
+                    filesHtml += '</ul>';
+                }
             }
-        }
-    } catch (e) {
-        console.error('JSON Parse error', e);
-    }
+        } catch (e) { /* no files */ }
 
-    body.innerHTML = `
+        // Unit billing summary
+        const unitLabel = ms.unit_label || 'units';
+        const unitRate = parseFloat(ms.unit_rate || 0);
+        const estQty = parseFloat(ms.estimated_quantity || 0);
+        const actualQty = parseFloat(ms.actual_quantity || 0);
+        const hasDynamicBill = unitRate > 0 && actualQty > 0;
+        const billedAmount = hasDynamicBill ? unitRate * actualQty : parseFloat(ms.actual_amount || ms.amount || 0);
+        const estimatedTotal = unitRate > 0 ? unitRate * estQty : parseFloat(ms.amount || 0);
+
+        const billingHtml = hasDynamicBill ? `
+            <div class="unit-billing-card">
+                <h4><i class="fas fa-calculator"></i> Unit Billing Verification</h4>
+                <div class="unit-billing-grid">
+                    <div class="ub-row">
+                        <span class="ub-label">Agreed Rate</span>
+                        <span class="ub-value">${formatCurrency(unitRate)} / ${esc(unitLabel)}</span>
+                    </div>
+                    <div class="ub-row">
+                        <span class="ub-label">Estimated <span class="ub-sub">(from quotation)</span></span>
+                        <span class="ub-value ub-estimate">${estQty > 0 ? estQty + ' ' + esc(unitLabel) : '—'}
+                            ${estQty > 0 ? '<span class="ub-sub">≈ ' + formatCurrency(estimatedTotal) + '</span>' : ''}
+                        </span>
+                    </div>
+                    <div class="ub-row">
+                        <span class="ub-label">Actual Submitted <span class="ub-sub">(by company)</span></span>
+                        <span class="ub-value ub-actual">${actualQty} ${esc(unitLabel)}</span>
+                    </div>
+                    <div class="ub-divider"></div>
+                    <div class="ub-row ub-total">
+                        <span class="ub-label"><strong>Amount to Pay</strong></span>
+                        <span class="ub-value ub-pay-amount">${formatCurrency(billedAmount)}</span>
+                    </div>
+                </div>
+                <p class="ub-note"><i class="fas fa-info-circle"></i> By approving, you confirm ${actualQty} ${esc(unitLabel)} of work was completed and agree to pay <strong>${formatCurrency(billedAmount)}</strong>.</p>
+            </div>` : `
+            <div class="unit-billing-card">
+                <h4><i class="fas fa-receipt"></i> Payment Summary</h4>
+                <div class="unit-billing-grid">
+                    <div class="ub-row ub-total">
+                        <span class="ub-label"><strong>Amount on Approval</strong></span>
+                        <span class="ub-value ub-pay-amount">${formatCurrency(billedAmount)}</span>
+                    </div>
+                </div>
+                <p class="ub-note"><i class="fas fa-info-circle"></i> By approving, you confirm this stage is complete and agree to pay <strong>${formatCurrency(billedAmount)}</strong>.</p>
+            </div>`;
+
+        body.innerHTML = `
         <div class="proof-section">
-            <h4><i class="fas fa-align-left"></i> Description of Work</h4>
-            <div class="proof-desc">${esc(ms.proof_of_work || 'No description provided.')}</div>
+            <h4><i class="fas fa-align-left"></i> Company Notes</h4>
+            <div class="proof-desc">${esc(ms.comments || ms.proof_of_work || 'No description provided.')}</div>
         </div>
+        ${billingHtml}
         <div class="proof-section">
             <h4><i class="fas fa-paperclip"></i> Attached Files</h4>
             ${filesHtml}
-        </div>
-        <div class="proof-section">
-            <h4><i class="fas fa-info-circle"></i> Verification Info</h4>
-            <p class="text-small">By approving this phase, the funds (${formatCurrency(ms.amount)}) will be released from Escrow to the Company. This action cannot be undone.</p>
-        </div>
-    `;
+        </div>`;
 
-    overlay.classList.add('show');
-    updateBodyScrollLock();
-};
+        overlay.classList.add('show');
+        updateBodyScrollLock();
+    };
 
-window.closeProofModal = function () {
-    const overlay = document.getElementById('proofReviewOverlay');
-    if (overlay) overlay.classList.remove('show');
-    currentReviewMilestoneId = null;
-    updateBodyScrollLock();
-};
+    window.closeProofModal = function () {
+        const overlay = document.getElementById('proofReviewOverlay');
+        if (overlay) overlay.classList.remove('show');
+        currentReviewMilestoneId = null;
+        updateBodyScrollLock();
+    };
 
-window.verifyMilestoneCurrent = async function (action) {
-    if (!currentReviewMilestoneId) return;
+    window.verifyMilestoneCurrent = async function (action) {
+        if (!currentReviewMilestoneId) return;
 
-    const actionText = action === 'approve' ? 'APPROVE and RELEASE PAYMENT' : 'REJECT';
-    if (!confirm(`Are you sure you want to ${actionText} for this phase?`)) return;
+        const ms = currentContractMilestones.find(m => m.milestone_id == currentReviewMilestoneId);
+        const unitRate = parseFloat(ms?.unit_rate || 0);
+        const actualQty = parseFloat(ms?.actual_quantity || 0);
+        const billedAmt = (unitRate > 0 && actualQty > 0) ? unitRate * actualQty : parseFloat(ms?.actual_amount || ms?.amount || 0);
+        const unitLabel = ms?.unit_label || 'units';
 
-    let feedback = '';
-    if (action === 'reject') {
-        feedback = prompt("Please provide a reason for rejection (required):");
-        if (!feedback || !feedback.trim()) {
-            alert("Rejection reason is required.");
-            return;
-        }
-    }
-
-    try {
-        // Show loading
-        const body = document.getElementById('proofReviewBody');
-        body.innerHTML = '<div class="contracts-loading"><div class="spinner"></div><p>Processing verification...</p></div>';
-
-        const formData = new FormData();
-        formData.append('milestone_id', currentReviewMilestoneId);
-        formData.append('action', action);
-        if (feedback) formData.append('feedback', feedback);
-
-        // Call API with action=verify_phase in URL to route correctly
-        const res = await fetch('/2nd-Year-Group-Project/FixLanka/api/projects.php?action=verify_phase', {
-            method: 'POST',
-            body: formData
-        });
-
-        const json = await res.json();
-
-        if (json.success) {
-            alert(`Phase ${action}ed successfully.`);
-            closeProofModal();
-            closeContractDetail(); // Close parent modal too to refresh
-            loadContracts(); // Refresh list
+        if (action === 'approve') {
+            const payStr = billedAmt > 0 ? `\n\nThis will record a payment of ${formatCurrency(billedAmt)}.` : '';
+            const confirmed = await window.showConfirm(`Confirm Approval\n\nYou are confirming that ${actualQty > 0 ? actualQty + ' ' + unitLabel + ' of work' : 'this stage'} was completed.${payStr}\n\nThis action cannot be undone.`, { title: 'Confirm Milestone', confirmText: 'Approve & Pay' });
+            if (!confirmed) return;
         } else {
-            alert('Error: ' + json.message);
-            // Reload modal content if failed (optional, or just close)
-            closeProofModal();
+            const feedback = await window.showPrompt('Please provide a reason for rejection (required):', '', { title: 'Reject Milestone', placeholder: 'Explain what was missing or incorrect...', confirmText: 'Submit Rejection' });
+            if (!feedback || !feedback.trim()) {
+                await window.showAlert('Rejection reason is required.', 'warning');
+                return;
+            }
+            // Store for fetch below
+            window._rejectFeedback = feedback.trim();
         }
 
-    } catch (err) {
-        console.error(err);
-        alert('Communication error. Please try again.');
-        closeProofModal();
+        const body = document.getElementById('proofReviewBody');
+        body.innerHTML = '<div class="contracts-loading"><div class="spinner"></div><p>Processing...</p></div>';
+
+        try {
+            const apiAction = action === 'approve' ? 'approve_milestone' : 'reject_milestone';
+            const payload = { milestone_id: currentReviewMilestoneId };
+            if (action === 'reject') payload.reason = window._rejectFeedback;
+
+            const res = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: apiAction, ...payload })
+            });
+            const json = await res.json();
+
+            if (json.success) {
+                let msg = `Stage ${action === 'approve' ? 'approved' : 'rejected'} successfully.`;
+                if (json.billed_amount > 0) {
+                    msg += `\n\n${formatCurrency(json.billed_amount)} has been recorded as paid.`;
+                }
+                await window.showAlert(msg, 'success', 'Success');
+                closeProofModal();
+                loadContracts();
+            } else {
+                await window.showAlert('Error: ' + (json.message || 'Unknown error'), 'danger', 'Error');
+                closeProofModal();
+            }
+        } catch (err) {
+            console.error(err);
+            await window.showAlert('Network error. Please try again.', 'danger', 'Error');
+            closeProofModal();
+        }
+    };
+
+    function capitalize(s) {
+        return s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ') : '';
     }
-}
 
-function capitalize(s) {
-    return s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ') : '';
-}
-
-function esc(s) {
-    if (!s) return '';
-    const d = document.createElement('div');
-    d.textContent = s;
-    return d.innerHTML;
-}
+    function esc(s) {
+        if (!s) return '';
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
 })();

@@ -8,7 +8,7 @@ let milestones = [];
 const API_BASE = '/2nd-Year-Group-Project/FixLanka/api/milestones.php';
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     loadMilestonePlan();
 });
 
@@ -18,33 +18,33 @@ document.addEventListener('DOMContentLoaded', function() {
 function loadMilestonePlan() {
     const urlParams = new URLSearchParams(window.location.search);
     const contractId = urlParams.get('contract_id');
-    
+
     if (!contractId) {
         showToast('Error', 'No contract ID provided', 'error');
         return;
     }
-    
+
     // Fetch contract data
     Promise.all([
         fetch(`/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=get_details&contract_id=${contractId}`).then(r => r.json()),
         fetch(`${API_BASE}?action=get_plan&contract_id=${contractId}`).then(r => r.json())
     ])
-    .then(([contractResponse, milestonesResponse]) => {
-        if (contractResponse.success && milestonesResponse.success) {
-            contractData = contractResponse.contract;
-            milestones = milestonesResponse.milestones;
-            
-            displayContractInfo();
-            displayPaymentBreakdown();
-            displayMilestones();
-        } else {
-            showToast('Error', 'Failed to load milestone plan', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error loading data:', error);
-        showToast('Error', 'Failed to load data', 'error');
-    });
+        .then(([contractResponse, milestonesResponse]) => {
+            if (contractResponse.success && milestonesResponse.success) {
+                contractData = contractResponse.contract;
+                milestones = milestonesResponse.milestones;
+
+                displayContractInfo();
+                displayPaymentBreakdown();
+                displayMilestones();
+            } else {
+                showToast('Error', 'Failed to load milestone plan', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading data:', error);
+            showToast('Error', 'Failed to load data', 'error');
+        });
 }
 
 /**
@@ -54,7 +54,7 @@ function displayContractInfo() {
     document.getElementById('contractId').textContent = contractData.contract_id || 'N/A';
     document.getElementById('totalBudget').textContent = formatCurrency(contractData.total_budget || 0);
     document.getElementById('totalMilestones').textContent = milestones.length;
-    
+
     if (contractData.start_date && contractData.end_date) {
         const start = new Date(contractData.start_date);
         const end = new Date(contractData.end_date);
@@ -69,7 +69,7 @@ function displayContractInfo() {
 function displayPaymentBreakdown() {
     const container = document.getElementById('paymentBreakdown');
     container.innerHTML = '';
-    
+
     milestones.forEach((milestone, index) => {
         const item = document.createElement('div');
         item.className = 'breakdown-item';
@@ -96,23 +96,23 @@ function displayMilestones() {
 function displayTimelineView() {
     const container = document.getElementById('timelineView');
     container.innerHTML = '';
-    
+
     milestones.forEach((milestone, index) => {
         const item = document.createElement('div');
         item.className = 'timeline-item';
-        
+
         // Parse deliverables
         let deliverables = [];
         if (milestone.deliverables) {
             try {
-                deliverables = typeof milestone.deliverables === 'string' 
-                    ? JSON.parse(milestone.deliverables) 
+                deliverables = typeof milestone.deliverables === 'string'
+                    ? JSON.parse(milestone.deliverables)
                     : milestone.deliverables;
             } catch (e) {
                 deliverables = [];
             }
         }
-        
+
         // Find dependency name
         let dependencyText = '';
         if (milestone.depends_on_milestone) {
@@ -121,7 +121,7 @@ function displayTimelineView() {
                 dependencyText = `⚠️ Depends on: ${depMilestone.milestone_name}`;
             }
         }
-        
+
         item.innerHTML = `
             <div class="timeline-marker">${index + 1}</div>
             <div class="timeline-content">
@@ -180,7 +180,7 @@ function displayTimelineView() {
                 ` : ''}
             </div>
         `;
-        
+
         container.appendChild(item);
     });
 }
@@ -191,22 +191,22 @@ function displayTimelineView() {
 function displayGridView() {
     const container = document.getElementById('gridView');
     container.innerHTML = '';
-    
+
     milestones.forEach((milestone, index) => {
         const card = document.createElement('div');
         card.className = 'milestone-card';
-        
+
         let deliverables = [];
         if (milestone.deliverables) {
             try {
-                deliverables = typeof milestone.deliverables === 'string' 
-                    ? JSON.parse(milestone.deliverables) 
+                deliverables = typeof milestone.deliverables === 'string'
+                    ? JSON.parse(milestone.deliverables)
                     : milestone.deliverables;
             } catch (e) {
                 deliverables = [];
             }
         }
-        
+
         card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h3 style="margin: 0;">Milestone ${index + 1}</h3>
@@ -226,7 +226,7 @@ function displayGridView() {
                 </div>
             ` : ''}
         `;
-        
+
         container.appendChild(card);
     });
 }
@@ -238,9 +238,9 @@ function switchView(view) {
     const timelineView = document.getElementById('timelineView');
     const gridView = document.getElementById('gridView');
     const buttons = document.querySelectorAll('.view-toggle button');
-    
+
     buttons.forEach(btn => btn.classList.remove('active'));
-    
+
     if (view === 'timeline') {
         timelineView.classList.add('active');
         gridView.classList.remove('active');
@@ -276,46 +276,52 @@ function closeModal(modalId) {
 /**
  * Approve milestone plan
  */
-function approvePlan() {
+async function approvePlan() {
     const urlParams = new URLSearchParams(window.location.search);
     const contractId = urlParams.get('contract_id');
     const feedback = document.getElementById('feedbackText').value;
-    
-    if (!confirm('Are you sure you want to approve this milestone plan?')) {
+
+    const confirmed = await window.showConfirm('Are you sure you want to approve this milestone plan?', {
+        title: 'Approve Milestone Plan',
+        confirmText: 'Yes, Approve',
+        type: 'success'
+    });
+
+    if (!confirmed) {
         return;
     }
-    
+
     showToast('Processing...', 'Approving milestone plan', 'info');
-    
+
     const formData = new FormData();
     formData.append('action', 'approve_plan');
     formData.append('contract_id', contractId);
     if (feedback) {
         formData.append('feedback', feedback);
     }
-    
+
     fetch(API_BASE, {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('Success!', 'Milestone plan approved successfully', 'success');
-            closeModal('approveModal');
-            
-            // Redirect after 2 seconds
-            setTimeout(() => {
-                window.location.href = '/2nd-Year-Group-Project/FixLanka/views/user/contracts.php';
-            }, 2000);
-        } else {
-            showToast('Error', data.message || 'Failed to approve plan', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Approval error:', error);
-        showToast('Error', 'Network error. Please try again.', 'error');
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Success!', 'Milestone plan approved successfully', 'success');
+                closeModal('approveModal');
+
+                // Redirect after 2 seconds
+                setTimeout(() => {
+                    window.location.href = '/2nd-Year-Group-Project/FixLanka/views/user/contracts.php';
+                }, 2000);
+            } else {
+                showToast('Error', data.message || 'Failed to approve plan', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Approval error:', error);
+            showToast('Error', 'Network error. Please try again.', 'error');
+        });
 }
 
 /**
@@ -325,41 +331,41 @@ function requestChanges() {
     const urlParams = new URLSearchParams(window.location.search);
     const contractId = urlParams.get('contract_id');
     const feedback = document.getElementById('changesReason').value;
-    
+
     if (!feedback || feedback.trim() === '') {
         showToast('Error', 'Please provide feedback for the requested changes', 'error');
         return;
     }
-    
+
     showToast('Processing...', 'Submitting change request', 'info');
-    
+
     const formData = new FormData();
     formData.append('action', 'request_changes');
     formData.append('contract_id', contractId);
     formData.append('feedback', feedback);
-    
+
     fetch(API_BASE, {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('Success!', 'Change request submitted successfully', 'success');
-            closeModal('changesModal');
-            
-            // Redirect after 2 seconds
-            setTimeout(() => {
-                window.location.href = '/2nd-Year-Group-Project/FixLanka/views/user/contracts.php';
-            }, 2000);
-        } else {
-            showToast('Error', data.message || 'Failed to submit request', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Request error:', error);
-        showToast('Error', 'Network error. Please try again.', 'error');
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Success!', 'Change request submitted successfully', 'success');
+                closeModal('changesModal');
+
+                // Redirect after 2 seconds
+                setTimeout(() => {
+                    window.location.href = '/2nd-Year-Group-Project/FixLanka/views/user/contracts.php';
+                }, 2000);
+            } else {
+                showToast('Error', data.message || 'Failed to submit request', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Request error:', error);
+            showToast('Error', 'Network error. Please try again.', 'error');
+        });
 }
 
 /**
@@ -388,10 +394,10 @@ function formatCurrency(amount) {
 function formatDate(dateString) {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
     });
 }
 
@@ -417,10 +423,10 @@ function showToast(title, message, type = 'info') {
     const icon = document.getElementById('toastIcon');
     const titleEl = document.getElementById('toastTitle');
     const messageEl = document.getElementById('toastMessage');
-    
+
     titleEl.textContent = title;
     messageEl.textContent = message;
-    
+
     if (type === 'success') {
         icon.textContent = '✓';
         toast.className = 'toast success show';
@@ -431,7 +437,7 @@ function showToast(title, message, type = 'info') {
         icon.textContent = 'ℹ';
         toast.className = 'toast info show';
     }
-    
+
     setTimeout(() => {
         toast.classList.remove('show');
     }, 5000);

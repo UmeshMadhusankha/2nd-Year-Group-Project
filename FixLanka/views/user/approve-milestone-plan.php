@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Review Milestone Plan - FixLanka</title>
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/common.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/contracts.css">
     <style>
         /* Customer Milestone Plan Review Styles */
@@ -630,6 +631,7 @@
         </div>
     </div>
 
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/customer/milestone-plan-review.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/milestone-plan-review.js"></script>
 </body>
 </html>

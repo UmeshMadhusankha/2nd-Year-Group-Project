@@ -42,6 +42,8 @@ foreach ($jobRequests as $job) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job History - Fix Lanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/common.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/navbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/job-history.css">
 </head>
@@ -181,10 +183,10 @@ foreach ($jobRequests as $job) {
                                     <button onclick="openEditModal(<?php echo $job['request_id']; ?>)" class="action-btn btn-edit">
                                         <i class="fas fa-edit"></i> Edit
                                     </button>
-                                    <form action="/2nd-Year-Group-Project/FixLanka/delete-job" method="POST" style="display:inline;" 
-                                          onsubmit="return confirm('Are you sure you want to delete this job request?');">
+                                    <form id="deleteForm_<?php echo $job['request_id']; ?>" action="/2nd-Year-Group-Project/FixLanka/delete-job" method="POST" style="display:inline;">
                                         <input type="hidden" name="request_id" value="<?php echo $job['request_id']; ?>">
-                                        <button type="submit" class="action-btn btn-delete">
+                                        <button type="button" class="action-btn btn-delete" 
+                                                onclick="handleDeleteJob(<?php echo $job['request_id']; ?>)">
                                             <i class="fas fa-trash-alt"></i> Delete
                                         </button>
                                     </form>
@@ -560,7 +562,7 @@ foreach ($jobRequests as $job) {
 
             <!-- Amount + status -->
             <div style="text-align:right;flex-shrink:0">
-                <div style="font-size:17px;font-weight:800;color:#0abab5">LKR ${amount}</div>
+                <div style="font-size:17px;font-weight:800;color:#0abab5">LKR ${amount}${q.labor_unit_label || q.material_unit_label ? ' <span style="font-size:11px;font-weight:normal">(per unit)</span>' : ''}</div>
                 <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;
                              background:${color}18;color:${color};border:1px solid ${color}">${label}</span>
             </div>
@@ -592,7 +594,6 @@ foreach ($jobRequests as $job) {
 
         // Detail grid construction
         let detailCells = [
-            detailCell('fas fa-clock','Estimated Duration', days),
             detailCell('fas fa-tools','Materials','', mats),
             detailCell('fas fa-shield-alt','Valid For (Warranty)', warranty),
             detailCell('fas fa-calendar-alt','Submitted On', submittedOn),
@@ -604,8 +605,8 @@ foreach ($jobRequests as $job) {
             const formatCurr = (val) => val ? 'LKR ' + parseFloat(val).toLocaleString() : '—';
             
             detailCells.push(
-                detailCell('fas fa-user-hard-hat', 'Labor Cost', formatCurr(q.labor_cost)),
-                detailCell('fas fa-box-open', 'Material Cost', formatCurr(q.material_cost)),
+                detailCell('fas fa-user-hard-hat', q.labor_unit_label ? `Labor Cost (${q.labor_unit_label})` : 'Labor Cost', formatCurr(q.labor_cost)),
+                detailCell('fas fa-box-open', q.material_unit_label ? `Material Cost (${q.material_unit_label})` : 'Material Cost', formatCurr(q.material_cost)),
                 detailCell('fas fa-truck', 'Transport Cost', formatCurr(q.transport_cost)),
                 detailCell('fas fa-plus-circle', 'Other Charges', formatCurr(q.other_charges)),
                 detailCell('fas fa-money-check-alt', 'Pricing Type', escapeQH(q.pricing_type ? q.pricing_type.replace(/_/g, ' ') : '—').replace(/\b\w/g, l => l.toUpperCase())),
@@ -630,7 +631,7 @@ foreach ($jobRequests as $job) {
                 </div>
             </div>
             <div style="text-align:right">
-                <div style="font-size:24px;font-weight:800;color:#0abab5">LKR ${amount}</div>
+                <div style="font-size:24px;font-weight:800;color:#0abab5">LKR ${amount}${q.labor_unit_label || q.material_unit_label ? ' <span style="font-size:14px;font-weight:normal">(per unit)</span>' : ''}</div>
                 <span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;
                              background:${color}18;color:${color};border:1px solid ${color}">${label}</span>
             </div>
@@ -668,25 +669,43 @@ foreach ($jobRequests as $job) {
         return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    function acceptQuote(source, quoteId, requestId) {
-        if (!confirm('Accept this quote? All other quotes for this job will be rejected and the job will be assigned to this provider.')) return;
-        fetch('/2nd-Year-Group-Project/FixLanka/api/user-quotes.php?action=respond', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ source, quote_id: quoteId, decision: 'accepted' })
-        })
-        .then(r => r.json())
-        .then(data => {
+    async function acceptQuote(source, quoteId, requestId) {
+        const confirmed = await window.showConfirm(
+            'Accept this quote? All other quotes for this job will be rejected and the job will be assigned to this provider.',
+            { title: 'Accept Quotation', confirmText: 'Accept Quote' }
+        );
+        
+        if (!confirmed) return;
+
+        try {
+            const res = await fetch('/2nd-Year-Group-Project/FixLanka/api/user-quotes.php?action=respond', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ source, quote_id: quoteId, decision: 'accepted' })
+            });
+            const data = await res.json();
+
             if (data.success) {
                 closeQuoteDetail();
                 closeQuotesModal();
-                alert('Quote accepted! The job has been assigned to the provider.');
+                await window.showAlert('Quote accepted! The job has been assigned to the provider.', 'success', 'Success');
                 location.reload();
             } else {
-                alert('Error: ' + (data.message || 'Failed to accept quote.'));
+                await window.showAlert('Error: ' + (data.message || 'Failed to accept quote.'), 'danger', 'Error');
             }
-        })
-        .catch(() => alert('Network error. Please try again.'));
+        } catch (err) {
+            await window.showAlert('Network error. Please try again.', 'danger', 'Error');
+        }
+    }
+
+    async function handleDeleteJob(requestId) {
+        const confirmed = await window.showConfirm(
+            'Are you sure you want to delete this job request? This action cannot be undone.',
+            { title: 'Delete Job Request', confirmText: 'Delete', type: 'danger' }
+        );
+        if (confirmed) {
+            document.getElementById('deleteForm_' + requestId).submit();
+        }
     }
 
     function closeQuoteDetail() {
@@ -708,6 +727,7 @@ foreach ($jobRequests as $job) {
     </script>
 
 
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/job-history.js"></script>
 </body>
 </html>

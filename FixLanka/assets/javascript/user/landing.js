@@ -299,7 +299,7 @@ let allProvidersLoaded = false;
 let currentProviderType = 'repairers';
 
 // Initialize the application
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeMobileMenu();
     initializeSearchForm();
     initializeLazyLoading();
@@ -311,9 +311,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // Mobile Menu Functionality
 function initializeMobileMenu() {
     if (mobileMenuToggle && mobileMenu) {
-        mobileMenuToggle.addEventListener('click', function() {
+        mobileMenuToggle.addEventListener('click', function () {
             mobileMenu.classList.toggle('active');
-            
+
             // Animate hamburger menu
             const hamburgers = mobileMenuToggle.querySelectorAll('.hamburger');
             hamburgers.forEach((line, index) => {
@@ -331,7 +331,7 @@ function initializeMobileMenu() {
         // Close mobile menu when clicking on links
         const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
         mobileNavLinks.forEach(link => {
-            link.addEventListener('click', function() {
+            link.addEventListener('click', function () {
                 mobileMenu.classList.remove('active');
                 // Reset hamburger animation
                 const hamburgers = mobileMenuToggle.querySelectorAll('.hamburger');
@@ -348,20 +348,20 @@ function initializeMobileMenu() {
 function initializeProfileDropdown() {
     if (profileAvatar && profileDropdown) {
         // Toggle dropdown when clicking profile avatar
-        profileAvatar.addEventListener('click', function(e) {
+        profileAvatar.addEventListener('click', function (e) {
             e.stopPropagation();
             profileDropdown.classList.toggle('active');
         });
 
         // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             if (!profileAvatar.contains(e.target) && !profileDropdown.contains(e.target)) {
                 profileDropdown.classList.remove('active');
             }
         });
 
         // Close dropdown on escape key
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && profileDropdown.classList.contains('active')) {
                 profileDropdown.classList.remove('active');
             }
@@ -372,18 +372,18 @@ function initializeProfileDropdown() {
 // Provider Tabs Functionality
 function initializeProviderTabs() {
     providerTabs.forEach(tab => {
-        tab.addEventListener('click', function() {
+        tab.addEventListener('click', function () {
             const type = this.dataset.type;
-            
+
             // Update active tab
             providerTabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
-            
+
             // Show corresponding grid
             document.querySelectorAll('.providers-grid').forEach(grid => {
                 grid.classList.remove('active');
             });
-            
+
             if (type === 'repairers') {
                 repairersGrid.classList.add('active');
                 currentProviderType = 'repairers';
@@ -391,14 +391,14 @@ function initializeProviderTabs() {
                 companiesGrid.classList.add('active');
                 currentProviderType = 'companies';
             }
-            
+
             // Reset and reload data
             currentPage = 0;
             allProvidersLoaded = false;
-            
+
             const targetGrid = type === 'repairers' ? repairersGrid : companiesGrid;
             targetGrid.innerHTML = '';
-            
+
             loadInitialProviders();
         });
     });
@@ -407,18 +407,18 @@ function initializeProviderTabs() {
 // Search Form Functionality
 function initializeSearchForm() {
     if (searchForm) {
-        searchForm.addEventListener('submit', function(e) {
+        searchForm.addEventListener('submit', function (e) {
             e.preventDefault();
-            
+
             const service = document.getElementById('serviceSelect').value;
             const rating = document.getElementById('ratingSelect').value;
             const location = document.getElementById('locationInput').value;
-            
+
             // Simulate search functionality
-            
+
             // Show loading state
             showSearchLoading();
-            
+
             // Simulate API call delay
             setTimeout(() => {
                 hideSearchLoading();
@@ -448,29 +448,29 @@ function hideSearchLoading() {
 // Filter Providers (simplified for demo)
 function filterProviders(filters) {
     let filteredData = [...providerData];
-    
+
     // Filter by service (simplified matching)
     if (filters.service) {
-        filteredData = filteredData.filter(provider => 
+        filteredData = filteredData.filter(provider =>
             provider.title.toLowerCase().includes(filters.service.toLowerCase()) ||
             provider.description.toLowerCase().includes(filters.service.toLowerCase())
         );
     }
-    
+
     // Filter by rating
     if (filters.rating) {
         const minRating = parseFloat(filters.rating);
         filteredData = filteredData.filter(provider => provider.rating >= minRating);
     }
-    
+
     // Clear current grid and reset pagination
     providersGrid.innerHTML = '';
     currentPage = 0;
     allProvidersLoaded = false;
-    
+
     // Update provider data temporarily for this search
     window.currentFilteredData = filteredData;
-    
+
     // Load filtered results
     loadProviders(true);
 }
@@ -502,22 +502,22 @@ function loadInitialProviders() {
 // Load Providers with Pagination
 function loadProviders(isFiltered = false) {
     if (isLoading) return;
-    
+
     isLoading = true;
     showLoading();
-    
+
     // Select data source based on current provider type
-    const dataSource = currentProviderType === 'repairers' 
-        ? (window.currentFilteredData || providerData) 
+    const dataSource = currentProviderType === 'repairers'
+        ? (window.currentFilteredData || providerData)
         : companyData;
-    
+
     // Calculate start and end indices
     const startIndex = currentPage * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, dataSource.length);
-    
+
     // Get current batch of providers
     const currentBatch = dataSource.slice(startIndex, endIndex);
-    
+
     // Simulate network delay
     setTimeout(() => {
         // Render providers based on type
@@ -530,18 +530,18 @@ function loadProviders(isFiltered = false) {
                 }
             }, index * 100); // Stagger animation
         });
-        
+
         // Update pagination state
         currentPage++;
         isLoading = false;
         hideLoading();
-        
+
         // Check if all providers are loaded
         if (endIndex >= dataSource.length) {
             allProvidersLoaded = true;
             scrollTrigger.style.display = 'none';
         }
-        
+
     }, 800); // Simulate loading delay
 }
 
@@ -564,7 +564,7 @@ function renderProviderCard(provider) {
     const card = document.createElement('div');
     card.className = 'provider-card';
     card.style.animationDelay = '0s'; // Reset animation delay
-    
+
     card.innerHTML = `
         <div class="provider-header">
             <div class="provider-avatar">
@@ -599,7 +599,7 @@ function renderProviderCard(provider) {
             </button>
         </div>
     `;
-    
+
     if (repairersGrid) {
         repairersGrid.appendChild(card);
     }
@@ -610,11 +610,11 @@ function renderCompanyCard(company) {
     const card = document.createElement('div');
     card.className = 'company-card';
     card.style.animationDelay = '0s';
-    
-    const servicesHTML = company.services.slice(0, 4).map(service => 
+
+    const servicesHTML = company.services.slice(0, 4).map(service =>
         `<span class="service-tag">${service}</span>`
     ).join('');
-    
+
     card.innerHTML = `
         <div class="company-header">
             <div class="company-logo">
@@ -672,7 +672,7 @@ function renderCompanyCard(company) {
             </button>
         </div>
     `;
-    
+
     if (companiesGrid) {
         companiesGrid.appendChild(card);
     }
@@ -682,7 +682,7 @@ function renderCompanyCard(company) {
 function viewCompanyDetails(companyId) {
     const company = companyData.find(c => c.id === companyId);
     if (!company) return;
-    
+
     // Create modal HTML
     const modalHTML = `
         <div class="company-modal-overlay" id="companyModal">
@@ -756,12 +756,12 @@ function viewCompanyDetails(companyId) {
                             Services Offered
                         </h3>
                         <div class="company-modal-services">
-                            ${company.services.map(service => 
-                                `<span class="modal-service-tag">
+                            ${company.services.map(service =>
+        `<span class="modal-service-tag">
                                     <i class="fas fa-check-circle"></i>
                                     ${service}
                                 </span>`
-                            ).join('')}
+    ).join('')}
                         </div>
                     </div>
                     
@@ -783,17 +783,17 @@ function viewCompanyDetails(companyId) {
             </div>
         </div>
     `;
-    
+
     // Add modal to body
     document.body.insertAdjacentHTML('beforeend', modalHTML);
-    
+
     // Show modal with animation
     setTimeout(() => {
         document.getElementById('companyModal').classList.add('show');
     }, 10);
-    
+
     // Close on outside click
-    document.getElementById('companyModal').addEventListener('click', function(e) {
+    document.getElementById('companyModal').addEventListener('click', function (e) {
         if (e.target === this) {
             closeCompanyModal();
         }
@@ -816,24 +816,24 @@ function generateStars(rating) {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-    
+
     let starsHTML = '';
-    
+
     // Full stars
     for (let i = 0; i < fullStars; i++) {
         starsHTML += '<i class="fas fa-star star"></i>';
     }
-    
+
     // Half star
     if (hasHalfStar) {
         starsHTML += '<i class="fas fa-star-half-alt star"></i>';
     }
-    
+
     // Empty stars
     for (let i = 0; i < emptyStars; i++) {
         starsHTML += '<i class="far fa-star star empty"></i>';
     }
-    
+
     return starsHTML;
 }
 
@@ -841,34 +841,34 @@ function generateStars(rating) {
 function viewProfile(providerId) {
     const provider = providerData.find(p => p.id === providerId);
     if (!provider) return;
-    
+
     // Only show popup for repairers with detailed profiles (IDs 1-5)
     // ID 1: Kamal Silva (Electrician)
     // ID 2: Nimal Perera (Plumber)
     // ID 3: Saman Fernando (HVAC)
     // ID 4: Ranjith Kumar (Carpenter) - mapped from Chaminda
     // ID 5: Pradeep Bandara (Painter) - mapped from Lakshmi
-    
+
     if (providerId >= 1 && providerId <= 5) {
         // Open the detailed profile popup
         openRepairerProfile(providerId);
     } else {
         // For other providers, show placeholder message
-        alert(`Viewing profile for ${provider.name}\n\nDetailed profile coming soon!`);
-        
+        window.showAlert(`Viewing profile for ${provider.name}\n\nDetailed profile coming soon!`, 'info', 'Profile Preview');
+
     }
 }
 
 // Smooth Scrolling for Navigation Links
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     const target = e.target;
-    
+
     // Handle navigation links with hash
     if (target.matches('a[href^="#"]')) {
         e.preventDefault();
         const targetId = target.getAttribute('href').substring(1);
         const targetElement = document.getElementById(targetId);
-        
+
         if (targetElement) {
             targetElement.scrollIntoView({
                 behavior: 'smooth',
@@ -879,15 +879,15 @@ document.addEventListener('click', function(e) {
 });
 
 // Handle Window Resize
-window.addEventListener('resize', function() {
+window.addEventListener('resize', function () {
     // Close mobile menu on resize to larger screen
     if (window.innerWidth > 768) {
         const mobileMenu = document.querySelector('.mobile-menu');
         const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
-        
+
         if (mobileMenu && mobileMenu.classList.contains('active')) {
             mobileMenu.classList.remove('active');
-            
+
             // Reset hamburger animation
             if (mobileMenuToggle) {
                 const hamburgers = mobileMenuToggle.querySelectorAll('.hamburger');
@@ -898,7 +898,7 @@ window.addEventListener('resize', function() {
             }
         }
     }
-    
+
     // Close profile dropdown on resize
     if (profileDropdown && profileDropdown.classList.contains('active')) {
         profileDropdown.classList.remove('active');
@@ -906,7 +906,7 @@ window.addEventListener('resize', function() {
 });
 
 // Add scroll-based navbar styling (optional enhancement)
-window.addEventListener('scroll', function() {
+window.addEventListener('scroll', function () {
     const navbar = document.querySelector('.navbar');
     if (navbar) {
         if (window.scrollY > 50) {
@@ -922,18 +922,18 @@ window.addEventListener('scroll', function() {
 // Form Validation Enhancement
 function validateSearchForm() {
     const location = document.getElementById('locationInput').value.trim();
-    
+
     if (location.length < 3) {
-        alert('Please enter a valid location (at least 3 characters)');
+        window.showAlert('Please enter a valid location (at least 3 characters)', 'warning');
         return false;
     }
-    
+
     return true;
 }
 
 // Add form validation to search form
 if (searchForm) {
-    searchForm.addEventListener('submit', function(e) {
+    searchForm.addEventListener('submit', function (e) {
         if (!validateSearchForm()) {
             e.preventDefault();
             return false;
@@ -943,23 +943,23 @@ if (searchForm) {
 
 // Send Repair Request Function (Placeholder - No functionality yet)
 function sendRepairRequest(type, providerId) {
-    
-    alert(`Send Repair Request feature will be implemented soon!\n\nProvider Type: ${type}\nProvider ID: ${providerId || 'Current profile'}`);
+
+    window.showAlert(`Send Repair Request feature will be implemented soon!\n\nProvider Type: ${type}\nProvider ID: ${providerId || 'Current profile'}`, 'info', 'Coming Soon');
     // TODO: Implement repair request functionality
     // This will redirect to post-job page or open a request form
 }
 
 // Contact Company Function (Placeholder)
 function contactCompany(companyId) {
-    
-    alert('Contact Company feature will be implemented soon!');
+
+    window.showAlert('Contact Company feature will be implemented soon!', 'info', 'Coming Soon');
     // TODO: Implement contact company functionality
 }
 
 // Request Company Quote Function (Placeholder)
 function requestCompanyQuote(companyId) {
-    
-    alert('Request Company Quote feature will be implemented soon!');
+
+    window.showAlert('Request Company Quote feature will be implemented soon!', 'info', 'Coming Soon');
     // TODO: Implement company quote request functionality
 }
 

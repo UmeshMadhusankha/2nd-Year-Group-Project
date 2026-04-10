@@ -2,7 +2,7 @@
 // SUPPORT PAGE JAVASCRIPT
 // ================================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialize support page functionality
     initializeSupportForm();
     initializeTicketModal();
@@ -147,7 +147,7 @@ function initializeSupportForm() {
 
     // Handle form submission
     if (form) {
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', function (e) {
             e.preventDefault();
             handleFormSubmission();
         });
@@ -155,8 +155,14 @@ function initializeSupportForm() {
 
     // Handle cancel button
     if (cancelBtn) {
-        cancelBtn.addEventListener('click', function() {
-            if (confirm('Are you sure you want to cancel? All entered information will be lost.')) {
+        cancelBtn.addEventListener('click', async function () {
+            const confirmed = await window.showConfirm('Are you sure you want to cancel? All entered information will be lost.', {
+                title: 'Cancel Action',
+                confirmText: 'Yes, Cancel',
+                type: 'warning'
+            });
+
+            if (confirmed) {
                 form.reset();
                 clearFileUpload();
             }
@@ -165,14 +171,14 @@ function initializeSupportForm() {
 
     // Handle new ticket button
     if (newTicketBtn) {
-        newTicketBtn.addEventListener('click', function() {
+        newTicketBtn.addEventListener('click', function () {
             scrollToForm();
         });
     }
 
     // Handle create first ticket button
     if (createFirstTicketBtn) {
-        createFirstTicketBtn.addEventListener('click', function() {
+        createFirstTicketBtn.addEventListener('click', function () {
             scrollToForm();
         });
     }
@@ -236,8 +242,8 @@ async function handleFormSubmission() {
 }
 
 function scrollToForm() {
-    document.getElementById('support-form-section').scrollIntoView({ 
-        behavior: 'smooth' 
+    document.getElementById('support-form-section').scrollIntoView({
+        behavior: 'smooth'
     });
     document.getElementById('issue-subject').focus();
 }
@@ -248,7 +254,7 @@ function initializeFileUpload() {
     const fileLabel = document.querySelector('.file-upload-label');
 
     if (fileInput && fileLabel) {
-        fileInput.addEventListener('change', function(e) {
+        fileInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (file) {
                 updateFileUploadUI(file);
@@ -256,20 +262,20 @@ function initializeFileUpload() {
         });
 
         // Handle drag and drop
-        fileLabel.addEventListener('dragover', function(e) {
+        fileLabel.addEventListener('dragover', function (e) {
             e.preventDefault();
             fileLabel.classList.add('drag-over');
         });
 
-        fileLabel.addEventListener('dragleave', function(e) {
+        fileLabel.addEventListener('dragleave', function (e) {
             e.preventDefault();
             fileLabel.classList.remove('drag-over');
         });
 
-        fileLabel.addEventListener('drop', function(e) {
+        fileLabel.addEventListener('drop', function (e) {
             e.preventDefault();
             fileLabel.classList.remove('drag-over');
-            
+
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 fileInput.files = files;
@@ -282,7 +288,7 @@ function initializeFileUpload() {
 function updateFileUploadUI(file) {
     const fileLabel = document.querySelector('.file-upload-label');
     const fileText = document.querySelector('.file-upload-text');
-    
+
     if (file) {
         const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
         fileText.innerHTML = `${file.name} (${fileSize} MB)`;
@@ -294,7 +300,7 @@ function clearFileUpload() {
     const fileInput = document.getElementById('issue-file');
     const fileLabel = document.querySelector('.file-upload-label');
     const fileText = document.querySelector('.file-upload-text');
-    
+
     if (fileInput) fileInput.value = '';
     if (fileText) fileText.innerHTML = 'Choose file or drag here';
     if (fileLabel) fileLabel.classList.remove('file-selected');
@@ -308,7 +314,7 @@ function initializeTicketModal() {
 
     // Handle view ticket buttons
     viewButtons.forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const ticketId = this.getAttribute('data-ticket-id');
             openTicketModal(ticketId);
         });
@@ -321,7 +327,7 @@ function initializeTicketModal() {
 
     // Handle click outside modal
     if (modal) {
-        modal.addEventListener('click', function(e) {
+        modal.addEventListener('click', function (e) {
             if (e.target === modal) {
                 closeTicketModal();
             }
@@ -403,7 +409,7 @@ function createMessageElement(message) {
 
     const textDiv = document.createElement('div');
     textDiv.className = 'message-text';
-    
+
     // Convert line breaks to paragraphs
     const paragraphs = message.text.split('\n\n').filter(p => p.trim());
     textDiv.innerHTML = paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
@@ -423,18 +429,18 @@ function initializeReplyForm() {
     const replyInput = document.getElementById('reply-message');
 
     if (sendReplyBtn) {
-        sendReplyBtn.addEventListener('click', function() {
+        sendReplyBtn.addEventListener('click', function () {
             sendReply();
         });
     }
 
     if (attachFileBtn) {
-        attachFileBtn.addEventListener('click', function() {
+        attachFileBtn.addEventListener('click', function () {
             // Create and trigger file input
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = '.jpg,.jpeg,.png,.gif,.pdf,.doc,.docx';
-            fileInput.onchange = function(e) {
+            fileInput.onchange = function (e) {
                 const file = e.target.files[0];
                 if (file) {
                     showNotification(`File "${file.name}" attached`, 'success');
@@ -445,7 +451,7 @@ function initializeReplyForm() {
     }
 
     if (replyInput) {
-        replyInput.addEventListener('keydown', function(e) {
+        replyInput.addEventListener('keydown', function (e) {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 sendReply();
             }
@@ -464,7 +470,7 @@ function sendReply() {
     }
 
     const message = replyInput.value.trim();
-    
+
     // Show loading state
     sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
     sendBtn.disabled = true;
@@ -499,7 +505,7 @@ function sendReply() {
 function updateTicketsTable() {
     const tbody = document.getElementById('tickets-tbody');
     const emptyState = document.getElementById('tickets-empty-state');
-    
+
     if (!tbody || !window.supportTickets) return;
 
     if (window.supportTickets.length === 0) {
@@ -540,7 +546,7 @@ function updateTicketsTable() {
     // Re-initialize view buttons
     const viewButtons = document.querySelectorAll('.view-ticket');
     viewButtons.forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const ticketId = this.getAttribute('data-ticket-id');
             openTicketModal(ticketId);
         });

@@ -152,6 +152,15 @@ switch ($action) {
         }
         $controller->respondToContract();
         break;
+
+    case 'pay_and_accept':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->payAndAccept();
+        break;
     
     // ========================================
     // PHASE 2: UNDO WINDOW (24-hour cancellation)

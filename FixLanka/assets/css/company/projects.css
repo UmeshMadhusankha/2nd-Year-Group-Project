@@ -3931,6 +3931,7 @@ body {
   z-index: 9999;
   opacity: 0;
   visibility: hidden;
+  pointer-events: none;
   transition: all 0.3s ease;
   padding: var(--spacing-md);
 }
@@ -3938,6 +3939,7 @@ body {
 .modal-overlay.active {
   opacity: 1;
   visibility: visible;
+  pointer-events: auto;
 }
 
 .modal-container {
@@ -7270,4 +7272,279 @@ body {
 .tooltip-container:hover .custom-tooltip {
   visibility: visible !important;
   opacity: 1 !important;
+}
+
+/* ================================================
+   START PROJECT MODAL  (.sp-overlay, .sp-dialog …)
+   Proof of Work Modal  (.pow-overlay …)
+   Shared toast         (.sp-toast)
+   Uses CSS variables from variables.css
+   ================================================ */
+
+/* ── Backdrop ──────────────────────────────────── */
+.sp-overlay,
+.pow-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: var(--z-modal);
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-md);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.sp-overlay.sp-open,
+.pow-overlay.pow-open {
+  display: flex;
+}
+
+/* ── Dialog box ────────────────────────────────── */
+.sp-dialog {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  animation: spSlideIn var(--transition-normal);
+}
+
+@keyframes spSlideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ── Header bar ────────────────────────────────── */
+.sp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+  color: var(--text-white);
+}
+
+.sp-header h3 {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.sp-close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: var(--text-white);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-normal);
+  flex-shrink: 0;
+}
+
+.sp-close-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* ── Body ──────────────────────────────────────── */
+.sp-body {
+  padding: var(--spacing-lg);
+}
+
+.sp-desc {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  margin: 0 0 var(--spacing-md);
+  line-height: 1.6;
+}
+
+.sp-desc strong {
+  color: var(--text-primary);
+}
+
+/* ── Form groups ───────────────────────────────── */
+.sp-form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.sp-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.sp-label i {
+  color: var(--primary-color);
+  margin-right: var(--spacing-xs);
+}
+
+.sp-hint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 var(--spacing-sm);
+}
+
+/* ── Select dropdown ───────────────────────────── */
+.sp-select {
+  width: 100%;
+  padding: 11px var(--spacing-md);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition-normal);
+  -webkit-appearance: auto;
+  appearance: auto;
+  font-family: var(--font-family-primary);
+}
+
+.sp-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
+}
+
+/* ── Textarea ──────────────────────────────────── */
+.sp-textarea {
+  width: 100%;
+  padding: 11px var(--spacing-md);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  resize: vertical;
+  outline: none;
+  font-family: var(--font-family-primary);
+  transition: border-color var(--transition-normal);
+}
+
+.sp-textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
+}
+
+/* ── Checkbox list ─────────────────────────────── */
+.sp-checkbox-list {
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  max-height: 180px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-color) transparent;
+}
+
+.sp-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-xs);
+  border-bottom: 1px solid var(--bg-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition-normal);
+  border-radius: var(--border-radius-sm);
+}
+
+.sp-checkbox-item:last-child {
+  border-bottom: none;
+}
+
+.sp-checkbox-item:hover {
+  background: var(--bg-hover);
+}
+
+.sp-checkbox-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.sp-item-name {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.sp-item-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.sp-placeholder {
+  color: var(--text-light);
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-sm) var(--spacing-xs);
+}
+
+/* ── Proof of Work upload zone ─────────────────── */
+.pow-upload-zone {
+  border: 2px dashed var(--border-color);
+  padding: 28px var(--spacing-lg);
+  text-align: center;
+  border-radius: var(--border-radius-sm);
+  position: relative;
+  cursor: pointer;
+  transition: border-color var(--transition-normal),
+    background var(--transition-normal);
+}
+
+.pow-upload-zone:hover {
+  border-color: var(--primary-color);
+  background: var(--bg-tertiary);
+}
+
+.pow-upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.pow-upload-zone i {
+  font-size: 28px;
+  color: var(--primary-color);
+  display: block;
+  margin-bottom: var(--spacing-sm);
+}
+
+.pow-upload-zone p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.pow-file-list {
+  margin-top: var(--spacing-sm);
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: left;
 }

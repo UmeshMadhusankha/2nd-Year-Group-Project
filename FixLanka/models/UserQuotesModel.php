@@ -172,7 +172,9 @@ class UserQuotesModel {
                     NULL AS payment_method,
                     NULL AS pricing_type,
                     NULL AS hourly_rate,
-                    NULL AS work_schedule_type
+                    NULL AS work_schedule_type,
+                    NULL AS labor_unit_label,
+                    NULL AS material_unit_label
                 FROM repairerquote rq
                 INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
                 INNER JOIN repairer r ON rq.repairer_id = r.repairer_id
@@ -210,7 +212,9 @@ class UserQuotesModel {
                     cq.payment_method AS payment_method,
                     cq.pricing_type AS pricing_type,
                     cq.hourly_rate AS hourly_rate,
-                    cq.work_schedule_type AS work_schedule_type
+                    cq.work_schedule_type AS work_schedule_type,
+                    cq.labor_unit_label AS labor_unit_label,
+                    cq.material_unit_label AS material_unit_label
                 FROM companyquotation cq
                 INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
                 $companyJoinSql
@@ -222,15 +226,20 @@ class UserQuotesModel {
             LIMIT :limit OFFSET :offset
         ";
 
-        $stmt = $this->pdo->prepare($sql);
-        foreach ($params as $key => $val) {
-            $stmt->bindValue($key, $val, is_int($val) ? PDO::PARAM_INT : PDO::PARAM_STR);
-        }
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => $val) {
+                $stmt->bindValue($key, $val, is_int($val) ? PDO::PARAM_INT : PDO::PARAM_STR);
+            }
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error in getUserQuotes: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     public function getUserPendingCount(int $userId): int {

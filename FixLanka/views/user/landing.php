@@ -35,6 +35,8 @@ if (!empty($aboutContent['body'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fix Lanka - Your Trusted Service Professionals</title>
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/common.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/landing.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/navbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/repairer-profile-popup.css">
@@ -194,6 +196,7 @@ if (!empty($aboutContent['body'])) {
     <!-- Repairer Profile Popup -->
     <?php include 'repairer-profile-popup.php'; ?>
 
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/landing.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/repairer-profile-popup.js"></script>
 </body>

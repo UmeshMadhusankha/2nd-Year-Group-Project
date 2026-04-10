@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/ContractModel.php';
+require_once __DIR__ . '/../models/EscrowModel.php';
 require_once __DIR__ . '/../models/SystemNotificationService.php';
 
 class ContractController {
@@ -262,7 +263,8 @@ class ContractController {
                     'customer_response' => $contract['customer_response'] ?? 'pending',
                     'customer_response_at' => $contract['customer_response_at'] ?? null,
                     'terms_accepted' => (bool)($contract['terms_accepted'] ?? 0),
-                    'chat_active' => (int)($contract['chat_active'] ?? 0)
+                    'chat_active' => (int)($contract['chat_active'] ?? 0),
+                    'unread_messages' => (int)($contract['unread_messages'] ?? 0)
                 ];
             }, $contracts);
 
@@ -1265,113 +1267,128 @@ class ContractController {
      */
     private function generateMilestones($totalAmount, $paymentMethod, $startDate, $endDate) {
         $milestones = [];
-        
-        // Calculate duration in days
-        $start = new DateTime($startDate);
-        $end = new DateTime($endDate);
+
+        $start    = new DateTime($startDate);
+        $end      = new DateTime($endDate);
         $duration = $start->diff($end)->days;
-        
+
         switch ($paymentMethod) {
             case 'full_upfront':
-                // Single milestone at start
+                // Legacy: single payment at project start
                 $milestones[] = [
-                    'milestone_number' => 1,
-                    'title' => 'Full Payment',
-                    'description' => 'Complete project payment upfront',
-                    'due_date' => $startDate,
-                    'amount' => $totalAmount,
-                    'percentage' => 100
+                    'milestone_number'    => 1,
+                    'title'               => 'Full Payment',
+                    'description'         => 'Complete project payment upfront',
+                    'due_date'            => $startDate,
+                    'amount'              => $totalAmount,
+                    'percentage'          => 100
                 ];
                 break;
-                
+
             case 'milestone_based':
-                // 3 milestones: 30% start, 40% middle, 30% end
-                $milestones[] = [
-                    'milestone_number' => 1,
-                    'title' => 'Initial Payment',
-                    'description' => 'Project initiation and setup',
-                    'due_date' => $startDate,
-                    'amount' => $totalAmount * 0.30,
-                    'percentage' => 30
-                ];
-                
+                // New model: NO upfront. All 3 stages billed upon completion + customer approval.
+                // Amounts are estimates; actual billing uses unit_rate × actual_quantity.
                 $midDate = clone $start;
-                $midDate->add(new DateInterval('P' . floor($duration / 2) . 'D'));
-                
+                $midDate->add(new DateInterval('P' . max(1, floor($duration / 2)) . 'D'));
+
                 $milestones[] = [
-                    'milestone_number' => 2,
-                    'title' => 'Mid-Project Payment',
-                    'description' => 'Progress payment for ongoing work',
-                    'due_date' => $midDate->format('Y-m-d'),
-                    'amount' => $totalAmount * 0.40,
-                    'percentage' => 40
+                    'milestone_number'    => 1,
+                    'title'               => 'Stage 1 — Foundation & Setup',
+                    'description'         => 'Initial preparation and setup work. Payment triggered after actual units verified.',
+                    'due_date'            => $midDate->format('Y-m-d'),
+                    'amount'              => $totalAmount * 0.40,
+                    'percentage'          => 40
                 ];
-                
+
                 $milestones[] = [
-                    'milestone_number' => 3,
-                    'title' => 'Final Payment',
-                    'description' => 'Project completion and handover',
-                    'due_date' => $endDate,
-                    'amount' => $totalAmount * 0.30,
-                    'percentage' => 30
+                    'milestone_number'    => 2,
+                    'title'               => 'Stage 2 — Core Work',
+                    'description'         => 'Main body of work. Payment triggered after actual units verified.',
+                    'due_date'            => $midDate->format('Y-m-d'),
+                    'amount'              => $totalAmount * 0.35,
+                    'percentage'          => 35
                 ];
-                break;
-                
-            case '50_50':
-                // 50% start, 50% end
+
                 $milestones[] = [
-                    'milestone_number' => 1,
-                    'title' => 'Initial Payment (50%)',
-                    'description' => 'First half payment at project start',
-                    'due_date' => $startDate,
-                    'amount' => $totalAmount * 0.50,
-                    'percentage' => 50
-                ];
-                
-                $milestones[] = [
-                    'milestone_number' => 2,
-                    'title' => 'Final Payment (50%)',
-                    'description' => 'Second half payment upon completion',
-                    'due_date' => $endDate,
-                    'amount' => $totalAmount * 0.50,
-                    'percentage' => 50
+                    'milestone_number'    => 3,
+                    'title'               => 'Stage 3 — Completion & Handover',
+                    'description'         => 'Final stage, completion and handover. Payment triggered after customer confirmation.',
+                    'due_date'            => $endDate,
+                    'amount'              => $totalAmount * 0.25,
+                    'percentage'          => 25
                 ];
                 break;
-                
-            case '30_70':
-                // 30% start, 70% end
-                $milestones[] = [
-                    'milestone_number' => 1,
-                    'title' => 'Initial Payment (30%)',
-                    'description' => 'Advance payment at project start',
-                    'due_date' => $startDate,
-                    'amount' => $totalAmount * 0.30,
-                    'percentage' => 30
-                ];
-                
-                $milestones[] = [
-                    'milestone_number' => 2,
-                    'title' => 'Final Payment (70%)',
-                    'description' => 'Completion payment upon delivery',
-                    'due_date' => $endDate,
-                    'amount' => $totalAmount * 0.70,
-                    'percentage' => 70
-                ];
-                break;
-                
+
             case 'completion':
-                // Single milestone at end
+                // 100% payment after full project completion
                 $milestones[] = [
-                    'milestone_number' => 1,
-                    'title' => 'Payment on Completion',
-                    'description' => 'Full payment after project completion',
-                    'due_date' => $endDate,
-                    'amount' => $totalAmount,
-                    'percentage' => 100
+                    'milestone_number'    => 1,
+                    'title'               => 'Final Payment on Completion',
+                    'description'         => 'Full project payment after completion and customer verification.',
+                    'due_date'            => $endDate,
+                    'amount'              => $totalAmount,
+                    'percentage'          => 100
+                ];
+                break;
+
+            case 'time_material':
+                // Dynamic: billing happens per verified time/material log
+                // Generate 3 review checkpoints for the customer to approve logged work
+                $step1 = clone $start;
+                $step1->add(new DateInterval('P' . max(1, intval($duration / 3)) . 'D'));
+                $step2 = clone $start;
+                $step2->add(new DateInterval('P' . max(2, intval($duration * 2 / 3)) . 'D'));
+
+                $milestones[] = [
+                    'milestone_number'    => 1,
+                    'title'               => 'T&M Review Checkpoint 1',
+                    'description'         => 'First billing review: company submits hours/materials used. Amount calculated from actual units.',
+                    'due_date'            => $step1->format('Y-m-d'),
+                    'amount'              => 0,
+                    'percentage'          => 0
+                ];
+                $milestones[] = [
+                    'milestone_number'    => 2,
+                    'title'               => 'T&M Review Checkpoint 2',
+                    'description'         => 'Second billing review: company submits hours/materials used. Amount calculated from actual units.',
+                    'due_date'            => $step2->format('Y-m-d'),
+                    'amount'              => 0,
+                    'percentage'          => 0
+                ];
+                $milestones[] = [
+                    'milestone_number'    => 3,
+                    'title'               => 'T&M Final Billing',
+                    'description'         => 'Final billing review on project close-out.',
+                    'due_date'            => $endDate,
+                    'amount'              => 0,
+                    'percentage'          => 0
+                ];
+                break;
+
+            // Legacy cases (kept for backward compatibility)
+            case '50_50':
+                $milestones[] = ['milestone_number' => 1, 'title' => 'Initial Payment (50%)', 'description' => 'First half at project start', 'due_date' => $startDate, 'amount' => $totalAmount * 0.50, 'percentage' => 50];
+                $milestones[] = ['milestone_number' => 2, 'title' => 'Final Payment (50%)',   'description' => 'Second half upon completion', 'due_date' => $endDate,   'amount' => $totalAmount * 0.50, 'percentage' => 50];
+                break;
+
+            case '30_70':
+                $milestones[] = ['milestone_number' => 1, 'title' => 'Initial Payment (30%)', 'description' => 'Advance at project start',    'due_date' => $startDate, 'amount' => $totalAmount * 0.30, 'percentage' => 30];
+                $milestones[] = ['milestone_number' => 2, 'title' => 'Final Payment (70%)',   'description' => 'Completion payment on delivery', 'due_date' => $endDate,  'amount' => $totalAmount * 0.70, 'percentage' => 70];
+                break;
+
+            default:
+                // Fallback: single payment at the end
+                $milestones[] = [
+                    'milestone_number'    => 1,
+                    'title'               => 'Payment on Completion',
+                    'description'         => 'Full payment after project completion',
+                    'due_date'            => $endDate,
+                    'amount'              => $totalAmount,
+                    'percentage'          => 100
                 ];
                 break;
         }
-        
+
         return $milestones;
     }
 
@@ -2537,6 +2554,129 @@ class ContractController {
     }
 
     /**
+     * Atomic Pay & Accept flow
+     */
+    public function payAndAccept() {
+        try {
+            if (!isset($_SESSION['user_id']) || !in_array(($_SESSION['user_role'] ?? ''), ['customer', 'user'], true)) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            $contractId = $data['contract_id'] ?? null;
+
+            if (!$contractId) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Missing contract ID']);
+                return;
+            }
+
+            $this->pdo->beginTransaction();
+
+            // 1. Get contract and check upfront requirements
+            $contract = $this->model->getByIdForCustomer($contractId, $_SESSION['user_id']);
+            if (!$contract) {
+                throw new Exception("Contract not found.");
+            }
+
+            // Get initial milestones (due on or before start_date)
+            $stmt = $this->pdo->prepare("SELECT * FROM contract_milestone WHERE contract_id = ? AND due_date <= ? ORDER BY milestone_number ASC");
+            $stmt->execute([$contractId, $contract['start_date']]);
+            $initialMilestones = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $totalUpfront = 0;
+            foreach ($initialMilestones as $ms) {
+                $totalUpfront += (float)$ms['amount'];
+            }
+
+            // 2. Process Payment (Simulated)
+            if ($totalUpfront > 0) {
+                $escrowModel = new EscrowModel($this->pdo);
+                
+                // Add funds to user wallet first (Simulate deposit from card)
+                $escrowModel->deposit($_SESSION['user_id'], $totalUpfront, 'user', "Initial deposit for Contract #{$contractId}");
+                
+                // Then hold for each initial milestone
+                foreach ($initialMilestones as $ms) {
+                    $success = $escrowModel->holdFundsForMilestone($_SESSION['user_id'], $ms['milestone_id'], $ms['amount']);
+                    if (!$success) {
+                        throw new Exception("Failed to hold escrow funds for Milestone #{$ms['milestone_id']}");
+                    }
+                }
+
+                // Record in payment history
+                $stmt = $this->pdo->prepare("INSERT INTO contract_payment_history (contract_id, amount, payment_type, status, paid_by, notes) VALUES (?, ?, 'escrow_deposit', 'completed', ?, ?)");
+                $stmt->execute([$contractId, $totalUpfront, $_SESSION['user_id'], "Upfront payment for project start"]);
+            }
+
+            // 3. Accept Contract (Signature logic)
+            $this->forceAcceptContract($contractId, $contract);
+
+            $this->pdo->commit();
+            echo json_encode(['success' => true, 'message' => 'Payment processed and contract accepted.']);
+
+        } catch (Exception $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log("[ContractController] Error in payAndAccept: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    private function forceAcceptContract($contractId, $contract) {
+        // Build e-sign metadata
+        $custStmt = $this->pdo->prepare("SELECT f_name, l_name, email FROM user WHERE user_id = ?");
+        $custStmt->execute([$_SESSION['user_id']]);
+        $cust = $custStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $signatureName = trim(($cust['f_name'] ?? '') . ' ' . ($cust['l_name'] ?? ''));
+        
+        $signatureMeta = [
+            'type' => 'pay_and_accept_confirmation',
+            'signed_by_user_id' => (int)$_SESSION['user_id'],
+            'signed_by_name' => $signatureName,
+            'signed_at' => gmdate('c'),
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? null
+        ];
+
+        $stmt = $this->pdo->prepare("
+            UPDATE contract 
+            SET status = 'active', 
+                terms_accepted = 1, 
+                terms_accepted_at = NOW(),
+                customer_response = 'accepted', 
+                customer_response_at = NOW(),
+                user_signature = 'E-SIGNED (PAID & ACCEPTED)',
+                customer_signature = ?,
+                signed_at = NOW(),
+                locked = 1,
+                escrow_enabled = 1
+            WHERE contract_id = ? AND customer_id = ?
+        ");
+        $stmt->execute([
+            json_encode($signatureMeta),
+            $contractId,
+            $_SESSION['user_id']
+        ]);
+
+        $this->addTimelineEvent($contractId, 'contract_accepted_paid', 'Contract accepted with initial payment received into Escrow');
+        
+        // Notify
+        $projectTitle = $contract['project_title'] ?? ('Contract #' . $contractId);
+        $companyId = $contract['company_id'];
+        $this->notifier->notify(
+            'Contract accepted & paid',
+            "Customer accepted and paid upfront for {$projectTitle}. You can now start the job.",
+            'company',
+            $companyId,
+            ['role' => 'user', 'id' => (int)$_SESSION['user_id'], 'name' => 'Customer']
+        );
+    }
+
+    /**
      * Check if contract has active undo window
      */
     public function checkUndoWindow() {
@@ -2731,64 +2871,158 @@ class ContractController {
     // ========================================
 
     public function submitMilestone() {
-        $milestoneId = $_POST['milestone_id'] ?? null;
-        $description = $_POST['completion_description'] ?? '';
-        
+        $milestoneId     = $_POST['milestone_id']          ?? null;
+        $comments        = $_POST['completion_description'] ?? '';
+        $actualQuantity  = $_POST['actual_quantity']        ?? null;
+        $proofFiles      = null; // future: handle file uploads as JSON
+
         if (!$milestoneId) {
             echo json_encode(['success' => false, 'message' => 'Milestone ID required']);
             return;
         }
-        
+
         try {
-            $this->pdo->beginTransaction();
-            
-            $stmt = $this->pdo->prepare("UPDATE milestone SET submitted_for_approval = 1, submitted_at = NOW(), completion_description = ? WHERE milestone_id = ?");
-            $stmt->execute([$description, $milestoneId]);
-            
-            $stmt = $this->pdo->prepare("SELECT contract_id, milestone_name FROM milestone WHERE milestone_id = ?");
-            $stmt->execute([$milestoneId]);
-            $milestone = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            $this->addTimelineEvent($milestone['contract_id'], 'milestone_submitted', "Milestone '{$milestone['milestone_name']}' submitted for approval");
-            $this->createNotification($milestone['contract_id'], 'milestone_submitted', "Milestone '{$milestone['milestone_name']}' is ready for your approval", 'customer');
-            
-            $this->pdo->commit();
-            echo json_encode(['success' => true, 'message' => 'Milestone submitted for approval']);
+            // Verify this milestone belongs to a contract owned by the logged-in company
+            $chk = $this->pdo->prepare("
+                SELECT cm.contract_id, cm.title as milestone_name, cm.unit_rate, cm.estimated_quantity,
+                       c.project_title, c.customer_id
+                FROM contract_milestone cm
+                JOIN contract c ON cm.contract_id = c.contract_id
+                WHERE cm.milestone_id = ? AND c.company_id = ?
+            ");
+            $companyId = $this->getCompanyId();
+            if (!$companyId) {
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+            $chk->execute([$milestoneId, $companyId]);
+            $m = $chk->fetch(PDO::FETCH_ASSOC);
+
+            if (!$m) {
+                echo json_encode(['success' => false, 'message' => 'Milestone not found or unauthorized']);
+                return;
+            }
+
+            $result = $this->model->markMilestoneCompleted(
+                $milestoneId,
+                $proofFiles,
+                $comments,
+                ($actualQuantity !== null && $actualQuantity !== '') ? (float)$actualQuantity : null
+            );
+
+            if (!$result) {
+                echo json_encode(['success' => false, 'message' => 'Could not submit milestone (check status)']);
+                return;
+            }
+
+            // Compute billing preview for response
+            $billingPreview = null;
+            if ($actualQuantity !== null && (float)($m['unit_rate'] ?? 0) > 0) {
+                $billingPreview = (float)$m['unit_rate'] * (float)$actualQuantity;
+            }
+
+            $this->addTimelineEvent(
+                $m['contract_id'],
+                'milestone_submitted',
+                "Milestone '{$m['milestone_name']}' submitted for verification"
+            );
+            $this->createNotification(
+                $m['contract_id'],
+                'milestone_submitted',
+                "Milestone '{$m['milestone_name']}' submitted — please verify the actual units and confirm payment.",
+                'customer'
+            );
+
+            echo json_encode([
+                'success'          => true,
+                'message'          => 'Milestone submitted for customer verification',
+                'billing_preview'  => $billingPreview,
+                'actual_quantity'  => $actualQuantity !== null ? (float)$actualQuantity : null,
+                'unit_rate'        => $m['unit_rate'] !== null ? (float)$m['unit_rate'] : null,
+            ]);
         } catch (Exception $e) {
-            $this->pdo->rollBack();
             error_log("Submit milestone error: " . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => 'Database error']);
+            echo json_encode(['success' => false, 'message' => 'Server error']);
         }
     }
 
     public function approveMilestone() {
         $milestoneId = $_POST['milestone_id'] ?? null;
-        
+
         if (!$milestoneId) {
             echo json_encode(['success' => false, 'message' => 'Milestone ID required']);
             return;
         }
-        
+
+        // Verify customer owns this contract
+        $customerId = $this->getCustomerId();
+        if (!$customerId) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
         try {
-            $this->pdo->beginTransaction();
-            
-            $stmt = $this->pdo->prepare("UPDATE milestone SET customer_approved = 1, customer_approved_at = NOW(), customer_verified = 1, customer_verified_at = NOW() WHERE milestone_id = ?");
+            // Check if this is a contract_milestone (new) or legacy milestone
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM contract_milestone WHERE milestone_id = ?");
             $stmt->execute([$milestoneId]);
-            
-            $stmt = $this->pdo->prepare("SELECT contract_id, milestone_name, amount FROM milestone WHERE milestone_id = ?");
-            $stmt->execute([$milestoneId]);
-            $milestone = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            $this->addTimelineEvent($milestone['contract_id'], 'milestone_approved', "Milestone '{$milestone['milestone_name']}' approved by customer");
-            $this->createNotification($milestone['contract_id'], 'milestone_approved', "Milestone '{$milestone['milestone_name']}' has been approved", 'company');
-            $this->createEscrowReleaseRequest($milestone['contract_id'], $milestoneId, $milestone['amount']);
-            
-            $this->pdo->commit();
-            echo json_encode(['success' => true, 'message' => 'Milestone approved successfully']);
+            $isNewMilestone = $stmt->fetchColumn() > 0;
+
+            if ($isNewMilestone) {
+                // Verify ownership
+                $ownStmt = $this->pdo->prepare("
+                    SELECT cm.contract_id, cm.title as milestone_name, c.company_id, c.project_title
+                    FROM contract_milestone cm
+                    JOIN contract c ON cm.contract_id = c.contract_id
+                    WHERE cm.milestone_id = ? AND c.customer_id = ?
+                ");
+                $ownStmt->execute([$milestoneId, $customerId]);
+                $m = $ownStmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$m) {
+                    echo json_encode(['success' => false, 'message' => 'Milestone not found or unauthorized']);
+                    return;
+                }
+
+                $result = $this->model->approveMilestone($milestoneId);
+
+                if ($result) {
+                    $billedAmount = is_array($result) ? ($result['billed_amount'] ?? 0) : 0;
+
+                    $this->addTimelineEvent($m['contract_id'], 'milestone_approved', "Milestone '{$m['milestone_name']}' verified and approved by customer");
+                    $this->createNotification(
+                        $m['contract_id'],
+                        'milestone_approved',
+                        "Milestone '{$m['milestone_name']}' approved — LKR " . number_format($billedAmount, 2) . " recorded as paid.",
+                        'company'
+                    );
+
+                    echo json_encode([
+                        'success'       => true,
+                        'message'       => 'Milestone approved and payment recorded',
+                        'billed_amount' => $billedAmount,
+                    ]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Failed to approve milestone']);
+                }
+            } else {
+                // Fallback legacy path
+                $this->pdo->beginTransaction();
+                $stmt = $this->pdo->prepare("UPDATE milestone SET customer_approved = 1, customer_approved_at = NOW(), customer_verified = 1, customer_verified_at = NOW() WHERE milestone_id = ?");
+                $stmt->execute([$milestoneId]);
+                $stmt = $this->pdo->prepare("SELECT contract_id, milestone_name, amount FROM milestone WHERE milestone_id = ?");
+                $stmt->execute([$milestoneId]);
+                $milestone = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($milestone) {
+                    $this->addTimelineEvent($milestone['contract_id'], 'milestone_approved', "Milestone '{$milestone['milestone_name']}' approved");
+                }
+                $this->pdo->commit();
+                echo json_encode(['success' => true, 'message' => 'Milestone approved successfully']);
+            }
         } catch (Exception $e) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
             error_log("Approve milestone error: " . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => 'Database error']);
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
 

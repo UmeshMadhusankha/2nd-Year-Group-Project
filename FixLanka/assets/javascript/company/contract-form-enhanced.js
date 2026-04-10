@@ -463,7 +463,7 @@
                 </div>
                 <div class="qs-preview-grid">
                     <div><span>Customer</span><strong>${esc(selectedQuotation.customer_fname)} ${esc(selectedQuotation.customer_lname)}</strong></div>
-                    <div><span>Amount</span><strong>LKR ${parseFloat(selectedQuotation.total_amount).toLocaleString()}</strong></div>
+                    <div><span>Amount</span><strong>LKR ${parseFloat(selectedQuotation.total_amount).toLocaleString()} ${selectedQuotation.labor_unit_label || selectedQuotation.material_unit_label ? ' (per unit)' : ''}</strong></div>
                     <div><span>Duration</span><strong>${selectedQuotation.estimated_duration || 'TBD'} days</strong></div>
                     <div><span>Payment</span><strong>${formatPaymentMethodLabel(selectedQuotation.payment_method)}</strong></div>
                 </div>
@@ -481,7 +481,9 @@
                 const result = await resp.json();
                 if (result.success) {
                     quotationFullData = result.data;
+                    updateUnitBasedLabels(result.data);
                     autoFillAllSections(result.data);
+                    applyUnitBasedMilestoneMode(); // Hide/show payment columns based on pricing type
                 } else {
                     // Fallback: use basic quotation data
                     autoFillFromBasicData(selectedQuotation);
@@ -572,6 +574,8 @@
 
         // Sync milestone payment columns + payment preview
         onPaymentMethodChange();
+        // Apply unit-based columns visibility after payment method has been set
+        applyUnitBasedMilestoneMode();
     }
 
     function autoFillFromBasicData(q) {
@@ -709,32 +713,36 @@
         const notice = document.getElementById('milestonePaymentNotice');
         if (notice) notice.style.display = isMilestone ? 'flex' : 'none';
 
-        // Recalc amounts for ALL methods now
-        autoDistributePayment(method);
-        recalcMilestoneAmountsAll();
-        recalcMilestoneTotals();
+        // Rebuild phase rows to match the selected payment method
+        resetMilestones();
 
+        // Sync amounts and generate preview (resetMilestones already calls recalc, but
+        // regenerate the payment preview which reads the updated rows)
         generatePaymentPreview();
     }
 
+
     function autoDistributePayment(method) {
+        // Row count is already correct after resetMilestones().
+        // Just ensure percentages match for fixed-split methods in case
+        // the user switched methods without triggering a full reset.
         const rows = document.querySelectorAll('#milestonesBody .milestone-row');
         if (rows.length === 0) return;
 
-        if (method === 'full_upfront') {
-            // First row 100%, others 0%
-            rows.forEach((row, index) => {
+        const pcts = {
+            'full_upfront': [100],
+            'completion': [100],
+            '50_50': [50, 50],
+            '30_70': [30, 70]
+        };
+
+        if (pcts[method]) {
+            rows.forEach((row, i) => {
                 const input = row.querySelector('.ms-pct-input');
-                if (input) input.value = (index === 0) ? 100 : 0;
-            });
-        } else if (method === 'completion') {
-            // Last row 100%, others 0%
-            rows.forEach((row, index) => {
-                const input = row.querySelector('.ms-pct-input');
-                if (input) input.value = (index === rows.length - 1) ? 100 : 0;
+                if (input) input.value = pcts[method][i] ?? 0;
             });
         }
-        // For other methods (milestone_based, 50_50, 30_70), we respect user input or defaults
+        // milestone_based: keep whatever the user has entered
     }
 
     function toggleMilestonePaymentColumns(show) {
@@ -747,31 +755,60 @@
         if (footer) footer.style.display = show ? '' : 'none';
     }
 
+    function applyUnitBasedMilestoneMode() {
+        const isUnitBased = quotationFullData?.labor_unit_label || quotationFullData?.material_unit_label;
+        // Hide payment columns entirely for unit-based; always show for fixed-price
+        document.querySelectorAll('#milestonesTable .ms-payment-col').forEach(el => {
+            el.style.display = isUnitBased ? 'none' : '';
+        });
+        const footer = document.getElementById('milestonesTotalRow');
+        if (footer) footer.style.display = isUnitBased ? 'none' : '';
+        const warning = document.getElementById('msTotalWarning');
+        if (warning && isUnitBased) warning.style.display = 'none';
+    }
+
     function recalcMilestoneAmountFromPct(pctInput) {
         const total = parseFloat(getVal('contractValue') || 0);
         const pct = parseFloat(pctInput.value || 0);
         const row = pctInput.closest('.milestone-row');
         const amountInput = row?.querySelector('.ms-amount-input');
         if (amountInput && total > 0) {
-            amountInput.value = (total * pct / 100).toFixed(0);
+            const isUnitBased = quotationFullData?.labor_unit_label || quotationFullData?.material_unit_label;
+            // If unit-based, don't divide the rate by percentage. The rate stays the same.
+            if (isUnitBased) {
+                amountInput.value = total.toFixed(0);
+            } else {
+                amountInput.value = (total * pct / 100).toFixed(0);
+            }
         }
     }
 
     function recalcMilestoneAmountsAll() {
         const total = parseFloat(getVal('contractValue') || 0);
+        const isUnitBased = quotationFullData?.labor_unit_label || quotationFullData?.material_unit_label;
         document.querySelectorAll('#milestonesBody .milestone-row').forEach(row => {
             const pctInput = row.querySelector('.ms-pct-input');
             const amountInput = row.querySelector('.ms-amount-input');
             if (pctInput && amountInput && total > 0) {
                 const pct = parseFloat(pctInput.value || 0);
-                amountInput.value = (total * pct / 100).toFixed(0);
+                if (isUnitBased) {
+                    amountInput.value = total.toFixed(0);
+                } else {
+                    amountInput.value = (total * pct / 100).toFixed(0);
+                }
             }
         });
     }
 
     function recalcMilestoneTotals() {
-        // Always run validation as columns are now always visible
+        const isUnitBased = quotationFullData?.labor_unit_label || quotationFullData?.material_unit_label;
         const warning = document.getElementById('msTotalWarning');
+
+        // For unit-based, no financial validation — hide warning, skip everything
+        if (isUnitBased) {
+            if (warning) warning.style.display = 'none';
+            return;
+        }
 
         let totalPct = 0;
         let totalAmount = 0;
@@ -941,6 +978,8 @@
             <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
         `;
         tbody.appendChild(tr);
+        // Ensure new row's payment columns follow current mode
+        applyUnitBasedMilestoneMode();
     }
 
     function renumberMilestones() {
@@ -954,43 +993,55 @@
         const tbody = document.getElementById('milestonesBody');
         if (!tbody) return;
 
-        const isMilestone = document.getElementById('paymentMethod')?.value === 'milestone_based';
-        const display = isMilestone ? '' : 'none';
+        const method = document.getElementById('paymentMethod')?.value || 'milestone_based';
 
-        tbody.innerHTML = `
-            <tr class="milestone-row">
-                <td>1</td>
-                <td><input type="text" name="ms_name[]" placeholder="Project Start" value="Project Commencement"></td>
-                <td><input type="text" name="ms_desc[]" placeholder="Description" value="Site preparation and initial setup"></td>
-                <td><input type="date" name="ms_date[]"></td>
-                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1" value="30"></td>
-                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
-                <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
-            </tr>
-            <tr class="milestone-row">
-                <td>2</td>
-                <td><input type="text" name="ms_name[]" placeholder="Midpoint" value="Mid-Project Review"></td>
-                <td><input type="text" name="ms_desc[]" placeholder="Description" value="Progress inspection and quality check"></td>
-                <td><input type="date" name="ms_date[]"></td>
-                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1" value="40"></td>
-                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
-                <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
-            </tr>
-            <tr class="milestone-row">
-                <td>3</td>
-                <td><input type="text" name="ms_name[]" placeholder="Completion" value="Project Handover"></td>
-                <td><input type="text" name="ms_desc[]" placeholder="Description" value="Final inspection, cleanup, and handover"></td>
-                <td><input type="date" name="ms_date[]"></td>
-                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1" value="30"></td>
-                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
-                <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
-            </tr>
-        `;
+        // Define templates keyed by payment method
+        // Each entry: array of { name, desc, pct }
+        const templates = {
+            'full_upfront': [
+                { name: 'Full Upfront Payment', desc: 'Full project payment collected before work begins', pct: 100 }
+            ],
+            'completion': [
+                { name: 'Payment on Completion', desc: 'Full payment collected after all work is completed and accepted', pct: 100 }
+            ],
+            '50_50': [
+                { name: 'Advance Payment (50%)', desc: 'First instalment paid at project commencement', pct: 50 },
+                { name: 'Final Payment (50%)', desc: 'Second instalment paid upon project completion', pct: 50 }
+            ],
+            '30_70': [
+                { name: 'Advance Payment (30%)', desc: 'Initial payment collected at project start', pct: 30 },
+                { name: 'Final Payment (70%)', desc: 'Remaining balance collected on project completion', pct: 70 }
+            ],
+            // milestone_based: 3-row editable template
+            'milestone_based': [
+                { name: 'Project Commencement', desc: 'Site preparation and initial setup', pct: 30 },
+                { name: 'Mid-Project Review', desc: 'Progress inspection and quality check', pct: 40 },
+                { name: 'Project Handover', desc: 'Final inspection, cleanup, and handover', pct: 30 }
+            ]
+        };
 
-        // Recalculate amounts if milestone-based
-        if (isMilestone) {
-            recalcMilestoneAmountsAll();
-            recalcMilestoneTotals();
+        const rows = templates[method] || templates['milestone_based'];
+
+        tbody.innerHTML = rows.map((r, i) => `
+            <tr class="milestone-row">
+                <td>${i + 1}</td>
+                <td><input type="text" name="ms_name[]" placeholder="Phase name" value="${r.name}"></td>
+                <td><input type="text" name="ms_desc[]" placeholder="Description" value="${r.desc}"></td>
+                <td><input type="date" name="ms_date[]"></td>
+                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1" value="${r.pct}"></td>
+                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
+                <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
+            </tr>
+        `).join('');
+
+        recalcMilestoneAmountsAll();
+        recalcMilestoneTotals();
+
+        // Pre-fill dates using the project's start and end dates
+        const start = document.getElementById('startDate')?.value;
+        const end = document.getElementById('endDate')?.value;
+        if (start && end) {
+            setMilestoneDates(start, end);
         }
     }
 
@@ -1040,7 +1091,8 @@
         const msBody = document.getElementById('previewMilestonesBody');
         if (msBody) {
             msBody.innerHTML = '';
-            const isMilestonePayment = getVal('paymentMethod') === 'milestone_based';
+            const isUnitBased = quotationFullData?.labor_unit_label || quotationFullData?.material_unit_label;
+            const isMilestonePayment = !isUnitBased && getVal('paymentMethod') === 'milestone_based';
             document.querySelectorAll('#milestonesBody .milestone-row').forEach((row, i) => {
                 const name = row.querySelector('input[name="ms_name[]"]')?.value || '';
                 const date = row.querySelector('input[name="ms_date[]"]')?.value || '';
@@ -1058,7 +1110,9 @@
 
         // Financial
         const totalVal = parseFloat(getVal('contractValue') || 0);
-        setText('previewValue', `LKR ${totalVal.toLocaleString()}`);
+        const isUnitBased = quotationFullData?.labor_unit_label || quotationFullData?.material_unit_label;
+        const totalSuffix = isUnitBased ? ' (per unit)' : '';
+        setText('previewValue', `LKR ${totalVal.toLocaleString()}${totalSuffix}`);
         const budgetTypes = { 'fixed': 'Fixed Price', 'time_based': 'Time-Based', 'flexible': 'Flexible (±10%)' };
         setText('previewBudgetType', budgetTypes[getVal('budgetType')] || 'Fixed');
         setText('previewPaymentMethod', formatPaymentMethodLabel(getVal('paymentMethod')));
@@ -1534,4 +1588,61 @@
         formDirty = false;
     };
 
+    function updateUnitBasedLabels(d) {
+        const isUnitBased = d.labor_unit_label || d.material_unit_label;
+        const suffix = isUnitBased ? ' (per unit)' : '';
+
+        // Update labels in Step 5 & 6
+        const contractValueLabel = document.querySelector('label[for="contractValue"]');
+        if (contractValueLabel) {
+            contractValueLabel.innerHTML = `Total Contract Value (LKR)${suffix} <span class="required">*</span>`;
+        }
+
+        const bdTotalLabel = document.querySelector('.breakdown-item.total span:first-child');
+        if (bdTotalLabel) {
+            bdTotalLabel.textContent = `Total${suffix}`;
+        }
+
+        // Milestone Table headers
+        const msAmountHeader = document.querySelector('#milestonesTable th:nth-child(6)');
+        if (msAmountHeader) {
+            msAmountHeader.textContent = `Amount (LKR)${suffix}`;
+        }
+
+        // Milestone Total label
+        const msTotalAmountCell = document.querySelector('#msTotalAmount')?.parentElement;
+        if (msTotalAmountCell) {
+            const unitSpanId = 'msTotalUnitSuffix';
+            let unitSpan = document.getElementById(unitSpanId);
+            if (!unitSpan) {
+                unitSpan = document.createElement('span');
+                unitSpan.id = unitSpanId;
+                msTotalAmountCell.appendChild(unitSpan);
+            }
+            unitSpan.textContent = suffix;
+        }
+
+        // Preview in Step 8
+        const previewValueCell = document.getElementById('previewValue')?.parentElement;
+        if (previewValueCell) {
+            const unitSpanId = 'previewValueUnitSuffix';
+            let unitSpan = document.getElementById(unitSpanId);
+            if (!unitSpan) {
+                unitSpan = document.createElement('span');
+                unitSpan.id = unitSpanId;
+                previewValueCell.appendChild(unitSpan);
+            }
+            unitSpan.textContent = suffix;
+        }
+    }
+
+    function esc(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
 })();

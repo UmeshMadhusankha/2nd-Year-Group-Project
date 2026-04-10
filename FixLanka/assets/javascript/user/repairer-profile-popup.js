@@ -20,7 +20,7 @@ function openRepairerProfile(repairerId, repairerData = null) {
     }
 
     const modal = document.getElementById('repairerProfileModal');
-    
+
     if (!modal) {
         console.error('Profile modal not found');
         if (DEBUG_REPAIRER_POPUP) console.groupEnd();
@@ -303,7 +303,7 @@ function generateStarsHTML(rating) {
  */
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
-    
+
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now - date);
@@ -313,7 +313,7 @@ function formatDate(dateString) {
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    
+
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
@@ -332,21 +332,21 @@ function escapeHtml(text) {
  * Request quote from repairer
  */
 function requestQuote() {
-    alert('Opening quote request form... (This will redirect to post job page in the actual application)');
+    window.showAlert('Opening quote request form... (This will redirect to post job page in the actual application)', 'info');
 }
 
 // Close modal on ESC key
-document.addEventListener('keydown', function(event) {
+document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
         closeRepairerProfile();
     }
 });
 
 // Prevent clicks inside modal content from closing the modal
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const modalContent = document.querySelector('.repairer-modal-content');
     if (modalContent) {
-        modalContent.addEventListener('click', function(event) {
+        modalContent.addEventListener('click', function (event) {
             event.stopPropagation();
         });
     }

@@ -46,7 +46,7 @@ body::before {
     z-index: 20000;
 }
 
-body > * {
+body>* {
     position: relative;
     z-index: 1;
 }
@@ -370,6 +370,7 @@ body.modal-open {
     box-shadow: 0 12px 30px rgba(var(--primary-rgb), 0.15);
     transform: translateY(-4px);
     border-color: rgba(var(--primary-rgb), 0.20);
+    z-index: 20;
 }
 
 .contract-card .job-card-header {
@@ -502,7 +503,7 @@ body.modal-open {
     flex-shrink: 0;
 }
 
-.contract-card .job-detail > div {
+.contract-card .job-detail>div {
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -597,10 +598,21 @@ body.modal-open {
     display: block;
 }
 
-.cstat-value.primary { color: var(--primary); }
-.cstat-value.warning { color: var(--warning); }
-.cstat-value.success { color: var(--success); }
-.cstat-value.info { color: var(--info); }
+.cstat-value.primary {
+    color: var(--primary);
+}
+
+.cstat-value.warning {
+    color: var(--warning);
+}
+
+.cstat-value.success {
+    color: var(--success);
+}
+
+.cstat-value.info {
+    color: var(--info);
+}
 
 .cstat-label {
     font-size: 0.78rem;
@@ -730,10 +742,28 @@ body.modal-open {
     color: var(--primary);
 }
 
-.cc-icon.active { background: rgba(var(--success-rgb), 0.12); color: var(--success); }
-.cc-icon.pending, .cc-icon.pending_signature, .cc-icon.draft { background: rgba(var(--warning-rgb), 0.12); color: var(--warning); }
-.cc-icon.completed { background: rgba(var(--info-rgb), 0.12); color: var(--info); }
-.cc-icon.terminated, .cc-icon.disputed { background: rgba(var(--danger-rgb), 0.12); color: var(--danger); }
+.cc-icon.active {
+    background: rgba(var(--success-rgb), 0.12);
+    color: var(--success);
+}
+
+.cc-icon.pending,
+.cc-icon.pending_signature,
+.cc-icon.draft {
+    background: rgba(var(--warning-rgb), 0.12);
+    color: var(--warning);
+}
+
+.cc-icon.completed {
+    background: rgba(var(--info-rgb), 0.12);
+    color: var(--info);
+}
+
+.cc-icon.terminated,
+.cc-icon.disputed {
+    background: rgba(var(--danger-rgb), 0.12);
+    color: var(--danger);
+}
 
 .cc-body {
     flex: 1;
@@ -804,14 +834,41 @@ body.modal-open {
     white-space: nowrap;
 }
 
-.cc-status.active { background: rgba(var(--success-rgb), 0.12); color: var(--success-dark); }
-.cc-status.in_progress { background: rgba(var(--info-rgb), 0.12); color: var(--info-dark); }
+.cc-status.active {
+    background: rgba(var(--success-rgb), 0.12);
+    color: var(--success-dark);
+}
+
+.cc-status.in_progress {
+    background: rgba(var(--info-rgb), 0.12);
+    color: var(--info-dark);
+}
+
 .cc-status.pending,
-.cc-status.pending_signature { background: rgba(var(--warning-rgb), 0.12); color: var(--warning-dark); }
-.cc-status.draft { background: rgba(var(--secondary-rgb), 0.06); color: var(--text-muted); }
-.cc-status.completed { background: rgba(var(--primary-rgb), 0.10); color: var(--primary-dark); }
-.cc-status.terminated { background: rgba(var(--danger-rgb), 0.12); color: var(--danger-dark); }
-.cc-status.disputed { background: rgba(var(--danger-rgb), 0.12); color: var(--danger-dark); }
+.cc-status.pending_signature {
+    background: rgba(var(--warning-rgb), 0.12);
+    color: var(--warning-dark);
+}
+
+.cc-status.draft {
+    background: rgba(var(--secondary-rgb), 0.06);
+    color: var(--text-muted);
+}
+
+.cc-status.completed {
+    background: rgba(var(--primary-rgb), 0.10);
+    color: var(--primary-dark);
+}
+
+.cc-status.terminated {
+    background: rgba(var(--danger-rgb), 0.12);
+    color: var(--danger-dark);
+}
+
+.cc-status.disputed {
+    background: rgba(var(--danger-rgb), 0.12);
+    color: var(--danger-dark);
+}
 
 /* =============================================
    CONTRACT DETAIL MODAL
@@ -822,7 +879,7 @@ body.modal-open {
     inset: 0;
     /* Must be above navbar (navbar is z-index: 10000) */
     z-index: 20000 !important;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(3px);
     justify-content: center;
     align-items: center;
@@ -848,8 +905,15 @@ body.modal-open {
 }
 
 @keyframes cdSlideIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Modal Header */
@@ -1256,15 +1320,44 @@ body.modal-open {
     color: var(--text-muted);
 }
 
-.cd-body .contract-status-badge.active { background: rgba(var(--success-rgb), 0.12); color: var(--success-dark); border-color: rgba(var(--success-rgb), 0.22); }
-.cd-body .contract-status-badge.in_progress { background: rgba(var(--info-rgb), 0.12); color: var(--info-dark); border-color: rgba(var(--info-rgb), 0.22); }
+.cd-body .contract-status-badge.active {
+    background: rgba(var(--success-rgb), 0.12);
+    color: var(--success-dark);
+    border-color: rgba(var(--success-rgb), 0.22);
+}
+
+.cd-body .contract-status-badge.in_progress {
+    background: rgba(var(--info-rgb), 0.12);
+    color: var(--info-dark);
+    border-color: rgba(var(--info-rgb), 0.22);
+}
+
 .cd-body .contract-status-badge.pending,
-.cd-body .contract-status-badge.pending_signature { background: rgba(var(--warning-rgb), 0.12); color: var(--warning-dark); border-color: rgba(var(--warning-rgb), 0.22); }
-.cd-body .contract-status-badge.draft { background: rgba(var(--secondary-rgb), 0.08); color: var(--text-muted); border-color: rgba(var(--secondary-rgb), 0.18); }
-.cd-body .contract-status-badge.completed { background: rgba(var(--primary-rgb), 0.10); color: var(--primary-dark); border-color: rgba(var(--primary-rgb), 0.22); }
+.cd-body .contract-status-badge.pending_signature {
+    background: rgba(var(--warning-rgb), 0.12);
+    color: var(--warning-dark);
+    border-color: rgba(var(--warning-rgb), 0.22);
+}
+
+.cd-body .contract-status-badge.draft {
+    background: rgba(var(--secondary-rgb), 0.08);
+    color: var(--text-muted);
+    border-color: rgba(var(--secondary-rgb), 0.18);
+}
+
+.cd-body .contract-status-badge.completed {
+    background: rgba(var(--primary-rgb), 0.10);
+    color: var(--primary-dark);
+    border-color: rgba(var(--primary-rgb), 0.22);
+}
+
 .cd-body .contract-status-badge.terminated,
 .cd-body .contract-status-badge.disputed,
-.cd-body .contract-status-badge.rejected { background: rgba(var(--danger-rgb), 0.12); color: var(--danger-dark); border-color: rgba(var(--danger-rgb), 0.22); }
+.cd-body .contract-status-badge.rejected {
+    background: rgba(var(--danger-rgb), 0.12);
+    color: var(--danger-dark);
+    border-color: rgba(var(--danger-rgb), 0.22);
+}
 
 .cd-body .preview-value {
     color: var(--primary-color);
@@ -1299,7 +1392,7 @@ body.modal-open {
     gap: var(--spacing-lg);
 }
 
-.cd-body .preview-parties > div strong {
+.cd-body .preview-parties>div strong {
     display: block;
     font-size: 11px;
     color: var(--text-muted);
@@ -1308,7 +1401,7 @@ body.modal-open {
     margin-bottom: 4px;
 }
 
-.cd-body .preview-parties > div span {
+.cd-body .preview-parties>div span {
     font-size: var(--font-size-base);
     font-weight: 700;
     color: var(--text-primary);
@@ -1329,7 +1422,7 @@ body.modal-open {
     grid-template-columns: 1fr 1fr 1fr;
 }
 
-.cd-body .preview-grid > div strong {
+.cd-body .preview-grid>div strong {
     font-size: 11px;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -1550,11 +1643,32 @@ body.modal-open {
     text-transform: capitalize;
 }
 
-.ms-status-badge.pending { background: rgba(var(--warning-rgb), 0.12); color: var(--warning-dark); }
-.ms-status-badge.in_progress { background: rgba(var(--info-rgb), 0.12); color: var(--info-dark); }
-.ms-status-badge.approved, .ms-status-badge.paid { background: rgba(var(--success-rgb), 0.12); color: var(--success-dark); }
-.ms-status-badge.submitted, .ms-status-badge.under_review { background: var(--purple-light); color: var(--purple-dark); }
-.ms-status-badge.rejected { background: rgba(var(--danger-rgb), 0.12); color: var(--danger-dark); }
+.ms-status-badge.pending {
+    background: rgba(var(--warning-rgb), 0.12);
+    color: var(--warning-dark);
+}
+
+.ms-status-badge.in_progress {
+    background: rgba(var(--info-rgb), 0.12);
+    color: var(--info-dark);
+}
+
+.ms-status-badge.approved,
+.ms-status-badge.paid {
+    background: rgba(var(--success-rgb), 0.12);
+    color: var(--success-dark);
+}
+
+.ms-status-badge.submitted,
+.ms-status-badge.under_review {
+    background: var(--purple-light);
+    color: var(--purple-dark);
+}
+
+.ms-status-badge.rejected {
+    background: rgba(var(--danger-rgb), 0.12);
+    color: var(--danger-dark);
+}
 
 /* Terms & Conditions */
 .cd-terms-content {
@@ -1605,7 +1719,9 @@ body.modal-open {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* =============================================
@@ -1713,8 +1829,9 @@ body.modal-open {
     padding: 0;
     border-left: none;
     backdrop-filter: none;
+    overflow: visible;
     min-height: 125px;
-    min-width: 1520px;
+    min-width: 1200px;
     cursor: pointer;
     transition: background var(--transition-fast);
 }
@@ -1728,6 +1845,7 @@ body.modal-open {
 .contracts-container.list-view .contract-card:hover {
     transform: none;
     background: rgba(var(--primary-rgb), 0.04);
+    z-index: 200;
 }
 
 .contracts-container.list-view .contract-card:first-of-type {
@@ -1913,7 +2031,7 @@ body.modal-open {
     border-left: none;
 }
 
-.contracts-container.list-view .card-meta-item > div {
+.contracts-container.list-view .card-meta-item>div {
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -2018,11 +2136,12 @@ body.modal-open {
     min-width: 220px;
     gap: 10px;
     display: flex;
-    justify-content: center;
+    justify-content: flex-end;
     align-items: center;
     flex-shrink: 0;
     background: transparent;
     border-left: none;
+    position: relative;
 }
 
 .contracts-container.list-view .card-action-btn {
@@ -2136,4 +2255,416 @@ body.modal-open {
         border-left: none;
         padding: 12px 16px;
     }
+}
+
+/* Card Action Dropdown Menu */
+.card-action-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% - 15px);
+    right: 16px;
+    background: white;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+    z-index: 1000;
+    min-width: 200px;
+    padding: 8px 0;
+}
+
+.card-action-menu.active {
+    display: block;
+    animation: cardMenuFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes cardMenuFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.card-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.card-menu-item:hover {
+    background: rgba(var(--primary-rgb), 0.08);
+    color: var(--primary-color);
+}
+
+.card-menu-item i {
+    width: 20px;
+    text-align: center;
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+.card-menu-item.danger-item:hover {
+    background: rgba(var(--danger-rgb), 0.08);
+    color: var(--danger-color);
+}
+
+.card-action-menu.is-fixed {
+    position: fixed !important;
+    margin: 0 !important;
+    z-index: 20000 !important;
+}
+
+/* === Escrow Payment Modal === */
+.payment-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.payment-modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.payment-modal {
+    background: white;
+    width: 100%;
+    max-width: 500px;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    transform: translateY(20px);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.payment-modal-overlay.show .payment-modal {
+    transform: translateY(0);
+}
+
+.payment-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.payment-icon {
+    width: 60px;
+    height: 60px;
+    background: #ecfdf5;
+    color: #10b981;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin: 0 auto 15px;
+}
+
+.payment-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.payment-amount-box {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.payment-label {
+    font-size: 0.875rem;
+    color: var(--text-medium);
+    margin-bottom: 5px;
+}
+
+.payment-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary-color);
+}
+
+.payment-info {
+    font-size: 0.9rem;
+    color: var(--text-medium);
+    background: #eff6ff;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+.payment-info i {
+    color: #3b82f6;
+    margin-right: 8px;
+}
+
+.payment-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.payment-card-sim {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+
+.payment-card-sim label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-medium);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.payment-card-sim input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid transparent;
+    background: #f1f5f9;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 1.1rem;
+}
+
+.payment-card-sim .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* === Custom Confirmation Modal === */
+.confirm-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30005;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.confirm-modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.confirm-modal {
+    background: white;
+    width: 100%;
+    max-width: 450px;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: scale(0.95);
+    transition: all 0.2s ease;
+}
+
+.confirm-modal-overlay.show .confirm-modal {
+    transform: scale(1);
+}
+
+.confirm-header {
+    margin-bottom: 20px;
+}
+
+.confirm-icon {
+    width: 48px;
+    height: 48px;
+    background: #fdf2f2;
+    color: #dc2626;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 16px;
+}
+
+.confirm-icon.primary {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.confirm-icon.success {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.confirm-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+}
+
+.confirm-message {
+    font-size: 0.9375rem;
+    color: var(--text-medium);
+    line-height: 1.5;
+}
+
+.confirm-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.confirm-footer button {
+    padding: 10px 18px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+/* ================================================
+   UNIT BILLING VERIFICATION CARD
+   (shown in milestone proof-review modal)
+   ================================================ */
+
+.unit-billing-card {
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.04) 0%, rgba(var(--info-rgb), 0.04) 100%);
+    border: 1px solid rgba(var(--primary-rgb), 0.18);
+    border-radius: var(--radius-md, 10px);
+    padding: 18px 20px;
+    margin: 14px 0;
+}
+
+.unit-billing-card h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary, #4f46e5);
+    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.unit-billing-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ub-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px dashed rgba(var(--primary-rgb), 0.10);
+}
+
+.ub-divider {
+    border-bottom: 2px solid rgba(var(--primary-rgb), 0.20);
+    margin: 4px 0;
+}
+
+.ub-row:last-child {
+    border-bottom: none;
+}
+
+.ub-label {
+    font-size: 0.83rem;
+    color: var(--text-medium, #64748b);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ub-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted, #94a3b8);
+    font-weight: 400;
+}
+
+.ub-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-dark, #1e293b);
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.ub-estimate {
+    color: var(--text-medium, #64748b);
+    font-weight: 500;
+}
+
+.ub-actual {
+    color: var(--info, #0ea5e9);
+}
+
+.ub-total .ub-label,
+.ub-total .ub-value {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.ub-pay-amount {
+    color: var(--success, #22c55e);
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+}
+
+.ub-note {
+    margin: 12px 0 0;
+    font-size: 0.8rem;
+    color: var(--text-medium, #64748b);
+    line-height: 1.5;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.ub-note i {
+    color: var(--primary, #4f46e5);
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.ub-note strong {
+    color: var(--success, #22c55e);
 }

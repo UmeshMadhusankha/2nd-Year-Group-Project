@@ -674,7 +674,7 @@ function createCompletedProjectLogItem(project) {
                         </div>
                         ${amount !== null ? `
                         <div class="quotation-amount-inline">
-                            <span class="amount-label">Total Amount:</span>
+                            <span class="amount-label">Total Amount${project.labor_unit_label || project.material_unit_label ? ' (per unit)' : ''}:</span>
                             <span class="amount-value">LKR ${formatNumber(amount)}</span>
                         </div>
                         ` : ''}
@@ -760,7 +760,7 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
                             </span>
                         </div>
                         <div class="quotation-amount-inline">
-                            <span class="amount-label">Total Amount:</span>
+                            <span class="amount-label">Total Amount${quotation.labor_unit_label || quotation.material_unit_label ? ' (per unit)' : ''}:</span>
                             <span class="amount-value">LKR ${formatNumber(amount)}</span>
                         </div>
                         ${isRejected && quotation.rejection_reason ? `
@@ -840,7 +840,7 @@ async function openQuotationModal(requestId) {
 
         // Show detailed error modal
         const daysExpired = Math.ceil((currentDate - requestDeadline) / (1000 * 60 * 60 * 24));
-        alert(
+        await window.showAlert(
             `âŒ Request Expired\n\n` +
             `This service request expired ${daysExpired} day(s) ago.\n` +
             `Deadline was: ${formatDate(request.finish_date)}\n\n` +
@@ -916,20 +916,17 @@ async function openQuotationModal(requestId) {
     updateDailyWorkHours();
     autoCalculateDuration();
 
-    // 6. Auto-fill Payment Method from company defaults (linked to payment structure)
+    // 6. Auto-fill Payment Method (default to empty for user selection)
     if (companyDefaults?.default_payment_terms) {
-        // Map old payment_terms to new payment_method
         const paymentTermsMap = {
-            'full_advance': 'upfront_final',
-            '50_50': '50-50',
-            '30_70': '30-70',
             'milestone': 'milestone',
-            'on_completion': 'milestone'
+            'on_completion': 'completion',
+            'time_material': 'time_material'
         };
-        const mappedMethod = paymentTermsMap[companyDefaults.default_payment_terms] || 'milestone';
+        const mappedMethod = paymentTermsMap[companyDefaults.default_payment_terms] || '';
         document.getElementById('payment-method').value = mappedMethod;
     } else {
-        document.getElementById('payment-method').value = '50-50'; // Default fallback
+        document.getElementById('payment-method').value = ''; // Default to placeholder
     }
     // Trigger payment method info update
     updatePaymentMethodInfo();
@@ -1118,11 +1115,29 @@ async function submitQuotation() {
 
     // Auto-determine pricing_type based on labor pricing method
     let pricing_type = 'fixed_price';
+    let labor_unit_label = null;
     const laborMethod = document.querySelector('input[name="labor_pricing_method"]:checked')?.value;
+
     if (laborMethod === 'hourly') {
         pricing_type = 'time_based';
-    } else if (laborMethod === 'per_sqm' || laborMethod === 'per_unit') {
+        labor_unit_label = 'per hour';
+    } else if (laborMethod === 'per_sqm') {
         pricing_type = 'hybrid';
+        labor_unit_label = 'per m²';
+    } else if (laborMethod === 'per_unit') {
+        pricing_type = 'hybrid';
+        labor_unit_label = 'per unit';
+    }
+
+    // Determine material unit label
+    let material_unit_label = null;
+    if (document.getElementById('vendor-supplies-materials')?.checked) {
+        const materialMethod = document.querySelector('input[name="material_pricing_method"]:checked')?.value;
+        if (materialMethod === 'per_sqm') {
+            material_unit_label = 'per m²';
+        } else if (materialMethod === 'per_unit') {
+            material_unit_label = 'per unit';
+        }
     }
 
     // Override if payment method is time_material
@@ -1178,13 +1193,21 @@ async function submitQuotation() {
         payment_terms: payment_terms, // Auto-generated from payment_method
         warranty_period: document.getElementById('warranty-period').value,
         additional_terms: document.getElementById('terms-conditions').value,
-        // ===== ADD BUSINESS LOGIC FIELDS TO FORM DATA =====
+        // ===== NEW BUSINESS LOGIC FIELDS =====
         budget_type: budget_type,
         payment_method: payment_method,
+        hourly_rate: hourly_rate,
+        spending_cap_multiplier: spending_cap_multiplier,
         pricing_type: pricing_type,
-        hourly_rate: hourly_rate ? parseFloat(hourly_rate) : null,
-        spending_cap_multiplier: parseFloat(spending_cap_multiplier)
-        // ===== END BUSINESS LOGIC FIELDS =====
+        labor_unit_label: labor_unit_label,
+        material_unit_label: material_unit_label,
+
+        // Also include work schedule fields
+        work_schedule_type: document.querySelector('input[name="work_schedule_type"]:checked')?.value || 'weekdays_only',
+        working_days_per_week: parseInt(document.getElementById('working-days-per-week')?.value) || 5,
+        daily_work_hours: parseFloat(document.getElementById('daily-work-hours')?.value) || 8.00,
+        work_start_time: document.getElementById('work-start-time')?.value || '08:00:00',
+        work_end_time: document.getElementById('work-end-time')?.value || '17:00:00'
     };
 
 
@@ -1269,7 +1292,13 @@ async function submitQuotation() {
 async function deleteQuotation(quotationId) {
 
     // Confirm deletion with user
-    if (!confirm('Are you sure you want to delete this quotation? This action cannot be undone.')) {
+    const confirmed = await window.showConfirm('Are you sure you want to delete this quotation? This action cannot be undone.', {
+        title: 'Delete Quotation',
+        confirmText: 'Delete',
+        type: 'danger'
+    });
+
+    if (!confirmed) {
         return;
     }
 
@@ -1541,108 +1570,17 @@ function calculateTotal() {
  * Initialize date validation
  */
 function initializeDateValidation() {
-    const startDate = document.getElementById('estimated-start-date');
-    const completionDate = document.getElementById('estimated-completion-date');
-    const duration = document.getElementById('estimated-duration');
-
-    if (startDate) {
-        startDate.addEventListener('change', () => {
-            if (completionDate) {
-                completionDate.min = startDate.value;
-            }
-            // Auto-calculate duration when dates change
-            autoCalculateDuration();
-        });
-    }
-
-    if (completionDate) {
-        completionDate.addEventListener('change', () => {
-            // Auto-calculate duration when dates change
-            autoCalculateDuration();
-        });
-    }
+    // Automated duration calculation from date range is now disabled as per requirements
+    // We keep the fields available in case they are needed for legacy reasons but no longer auto-calculate
 }
 
 /**
  * Auto-calculate duration between start and completion dates
  */
 function autoCalculateDuration() {
-    const startDateInput = document.getElementById('estimated-start-date');
-    const completionDateInput = document.getElementById('estimated-completion-date');
-    const durationInput = document.getElementById('estimated-duration');
-    const scheduleType = document.getElementById('work-schedule-type')?.value || 'weekdays_only';
-
-    if (startDateInput && completionDateInput && durationInput) {
-        const startDate = new Date(startDateInput.value);
-        const completionDate = new Date(completionDateInput.value);
-
-        // Validate that both dates are set
-        if (!startDateInput.value || !completionDateInput.value) {
-            durationInput.value = '';
-            return;
-        }
-
-        // Check if completion date is before start date
-        if (completionDate < startDate) {
-            durationInput.value = '';
-            durationInput.classList.add('error');
-            showToast('Completion date cannot be before start date!', 'error', 3000);
-
-            // Auto-fix: Set completion to start + 7 days
-            const fixedCompletion = new Date(startDate);
-            fixedCompletion.setDate(fixedCompletion.getDate() + 7);
-            completionDateInput.value = fixedCompletion.toISOString().split('T')[0];
-
-            // Recalculate with fixed date
-            const fixedDuration = calculateWorkingDaysBetweenDates(startDate, fixedCompletion, scheduleType);
-            durationInput.value = fixedDuration;
-            durationInput.classList.remove('error');
-            calculateTotalWorkHours();
-            updateSchedulePreview();
-            return;
-        }
-
-        // Calculate duration (in working days) based on schedule type
-        let durationDays = calculateWorkingDaysBetweenDates(startDate, completionDate, scheduleType);
-
-        // Backend requires duration > 0. If the chosen range contains no working days for this schedule,
-        // adjust completion date forward until at least 1 working day exists.
-        if (durationDays <= 0) {
-            const adjustedCompletion = new Date(completionDate);
-            let guard = 0;
-            while (durationDays <= 0 && guard < 31) {
-                adjustedCompletion.setDate(adjustedCompletion.getDate() + 1);
-                durationDays = calculateWorkingDaysBetweenDates(startDate, adjustedCompletion, scheduleType);
-                guard++;
-            }
-
-            if (guard > 0) {
-                completionDateInput.value = adjustedCompletion.toISOString().split('T')[0];
-                showToast('Selected date range has no working days for this schedule. Completion date adjusted.', 'warning', 4000);
-            }
-
-            if (durationDays <= 0) {
-                durationDays = 1;
-            }
-        }
-
-        // Warn if start and completion are the same day
-        if (startDateInput.value === completionDateInput.value) {
-            showToast('Same-day completion selected. Are you sure?', 'warning', 3000);
-        }
-
-        // Warn if duration is very long (> 90 days)
-        if (durationDays > 90) {
-            showToast(`Duration is ${durationDays} days. Please verify this is correct.`, 'warning', 3000);
-        }
-
-        durationInput.value = durationDays;
-        durationInput.classList.remove('error');
-
-        // Duration affects total hours + preview
-        calculateTotalWorkHours();
-        updateSchedulePreview();
-    }
+    // Automated duration calculation is now disabled.
+    // Companies now provide unit-based rates instead of auto-calculated fixed prices.
+    return;
 }
 
 /**
@@ -2019,7 +1957,12 @@ function createDirectRequestRow(request) {
  * @param {number} requestId - ID of the request to accept
  */
 async function acceptDirectRequest(requestId) {
-    if (!confirm('Accept this direct request? This will create a contract with the customer.')) {
+    const confirmed = await window.showConfirm('Accept this direct request? This will create a contract with the customer.', {
+        title: 'Accept Request',
+        confirmText: 'Accept'
+    });
+
+    if (!confirmed) {
         return;
     }
 
@@ -2049,7 +1992,12 @@ async function acceptDirectRequest(requestId) {
  * @param {number} requestId - ID of the request to reject
  */
 async function rejectDirectRequest(requestId) {
-    const reason = prompt('Please provide a reason for declining this request:');
+    const reason = await window.showPrompt('Please provide a reason for declining this request:', {
+        title: 'Decline Request',
+        confirmText: 'Decline',
+        placeholder: 'Reason for declining...'
+    });
+
     if (!reason || reason.trim() === '') {
         showToast('Decline cancelled - reason is required', 'info');
         return;
@@ -2329,28 +2277,15 @@ function calculateTotalWorkHours() {
     const dailyWorkHours = parseFloat(document.getElementById('daily-work-hours')?.value) || 0;
 
     const totalHoursField = document.getElementById('total-work-hours');
-    const laborHoursField = document.getElementById('labor-quantity'); // Hourly labor pricing field
+
+    // Auto-population of labor quantity is now disabled.
+    // Labor is now manually entered as a unit rate.
 
     if (estimatedDuration > 0 && dailyWorkHours > 0 && totalHoursField) {
         const totalHours = (estimatedDuration * dailyWorkHours).toFixed(2);
-
-        // Update work schedule total hours
         totalHoursField.value = totalHours;
-
-        // 💡 Auto-populate hourly labor "Number of Hours" field
-        if (laborHoursField) {
-            laborHoursField.value = totalHours;
-            // Trigger change event to recalculate labor cost
-            laborHoursField.dispatchEvent(new Event('input', { bubbles: true }));
-            console.log(`✅ Auto-filled hourly labor hours: ${totalHours}`);
-        }
-
-        console.log(`📊 Total work hours calculated: ${totalHours} (${estimatedDuration} days × ${dailyWorkHours} hrs)`);
     } else if (totalHoursField) {
         totalHoursField.value = '';
-        if (laborHoursField) {
-            laborHoursField.value = '';
-        }
     }
 }
 

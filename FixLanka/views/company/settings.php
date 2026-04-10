@@ -12,6 +12,8 @@ $userData = getUserData();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - FixLanka Company Dashboard</title>
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/common.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/settings.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../assets/css/company/settings.css')); ?>">
@@ -322,6 +324,7 @@ $userData = getUserData();
     </div>
 
     <!-- Scripts -->
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
 
     <script>
@@ -509,9 +512,15 @@ $userData = getUserData();
                 }
             }
 
-            function cancelChanges() {
+            async function cancelChanges() {
                 if (hasUnsavedChanges) {
-                    if (confirm('Are you sure you want to discard your changes?')) {
+                    const confirmed = await window.showConfirm('Are you sure you want to discard your changes?', {
+                        title: 'Discard Changes',
+                        confirmText: 'Discard',
+                        type: 'warning'
+                    });
+
+                    if (confirmed) {
                         fetchSettings();
                         showToast('Changes discarded', 'success');
                     }
@@ -664,7 +673,14 @@ $userData = getUserData();
 
             async function revokeSession(sessionId) {
                 if (!sessionId) return;
-                if (!confirm('Revoke this session? The user will be logged out on that device.')) return;
+                
+                const confirmed = await window.showConfirm('Revoke this session? The user will be logged out on that device.', {
+                    title: 'Revoke Session',
+                    confirmText: 'Revoke',
+                    type: 'warning'
+                });
+
+                if (!confirmed) return;
 
                 try {
                     const response = await fetch(SETTINGS_API, {
@@ -686,7 +702,13 @@ $userData = getUserData();
             }
 
             async function revokeAllSessions() {
-                if (!confirm('Are you sure you want to revoke all other sessions? You will remain logged in on this device.')) {
+                const confirmed = await window.showConfirm('Are you sure you want to revoke all other sessions? You will remain logged in on this device.', {
+                    title: 'Revoke All Sessions',
+                    confirmText: 'Revoke All',
+                    type: 'warning'
+                });
+
+                if (!confirmed) {
                     return;
                 }
 

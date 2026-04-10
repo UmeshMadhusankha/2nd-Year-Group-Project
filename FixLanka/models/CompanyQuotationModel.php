@@ -68,12 +68,12 @@ class CompanyQuotation
                 request_id, user_id, title, description,
                 labor_cost, material_cost, transport_cost, other_charges,
                 total_amount, start_date, completion_date, estimated_duration,
-                payment_terms, warranty_period, additional_terms, status
+                payment_terms, warranty_period, additional_terms, labor_unit_label, material_unit_label, status
             ) VALUES (
                 :request_id, :user_id, :title, :description,
                 :labor_cost, :material_cost, :transport_cost, :other_charges,
                 :total_amount, :start_date, :completion_date, :estimated_duration,
-                :payment_terms, :warranty_period, :additional_terms, :status
+                :payment_terms, :warranty_period, :additional_terms, :labor_unit_label, :material_unit_label, :status
             )";
 
             $stmt = $this->pdo->prepare($sql);
@@ -96,6 +96,8 @@ class CompanyQuotation
                 ':payment_terms'     => $data['payment_terms'] ?? null,
                 ':warranty_period'   => $data['warranty_period'] ?? null,
                 ':additional_terms'  => $data['additional_terms'] ?? null,
+                ':labor_unit_label'  => $data['labor_unit_label'] ?? null,
+                ':material_unit_label'=> $data['material_unit_label'] ?? null,
                 ':status'            => $status
             ]);
 
@@ -264,7 +266,9 @@ class CompanyQuotation
                 estimated_duration = :estimated_duration,
                 payment_terms = :payment_terms,
                 warranty_period = :warranty_period,
-                additional_terms = :additional_terms
+                additional_terms = :additional_terms,
+                labor_unit_label = :labor_unit_label,
+                material_unit_label = :material_unit_label
             WHERE quotation_id = :quotation_id AND status = :status";
 
             $stmt = $this->pdo->prepare($sql);
@@ -284,6 +288,8 @@ class CompanyQuotation
                 ':payment_terms' => $data['payment_terms'] ?? null,
                 ':warranty_period' => $data['warranty_period'] ?? null,
                 ':additional_terms' => $data['additional_terms'] ?? null,
+                ':labor_unit_label' => $data['labor_unit_label'] ?? null,
+                ':material_unit_label' => $data['material_unit_label'] ?? null,
                 ':status' => self::STATUS_PENDING
             ]);
 
@@ -452,6 +458,7 @@ class CompanyQuotation
                         payment_terms, payment_method, pricing_type, hourly_rate, spending_cap_multiplier,
                         work_schedule_type, working_days_per_week, daily_work_hours,
                         work_start_time, work_end_time, custom_schedule_json,
+                        labor_unit_label, material_unit_label,
                         warranty_period, additional_terms, status
                     ) VALUES (
                         :request_id, :company_id, :user_id, :title, :description,
@@ -461,6 +468,7 @@ class CompanyQuotation
                         :payment_terms, :payment_method, :pricing_type, :hourly_rate, :spending_cap_multiplier,
                         :work_schedule_type, :working_days_per_week, :daily_work_hours,
                         :work_start_time, :work_end_time, :custom_schedule_json,
+                        :labor_unit_label, :material_unit_label,
                         :warranty_period, :additional_terms, :status
                     )";
 
@@ -506,6 +514,8 @@ class CompanyQuotation
                 ':work_start_time' => $data['work_start_time'] ?? '08:00:00',
                 ':work_end_time' => $data['work_end_time'] ?? '17:00:00',
                 ':custom_schedule_json' => $data['custom_schedule_json'] ?? $data['custom_schedule_details'] ?? null,
+                ':labor_unit_label' => $data['labor_unit_label'] ?? null,
+                ':material_unit_label' => $data['material_unit_label'] ?? null,
                 ':warranty_period' => $data['warranty_period'] ?? null,
                 ':additional_terms' => $data['additional_terms'] ?? null,
                 ':status' => $data['status'] ?? self::STATUS_PENDING
@@ -627,6 +637,8 @@ class CompanyQuotation
                         work_start_time = :work_start_time,
                         work_end_time = :work_end_time,
                         custom_schedule_json = :custom_schedule_json,
+                        labor_unit_label = :labor_unit_label,
+                        material_unit_label = :material_unit_label,
                         warranty_period = :warranty_period,
                         additional_terms = :additional_terms
                     WHERE quotation_id = :quotation_id";
@@ -658,6 +670,8 @@ class CompanyQuotation
                 ':work_start_time' => $data['work_start_time'] ?? '08:00:00',
                 ':work_end_time' => $data['work_end_time'] ?? '17:00:00',
                 ':custom_schedule_json' => $data['custom_schedule_json'] ?? $data['custom_schedule_details'] ?? null,
+                ':labor_unit_label' => $data['labor_unit_label'] ?? null,
+                ':material_unit_label' => $data['material_unit_label'] ?? null,
                 ':warranty_period' => $data['warranty_period'] ?? null,
                 ':additional_terms' => $data['additional_terms'] ?? null
             ]);
