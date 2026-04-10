@@ -2430,15 +2430,7 @@ class ContractController {
                     throw new Exception("Contract not found or not authorized to accept.");
                 }
 
-                // Make the associated project active (in_progress)
-                $stmtProj = $this->pdo->prepare("
-                    UPDATE project p
-                    INNER JOIN contract c ON p.project_id = c.project_id
-                    SET p.status = 'in_progress',
-                        p.progress = 0
-                    WHERE c.contract_id = ?
-                ");
-                $stmtProj->execute([$contractId]);
+
 
                 $this->addTimelineEvent($contractId, 'contract_accepted', 'Contract accepted by customer');
 
