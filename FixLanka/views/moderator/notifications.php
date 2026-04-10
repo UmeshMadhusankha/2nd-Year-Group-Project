@@ -1,46 +1,156 @@
 <?php
-// Start session only if not already started
+// notifications.php - Pure PHP MVC - ABSOLUTE PATHS (100% WORKING)
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Include components
 require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
 require_once __DIR__ . '/_components/Common.php';
-require_once '../../includes/admin-modarator/auth.php';
-require_once '../../includes/admin-modarator/mock-data.php';
+require_once __DIR__ . '/../../config/databse.php';
+require_once __DIR__ . '/../../models/NotificationModel.php';
 
-require_once __DIR__ . '/_components/notifications/NotificationCard.php';
-require_once __DIR__ . '/_components/notifications/NotificationForm.php';
-require_once __DIR__ . '/_components/notifications/NotificationFilters.php';
-require_once __DIR__ . '/_components/notifications/NotificationStats.php';
-require_once __DIR__ . '/_components/notifications/Modals.php';
-require_once __DIR__ . '/_components/notifications/mock-data.php';
+$currentUser = function_exists('getCurrentUser') ? getCurrentUser() : null;
+$currentUserId = (int)($currentUser['id'] ?? ($_SESSION['user_id'] ?? 0));
+$currentUserRole = (string)($currentUser['role'] ?? ($_SESSION['user_role'] ?? 'moderator'));
+$currentUserName = (string)($currentUser['name'] ?? ($_SESSION['user_name'] ?? 'Moderator'));
 
+// Handle POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    
+    try {
+        $model = new NotificationModel($pdo);
+        
+        switch ($action) {
+            case 'add':
+                $title = trim($_POST['title'] ?? '');
+                $message = trim($_POST['message'] ?? '');
+                $recipients = trim($_POST['recipients'] ?? '');
+                
+                if (empty($title) || empty($message) || empty($recipients)) {
+                    $_SESSION['error_message'] = 'All fields required';
+                    break;
+                }
+                
+                $recipientTypeMap = ['all' => 'all', 'providers' => 'repairer', 'customers' => 'user', 'companies' => 'company'];
+                $recipient_type = $recipientTypeMap[$recipients] ?? 'all';
+                
+                $model->createNotification($title, $message, $recipient_type, 'sent', [
+                    'id' => $currentUserId,
+                    'role' => $currentUserRole,
+                    'name' => $currentUserName,
+                ]);
+                $_SESSION['success_message'] = 'Notification sent successfully!';
+                break;
+                
+            case 'update':
+                $notification_id = (int)($_POST['notification_id'] ?? 0);
+                $title = trim($_POST['title'] ?? '');
+                $message = trim($_POST['message'] ?? '');
+                $recipients = trim($_POST['recipients'] ?? '');
+                
+                if (!$notification_id || empty($title) || empty($message) || empty($recipients)) {
+                    $_SESSION['error_message'] = 'All fields required';
+                    break;
+                }
+                
+                $recipientTypeMap = ['all' => 'all', 'providers' => 'repairer', 'customers' => 'user', 'companies' => 'company'];
+                $recipient_type = $recipientTypeMap[$recipients] ?? 'all';
+                
+                $existing = $model->getNotificationById($notification_id);
+                if (!$existing) {
+                    $_SESSION['error_message'] = 'Notification not found';
+                    break;
+                }
 
-// Check if user is logged in and get user info
-// $isLoggedIn = isLoggedIn();
-// $user = $isLoggedIn ? getCurrentUser() : null;
-// requireRole("moderator", $basePath);
-// $user = getCurrentUser();
+                if (strtolower($currentUserRole) === 'moderator' && strtolower((string)($existing['created_by_role'] ?? '')) === 'admin') {
+                    $_SESSION['error_message'] = 'Moderator cannot edit notifications created by admin';
+                    break;
+                }
 
-$notifications = [];
-$stats = [];
-$templates = getNotificationTemplates() ?? [];
-$isLoading = true;
+                $updated = $model->updateNotification($notification_id, $title, $message, $recipient_type, [
+                    'id' => $currentUserId,
+                    'role' => $currentUserRole,
+                    'name' => $currentUserName,
+                ]);
+                if (!$updated) {
+                    $_SESSION['error_message'] = 'Unable to update notification';
+                    break;
+                }
+                $_SESSION['success_message'] = 'Notification updated successfully!';
+                break;
+                
+            case 'delete':
+                $notification_id = (int)($_POST['notification_id'] ?? 0);
+                
+                if (!$notification_id) {
+                    $_SESSION['error_message'] = 'ID required';
+                    break;
+                }
+                
+                $existing = $model->getNotificationById($notification_id);
+                if (!$existing) {
+                    $_SESSION['error_message'] = 'Notification not found';
+                    break;
+                }
 
-// Get mock notifications data
-$notificationsData = getEnhancedMockNotifications();
+                if (strtolower($currentUserRole) === 'moderator' && strtolower((string)($existing['created_by_role'] ?? '')) === 'admin') {
+                    $_SESSION['error_message'] = 'Moderator cannot delete notifications created by admin';
+                    break;
+                }
 
-$message = '';
+                $rowsAffected = $model->deleteNotification($notification_id, [
+                    'id' => $currentUserId,
+                    'role' => $currentUserRole,
+                    'name' => $currentUserName,
+                ]);
+                
+                if ($rowsAffected > 0) {
+                    $_SESSION['success_message'] = 'Notification deleted successfully!';
+                } else {
+                    $_SESSION['error_message'] = 'Notification not found';
+                }
+                break;
+        }
+        
+        // ABSOLUTE PATH redirect - NO 404 ERRORS
+        header('Location: /2nd-Year-Group-Project/FixLanka/views/moderator/notifications.php');
+        exit;
+        
+    } catch (Exception $e) {
+        error_log("Error: " . $e->getMessage());
+        $_SESSION['error_message'] = 'An error occurred. Please try again.';
+        header('Location: /2nd-Year-Group-Project/FixLanka/views/moderator/notifications.php');
+        exit;
+    }
+}
+
+// Fetch data
+try {
+    $model = new NotificationModel($pdo);
+    // For moderation/management view, show the latest notifications regardless of recipient type.
+    $recentNotifications = array_slice($model->getAllNotifications(), 0, 5);
+    $stats = $model->getNotificationStats();
+} catch (Exception $e) {
+    error_log("Error: " . $e->getMessage());
+    $recentNotifications = [];
+    $stats = ['total' => 0, 'sent' => 0, 'pending' => 0, 'failed' => 0];
+}
+
 $basePath = '';
-$currentPath = 'notifications';
+$currentPath = '/2nd-Year-Group-Project/FixLanka/moderator-notifications';
 
-// Get page title and description from variables or use defaults
-$pageTitle = $title ?? 'Advanced PHP Router';
-$pageDescription = $description ?? 'A Next.js-inspired PHP routing system with advanced features';
+$successMessage = $_SESSION['success_message'] ?? '';
+$errorMessage = $_SESSION['error_message'] ?? '';
+unset($_SESSION['success_message'], $_SESSION['error_message']);
+
+$pageTitle = 'Notifications';
+$pageDescription = 'Send notifications and manage communication';
+
+require_once __DIR__ . '/_components/notifications/mock-data.php';
+$templates = getNotificationTemplates() ?? [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -48,80 +158,120 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/notifications.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin/moderators.css">
 </head>
 
 <body class="bg-foreground text-background">
-    <!-- Sidebar Toggle Checkbox -->
     <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle-input">
 
     <div class="dashboard-container">
         <?php renderModeratorSidebar($currentPath, $basePath); ?>
+        
         <div class="dashboard-main">
             <?php renderPageHeader($basePath, 'Notifications', 'Send notifications and manage communication with advanced filtering'); ?>
-            <link rel="stylesheet" href="../../assets/css/moderator/notifications.css">
-            <link rel="stylesheet" href="../../assets/css/moderator/modals.css">
 
-            <div id="loadingOverlay" class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-                <div class="flex flex-col items-center space-y-4">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-fixlanka-primary"></div>
-                    <p class="text-foreground font-medium">Loading notifications...</p>
-                </div>
-            </div>
-
-            <div id="errorAlert" class="hidden fixed top-4 right-4 z-50 max-w-md">
-                <div class="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg shadow-lg">
-                    <div class="flex items-start">
-                        <i data-lucide="alert-circle" class="h-5 w-5 mr-2 flex-shrink-0 mt-0.5"></i>
-                        <div class="flex-1">
-                            <p class="font-medium">Error</p>
-                            <p id="errorMessage" class="text-sm mt-1"></p>
-                        </div>
-                        <button onclick="closeError()" class="ml-4 text-red-500 hover:text-red-600">
-                            <i data-lucide="x" class="h-4 w-4"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="successAlert" class="hidden fixed top-4 right-4 z-50 max-w-md">
+            <?php if ($successMessage): ?>
+            <div id="successAlert" class="fixed top-4 right-4 z-50 max-w-md">
                 <div class="bg-green-500/10 border border-green-500 text-green-500 px-4 py-3 rounded-lg shadow-lg">
                     <div class="flex items-start">
                         <i data-lucide="check-circle" class="h-5 w-5 mr-2 flex-shrink-0 mt-0.5"></i>
                         <div class="flex-1">
                             <p class="font-medium">Success</p>
-                            <p id="successMessage" class="text-sm mt-1"></p>
+                            <p class="text-sm mt-1"><?php echo htmlspecialchars($successMessage); ?></p>
                         </div>
-                        <button onclick="closeSuccess()" class="ml-4 text-green-500 hover:text-green-600">
-                            <i data-lucide="x" class="h-4 w-4"></i>
-                        </button>
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
+
+            <?php if ($errorMessage): ?>
+            <div id="errorAlert" class="fixed top-4 right-4 z-50 max-w-md">
+                <div class="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg shadow-lg">
+                    <div class="flex items-start">
+                        <i data-lucide="alert-circle" class="h-5 w-5 mr-2 flex-shrink-0 mt-0.5"></i>
+                        <div class="flex-1">
+                            <p class="font-medium">Error</p>
+                            <p class="text-sm mt-1"><?php echo htmlspecialchars($errorMessage); ?></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <main style="margin-top: 5rem;" class="notifications-content">
                 <div class="space-y-6">
+                    <!-- Page Header -->
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-3xl font-bold tracking-tight text-foreground">Notifications Dashboard</h2>
+                            <h2 class="text-3xl font-bold tracking-tight text-foreground">Notifications</h2>
                             <p class="text-muted-foreground">Send notifications and manage user communication with powerful filtering and sorting</p>
                         </div>
                         <div class="flex items-center space-x-3">
-                            <a href="<?= $basePath ?>/moderator/notifications/all" class="btn btn-outline">
+                            <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/all_notifications.php" class="btn btn-outline" style="text-decoration: none;">
                                 <i data-lucide="list" class="mr-2 h-4 w-4"></i>
                                 View All Notifications
                             </a>
-                            <button onclick="refreshNotifications()" class="btn btn-secondary" id="refreshBtn">
+                            <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/notifications.php" class="btn btn-secondary" style="text-decoration: none;">
                                 <i data-lucide="refresh-cw" class="mr-2 h-4 w-4"></i>
                                 Refresh
-                            </button>
+                            </a>
                         </div>
                     </div>
 
-                    <div id="statsContainer">
+                    <!-- Stats Cards (Matching Advertisement Review Style) -->
+                    <div class="stats-grid-new">
+                        <!-- Total Sent Card (Blue) -->
+                        <div class="stat-card-new stat-card-blue">
+                            <div class="stat-card-icon">
+                                <i data-lucide="send" class="h-8 w-8"></i>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="stat-card-number"><?php echo $stats['total'] ?? 0; ?></div>
+                                <div class="stat-card-label">Total Sent</div>
+                                <div class="stat-card-sublabel">All submissions</div>
+                            </div>
+                        </div>
+
+                        <!-- Sent Card (Green) -->
+                        <div class="stat-card-new stat-card-green">
+                            <div class="stat-card-icon">
+                                <i data-lucide="check-circle" class="h-8 w-8"></i>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="stat-card-number"><?php echo $stats['sent'] ?? 0; ?></div>
+                                <div class="stat-card-label">Sent</div>
+                                <div class="stat-card-sublabel">Currently active</div>
+                            </div>
+                        </div>
+
+                        <!-- Pending Card (Orange) -->
+                        <div class="stat-card-new stat-card-orange">
+                            <div class="stat-card-icon">
+                                <i data-lucide="clock" class="h-8 w-8"></i>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="stat-card-number"><?php echo $stats['pending'] ?? 0; ?></div>
+                                <div class="stat-card-label">Pending</div>
+                                <div class="stat-card-sublabel">Awaiting approval</div>
+                            </div>
+                        </div>
+
+                        <!-- Failed Card (Red) -->
+                        <div class="stat-card-new stat-card-red">
+                            <div class="stat-card-icon">
+                                <i data-lucide="x-circle" class="h-8 w-8"></i>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="stat-card-number"><?php echo $stats['failed'] ?? 0; ?></div>
+                                <div class="stat-card-label">Failed</div>
+                                <div class="stat-card-sublabel">Not approved</div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="notifications-grid">
+                        <!-- Send Form -->
                         <div class="send-notification-card">
                             <div class="p-6">
                                 <h3 class="text-lg font-medium text-foreground flex items-center gap-2">
@@ -129,10 +279,10 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                                     Send Notification
                                 </h3>
                                 <p class="text-sm text-muted-foreground">Broadcast messages to users</p>
-
-                                <form id="notificationForm" class="notification-form">
-                                    <input type="hidden" name="action" value="send_notification">
-
+                                
+                                <form method="POST" action="/2nd-Year-Group-Project/FixLanka/views/moderator/notifications.php" class="notification-form">
+                                    <input type="hidden" name="action" value="add">
+                                    
                                     <div>
                                         <label class="block text-sm font-medium text-foreground">Recipients</label>
                                         <select name="recipients" class="form-select mt-1" required>
@@ -140,15 +290,6 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                                             <option value="providers">Service Providers</option>
                                             <option value="customers">Customers</option>
                                             <option value="companies">Companies</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-foreground">Priority</label>
-                                        <select name="priority" class="form-select mt-1" required>
-                                            <option value="low">Low Priority</option>
-                                            <option value="medium" selected>Medium Priority</option>
-                                            <option value="high">High Priority</option>
                                         </select>
                                     </div>
 
@@ -162,73 +303,98 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                                         <textarea name="message" rows="4" placeholder="Enter your notification message..." required class="form-textarea mt-1"></textarea>
                                     </div>
 
-                                    <div class="flex items-center">
-                                        <input type="checkbox" name="schedule" id="schedule" class="h-4 w-4 text-fixlanka-primary focus:ring-fixlanka-primary border-border rounded">
-                                        <label for="schedule" class="ml-2 block text-sm text-foreground">Schedule for later</label>
-                                    </div>
-
                                     <div class="form-actions">
-                                        <button type="submit" name="send_type" value="send" class="btn btn-primary flex-1" id="sendBtn">
+                                        <button type="submit" class="btn btn-primary flex-1">
                                             <i data-lucide="send" class="mr-2 h-4 w-4"></i>
-                                            <span id="sendBtnText">Send Now</span>
-                                        </button>
-                                        <button type="submit" name="send_type" value="draft" class="btn btn-secondary flex-1" id="draftBtn">
-                                            <i data-lucide="save" class="mr-2 h-4 w-4"></i>
-                                            <span id="draftBtnText">Save Draft</span>
+                                            Send Now
                                         </button>
                                     </div>
                                 </form>
                             </div>
                         </div>
 
+                        <!-- Recent Notifications -->
                         <div class="recent-notifications-card">
                             <div class="p-6">
                                 <div class="flex items-center justify-between w-full mb-4">
                                     <div>
                                         <h3 class="text-lg font-medium text-foreground flex items-center gap-2">
-                                            <i data-lucide="history" class="h-5 w-5"></i>
+                                            <i data-lucide="bell" class="h-5 w-5"></i>
                                             Recent Notifications
                                         </h3>
                                         <p class="text-sm text-muted-foreground">Latest 5 notifications with performance metrics</p>
                                     </div>
-                                    <div class="flex items-center space-x-2">
-                                        <button onclick="toggleNotificationView('list')" id="listViewBtn" class="btn btn-sm btn-primary">
-                                            <i data-lucide="list" class="h-4 w-4"></i>
-                                        </button>
-                                        <button onclick="toggleNotificationView('grid')" id="gridViewBtn" class="btn btn-sm btn-secondary">
-                                            <i data-lucide="grid-3x3" class="h-4 w-4"></i>
-                                        </button>
-                                    </div>
                                 </div>
 
-                                <div id="notificationsLoader" class="space-y-4">
-                                    <?php for ($i = 0; $i < 5; $i++): ?>
-                                        <div class="animate-pulse">
-                                            <div class="bg-muted/30 rounded-lg border p-4">
-                                                <div class="h-4 bg-muted rounded w-3/4 mb-3"></div>
-                                                <div class="h-3 bg-muted rounded w-1/2 mb-2"></div>
-                                                <div class="h-3 bg-muted rounded w-1/4"></div>
+                                <div class="space-y-4 recent-notifications-list">
+                                    <?php if (empty($recentNotifications)): ?>
+                                        <div class="text-center py-8 text-muted-foreground">
+                                            <i data-lucide="inbox" class="h-12 w-12 mx-auto mb-2 opacity-50"></i>
+                                            <p>No notifications yet</p>
+                                        </div>
+                                    <?php else: ?>
+                                        <?php foreach ($recentNotifications as $n): 
+                                            $recipientDisplay = ['all' => 'All Users', 'repairer' => 'Service Providers', 'user' => 'Customers', 'company' => 'Companies'];
+                                            $displayRecipient = $recipientDisplay[$n['recipient_type']] ?? $n['recipient_type'];
+                                            $creatorRole = strtolower((string)($n['created_by_role'] ?? ''));
+                                            $creatorName = trim((string)($n['created_by_name'] ?? ''));
+                                            if ($creatorName === '') {
+                                                $creatorName = $creatorRole === 'admin' ? 'Admin' : ($creatorRole === 'moderator' ? 'Moderator' : 'System');
+                                            }
+                                            $isAdminCreated = $creatorRole === 'admin';
+                                            
+                                            $statusClass = 'badge-sent';
+                                            if ($n['status'] === 'pending') $statusClass = 'badge-pending';
+                                            if ($n['status'] === 'failed') $statusClass = 'badge-failed';
+
+                                            $displayDateRaw = $n['send_date'] ?? ($n['created_at'] ?? null);
+                                            if ($displayDateRaw === null && isset($n['date'], $n['time'])) {
+                                                $displayDateRaw = $n['date'] . ' ' . $n['time'];
+                                            }
+                                        ?>
+                                        <div class="notification-item">
+                                            <div class="notification-header">
+                                                <div class="flex-1">
+                                                    <p class="text-sm font-semibold text-foreground"><?php echo htmlspecialchars($n['title']); ?></p>
+                                                    <p class="text-sm text-muted-foreground leading-relaxed mt-1"><?php echo htmlspecialchars($n['message']); ?></p>
+                                                </div>
+                                                <span class="badge <?php echo $statusClass; ?>">
+                                                    <?php echo ucfirst($n['status']); ?>
+                                                </span>
+                                            </div>
+                                            
+                                            <div class="notification-meta">
+                                                <div class="flex items-center space-x-4">
+                                                    <span>To: <?php echo htmlspecialchars($displayRecipient); ?></span>
+                                                    <span>Created by: <?php echo htmlspecialchars($creatorName); ?></span>
+                                                    <span>
+                                                        <?php echo $displayDateRaw ? date('M d, Y H:i', strtotime((string)$displayDateRaw)) : ''; ?>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="notification-footer">
+                                                <div class="flex items-center space-x-2">
+                                                    <button type="button" onclick='openEditModal(<?php echo json_encode($n, JSON_HEX_APOS | JSON_HEX_QUOT); ?>)' class="notification-action-btn edit-btn" <?php echo ($isAdminCreated && $currentUserRole === 'moderator') ? 'disabled title="Admin-created notifications cannot be edited by moderators"' : ''; ?>>
+                                                        <i data-lucide="edit" class="h-3 w-3"></i>
+                                                        Edit
+                                                    </button>
+                                                    
+                                                    <button type="button" onclick="openDeleteModal(<?php echo $n['notification_id']; ?>)" class="notification-action-btn delete-btn" <?php echo ($isAdminCreated && $currentUserRole === 'moderator') ? 'disabled title="Admin-created notifications cannot be deleted by moderators"' : ''; ?>>
+                                                        <i data-lucide="trash-2" class="h-3 w-3"></i>
+                                                        Delete
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    <?php endfor; ?>
-                                </div>
-
-                                <div id="notificationsList" class="space-y-4" style="display: none;">
-                                </div>
-
-                                <div id="notificationsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4" style="display: none;">
-                                </div>
-
-                                <div class="mt-4 text-center">
-                                    <a href="<?= $basePath ?>/moderator/notifications/all" class="btn btn-outline">
-                                        <i data-lucide="arrow-right" class="mr-2 h-4 w-4"></i>
-                                        View All Notifications
-                                    </a>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Quick Templates -->
                     <div class="templates-section">
                         <div class="p-6">
                             <h3 class="text-lg font-medium text-foreground">Quick Templates</h3>
@@ -237,23 +403,26 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                             <div class="templates-grid">
                                 <?php
                                 $priorityVariants = [
-                                    'low' => 'secondary',
-                                    'medium' => 'outline',
-                                    'high' => 'destructive'
+                                    'low' => 'badge-low',
+                                    'medium' => 'badge-medium',
+                                    'high' => 'badge-high'
                                 ];
 
                                 foreach (array_slice($templates, 0, 6) as $template):
+                                    $priorityClass = $priorityVariants[$template['priority']] ?? 'badge-low';
                                 ?>
-                                    <div class="template-card">
-                                        <div class="template-header">
-                                            <h4 class="font-medium text-foreground"><?php echo htmlspecialchars($template['title']); ?></h4>
-                                            <?php renderBadge(ucfirst($template['priority']), $priorityVariants[$template['priority']]); ?>
-                                        </div>
-                                        <p class="text-sm text-muted-foreground"><?php echo htmlspecialchars(substr($template['message'], 0, 100) . '...'); ?></p>
-                                        <button onclick='useTemplate(<?php echo htmlspecialchars(json_encode($template)); ?>)' class="template-btn">
-                                            Use Template
-                                        </button>
+                                <div class="template-card">
+                                    <div class="template-header">
+                                        <span class="badge <?php echo $priorityClass; ?>">
+                                            <?php echo ucfirst($template['priority']); ?>
+                                        </span>
                                     </div>
+                                    <h4 class="text-sm font-medium text-foreground"><?php echo htmlspecialchars($template['title']); ?></h4>
+                                    <p class="text-xs text-muted-foreground"><?php echo htmlspecialchars($template['message']); ?></p>
+                                    <button type="button" onclick='useTemplate(<?php echo json_encode($template, JSON_HEX_APOS | JSON_HEX_QUOT); ?>)' class="template-btn">
+                                        Use Template
+                                    </button>
+                                </div>
                                 <?php endforeach; ?>
                             </div>
                         </div>
@@ -261,28 +430,143 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                 </div>
             </main>
 
-            <?php
-            renderNotificationDetailsModal();
-            renderEditNotificationModal();
-            renderVideoNotificationModal();
-            renderDeleteConfirmModal();
-            ?>
+            <!-- Edit Modal -->
+            <div id="editNotificationModal" class="modal-overlay" style="display: none;">
+                <div class="moderators-modal-content">
+                    <div class="moderators-modal-header">
+                        <h3 class="text-lg font-medium text-card-foreground">Edit Notification</h3>
+                        <button type="button" onclick="closeEditModal()" class="text-muted-foreground hover:text-foreground">
+                            <i data-lucide="x" class="h-5 w-5"></i>
+                        </button>
+                    </div>
+                    
+                    <form method="POST" action="/2nd-Year-Group-Project/FixLanka/views/moderator/notifications.php" class="moderators-modal-form">
+                        <input type="hidden" name="action" value="update">
+                        <input type="hidden" id="editNotificationId" name="notification_id">
 
-            <script>
-                window.basePath = "<?php echo $basePath; ?>";
-                // Embed mock notifications data directly
-                window.allNotifications = <?= json_encode($notificationsData) ?>;
-            </script>
+                        <div class="moderators-form-group">
+                            <label class="moderators-form-label">Recipients</label>
+                            <select id="editRecipients" name="recipients" class="form-select" required>
+                                <option value="all">All Users</option>
+                                <option value="providers">Service Providers</option>
+                                <option value="customers">Customers</option>
+                                <option value="companies">Companies</option>
+                            </select>
+                        </div>
 
-            <script src="../../assets/javascript/moderator/notifications/modalFunctions.js"></script>
-            <script src="../../assets/javascript/moderator/notifications/notifications.js"></script>
+                        <div class="moderators-form-group">
+                            <label class="moderators-form-label">Title</label>
+                            <input type="text" id="editTitle" name="title" class="form-input" required>
+                        </div>
+
+                        <div class="moderators-form-group">
+                            <label class="moderators-form-label">Message</label>
+                            <textarea id="editMessage" name="message" rows="4" class="form-textarea" required></textarea>
+                        </div>
+
+                        <div class="moderators-form-actions">
+                            <button type="button" onclick="closeEditModal()" class="moderators-cancel-btn">Cancel</button>
+                            <button type="submit" class="moderators-save-btn">Update</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Delete Modal -->
+            <div id="deleteNotificationModal" class="modal-overlay" style="display: none;">
+                <div class="moderators-modal-content" style="max-width: 400px;">
+                    <div class="moderators-modal-header">
+                        <h3 class="text-lg font-medium text-card-foreground">Confirm Delete</h3>
+                        <p class="text-sm text-muted-foreground mb-4">Are you sure you want to delete this notification?</p>
+                    </div>
+                    
+                    <form method="POST" action="/2nd-Year-Group-Project/FixLanka/views/moderator/notifications.php">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" id="deleteNotificationId" name="notification_id">
+                        
+                        <div class="moderators-form-actions">
+                            <button type="button" onclick="closeDeleteModal()" class="moderators-cancel-btn">Cancel</button>
+                            <button type="submit" class="moderators-btn-danger">Delete</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
         </div>
     </div>
-    <script>
-        lucide.createIcons();
-    </script>
-    <script src="../../assets/javascript/admin-moderator/common.js"></script>
 
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        const currentUserRole = <?php echo json_encode($currentUserRole); ?>;
+        
+        // Template use function
+        function useTemplate(template) {
+            const form = document.querySelector('form[action="/2nd-Year-Group-Project/FixLanka/views/moderator/notifications.php"]');
+            if (!form) {
+                console.error('Form not found');
+                return;
+            }
+            
+            const recipientsSelect = form.querySelector('select[name="recipients"]');
+            const titleInput = form.querySelector('input[name="title"]');
+            const messageTextarea = form.querySelector('textarea[name="message"]');
+            
+            if (recipientsSelect) recipientsSelect.value = template.recipients || 'all';
+            if (titleInput) titleInput.value = template.title || '';
+            if (messageTextarea) messageTextarea.value = template.message || '';
+            
+            form.scrollIntoView({ behavior: 'smooth' });
+            lucide.createIcons();
+        }
+        
+        // Edit modal functions
+        function openEditModal(n) {
+            if (currentUserRole === 'moderator' && String(n.created_by_role || '').toLowerCase() === 'admin') {
+                alert('Admin-created notifications cannot be edited by moderators.');
+                return;
+            }
+            const map = {'all': 'all', 'repairer': 'providers', 'user': 'customers', 'company': 'companies'};
+            document.getElementById('editNotificationId').value = n.notification_id;
+            document.getElementById('editTitle').value = n.title;
+            document.getElementById('editMessage').value = n.message;
+            document.getElementById('editRecipients').value = map[n.recipient_type] || 'all';
+            document.getElementById('editNotificationModal').style.display = 'flex';
+            lucide.createIcons();
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editNotificationModal').style.display = 'none';
+        }
+        
+        // Delete modal functions
+        function openDeleteModal(id) {
+            document.getElementById('deleteNotificationId').value = id;
+            document.getElementById('deleteNotificationModal').style.display = 'flex';
+        }
+        
+        function closeDeleteModal() {
+            document.getElementById('deleteNotificationModal').style.display = 'none';
+        }
+        
+        // Close modals when clicking outside
+        window.onclick = function(e) {
+            const editModal = document.getElementById('editNotificationModal');
+            const deleteModal = document.getElementById('deleteNotificationModal');
+            if (e.target === editModal) closeEditModal();
+            if (e.target === deleteModal) closeDeleteModal();
+        }
+        
+        // Auto-hide alerts after 5 seconds
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('#successAlert, #errorAlert');
+            alerts.forEach(alert => {
+                alert.style.opacity = '0';
+                alert.style.transition = 'opacity 0.5s';
+                setTimeout(() => alert.remove(), 500);
+            });
+        }, 5000);
+    </script>
 </body>
 
 </html>

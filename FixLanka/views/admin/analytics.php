@@ -9,14 +9,8 @@ require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
 require_once __DIR__ . '/_components/Common.php';
-require_once '../../includes/admin-modarator/auth.php';
-require_once '../../includes/admin-modarator/mock-data.php';
-
-// // Check if user is logged in and get user info
-// $isLoggedIn = isLoggedIn();
-// $user = $isLoggedIn ? getCurrentUser() : null;
-// requireRole("admin", $basePath);
-// $user = getCurrentUser();
+require_once __DIR__ . '/../../includes/admin-modarator/auth.php';
+require_once __DIR__ . '/../../includes/admin-modarator/mock-data.php';
 
 $basePath = '';
 $currentPath = 'analytics';
@@ -31,8 +25,6 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
 
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath ?? ''); ?>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
 </head>
 
 <body class="bg-background text-foreground">
@@ -41,8 +33,13 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
     <div class="dashboard-container">
         <?php renderAdminSidebar($currentPath, $basePath); ?>
         <div class="dashboard-main">
-            <link rel="stylesheet" href="../../assets/css/admin/analytics.css">
+            <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin/analytics.css">
+            <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            
             <?php renderPageHeader($basePath, 'Analytics', 'Comprehensive insights and performance metrics'); ?>
             <main style="margin-top: 5rem;" class="dashboard-content">
                 <div class="space-y-6">
@@ -71,7 +68,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                             </select>
                         </div>
                         <button class="analytics-export-btn">
-                            <i data-lucide="download" class="mr-2 h-4 w-4"></i>
+                            <i class="fa-solid fa-download mr-2 h-4 w-4"></i>
                             Export Report
                         </button>
                     </div>
@@ -79,10 +76,10 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                     <div class="analytics-stats-grid">
                         <?php
                         $stats = [
-                            ['title' => 'Total Users', 'value' => number_format($mockAnalytics['totalUsers']), 'description' => '+12% from last month', 'icon' => 'users', 'color' => 'blue'],
-                            ['title' => 'Active Sessions', 'value' => '1,247', 'description' => 'Currently online', 'icon' => 'activity', 'color' => 'green'],
-                            ['title' => 'Page Views', 'value' => '45.2K', 'description' => 'This month', 'icon' => 'eye', 'color' => 'purple'],
-                            ['title' => 'Conversion Rate', 'value' => '3.2%', 'description' => '+0.5% improvement', 'icon' => 'trending-up', 'color' => 'emerald']
+                            ['title' => 'Total Users', 'value' => number_format($mockAnalytics['totalUsers']), 'description' => '+12% from last month', 'icon' => 'fa-users', 'color' => 'blue'],
+                            ['title' => 'Active Sessions', 'value' => '1,247', 'description' => 'Currently online', 'icon' => 'fa-chart-line', 'color' => 'green'],
+                            ['title' => 'Page Views', 'value' => '45.2K', 'description' => 'This month', 'icon' => 'fa-eye', 'color' => 'purple'],
+                            ['title' => 'Conversion Rate', 'value' => '3.2%', 'description' => '+0.5% improvement', 'icon' => 'fa-arrow-trend-up', 'color' => 'emerald']
                         ];
 
                         foreach ($stats as $stat) {
@@ -98,7 +95,6 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                                 <p class="text-muted-foreground text-sm">Monthly user registration trends</p>
                             </div>
                             <div class="analytics-chart-content">
-                                <!-- Replaced placeholder with actual canvas for chart -->
                                 <canvas id="userGrowthChart" width="400" height="200"></canvas>
                             </div>
                         </div>
@@ -109,7 +105,6 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                                 <p class="text-muted-foreground text-sm">Monthly revenue and commission breakdown</p>
                             </div>
                             <div class="analytics-chart-content">
-                                <!-- Replaced placeholder with actual canvas for chart -->
                                 <canvas id="revenueChart" width="400" height="200"></canvas>
                             </div>
                         </div>
@@ -118,90 +113,111 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                     <div class="analytics-metrics-grid">
                         <div class="analytics-metrics-card">
                             <div class="analytics-metrics-header">
-                                <h3 class="text-lg font-semibold">User Engagement</h3>
-                                <p class="text-muted-foreground text-sm">Key engagement metrics and trends</p>
+                                <h3 class="text-lg font-semibold">Top Service Categories</h3>
+                                <p class="text-muted-foreground text-sm">Most popular service types</p>
                             </div>
                             <div class="analytics-metrics-content">
                                 <div class="analytics-metric-item">
-                                    <div class="analytics-metric-info">
-                                        <span class="analytics-metric-label">Average Session Duration</span>
-                                        <span class="analytics-metric-description">Time spent per session</span>
+                                    <span class="text-card-foreground">Plumbing</span>
+                                    <div class="analytics-progress-bar">
+                                        <div class="analytics-progress-fill bg-fixlanka-primary" style="width: 85%"></div>
                                     </div>
-                                    <span class="analytics-metric-value analytics-trend-positive">4m 32s</span>
+                                    <span class="text-muted-foreground">850 requests</span>
                                 </div>
                                 <div class="analytics-metric-item">
-                                    <div class="analytics-metric-info">
-                                        <span class="analytics-metric-label">Bounce Rate</span>
-                                        <span class="analytics-metric-description">Single page visits</span>
+                                    <span class="text-card-foreground">Electrical</span>
+                                    <div class="analytics-progress-bar">
+                                        <div class="analytics-progress-fill bg-fixlanka-highlight" style="width: 75%"></div>
                                     </div>
-                                    <span class="analytics-metric-value analytics-trend-negative">23.4%</span>
+                                    <span class="text-muted-foreground">750 requests</span>
                                 </div>
                                 <div class="analytics-metric-item">
-                                    <div class="analytics-metric-info">
-                                        <span class="analytics-metric-label">Pages per Session</span>
-                                        <span class="analytics-metric-description">Average page views</span>
+                                    <span class="text-card-foreground">Carpentry</span>
+                                    <div class="analytics-progress-bar">
+                                        <div class="analytics-progress-fill bg-fixlanka-accent" style="width: 60%"></div>
                                     </div>
-                                    <span class="analytics-metric-value analytics-trend-positive">3.7</span>
+                                    <span class="text-muted-foreground">600 requests</span>
+                                </div>
+                                <div class="analytics-metric-item">
+                                    <span class="text-card-foreground">Painting</span>
+                                    <div class="analytics-progress-bar">
+                                        <div class="analytics-progress-fill bg-fixlanka-error" style="width: 45%"></div>
+                                    </div>
+                                    <span class="text-muted-foreground">450 requests</span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="analytics-metrics-card">
                             <div class="analytics-metrics-header">
-                                <h3 class="text-lg font-semibold">Service Performance</h3>
-                                <p class="text-muted-foreground text-sm">Service provider and booking metrics</p>
+                                <h3 class="text-lg font-semibold">Top Rated Providers</h3>
+                                <p class="text-muted-foreground text-sm">Highest performing service providers</p>
                             </div>
                             <div class="analytics-metrics-content">
                                 <div class="analytics-metric-item">
-                                    <div class="analytics-metric-info">
-                                        <span class="analytics-metric-label">Booking Success Rate</span>
-                                        <span class="analytics-metric-description">Completed bookings</span>
+                                    <span class="text-card-foreground">John's Plumbing Services</span>
+                                    <div class="analytics-progress-bar">
+                                        <div class="analytics-progress-fill bg-fixlanka-primary" style="width: 95%"></div>
                                     </div>
-                                    <span class="analytics-metric-value analytics-trend-positive">87.3%</span>
+                                    <span class="text-muted-foreground">4.8/5.0 (120 reviews)</span>
                                 </div>
                                 <div class="analytics-metric-item">
-                                    <div class="analytics-metric-info">
-                                        <span class="analytics-metric-label">Average Rating</span>
-                                        <span class="analytics-metric-description">Service provider ratings</span>
+                                    <span class="text-card-foreground">Electric Fix Pro</span>
+                                    <div class="analytics-progress-bar">
+                                        <div class="analytics-progress-fill bg-fixlanka-highlight" style="width: 92%"></div>
                                     </div>
-                                    <span class="analytics-metric-value">4.6/5</span>
+                                    <span class="text-muted-foreground">4.6/5.0 (98 reviews)</span>
                                 </div>
                                 <div class="analytics-metric-item">
-                                    <div class="analytics-metric-info">
-                                        <span class="analytics-metric-label">Response Time</span>
-                                        <span class="analytics-metric-description">Average provider response</span>
+                                    <span class="text-card-foreground">Master Carpenters Ltd</span>
+                                    <div class="analytics-progress-bar">
+                                        <div class="analytics-progress-fill bg-fixlanka-accent" style="width: 88%"></div>
                                     </div>
-                                    <span class="analytics-metric-value analytics-trend-positive">2.3h</span>
+                                    <span class="text-muted-foreground">4.4/5.0 (85 reviews)</span>
+                                </div>
+                                <div class="analytics-metric-item">
+                                    <span class="text-card-foreground">Quick House Repairs</span>
+                                    <div class="analytics-progress-bar">
+                                        <div class="analytics-progress-fill bg-fixlanka-error" style="width: 85%"></div>
+                                    </div>
+                                    <span class="text-muted-foreground">4.2/5.0 (72 reviews)</span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="analytics-metrics-card">
                             <div class="analytics-metrics-header">
-                                <h3 class="text-lg font-semibold">Platform Health</h3>
-                                <p class="text-muted-foreground text-sm">System performance and reliability</p>
+                                <h3 class="text-lg font-semibold">Popular Districts</h3>
+                                <p class="text-muted-foreground text-sm">Most active service areas</p>
                             </div>
                             <div class="analytics-metrics-content">
                                 <div class="analytics-metric-item">
-                                    <div class="analytics-metric-info">
-                                        <span class="analytics-metric-label">Uptime</span>
-                                        <span class="analytics-metric-description">System availability</span>
+                                    <span class="text-card-foreground">Colombo</span>
+                                    <div class="analytics-progress-bar">
+                                        <div class="analytics-progress-fill bg-fixlanka-primary" style="width: 90%"></div>
                                     </div>
-                                    <span class="analytics-metric-value analytics-trend-positive">99.9%</span>
+                                    <span class="text-muted-foreground">1,200 requests</span>
                                 </div>
                                 <div class="analytics-metric-item">
-                                    <div class="analytics-metric-info">
-                                        <span class="analytics-metric-label">Load Time</span>
-                                        <span class="analytics-metric-description">Average page load</span>
+                                    <span class="text-card-foreground">Gampaha</span>
+                                    <div class="analytics-progress-bar">
+                                        <div class="analytics-progress-fill bg-fixlanka-highlight" style="width: 70%"></div>
                                     </div>
-                                    <span class="analytics-metric-value">1.2s</span>
+                                    <span class="text-muted-foreground">800 requests</span>
                                 </div>
                                 <div class="analytics-metric-item">
-                                    <div class="analytics-metric-info">
-                                        <span class="analytics-metric-label">Error Rate</span>
-                                        <span class="analytics-metric-description">System errors</span>
+                                    <span class="text-card-foreground">Kandy</span>
+                                    <div class="analytics-progress-bar">
+                                        <div class="analytics-progress-fill bg-fixlanka-accent" style="width: 55%"></div>
                                     </div>
-                                    <span class="analytics-metric-value analytics-trend-negative">0.1%</span>
+                                    <span class="text-muted-foreground">600 requests</span>
+                                </div>
+                                <div class="analytics-metric-item">
+                                    <span class="text-card-foreground">Negombo</span>
+                                    <div class="analytics-progress-bar">
+                                        <div class="analytics-progress-fill bg-fixlanka-error" style="width: 40%"></div>
+                                    </div>
+                                    <span class="text-muted-foreground">450 requests</span>
                                 </div>
                             </div>
                         </div>
@@ -210,9 +226,6 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
             </main>
 
             <script>
-                lucide.createIcons();
-
-
                 // User Growth Chart
                 const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
                 const userGrowthChart = new Chart(userGrowthCtx, {
@@ -240,8 +253,9 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
+                                position: 'top',
                                 labels: {
-                                    color: 'rgb(156, 163, 175)'
+                                    usePointStyle: true
                                 }
                             }
                         },
@@ -249,18 +263,14 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                             y: {
                                 beginAtZero: true,
                                 ticks: {
-                                    color: 'rgb(156, 163, 175)'
-                                },
-                                grid: {
-                                    color: 'rgba(156, 163, 175, 0.1)'
+                                    callback: function(value) {
+                                        return value.toLocaleString();
+                                    }
                                 }
                             },
                             x: {
-                                ticks: {
-                                    color: 'rgb(156, 163, 175)'
-                                },
                                 grid: {
-                                    color: 'rgba(156, 163, 175, 0.1)'
+                                    display: false
                                 }
                             }
                         }
@@ -292,8 +302,9 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
+                                position: 'top',
                                 labels: {
-                                    color: 'rgb(156, 163, 175)'
+                                    usePointStyle: true
                                 }
                             }
                         },
@@ -301,21 +312,14 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                             y: {
                                 beginAtZero: true,
                                 ticks: {
-                                    color: 'rgb(156, 163, 175)',
                                     callback: function(value) {
                                         return 'LKR ' + value.toLocaleString();
                                     }
-                                },
-                                grid: {
-                                    color: 'rgba(156, 163, 175, 0.1)'
                                 }
                             },
                             x: {
-                                ticks: {
-                                    color: 'rgb(156, 163, 175)'
-                                },
                                 grid: {
-                                    color: 'rgba(156, 163, 175, 0.1)'
+                                    display: false
                                 }
                             }
                         }
@@ -324,10 +328,7 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
             </script>
         </div>
     </div>
-    <script>
-        lucide.createIcons();
-    </script>
-    <script src="../../assets/javascript/admin-moderator/common.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
 </body>
 
 </html>

@@ -50,19 +50,41 @@ class JobRequestController {
             }
         }
         
+        // Process provider type checkboxes
+        $providerType = 'individual'; // default
+        if (isset($_POST['provider_type']) && is_array($_POST['provider_type'])) {
+            $selectedTypes = $_POST['provider_type'];
+            if (count($selectedTypes) === 2) {
+                $providerType = 'both';
+            } else {
+                $providerType = $selectedTypes[0];
+            }
+        }
+
         $data = [
             'user_id' => $userId,
             'category_id' => $_POST['category_id'] ?? null,
+            'title' => trim($_POST['title'] ?? ''),
             'description' => trim($_POST['description'] ?? ''),
-            'location' => trim($_POST['location'] ?? ''),
-            'service_provider_type' => $_POST['service_provider_type'] ?? null,
+            'district' => trim($_POST['district'] ?? ''),
+            'address' => trim($_POST['address'] ?? ''),
+            'service_provider_type' => $providerType,
             'urgency' => $_POST['urgency'] ?? 'medium',
+            'finish_date' => $_POST['finish_date'] ?? null,
             'photos' => $photoPath
         ];
         
         // Validate required fields
-        if (empty($data['category_id']) || empty($data['description']) || empty($data['location']) || empty($data['service_provider_type'])) {
+        if (empty($data['category_id']) || empty($data['title']) || empty($data['description']) || 
+            empty($data['district']) || empty($data['address']) || empty($data['finish_date'])) {
             $_SESSION['error'] = 'All required fields must be filled';
+            header('Location: /2nd-Year-Group-Project/FixLanka/post-job');
+            exit;
+        }
+        
+        // Validate at least one provider type is selected
+        if (empty($providerType)) {
+            $_SESSION['error'] = 'Please select at least one service provider type';
             header('Location: /2nd-Year-Group-Project/FixLanka/post-job');
             exit;
         }
@@ -133,13 +155,26 @@ class JobRequestController {
             }
         }
         
+        // Handle provider_type array from checkboxes
+        $providerType = 'individual'; // default
+        if (isset($_POST['provider_type']) && is_array($_POST['provider_type'])) {
+            // Join array values with comma (e.g., "individual,company")
+            $providerType = implode(',', $_POST['provider_type']);
+        } elseif (isset($_POST['service_provider_type'])) {
+            // Fallback to old field name
+            $providerType = $_POST['service_provider_type'];
+        }
+        
         $data = [
             'user_id' => $userId,
+            'title' => trim($_POST['title'] ?? ''),
             'category_id' => $_POST['category_id'] ?? 1,
             'description' => trim($_POST['description'] ?? ''),
-            'location' => trim($_POST['location'] ?? ''),
-            'service_provider_type' => $_POST['service_provider_type'] ?? 'individual',
+            'district' => trim($_POST['district'] ?? ''),
+            'address' => trim($_POST['address'] ?? ''),
+            'service_provider_type' => $providerType,
             'urgency' => $_POST['urgency'] ?? 'medium',
+            'finish_date' => $_POST['finish_date'] ?? null,
             'photos' => $photoPath
         ];
         
@@ -177,6 +212,37 @@ class JobRequestController {
         }
         
         header('Location: /2nd-Year-Group-Project/FixLanka/job-history');
+        exit;
+    }
+
+    /**
+     * API - Get all open job requests (for companies)
+     */
+    public function getOpenRequests() {
+        // Ensure user is logged in
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
+
+        // Get filters from query parameters
+        $filters = [];
+        if (isset($_GET['district']) && !empty($_GET['district'])) {
+            $filters['district'] = $_GET['district'];
+        }
+        if (isset($_GET['category_id']) && !empty($_GET['category_id'])) {
+            $filters['category_id'] = $_GET['category_id'];
+        }
+        
+        $requests = $this->jobRequestModel->getAllOpen($filters);
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'data' => $requests]);
         exit;
     }
 }

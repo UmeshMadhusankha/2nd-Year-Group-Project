@@ -566,7 +566,7 @@ $mockActivity = [
     ['action' => 'User account suspended', 'time' => '3 hours ago', 'type' => 'moderation']
 ];
 
-// Ad Reports Data
+// Ad Reports Data - ADVERTISEMENT REPORTS ONLY
 $mockAdReports = [
     [
         'id' => 1,
@@ -574,14 +574,17 @@ $mockAdReports = [
         'user_email' => 'john.silva@email.com',
         'ad_id' => 2,
         'ad_title' => 'Expert Electrical Work',
-        'issue_type' => 'Fraud',
+        'company_name' => 'Fernando Electrics',
+        'issue_type' => 'Misleading Information',
+        'category' => 'advertisement',
         'description' => 'This advertisement contains misleading information about certifications and qualifications.',
         'priority' => 'High',
         'status' => 'Pending',
         'created_date' => '2024-10-22',
         'evidence' => 'Screenshots attached showing false claims',
         'reported_entity_type' => 'advertisement',
-        'reported_entity_id' => 2
+        'reported_entity_id' => 2,
+        'moderator_notes' => ''
     ],
     [
         'id' => 2,
@@ -589,13 +592,15 @@ $mockAdReports = [
         'user_email' => 'sarah.fernando@email.com',
         'ad_id' => 5,
         'ad_title' => 'AC Repair & Maintenance',
-        'issue_type' => 'Service Issue',
-        'description' => 'Service provider did not show up for scheduled appointment and is not responding.',
-        'priority' => 'Medium',
+        'company_name' => 'CoolBreeze Services',
+        'issue_type' => 'False Pricing',
+        'category' => 'advertisement',
+        'description' => 'Advertisement displays different prices than what is actually charged to customers.',
+        'priority' => 'High',
         'status' => 'Investigating',
         'created_date' => '2024-10-21',
-        'moderator_notes' => 'Contacted service provider for clarification',
-        'reported_entity_type' => 'service_provider',
+        'moderator_notes' => 'Contacted company for pricing clarification',
+        'reported_entity_type' => 'advertisement',
         'reported_entity_id' => 5
     ],
     [
@@ -604,12 +609,14 @@ $mockAdReports = [
         'user_email' => 'michael.perera@email.com',
         'ad_id' => 1,
         'ad_title' => 'Professional Plumbing Services',
-        'issue_type' => 'Payment Dispute',
-        'description' => 'Was charged more than the quoted price without prior notification.',
+        'company_name' => 'Silva Plumbing Co.',
+        'issue_type' => 'Inappropriate Content',
+        'category' => 'advertisement',
+        'description' => 'Advertisement contains inappropriate images and unprofessional language.',
         'priority' => 'High',
         'status' => 'Escalated',
         'created_date' => '2024-10-20',
-        'moderator_notes' => 'Escalated to admin for review',
+        'moderator_notes' => 'Escalated to admin - requires immediate action',
         'reported_entity_type' => 'advertisement',
         'reported_entity_id' => 1
     ],
@@ -619,12 +626,14 @@ $mockAdReports = [
         'user_email' => 'emily.rodrigo@email.com',
         'ad_id' => 3,
         'ad_title' => 'Home Renovation Specialists',
-        'issue_type' => 'Harassment',
-        'description' => 'Received inappropriate messages from service provider after declining their quote.',
-        'priority' => 'High',
+        'company_name' => 'BuildRight Construction',
+        'issue_type' => 'Duplicate Listing',
+        'category' => 'advertisement',
+        'description' => 'Same advertisement posted multiple times with different prices and details.',
+        'priority' => 'Medium',
         'status' => 'Resolved',
         'created_date' => '2024-10-18',
-        'moderator_notes' => 'User warned and service provider account suspended for 7 days',
+        'moderator_notes' => 'Removed duplicate advertisements. Warning issued to company.',
         'resolved_at' => '2024-10-19',
         'resolver_name' => 'Moderator Team'
     ],
@@ -634,92 +643,124 @@ $mockAdReports = [
         'user_email' => 'david.j@email.com',
         'ad_id' => 4,
         'ad_title' => 'Carpentry & Woodwork',
-        'issue_type' => 'Spam',
-        'description' => 'Advertisement is being reposted multiple times with different prices.',
-        'priority' => 'Low',
+        'company_name' => 'Woodcraft Masters',
+        'issue_type' => 'Spam Content',
+        'category' => 'advertisement',
+        'description' => 'Advertisement contains spam links and irrelevant promotional content not related to services.',
+        'priority' => 'Medium',
         'status' => 'Pending',
         'created_date' => '2024-10-22',
         'reported_entity_type' => 'advertisement',
-        'reported_entity_id' => 4
+        'reported_entity_id' => 4,
+        'moderator_notes' => ''
     ],
     [
         'id' => 6,
         'user_name' => 'Kasun Perera',
         'user_email' => 'kasun.perera@email.com',
-        'ad_id' => 2,
-        'ad_title' => 'Expert Electrical Work',
-        'issue_type' => 'Performance Issue',
-        'description' => 'Work quality was substandard and did not meet professional standards.',
-        'priority' => 'Medium',
+        'ad_id' => 6,
+        'ad_title' => 'Painting & Decorating',
+        'company_name' => 'Color Experts Ltd',
+        'issue_type' => 'Expired Advertisement',
+        'category' => 'advertisement',
+        'description' => 'Advertisement has expired but still appears as active in search results.',
+        'priority' => 'Low',
         'status' => 'Investigating',
         'created_date' => '2024-10-21',
-        'reported_entity_type' => 'service_provider',
-        'reported_entity_id' => 2
+        'reported_entity_type' => 'advertisement',
+        'reported_entity_id' => 6,
+        'moderator_notes' => 'Checking system records'
     ],
     [
         'id' => 7,
         'user_name' => 'Nimal Silva',
         'user_email' => 'nimal.silva@email.com',
-        'ad_id' => 5,
-        'ad_title' => 'AC Repair & Maintenance',
-        'issue_type' => 'Billing Problem',
-        'description' => 'Charged for services that were not completed.',
+        'ad_id' => 7,
+        'ad_title' => 'Landscaping Services',
+        'company_name' => 'Green Gardens',
+        'issue_type' => 'Policy Violation',
+        'category' => 'advertisement',
+        'description' => 'Advertisement violates platform policies by requesting payment outside the system.',
         'priority' => 'High',
-        'status' => 'Pending',
+        'status' => 'Escalated',
         'created_date' => '2024-10-22',
         'reported_entity_type' => 'advertisement',
-        'reported_entity_id' => 5
+        'reported_entity_id' => 7,
+        'moderator_notes' => 'Company contacted - awaiting response'
     ],
     [
         'id' => 8,
         'user_name' => 'Chamari Perera',
         'user_email' => 'chamari.perera@email.com',
-        'ad_id' => 1,
-        'ad_title' => 'Professional Plumbing Services',
-        'issue_type' => 'Technical Error',
-        'description' => 'Unable to book appointment through the platform.',
-        'priority' => 'Low',
-        'status' => 'Resolved',
+        'ad_id' => 8,
+        'ad_title' => 'Roofing Solutions',
+        'company_name' => 'RoofTech Services',
+        'issue_type' => 'Unverified Claims',
+        'category' => 'advertisement',
+        'description' => 'Advertisement makes unverified claims about warranty and certification.',
+        'priority' => 'Medium',
+        'status' => 'Investigating',
         'created_date' => '2024-10-19',
-        'moderator_notes' => 'Technical issue fixed by development team',
-        'resolved_at' => '2024-10-20',
-        'resolver_name' => 'Tech Support'
+        'moderator_notes' => 'Requested documentation from company',
+        'reported_entity_type' => 'advertisement',
+        'reported_entity_id' => 8
     ],
     [
         'id' => 9,
         'user_name' => 'Ruwan Fernando',
         'user_email' => 'ruwan.fernando@email.com',
-        'ad_id' => 3,
-        'ad_title' => 'Home Renovation Specialists',
-        'issue_type' => 'Content Issue',
-        'description' => 'Advertisement contains inappropriate images.',
+        'ad_id' => 9,
+        'ad_title' => 'Pest Control Services',
+        'company_name' => 'BugBusters',
+        'issue_type' => 'Misleading Information',
+        'category' => 'advertisement',
+        'description' => 'Advertisement claims 100% effectiveness with no scientific backing or proof.',
         'priority' => 'Medium',
-        'status' => 'Investigating',
+        'status' => 'Pending',
         'created_date' => '2024-10-21',
         'reported_entity_type' => 'advertisement',
-        'reported_entity_id' => 3
+        'reported_entity_id' => 9,
+        'moderator_notes' => ''
     ],
     [
         'id' => 10,
         'user_name' => 'Dilani Jayawardena',
         'user_email' => 'dilani.j@email.com',
-        'ad_id' => 4,
-        'ad_title' => 'Carpentry & Woodwork',
-        'issue_type' => 'Other',
-        'description' => 'Service provider does not accept the payment method specified in their ad.',
+        'ad_id' => 10,
+        'ad_title' => 'Security Systems Installation',
+        'company_name' => 'SecureHome Technologies',
+        'issue_type' => 'Inappropriate Images',
+        'category' => 'advertisement',
+        'description' => 'Advertisement contains low-quality and unprofessional images.',
         'priority' => 'Low',
-        'status' => 'Pending',
-        'created_date' => '2024-10-22',
-        'reported_entity_type' => 'service_provider',
-        'reported_entity_id' => 4
+        'status' => 'Resolved',
+        'created_date' => '2024-10-18',
+        'moderator_notes' => 'Company updated images. Issue resolved.',
+        'resolved_at' => '2024-10-20',
+        'resolver_name' => 'Moderator Team'
     ]
 ];
 
 /**
- * Get all ad reports data
+ * Get advertisement reports ONLY
+ * Filters out all non-advertisement related reports
  */
 function getAdReports() {
     global $mockAdReports;
-    return $mockAdReports;
+
+    if (!is_array($mockAdReports)) {
+        $mockAdReports = [];
+    }
+
+    // Filter to ensure ONLY advertisement category reports.
+    // Some mock rows may not include a `category`; default those to `advertisement`.
+    return array_values(array_filter($mockAdReports, function ($report) {
+        if (!is_array($report)) {
+            return false;
+        }
+
+        $category = $report['category'] ?? 'advertisement';
+        return $category === 'advertisement';
+    }));
 }
-?>
+        

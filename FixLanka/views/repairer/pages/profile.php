@@ -4,6 +4,30 @@ $currentPage = 'profile';
 $pageTitle = 'My Profile';
 $pageSubtitle = 'Manage your personal information and settings';
 $searchPlaceholder = 'Search requests, repairers, projects...';
+
+// Get user ID from session
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$userId = $_SESSION['user_id'] ?? null;
+
+if (!$userId) {
+    header('Location: /2nd-Year-Group-Project/FixLanka/login');
+    exit;
+}
+
+// Load service categories for the category dropdown (DB-driven)
+$serviceCategories = [];
+try {
+    require_once __DIR__ . '/../../../config/database.php';
+    if (isset($pdo)) {
+        $stmt = $pdo->query('SELECT category_id, name FROM category ORDER BY name');
+        $serviceCategories = $stmt->fetchAll();
+    }
+} catch (Exception $e) {
+    // Non-fatal: dropdown will still render the placeholder.
+    error_log('Failed to load service categories for repairer profile: ' . $e->getMessage());
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -12,11 +36,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../../../assets/css/common/global.css">
-    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
-    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
-    <link rel="stylesheet" href="../../../assets/css/repairer/profile.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/profile.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -25,10 +49,10 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <!-- Dashboard Container -->
     <div class="dashboard-container">
         <!-- Include Topbar -->
-        <?php include '../common/topbar.php'; ?>
+        <?php require_once __DIR__ . '/../common/topbar.php'; ?>
 
         <!-- Include Sidebar -->
-        <?php include '../common/sidebar.php'; ?>
+        <?php require_once __DIR__ . '/../common/sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content-wrapper">
@@ -57,7 +81,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                             <div class="profile-left-column">
                                 <div class="profile-photo-section">
                                     <div class="profile-photo-container">
-                                        <img src="../common/user.png" alt="Profile Photo" class="profile-photo" id="profile-photo">
+                                        <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Profile Photo" class="profile-photo" id="profile-photo">
                                         <div class="profile-photo-overlay">
                                             <button class="photo-upload-btn" id="photo-upload-btn">
                                                 <i class="fas fa-camera"></i>
@@ -67,17 +91,12 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                         <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
                                     </div>
                                     <div class="profile-photo-info">
-                                        <h3 class="profile-name">John Doe</h3>
+                                        <h3 class="profile-name" id="profileDisplayName">—</h3>
                                         <p class="profile-role">Repair Specialist</p>
                                         <div class="profile-rating">
-                                            <div class="stars">
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star-half-alt"></i>
+                                            <div class="stars" id="profileRatingStars">
                                             </div>
-                                            <span class="rating-text">4.8 (127 reviews)</span>
+                                            <span class="rating-text" id="profileRatingText">—</span>
                                         </div>
                                     </div>
                                 </div>
@@ -90,28 +109,28 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                             <i class="fas fa-calendar-check"></i>
                                             <div class="info-card-content">
                                                 <span class="info-card-label">Member Since</span>
-                                                <span class="info-card-value">January 2023</span>
+                                                <span class="info-card-value" id="profileMemberSince">—</span>
                                             </div>
                                         </div>
                                         <div class="info-card">
                                             <i class="fas fa-tools"></i>
                                             <div class="info-card-content">
                                                 <span class="info-card-label">Jobs Completed</span>
-                                                <span class="info-card-value">127</span>
+                                                <span class="info-card-value" id="profileJobsCompleted">—</span>
                                             </div>
                                         </div>
                                         <div class="info-card">
                                             <i class="fas fa-medal"></i>
                                             <div class="info-card-content">
                                                 <span class="info-card-label">Success Rate</span>
-                                                <span class="info-card-value">98%</span>
+                                                <span class="info-card-value" id="profileSuccessRate">—</span>
                                             </div>
                                         </div>
                                         <div class="info-card">
                                             <i class="fas fa-clock"></i>
                                             <div class="info-card-content">
                                                 <span class="info-card-label">Response Time</span>
-                                                <span class="info-card-value">< 2 hours</span>
+                                                <span class="info-card-value" id="profileResponseTime">—</span>
                                             </div>
                                         </div>
                                     </div>
@@ -126,26 +145,39 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                         <div class="form-grid">
                                             <div class="form-group">
                                                 <label for="full-name" class="form-label">Full Name</label>
-                                                <input type="text" id="full-name" name="full-name" class="form-input" value="John Doe" readonly>
+                                                <input type="text" id="full-name" name="full-name" class="form-input" value="" readonly>
                                             </div>
                                             <div class="form-group">
                                                 <label for="email" class="form-label">Email Address</label>
-                                                <input type="email" id="email" name="email" class="form-input" value="user@gmail.com" readonly required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address">
+                                                <input type="email" id="email" name="email" class="form-input" value="" readonly required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address">
                                             </div>
                                             <div class="form-group">
                                                 <label for="phone" class="form-label">Phone Number</label>
-                                                <input type="tel" id="phone" name="phone" class="form-input" value="0701122333" readonly required pattern="[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}" title="Please enter a valid phone number (e.g., 0771234567 or +94771234567)">
+                                                <input type="tel" id="phone" name="phone" class="form-input" value="" readonly required pattern="[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}" title="Please enter a valid phone number (e.g., 0771234567 or +94771234567)">
                                             </div>
                                             <div class="form-group">
                                                 <label for="service-category" class="form-label">Service Category</label>
                                                 <select id="service-category" name="service-category" class="form-select" disabled>
-                                                    <option value="electronics">Electronics Repair</option>
-                                                    <option value="appliances">Home Appliances</option>
-                                                    <option value="automotive">Automotive</option>
-                                                    <option value="plumbing">Plumbing</option>
-                                                    <option value="electrical">Electrical</option>
-                                                    <option value="carpentry">Carpentry</option>
+                                                    <option value="">Select Category</option>
+                                                    <?php foreach ($serviceCategories as $cat): ?>
+                                                        <option value="<?php echo htmlspecialchars((string)$cat['category_id']); ?>">
+                                                            <?php echo htmlspecialchars((string)$cat['name']); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
                                                 </select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="service-category-name" class="form-label">Service Category (Current)</label>
+                                                <input type="text" id="service-category-name" class="form-input" value="" readonly>
+                                            </div>
+
+                                            <div class="form-group form-group-full">
+                                                <label class="form-label">Skills (Tags)</label>
+                                                <div class="skills-tag-input">
+                                                    <div class="skill-tags" id="skillsTags"></div>
+                                                    <input type="text" id="skillsInput" class="form-input" placeholder="Type a skill and press Enter" readonly>
+                                                </div>
                                             </div>
                                             <div class="form-group form-group-full">
                                                 <label class="form-label">Working Districts</label>
@@ -270,24 +302,24 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                                 <div class="working-hours-row">
                                                     <span class="day-label">Monday - Friday</span>
                                                     <div class="time-inputs">
-                                                        <input type="time" id="weekday-start" name="weekday-start" class="form-input time-input" value="09:00" readonly>
+                                                        <input type="time" id="weekday-start" name="weekday-start" class="form-input time-input" value="" readonly>
                                                         <span class="time-separator">to</span>
-                                                        <input type="time" id="weekday-end" name="weekday-end" class="form-input time-input" value="18:00" readonly>
+                                                        <input type="time" id="weekday-end" name="weekday-end" class="form-input time-input" value="" readonly>
                                                     </div>
                                                 </div>
                                                 <div class="working-hours-row">
                                                     <span class="day-label">Saturday</span>
                                                     <div class="time-inputs">
-                                                        <input type="time" id="saturday-start" name="saturday-start" class="form-input time-input" value="10:00" readonly>
+                                                        <input type="time" id="saturday-start" name="saturday-start" class="form-input time-input" value="" readonly>
                                                         <span class="time-separator">to</span>
-                                                        <input type="time" id="saturday-end" name="saturday-end" class="form-input time-input" value="16:00" readonly>
+                                                        <input type="time" id="saturday-end" name="saturday-end" class="form-input time-input" value="" readonly>
                                                     </div>
                                                 </div>
                                                 <div class="working-hours-row">
                                                     <span class="day-label">Sunday</span>
                                                     <div class="time-inputs">
                                                         <label class="checkbox-wrapper">
-                                                            <input type="checkbox" id="sunday-closed" name="sunday-closed" checked disabled>
+                                                            <input type="checkbox" id="sunday-closed" name="sunday-closed" disabled>
                                                             <span class="checkbox-label">Closed</span>
                                                         </label>
                                                     </div>
@@ -355,6 +387,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
         </div>
     </div>
 
-    <script src="../../../assets/javascript/repairer/profile.js"></script>
+    <script>
+        // Pass user ID to JavaScript
+        window.currentUserId = <?php echo json_encode((int)$userId); ?>;
+    </script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/profile.js"></script>
 </body>
 </html>
+

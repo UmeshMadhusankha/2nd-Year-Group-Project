@@ -1,11 +1,10 @@
-// ================================================
+﻿// ================================================
 // SUBMIT QUOTE PAGE JAVASCRIPT
 // ================================================
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize submit quote page functionality
     initializeQuoteForm();
-    initializeBreakdownCalculator();
     initializeConfirmationModal();
     initializeFormValidation();
     
@@ -13,11 +12,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const jobId = urlParams.get('jobId') || '1'; // Default to job 1 if no ID provided
     
+    // Set request_id in hidden field (in real app, this would be the actual request_id from database)
+    document.getElementById('request-id').value = jobId;
+    
     // Get job data based on ID
     const jobData = getJobDataById(jobId);
     
     // Populate job details
     populateJobDetails(jobData);
+    
+    // Set default valid until date (7 days from now)
+    setDefaultValidUntilDate();
 });
 
 // ===== JOB DATA REPOSITORY =====
@@ -136,15 +141,15 @@ function initializeQuoteForm() {
         });
     }
 
-    // Handle back button
+    // Handle back button - use absolute path
     if (backBtn) {
         backBtn.addEventListener('click', function() {
             if (hasUnsavedChanges()) {
                 if (confirm('You have unsaved changes. Are you sure you want to go back?')) {
-                    window.location.href = 'available-jobs.php';
+                    window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-available-jobs';
                 }
             } else {
-                window.location.href = 'available-jobs.php';
+                window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-available-jobs';
             }
         });
     }
@@ -171,92 +176,57 @@ function initializeQuoteForm() {
 
 function handleQuoteSubmission() {
     const form = document.getElementById('quote-form');
-    const price = document.getElementById('quote-price').value;
-    const days = document.getElementById('completion-days').value || '0';
-    const hours = document.getElementById('completion-hours').value || '0';
-    const notes = document.getElementById('quote-notes').value;
+    const quoteAmount = document.getElementById('quote-amount').value;
+    const estimatedDays = document.getElementById('estimated-days').value;
+    const warrantyPeriod = document.getElementById('warranty-period').value;
+    const validUntil = document.getElementById('valid-until').value;
+    const materialsIncluded = document.getElementById('materials-included').checked;
+    const message = document.getElementById('quote-message').value;
     const termsAgreed = document.getElementById('terms-agreement').checked;
 
     // Validate required fields
-    if (!price || !notes || !termsAgreed) {
+    if (!quoteAmount || !estimatedDays || !validUntil || !message || !termsAgreed) {
         showNotification('Please fill in all required fields and agree to terms.', 'error');
         return;
     }
 
-    if (!days && !hours) {
-        showNotification('Please provide an estimated completion time.', 'error');
+    // Validate quote amount
+    if (parseFloat(quoteAmount) <= 0) {
+        showNotification('Quote amount must be greater than zero.', 'error');
+        return;
+    }
+
+    // Validate estimated days
+    if (parseInt(estimatedDays) <= 0) {
+        showNotification('Estimated days must be at least 1 day.', 'error');
+        return;
+    }
+
+    // Validate message length
+    if (message.trim().length < 10) {
+        showNotification('Quote details must be at least 10 characters long.', 'error');
+        return;
+    }
+
+    // Validate valid until date is in the future
+    const validUntilDate = new Date(validUntil);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (validUntilDate < today) {
+        showNotification('Quote validity date must be in the future.', 'error');
         return;
     }
 
     // Update confirmation modal
-    updateConfirmationModal(price, days, hours);
+    updateConfirmationModal(quoteAmount, estimatedDays, warrantyPeriod, validUntil, materialsIncluded);
     
     // Show confirmation modal
     showConfirmationModal();
 }
 
-// ===== BREAKDOWN CALCULATOR =====
-function initializeBreakdownCalculator() {
-    const addItemBtn = document.getElementById('add-breakdown-item');
-    const breakdownItems = document.getElementById('breakdown-items');
-
-    if (addItemBtn) {
-        addItemBtn.addEventListener('click', addBreakdownItem);
-    }
-
-    // Initialize existing item listeners
-    updateBreakdownListeners();
-    updateBreakdownTotal();
-}
-
-function addBreakdownItem() {
-    const breakdownItems = document.getElementById('breakdown-items');
-    const newItem = document.createElement('div');
-    newItem.className = 'breakdown-item';
-    
-    newItem.innerHTML = `
-        <div class="breakdown-input-group">
-            <input type="text" class="breakdown-description" placeholder="Item description (e.g., New faucet cartridge)">
-            <input type="number" class="breakdown-cost" placeholder="Cost" min="0" step="0.01">
-            <button type="button" class="btn-remove-item" title="Remove item">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    `;
-    
-    breakdownItems.appendChild(newItem);
-    updateBreakdownListeners();
-}
-
-function updateBreakdownListeners() {
-    const removeButtons = document.querySelectorAll('.btn-remove-item');
-    const costInputs = document.querySelectorAll('.breakdown-cost');
-
-    // Remove item listeners
-    removeButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            this.closest('.breakdown-item').remove();
-            updateBreakdownTotal();
-        });
-    });
-
-    // Cost change listeners
-    costInputs.forEach(input => {
-        input.addEventListener('input', updateBreakdownTotal);
-    });
-}
-
-function updateBreakdownTotal() {
-    const costInputs = document.querySelectorAll('.breakdown-cost');
-    let total = 0;
-
-    costInputs.forEach(input => {
-        const value = parseFloat(input.value) || 0;
-        total += value;
-    });
-
-    document.getElementById('breakdown-total').textContent = `Rs. ${total.toFixed(2)}`;
-}
+// ===== BREAKDOWN CALCULATOR ===== 
+// (Removed - not needed for database schema)
 
 // ===== CONFIRMATION MODAL =====
 function initializeConfirmationModal() {
@@ -305,25 +275,63 @@ function hideConfirmationModal() {
     }
 }
 
-function updateConfirmationModal(price, days, hours) {
-    const confirmPrice = document.getElementById('confirm-price');
-    const confirmTime = document.getElementById('confirm-time');
+function updateConfirmationModal(quoteAmount, estimatedDays, warrantyPeriod, validUntil, materialsIncluded) {
+    const confirmAmount = document.getElementById('confirm-amount');
+    const confirmDays = document.getElementById('confirm-days');
+    const confirmWarranty = document.getElementById('confirm-warranty');
+    const confirmValidUntil = document.getElementById('confirm-valid-until');
+    const confirmMaterials = document.getElementById('confirm-materials');
 
-    if (confirmPrice) {
-        confirmPrice.textContent = `Rs. ${parseFloat(price).toFixed(2)}`;
+    if (confirmAmount) {
+        confirmAmount.textContent = `Rs. ${parseFloat(quoteAmount).toFixed(2)}`;
     }
 
-    if (confirmTime) {
-        const timeText = formatTime(parseInt(days), parseInt(hours));
-        confirmTime.textContent = timeText;
+    if (confirmDays) {
+        const days = parseInt(estimatedDays);
+        confirmDays.textContent = `${days} day${days !== 1 ? 's' : ''}`;
+    }
+
+    if (confirmWarranty) {
+        const months = parseInt(warrantyPeriod);
+        if (months === 0) {
+            confirmWarranty.textContent = 'No warranty';
+        } else if (months === 12) {
+            confirmWarranty.textContent = '1 year';
+        } else if (months === 24) {
+            confirmWarranty.textContent = '2 years';
+        } else {
+            confirmWarranty.textContent = `${months} month${months !== 1 ? 's' : ''}`;
+        }
+    }
+
+    if (confirmValidUntil) {
+        const date = new Date(validUntil);
+        confirmValidUntil.textContent = date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+    }
+
+    if (confirmMaterials) {
+        confirmMaterials.textContent = materialsIncluded ? 'Included' : 'Not Included';
     }
 }
 
-function formatTime(days, hours) {
-    const parts = [];
-    if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
-    if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
-    return parts.length > 0 ? parts.join(', ') : '0 hours';
+// Helper function to set default valid until date (7 days from now)
+function setDefaultValidUntilDate() {
+    const validUntilInput = document.getElementById('valid-until');
+    if (validUntilInput && !validUntilInput.value) {
+        const today = new Date();
+        const defaultDate = new Date(today.setDate(today.getDate() + 7));
+        const formattedDate = defaultDate.toISOString().split('T')[0];
+        validUntilInput.value = formattedDate;
+        
+        // Set minimum date to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        validUntilInput.min = tomorrow.toISOString().split('T')[0];
+    }
 }
 
 function confirmQuoteSubmission() {
@@ -333,45 +341,106 @@ function confirmQuoteSubmission() {
     confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
     confirmBtn.disabled = true;
 
-    // Simulate API call
-    setTimeout(() => {
-        // Hide modal
-        hideConfirmationModal();
-        
-        // Show success message
-        showNotification('Quote submitted successfully! The customer will be notified.', 'success');
-        
-        // Clear form
-        clearForm();
+    // Get form data
+    const requestId = document.getElementById('request-id').value;
+    const repairerId = document.getElementById('repairer-id').value;
+    const quoteAmount = document.getElementById('quote-amount').value;
+    const estimatedDays = document.getElementById('estimated-days').value;
+    const warrantyPeriod = document.getElementById('warranty-period').value;
+    const validUntil = document.getElementById('valid-until').value;
+    const materialsIncluded = document.getElementById('materials-included').checked;
+    const message = document.getElementById('quote-message').value;
+
+    // Prepare data for API
+    const quoteData = {
+        request_id: parseInt(requestId),
+        repairer_id: parseInt(repairerId),
+        quoteAmount: parseFloat(quoteAmount),
+        estimatedDays: parseInt(estimatedDays),
+        warrantyPeriod: parseInt(warrantyPeriod),
+        validUntil: validUntil,
+        materialsIncluded: materialsIncluded,
+        message: message,
+        status: 'pending'
+    };
+
+    // Submit to API
+    fetch('/2nd-Year-Group-Project/FixLanka/api/repairer-quotes.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(quoteData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Hide modal
+            hideConfirmationModal();
+            
+            // Show success message
+            showNotification('Quote submitted successfully! The customer will be notified.', 'success');
+            
+            // Log the submitted data (for debugging in dummy mode)
+            
+            // Clear form
+            clearForm();
+            
+            // Reset button
+            confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirm & Submit';
+            confirmBtn.disabled = false;
+            
+            // Redirect after delay
+            setTimeout(() => {
+                window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-my-jobs';
+            }, 2000);
+        } else {
+            throw new Error(data.error || 'Failed to submit quote');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to submit quote: ' + error.message, 'error');
         
         // Reset button
         confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirm & Submit';
         confirmBtn.disabled = false;
         
-        // Redirect after delay
-        setTimeout(() => {
-            window.location.href = 'my-jobs.php';
-        }, 2000);
-        
-    }, 2000); // Simulate 2 second delay
+        // Hide modal
+        hideConfirmationModal();
+    });
 }
 
 // ===== FORM VALIDATION =====
 function initializeFormValidation() {
-    const priceInput = document.getElementById('quote-price');
-    const notesInput = document.getElementById('quote-notes');
+    const amountInput = document.getElementById('quote-amount');
+    const daysInput = document.getElementById('estimated-days');
+    const messageInput = document.getElementById('quote-message');
+    const validUntilInput = document.getElementById('valid-until');
     const termsCheckbox = document.getElementById('terms-agreement');
 
     // Real-time validation
-    if (priceInput) {
-        priceInput.addEventListener('input', function() {
-            validatePrice(this);
+    if (amountInput) {
+        amountInput.addEventListener('input', function() {
+            validateAmount(this);
         });
     }
 
-    if (notesInput) {
-        notesInput.addEventListener('input', function() {
-            validateNotes(this);
+    if (daysInput) {
+        daysInput.addEventListener('input', function() {
+            validateDays(this);
+        });
+    }
+
+    if (messageInput) {
+        messageInput.addEventListener('input', function() {
+            validateMessage(this);
+        });
+    }
+
+    if (validUntilInput) {
+        validUntilInput.addEventListener('change', function() {
+            validateValidUntil(this);
         });
     }
 
@@ -382,7 +451,7 @@ function initializeFormValidation() {
     }
 }
 
-function validatePrice(input) {
+function validateAmount(input) {
     const value = parseFloat(input.value);
     const isValid = value > 0;
     
@@ -390,8 +459,27 @@ function validatePrice(input) {
     return isValid;
 }
 
-function validateNotes(input) {
+function validateDays(input) {
+    const value = parseInt(input.value);
+    const isValid = value > 0 && value <= 365;
+    
+    toggleFieldValidation(input, isValid);
+    return isValid;
+}
+
+function validateMessage(input) {
     const isValid = input.value.trim().length >= 10;
+    
+    toggleFieldValidation(input, isValid);
+    return isValid;
+}
+
+function validateValidUntil(input) {
+    const selectedDate = new Date(input.value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const isValid = selectedDate > today;
     
     toggleFieldValidation(input, isValid);
     return isValid;
@@ -416,58 +504,49 @@ function toggleFieldValidation(element, isValid) {
 
 // ===== UTILITY FUNCTIONS =====
 function hasUnsavedChanges() {
-    const price = document.getElementById('quote-price').value;
-    const notes = document.getElementById('quote-notes').value;
-    const days = document.getElementById('completion-days').value;
-    const hours = document.getElementById('completion-hours').value;
+    const quoteAmount = document.getElementById('quote-amount').value;
+    const estimatedDays = document.getElementById('estimated-days').value;
+    const message = document.getElementById('quote-message').value;
 
-    return price || notes || days || hours;
+    return quoteAmount || estimatedDays || message;
 }
 
 function clearForm() {
     const form = document.getElementById('quote-form');
     if (form) {
         form.reset();
-        
-        // Clear breakdown items except the first one
-        const breakdownItems = document.getElementById('breakdown-items');
-        const items = breakdownItems.querySelectorAll('.breakdown-item');
-        for (let i = 1; i < items.length; i++) {
-            items[i].remove();
-        }
-        
-        // Clear first item
-        const firstItem = items[0];
-        if (firstItem) {
-            firstItem.querySelector('.breakdown-description').value = '';
-            firstItem.querySelector('.breakdown-cost').value = '';
-        }
-        
-        updateBreakdownTotal();
+        // Reset to default valid until date
+        setDefaultValidUntilDate();
     }
 }
 
 function saveDraft() {
-    const price = document.getElementById('quote-price').value;
-    const days = document.getElementById('completion-days').value;
-    const hours = document.getElementById('completion-hours').value;
-    const notes = document.getElementById('quote-notes').value;
+    const quoteAmount = document.getElementById('quote-amount').value;
+    const estimatedDays = document.getElementById('estimated-days').value;
+    const warrantyPeriod = document.getElementById('warranty-period').value;
+    const validUntil = document.getElementById('valid-until').value;
+    const materialsIncluded = document.getElementById('materials-included').checked;
+    const message = document.getElementById('quote-message').value;
+    const requestId = document.getElementById('request-id').value;
 
-    if (!price && !notes && !days && !hours) {
+    if (!quoteAmount && !estimatedDays && !message) {
         showNotification('Nothing to save.', 'info');
         return;
     }
 
-    // Simulate saving to local storage or API
+    // Simulate saving to local storage
     const draftData = {
-        price,
-        days,
-        hours,
-        notes,
+        request_id: requestId,
+        quoteAmount,
+        estimatedDays,
+        warrantyPeriod,
+        validUntil,
+        materialsIncluded,
+        message,
         timestamp: new Date().toISOString()
     };
 
-    localStorage.setItem('quote-draft', JSON.stringify(draftData));
+    localStorage.setItem('quote-draft-' + requestId, JSON.stringify(draftData));
     showNotification('Draft saved successfully!', 'success');
 }
 
@@ -475,10 +554,12 @@ function setupAutoSave() {
     let autoSaveTimeout;
     
     const inputs = [
-        document.getElementById('quote-price'),
-        document.getElementById('completion-days'),
-        document.getElementById('completion-hours'),
-        document.getElementById('quote-notes')
+        document.getElementById('quote-amount'),
+        document.getElementById('estimated-days'),
+        document.getElementById('warranty-period'),
+        document.getElementById('valid-until'),
+        document.getElementById('materials-included'),
+        document.getElementById('quote-message')
     ];
 
     inputs.forEach(input => {

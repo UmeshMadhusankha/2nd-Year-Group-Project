@@ -1,16 +1,16 @@
-// ================================================
+﻿// ================================================
 // PAYMENT PAGE - SECURE PAYMENT PROCESSING
 // ================================================
 
-document.addEventListener('DOMContentLoaded', function() {
-    
+document.addEventListener('DOMContentLoaded', function () {
+
     // ================================================
     // DOM ELEMENTS
     // ================================================
     const paymentForm = document.getElementById('paymentForm');
     const cancelBtn = document.getElementById('cancelBtn');
     const payBtn = document.getElementById('payBtn');
-    
+
     // Form inputs
     const fullNameInput = document.getElementById('fullName');
     const emailInput = document.getElementById('email');
@@ -23,23 +23,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const expiryDateInput = document.getElementById('expiryDate');
     const cvvInput = document.getElementById('cvv');
     const saveCardCheckbox = document.getElementById('saveCard');
-    
+
     // Card detection
     const cardIcon = document.getElementById('cardIcon');
     const cardType = document.getElementById('cardType');
-    
+
     // Promo code
     const promoCodeInput = document.getElementById('promoCode');
     const applyPromoBtn = document.getElementById('applyPromoBtn');
     const promoMessage = document.getElementById('promoMessage');
-    
+
     // Price elements
     const subtotalElement = document.getElementById('subtotal');
     const serviceFeeElement = document.getElementById('serviceFee');
     const discountRow = document.getElementById('discountRow');
     const discountElement = document.getElementById('discount');
     const totalElement = document.getElementById('total');
-    
+
     // Modals
     const successModal = document.getElementById('successModal');
     const loadingOverlay = document.getElementById('loadingOverlay');
@@ -99,54 +99,54 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupEventListeners() {
         // Form submission
         paymentForm.addEventListener('submit', handlePayment);
-        
+
         // Cancel button
         cancelBtn.addEventListener('click', handleCancel);
-        
+
         // Card number formatting and detection
-        cardNumberInput.addEventListener('input', function(e) {
+        cardNumberInput.addEventListener('input', function (e) {
             formatCardNumber(e);
             detectCardType(e.target.value);
         });
-        
+
         // Expiry date formatting
         expiryDateInput.addEventListener('input', formatExpiryDate);
-        
+
         // CVV validation
-        cvvInput.addEventListener('input', function(e) {
+        cvvInput.addEventListener('input', function (e) {
             e.target.value = e.target.value.replace(/\D/g, '').substring(0, 4);
         });
-        
+
         // ZIP code validation
-        zipCodeInput.addEventListener('input', function(e) {
+        zipCodeInput.addEventListener('input', function (e) {
             e.target.value = e.target.value.replace(/[^\d\s-]/g, '');
         });
-        
+
         // Promo code
         applyPromoBtn.addEventListener('click', applyPromoCode);
-        promoCodeInput.addEventListener('keypress', function(e) {
+        promoCodeInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 applyPromoCode();
             }
         });
-        
+
         // Real-time validation
         fullNameInput.addEventListener('blur', validateFullName);
         emailInput.addEventListener('blur', validateEmail);
         cardNumberInput.addEventListener('blur', validateCardNumber);
         expiryDateInput.addEventListener('blur', validateExpiryDate);
         cvvInput.addEventListener('blur', validateCVV);
-        
+
         // Success modal actions
-        viewOrderBtn.addEventListener('click', function() {
+        viewOrderBtn.addEventListener('click', function () {
             window.location.href = 'job-history.html';
         });
-        
-        backToDashboardBtn.addEventListener('click', function() {
+
+        backToDashboardBtn.addEventListener('click', function () {
             window.location.href = 'dashboard.html';
         });
-        
+
         // Auto-save form data (for convenience, not sensitive data)
         const formInputs = [fullNameInput, emailInput, addressInput, cityInput, stateInput, zipCodeInput];
         formInputs.forEach(input => {
@@ -169,16 +169,16 @@ document.addEventListener('DOMContentLoaded', function() {
     function detectCardType(cardNumber) {
         const cleanNumber = cardNumber.replace(/\s/g, '');
         let detectedType = 'default';
-        
+
         for (const [type, pattern] of Object.entries(cardPatterns)) {
             if (pattern.test(cleanNumber)) {
                 detectedType = type;
                 break;
             }
         }
-        
+
         cardType.innerHTML = cardIcons[detectedType];
-        
+
         // Update CVV max length based on card type
         cvvInput.maxLength = detectedType === 'amex' ? 4 : 3;
     }
@@ -188,11 +188,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================================================
     function formatExpiryDate(e) {
         let value = e.target.value.replace(/\D/g, '');
-        
+
         if (value.length >= 2) {
             value = value.substring(0, 2) + '/' + value.substring(2, 4);
         }
-        
+
         e.target.value = value;
     }
 
@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateFullName() {
         const value = fullNameInput.value.trim();
         const isValid = value.length >= 3 && /^[a-zA-Z\s]+$/.test(value);
-        
+
         setValidationState(fullNameInput, isValid, 'Please enter a valid full name');
         return isValid;
     }
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const value = emailInput.value.trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const isValid = emailRegex.test(value);
-        
+
         setValidationState(emailInput, isValid, 'Please enter a valid email address');
         return isValid;
     }
@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateCardNumber() {
         const value = cardNumberInput.value.replace(/\s/g, '');
         const isValid = value.length >= 13 && value.length <= 19 && /^\d+$/.test(value);
-        
+
         setValidationState(cardNumberInput, isValid, 'Please enter a valid card number');
         return isValid;
     }
@@ -227,22 +227,22 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateExpiryDate() {
         const value = expiryDateInput.value;
         const [month, year] = value.split('/');
-        
+
         if (!month || !year) {
             setValidationState(expiryDateInput, false, 'Please enter expiry date (MM/YY)');
             return false;
         }
-        
+
         const currentDate = new Date();
         const currentYear = currentDate.getFullYear() % 100;
         const currentMonth = currentDate.getMonth() + 1;
-        
+
         const expMonth = parseInt(month);
         const expYear = parseInt(year);
-        
-        const isValid = expMonth >= 1 && expMonth <= 12 && 
-                       (expYear > currentYear || (expYear === currentYear && expMonth >= currentMonth));
-        
+
+        const isValid = expMonth >= 1 && expMonth <= 12 &&
+            (expYear > currentYear || (expYear === currentYear && expMonth >= currentMonth));
+
         setValidationState(expiryDateInput, isValid, 'Card has expired or invalid date');
         return isValid;
     }
@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateCVV() {
         const value = cvvInput.value;
         const isValid = value.length >= 3 && value.length <= 4 && /^\d+$/.test(value);
-        
+
         setValidationState(cvvInput, isValid, 'Please enter a valid CVV');
         return isValid;
     }
@@ -258,14 +258,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function setValidationState(input, isValid, message) {
         const inputWrapper = input.closest('.input-wrapper') || input.parentElement;
         const existingError = inputWrapper.querySelector('.error-message');
-        
+
         if (existingError) {
             existingError.remove();
         }
-        
+
         if (!isValid && input.value.trim() !== '') {
             input.style.borderColor = 'var(--danger-color)';
-            
+
             const errorElement = document.createElement('div');
             errorElement.className = 'error-message';
             errorElement.style.cssText = `
@@ -277,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 gap: var(--spacing-xs);
             `;
             errorElement.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-            
+
             inputWrapper.appendChild(errorElement);
         } else {
             input.style.borderColor = isValid ? 'var(--success-color)' : '';
@@ -289,25 +289,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================================================
     function applyPromoCode() {
         const code = promoCodeInput.value.trim().toUpperCase();
-        
+
         if (!code) {
             showPromoMessage('Please enter a promo code', 'error');
             return;
         }
-        
+
         if (promoCodes[code]) {
             const promo = promoCodes[code];
             paymentData.appliedPromo = code;
-            
+
             if (promo.type === 'percentage') {
                 paymentData.discount = Math.round(paymentData.subtotal * promo.value / 100);
             } else {
                 paymentData.discount = promo.value;
             }
-            
+
             updatePriceSummary();
-            showPromoMessage(`✓ ${promo.description} applied!`, 'success');
-            
+            showPromoMessage(`âœ“ ${promo.description} applied!`, 'success');
+
             applyPromoBtn.disabled = true;
             applyPromoBtn.textContent = 'Applied';
             promoCodeInput.disabled = true;
@@ -320,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function() {
         promoMessage.textContent = message;
         promoMessage.className = `promo-message ${type}`;
         promoMessage.style.display = 'block';
-        
+
         if (type === 'error') {
             setTimeout(() => {
                 promoMessage.style.display = 'none';
@@ -333,11 +333,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================================================
     function updatePriceSummary() {
         paymentData.total = paymentData.subtotal + paymentData.serviceFee - paymentData.discount;
-        
+
         subtotalElement.textContent = `LKR ${paymentData.subtotal.toLocaleString()}`;
         serviceFeeElement.textContent = `LKR ${paymentData.serviceFee.toLocaleString()}`;
         totalElement.textContent = `LKR ${paymentData.total.toLocaleString()}`;
-        
+
         if (paymentData.discount > 0) {
             discountRow.style.display = 'flex';
             discountElement.textContent = `- LKR ${paymentData.discount.toLocaleString()}`;
@@ -351,19 +351,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================================================
     function handlePayment(e) {
         e.preventDefault();
-        
+
         // Validate all fields
         const isFullNameValid = validateFullName();
         const isEmailValid = validateEmail();
         const isCardNumberValid = validateCardNumber();
         const isExpiryValid = validateExpiryDate();
         const isCVVValid = validateCVV();
-        
+
         if (!isFullNameValid || !isEmailValid || !isCardNumberValid || !isExpiryValid || !isCVVValid) {
             showNotification('Please fix the errors in the form', 'error');
             return;
         }
-        
+
         // Collect payment data
         const paymentInfo = {
             fullName: fullNameInput.value.trim(),
@@ -384,13 +384,12 @@ document.addEventListener('DOMContentLoaded', function() {
             amount: paymentData.total,
             promoCode: paymentData.appliedPromo
         };
-        
-        console.log('Processing payment:', paymentInfo);
-        
+
+
         // Show loading overlay
         loadingOverlay.classList.add('show');
         payBtn.disabled = true;
-        
+
         // Simulate payment processing
         setTimeout(() => {
             processPayment(paymentInfo);
@@ -403,21 +402,21 @@ document.addEventListener('DOMContentLoaded', function() {
     function processPayment(paymentInfo) {
         // Simulate successful payment
         const transactionId = 'TXN' + Date.now();
-        
+
         // Hide loading
         loadingOverlay.classList.remove('show');
-        
+
         // Update success modal
         transactionIdElement.textContent = transactionId;
         amountPaidElement.textContent = `LKR ${paymentData.total.toLocaleString()}`;
-        
+
         // Show success modal
         successModal.classList.add('show');
         document.body.style.overflow = 'hidden';
-        
+
         // Clear sensitive data
         clearFormData();
-        
+
         // Store transaction in localStorage (for demo purposes)
         storeTransaction({
             id: transactionId,
@@ -434,8 +433,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================================================
     // CANCEL PAYMENT
     // ================================================
-    function handleCancel() {
-        if (confirm('Are you sure you want to cancel this payment?')) {
+    async function handleCancel() {
+        const confirmed = await window.showConfirm('Are you sure you want to cancel this payment?', { title: 'Cancel Payment', confirmText: 'Yes, Cancel', type: 'warning' });
+        if (confirmed) {
             window.location.href = 'job-history.html';
         }
     }
@@ -453,13 +453,13 @@ document.addEventListener('DOMContentLoaded', function() {
             zipCode: zipCodeInput.value,
             country: countrySelect.value
         };
-        
+
         localStorage.setItem('fixlanka_payment_form', JSON.stringify(formData));
     }
 
     function loadSavedData() {
         const savedData = localStorage.getItem('fixlanka_payment_form');
-        
+
         if (savedData) {
             try {
                 const data = JSON.parse(savedData);
@@ -509,15 +509,15 @@ document.addEventListener('DOMContentLoaded', function() {
             z-index: 10000;
             animation: slideInRight 0.3s ease-out;
         `;
-        
+
         const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
         toast.innerHTML = `
             <i class="fas ${icon}"></i>
             <span style="margin-left: 10px;">${message}</span>
         `;
-        
+
         document.body.appendChild(toast);
-        
+
         setTimeout(() => {
             toast.style.animation = 'slideOutRight 0.3s ease-out';
             setTimeout(() => toast.remove(), 300);
@@ -554,12 +554,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================================================
     // KEYBOARD SHORTCUTS
     // ================================================
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         // ESC to cancel
         if (e.key === 'Escape' && !successModal.classList.contains('show')) {
             handleCancel();
         }
-        
+
         // Ctrl/Cmd + Enter to submit
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             e.preventDefault();
@@ -570,16 +570,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================================================
     // SECURITY FEATURES
     // ================================================
-    
+
     // Prevent copy/paste on sensitive fields
     [cardNumberInput, cvvInput].forEach(input => {
         input.addEventListener('copy', e => e.preventDefault());
         input.addEventListener('paste', e => e.preventDefault());
         input.addEventListener('cut', e => e.preventDefault());
     });
-    
+
     // Clear form on page unload (security)
-    window.addEventListener('beforeunload', function() {
+    window.addEventListener('beforeunload', function () {
         cardNumberInput.value = '';
         cvvInput.value = '';
     });

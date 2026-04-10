@@ -9,8 +9,8 @@ require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
 require_once __DIR__ . '/_components/Common.php';
-require_once '../../includes/admin-modarator/auth.php';
-require_once '../../includes/admin-modarator/mock-data.php';
+require_once __DIR__ . '/../../includes/admin-modarator/auth.php';
+require_once __DIR__ . '/../../includes/admin-modarator/mock-data.php';
 
 require_once __DIR__ . '/_components/notifications/NotificationCard.php';
 require_once __DIR__ . '/_components/notifications/NotificationForm.php';
@@ -56,8 +56,8 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
         <?php renderModeratorSidebar($currentPath, $basePath); ?>
         <div class="dashboard-main">
             <?php renderPageHeader($basePath, 'All Notifications', 'Complete notification history with advanced filtering and analytics'); ?>
-            <link rel="stylesheet" href="../../assets/css/moderator/notifications.css">
-            <link rel="stylesheet" href="../../assets/css/moderator/modals.css">
+            <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/notifications.css">
+            <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/modals.css">
 
             <div id="loadingOverlay" class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center" style="display: none;">
                 <div class="flex flex-col items-center space-y-4">
@@ -239,15 +239,16 @@ $pageDescription = $description ?? 'A Next.js-inspired PHP routing system with a
                 window.basePath = "<?php echo $basePath; ?>";
                 window.allNotifications = []
             </script>
-            <script src="../../assets/javascript/moderator/notifications/modalFunctions.js"></script>
-            <script src="../../assets/javascript/moderator/notifications/notifications.js"></script>
+            <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/moderator/notifications/modalFunctions.js"></script>
+            <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/moderator/notifications/notifications.js"></script>
         </div>
     </div>
     <script>
         lucide.createIcons();
     </script>
-    <script src="../../assets/javascript/admin-moderator/common.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/admin-moderator/common.js"></script>
 
 </body>
 
 </html>
+

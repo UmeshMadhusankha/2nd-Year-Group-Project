@@ -12,11 +12,11 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Submit Quote - FixLanka</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../../../assets/css/common/global.css">
-    <link rel="stylesheet" href="../../../assets/css/common/variables.css">
-    <link rel="stylesheet" href="../../../assets/css/common/topbar.css">
-    <link rel="stylesheet" href="../../../assets/css/common/sidebar.css">
-    <link rel="stylesheet" href="../../../assets/css/repairer/submit-quote.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/sidebar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/submit-quote.css">
 </head>
 <body>
     <!-- Sidebar Toggle Checkbox -->
@@ -25,10 +25,10 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <!-- Dashboard Container -->
     <div class="dashboard-container">
         <!-- Include Topbar -->
-        <?php include '../common/topbar.php'; ?>
+        <?php require_once __DIR__ . '/../common/topbar.php'; ?>
 
         <!-- Include Sidebar -->
-        <?php include '../common/sidebar.php'; ?>
+        <?php require_once __DIR__ . '/../common/sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="main-content-wrapper">
@@ -107,68 +107,66 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                         </div>
                         
                         <form class="quote-form" id="quote-form">
+                            <!-- Hidden fields for request_id and repairer_id -->
+                            <input type="hidden" id="request-id" name="request_id" value="">
+                            <input type="hidden" id="repairer-id" name="repairer_id" value="1">
+                            
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label for="quote-price" class="form-label">Price (LKR) *</label>
+                                    <label for="quote-amount" class="form-label">Quote Amount (LKR) *</label>
                                     <div class="input-group">
                                         <span class="input-prefix">Rs.</span>
-                                        <input type="number" id="quote-price" name="price" class="form-input" 
+                                        <input type="number" id="quote-amount" name="quoteAmount" class="form-input" 
                                                placeholder="0.00" min="0" step="0.01" required>
                                     </div>
-                                    <small class="form-help">Include all materials and labor costs</small>
+                                    <small class="form-help">Total price for the job</small>
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="completion-time" class="form-label">Estimated Completion Time *</label>
-                                    <div class="time-input-group">
-                                        <input type="number" id="completion-days" name="completion-days" class="form-input time-input" 
-                                               placeholder="0" min="0" max="365">
-                                        <span class="time-label">Days</span>
-                                        <input type="number" id="completion-hours" name="completion-hours" class="form-input time-input" 
-                                               placeholder="0" min="0" max="23">
-                                        <span class="time-label">Hours</span>
-                                    </div>
-                                    <small class="form-help">Estimated time to complete the job</small>
+                                    <label for="estimated-days" class="form-label">Estimated Duration (Days) *</label>
+                                    <input type="number" id="estimated-days" name="estimatedDays" class="form-input" 
+                                           placeholder="e.g., 3" min="1" max="365" required>
+                                    <small class="form-help">How many days to complete this job</small>
                                 </div>
+                            </div>
+                            
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="warranty-period" class="form-label">Warranty Period (Months)</label>
+                                    <select id="warranty-period" name="warrantyPeriod" class="form-input">
+                                        <option value="0">No Warranty</option>
+                                        <option value="1">1 Month</option>
+                                        <option value="3">3 Months</option>
+                                        <option value="6" selected>6 Months</option>
+                                        <option value="12">1 Year</option>
+                                        <option value="24">2 Years</option>
+                                    </select>
+                                    <small class="form-help">Warranty/guarantee period for your work</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="valid-until" class="form-label">Quote Valid Until *</label>
+                                    <input type="date" id="valid-until" name="validUntil" class="form-input" required>
+                                    <small class="form-help">Quote expiry date (typically 7-14 days)</small>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="materials-included" name="materialsIncluded" checked>
+                                    <span class="checkbox-custom"></span>
+                                    <span class="checkbox-text">
+                                        Materials cost included in quote
+                                    </span>
+                                </label>
+                                <small class="form-help">Check if the quote amount includes all materials needed</small>
                             </div>
                             
                             <div class="form-group">
-                                <label for="quote-notes" class="form-label">Notes *</label>
-                                <textarea id="quote-notes" name="notes" class="form-textarea" rows="6" 
-                                          placeholder="Describe your approach, materials needed, any special considerations..." required></textarea>
-                                <small class="form-help">Provide details about how you'll approach this job</small>
-                            </div>
-                            
-                            <!-- Quote Breakdown Section -->
-                            <div class="quote-breakdown">
-                                <h4 class="breakdown-title">
-                                    <i class="fas fa-calculator"></i>
-                                    Quote Breakdown (Optional)
-                                </h4>
-                                
-                                <div class="breakdown-items" id="breakdown-items">
-                                    <div class="breakdown-item">
-                                        <div class="breakdown-input-group">
-                                            <input type="text" class="breakdown-description" placeholder="Item description (e.g., New faucet cartridge)">
-                                            <input type="number" class="breakdown-cost" placeholder="Cost" min="0" step="0.01">
-                                            <button type="button" class="btn-remove-item" title="Remove item">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <button type="button" class="btn btn-secondary btn-sm" id="add-breakdown-item">
-                                    <i class="fas fa-plus"></i>
-                                    Add Item
-                                </button>
-                                
-                                <div class="breakdown-total">
-                                    <div class="total-row">
-                                        <span class="total-label">Breakdown Total:</span>
-                                        <span class="total-amount" id="breakdown-total">Rs. 0.00</span>
-                                    </div>
-                                </div>
+                                <label for="quote-message" class="form-label">Quote Details *</label>
+                                <textarea id="quote-message" name="message" class="form-textarea" rows="6" 
+                                          placeholder="Describe your approach, materials to be used, work schedule, and any special considerations..." required></textarea>
+                                <small class="form-help">Provide detailed information about how you'll approach this job</small>
                             </div>
                             
                             <!-- Terms and Conditions -->
@@ -178,17 +176,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                         <input type="checkbox" id="terms-agreement" required>
                                         <span class="checkbox-custom"></span>
                                         <span class="checkbox-text">
-                                            I agree to the <a href="#terms" class="link">terms and conditions</a> and confirm that this quote is valid for 7 days
-                                        </span>
-                                    </label>
-                                </div>
-                                
-                                <div class="form-group checkbox-group">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="warranty-offered">
-                                        <span class="checkbox-custom"></span>
-                                        <span class="checkbox-text">
-                                            I offer a warranty/guarantee for this work
+                                            I agree to the <a href="#terms" class="link">terms and conditions</a> and confirm the accuracy of this quote
                                         </span>
                                     </label>
                                 </div>
@@ -235,16 +223,32 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                     <div class="confirmation-details">
                         <h4>Quote Summary</h4>
                         <div class="summary-item">
-                            <span class="summary-label">Total Price:</span>
-                            <span class="summary-value" id="confirm-price">Rs. 0.00</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Completion Time:</span>
-                            <span class="summary-value" id="confirm-time">0 days, 0 hours</span>
-                        </div>
-                        <div class="summary-item">
                             <span class="summary-label">Job:</span>
                             <span class="summary-value" id="confirm-job">Fix Kitchen Faucet Leak</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Quote Amount:</span>
+                            <span class="summary-value" id="confirm-amount">Rs. 0.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Estimated Duration:</span>
+                            <span class="summary-value" id="confirm-days">0 days</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Warranty:</span>
+                            <span class="summary-value" id="confirm-warranty">6 months</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Valid Until:</span>
+                            <span class="summary-value" id="confirm-valid-until">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Materials:</span>
+                            <span class="summary-value" id="confirm-materials">Included</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Status:</span>
+                            <span class="summary-value">Pending</span>
                         </div>
                     </div>
                     
@@ -268,7 +272,8 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     </div>
 
     <!-- Include JavaScript -->
-    <script src="../../../assets/javascript/common/common.js"></script>
-    <script src="../../../assets/javascript/repairer/submit-quote.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/submit-quote.js"></script>
 </body>
 </html>
+

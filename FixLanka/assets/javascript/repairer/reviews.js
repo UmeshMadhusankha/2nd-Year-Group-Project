@@ -1,21 +1,146 @@
-// ================================================
-// REVIEWS PAGE JAVASCRIPT
+﻿// ================================================
+// REVIEWS PAGE JAVASCRIPT - Connected to Backend
 // ================================================
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize the reviews page
-    initializeReviewsPage();
-});
+const REVIEWS_REPAIRER_ID = window.CURRENT_REPAIRER_ID || 0;
+const REVIEWS_API = '/2nd-Year-Group-Project/FixLanka/api';
 
-// ===== MAIN INITIALIZATION =====
-function initializeReviewsPage() {
+// Raw data from API
+let allReviews = [];
+let currentFilters = { rating: 'all', response: 'all', sort: 'newest' };
+
+document.addEventListener('DOMContentLoaded', function () {
     initializeFilters();
     initializeModal();
-    initializeResponses();
-    initializeActions();
-    loadReviews();
-    updateStats();
+    if (REVIEWS_REPAIRER_ID) {
+        loadReviewsFromAPI();
+    } else {
+        showReviewsError('Session expired. Please log in again.');
+    }
+});
+
+// ===== LOAD FROM API =====
+async function loadReviewsFromAPI() {
+    const list = document.getElementById('reviewsList');
+    if (list) {
+        list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-secondary)"><i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top:12px">Loading reviews...</p></div>`;
+    }
+
+    try {
+        const res = await fetch(`${REVIEWS_API}/repairer-reviews.php?repairer_id=${REVIEWS_REPAIRER_ID}&limit=100`);
+        const data = await res.json();
+
+        if (!data.success) {
+            showReviewsError(data.error || 'Failed to load reviews');
+            return;
+        }
+
+        allReviews = data.reviews || [];
+        populateStats(data.stats);
+        renderReviews(allReviews);
+    } catch (err) {
+        console.error('Reviews load error:', err);
+        showReviewsError('Failed to connect to the server. Please try again.');
+    }
 }
+
+function populateStats(stats) {
+    if (!stats) return;
+
+    const avg = stats.average_rating || 0;
+    const total = stats.total_reviews || 0;
+    const positiveRate = stats.positive_rate || 0;
+
+    // Header overview
+    setText('overallRatingNumber', avg.toFixed(1));
+    setText('reviewCountLabel', `${total} review${total !== 1 ? 's' : ''}`);
+
+    // Star display
+    const starsEl = document.getElementById('overallRatingStars');
+    if (starsEl) starsEl.innerHTML = renderStars(avg);
+
+    // Stat cards
+    setText('totalReviewsCount', total);
+    setText('positiveReviewsRate', `${positiveRate}%`);
+    setText('responseRate', '—');       // Not tracked yet
+    setText('avgResponseTime', '—');    // Not tracked yet
+    setText('reviewsSubtitle', `${total} review${total !== 1 ? 's' : ''} total`);
+}
+
+function renderStars(rating) {
+    let html = '';
+    for (let i = 1; i <= 5; i++) {
+        if (i <= rating) {
+            html += '<i class="fas fa-star" style="color:#f59e0b"></i>';
+        } else if (i - 0.5 <= rating) {
+            html += '<i class="fas fa-star-half-alt" style="color:#f59e0b"></i>';
+        } else {
+            html += '<i class="far fa-star" style="color:#f59e0b"></i>';
+        }
+    }
+    return html;
+}
+
+function renderReviews(reviews) {
+    const list = document.getElementById('reviewsList');
+    if (!list) return;
+
+    if (!reviews.length) {
+        list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-secondary)"><i class="fas fa-star fa-2x"></i><p style="margin-top:12px">No reviews yet. Complete some jobs to receive your first review!</p></div>`;
+        setText('reviewsSubtitle', '0 reviews');
+        return;
+    }
+
+    list.innerHTML = reviews.map(r => createReviewCard(r)).join('');
+}
+
+function createReviewCard(review) {
+    const rating = parseFloat(review.rating) || 0;
+    const author = review.author || 'Anonymous';
+    const text = review.text || review.comments || '';
+    const date = review.date ? new Date(review.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+
+    return `
+        <div class="review-item" data-rating="${rating}">
+            <div class="review-header">
+                <div class="reviewer-info">
+                    <div class="reviewer-avatar">${escapeHtmlReviews(author.charAt(0).toUpperCase())}</div>
+                    <div class="reviewer-details">
+                        <h4 class="reviewer-name">${escapeHtmlReviews(author)}</h4>
+                        <span class="review-date">${date}</span>
+                    </div>
+                </div>
+                <div class="review-rating">
+                    ${renderStars(rating)}
+                    <span class="rating-value">${rating.toFixed(1)}</span>
+                </div>
+            </div>
+            <div class="review-body">
+                <p class="review-text">${escapeHtmlReviews(text)}</p>
+            </div>
+        </div>`;
+}
+
+function showReviewsError(message) {
+    const list = document.getElementById('reviewsList');
+    if (list) {
+        list.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444"><i class="fas fa-exclamation-circle fa-2x"></i><p style="margin-top:12px">${escapeHtmlReviews(message)}</p></div>`;
+    }
+    setText('reviewsSubtitle', 'Error loading data');
+}
+
+function escapeHtmlReviews(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
 
 // ===== FILTER FUNCTIONALITY =====
 function initializeFilters() {
@@ -56,7 +181,7 @@ function applyFilters() {
 
     // Sort reviews
     const visibleReviews = reviewsArray.filter(item => item.style.display !== 'none');
-    
+
     visibleReviews.sort((a, b) => {
         switch (sortBy) {
             case 'newest':
@@ -117,7 +242,7 @@ function initializeModal() {
     }
 
     if (modalOverlay) {
-        modalOverlay.addEventListener('click', function(e) {
+        modalOverlay.addEventListener('click', function (e) {
             if (e.target === modalOverlay) {
                 closeModal();
             }
@@ -125,7 +250,7 @@ function initializeModal() {
     }
 
     // ESC key to close modal
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && modal && modal.classList.contains('show')) {
             closeModal();
         }
@@ -146,7 +271,7 @@ function openModal(reviewId, customerName, jobTitle) {
     const modal = document.querySelector('.modal-overlay');
     const customerInfo = document.querySelector('.customer-info');
     const responseText = document.getElementById('response-text');
-    
+
     if (modal) {
         // Update customer info
         if (customerInfo) {
@@ -189,11 +314,11 @@ function closeModal() {
 function updateCharacterCount() {
     const textarea = document.getElementById('response-text');
     const counter = document.querySelector('.character-count');
-    
+
     if (textarea && counter) {
         const remaining = 500 - textarea.value.length;
         counter.textContent = `${remaining} characters remaining`;
-        
+
         if (remaining < 50) {
             counter.style.color = '#ef4444';
         } else if (remaining < 100) {
@@ -208,7 +333,7 @@ function sendResponse() {
     const modal = document.querySelector('.modal-overlay');
     const responseText = document.getElementById('response-text');
     const sendBtn = document.querySelector('.btn-primary');
-    
+
     if (!responseText || !responseText.value.trim()) {
         showNotification('Please enter a response before sending', 'error');
         return;
@@ -229,10 +354,10 @@ function sendResponse() {
     setTimeout(() => {
         const reviewId = modal.dataset.reviewId;
         addResponseToReview(reviewId, responseText.value.trim());
-        
+
         closeModal();
         showNotification('Response sent successfully!', 'success');
-        
+
         // Reset button
         if (sendBtn) {
             sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Response';
@@ -260,11 +385,11 @@ function addResponseToReview(reviewId, responseText) {
             Your Response
         </div>
         <p class="response-text">${responseText}</p>
-        <div class="response-date">${new Date().toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        })}</div>
+        <div class="response-date">${new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    })}</div>
     `;
 
     // Insert response before review actions
@@ -288,14 +413,14 @@ function addResponseToReview(reviewId, responseText) {
 // ===== RESPONSE MANAGEMENT =====
 function initializeResponses() {
     const respondBtns = document.querySelectorAll('.respond-btn');
-    
+
     respondBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const reviewItem = this.closest('.review-item');
             const reviewId = reviewItem.dataset.reviewId;
             const customerName = reviewItem.querySelector('.reviewer-name').textContent;
             const jobTitle = reviewItem.querySelector('.review-job').textContent;
-            
+
             openModal(reviewId, customerName, jobTitle);
         });
     });
@@ -303,24 +428,6 @@ function initializeResponses() {
 
 // ===== ACTION HANDLERS =====
 function initializeActions() {
-    // Share buttons
-    const shareBtns = document.querySelectorAll('.share-btn');
-    shareBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const reviewItem = this.closest('.review-item');
-            shareReview(reviewItem);
-        });
-    });
-
-    // Report buttons
-    const reportBtns = document.querySelectorAll('.report-btn');
-    reportBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const reviewItem = this.closest('.review-item');
-            reportReview(reviewItem);
-        });
-    });
-
     // Load more button
     const loadMoreBtn = document.querySelector('.load-more-btn');
     if (loadMoreBtn) {
@@ -328,54 +435,218 @@ function initializeActions() {
     }
 }
 
-function shareReview(reviewItem) {
-    const customerName = reviewItem.querySelector('.reviewer-name').textContent;
-    const rating = reviewItem.dataset.rating;
-    const reviewText = reviewItem.querySelector('.review-text').textContent;
-    
-    const shareText = `Check out this ${rating}-star review from ${customerName}: "${reviewText.substring(0, 100)}..."`;
-    
-    if (navigator.share) {
-        navigator.share({
-            title: 'Customer Review - FixLanka',
-            text: shareText,
-            url: window.location.href
-        }).then(() => {
-            showNotification('Review shared successfully!', 'success');
-        }).catch(() => {
-            copyToClipboard(shareText);
-        });
-    } else {
-        copyToClipboard(shareText);
-    }
-}
+// Function to open respond modal
+function openRespondModal(reviewId, customerName) {
+    const modal = document.getElementById('respondModal');
+    const customerNameSpan = document.getElementById('modalCustomerName');
+    const responseText = document.getElementById('responseText');
+    const charCount = document.getElementById('charCount');
+    const modalTitle = modal ? modal.querySelector('.modal-title') : null;
 
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        showNotification('Review text copied to clipboard!', 'success');
-    }).catch(() => {
-        showNotification('Unable to copy to clipboard', 'error');
-    });
-}
+    if (modal) {
+        // Reset modal title
+        if (modalTitle) {
+            modalTitle.textContent = 'Respond to Review';
+        }
 
-function reportReview(reviewItem) {
-    const customerName = reviewItem.querySelector('.reviewer-name').textContent;
-    
-    if (confirm(`Are you sure you want to report the review from ${customerName}? This action will flag the review for moderation.`)) {
-        // Simulate API call
-        setTimeout(() => {
-            showNotification('Review reported successfully. Our team will investigate.', 'success');
-            
-            // Add reported indicator
-            const reportBtn = reviewItem.querySelector('.report-btn');
-            if (reportBtn) {
-                reportBtn.innerHTML = '<i class="fas fa-check"></i> Reported';
-                reportBtn.disabled = true;
-                reportBtn.classList.add('btn-secondary');
-                reportBtn.classList.remove('btn-outline');
+        // Update customer info
+        if (customerNameSpan) {
+            customerNameSpan.textContent = customerName;
+        }
+
+        // Clear previous response
+        if (responseText) {
+            responseText.value = '';
+            if (charCount) {
+                charCount.textContent = '0';
             }
-        }, 1000);
+        }
+
+        // Store review ID for later use
+        modal.dataset.reviewId = reviewId;
+
+        // Show modal with class
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        // Focus on textarea
+        setTimeout(() => {
+            if (responseText) {
+                responseText.focus();
+            }
+        }, 100);
     }
+}
+
+// Function to close respond modal
+function closeRespondModal() {
+    const modal = document.getElementById('respondModal');
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+}
+
+// Function to send response
+function sendResponse() {
+    const responseText = document.getElementById('responseText');
+
+    if (!responseText || !responseText.value.trim()) {
+        showNotification('Please enter a response before sending', 'error');
+        return;
+    }
+
+    if (responseText.value.length > 500) {
+        showNotification('Response exceeds 500 character limit', 'error');
+        return;
+    }
+
+    // Simulate sending response
+    showNotification('Response sent successfully!', 'success');
+    closeRespondModal();
+
+    // Update stats
+    updateStats();
+}
+
+// Function to edit existing response
+function editResponse(reviewId) {
+
+
+    const reviewItems = document.querySelectorAll('.review-item');
+
+    let reviewItem = null;
+    let customerName = '';
+    let existingResponseText = '';
+
+    // Find the review item by matching the index (reviewId 1 = index 0, reviewId 2 = index 1, etc.)
+    reviewItems.forEach((item, index) => {
+
+        if (index + 1 === reviewId) {
+            reviewItem = item;
+            const nameElement = item.querySelector('.reviewer-name');
+            customerName = nameElement ? nameElement.textContent.trim() : '';
+
+            const responseElement = item.querySelector('.response-text');
+
+            if (responseElement) {
+                existingResponseText = responseElement.textContent.trim();
+
+                // Remove quotes if present and clean up whitespace
+                existingResponseText = existingResponseText
+                    .replace(/^["']|["']$/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+            }
+        }
+    });
+
+
+
+
+    if (!reviewItem) {
+        console.error('Review item not found for ID:', reviewId);
+        showNotification('Could not find review to edit', 'error');
+        return;
+    }
+
+    // Open modal with existing response
+    const modal = document.getElementById('respondModal');
+    const customerNameSpan = document.getElementById('modalCustomerName');
+    const responseText = document.getElementById('responseText');
+    const charCount = document.getElementById('charCount');
+    const modalTitle = modal ? modal.querySelector('.modal-title') : null;
+
+    if (modal) {
+
+        // Update modal title
+        if (modalTitle) {
+            modalTitle.textContent = 'Edit Response';
+        }
+
+        // Update customer info
+        if (customerNameSpan) {
+            customerNameSpan.textContent = customerName;
+        }
+
+        // Set existing response
+        if (responseText) {
+            responseText.value = existingResponseText;
+            if (charCount) {
+                charCount.textContent = existingResponseText.length.toString();
+            }
+        }
+
+        // Store review ID for later use
+        modal.dataset.reviewId = reviewId;
+
+        // Show modal with class
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        // Focus on textarea
+        setTimeout(() => {
+            if (responseText) {
+                responseText.focus();
+                // Move cursor to end
+                responseText.setSelectionRange(responseText.value.length, responseText.value.length);
+            }
+        }, 100);
+    } else {
+        console.error('Modal not found!');
+        showNotification('Could not open edit modal', 'error');
+    }
+}
+
+// Character counter for response textarea
+document.addEventListener('DOMContentLoaded', function () {
+    const responseText = document.getElementById('responseText');
+    const charCount = document.getElementById('charCount');
+
+    if (responseText && charCount) {
+        responseText.addEventListener('input', function () {
+            charCount.textContent = this.value.length;
+
+            // Change color based on character count
+            if (this.value.length > 450) {
+                charCount.style.color = '#ef4444';
+            } else if (this.value.length > 400) {
+                charCount.style.color = '#f59e0b';
+            } else {
+                charCount.style.color = 'inherit';
+            }
+        });
+    }
+
+    // Close modal on overlay click
+    const modal = document.getElementById('respondModal');
+    if (modal) {
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) {
+                closeRespondModal();
+            }
+        });
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('respondModal');
+            if (modal && modal.classList.contains('show')) {
+                closeRespondModal();
+            }
+        }
+    });
+});
+
+// Function to reset filters
+function resetFilters() {
+    document.getElementById('rating-filter').value = 'all';
+    document.getElementById('response-filter').value = 'all';
+    document.getElementById('sort-filter').value = 'newest';
+    applyFilters();
+    showNotification('Filters reset successfully', 'success');
 }
 
 // ===== DATA LOADING =====
@@ -383,12 +654,12 @@ function loadReviews() {
     // This would typically fetch from an API
     // For now, we'll work with the existing HTML structure
     const reviewItems = document.querySelectorAll('.review-item');
-    
+
     // Add data attributes for filtering/sorting
     reviewItems.forEach((item, index) => {
         const stars = item.querySelectorAll('.star-rating .filled').length;
         const dateText = item.querySelector('.review-date').textContent;
-        
+
         item.dataset.reviewId = `review-${index + 1}`;
         item.dataset.rating = stars;
         item.dataset.date = convertDateToISO(dateText);
@@ -399,7 +670,7 @@ function loadReviews() {
 
 function loadMoreReviews() {
     const loadMoreBtn = document.querySelector('.load-more-btn');
-    
+
     if (loadMoreBtn) {
         loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
         loadMoreBtn.disabled = true;
@@ -409,12 +680,12 @@ function loadMoreReviews() {
     setTimeout(() => {
         // Add new review items (simulation)
         addNewReviews();
-        
+
         if (loadMoreBtn) {
             loadMoreBtn.innerHTML = '<i class="fas fa-plus"></i> Load More Reviews';
             loadMoreBtn.disabled = false;
         }
-        
+
         showNotification('More reviews loaded!', 'success');
     }, 2000);
 }
@@ -457,7 +728,7 @@ function createReviewElement(review, id) {
     reviewDiv.dataset.rating = review.rating;
     reviewDiv.dataset.date = review.date;
 
-    const stars = Array.from({length: 5}, (_, i) => 
+    const stars = Array.from({ length: 5 }, (_, i) =>
         `<i class="fas fa-star ${i < review.rating ? 'filled' : ''}"></i>`
     ).join('');
 
@@ -484,40 +755,11 @@ function createReviewElement(review, id) {
             <p class="review-text">${review.text}</p>
         </div>
         <div class="review-actions">
-            <button class="btn btn-primary respond-btn">
+            <button class="btn btn-primary respond-btn" onclick="openRespondModal('review-${id}', '${review.name}')">
                 <i class="fas fa-reply"></i> Respond
-            </button>
-            <button class="btn btn-outline share-btn">
-                <i class="fas fa-share-alt"></i> Share
-            </button>
-            <button class="btn btn-outline report-btn">
-                <i class="fas fa-flag"></i> Report
             </button>
         </div>
     `;
-
-    // Add event listeners to new elements
-    const respondBtn = reviewDiv.querySelector('.respond-btn');
-    const shareBtn = reviewDiv.querySelector('.share-btn');
-    const reportBtn = reviewDiv.querySelector('.report-btn');
-
-    if (respondBtn) {
-        respondBtn.addEventListener('click', function() {
-            openModal(`review-${id}`, review.name, review.job);
-        });
-    }
-
-    if (shareBtn) {
-        shareBtn.addEventListener('click', function() {
-            shareReview(reviewDiv);
-        });
-    }
-
-    if (reportBtn) {
-        reportBtn.addEventListener('click', function() {
-            reportReview(reviewDiv);
-        });
-    }
 
     return reviewDiv;
 }
@@ -528,7 +770,7 @@ function updateStats() {
     const totalReviews = reviewItems.length;
     const responsedReviews = document.querySelectorAll('.review-response').length;
     const pendingReviews = totalReviews - responsedReviews;
-    
+
     // Calculate average rating
     let totalRating = 0;
     reviewItems.forEach(item => {
@@ -544,11 +786,11 @@ function updateStats() {
     // Update overall rating display
     const ratingNumber = document.querySelector('.rating-number');
     const ratingCount = document.querySelector('.rating-count');
-    
+
     if (ratingNumber) {
         ratingNumber.textContent = avgRating;
     }
-    
+
     if (ratingCount) {
         ratingCount.textContent = `Based on ${totalReviews} reviews`;
     }
@@ -556,11 +798,11 @@ function updateStats() {
 
 function updateStatCard(type, value) {
     const statCards = document.querySelectorAll('.stat-card');
-    
+
     statCards.forEach(card => {
         const statNumber = card.querySelector('.stat-number');
         const statLabel = card.querySelector('.stat-label');
-        
+
         if (type === 'total-reviews' && statLabel && statLabel.textContent.includes('Total Reviews')) {
             statNumber.textContent = value;
         } else if (type === 'pending-responses' && statLabel && statLabel.textContent.includes('Pending Responses')) {
@@ -580,10 +822,10 @@ function convertDateToISO(dateString) {
 
 function formatDate(dateString) {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
     });
 }
 

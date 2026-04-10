@@ -2,8 +2,8 @@
 // JOB HISTORY PAGE - FILTERING, SEARCH, AND REVIEW
 // ================================================
 
-document.addEventListener('DOMContentLoaded', function() {
-    
+document.addEventListener('DOMContentLoaded', function () {
+
     // ================================================
     // SAMPLE JOB DATA
     // ================================================
@@ -143,28 +143,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const emptyState = document.getElementById('emptyState');
     const loadMoreBtn = document.getElementById('loadMoreBtn');
     const loadMoreContainer = document.getElementById('loadMoreContainer');
-    
+
     // Modal elements
     const reviewModal = document.getElementById('reviewModal');
     const modalClose = document.getElementById('modalClose');
     const cancelReview = document.getElementById('cancelReview');
     const reviewForm = document.getElementById('reviewForm');
     const starRating = document.getElementById('starRating');
-    const stars = starRating.querySelectorAll('.star');
+    const stars = starRating ? starRating.querySelectorAll('.star') : [];
     const ratingText = document.getElementById('ratingText');
     const reviewText = document.getElementById('reviewText');
     const submitReview = document.getElementById('submitReview');
     const reviewCharCounter = document.getElementById('reviewCharCounter');
     const providerInfo = document.getElementById('providerInfo');
-    
+
     // Toast
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toastMessage');
-    
+
     // Profile dropdown
     const profileAvatar = document.getElementById('profileAvatar');
     const profileDropdown = document.getElementById('profileDropdown');
-    
+
     // Mobile menu
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
     const mobileMenu = document.getElementById('mobileMenu');
@@ -192,23 +192,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // RENDER JOBS
     // ================================================
     function renderJobs() {
+        if (!jobsContainer) return;
         const filteredJobs = getFilteredJobs();
-        
+
         if (filteredJobs.length === 0) {
             jobsContainer.style.display = 'none';
-            loadMoreContainer.style.display = 'none';
-            emptyState.style.display = 'block';
+            if (loadMoreContainer) loadMoreContainer.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'block';
         } else {
             jobsContainer.style.display = 'grid';
-            emptyState.style.display = 'none';
-            
+            if (emptyState) emptyState.style.display = 'none';
+
             jobsContainer.innerHTML = filteredJobs.map(job => createJobCard(job)).join('');
-            
+
             // Show/hide load more button
-            if (displayedJobsCount >= allJobs.length + additionalJobs.length) {
-                loadMoreContainer.style.display = 'none';
-            } else {
-                loadMoreContainer.style.display = 'block';
+            if (loadMoreContainer) {
+                if (displayedJobsCount >= allJobs.length + additionalJobs.length) {
+                    loadMoreContainer.style.display = 'none';
+                } else {
+                    loadMoreContainer.style.display = 'block';
+                }
             }
         }
     }
@@ -219,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function createJobCard(job) {
         const statusClass = job.status.toLowerCase();
         const canReview = job.status === 'completed' && job.paymentDone && !job.reviewed;
-        
+
         return `
             <div class="job-card" data-job-id="${job.id}" data-status="${job.status}">
                 <div class="job-card-header">
@@ -270,23 +273,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================================================
     function getFilteredJobs() {
         let filtered = allJobs;
-        
+
         // Filter by status
         if (currentFilter !== 'all') {
             filtered = filtered.filter(job => job.status === currentFilter);
         }
-        
+
         // Filter by search term
         if (currentSearchTerm) {
-            filtered = filtered.filter(job => 
+            filtered = filtered.filter(job =>
                 job.title.toLowerCase().includes(currentSearchTerm.toLowerCase()) ||
                 job.description.toLowerCase().includes(currentSearchTerm.toLowerCase())
             );
         }
-        
+
         // Sort by date (newest first)
         filtered.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
-        
+
         return filtered;
     }
 
@@ -294,10 +297,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // UPDATE COUNTS
     // ================================================
     function updateCounts() {
-        document.getElementById('allCount').textContent = allJobs.length;
-        document.getElementById('openCount').textContent = allJobs.filter(j => j.status === 'open').length;
-        document.getElementById('assignedCount').textContent = allJobs.filter(j => j.status === 'assigned').length;
-        document.getElementById('completedCount').textContent = allJobs.filter(j => j.status === 'completed').length;
+        const allCount = document.getElementById('allCount');
+        const openCount = document.getElementById('openCount');
+        const assignedCount = document.getElementById('assignedCount');
+        const completedCount = document.getElementById('completedCount');
+
+        if (allCount) allCount.textContent = allJobs.length;
+        if (openCount) openCount.textContent = allJobs.filter(j => j.status === 'open').length;
+        if (assignedCount) assignedCount.textContent = allJobs.filter(j => j.status === 'assigned').length;
+        if (completedCount) completedCount.textContent = allJobs.filter(j => j.status === 'completed').length;
     }
 
     // ================================================
@@ -306,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupEventListeners() {
         // Filter tabs
         filterTabs.forEach(tab => {
-            tab.addEventListener('click', function() {
+            tab.addEventListener('click', function () {
                 filterTabs.forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
                 currentFilter = this.dataset.filter;
@@ -315,53 +323,61 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Search
-        searchInput.addEventListener('input', function() {
-            currentSearchTerm = this.value;
-            searchClear.style.display = this.value ? 'block' : 'none';
-            renderJobs();
-        });
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                currentSearchTerm = this.value;
+                if (searchClear) searchClear.style.display = this.value ? 'block' : 'none';
+                renderJobs();
+            });
+        }
 
-        searchClear.addEventListener('click', function() {
-            searchInput.value = '';
-            currentSearchTerm = '';
-            this.style.display = 'none';
-            renderJobs();
-        });
+        if (searchClear) {
+            searchClear.addEventListener('click', function () {
+                if (searchInput) searchInput.value = '';
+                currentSearchTerm = '';
+                this.style.display = 'none';
+                renderJobs();
+            });
+        }
 
         // Load more
-        loadMoreBtn.addEventListener('click', function() {
-            this.classList.add('loading');
-            this.innerHTML = '<i class="fas fa-spinner"></i> Loading...';
-            
-            setTimeout(() => {
-                allJobs = [...allJobs, ...additionalJobs];
-                displayedJobsCount = allJobs.length;
-                renderJobs();
-                updateCounts();
-                this.classList.remove('loading');
-                this.innerHTML = '<i class="fas fa-plus"></i> Load More Jobs';
-            }, 1000);
-        });
+        if (loadMoreBtn && loadMoreContainer) {
+            loadMoreBtn.addEventListener('click', function () {
+                this.classList.add('loading');
+                this.innerHTML = '<i class="fas fa-spinner"></i> Loading...';
+
+                setTimeout(() => {
+                    allJobs = [...allJobs, ...additionalJobs];
+                    displayedJobsCount = allJobs.length;
+                    renderJobs();
+                    updateCounts();
+                    this.classList.remove('loading');
+                    this.innerHTML = '<i class="fas fa-plus"></i> Load More Jobs';
+                }, 1000);
+            });
+        }
 
         // Modal close
-        modalClose.addEventListener('click', closeReviewModal);
-        cancelReview.addEventListener('click', closeReviewModal);
-        
-        reviewModal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeReviewModal();
-            }
-        });
+        if (modalClose) modalClose.addEventListener('click', closeReviewModal);
+        if (cancelReview) cancelReview.addEventListener('click', closeReviewModal);
+
+        if (reviewModal) {
+            reviewModal.addEventListener('click', function (e) {
+                if (e.target === this) {
+                    closeReviewModal();
+                }
+            });
+        }
 
         // Star rating
         stars.forEach(star => {
-            star.addEventListener('click', function() {
+            star.addEventListener('click', function () {
                 selectedRating = parseInt(this.dataset.rating);
                 updateStarRating();
                 validateReviewForm();
             });
 
-            star.addEventListener('keypress', function(e) {
+            star.addEventListener('keypress', function (e) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     this.click();
                 }
@@ -369,31 +385,37 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Review textarea
-        reviewText.addEventListener('input', function() {
-            const length = this.value.length;
-            reviewCharCounter.textContent = `${length}/500 characters`;
-            validateReviewForm();
-        });
+        if (reviewText) {
+            reviewText.addEventListener('input', function () {
+                const length = this.value.length;
+                if (reviewCharCounter) reviewCharCounter.textContent = `${length}/500 characters`;
+                validateReviewForm();
+            });
+        }
 
         // Review form submit
-        reviewForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            submitReviewHandler();
-        });
+        if (reviewForm) {
+            reviewForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                submitReviewHandler();
+            });
+        }
 
         // Profile dropdown
-        profileAvatar.addEventListener('click', function(e) {
-            e.stopPropagation();
-            profileDropdown.classList.toggle('show');
-        });
+        if (profileAvatar && profileDropdown) {
+            profileAvatar.addEventListener('click', function (e) {
+                e.stopPropagation();
+                profileDropdown.classList.toggle('show');
+            });
 
-        document.addEventListener('click', function() {
-            profileDropdown.classList.remove('show');
-        });
+            document.addEventListener('click', function () {
+                profileDropdown.classList.remove('show');
+            });
+        }
 
         // Mobile menu
         if (mobileMenuToggle) {
-            mobileMenuToggle.addEventListener('click', function() {
+            mobileMenuToggle.addEventListener('click', function () {
                 this.classList.toggle('active');
                 mobileMenu.classList.toggle('show');
             });
@@ -403,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================================================
     // REVIEW MODAL FUNCTIONS
     // ================================================
-    window.openReviewModal = function(jobId) {
+    window.openReviewModal = function (jobId) {
         const job = allJobs.find(j => j.id === jobId);
         if (!job || !job.provider) return;
 
@@ -411,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedRating = 0;
         reviewText.value = '';
         reviewCharCounter.textContent = '0/500 characters';
-        
+
         // Populate provider info
         providerInfo.innerHTML = `
             <div class="provider-avatar">
@@ -422,7 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p>Service Provider for "${job.title}"</p>
             </div>
         `;
-        
+
         updateStarRating();
         reviewModal.classList.add('show');
         document.body.style.overflow = 'hidden';
@@ -471,7 +493,6 @@ document.addEventListener('DOMContentLoaded', function() {
             provider: currentJobForReview.provider.name
         };
 
-        console.log('Review submitted:', reviewData);
 
         // Update job as reviewed
         const jobIndex = allJobs.findIndex(j => j.id === currentJobForReview.id);
@@ -487,14 +508,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================================================
     // GLOBAL FUNCTIONS (for onclick handlers)
     // ================================================
-    window.editJob = function(jobId) {
-        console.log('Edit job:', jobId);
+    window.editJob = function (jobId) {
+
         // Redirect to edit page or open edit modal
         alert(`Edit functionality for job ${jobId} - Redirect to edit page`);
     };
 
-    window.viewJobDetails = function(jobId) {
-        console.log('View job details:', jobId);
+    window.viewJobDetails = function (jobId) {
+
         // Redirect to job details page
         alert(`View details for job ${jobId} - Redirect to details page`);
     };
@@ -505,7 +526,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function showToast(message) {
         toastMessage.textContent = message;
         toast.classList.add('show');
-        
+
         setTimeout(() => {
             toast.classList.remove('show');
         }, 3000);
@@ -529,10 +550,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // ================================================
     function formatDate(dateString) {
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
         });
     }
 
