@@ -16,14 +16,14 @@ $allJobRequests = [];
 
 foreach ($jobRequests as $job) {
     $job['request_type'] = 'regular';
-    $job['posted_date'] = $job['dateCreated'] ?? ($job['date_created'] ?? null);
+    $job['posted_date'] = $job['created_at'] ?? ($job['dateCreated'] ?? ($job['date_created'] ?? null));
     $allJobRequests[] = $job;
 }
 
 foreach ($directJobRequests as $job) {
     $job['request_type'] = 'direct';
     $job['service_provider_type'] = $job['service_provider_type'] ?? ($job['provider_type'] ?? 'individual');
-    $job['posted_date'] = $job['date_created'] ?? ($job['dateCreated'] ?? null);
+    $job['posted_date'] = $job['created_at'] ?? ($job['date_created'] ?? ($job['dateCreated'] ?? null));
     $allJobRequests[] = $job;
 }
 

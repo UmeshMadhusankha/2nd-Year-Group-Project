@@ -23,19 +23,19 @@ class Repairer {
                     r.email,
                     r.phoneNumber,
                     r.about,
-                    r.profilePicture,
+                    r.profile_picture AS profilePicture,
                     $skillsSelect
                     r.ratings,
-                    r.completedJobsCount,
+                    r.completed_jobs_count AS completedJobsCount,
                     r.districts,
                     r.availability,
-                    r.dateJoined,
+                    r.joined_at AS dateJoined,
                     c.name as category_name,
                     'individual' as provider_type
                 FROM repairer r
                 LEFT JOIN category c ON r.category_id = c.category_id
                 WHERE r.availability = 'available'
-                ORDER BY r.ratings DESC, r.completedJobsCount DESC
+                ORDER BY r.ratings DESC, r.completed_jobs_count DESC
                 LIMIT ? OFFSET ?
             ");
             
@@ -62,13 +62,13 @@ class Repairer {
                     r.email,
                     r.phoneNumber,
                     r.about,
-                    r.profilePicture,
+                    r.profile_picture AS profilePicture,
                     $skillsSelect
                     r.ratings,
-                    r.completedJobsCount,
+                    r.completed_jobs_count AS completedJobsCount,
                     r.districts,
                     r.availability,
-                    r.dateJoined,
+                    r.joined_at AS dateJoined,
                     c.name as category_name,
                     'individual' as provider_type
                 FROM repairer r
@@ -111,7 +111,7 @@ class Repairer {
                 }
             }
             
-            $sql .= " ORDER BY r.ratings DESC, r.completedJobsCount DESC LIMIT ? OFFSET ?";
+            $sql .= " ORDER BY r.ratings DESC, r.completed_jobs_count DESC LIMIT ? OFFSET ?";
             $params[] = $limit;
             $params[] = $offset;
             
@@ -139,13 +139,13 @@ class Repairer {
                     r.email,
                     r.phoneNumber,
                     r.about,
-                    r.profilePicture,
+                    r.profile_picture AS profilePicture,
                     $skillsSelect
                     r.ratings,
-                    r.completedJobsCount,
+                    r.completed_jobs_count AS completedJobsCount,
                     r.districts,
                     r.availability,
-                    r.dateJoined,
+                    r.joined_at AS dateJoined,
                     r.category_id,
                     c.name as category_name,
                     'individual' as provider_type
@@ -412,7 +412,7 @@ class Repairer {
      */
     public function updateProfilePicture($repairerId, $picturePath) {
         try {
-            $stmt = $this->pdo->prepare("UPDATE repairer SET profilePicture = ? WHERE repairer_id = ?");
+            $stmt = $this->pdo->prepare("UPDATE repairer SET profile_picture = ? WHERE repairer_id = ?");
             return $stmt->execute([$picturePath, $repairerId]);
         } catch (PDOException $e) {
             error_log("Error updating profile picture: " . $e->getMessage());

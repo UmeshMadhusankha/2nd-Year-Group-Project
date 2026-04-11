@@ -48,7 +48,7 @@ try {
             jr.address,
             jr.urgency,
             jr.finish_date,
-            jr.dateCreated,
+            jr.created_at,
             jr.service_provider_type,
             c.name AS category_name
         FROM JobRequest jr
@@ -56,7 +56,7 @@ try {
         WHERE jr.user_id = :user_id
           AND jr.status = 'pending'
           AND jr.service_provider_type = :provider_type
-        ORDER BY jr.dateCreated DESC
+        ORDER BY jr.created_at DESC
     ";
 
     $stmt = $pdo->prepare($sql);

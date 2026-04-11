@@ -15,7 +15,7 @@ $dbUser = null;
 
 try {
     global $pdo;
-    $stmt = $pdo->prepare('SELECT user_id, f_name, l_name, email, profilePicture, address, district, created_at FROM User WHERE user_id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT user_id, f_name, l_name, email, profile_picture, address, district, created_at FROM user WHERE user_id = ? LIMIT 1');
     $stmt->execute([(int)$userData['id']]);
     $dbUser = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
 } catch (Throwable $e) {
@@ -59,7 +59,7 @@ $rawAddress = trim((string)($dbUser['address'] ?? ''));
 $rawDistrict = trim((string)($dbUser['district'] ?? ''));
 $displayLocation = trim($rawAddress !== '' && $rawDistrict !== '' ? ($rawAddress . ', ' . $rawDistrict) : ($rawAddress ?: ($rawDistrict ?: 'Sri Lanka')));
 $joinedText = !empty($dbUser['created_at']) ? date('F Y', strtotime($dbUser['created_at'])) : 'N/A';
-$profilePicture = trim((string)($dbUser['profilePicture'] ?? ''));
+$profilePicture = trim((string)($dbUser['profile_picture'] ?? ''));
 
 $initial = strtoupper(substr($displayName ?: 'U', 0, 1));
 $isEmailValid = filter_var($displayEmail, FILTER_VALIDATE_EMAIL) ? true : false;

@@ -80,7 +80,7 @@ class LoadLandingProvidersModel {
             $params[] = '%' . $filters['district'] . '%';
         }
 
-        $sql .= ' ORDER BY r.ratings DESC, r.completedJobsCount DESC, r.repairer_id DESC LIMIT ? OFFSET ?';
+        $sql .= ' ORDER BY r.ratings DESC, r.completed_jobs_count DESC, r.repairer_id DESC LIMIT ? OFFSET ?';
 
         $stmt = $this->pdo->prepare($sql);
 

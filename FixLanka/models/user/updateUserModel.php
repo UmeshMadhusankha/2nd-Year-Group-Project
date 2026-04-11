@@ -50,7 +50,7 @@ class UpdateUserModel {
             return null;
         }
 
-        $stmt = $this->pdo->prepare('SELECT user_id, f_name, l_name, email, profilePicture, address, district FROM User WHERE user_id = ? LIMIT 1');
+        $stmt = $this->pdo->prepare('SELECT user_id, f_name, l_name, email, profile_picture, address, district FROM user WHERE user_id = ? LIMIT 1');
         $stmt->execute([$userId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 

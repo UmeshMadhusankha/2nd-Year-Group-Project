@@ -46,7 +46,7 @@ class JobRequest {
                 FROM JobRequest jr
                 LEFT JOIN Category c ON jr.category_id = c.category_id
                 WHERE jr.user_id = ?
-                ORDER BY jr.dateCreated DESC
+                ORDER BY jr.created_at DESC
             ");
             $stmt->execute([$userId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -66,7 +66,7 @@ class JobRequest {
                 FROM directjobrequest djr
                 LEFT JOIN Category c ON djr.category_id = c.category_id
                 WHERE djr.user_id = ?
-                ORDER BY djr.date_created DESC
+                ORDER BY COALESCE(djr.created_at, djr.date_created) DESC
             ");
             $stmt->execute([$userId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -214,7 +214,7 @@ class JobRequest {
                 $params[] = $filters['category_id'];
             }
             
-            $sql .= " ORDER BY jr.dateCreated DESC";
+            $sql .= " ORDER BY jr.created_at DESC";
             
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
