@@ -500,32 +500,43 @@
         if (overlay) overlay.classList.remove('show');
     }
 
-    // =========================================
-    // RESPOND TO CONTRACT
-    // =========================================
-    window.respondContract = async function (contractId, response) {
-        const label = response === 'accepted' ? 'accept' : 'decline';
+// =========================================
+// RESPOND TO CONTRACT
+// =========================================
+window.respondContract = async function (contractId, response) {
+    const label = response === 'accepted' ? 'accept' : 'decline';
+    if (response === 'accepted') {
+        const msg =
+            "Electronic Signature Confirmation\n\n" +
+            "By clicking OK, you confirm you have read and agree to the contract terms, and you electronically sign this contract in FixLanka.";
+        if (!confirm(msg)) return;
+    } else {
         if (!confirm(`Are you sure you want to ${label} this contract?`)) return;
+    }
 
-        try {
-            const res = await fetch(API, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'respond', contract_id: contractId, response: response })
-            });
-            const json = await res.json();
+    try {
+        const res = await fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'respond',
+                contract_id: contractId,
+                response: response,
+                esign_consent: response === 'accepted'
+            })
+        });
+        const json = await res.json();
 
-            if (json.success) {
-                alert(`Contract ${label}ed successfully!`);
-                closeDetail();
-                loadContracts();
-            } else {
-                alert('Error: ' + json.message);
-            }
-        } catch (err) {
-            console.error('Respond error:', err);
-            alert('Could not process your response. Please try again.');
+        if (json.success) {
+            alert(`Contract ${label}ed successfully!`);
+            closeDetail();
+            loadContracts();
+        } else {
+            alert('Error: ' + json.message);
         }
+    } catch (err) {
+        console.error('Respond error:', err);
+        alert('Could not process your response. Please try again.');
     }
 };
 // =========================================
@@ -743,4 +754,4 @@ function esc(s) {
     d.textContent = s;
     return d.innerHTML;
 }
-    }) ();
+})();

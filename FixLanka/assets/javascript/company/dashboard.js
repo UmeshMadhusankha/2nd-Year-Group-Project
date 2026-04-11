@@ -5,8 +5,11 @@ const calendarState = {
     currentDate: new Date(),
     selectedDate: null,
     events: [],
+    systemEvents: [],
     viewMode: 'month'
 };
+
+let dashboardData = null;
 
 document.addEventListener('DOMContentLoaded', function () {
     // Initialize all dashboard components
@@ -26,6 +29,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Initialize dashboard navigation
     initializeDashboardNavigation();
+
+    // Load real dashboard data from backend
+    loadDashboardData();
 
     // Also try to initialize after a longer delay
     setTimeout(initializeSidebarToggle, 2000);
@@ -129,6 +135,9 @@ function initializePanelNavigation() {
 function initializeActionButtonsNavigation() {
     // Make request cards clickable
     document.addEventListener('click', function (e) {
+        // If click is inside the Repair Requests list/table, let its own handlers run
+        if (e.target.closest('#requestsList')) return;
+
         const requestCard = e.target.closest('.request-card');
         if (requestCard && !e.target.closest('.request-actions')) {
             // Navigate to repair requests page with specific request
@@ -156,6 +165,9 @@ function initializeActionButtonsNavigation() {
 
     // Action buttons in request cards
     document.addEventListener('click', function (e) {
+        // If click is inside the Repair Requests list/table, let its own handlers run
+        if (e.target.closest('#requestsList')) return;
+
         const actionBtn = e.target.closest('.action-btn');
         if (!actionBtn) return;
 
@@ -205,22 +217,25 @@ function navigateToPage(url, pageName) {
     window.location.href = url;
 }
 
+function redirectToRepairRequests(requestId, action) {
+    const id = Number(requestId);
+    const a = String(action || '').toLowerCase();
+    const safeAction = (a === 'quote' || a === 'details') ? a : 'details';
+    const url = `/2nd-Year-Group-Project/FixLanka/views/company/repair-requests.php?request_id=${encodeURIComponent(id)}&action=${encodeURIComponent(safeAction)}`;
+    window.location.href = url;
+}
+
 function showEarningsModal() {
     const modal = createModal('earningsModal');
 
-    // Calculate sample earnings data
-    const monthlyEarnings = [
-        { month: 'Jan', amount: 380000, projects: 12 },
-        { month: 'Feb', amount: 420000, projects: 15 },
-        { month: 'Mar', amount: 390000, projects: 11 },
-        { month: 'Apr', amount: 450000, projects: 16 },
-        { month: 'May', amount: 480000, projects: 18 },
-        { month: 'Jun', amount: 520000, projects: 20 }
-    ];
+    if (!dashboardData || !Array.isArray(dashboardData.earningsByMonth)) {
+        showNotification('Dashboard data not loaded yet', 'warning');
+        return;
+    }
 
-    const totalEarnings = monthlyEarnings.reduce((sum, month) => sum + month.amount, 0);
-    const avgMonthly = totalEarnings / monthlyEarnings.length;
-    const totalProjects = monthlyEarnings.reduce((sum, month) => sum + month.projects, 0);
+    const monthlyEarnings = dashboardData.earningsByMonth;
+    const totalEarnings = monthlyEarnings.reduce((sum, month) => sum + Number(month.amount || 0), 0);
+    const avgMonthly = monthlyEarnings.length > 0 ? (totalEarnings / monthlyEarnings.length) : 0;
 
     modal.innerHTML = `
         <div class="modal-content earnings-modal">
@@ -231,16 +246,12 @@ function showEarningsModal() {
             <div class="modal-body">
                 <div class="earnings-summary">
                     <div class="summary-card">
-                        <h4>Total Earnings (6 months)</h4>
+                        <h4>Total Earnings</h4>
                         <p class="amount">LKR ${formatCurrency(totalEarnings)}</p>
                     </div>
                     <div class="summary-card">
                         <h4>Average Monthly</h4>
                         <p class="amount">LKR ${formatCurrency(avgMonthly)}</p>
-                    </div>
-                    <div class="summary-card">
-                        <h4>Total Projects</h4>
-                        <p class="amount">${totalProjects}</p>
                     </div>
                 </div>
                 
@@ -249,27 +260,11 @@ function showEarningsModal() {
                     <div class="chart-container">
                         ${monthlyEarnings.map(month => `
                             <div class="chart-column">
-                                <div class="bar" style="height: ${(month.amount / 520000) * 100}%"></div>
+                                <div class="bar" style="height: ${getEarningsBarHeight(monthlyEarnings, month.amount)}%"></div>
                                 <span class="month-label">${month.month}</span>
-                                <span class="amount-label">LKR ${formatCurrency(month.amount / 1000)}K</span>
+                                <span class="amount-label">LKR ${formatCurrency((Number(month.amount || 0)) / 1000)}K</span>
                             </div>
                         `).join('')}
-                    </div>
-                </div>
-                
-                <div class="earnings-breakdown">
-                    <h4>Earnings Breakdown</h4>
-                    <div class="breakdown-item">
-                        <span>Project Payments</span>
-                        <span>LKR ${formatCurrency(totalEarnings * 0.7)}</span>
-                    </div>
-                    <div class="breakdown-item">
-                        <span>Service Fees</span>
-                        <span>LKR ${formatCurrency(totalEarnings * 0.2)}</span>
-                    </div>
-                    <div class="breakdown-item">
-                        <span>Consultations</span>
-                        <span>LKR ${formatCurrency(totalEarnings * 0.1)}</span>
                     </div>
                 </div>
             </div>
@@ -289,15 +284,25 @@ function showEarningsModal() {
 function showRatingModal() {
     const modal = createModal('ratingModal');
 
-    const ratingData = [
-        { category: 'Plumbing', rating: 4.9, reviews: 45, trend: '+0.2' },
-        { category: 'Electrical', rating: 4.8, reviews: 38, trend: '+0.1' },
-        { category: 'Carpentry', rating: 4.7, reviews: 32, trend: '+0.3' },
-        { category: 'Painting', rating: 4.6, reviews: 28, trend: '+0.1' }
-    ];
+    if (!dashboardData) {
+        showNotification('Dashboard data not loaded yet', 'warning');
+        return;
+    }
 
-    const avgRating = ratingData.reduce((sum, cat) => sum + cat.rating, 0) / ratingData.length;
-    const totalReviews = ratingData.reduce((sum, cat) => sum + cat.reviews, 0);
+    const feedbackStats = dashboardData.feedbackStats || { total_reviews: 0, average_rating: 0 };
+    const overallRating = (typeof dashboardData.kpis?.average_rating === 'number')
+        ? dashboardData.kpis.average_rating
+        : (feedbackStats.average_rating || 0);
+
+    const workforce = Array.isArray(dashboardData.workforce) ? dashboardData.workforce : [];
+    const ratingData = workforce
+        .filter(w => Number(w.avg_rating || 0) > 0)
+        .slice(0, 6)
+        .map(w => ({
+            category: w.specialty,
+            rating: Number(w.avg_rating || 0),
+            count: Number(w.total || 0)
+        }));
 
     modal.innerHTML = `
         <div class="modal-content rating-modal">
@@ -308,51 +313,42 @@ function showRatingModal() {
             <div class="modal-body">
                 <div class="rating-overview">
                     <div class="overall-rating">
-                        <div class="rating-number">${avgRating.toFixed(1)}</div>
+                        <div class="rating-number">${Number(overallRating || 0).toFixed(1)}</div>
                         <div class="rating-stars">
-                            ${generateStars(avgRating)}
+                            ${generateStars(overallRating || 0)}
                         </div>
-                        <div class="rating-text">Based on ${totalReviews} reviews</div>
+                        <div class="rating-text">Based on ${Number(feedbackStats.total_reviews || 0)} reviews</div>
                     </div>
                 </div>
                 
                 <div class="category-ratings">
                     <h4>Ratings by Category</h4>
-                    ${ratingData.map(cat => `
+                    ${ratingData.length > 0 ? ratingData.map(cat => `
                         <div class="category-rating">
                             <div class="category-info">
-                                <span class="category-name">${cat.category}</span>
-                                <span class="category-trend ${cat.trend.startsWith('+') ? 'positive' : 'negative'}">
-                                    ${cat.trend}
-                                </span>
+                                <span class="category-name">${escapeHtml(cat.category)}</span>
                             </div>
                             <div class="rating-display">
-                                <span class="rating-number">${cat.rating}</span>
+                                <span class="rating-number">${cat.rating.toFixed(1)}</span>
                                 <div class="rating-stars">${generateStars(cat.rating)}</div>
-                                <span class="review-count">(${cat.reviews})</span>
+                                <span class="review-count">(${cat.count})</span>
                             </div>
                         </div>
-                    `).join('')}
+                    `).join('') : `<div class="review-item"><p>No category ratings yet.</p></div>`}
                 </div>
                 
                 <div class="recent-reviews">
                     <h4>Recent Reviews</h4>
-                    <div class="review-item">
-                        <div class="review-header">
-                            <span class="reviewer-name">Sarah Johnson</span>
-                            <div class="review-rating">${generateStars(5)}</div>
+                    ${Array.isArray(dashboardData.feedback) && dashboardData.feedback.length > 0 ? dashboardData.feedback.map(r => `
+                        <div class="review-item">
+                            <div class="review-header">
+                                <span class="reviewer-name">${escapeHtml(r.customer || 'Customer')}</span>
+                                <div class="review-rating">${generateStars(Number(r.rating || 0))}</div>
+                            </div>
+                            <p>${escapeHtml(r.comments || '')}</p>
+                            <span class="review-date">${escapeHtml(r.date || '')}</span>
                         </div>
-                        <p>"Excellent plumbing work! Fixed our kitchen sink perfectly."</p>
-                        <span class="review-date">2 days ago</span>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-header">
-                            <span class="reviewer-name">Mike Wilson</span>
-                            <div class="review-rating">${generateStars(4)}</div>
-                        </div>
-                        <p>"Good carpentry service, professional team."</p>
-                        <span class="review-date">5 days ago</span>
-                    </div>
+                    `).join('') : `<div class="review-item"><p>No reviews yet.</p></div>`}
                 </div>
             </div>
             <div class="modal-footer">
@@ -517,10 +513,12 @@ function addBaseModalStyles() {
             justify-content: center;
             z-index: 10000;
             opacity: 0;
+            pointer-events: none;
             transition: opacity 0.3s ease;
         }
         .modal-overlay.active {
             opacity: 1;
+            pointer-events: auto;
         }
         .modal-content {
             background: white;
@@ -758,7 +756,7 @@ function initializeUI() {
     // Load calendar and requests
     loadCalendarEvents();
     updateCalendarDisplay();
-    loadStaticRequests();
+    updateUpcomingEvents();
 }
 
 // ===== FULL CALENDAR FUNCTIONALITY =====
@@ -788,15 +786,13 @@ function initializeCalendar() {
     // Initialize keyboard navigation
     initializeKeyboardNavigation();
 
-    // Load sample events
-    loadSampleEvents();
+    // Calendar events are loaded from localStorage via initializeUI()
+    updateUpcomingEvents();
 }
 
 function loadSampleEvents() {
-    // Initialize with empty events - no sample data
-    calendarState.events = [];
-
-    saveCalendarEvents();
+    // Legacy shim: keep behavior non-destructive
+    loadCalendarEvents();
     updateCalendarDisplay();
     updateUpcomingEvents();
 }
@@ -831,6 +827,38 @@ function loadCalendarEvents() {
     } else {
         calendarState.events = [];
     }
+}
+
+function setSystemCalendarEvents(systemEvents) {
+    if (!Array.isArray(systemEvents)) {
+        calendarState.systemEvents = [];
+        return;
+    }
+
+    calendarState.systemEvents = systemEvents.map(event => {
+        let eventDate;
+        if (typeof event.date === 'string') {
+            const parts = event.date.split('T')[0].split('-');
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            eventDate = new Date(year, month, day);
+        } else {
+            eventDate = new Date(event.date);
+        }
+
+        return {
+            ...event,
+            is_system: true,
+            date: eventDate,
+            time: event.time || 'All day',
+            type: event.type || 'system'
+        };
+    });
+}
+
+function getAllCalendarEvents() {
+    return [...calendarState.systemEvents, ...calendarState.events];
 }
 
 function saveCalendarEvents() {
@@ -991,7 +1019,20 @@ function showDateModal(dateStr, message, events) {
     modal.id = 'dateModal';
     modal.className = 'modal-overlay active';
 
-    const eventsHTML = events.map(event => `
+    const eventsHTML = events.map(event => {
+        const canEdit = !event.is_system;
+        const actionsHTML = canEdit ? `
+            <div class="event-actions">
+                <button onclick="editEvent('${event.id}')" class="action-btn secondary">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button onclick="deleteEvent('${event.id}')" class="action-btn danger">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        ` : '';
+
+        return `
         <div class="event-item ${event.type}">
             <div class="event-header">
                 <h4>${event.title}</h4>
@@ -1001,16 +1042,10 @@ function showDateModal(dateStr, message, events) {
             ${event.client ? `<div class="event-meta">Client: ${event.client}</div>` : ''}
             ${event.location ? `<div class="event-meta">Location: ${event.location}</div>` : ''}
             ${event.participants ? `<div class="event-meta">Participants: ${event.participants.join(', ')}</div>` : ''}
-            <div class="event-actions">
-                <button onclick="editEvent('${event.id}')" class="action-btn secondary">
-                    <i class="fas fa-edit"></i> Edit
-                </button>
-                <button onclick="deleteEvent('${event.id}')" class="action-btn danger">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
-            </div>
+            ${actionsHTML}
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     modal.innerHTML = `
         <div class="modal-content date-modal">
@@ -1048,10 +1083,12 @@ function showDateModal(dateStr, message, events) {
                 justify-content: center;
                 z-index: 10000;
                 opacity: 0;
+                pointer-events: none;
                 transition: opacity 0.3s ease;
             }
             .modal-overlay.active {
                 opacity: 1;
+                pointer-events: auto;
             }
             .modal-content {
                 background: white;
@@ -1247,6 +1284,28 @@ function showDateModal(dateStr, message, events) {
         document.head.appendChild(styles);
     }
 
+    // Click outside to close
+    modal.addEventListener('mousedown', (e) => {
+        if (e.target === modal) {
+            closeDateModal();
+        }
+    });
+
+    // Escape to close (installed once)
+    if (!window.__fixlankaDashboardModalEsc) {
+        window.__fixlankaDashboardModalEsc = true;
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            if (document.getElementById('eventFormModal')) {
+                closeEventForm();
+                return;
+            }
+            if (document.getElementById('dateModal')) {
+                closeDateModal();
+            }
+        });
+    }
+
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
 }
@@ -1403,6 +1462,13 @@ function showEventForm(date = null, event = null) {
 
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
+
+    // Click outside to close
+    modal.addEventListener('mousedown', (e) => {
+        if (e.target === modal) {
+            closeEventForm();
+        }
+    });
 }
 
 function closeEventForm() {
@@ -1471,10 +1537,22 @@ function editEvent(eventId) {
     if (event) {
         closeDateModal();
         showEventForm(event.date, event);
+        return;
+    }
+
+    const systemEvent = calendarState.systemEvents.find(e => e.id === eventId);
+    if (systemEvent) {
+        showNotification('System events cannot be edited', 'info');
     }
 }
 
 function deleteEvent(eventId) {
+    const systemEvent = calendarState.systemEvents.find(e => e.id === eventId);
+    if (systemEvent) {
+        showNotification('System events cannot be deleted', 'info');
+        return;
+    }
+
     if (confirm('Are you sure you want to delete this event?')) {
         calendarState.events = calendarState.events.filter(e => e.id !== eventId);
         saveCalendarEvents();
@@ -1489,8 +1567,9 @@ function updateUpcomingEvents() {
     if (!upcomingContainer) return;
 
     const today = new Date();
-    const upcomingEvents = calendarState.events
-        .filter(event => event.date >= today)
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const upcomingEvents = getAllCalendarEvents()
+        .filter(event => event.date >= todayStart)
         .sort((a, b) => a.date - b.date)
         .slice(0, 3);
 
@@ -1614,7 +1693,7 @@ function navigateDate(currentDate, days) {
 
 // Utility Functions
 function getEventsForDate(date) {
-    return calendarState.events.filter(event =>
+    return getAllCalendarEvents().filter(event =>
         event.date.toDateString() === date.toDateString()
     );
 }
@@ -1760,13 +1839,43 @@ function loadStaticRequests() {
     const requestsList = document.getElementById('requestsList');
     if (!requestsList) return;
 
-    // Load Direct Requests by default
-    loadRequestsByType('direct');
+    if (!dashboardData || !dashboardData.requests) {
+        requestsList.innerHTML = '<div class="empty-state">Loading requests...</div>';
+        return;
+    }
+
+    const directCount = Array.isArray(dashboardData.requests.direct) ? dashboardData.requests.direct.length : 0;
+    const publicCount = Array.isArray(dashboardData.requests.public) ? dashboardData.requests.public.length : 0;
+
+    const tabButtons = document.querySelectorAll('.requests-panel .tab-button');
+    const activeBtn = document.querySelector('.requests-panel .tab-button.active');
+    const activeType = activeBtn?.getAttribute('data-tab');
+
+    let initialType = 'public';
+
+    if (activeType === 'public' && publicCount > 0) {
+        initialType = 'public';
+    } else if (activeType === 'direct' && directCount > 0) {
+        initialType = 'direct';
+    } else if (activeType === 'direct' && directCount > 0) {
+        initialType = 'direct';
+    } else if (publicCount > 0) {
+        initialType = 'public';
+    } else {
+        initialType = 'direct';
+    }
+
+    // Keep UI in sync with what we render
+    tabButtons.forEach(btn => btn.classList.remove('active'));
+    const btnToActivate = document.querySelector(`.requests-panel .tab-button[data-tab="${initialType}"]`);
+    if (btnToActivate) btnToActivate.classList.add('active');
+
+    loadRequestsByType(initialType);
 }
 
 // Initialize tab switching functionality
 function initializeTabSwitching() {
-    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabButtons = document.querySelectorAll('.requests-panel .tab-button');
 
     tabButtons.forEach(button => {
         button.addEventListener('click', function () {
@@ -1785,141 +1894,568 @@ function initializeTabSwitching() {
 }
 
 // Load requests by type (direct or public)
-function loadRequestsByType(type) {
+async function loadRequestsByType(type) {
     const requestsList = document.getElementById('requestsList');
     if (!requestsList) return;
 
-    let requestsData;
-
-    if (type === 'direct') {
-        // Direct Requests - Customer-to-company direct requests
-        requestsData = [
-            {
-                customer: 'John Smith',
-                avatar: 'https://via.placeholder.com/48x48/0abab5/ffffff?text=JS',
-                category: 'Plumbing',
-                title: 'Kitchen Sink Repair',
-                description: 'Leaking kitchen sink needs immediate attention',
-                date: 'Aug 25',
-                status: 'pending',
-                type: 'direct'
-            },
-            {
-                customer: 'Sarah Johnson',
-                avatar: 'https://via.placeholder.com/48x48/f59e0b/ffffff?text=SJ',
-                category: 'Electrical',
-                title: 'Outlet Installation',
-                description: 'Need 3 new outlets installed in living room',
-                date: 'Aug 24',
-                status: 'accepted',
-                type: 'direct'
-            },
-            {
-                customer: 'Mike Wilson',
-                avatar: 'https://via.placeholder.com/48x48/10b981/ffffff?text=MW',
-                category: 'Carpentry',
-                title: 'Cabinet Door Fix',
-                description: 'Kitchen cabinet door is loose and needs repair',
-                date: 'Aug 23',
-                status: 'completed',
-                type: 'direct'
-            },
-            {
-                customer: 'Emma Davis',
-                avatar: 'https://via.placeholder.com/48x48/ef4444/ffffff?text=ED',
-                category: 'Roofing',
-                title: 'Roof Leak Repair',
-                description: 'Urgent roof leak in bedroom ceiling',
-                date: 'Aug 22',
-                status: 'pending',
-                type: 'direct'
-            }
-        ];
-    } else {
-        // Public Requests - Open market requests from the platform
-        requestsData = [
-            {
-                customer: 'ABC Corporation',
-                avatar: 'https://via.placeholder.com/48x48/3b82f6/ffffff?text=ABC',
-                category: 'Construction',
-                title: 'Office Building Renovation',
-                description: 'Complete renovation of 3rd floor office space',
-                date: 'Aug 26',
-                status: 'bidding',
-                type: 'public',
-                bidAmount: 'LKR 500K',
-                deadline: 'Sep 15'
-            },
-            {
-                customer: 'City Council',
-                avatar: 'https://via.placeholder.com/48x48/8b5cf6/ffffff?text=CC',
-                category: 'Public Works',
-                title: 'Park Maintenance',
-                description: 'Monthly maintenance for Central Park facilities',
-                date: 'Aug 25',
-                status: 'bidding',
-                type: 'public',
-                bidAmount: 'LKR 150K',
-                deadline: 'Sep 10'
-            },
-            {
-                customer: 'Green Valley Resort',
-                avatar: 'https://via.placeholder.com/48x48/059669/ffffff?text=GV',
-                category: 'Hospitality',
-                title: 'Pool Area Repair',
-                description: 'Swimming pool deck and filtration system repair',
-                date: 'Aug 24',
-                status: 'awarded',
-                type: 'public',
-                bidAmount: 'LKR 300K',
-                deadline: 'Aug 30'
-            },
-            {
-                customer: 'Tech Startup Hub',
-                avatar: 'https://via.placeholder.com/48x48/f97316/ffffff?text=TS',
-                category: 'Commercial',
-                title: 'HVAC System Installation',
-                description: 'Install modern HVAC system in new office space',
-                date: 'Aug 23',
-                status: 'bidding',
-                type: 'public',
-                bidAmount: 'LKR 750K',
-                deadline: 'Sep 20'
-            }
-        ];
+    if (!dashboardData || !dashboardData.requests) {
+        requestsList.innerHTML = '<div class="empty-state">Unable to load requests.</div>';
+        return;
     }
 
-    const requestsHTML = requestsData.map(request => `
-        <div class="request-card ${type}-request" data-status="${request.status}">
-            <div class="request-info">
-                <img src="${request.avatar}" alt="${request.customer}" class="customer-avatar">
-                <div class="request-details">
-                    <h4>
-                        <span class="title-text">${request.title}</span>
-                        <span class="request-status ${request.status}">${capitalizeFirst(request.status)}</span>
-                    </h4>
-                    <div class="request-meta">
-                        <span class="request-category">${request.category}</span>
-                        <span>${request.customer}</span>
-                        <span>${request.date}</span>
-                        ${request.deadline ? `<span class="deadline">Due: ${request.deadline}</span>` : ''}
-                    </div>
-                    <p class="request-description">${request.description}</p>
-                    ${request.bidAmount ? `<div class="bid-amount">Budget: ${request.bidAmount}</div>` : ''}
-                </div>
-            </div>
-            <div class="request-actions">
-                ${getStaticActionButtons(request.status, type)}
-            </div>
-        </div>
-    `).join('');
+    // For Public tab: use same API as the Repair Requests page to keep behavior consistent.
+    if (type === 'public') {
+        try {
+            requestsList.innerHTML = '<div class="loading-state" style="text-align:center;padding:2rem;">Loading requests...</div>';
+            const res = await fetch('/2nd-Year-Group-Project/FixLanka/api/job-requests.php?status=pending');
+            const json = await res.json();
+            const rows = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+
+            // Sort newest-first using whatever timestamp field exists
+            const sorted = [...rows].sort((a, b) => {
+                const ad = new Date(a.created_at || a.dateCreated || 0);
+                const bd = new Date(b.created_at || b.dateCreated || 0);
+                const diff = bd - ad;
+                if (diff !== 0) return diff;
+                return Number(b.request_id || 0) - Number(a.request_id || 0);
+            });
+
+            const limited = sorted.slice(0, 5);
+            const mapped = limited.map(r => ({
+                request_id: Number(r.request_id),
+                title: r.title,
+                category: r.category_name || r.category || 'General',
+                customer: r.customer_name || '',
+                date: r.posted_ago || (r.dateCreated ? formatDateShort(r.dateCreated) : ''),
+                deadline: r.finish_date ? formatDateShort(r.finish_date) : null,
+                status: 'bidding'
+            }));
+
+            if (mapped.length === 0) {
+                requestsList.innerHTML = '<div class="empty-state">No requests found.</div>';
+                return;
+            }
+
+            renderRequestsTable(mapped, 'public');
+        } catch (e) {
+            console.error(e);
+            requestsList.innerHTML = '<div class="empty-state">Unable to load requests.</div>';
+        }
+        return;
+    }
+
+    const requestsData = dashboardData.requests[type] || [];
+
+    if (!Array.isArray(requestsData) || requestsData.length === 0) {
+        requestsList.innerHTML = '<div class="empty-state">No requests found.</div>';
+        return;
+    }
+
+    renderRequestsTable(requestsData, type);
 
     // Add fade animation
     requestsList.style.opacity = '0';
     setTimeout(() => {
-        requestsList.innerHTML = requestsHTML;
+        // renderRequestsTable already replaced contents
         requestsList.style.opacity = '1';
     }, 150);
+}
+
+function renderRequestsTable(requestsData, type) {
+    const requestsList = document.getElementById('requestsList');
+    if (!requestsList) return;
+
+    const isPublic = type === 'public';
+    const tableHead = isPublic ? `
+        <thead>
+            <tr>
+                <th>Request Details</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Deadline</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+    ` : `
+        <thead>
+            <tr>
+                <th>Request Details</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Deadline</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+    `;
+
+    const rowsHtml = (Array.isArray(requestsData) ? requestsData : []).map(request => {
+        const initials = getInitialsFromName(request.customer || '');
+        const status = String(request.status || 'pending').toLowerCase();
+        const statusClass = status === 'accepted' ? 'accepted' : (status === 'completed' ? 'accepted' : 'pending');
+        const statusIcon = status === 'accepted' ? 'check' : (status === 'completed' ? 'check-circle' : 'clock');
+        const deadline = request.deadline ? escapeHtml(request.deadline) : '—';
+
+        const publicActions = `
+            <div class="table-actions">
+                <button class="action-btn small primary" type="button" onclick="redirectToRepairRequests(${Number(request.request_id)}, 'quote')">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    Submit Quotation
+                </button>
+                <button class="action-btn small secondary" type="button" onclick="redirectToRepairRequests(${Number(request.request_id)}, 'details')">
+                    <i class="fas fa-eye"></i>
+                    View
+                </button>
+            </div>
+        `;
+
+        const directActions = `
+            <div class="table-actions">
+                <button class="action-btn small secondary" type="button" onclick="redirectToRepairRequests(${Number(request.request_id)}, 'details')">
+                    <i class="fas fa-eye"></i>
+                    View
+                </button>
+            </div>
+        `;
+
+        return `
+            <tr data-request-id="${Number(request.request_id)}">
+                <td>
+                    <div>
+                        <h5>${escapeHtml(request.title || '')}</h5>
+                        <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
+                            #REQ-${Number(request.request_id)} &bull; ${escapeHtml(request.category || 'General')}
+                        </p>
+                    </div>
+                </td>
+                <td>
+                    <div class="table-customer">
+                        <div class="table-customer-avatar">${escapeHtml(initials)}</div>
+                        <div class="table-customer-info">
+                            <h5>${escapeHtml(request.customer || '')}</h5>
+                            <p></p>
+                        </div>
+                    </div>
+                </td>
+                <td>${escapeHtml(request.date || '')}</td>
+                <td>${deadline}</td>
+                ${isPublic ? '' : `
+                <td>
+                    <span class="status-badge ${statusClass}">
+                        <i class="fas fa-${statusIcon}"></i>
+                        ${capitalizeFirst(status)}
+                    </span>
+                </td>
+                `}
+                <td>${isPublic ? publicActions : directActions}</td>
+            </tr>
+        `;
+    }).join('');
+
+    requestsList.innerHTML = `
+        <table class="requests-table">
+            ${tableHead}
+            <tbody>
+                ${rowsHtml}
+            </tbody>
+        </table>
+    `;
+}
+
+async function loadDashboardData(chartPeriodOverride) {
+    const periodText = document.querySelector('.period-selector')?.value || 'Last 7 Days';
+    const mappedPeriod = chartPeriodOverride || (periodText === 'Last 30 Days' ? '30d' : (periodText === 'Last 3 Months' ? '3m' : '7d'));
+
+    try {
+        const res = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-dashboard.php?chart_period=${encodeURIComponent(mappedPeriod)}`);
+        const json = await res.json();
+
+        if (!json || json.success !== true) {
+            throw new Error(json?.message || 'Failed to load dashboard');
+        }
+
+        dashboardData = json.data;
+
+        // Merge read-only system events (projects/milestones) into calendar
+        setSystemCalendarEvents(dashboardData?.calendar?.system_events || []);
+        updateCalendarDisplay();
+
+        renderKPIs(dashboardData.kpis);
+        renderProjects(dashboardData.projects);
+        renderContracts(dashboardData.contracts);
+        renderPayments(dashboardData.payments);
+        renderIncomeChart(dashboardData.incomeChart);
+        renderWorkforce(dashboardData.workforce);
+        renderFeedback(dashboardData.feedback);
+        renderSupportTickets(dashboardData.supportTickets);
+
+        loadStaticRequests();
+    } catch (e) {
+        console.error(e);
+        showNotification('Failed to load dashboard data', 'error');
+    }
+}
+
+function renderKPIs(kpis) {
+    if (!kpis) return;
+
+    const activeEl = document.getElementById('kpiActiveProjects');
+    const pendingEl = document.getElementById('kpiPendingRequests');
+    const earningsEl = document.getElementById('kpiTotalEarnings');
+    const ratingEl = document.getElementById('kpiAverageRating');
+
+    if (activeEl) activeEl.textContent = Number(kpis.active_projects ?? 0);
+    if (pendingEl) pendingEl.textContent = Number(kpis.pending_requests ?? 0);
+    if (earningsEl) earningsEl.textContent = `LKR ${formatCurrency(Number(kpis.total_earnings ?? 0))}`;
+    if (ratingEl) ratingEl.textContent = Number(kpis.average_rating ?? 0).toFixed(1);
+}
+
+function renderProjects(projects) {
+    const container = document.getElementById('dashboardProjectsList');
+    if (!container) return;
+
+    if (!Array.isArray(projects) || projects.length === 0) {
+        container.innerHTML = '<div class="empty-state">No projects found.</div>';
+        return;
+    }
+
+    container.innerHTML = projects.map(p => {
+        const mapped = mapProjectStatus(p.status);
+        const progress = clampNumber(p.progress, 0, 100);
+        const dateText = p.end_date ? `Due: ${formatDateShort(p.end_date)}` : (p.start_date ? `Starts: ${formatDateShort(p.start_date)}` : '');
+
+        return `
+            <div class="project-item">
+                <div class="project-info">
+                    <h4>${escapeHtml(p.title || '')}</h4>
+                    <p><strong>Client:</strong> ${escapeHtml(p.client || '')}</p>
+                    ${dateText ? `<span class="project-date">${escapeHtml(dateText)}</span>` : ''}
+                </div>
+                <div class="project-details">
+                    <div class="project-status ${mapped.className}">${escapeHtml(mapped.label)}</div>
+                    <div class="project-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress}%;"></div>
+                        </div>
+                        <span class="progress-text">${progress}%</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderContracts(contracts) {
+    const container = document.getElementById('dashboardContractsList');
+    if (!container) return;
+
+    if (!Array.isArray(contracts) || contracts.length === 0) {
+        container.innerHTML = '<div class="empty-state">No contracts found.</div>';
+        return;
+    }
+
+    container.innerHTML = contracts.map(c => {
+        const mapped = mapContractStatus(c.status);
+        const startText = c.start_date ? `Started: ${formatDateShort(c.start_date)}` : '';
+
+        return `
+            <div class="contract-item">
+                <div class="contract-info">
+                    <h4>${escapeHtml(c.title || '')}</h4>
+                    <p>${escapeHtml(c.customer || '')}</p>
+                    ${startText ? `<span class="contract-date">${escapeHtml(startText)}</span>` : ''}
+                </div>
+                <div class="contract-details">
+                    <div class="contract-status ${mapped.className}">${escapeHtml(mapped.label)}</div>
+                    <div class="contract-value">LKR ${formatCurrency(Number(c.total_budget || 0) / 1000)}K</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderPayments(payments) {
+    const container = document.getElementById('dashboardPaymentsList');
+    if (!container) return;
+
+    if (!Array.isArray(payments) || payments.length === 0) {
+        container.innerHTML = '<div class="empty-state">No payments found.</div>';
+        return;
+    }
+
+    container.innerHTML = payments.map(p => {
+        const amountClass = p.status === 'completed' ? 'positive' : (p.status === 'failed' || p.status === 'refunded' ? 'negative' : '');
+        const sign = p.status === 'completed' ? '+' : '';
+
+        return `
+            <div class="payment-item">
+                <div class="payment-info">
+                    <h4>${escapeHtml(p.title || 'Payment')}</h4>
+                    <p>${escapeHtml(p.subtitle || '')}</p>
+                </div>
+                <div class="payment-amount ${amountClass}">${sign}LKR ${formatCurrency(Number(p.amount || 0) / 1000)}K</div>
+                <div class="payment-date">${escapeHtml(p.date || '')}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderIncomeChart(incomeChart) {
+    const barsContainer = document.getElementById('incomeChart');
+    const labelsContainer = document.getElementById('incomeChartLabels');
+    if (!barsContainer || !labelsContainer || !incomeChart) return;
+
+    const labels = Array.isArray(incomeChart.labels) ? incomeChart.labels : [];
+    const values = Array.isArray(incomeChart.values) ? incomeChart.values : [];
+    const maxValue = Math.max(0, ...values.map(v => Number(v || 0)));
+
+    barsContainer.innerHTML = values.map(v => {
+        const val = Number(v || 0);
+        const height = maxValue > 0 ? (val / maxValue) * 100 : 0;
+        return `<div class="chart-bar" data-value="${formatCurrency(val / 1000)}K" style="height: ${height}%;"></div>`;
+    }).join('');
+
+    labelsContainer.innerHTML = labels.map(l => `<div class="chart-label">${escapeHtml(l)}</div>`).join('');
+
+    const totalEl = document.getElementById('incomeSummaryTotal');
+    const avgEl = document.getElementById('incomeSummaryAvg');
+    const growthEl = document.getElementById('incomeSummaryGrowth');
+
+    const summary = incomeChart.summary || {};
+    if (totalEl) totalEl.textContent = `LKR ${formatCurrency(Number(summary.total || 0) / 1000)}K`;
+    if (avgEl) avgEl.textContent = `LKR ${formatCurrency(Number(summary.avg || 0) / 1000)}K`;
+
+    if (growthEl) {
+        if (summary.growth_pct === null || summary.growth_pct === undefined) {
+            growthEl.textContent = '—';
+        } else {
+            const pct = Number(summary.growth_pct || 0);
+            const sign = pct >= 0 ? '+' : '';
+            growthEl.textContent = `${sign}${pct.toFixed(0)}%`;
+        }
+    }
+
+    animateChartBars();
+}
+
+function renderWorkforce(workforce) {
+    if (!Array.isArray(workforce)) workforce = [];
+
+    const grid = document.getElementById('workforceGrid');
+    if (!grid) return;
+
+    const categoryFilter = document.getElementById('workforceCategoryFilter');
+    if (categoryFilter) {
+        categoryFilter.innerHTML = '<option value="">All Categories</option>';
+    }
+
+    if (workforce.length === 0) {
+        grid.innerHTML = '<div class="empty-state">No workforce categories found.</div>';
+        return;
+    }
+
+    // Stable sort by specialty name
+    const sorted = [...workforce].sort((a, b) => String(a.specialty || '').localeCompare(String(b.specialty || ''), undefined, { sensitivity: 'base' }));
+
+    const cards = sorted.map(row => {
+        const specialtyName = String(row.specialty || '');
+        const key = workforceSlug(specialtyName);
+        const total = Number(row.total || 0);
+        const active = Number(row.active || 0);
+        const ratio = total > 0 ? Math.round((active / total) * 100) : 0;
+        const avgRating = Number(row.avg_rating || 0);
+
+        const badge = ratio >= 60
+            ? { cls: 'available', text: 'Available' }
+            : (ratio >= 30 ? { cls: 'limited', text: 'Limited' } : { cls: 'offline', text: 'Offline' });
+
+        const icon = getWorkforceIconClass(specialtyName);
+        const href = `/2nd-Year-Group-Project/FixLanka/company-workforce#${encodeURIComponent(key)}`;
+
+        if (categoryFilter && key) {
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = specialtyName;
+            categoryFilter.appendChild(opt);
+        }
+
+        return `
+            <div class="workforce-item" data-category="${escapeHtml(key)}">
+                <div class="workforce-header">
+                    <div class="workforce-icon">
+                        <i class="fas ${escapeHtml(icon)}"></i>
+                    </div>
+                    <div class="workforce-title">
+                        <h4>${escapeHtml(specialtyName)}</h4>
+                        <div class="workforce-availability">
+                            <span class="available-count">${active}</span>
+                            <span class="total-count">/ ${total} Total</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workforce-progress">
+                    <div class="progress-label">
+                        <span>Availability Ratio</span>
+                        <span class="progress-percentage">${ratio}%</span>
+                    </div>
+                    <div class="progress-bar" role="progressbar" aria-valuenow="${ratio}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(specialtyName)} availability ratio">
+                        <div class="progress-fill" style="width: ${ratio}%"></div>
+                    </div>
+                </div>
+
+                <div class="workforce-details">
+                    <div class="detail-item">
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <span>${avgRating.toFixed(1)} Rating</span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                        <span>Verified</span>
+                    </div>
+                </div>
+
+                <div class="availability-badge ${badge.cls}">${badge.text}</div>
+
+                <div class="workforce-actions" role="group" aria-label="${escapeHtml(specialtyName)} workforce actions">
+                    <button class="action-btn primary" type="button" onclick="window.location.href='${href}'">
+                        <i class="fas fa-eye icon-left" aria-hidden="true"></i>
+                        <span class="btn-text">View All</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    grid.innerHTML = cards;
+}
+
+function renderFeedback(feedback) {
+    const container = document.getElementById('dashboardFeedbackList');
+    if (!container) return;
+
+    if (!Array.isArray(feedback) || feedback.length === 0) {
+        container.innerHTML = '<div class="empty-state">No feedback yet.</div>';
+        return;
+    }
+
+    container.innerHTML = feedback.map(f => {
+        const rating = clampNumber(Number(f.rating || 0), 0, 5);
+        return `
+            <div class="feedback-item">
+                <div class="feedback-rating">${renderStarsIcons(rating)}</div>
+                <p>${escapeHtml(f.comments || '')}</p>
+                <span class="feedback-customer">- ${escapeHtml(f.customer || '')}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderSupportTickets(tickets) {
+    const container = document.getElementById('dashboardSupportTickets');
+    if (!container) return;
+
+    if (!Array.isArray(tickets) || tickets.length === 0) {
+        container.innerHTML = '<div class="empty-state">No support tickets.</div>';
+        return;
+    }
+
+    container.innerHTML = tickets.map(t => {
+        const priority = (t.priority || 'medium').toLowerCase();
+        const mappedPriority = priority === 'urgent' ? 'high' : (priority === 'low' ? 'low' : (priority === 'high' ? 'high' : 'medium'));
+        return `
+            <div class="ticket-item ${mappedPriority}">
+                <div class="ticket-priority">${escapeHtml(priority)}</div>
+                <div class="ticket-info">
+                    <h4>${escapeHtml(t.title || '')}</h4>
+                    <p>${escapeHtml(t.ticket_number || '')}</p>
+                </div>
+                <div class="ticket-status">${escapeHtml(t.status || '')}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function mapProjectStatus(status) {
+    switch ((status || '').toLowerCase()) {
+        case 'in_progress':
+            return { className: 'in-progress', label: 'In Progress' };
+        case 'completed':
+            return { className: 'completed', label: 'Completed' };
+        case 'on_hold':
+            return { className: 'delayed', label: 'On Hold' };
+        case 'planned':
+        default:
+            return { className: 'pending', label: 'Pending' };
+    }
+}
+
+function mapContractStatus(status) {
+    const s = (status || '').toLowerCase();
+    if (s === 'active' || s === 'in_progress') return { className: 'active', label: 'Active' };
+    if (s === 'completed') return { className: 'completed', label: 'Completed' };
+    if (s === 'pending_signature' || s === 'milestone_pending' || s === 'draft') return { className: 'pending', label: 'Pending' };
+    return { className: 'pending', label: capitalizeFirst(s || 'pending') };
+}
+
+function clampNumber(n, min, max) {
+    n = Number(n);
+    if (Number.isNaN(n)) return min;
+    return Math.min(max, Math.max(min, n));
+}
+
+function formatDateShort(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return String(dateStr);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function workforceSlug(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9\-]/g, '')
+        .replace(/\-+/g, '-')
+        .replace(/^\-+|\-+$/g, '')
+        || 'category';
+}
+
+function getWorkforceIconClass(specialty) {
+    const s = String(specialty || '').toLowerCase();
+    if (s.includes('carp')) return 'fa-hammer';
+    if (s.includes('elect')) return 'fa-bolt';
+    if (s.includes('plumb')) return 'fa-wrench';
+    if (s.includes('paint')) return 'fa-paint-brush';
+    if (s.includes('mason') || s.includes('brick')) return 'fa-trowel';
+    if (s.includes('tile')) return 'fa-border-all';
+    if (s.includes('ac') || s.includes('hvac')) return 'fa-fan';
+    return 'fa-user-cog';
+}
+
+function getEarningsBarHeight(series, amount) {
+    if (!Array.isArray(series) || series.length === 0) return 0;
+    const max = Math.max(0, ...series.map(s => Number(s.amount || 0)));
+    const val = Number(amount || 0);
+    return max > 0 ? (val / max) * 100 : 0;
+}
+
+function renderStarsIcons(rating) {
+    let html = '';
+    for (let i = 1; i <= 5; i++) {
+        html += i <= rating ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
+    }
+    return html;
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
 }
 
 // Generate static action buttons (no functionality)
@@ -2050,60 +2586,9 @@ function initializeIncomeChart() {
 
 // Update income chart based on period selection
 function updateIncomeChart() {
-    const period = document.querySelector('.period-selector').value;
-    const chartBars = document.querySelectorAll('.chart-bar');
-    const chartLabels = document.querySelector('.chart-labels');
-    const summaryValues = document.querySelectorAll('.summary-value');
-
-    let data, labels, summary;
-
-    switch (period) {
-        case 'Last 7 Days':
-            data = [45, 62, 38, 75, 52, 68, 41];
-            labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            summary = ['LKR 381K', 'LKR 54K', '+18%'];
-            break;
-        case 'Last 30 Days':
-            data = [120, 95, 160, 85, 140, 110, 130];
-            labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7'];
-            summary = ['LKR 840K', 'LKR 28K', '+12%'];
-            break;
-        case 'Last 3 Months':
-            data = [450, 380, 520, 340, 460, 390, 480];
-            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
-            summary = ['LKR 3.02M', 'LKR 101K', '+25%'];
-            break;
-        default:
-            return;
-    }
-
-    // Update chart bars
-    const maxValue = Math.max(...data);
-    chartBars.forEach((bar, index) => {
-        if (data[index] !== undefined) {
-            const height = (data[index] / maxValue) * 100;
-            bar.style.height = height + '%';
-            bar.setAttribute('data-value', data[index] + 'K');
-        }
-    });
-
-    // Update labels
-    const labelElements = chartLabels.querySelectorAll('.chart-label');
-    labelElements.forEach((label, index) => {
-        if (labels[index]) {
-            label.textContent = labels[index];
-        }
-    });
-
-    // Update summary values
-    summaryValues.forEach((value, index) => {
-        if (summary[index]) {
-            value.textContent = summary[index];
-        }
-    });
-
-    // Re-animate bars
-    animateChartBars();
+    const periodText = document.querySelector('.period-selector')?.value || 'Last 7 Days';
+    const period = periodText === 'Last 30 Days' ? '30d' : (periodText === 'Last 3 Months' ? '3m' : '7d');
+    loadDashboardData(period);
 }
 
 // Animate chart bars on load
@@ -2118,4 +2603,11 @@ function animateChartBars() {
             bar.style.height = originalHeight;
         }, index * 100 + 300);
     });
+}
+
+function getInitialsFromName(fullName) {
+    const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return 'U';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }

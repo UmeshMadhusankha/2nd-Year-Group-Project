@@ -1,6 +1,6 @@
 <?php
 // Start session and verify authentication
-require_once '../../config/session.php';
+require_once __DIR__ . '/../../config/session.php';
 requireRole('company');
 $userData = getUserData();
 ?>
@@ -39,11 +39,6 @@ $userData = getUserData();
                 <!-- Page Header -->
                 <header class="page-header">
                     <div class="header-content">
-                        <div class="breadcrumbs">
-                            <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard"><i class="fas fa-home"></i> Dashboard</a>
-                            <span class="separator">/</span>
-                            <span class="current">Support</span>
-                        </div>
                         <div class="header-main">
                             <div class="title-section">
                                 <h1><i class="fas fa-life-ring"></i> Support Center</h1>
@@ -61,6 +56,11 @@ $userData = getUserData();
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                        <div class="breadcrumbs">
+                            <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard"><i class="fas fa-home"></i> Dashboard</a>
+                            <span class="separator">/</span>
+                            <span class="current">Support</span>
                         </div>
 
                     </div>

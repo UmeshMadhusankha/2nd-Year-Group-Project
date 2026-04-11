@@ -1,327 +1,318 @@
 <?php
-/**
- * AdReportModel.php - FIXED VERSION
- * Handles all database operations for advertisement reports
- * ✅ Updated to match actual ad_reports table structure
- */
 
 class AdReportModel
 {
-    private $pdo;
+    private PDO $pdo;
 
-    public function __construct($pdo)
+    public function __construct(PDO $pdo)
     {
         $this->pdo = $pdo;
     }
 
-    /**
-     * Get all advertisement reports with full details
-     * ✅ FIXED: Uses correct column names from database
-     */
-    public function getAllReports($filters = [])
+    private function tableExists(string $tableName): bool
     {
-        $sql = "SELECT 
-                    r.report_id,
-                    r.ad_id,
-                    r.reporter_id,
-                    r.reporter_type,
-                    r.report_category,
-                    r.description,
-                    r.severity,
-                    r.status as report_status,
-                    r.assigned_to,
-                    r.resolution_notes,
-                    r.resolved_at,
-                    r.resolved_by,
-                    r.created_at,
-                    r.updated_at,
-                    a.title as ad_title,
-                    a.type as ad_type,
-                    a.status as ad_status,
-                    a.provider_type,
-                    a.provider_id,
-                    CASE 
-                        WHEN a.provider_type = 'company' THEN c.name
-                        WHEN a.provider_type = 'repairer' THEN CONCAT(rep.f_name, ' ', rep.l_name)
-                        ELSE 'Unknown'
-                    END as company_name,
-                    CASE 
-                        WHEN a.provider_type = 'company' THEN c.email
-                        WHEN a.provider_type = 'repairer' THEN rep.email
-                        ELSE NULL
-                    END as provider_email
-                FROM ad_reports r
-                INNER JOIN Advertisement a ON r.ad_id = a.ad_id
-                LEFT JOIN Company c ON a.provider_id = c.company_id AND a.provider_type = 'company'
-                LEFT JOIN Repairer rep ON a.provider_id = rep.repairer_id AND a.provider_type = 'repairer'
-                WHERE 1=1";
-
-        $params = [];
-
-        // Apply filters
-        if (!empty($filters['status'])) {
-            $sql .= " AND r.status = :status";
-            $params[':status'] = $filters['status'];
-        }
-
-        if (!empty($filters['severity'])) {
-            $sql .= " AND r.severity = :severity";
-            $params[':severity'] = $filters['severity'];
-        }
-
-        if (!empty($filters['report_category'])) {
-            $sql .= " AND r.report_category = :report_category";
-            $params[':report_category'] = $filters['report_category'];
-        }
-
-        if (!empty($filters['search'])) {
-            $sql .= " AND (a.title LIKE :search OR r.description LIKE :search)";
-            $params[':search'] = '%' . $filters['search'] . '%';
-        }
-
-        $sql .= " ORDER BY r.created_at DESC";
-
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute($params);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error fetching reports: " . $e->getMessage());
-            return [];
-        }
+        // MariaDB/MySQL does not allow binding parameters in SHOW statements.
+        $stmt = $this->pdo->prepare(
+            'SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :t LIMIT 1'
+        );
+        $stmt->execute([':t' => $tableName]);
+        return (bool)$stmt->fetchColumn();
     }
 
-    /**
-     * Get single report by ID with full details
-     */
-    public function getReportById($report_id)
+    public function getAdvertisementStatus(int $adId): ?string
     {
-        $sql = "SELECT 
-                    r.*,
-                    a.title as ad_title,
-                    a.status as ad_status,
-                    a.provider_type,
-                    CASE 
-                        WHEN a.provider_type = 'company' THEN c.name
-                        WHEN a.provider_type = 'repairer' THEN CONCAT(rep.f_name, ' ', rep.l_name)
-                        ELSE 'Unknown'
-                    END as company_name
-                FROM ad_reports r
-                INNER JOIN Advertisement a ON r.ad_id = a.ad_id
-                LEFT JOIN Company c ON a.provider_id = c.company_id AND a.provider_type = 'company'
-                LEFT JOIN Repairer rep ON a.provider_id = rep.repairer_id AND a.provider_type = 'repairer'
-                WHERE r.report_id = :report_id";
-
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindParam(':report_id', $report_id, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error fetching report: " . $e->getMessage());
+        if (!$this->tableExists('advertisement')) {
             return null;
         }
+
+        $stmt = $this->pdo->prepare('SELECT status FROM advertisement WHERE ad_id = :id');
+        $stmt->execute([':id' => $adId]);
+        $status = $stmt->fetchColumn();
+        return $status !== false ? (string)$status : null;
     }
 
-    /**
-     * Update report status and notes
-     * ✅ FIXED: Uses resolution_notes, assigned_to, resolved_by
-     */
-    public function updateReport($report_id, $data)
+    public function deleteAdvertisement(int $adId): bool
     {
-        // Get current report data
-        $currentReport = $this->getReportById($report_id);
-        if (!$currentReport) {
-            return ['success' => false, 'message' => 'Report not found'];
+        if (!$this->tableExists('advertisement')) {
+            throw new RuntimeException('advertisement table not found.');
         }
 
-        // Validate report status transition
-        $validTransitions = [
-            'pending' => ['investigating', 'dismissed'],
-            'investigating' => ['resolved', 'escalated', 'dismissed'],
-            'resolved' => [], // Final state
-            'dismissed' => [], // Final state
-            'escalated' => ['resolved', 'dismissed']
+        $stmt = $this->pdo->prepare('DELETE FROM advertisement WHERE ad_id = :id');
+        $stmt->execute([':id' => $adId]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function markAdvertisementExpired(int $adId): bool
+    {
+        if (!$this->tableExists('advertisement')) {
+            throw new RuntimeException('advertisement table not found.');
+        }
+
+        $stmt = $this->pdo->prepare("UPDATE advertisement SET status = 'expired' WHERE ad_id = :id");
+        $stmt->execute([':id' => $adId]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function suspendAdvertisement(int $adId): bool
+    {
+        if (!$this->tableExists('advertisement')) {
+            throw new RuntimeException('advertisement table not found.');
+        }
+
+        $stmt = $this->pdo->prepare("UPDATE advertisement SET status = 'suspended' WHERE ad_id = :id");
+        $stmt->execute([':id' => $adId]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function isReady(): bool
+    {
+        return $this->tableExists('advertisement') && $this->tableExists('adreport');
+    }
+
+    public function getReports(): array
+    {
+        if ($this->isReady()) {
+            $sql = "
+                SELECT
+                    ar.report_id AS id,
+                    ar.ad_id,
+                    a.title AS ad_title,
+                    ar.reporter_id,
+                    ar.reporter_type,
+                    ar.issue_type,
+                    ar.description,
+                    ar.priority,
+                    ar.status,
+                    a.status AS ad_status,
+                    DATE_FORMAT(ar.created_at, '%Y-%m-%d') AS created_date,
+                    (CASE
+                        WHEN a.provider_type = 'company' THEN c.name
+                        ELSE CONCAT(r.f_name, ' ', r.l_name)
+                    END) AS company_name,
+                    COALESCE(ar.evidence, '') AS evidence
+                FROM adreport ar
+                INNER JOIN advertisement a ON a.ad_id = ar.ad_id
+                LEFT JOIN company c ON a.provider_type='company' AND c.company_id = a.provider_id
+                LEFT JOIN repairer r ON a.provider_type='repairer' AND r.repairer_id = a.provider_id
+                ORDER BY ar.created_at DESC, ar.report_id DESC
+            ";
+
+            $rows = $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as &$row) {
+                $row['status'] = strtolower(trim((string)($row['status'] ?? 'pending')));
+                $row['priority'] = strtolower(trim((string)($row['priority'] ?? 'low')));
+                $row['issue_type'] = $this->normalizeIssueType((string)($row['issue_type'] ?? 'other'));
+                $row['reporter_type'] = strtolower(trim((string)($row['reporter_type'] ?? 'user')));
+                $row['ad_status'] = strtolower(trim((string)($row['ad_status'] ?? 'unknown')));
+            }
+            unset($row);
+
+            return $rows;
+        }
+
+        $mockPath = __DIR__ . '/../includes/admin-modarator/mock-data.php';
+        if (is_file($mockPath)) {
+            require_once $mockPath;
+
+            if (function_exists('getAdReports')) {
+                $reports = getAdReports();
+                if (!is_array($reports)) {
+                    $reports = [];
+                }
+                $raw = array_values($reports);
+                return array_map(function (array $r) {
+                    $status = strtolower(trim((string)($r['status'] ?? 'pending')));
+                    $statusMap = [
+                        'pending' => 'pending',
+                        'investigating' => 'investigating',
+                        'resolved' => 'resolved',
+                        'escalated' => 'escalated',
+                        'dismissed' => 'dismissed',
+                    ];
+
+                    $priority = strtolower(trim((string)($r['priority'] ?? 'low')));
+
+                    $issueType = $this->normalizeIssueType((string)($r['issue_type'] ?? 'other'));
+
+                    return [
+                        'id' => (int)($r['id'] ?? 0),
+                        'ad_id' => (int)($r['ad_id'] ?? 0),
+                        'ad_title' => (string)($r['ad_title'] ?? ''),
+                        'reporter_id' => 0,
+                        'reporter_type' => 'user',
+                        'issue_type' => $issueType,
+                        'description' => (string)($r['description'] ?? ''),
+                        'priority' => in_array($priority, ['critical', 'high', 'medium', 'low'], true) ? $priority : 'low',
+                        'status' => $statusMap[$status] ?? 'pending',
+                        'ad_status' => 'pending',
+                        'created_date' => (string)($r['created_date'] ?? date('Y-m-d')),
+                        'company_name' => (string)($r['company_name'] ?? 'Unknown'),
+                        'evidence' => (string)($r['evidence'] ?? ''),
+                    ];
+                }, $raw);
+            }
+        }
+
+        return [];
+    }
+
+    public function updateReport(int $reportId, string $status, string $priority, string $moderatorNotes, ?int $handledBy): bool
+    {
+        if (!$this->tableExists('adreport')) {
+            throw new RuntimeException('adreport table not found. Please apply the latest database schema updates.');
+        }
+
+        $sql = "
+            UPDATE adreport
+            SET status = :status,
+                priority = :priority,
+                moderator_notes = :notes,
+                handled_by = :handled_by
+            WHERE report_id = :id
+            LIMIT 1
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':status' => $status,
+            ':priority' => $priority,
+            ':notes' => $moderatorNotes,
+            ':handled_by' => $handledBy,
+            ':id' => $reportId,
+        ]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function dismissReport(int $reportId, string $moderatorNotes, ?int $handledBy): bool
+    {
+        if (!$this->tableExists('adreport')) {
+            throw new RuntimeException('adreport table not found. Please apply the latest database schema updates.');
+        }
+
+        $sql = "
+            UPDATE adreport
+            SET status = 'dismissed',
+                moderator_notes = :notes,
+                handled_by = :handled_by
+            WHERE report_id = :id
+            LIMIT 1
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':notes' => $moderatorNotes,
+            ':handled_by' => $handledBy,
+            ':id' => $reportId,
+        ]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function escalateReport(int $reportId, string $moderatorNotes, ?int $handledBy): bool
+    {
+        if (!$this->tableExists('adreport')) {
+            throw new RuntimeException('adreport table not found. Please apply the latest database schema updates.');
+        }
+
+        $sql = "
+            UPDATE adreport
+            SET status = 'escalated',
+                moderator_notes = :notes,
+                handled_by = :handled_by
+            WHERE report_id = :id
+            LIMIT 1
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':notes' => $moderatorNotes,
+            ':handled_by' => $handledBy,
+            ':id' => $reportId,
+        ]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function resolveReport(int $reportId, string $moderatorNotes, ?int $handledBy): bool
+    {
+        if (!$this->tableExists('adreport')) {
+            throw new RuntimeException('adreport table not found. Please apply the latest database schema updates.');
+        }
+
+        $sql = "
+            UPDATE adreport
+            SET status = 'resolved',
+                moderator_notes = :notes,
+                handled_by = :handled_by
+            WHERE report_id = :id
+            LIMIT 1
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':notes' => $moderatorNotes,
+            ':handled_by' => $handledBy,
+            ':id' => $reportId,
+        ]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function enrichReportsWithAdStatus(array $reports): array
+    {
+        foreach ($reports as &$report) {
+            $adId = (int)($report['ad_id'] ?? 0);
+            if ($adId <= 0) {
+                $report['ad_status'] = 'unknown';
+                continue;
+            }
+
+            $status = $this->getAdvertisementStatus($adId);
+            $report['ad_status'] = $status ?? 'deleted';
+        }
+        unset($report);
+
+        return $reports;
+    }
+
+    public function getStatistics(array $reports): array
+    {
+        $total = count($reports);
+        $pending = 0;
+        $resolved = 0;
+
+        foreach ($reports as $r) {
+            $status = $r['status'] ?? '';
+            if ($status === 'pending') {
+                $pending++;
+            }
+            if ($status === 'resolved') {
+                $resolved++;
+            }
+        }
+
+        return [
+            'total_reports' => $total,
+            'pending' => $pending,
+            'resolved' => $resolved,
+        ];
+    }
+
+    private function normalizeIssueType(string $issueType): string
+    {
+        $t = strtolower(trim($issueType));
+
+        $map = [
+            'inappropriate content' => 'inappropriate_content',
+            'inappropriate images' => 'inappropriate_content',
+            'misleading information' => 'misleading_information',
+            'false pricing' => 'misleading_information',
+            'spam content' => 'spam',
+            'spam' => 'spam',
+            'privacy violation' => 'privacy_violation',
+            'copyright' => 'copyright_infringement',
+            'copyright infringement' => 'copyright_infringement',
+            'fraud' => 'fraud',
+            'policy violation' => 'other',
+            'duplicate listing' => 'other',
+            'expired advertisement' => 'other',
+            'unverified claims' => 'other',
+            'other' => 'other',
         ];
 
-        $currentStatus = $currentReport['status'];
-        $newStatus = $data['status'];
-
-        // Check if transition is valid
-        if ($currentStatus !== $newStatus && 
-            !in_array($newStatus, $validTransitions[$currentStatus] ?? [])) {
-            return [
-                'success' => false, 
-                'message' => "Cannot change status from '{$currentStatus}' to '{$newStatus}'"
-            ];
-       }
-
-        $sql = "UPDATE ad_reports SET
-                    status = :status,
-                    severity = :severity,
-                    resolution_notes = :resolution_notes,
-                    assigned_to = :assigned_to,
-                    updated_at = CURRENT_TIMESTAMP";
-
-        // If status is resolved, set resolved_at and resolved_by
-        if ($newStatus === 'resolved') {
-            $sql .= ", resolved_at = CURRENT_TIMESTAMP, resolved_by = :resolved_by";
-        }
-
-        $sql .= " WHERE report_id = :report_id";
-
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindParam(':status', $data['status']);
-            $stmt->bindParam(':severity', $data['severity']);
-            $stmt->bindParam(':resolution_notes', $data['resolution_notes']);
-            $stmt->bindParam(':assigned_to', $data['moderator_id'], PDO::PARAM_INT);
-            $stmt->bindParam(':report_id', $report_id, PDO::PARAM_INT);
-            
-            if ($newStatus === 'resolved') {
-                $stmt->bindParam(':resolved_by', $data['moderator_id'], PDO::PARAM_INT);
-            }
-            
-            if ($stmt->execute()) {
-                return ['success' => true, 'message' => 'Report updated successfully'];
-            }
-            return ['success' => false, 'message' => 'Failed to update report'];
-        } catch (PDOException $e) {
-            error_log("Error updating report: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
-        }
-    }
-
-    /**
-     * Get current advertisement status
-     */
-    public function getAdStatus($ad_id)
-    {
-        $sql = "SELECT status FROM Advertisement WHERE ad_id = :ad_id";
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindParam(':ad_id', $ad_id, PDO::PARAM_INT);
-            $stmt->execute();
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result ? $result['status'] : null;
-        } catch (PDOException $e) {
-            error_log("Error getting ad status: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Update advertisement status with strict validation
-     */
-    public function updateAdStatus($ad_id, $new_status, $reason = '')
-    {
-        // Get current ad status
-        $currentStatus = $this->getAdStatus($ad_id);
-        if (!$currentStatus) {
-            return ['success' => false, 'message' => 'Advertisement not found'];
-        }
-
-        // Define valid status transitions
-        $validTransitions = [
-            'pending' => ['approved', 'rejected'],
-            'approved' => ['active', 'rejected'],
-            'active' => ['inactive', 'suspended'],
-            'inactive' => ['active', 'suspended'],
-            'suspended' => ['deleted'],
-            'rejected' => [], // FINAL - Cannot change
-            'expired' => [], // FINAL - Cannot change
-            'deleted' => []  // FINAL - Cannot change
-        ];
-
-        // Block changes to final states
-        if (in_array($currentStatus, ['rejected', 'expired', 'deleted'])) {
-            return [
-                'success' => false, 
-                'message' => "Cannot modify advertisement with '{$currentStatus}' status - it is final"
-            ];
-        }
-
-        // Validate transition
-        if (!in_array($new_status, $validTransitions[$currentStatus] ?? [])) {
-            return [
-                'success' => false, 
-                'message' => "Invalid status transition from '{$currentStatus}' to '{$new_status}'"
-            ];
-        }
-
-        $sql = "UPDATE Advertisement 
-                SET status = :status, 
-                    updated_at = CURRENT_TIMESTAMP 
-                WHERE ad_id = :ad_id";
-
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindParam(':status', $new_status);
-            $stmt->bindParam(':ad_id', $ad_id, PDO::PARAM_INT);
-            
-            if ($stmt->execute()) {
-                $this->logModeratorAction($ad_id, $currentStatus, $new_status, $reason);
-                return ['success' => true, 'message' => "Advertisement status changed to '{$new_status}'"];
-            }
-            return ['success' => false, 'message' => 'Failed to update advertisement'];
-        } catch (PDOException $e) {
-            error_log("Error updating ad status: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
-        }
-    }
-
-    /**
-     * Log moderator action
-     */
-    private function logModeratorAction($ad_id, $old_status, $new_status, $reason)
-    {
-        $sql = "INSERT INTO moderator_activity 
-                (moderator_id, action_type, target_type, target_id, old_value, new_value, reason)
-                VALUES (:moderator_id, 'status_change', 'advertisement', :ad_id, :old_status, :new_status, :reason)";
-        
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $moderator_id = $_SESSION['moderator_id'] ?? 1;
-            $stmt->bindParam(':moderator_id', $moderator_id, PDO::PARAM_INT);
-            $stmt->bindParam(':ad_id', $ad_id, PDO::PARAM_INT);
-            $stmt->bindParam(':old_status', $old_status);
-            $stmt->bindParam(':new_status', $new_status);
-            $stmt->bindParam(':reason', $reason);
-            $stmt->execute();
-        } catch (PDOException $e) {
-            error_log("Error logging action: " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Get statistics for dashboard
-     */
-    public function getStatistics()
-    {
-        try {
-            $sql = "SELECT 
-                        COUNT(*) as total_reports,
-                        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                        SUM(CASE WHEN status = 'investigating' THEN 1 ELSE 0 END) as investigating,
-                        SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved,
-                        SUM(CASE WHEN status = 'dismissed' THEN 1 ELSE 0 END) as dismissed,
-                        SUM(CASE WHEN status = 'escalated' THEN 1 ELSE 0 END) as escalated,
-                        SUM(CASE WHEN severity = 'critical' THEN 1 ELSE 0 END) as critical_reports
-                    FROM ad_reports";
-            
-            $stmt = $this->pdo->query($sql);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error getting statistics: " . $e->getMessage());
-            return [
-                'total_reports' => 0,
-                'pending' => 0,
-                'investigating' => 0,
-                'resolved' => 0,
-                'dismissed' => 0,
-                'escalated' => 0,
-                'critical_reports' => 0
-            ];
-        }
+        return $map[$t] ?? 'other';
     }
 }

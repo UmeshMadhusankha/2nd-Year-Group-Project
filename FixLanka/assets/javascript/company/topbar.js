@@ -355,7 +355,7 @@ async function toggleNotificationDropdown() {
       </div>
     </div>
     <div class="notification-footer">
-      <a href="/2nd-Year-Group-Project/FixLanka/views/company/support.php">View All Notifications</a>
+            <a href="/2nd-Year-Group-Project/FixLanka/views/company/notifications.php">View All Notifications</a>
     </div>
   `;
 
@@ -375,26 +375,34 @@ async function toggleNotificationDropdown() {
         dropdown.classList.add('active');
     });
 
-    // Load notifications from API
+        // Load notifications from API
     try {
         const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/notifications.php?action=list&user_id=${companyId}&user_type=company&limit=5`);
         const data = await response.json();
 
         const notificationList = dropdown.querySelector('.notification-list');
 
-        if (data.success && data.notifications && data.notifications.length > 0) {
-            notificationList.innerHTML = data.notifications.map(notif => `
-        <div class="notification-item ${notif.is_read == 0 ? 'unread' : ''} ${notif.type}">
-          <div class="notification-icon">
-            <i class="fas ${getNotificationIcon(notif.type)}"></i>
-          </div>
-          <div class="notification-content">
-            <h5>${escapeHtml(notif.title)}</h5>
-            <p>${escapeHtml(notif.message)}</p>
-            <span class="notification-time">${formatTimeAgo(notif.created_at)}</span>
-          </div>
-        </div>
-      `).join('');
+                if (data.success && data.notifications && data.notifications.length > 0) {
+                        const notificationsPageUrl = '/2nd-Year-Group-Project/FixLanka/views/company/notifications.php';
+                        const notifications = Array.isArray(data.notifications) ? data.notifications : [];
+
+                        // Dropdown items are simple links (details popup is on the notifications page).
+                        notificationList.innerHTML = notifications.map((notif) => `
+                <a class="notification-item ${notif.is_read == 0 ? 'unread' : ''} ${notif.type || ''}" href="${notificationsPageUrl}" style="text-decoration:none; color:inherit;">
+                    <div class="notification-icon">
+                        <i class="fas ${getNotificationIcon(notif.type)}"></i>
+                    </div>
+                    <div class="notification-content">
+                        <h5>${escapeHtml(notif.title)}</h5>
+                        <p>${escapeHtml(notif.message)}</p>
+                        <span class="notification-time">${formatTimeAgo(notif.created_at)}</span>
+                    </div>
+                </a>
+            `).join('');
+
+                        // Mark notifications as seen locally (schema doesn't support is_read)
+                    markCompanyNotificationsSeenFromList(companyId, notifications);
+                        updateNotificationBadge(0);
         } else {
             notificationList.innerHTML = `
         <div class="notification-empty">
@@ -412,6 +420,14 @@ async function toggleNotificationDropdown() {
         <p>Failed to load notifications</p>
       </div>
     `;
+
+                // Fallback: if dropdown cannot load, clicking bell should still open the notifications page.
+                const notificationBell = document.querySelector('.notification-bell');
+                if (notificationBell) {
+                        notificationBell.onclick = function () {
+                                window.location.href = '/2nd-Year-Group-Project/FixLanka/views/company/notifications.php';
+                        };
+                }
     }
 
     const markAllBtn = dropdown.querySelector('.mark-all-read');
@@ -481,6 +497,102 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function closeCompanyNotificationDetailsModal() {
+    const existing = document.getElementById('companyNotificationDetailsModal');
+    if (existing) {
+        existing.remove();
+    }
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', onCompanyNotificationDetailsKeyDown);
+}
+
+function onCompanyNotificationDetailsKeyDown(e) {
+    if (e.key === 'Escape') {
+        closeCompanyNotificationDetailsModal();
+    }
+}
+
+function openCompanyNotificationDetailsModal(notification) {
+    if (!notification || typeof notification !== 'object') return;
+
+    closeCompanyNotificationDetailsModal();
+
+    const title = notification.title || 'Notification';
+    const message = notification.message || '';
+    const createdAt = notification.created_at || notification.send_date || '';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'notification-details-overlay';
+    overlay.id = 'companyNotificationDetailsModal';
+    overlay.innerHTML = `
+        <div class="notification-details-modal" role="dialog" aria-modal="true" aria-label="Notification details">
+            <div class="notification-details-header">
+                <h3 class="notification-details-title">${escapeHtml(title)}</h3>
+                <button type="button" class="notification-details-close" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="notification-details-body">
+                <div class="notification-details-meta">${escapeHtml(createdAt ? formatTimeAgo(createdAt) : '')}</div>
+                <p class="notification-details-message">${escapeHtml(String(message))}</p>
+            </div>
+            <div class="notification-details-footer">
+                <button type="button" class="btn btn-secondary notification-details-close-btn">Close</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    document.body.style.overflow = 'hidden';
+
+    // If CSS didn't apply (cached/old), force minimal inline styles so the modal is still usable.
+    try {
+        const overlayPos = window.getComputedStyle(overlay).position;
+        if (overlayPos !== 'fixed') {
+            overlay.style.cssText = [
+                'position:fixed',
+                'inset:0',
+                'background:rgba(0,0,0,0.35)',
+                'z-index:10001',
+                'display:flex',
+                'align-items:center',
+                'justify-content:center',
+                'padding:20px'
+            ].join(';');
+        }
+
+        const modal = overlay.querySelector('.notification-details-modal');
+        if (modal) {
+            const bg = window.getComputedStyle(modal).backgroundColor;
+            if (bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent') {
+                modal.style.cssText = [
+                    'width:520px',
+                    'max-width:100%',
+                    'background:rgba(255,255,255,0.98)',
+                    'border-radius:16px',
+                    'overflow:hidden',
+                    'box-shadow:0 10px 40px -10px rgba(0,0,0,0.2),0 0 0 1px rgba(0,0,0,0.06)'
+                ].join(';');
+            }
+        }
+    } catch {
+        // ignore
+    }
+
+    overlay.querySelectorAll('.notification-details-close, .notification-details-close-btn')
+        .forEach((btn) => btn.addEventListener('click', closeCompanyNotificationDetailsModal));
+
+    overlay.addEventListener('click', function (e) {
+        const modal = overlay.querySelector('.notification-details-modal');
+        if (modal && !modal.contains(e.target)) {
+            closeCompanyNotificationDetailsModal();
+        }
+    });
+
+    document.addEventListener('keydown', onCompanyNotificationDetailsKeyDown);
 }
 
 /**
@@ -613,14 +725,86 @@ async function getNotificationCount() {
         const companyId = window.CURRENT_COMPANY_ID || 0;
         if (!companyId) return 0;
 
-        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/notifications.php?action=count&user_id=${companyId}&user_type=company`);
-        const data = await response.json();
+        // Compute "new" count client-side (DB schema doesn't have is_read).
+        const lastSeenMs = getCompanyNotificationsLastSeenMs(companyId);
 
-        return data.success ? (data.count || 0) : 0;
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/notifications.php?action=list&user_id=${companyId}&user_type=company&limit=20`);
+        const data = await response.json();
+        if (!data.success) return 0;
+
+        const notifications = Array.isArray(data.notifications) ? data.notifications : [];
+        if (notifications.length === 0) return 0;
+
+        const times = notifications
+            .map(getNotificationTimeMs)
+            .filter((t) => Number.isFinite(t) && t > 0);
+
+        if (times.length === 0) {
+            // If timestamps are missing, show a simple indicator that something exists.
+            return notifications.length;
+        }
+
+        const newCount = times.filter((t) => t > lastSeenMs).length;
+        return newCount;
     } catch (error) {
         console.error('Error getting notification count:', error);
         return 0;
     }
+}
+
+function getCompanyNotificationsStorageKey(companyId) {
+    return `fixlanka:company:${companyId}:notificationsLastSeenAt`;
+}
+
+function getCompanyNotificationsLastSeenMs(companyId) {
+    try {
+        const raw = localStorage.getItem(getCompanyNotificationsStorageKey(companyId));
+        if (!raw) return 0;
+        const ms = Date.parse(raw);
+        return Number.isFinite(ms) ? ms : 0;
+    } catch {
+        return 0;
+    }
+}
+
+function setCompanyNotificationsLastSeenMs(companyId, ms) {
+    try {
+        const iso = new Date(ms).toISOString();
+        localStorage.setItem(getCompanyNotificationsStorageKey(companyId), iso);
+    } catch {
+        // ignore
+    }
+}
+
+function getNotificationTimeMs(notif) {
+    if (!notif || typeof notif !== 'object') return 0;
+
+    // Prefer normalized created_at from API.
+    const candidates = [notif.created_at, notif.send_date];
+    for (const value of candidates) {
+        if (!value) continue;
+        const ms = Date.parse(value);
+        if (Number.isFinite(ms)) return ms;
+    }
+
+    // Legacy fallbacks.
+    if (notif.date && notif.time) {
+        const ms = Date.parse(`${notif.date} ${notif.time}`);
+        if (Number.isFinite(ms)) return ms;
+    }
+    return 0;
+}
+
+function markCompanyNotificationsSeenFromList(companyId, notifications) {
+    const times = (Array.isArray(notifications) ? notifications : [])
+        .map(getNotificationTimeMs)
+        .filter((t) => Number.isFinite(t) && t > 0);
+    if (times.length === 0) {
+        setCompanyNotificationsLastSeenMs(companyId, Date.now());
+        return;
+    }
+    const latest = Math.max(...times);
+    setCompanyNotificationsLastSeenMs(companyId, latest);
 }
 
 /**
@@ -645,6 +829,7 @@ window.refreshNotifications = refreshNotifications;
 window.getNotificationCount = getNotificationCount;
 window.toggleNotificationDropdown = toggleNotificationDropdown;
 window.initializeTopbar = initializeTopbar;
+window.openCompanyNotificationDetailsModal = openCompanyNotificationDetailsModal;
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {

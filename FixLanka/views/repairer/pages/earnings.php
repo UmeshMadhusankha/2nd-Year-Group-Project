@@ -613,6 +613,9 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
     </div>
 
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
+    <script>
+        window.CURRENT_REPAIRER_ID = <?php echo isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0; ?>;
+    </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/earnings.js"></script>
     <script>
         // Tab switching function

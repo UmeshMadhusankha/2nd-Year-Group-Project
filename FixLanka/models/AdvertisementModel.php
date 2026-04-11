@@ -1,330 +1,192 @@
 <?php
-/**
- * AdvertisementModel.php
- * ✅ FIXED - Column name corrections + Activity Logging
- * Version: 3.1.0
- */
 
 class AdvertisementModel
 {
-    private $pdo;
+	private PDO $pdo;
 
-    public function __construct($pdo)
-    {
-        $this->pdo = $pdo;
-    }
+	private const APPROVED_STATUSES = [
+		'approved',
+		'scheduled',
+		'paused',
+		'inactive',
+		'suspended',
+		'expired',
+	];
 
-    public function moderatorExists($moderatorId)
-    {
-        try {
-            $stmt = $this->pdo->prepare("SELECT COUNT(*) as count FROM moderator WHERE moderator_id = :moderator_id");
-            $stmt->execute(['moderator_id' => $moderatorId]);
-            $row = $stmt->fetch();
-            return ($row['count'] > 0);
-        } catch (PDOException $e) {
-            error_log("Moderator check failed: " . $e->getMessage());
-            return false;
-        }
-    }
+	public function __construct(PDO $pdo)
+	{
+		$this->pdo = $pdo;
+	}
 
-    public function getStatistics()
-    {
-        $stats = [
-            'total' => 0,
-            'pending' => 0,
-            'approved' => 0,
-            'rejected' => 0
-        ];
+	private function tableExists(string $tableName): bool
+	{
+		$stmt = $this->pdo->prepare(
+			'SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :t LIMIT 1'
+		);
+		$stmt->execute([':t' => $tableName]);
+		return (bool)$stmt->fetchColumn();
+	}
 
-        try {
-            $stmt = $this->pdo->query("SELECT COUNT(*) as total FROM advertisement");
-            $stats['total'] = $stmt->fetch()['total'];
+	public function isReady(): bool
+	{
+		return $this->tableExists('advertisement');
+	}
 
-            $stmt = $this->pdo->query("SELECT COUNT(*) as total FROM advertisement WHERE status = 'pending'");
-            $stats['pending'] = $stmt->fetch()['total'];
+	public function getStats(): array
+	{
+		if (!$this->isReady()) {
+			return ['total' => 0, 'pending' => 0, 'approved' => 0, 'rejected' => 0];
+		}
 
-            $stmt = $this->pdo->query("SELECT COUNT(*) as total FROM advertisement WHERE status = 'approved'");
-            $stats['approved'] = $stmt->fetch()['total'];
+		$sql = "
+			SELECT
+				COUNT(*) AS total,
+				SUM(status = 'pending') AS pending,
+				SUM(LOWER(status) IN ('approved','scheduled','paused','inactive','suspended','expired')) AS approved,
+				SUM(status = 'rejected') AS rejected
+			FROM advertisement
+		";
+		$row = $this->pdo->query($sql)->fetch(PDO::FETCH_ASSOC) ?: [];
 
-            $stmt = $this->pdo->query("SELECT COUNT(*) as total FROM advertisement WHERE status = 'rejected'");
-            $stats['rejected'] = $stmt->fetch()['total'];
+		return [
+			'total' => (int)($row['total'] ?? 0),
+			'pending' => (int)($row['pending'] ?? 0),
+			'approved' => (int)($row['approved'] ?? 0),
+			'rejected' => (int)($row['rejected'] ?? 0),
+		];
+	}
 
-        } catch (PDOException $e) {
-            error_log("Statistics query failed: " . $e->getMessage());
-        }
+	public function getAdvertisements(array $filters): array
+	{
+		if (!$this->isReady()) {
+			return [];
+		}
 
-        return $stats;
-    }
+		$where = [];
+		$params = [];
 
-    public function getAdvertisements($filters = [])
-    {
-        // SIMPLIFIED QUERY - No JOINs for now
-        $sql = "SELECT 
-                    ad_id,
-                    title,
-                    description,
-                    provider_id,
-                    provider_type,
-                    type,
-                    budget,
-                    status,
-                    submission_date,
-                    reviewed_by,
-                    reviewed_at,
-                    moderator_notes,
-                    contact_email,
-                    contact_phone,
-                    image_url,
-                    category_id
-                FROM advertisement
-                WHERE 1=1";
+		if (!empty($filters['status'])) {
+			$status = strtolower(trim((string)$filters['status']));
+			if ($status === 'approved') {
+				$where[] = "LOWER(a.status) IN ('approved','scheduled','paused','inactive','suspended','expired')";
+			} else {
+				$where[] = 'LOWER(a.status) = :status';
+				$params[':status'] = $status;
+			}
+		}
 
-        $params = [];
+		if (!empty($filters['type'])) {
+			$where[] = 'a.type = :type';
+			$params[':type'] = $filters['type'];
+		}
 
-        if (!empty($filters['status'])) {
-            $sql .= " AND status = :status";
-            $params['status'] = $filters['status'];
-        }
+		if (!empty($filters['search'])) {
+			$where[] = "(a.title LIKE :search OR (CASE WHEN a.provider_type='company' THEN c.name ELSE CONCAT(r.f_name,' ',r.l_name) END) LIKE :search)";
+			$params[':search'] = '%' . $filters['search'] . '%';
+		}
 
-        if (!empty($filters['type'])) {
-            $sql .= " AND type = :type";
-            $params['type'] = $filters['type'];
-        }
+		$whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
-        if (!empty($filters['search'])) {
-            $sql .= " AND title LIKE :search";
-            $params['search'] = '%' . $filters['search'] . '%';
-        }
+		$sql = "
+			SELECT
+				a.ad_id,
+				a.title,
+				a.type,
+				a.budget,
+				a.status,
+				a.submission_date,
+				a.provider_id,
+				a.provider_type,
+				(CASE
+					WHEN a.provider_type = 'company' THEN c.name
+					ELSE CONCAT(r.f_name, ' ', r.l_name)
+				END) AS provider_name
+			FROM advertisement a
+			LEFT JOIN company c ON a.provider_type='company' AND c.company_id = a.provider_id
+			LEFT JOIN repairer r ON a.provider_type='repairer' AND r.repairer_id = a.provider_id
+			{$whereSql}
+			ORDER BY
+				CASE
+					WHEN a.status = 'pending' THEN
+						CASE
+							WHEN LOWER(a.type) = 'sponsored' THEN 0
+							WHEN LOWER(a.type) = 'featured' THEN 1
+							WHEN LOWER(a.type) = 'banner' THEN 2
+							ELSE 3
+						END
+					ELSE 4
+				END,
+				a.submission_date DESC,
+				a.ad_id DESC
+		";
 
-        $sql .= " ORDER BY submission_date DESC LIMIT 100";
+		$stmt = $this->pdo->prepare($sql);
+		$stmt->execute($params);
+		return $stmt->fetchAll(PDO::FETCH_ASSOC);
+	}
 
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute($params);
-            $results = $stmt->fetchAll();
-            
-            // Add derived fields
-            foreach ($results as &$ad) {
-                $ad['provider_name'] = $this->getProviderName($ad['provider_id'], $ad['provider_type']);
-                $ad['moderator_name'] = $this->getModeratorName($ad['reviewed_by']);
-                $ad['moderator_email'] = $this->getModeratorEmail($ad['reviewed_by']);
-                $ad['category_name'] = $this->getCategoryName($ad['category_id']);
-            }
-            
-            return $results;
-        } catch (PDOException $e) {
-            error_log("Get advertisements failed: " . $e->getMessage());
-            return [];
-        }
-    }
+	public function getAdvertisementById(int $adId): ?array
+	{
+		if (!$this->isReady()) {
+			return null;
+		}
 
-    private function getProviderName($providerId, $providerType)
-    {
-        if (!$providerId) return 'Unknown';
-        
-        try {
-            if ($providerType === 'company') {
-                $stmt = $this->pdo->prepare("SELECT name FROM company WHERE company_id = :id");
-            } else {
-                $stmt = $this->pdo->prepare("SELECT first_name FROM repairer WHERE repairer_id = :id");
-            }
-            $stmt->execute(['id' => $providerId]);
-            $row = $stmt->fetch();
-            return $row ? ($row['name'] ?? $row['first_name'] ?? 'Unknown') : 'Unknown';
-        } catch (PDOException $e) {
-            return 'Unknown';
-        }
-    }
+		$sql = "
+			SELECT
+				a.*,
+				(CASE
+					WHEN a.provider_type = 'company' THEN c.name
+					ELSE CONCAT(r.f_name, ' ', r.l_name)
+				END) AS provider_name,
+				(CASE
+					WHEN a.provider_type = 'company' THEN c.email
+					ELSE r.email
+				END) AS provider_email,
+				(CASE
+					WHEN a.provider_type = 'company' THEN c.contact_no
+					ELSE r.phoneNumber
+				END) AS provider_phone
+			FROM advertisement a
+			LEFT JOIN company c ON a.provider_type='company' AND c.company_id = a.provider_id
+			LEFT JOIN repairer r ON a.provider_type='repairer' AND r.repairer_id = a.provider_id
+			WHERE a.ad_id = :ad_id
+			LIMIT 1
+		";
 
-    private function getModeratorName($moderatorId)
-    {
-        if (!$moderatorId) return null;
-        
-        try {
-            $stmt = $this->pdo->prepare("SELECT username FROM moderator WHERE moderator_id = :id");
-            $stmt->execute(['id' => $moderatorId]);
-            $row = $stmt->fetch();
-            return $row ? $row['username'] : null;
-        } catch (PDOException $e) {
-            return null;
-        }
-    }
+		$stmt = $this->pdo->prepare($sql);
+		$stmt->execute([':ad_id' => $adId]);
+		$row = $stmt->fetch(PDO::FETCH_ASSOC);
+		return $row ?: null;
+	}
 
-    private function getModeratorEmail($moderatorId)
-    {
-        if (!$moderatorId) return null;
-        
-        try {
-            $stmt = $this->pdo->prepare("SELECT email FROM moderator WHERE moderator_id = :id");
-            $stmt->execute(['id' => $moderatorId]);
-            $row = $stmt->fetch();
-            return $row ? $row['email'] : null;
-        } catch (PDOException $e) {
-            return null;
-        }
-    }
+	public function reviewAdvertisement(int $adId, string $newStatus, ?int $reviewedBy, string $notes = ''): bool
+	{
+		if (!$this->isReady()) {
+			throw new RuntimeException('Advertisement table is missing.');
+		}
 
-    private function getCategoryName($categoryId)
-    {
-        if (!$categoryId) return null;
-        
-        try {
-            $stmt = $this->pdo->prepare("SELECT name FROM category WHERE category_id = :id");
-            $stmt->execute(['id' => $categoryId]);
-            $row = $stmt->fetch();
-            return $row ? $row['name'] : null;
-        } catch (PDOException $e) {
-            return null;
-        }
-    }
+		if (!in_array($newStatus, ['approved', 'rejected'], true)) {
+			throw new InvalidArgumentException('Invalid review status.');
+		}
 
-    public function getAdvertisementById($ad_id)
-    {
-        $sql = "SELECT * FROM advertisement WHERE ad_id = :ad_id";
+		$sql = "
+			UPDATE advertisement
+			SET status = :status,
+				reviewed_by = :reviewed_by,
+				reviewed_at = NOW(),
+				moderator_notes = :notes
+			WHERE ad_id = :ad_id
+			  AND status = 'pending'
+		";
+		$stmt = $this->pdo->prepare($sql);
+		$stmt->execute([
+			':status' => $newStatus,
+			':reviewed_by' => $reviewedBy,
+			':notes' => $notes,
+			':ad_id' => $adId,
+		]);
 
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(['ad_id' => $ad_id]);
-            $ad = $stmt->fetch();
-            
-            if ($ad) {
-                $ad['provider_name'] = $this->getProviderName($ad['provider_id'], $ad['provider_type']);
-                $ad['moderator_name'] = $this->getModeratorName($ad['reviewed_by']);
-                $ad['moderator_email'] = $this->getModeratorEmail($ad['reviewed_by']);
-                $ad['category_name'] = $this->getCategoryName($ad['category_id']);
-            }
-            
-            return $ad ?: null;
-        } catch (PDOException $e) {
-            error_log("Get advertisement by ID failed: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    public function isValidStatusTransition($currentStatus, $newStatus)
-    {
-        $currentStatus = strtolower($currentStatus);
-        $newStatus = strtolower($newStatus);
-        
-        if ($currentStatus === 'rejected') {
-            return false;
-        }
-
-        $allowedTransitions = [
-            'pending' => ['approved', 'rejected'],
-            'approved' => []
-        ];
-
-        if (!isset($allowedTransitions[$currentStatus])) {
-            return false;
-        }
-
-        return in_array($newStatus, $allowedTransitions[$currentStatus]);
-    }
-
-    public function updateStatus($ad_id, $newStatus, $moderatorId, $notes = '')
-    {
-        if (!$this->moderatorExists($moderatorId)) {
-            return [
-                'success' => false,
-                'message' => "❌ ERROR: Moderator ID {$moderatorId} does not exist in database."
-            ];
-        }
-
-        $ad = $this->getAdvertisementById($ad_id);
-        
-        if (!$ad) {
-            return [
-                'success' => false,
-                'message' => "❌ Advertisement #{$ad_id} not found."
-            ];
-        }
-
-        $currentStatus = strtolower($ad['status']);
-        $newStatus = strtolower($newStatus);
-
-        if (!$this->isValidStatusTransition($currentStatus, $newStatus)) {
-            return [
-                'success' => false,
-                'message' => "❌ Invalid transition: Cannot change from '{$currentStatus}' to '{$newStatus}'."
-            ];
-        }
-
-        try {
-            $this->pdo->beginTransaction();
-
-            // ✅ Update advertisement table
-            $stmt = $this->pdo->prepare("
-                UPDATE advertisement 
-                SET status = :status,
-                    reviewed_by = :moderator_id,
-                    reviewed_at = NOW(),
-                    moderator_notes = :notes
-                WHERE ad_id = :ad_id
-            ");
-
-            $stmt->execute([
-                'status' => $newStatus,
-                'moderator_id' => $moderatorId,
-                'notes' => $notes,
-                'ad_id' => $ad_id
-            ]);
-
-            // ✅ Insert into ad_status_history with CORRECT column names
-            $stmt = $this->pdo->prepare("
-                INSERT INTO ad_status_history 
-                (ad_id, old_status, new_status, changed_by_role, changed_by_id, reason, is_override)
-                VALUES (:ad_id, :old_status, :new_status, 'moderator', :moderator_id, :reason, 0)
-            ");
-
-            $stmt->execute([
-                'ad_id' => $ad_id,
-                'old_status' => $currentStatus,
-                'new_status' => $newStatus,
-                'moderator_id' => $moderatorId,
-                'reason' => $notes
-            ]);
-
-            // ✅ NEW: Log activity to system_activity_logs
-            require_once __DIR__ . '/ActivityLogModel.php';
-            $activityLog = new ActivityLogModel($this->pdo);
-            
-            $activityType = ($newStatus === 'approved') ? 'ad_approved' : 'ad_rejected';
-            $description = "Moderator #{$moderatorId} {$newStatus} advertisement: {$ad['title']}";
-            
-            $activityLog->logActivity(
-                $moderatorId,
-                'moderator',
-                $activityType,
-                $description,
-                $ad_id
-            );
-
-            $this->pdo->commit();
-
-            $actionVerb = ($newStatus === 'approved') ? 'approved' : 'rejected';
-            return [
-                'success' => true,
-                'message' => "✅ Advertisement #{$ad_id} has been {$actionVerb}."
-            ];
-
-        } catch (PDOException $e) {
-            $this->pdo->rollBack();
-            error_log("Update status failed: " . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => "❌ Database error: " . $e->getMessage()
-            ];
-        }
-    }
-
-    public function tableExists()
-    {
-        try {
-            $stmt = $this->pdo->query("SHOW TABLES LIKE 'advertisement'");
-            return $stmt->rowCount() > 0;
-        } catch (PDOException $e) {
-            return false;
-        }
-    }
+		return $stmt->rowCount() > 0;
+	}
 }
+

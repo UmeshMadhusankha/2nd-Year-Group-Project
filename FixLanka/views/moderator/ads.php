@@ -9,6 +9,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Reduce chances of stale cached HTML in browsers/back-button.
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Cache-Control: post-check=0, pre-check=0', false);
+header('Pragma: no-cache');
+header('Expires: 0');
+
 require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
@@ -16,7 +22,7 @@ require_once __DIR__ . '/_components/Common.php';
 require_once __DIR__ . '/../../config/database.php';
 
 try {
-    $pdo = getDatabaseConnection();
+    // $pdo is provided by config/database.php
     require_once __DIR__ . '/../../controllers/AdvertisementController.php';
     $controller = new AdvertisementController($pdo);
     
@@ -58,6 +64,8 @@ $pageDescription = 'Review and manage submitted advertisements';
 <html lang="en">
 <head>
     <?php renderMeta($pageTitle, $pageDescription, $basePath); ?>
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/moderator/ads.css?v=<?php echo time(); ?>">
 </head>
 <body class="bg-foreground text-background">
@@ -129,7 +137,7 @@ $pageDescription = 'Review and manage submitted advertisements';
                         <div class="p-6">
                             <form method="GET" id="filterForm" class="space-y-4">
                                 <div class="grid gap-4 grid-cols-6">
-                                    <div>
+                                    <div class="col-span-3">
                                         <label class="block text-sm font-medium mb-2">Status</label>
                                         <select name="status" class="form-select w-full">
                                             <option value="">All Advertisements</option>
@@ -139,7 +147,7 @@ $pageDescription = 'Review and manage submitted advertisements';
                                         </select>
                                     </div>
 
-                                    <div>
+                                    <div class="col-span-3">
                                         <label class="block text-sm font-medium mb-2">Type</label>
                                         <select name="type" class="form-select w-full">
                                             <option value="">All Types</option>
@@ -147,18 +155,6 @@ $pageDescription = 'Review and manage submitted advertisements';
                                             <option value="featured" <?php echo ($filters['type'] === 'featured') ? 'selected' : ''; ?>>Featured</option>
                                             <option value="sponsored" <?php echo ($filters['type'] === 'sponsored') ? 'selected' : ''; ?>>Sponsored</option>
                                         </select>
-                                    </div>
-
-                                    <div class="col-span-3">
-                                        <label class="block text-sm font-medium mb-2">Search</label>
-                                        <input type="text" name="search" value="<?php echo htmlspecialchars($filters['search']); ?>" 
-                                               placeholder="Search ads..." class="form-input w-full">
-                                    </div>
-
-                                    <div class="flex items-end">
-                                        <button type="submit" id="filterBtn" class="filter-button">
-                                            <i class="fas fa-filter"></i> <span>Filter</span>
-                                        </button>
                                     </div>
                                 </div>
                             </form>
@@ -217,80 +213,98 @@ $pageDescription = 'Review and manage submitted advertisements';
 
             <!-- Review Modal -->
             <?php if ($advertisement && is_array($advertisement)): ?>
-            <div id="reviewModal" class="modal-bg">
-                <div class="modal-box">
-                    <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/ads.php" class="close-btn">×</a>
-                    <h2 style="margin-bottom: 20px;">Advertisement Review</h2>
-                    
-                    <div id="modalContent">
-                        <div class="detail-row">
-                            <span class="detail-label">Advertisement ID:</span>
-                            <span class="detail-value">#<?php echo $advertisement['ad_id']; ?></span>
+            <div id="reviewModal" class="modal-bg" role="presentation">
+                <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle" tabindex="-1">
+                    <a href="/2nd-Year-Group-Project/FixLanka/views/moderator/ads.php" class="close-btn" aria-label="Close dialog">×</a>
+
+                    <div class="review-modal-header">
+                        <div class="review-modal-title">
+                            <h2 id="reviewModalTitle">Advertisement Review</h2>
+                            <p class="review-modal-subtitle">
+                                ID #<?php echo (int)$advertisement['ad_id']; ?>
+                                <span class="review-dot">•</span>
+                                Submitted <?php echo date('M d, Y H:i', strtotime($advertisement['submission_date'])); ?>
+                            </p>
                         </div>
+                        <div class="review-modal-status">
+                            <span class="badge status-<?php echo strtolower($advertisement['status']); ?>">
+                                <?php echo ucfirst($advertisement['status']); ?>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="review-media">
+                        <?php if (!empty($advertisement['image_url'])): ?>
+                            <img
+                                class="review-media-img"
+                                src="<?php echo htmlspecialchars($advertisement['image_url']); ?>"
+                                alt="Advertisement media preview"
+                                loading="lazy"
+                            />
+                        <?php else: ?>
+                            <div class="review-media-empty">
+                                <i class="fa-solid fa-image"></i>
+                                <div>
+                                    <div class="review-media-empty-title">No media uploaded</div>
+                                    <div class="review-media-empty-subtitle">This advertisement has no image.</div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div id="modalContent" class="review-details">
                         <div class="detail-row">
-                            <span class="detail-label">Title:</span>
+                            <span class="detail-label">Title</span>
                             <span class="detail-value"><?php echo htmlspecialchars($advertisement['title']); ?></span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Description:</span>
+                            <span class="detail-label">Description</span>
                             <span class="detail-value"><?php echo htmlspecialchars($advertisement['description'] ?? 'No description'); ?></span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Provider:</span>
+                            <span class="detail-label">Provider</span>
                             <span class="detail-value"><?php echo htmlspecialchars($advertisement['provider_name'] ?? 'Unknown'); ?></span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Contact Email:</span>
+                            <span class="detail-label">Contact Email</span>
                             <span class="detail-value"><?php echo htmlspecialchars($advertisement['contact_email'] ?? $advertisement['provider_email'] ?? 'N/A'); ?></span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Contact Phone:</span>
+                            <span class="detail-label">Contact Phone</span>
                             <span class="detail-value"><?php echo htmlspecialchars($advertisement['contact_phone'] ?? $advertisement['provider_phone'] ?? 'N/A'); ?></span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Type:</span>
+                            <span class="detail-label">Type</span>
                             <span class="detail-value"><?php echo ucfirst($advertisement['type']); ?></span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Budget:</span>
-                            <span class="detail-value">LKR <?php echo number_format($advertisement['budget'], 2); ?></span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Status:</span>
-                            <span class="detail-value">
-                                <span class="badge status-<?php echo strtolower($advertisement['status']); ?>">
-                                    <?php echo ucfirst($advertisement['status']); ?>
-                                </span>
-                            </span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Submitted:</span>
-                            <span class="detail-value"><?php echo date('M d, Y H:i', strtotime($advertisement['submission_date'])); ?></span>
+                            <span class="detail-label">Budget</span>
+                            <span class="detail-value">LKR <?php echo number_format((float)$advertisement['budget'], 2); ?></span>
                         </div>
                     </div>
                     
-                    <?php if ($advertisement['status'] === 'pending'): ?>
-                    <form method="POST" style="margin-top: 20px;">
-                        <input type="hidden" name="ad_id" value="<?php echo $advertisement['ad_id']; ?>">
-                        
-                        <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Review Notes:</label>
-                            <textarea name="notes" rows="3" placeholder="Add optional notes..." 
-                                      style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;"></textarea>
+                    <?php if (($advertisement['status'] ?? '') === 'pending'): ?>
+                    <form method="POST" class="review-form">
+                        <input type="hidden" name="ad_id" value="<?php echo (int)$advertisement['ad_id']; ?>">
+
+                        <div class="review-notes">
+                            <label class="review-notes-label" for="reviewNotes">Review notes (required for rejection)</label>
+                            <textarea id="reviewNotes" name="notes" rows="3" placeholder="Add notes for the provider..." class="review-notes-input"></textarea>
+                            <div id="reviewNotesError" class="review-notes-error" aria-live="polite"></div>
                         </div>
 
                         <div class="modal-actions">
-                            <button type="submit" name="action" value="approve" class="approve-btn">
+                            <button type="submit" name="action" value="approve" class="action-btn success">
                                 <i class="fas fa-check"></i> Approve
                             </button>
-                            <button type="submit" name="action" value="reject" class="reject-btn">
+                            <button type="submit" name="action" value="reject" class="action-btn danger">
                                 <i class="fas fa-times"></i> Reject
                             </button>
                         </div>
                     </form>
                     <?php else: ?>
-                    <div style="margin-top: 20px; padding: 15px; background: #f3f4f6; border-radius: 6px; color: #6b7280;">
-                        <strong>Note:</strong> <?php echo $controller->getStatusExplanation($advertisement['status']); ?>
+                    <div class="review-note">
+                        <strong>Note:</strong> <?php echo htmlspecialchars($controller->getStatusExplanation($advertisement['status'] ?? '')); ?>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -301,11 +315,55 @@ $pageDescription = 'Review and manage submitted advertisements';
     </div>
 
     <script>
-        document.getElementById('filterForm').addEventListener('submit', function(e) {
-            var btn = document.getElementById('filterBtn');
-            btn.classList.add('loading');
-            btn.querySelector('span').textContent = 'Filtering...';
-        });
+        // Auto-apply filters (Status/Type)
+        (function () {
+            var form = document.getElementById('filterForm');
+            if (!form) return;
+            var selects = form.querySelectorAll('select[name="status"], select[name="type"]');
+            selects.forEach(function (el) {
+                el.addEventListener('change', function () {
+                    form.submit();
+                });
+            });
+        })();
+
+
+        // Require notes when rejecting
+        (function () {
+            var form = document.querySelector('form.review-form');
+            if (!form) return;
+
+            var notes = document.getElementById('reviewNotes');
+            var errorEl = document.getElementById('reviewNotesError');
+            if (!notes || !errorEl) return;
+
+            function clearError() {
+                notes.classList.remove('is-invalid');
+                errorEl.textContent = '';
+                errorEl.style.display = 'none';
+            }
+
+            notes.addEventListener('input', function () {
+                if (notes.value.trim() !== '') {
+                    clearError();
+                }
+            });
+
+            form.addEventListener('submit', function (e) {
+                var submitter = e.submitter || document.activeElement;
+                var action = submitter && submitter.getAttribute ? submitter.getAttribute('value') : '';
+
+                if (action !== 'reject') return;
+
+                if (notes.value.trim() === '') {
+                    e.preventDefault();
+                    notes.classList.add('is-invalid');
+                    errorEl.textContent = 'Please add a short reason to reject this advertisement.';
+                    errorEl.style.display = 'block';
+                    notes.focus();
+                }
+            });
+        })();
     </script>
 </body>
 </html>

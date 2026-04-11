@@ -15,7 +15,7 @@
  */
 
 // Start session and verify authentication
-require_once '../../config/session.php';
+require_once __DIR__ . '/../../config/session.php';
 requireRole('company');
 
 // Retrieve logged-in user data from session
@@ -63,11 +63,6 @@ if (!$userId) {
                 <!-- Page Header -->
                 <header class="page-header">
                     <div class="header-content">
-                        <div class="breadcrumbs">
-                            <a href="/2nd-Year-Group-Project/FixLanka/views/company/dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
-                            <span class="separator">/</span>
-                            <span class="current">Contracts</span>
-                        </div>
                         <div class="header-main">
                             <div class="title-section">
                                 <h1><i class="fas fa-handshake"></i> Contracts Management</h1>
@@ -85,6 +80,11 @@ if (!$userId) {
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                        <div class="breadcrumbs">
+                            <a href="/2nd-Year-Group-Project/FixLanka/views/company/dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                            <span class="separator">/</span>
+                            <span class="current">Contracts</span>
                         </div>
                         <div class="quick-stats">
                             <div class="stat-item">

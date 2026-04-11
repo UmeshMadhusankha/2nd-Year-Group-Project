@@ -1,6 +1,7 @@
 <?php
 // filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\views\auth\signup.php
 require_once __DIR__ . '/../../config/session.php';
+require_once __DIR__ . '/../../config/database.php';
 
 // Redirect if already logged in
 if (isLoggedIn()) {
@@ -11,6 +12,18 @@ if (isLoggedIn()) {
 // Get error message if exists
 $error = $_SESSION['error'] ?? '';
 unset($_SESSION['error']);
+
+// Load service categories (for Repairer signup)
+$serviceCategories = [];
+try {
+    if (isset($pdo)) {
+        $stmt = $pdo->query('SELECT category_id, name FROM category ORDER BY name');
+        $serviceCategories = $stmt->fetchAll();
+    }
+} catch (Exception $e) {
+    // Non-fatal: fallback to empty list; backend still accepts custom category.
+    error_log('Failed to load categories for signup: ' . $e->getMessage());
+}
 ?>
 
 <!DOCTYPE html>
@@ -19,6 +32,8 @@ unset($_SESSION['error']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - Fix Lanka</title>
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/auth/signup.css">
 </head>
 <body>
@@ -30,10 +45,10 @@ unset($_SESSION['error']);
             </div>
             
             <!-- Role Selection Buttons -->
-            <div class="role-buttons">
-                <button type="button" class="role-btn active" data-role="user">User</button>
-                <button type="button" class="role-btn" data-role="repairer">Repairer</button>
-                <button type="button" class="role-btn" data-role="company">Company</button>
+            <div class="view-toggle-group role-buttons">
+                <button type="button" class="view-toggle role-btn active" data-role="user">User</button>
+                <button type="button" class="view-toggle role-btn" data-role="repairer">Repairer</button>
+                <button type="button" class="view-toggle role-btn" data-role="company">Company</button>
             </div>
             
             <?php if (!empty($error)): ?>
@@ -85,7 +100,7 @@ unset($_SESSION['error']);
                     </label>
                 </div>
                 
-                <button type="submit" class="signup-submit-btn">Create User Account</button>
+                <button type="submit" class="action-btn primary large signup-submit-btn">Create User Account</button>
             </form>
             
             <!-- REPAIRER REGISTRATION FORM -->
@@ -129,27 +144,25 @@ unset($_SESSION['error']);
                     <label for="category_id">Service Category *</label>
                     <select id="category_id" name="category_id" required>
                         <option value="">Select a category</option>
-                        <option value="1">Plumbing</option>
-                        <option value="2">Electrical</option>
-                        <option value="3">HVAC</option>
-                        <option value="4">Cleaning</option>
-                        <option value="5">Carpentry</option>
-                        <option value="6">Painting</option>
-                        <option value="7">Appliance Repair</option>
-                        <option value="8">Roofing</option>
-                        <option value="9">Landscaping</option>
-                        <option value="10">Pest Control</option>
-                        <option value="11">Home Security</option>
-                        <option value="12">Interior Design</option>
-                        <option value="13">Flooring</option>
-                        <option value="14">Masonry</option>
-                        <option value="15">Welding</option>
-                        <option value="16">Glass & Mirror</option>
-                        <option value="17">Tile Work</option>
-                        <option value="18">Drywall</option>
-                        <option value="19">Insulation</option>
-                        <option value="20">Window Installation</option>
+                        <?php foreach ($serviceCategories as $cat): ?>
+                            <option value="<?php echo htmlspecialchars((string)$cat['category_id']); ?>">
+                                <?php echo htmlspecialchars((string)$cat['name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                        <option value="other">Other</option>
                     </select>
+                </div>
+
+                <div class="form-group" id="category_other_group" style="display:none;">
+                    <label for="category_custom">Other Category *</label>
+                    <input type="text" id="category_custom" name="category_custom" placeholder="Type your service category">
+                    <small class="password-hint">If it doesn't exist, we'll add it as a new category</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="experience_initial_years">Initial Experience (Years) *</label>
+                    <input type="number" id="experience_initial_years" name="experience_initial_years" required min="0" max="50" step="1" placeholder="e.g. 1">
+                    <small class="password-hint">Enter your existing experience before using FixLanka</small>
                 </div>
                 
                 <div class="form-group">
@@ -201,7 +214,7 @@ unset($_SESSION['error']);
                     </label>
                 </div>
                 
-                <button type="submit" class="signup-submit-btn">Create Repairer Account</button>
+                <button type="submit" class="action-btn primary large signup-submit-btn">Create Repairer Account</button>
             </form>
             
             <!-- COMPANY REGISTRATION FORM -->
@@ -232,8 +245,13 @@ unset($_SESSION['error']);
                         <label><input type="checkbox" name="business_type[]" value="Masonry"> Masonry</label>
                         <label><input type="checkbox" name="business_type[]" value="Welding"> Welding</label>
                         <label><input type="checkbox" name="business_type[]" value="Construction"> Construction</label>
-                        <label><input type="checkbox" name="business_type[]" value="Other"> Other</label>
+                        <label><input type="checkbox" id="company_business_type_other" name="business_type[]" value="Other"> Other</label>
                     </div>
+                </div>
+
+                <div class="form-group" id="company_business_type_other_group" style="display:none;">
+                    <label for="company_business_type_other_text">Other Business Type *</label>
+                    <input type="text" id="company_business_type_other_text" name="business_type_other" placeholder="Type your business type">
                 </div>
                 
                 <div class="form-row">
@@ -322,7 +340,7 @@ unset($_SESSION['error']);
                     </label>
                 </div>
                 
-                <button type="submit" class="signup-submit-btn">Create Company Account</button>
+                <button type="submit" class="action-btn primary large signup-submit-btn">Create Company Account</button>
             </form>
             
             <div class="login-link">

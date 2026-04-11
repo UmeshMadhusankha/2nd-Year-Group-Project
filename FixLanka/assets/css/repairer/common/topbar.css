@@ -1,7 +1,7 @@
 /* Topbar/Header Component Styles */
 
 /* Import Global Variables */
-@import "variables.css";
+@import "../../common/variables.css";
 
 /* Header */
 .header {
@@ -27,14 +27,16 @@
   align-items: center;
   gap: var(--spacing-xl);
   flex: 1;
-  min-width: 0; /* Prevent overflow */
+  min-width: 0;
+  /* Prevent overflow */
 }
 
 .header-right {
   display: flex;
   align-items: center;
   gap: var(--spacing-lg);
-  flex: 0 0 auto; /* Don't grow, maintain size */
+  flex: 0 0 auto;
+  /* Don't grow, maintain size */
   justify-content: flex-end;
   position: relative;
   z-index: 100;
@@ -57,9 +59,11 @@
   box-shadow: var(--shadow-sm);
   text-decoration: none;
   user-select: none;
-  flex-shrink: 0; /* Prevent shrinking */
+  flex-shrink: 0;
+  /* Prevent shrinking */
   position: relative;
-  z-index: 1002; /* Always on top */
+  z-index: 1002;
+  /* Always on top */
 }
 
 .sidebar-toggle i {
@@ -87,12 +91,14 @@
   align-items: center;
   gap: var(--spacing-sm);
   transition: var(--transition-normal);
-  flex-shrink: 0; /* Prevent shrinking */
+  flex-shrink: 0;
+  /* Prevent shrinking */
 }
 
 .logo-image {
   width: auto;
-  height: 48px; /* Slightly smaller for better proportion */
+  height: 48px;
+  /* Slightly smaller for better proportion */
   object-fit: contain;
   transition: var(--transition-normal);
 }
@@ -102,10 +108,11 @@
   font-weight: 700;
   color: var(--text-primary);
   transition: var(--transition-normal);
-  white-space: nowrap; /* Prevent text wrapping */
+  white-space: nowrap;
+  /* Prevent text wrapping */
 }
 
-.sidebar.collapsed ~ * .logo-text {
+.sidebar.collapsed~* .logo-text {
   opacity: 0;
   transform: translateX(-10px);
   width: 0;
@@ -116,8 +123,10 @@
   margin-left: var(--spacing-lg);
   padding-left: var(--spacing-lg);
   flex: 1;
-  min-width: 0; /* Allow content to shrink */
-  max-width: 400px; /* Prevent excessive growth */
+  min-width: 0;
+  /* Allow content to shrink */
+  max-width: 400px;
+  /* Prevent excessive growth */
 }
 
 .page-title {
@@ -576,7 +585,7 @@
   .search-box {
     width: 250px;
   }
-  
+
   .page-info {
     max-width: 300px;
   }
@@ -586,15 +595,15 @@
   .header {
     padding: 0 var(--spacing-md);
   }
-  
+
   .header-left {
     gap: var(--spacing-md);
   }
-  
+
   .header-right {
     gap: var(--spacing-md);
   }
-  
+
   /* Make sidebar toggle more prominent on tablets */
   .sidebar-toggle {
     background: var(--primary-color);
@@ -602,30 +611,31 @@
     border: none;
     box-shadow: 0 2px 8px rgba(10, 186, 181, 0.25);
   }
-  
+
   .sidebar-toggle:hover {
     background: var(--primary-hover);
     box-shadow: 0 4px 12px rgba(10, 186, 181, 0.35);
   }
-  
+
   .page-info {
     margin-left: var(--spacing-md);
     padding-left: var(--spacing-md);
     max-width: 200px;
   }
-  
+
   .page-title {
     font-size: var(--font-size-lg);
   }
-  
+
   .page-subtitle {
-    display: none; /* Hide subtitle on tablets */
+    display: none;
+    /* Hide subtitle on tablets */
   }
-  
+
   .search-box {
     width: 200px;
   }
-  
+
   .profile-name {
     display: none;
   }
@@ -635,21 +645,21 @@
   .header-left {
     gap: var(--spacing-sm);
   }
-  
+
   .header-right {
     gap: var(--spacing-sm);
   }
-  
+
   .page-info {
     margin-left: var(--spacing-sm);
     padding-left: var(--spacing-sm);
     border-left: none;
   }
-  
+
   .search-box {
     width: 150px;
   }
-  
+
   .search-box input {
     font-size: 12px;
     padding: var(--spacing-xs) var(--spacing-sm);
@@ -660,70 +670,72 @@
 @media (max-width: 480px) {
   .header {
     padding: 0 var(--spacing-sm);
-    height: var(--header-height); /* Fixed height, no auto */
+    height: var(--header-height);
+    /* Fixed height, no auto */
     min-height: var(--header-height);
-    flex-wrap: nowrap; /* Prevent wrapping */
+    flex-wrap: nowrap;
+    /* Prevent wrapping */
   }
-  
+
   .header-left {
     flex: 1;
     gap: var(--spacing-sm);
     min-width: 0;
   }
-  
+
   .header-right {
     flex: 0 0 auto;
     gap: var(--spacing-xs);
   }
-  
+
   /* Notification dropdown responsive adjustments */
   .notification-dropdown {
     right: -80px;
     min-width: 300px;
     max-width: 90vw;
   }
-  
+
   .notification-dropdown-header {
     padding: var(--spacing-sm) var(--spacing-md);
   }
-  
+
   .notification-dropdown-title {
     font-size: var(--font-size-sm);
   }
-  
+
   .mark-all-read {
     font-size: 10px;
   }
-  
+
   .notification-item {
     padding: var(--spacing-sm) var(--spacing-md);
   }
-  
+
   .notification-icon {
     width: 36px;
     height: 36px;
     font-size: var(--font-size-sm);
   }
-  
+
   .notification-title {
     font-size: 12px;
   }
-  
+
   .notification-description {
     font-size: 11px;
   }
-  
+
   .notification-time {
     font-size: 10px;
   }
-  
+
   /* Profile dropdown responsive adjustments */
   .profile-dropdown {
     right: 0;
     left: auto;
     min-width: 180px;
   }
-  
+
   /* Ensure sidebar toggle is always visible and prominent on mobile */
   .sidebar-toggle {
     width: 44px;
@@ -733,63 +745,66 @@
     color: var(--text-white);
     border: none;
     box-shadow: 0 2px 8px rgba(10, 186, 181, 0.3);
-    order: -1; /* Ensure it comes first */
+    order: -1;
+    /* Ensure it comes first */
     flex-shrink: 0;
   }
-  
+
   .sidebar-toggle:hover {
     background: var(--primary-hover);
     transform: scale(1.1);
     box-shadow: 0 4px 12px rgba(10, 186, 181, 0.4);
   }
-  
+
   .logo {
     order: 1;
   }
-  
+
   .logo-text {
-    display: none; /* Hide logo text on very small screens */
+    display: none;
+    /* Hide logo text on very small screens */
   }
-  
+
   .logo-image {
     height: 40px;
   }
-  
+
   .page-info {
-    display: none; /* Hide page info on very small screens */
+    display: none;
+    /* Hide page info on very small screens */
   }
-  
+
   .search-box {
     width: 100px;
     order: 1;
   }
-  
+
   .search-box input {
     font-size: 12px;
     padding: 6px 8px;
     padding-left: 1.8rem;
     height: 36px;
   }
-  
+
   .search-box i {
     left: 8px;
     font-size: 12px;
   }
-  
+
   .notification-bell {
     order: 2;
     width: 36px;
     height: 36px;
   }
-  
+
   .notification-bell i {
     font-size: var(--font-size-base);
   }
-  
+
   .profile-menu {
     order: 3;
   }
-  
+
   .profile-avatar {
     width: 32px;
     height: 32px;
@@ -801,7 +816,7 @@
   .header {
     padding: 0 var(--spacing-xs);
   }
-  
+
   .sidebar-toggle {
     width: 40px;
     height: 40px;
@@ -812,42 +827,42 @@
     position: relative;
     z-index: 9999;
   }
-  
+
   .logo-image {
     height: 36px;
   }
-  
+
   .search-box {
     width: 80px;
   }
-  
+
   .search-box input {
     font-size: 11px;
     padding: 4px 6px;
     padding-left: 1.6rem;
     height: 32px;
   }
-  
+
   .notification-bell {
     width: 32px;
     height: 32px;
   }
-  
+
   .notification-dropdown {
     right: -100px;
     min-width: 280px;
     max-width: 95vw;
   }
-  
+
   .notification-item {
     padding: var(--spacing-xs) var(--spacing-sm);
   }
-  
+
   .notification-icon {
     width: 32px;
     height: 32px;
   }
-  
+
   .profile-avatar {
     width: 28px;
     height: 28px;

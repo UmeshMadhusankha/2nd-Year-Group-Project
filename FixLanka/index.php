@@ -2,32 +2,9 @@
 // filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\index.php
 require_once __DIR__ . '/config/session.php';
 
-// Check if query parameter routing is being used (for Account Moderation)
-if (isset($_GET['page'])) {
-    require_once __DIR__ . '/config/database.php';
-    
-    $page = $_GET['page'];
-    
-    switch ($page) {
-        case 'accountModeration':
-            require_once __DIR__ . '/models/AccountModerationModel.php';
-            require_once __DIR__ . '/controllers/AccountModerationController.php';
-            
-            $controller = new AccountModerationController($pdo);
-            $controller->handleRequest();
-            exit;
-            break;
-        
-        default:
-            // Continue to path-based routing below
-            break;
-    }
-}
-
-// Original path-based routing
 $request = $_SERVER['REQUEST_URI'];
 $request = str_replace('/2nd-Year-Group-Project/FixLanka', '', $request);
-$request = strtok($request, '?');
+$request = strtok($request, '?'); // Remove query string
 
 switch ($request) {
     case '/':
@@ -42,6 +19,16 @@ switch ($request) {
             $controller->login();
         } else {
             $controller->showLoginPage();
+        }
+        break;
+
+    case '/forgot-password':
+        require_once __DIR__ . '/controllers/AuthController.php';
+        $controller = new AuthController();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $controller->resetPasswordWithoutVerification();
+        } else {
+            $controller->showForgotPasswordPage();
         }
         break;
     
@@ -121,13 +108,11 @@ switch ($request) {
     case '/admin-alerts':
         require_once __DIR__ . '/views/admin/alerts.php';
         break;
-    
-    // ✅ NEW: Admin Alert Actions Route (Handles Create, Update, Delete, Toggle)
+
     case '/admin-alerts-action':
         require_once __DIR__ . '/controllers/AdminAlertController.php';
         $controller = new AdminAlertController();
         $controller->handleRequest();
-        exit;
         break;
     
     case '/admin-analytics':
@@ -150,14 +135,9 @@ switch ($request) {
         require_once __DIR__ . '/views/admin/moderators.php';
         break;
 
-// ✅ NEW ROUTE: Moderator Actions Handler
-case '/admin-moderators-action':
-    require_once __DIR__ . '/config/databse.php';
-    require_once __DIR__ . '/controllers/ModeratorController.php';
-    $controller = new ModeratorController();
-    $controller->handleRequest();
-    exit;
-    break;
+    case '/admin-audit-logs':
+        require_once __DIR__ . '/views/admin/audit-logs.php';
+        break;
     
     case '/moderator-dashboard':
         require_once __DIR__ . '/views/moderator/dashboard.php';
@@ -171,14 +151,10 @@ case '/admin-moderators-action':
         require_once __DIR__ . '/views/moderator/ads.php';
         break;
     
+    case '/moderator-static-content':
+        require_once __DIR__ . '/views/moderator/static-content.php';
+        break;
     
-case '/moderator-static-content':
-    require_once __DIR__ . '/models/StaticContentModel.php';
-    require_once __DIR__ . '/controllers/StaticContentController.php';
-    $controller = new StaticContentController();
-    $controller->handleRequest();
-    break;
-
     case '/moderator-ad-schedule':
         require_once __DIR__ . '/views/moderator/ad-schedule.php';
         break;
@@ -242,6 +218,10 @@ case '/moderator-static-content':
     
     case '/repairer-support':
         require_once __DIR__ . '/views/repairer/pages/support.php';
+        break;
+
+    case '/repairer-notifications':
+        require_once __DIR__ . '/views/repairer/pages/notifications.php';
         break;
     
     case '/repairer-settings':
@@ -334,8 +314,8 @@ case '/moderator-static-content':
         $controller = new ProviderController();
         $controller->getProviders();
         break;
-    
-    case '/get-featured-providers':
+
+        case '/get-featured-providers':
         require_once __DIR__ . '/controllers/ProviderController.php';
         $controller = new ProviderController();
         $controller->getFeatured();
@@ -347,7 +327,7 @@ case '/moderator-static-content':
         $controller->getProviderDetails();
         break;
     
-    default:
+        default:
         http_response_code(404);
         echo "404 - Page Not Found";
         break;

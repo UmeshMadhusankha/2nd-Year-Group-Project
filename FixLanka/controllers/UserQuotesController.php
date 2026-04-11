@@ -51,7 +51,7 @@ class UserQuotesController {
             $status = 'pending';
         }
 
-        $quotes = $this->model->getUserQuotes((int)$user['id'], $limit, $offset, $status);
+        $quotes = $this->model->getUserQuotes((int)$user['id'], $limit, $offset, $status, $requestId);
         $pendingCount = $this->model->getUserPendingCount((int)$user['id']);
 
         echo json_encode([

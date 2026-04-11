@@ -8,7 +8,7 @@
  */
 
 // Get company ID from global scope
-const currentCompanyId = window.CURRENT_COMPANY_ID || null;
+var currentCompanyId = window.CURRENT_COMPANY_ID || window.CURRENT_USER_ID || window.currentCompanyId || null;
 
 // API endpoint
 const API_URL = '/2nd-Year-Group-Project/FixLanka/api/company-employees.php';
@@ -124,7 +124,9 @@ function updateCategoryCards(specialties) {
         'Electrical': 'fa-bolt',
         'Carpentry': 'fa-hammer',
         'HVAC': 'fa-fan',
+        'HVAC Technician': 'fa-fan',
         'Painting': 'fa-paint-roller',
+        'Painter': 'fa-paint-roller',
         'Masonry': 'fa-hard-hat',
         'Welding': 'fa-fire',
         'General': 'fa-tools'
@@ -136,7 +138,9 @@ function updateCategoryCards(specialties) {
         'Electrical': 'electrical',
         'Carpentry': 'carpentry',
         'HVAC': 'hvac',
+        'HVAC Technician': 'hvac',
         'Painting': 'painting',
+        'Painter': 'painting',
         'Masonry': 'masonry',
         'Welding': 'welding',
         'General': 'general'
@@ -149,11 +153,13 @@ function updateCategoryCards(specialties) {
         const minRate = parseFloat(spec.min_hourly_rate || 0);
         const maxRate = parseFloat(spec.max_hourly_rate || 0);
         const rateRange = minRate > 0 && maxRate > 0 
-            ? `LKR ${minRate.toLocaleString()}-${maxRate.toLocaleString()}/hr`
+            ? (minRate === maxRate
+                ? `LKR ${minRate.toLocaleString()}/hr`
+                : `LKR ${minRate.toLocaleString()}-${maxRate.toLocaleString()}/hr`)
             : 'Rate not set';
         
         const card = document.createElement('div');
-        card.className = 'category-card';
+        card.className = 'category-card category-card--summary';
         card.innerHTML = `
             <div class="category-icon ${colorClass}">
                 <i class="fas ${icon}"></i>
@@ -242,7 +248,17 @@ async function bulkAddEmployees(employees) {
             showToast(result.message, 'success');
             await loadEmployeesData();
             return true;
-        } else {
+                    const raw = await response.text();
+                    let result;
+                    try {
+                        result = raw ? JSON.parse(raw) : null;
+                    } catch (e) {
+                        throw new Error('Server returned non-JSON response for bulk add');
+                    }
+
+                    if (!response.ok) {
+                        throw new Error((result && (result.message || result.error)) || 'Bulk add failed');
+                    }
             showToast(result.message || 'Failed to add employees', 'error');
             return false;
         }
@@ -320,7 +336,7 @@ async function updateEmployeeStatus(employeeId, status) {
  * Delete employee
  */
 async function deleteEmployee(employeeId) {
-    if (!confirm('Are you sure you want to remove this employee?')) {
+    if (!confirm('Are you sure you want to offboard this employee? They will be removed from active workforce but history will be kept.')) {
         return false;
     }
     
@@ -332,7 +348,7 @@ async function deleteEmployee(employeeId) {
         const result = await response.json();
         
         if (result.success) {
-            showToast('Employee removed successfully', 'success');
+            showToast('Employee offboarded successfully', 'success');
             await loadEmployeesData();
             return true;
         } else {

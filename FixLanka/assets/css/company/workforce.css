@@ -763,7 +763,7 @@
     margin: 0;
 }
 
-.category-stats {
+.category-card > .category-stats {
     padding: var(--spacing-lg);
     display: flex;
     flex-direction: column;
@@ -802,7 +802,7 @@
     color: var(--text-secondary);
 }
 
-.category-actions {
+.category-card > .category-actions {
     padding: var(--spacing-md);
     background: var(--bg-secondary);
     display: flex;
@@ -821,6 +821,7 @@
     font-size: var(--font-size-2xl);
     color: var(--text-white);
     flex-shrink: 0;
+    background: var(--primary-color);
 }
 
 .category-icon.plumbing {
@@ -876,6 +877,50 @@
     font-size: 12px;
 }
 
+/* Clean summary cards (used by company-employees-db.js) */
+.category-card--summary {
+    padding: var(--spacing-lg);
+    overflow: visible;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+}
+
+.category-card--summary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.category-card--summary .category-icon {
+    width: 56px;
+    height: 56px;
+    font-size: var(--font-size-xl);
+}
+
+.category-card--summary .category-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.category-card--summary .category-info h3 {
+    margin: 0;
+}
+
+.category-card--summary .category-stats {
+    display: flex;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-sm);
+}
+
+.category-card--summary .category-meta {
+    justify-content: space-between;
+    margin-top: var(--spacing-sm);
+}
+
+.category-card--summary .hourly-range {
+    white-space: nowrap;
+}
+
 /* Freelancer List */
 /* ===================================
    FREELANCER SECTION
@@ -887,17 +932,17 @@
     gap: var(--spacing-sm);
     margin-bottom: var(--spacing-lg);
     padding: 8px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
     flex-wrap: wrap;
 }
 
 .freelancer-filter-tabs .tab-btn {
     padding: 12px 24px;
     border: 2px solid transparent;
-    border-radius: 8px;
-    background: white;
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-card);
     color: var(--text-secondary);
     font-size: 14px;
     font-weight: 600;
@@ -918,14 +963,21 @@
     gap: var(--spacing-lg);
 }
 
+/* Rating stars inside freelancer cards */
+.freelancer-card .rating-stars {
+    color: var(--warning-light);
+    font-size: 10px;
+    line-height: 1;
+}
+
 /* Freelancer Card */
 .freelancer-card {
-    background: linear-gradient(to bottom, #ffffff, #fafafa);
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
+    background: linear-gradient(to bottom, var(--bg-card), var(--bg-secondary));
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
     padding: 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
     position: relative;
     animation: fadeInUp 0.5s ease both;
@@ -945,7 +997,7 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, #0abab5, #099d99);
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
     transform: scaleX(0);
     transition: transform 0.3s ease;
     transform-origin: left;
@@ -953,9 +1005,8 @@
 
 .freelancer-card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 12px 32px rgba(10, 186, 181, 0.2),
-        0 6px 16px rgba(0, 0, 0, 0.12);
-    border-color: rgba(10, 186, 181, 0.4);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(var(--primary-rgb), 0.35);
 }
 
 .freelancer-card:hover::before {
@@ -968,8 +1019,7 @@
     justify-content: space-between;
     align-items: flex-start;
     padding: 28px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-    border-bottom: 1px solid #e9ecef;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
     gap: 16px;
 }
 
@@ -1010,7 +1060,7 @@
 }
 
 .freelancer-info-modern h4 {
-    color: #2d3748;
+    color: var(--text-primary);
     font-size: 18px;
     font-weight: 700;
     margin: 0 0 6px 0;
@@ -1104,7 +1154,7 @@
 .detail-item label {
     font-size: 11px;
     font-weight: 600;
-    color: #94a3b8;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     display: flex;
@@ -1125,7 +1175,7 @@
 .detail-item span {
     font-size: 14px;
     font-weight: 600;
-    color: #2d3748;
+    color: var(--text-primary);
 }
 
 /* Assignment Section */
@@ -1360,6 +1410,7 @@
     overflow: hidden;
     position: relative;
     animation: fadeInUp 0.5s ease both;
+    cursor: pointer;
 }
 
 .application-card:nth-child(1) { animation-delay: 0.05s; }
@@ -1662,15 +1713,21 @@
     white-space: nowrap;
     flex: 1;
     min-width: 120px;
+    position: relative;
+    overflow: hidden;
+}
+
+.application-actions .action-btn-sm::before {
+    pointer-events: none;
 }
 
 .application-actions .action-btn-sm:hover {
-    transform: translateY(-2px);
+    transform: none;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .application-actions .action-btn-sm:active {
-    transform: translateY(0);
+    transform: none;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
@@ -1681,30 +1738,33 @@
 }
 
 .application-actions .action-btn-sm.primary:hover {
+    transform: none;
     background: linear-gradient(135deg, var(--primary-hover, #099d99), var(--primary-color, #0abab5));
     box-shadow: 0 4px 16px rgba(10, 186, 181, 0.4);
 }
 
 /* Success button (Accept) */
 .application-actions .action-btn-sm.success {
-    background: linear-gradient(135deg, #28a745, #218838);
+    background: linear-gradient(135deg, var(--success-color), var(--success-dark));
     color: white;
 }
 
 .application-actions .action-btn-sm.success:hover {
-    background: linear-gradient(135deg, #218838, #28a745);
-    box-shadow: 0 4px 16px rgba(40, 167, 69, 0.4);
+    transform: none;
+    background: linear-gradient(135deg, var(--success-dark), var(--success-color));
+    box-shadow: 0 4px 16px rgba(var(--success-rgb), 0.35);
 }
 
 /* Danger button (Decline) */
 .application-actions .action-btn-sm.danger {
-    background: linear-gradient(135deg, #dc3545, #c82333);
+    background: linear-gradient(135deg, var(--danger-color), var(--danger-dark));
     color: white;
 }
 
 .application-actions .action-btn-sm.danger:hover {
-    background: linear-gradient(135deg, #c82333, #dc3545);
-    box-shadow: 0 4px 16px rgba(220, 53, 69, 0.4);
+    transform: none;
+    background: linear-gradient(135deg, var(--danger-dark), var(--danger-color));
+    box-shadow: 0 4px 16px rgba(var(--danger-rgb), 0.35);
 }
 
 /* Empty State for Applications */
@@ -2680,9 +2740,7 @@
     flex: 1;
     padding: var(--spacing-xl);
     overflow-y: auto;
-    background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.5),
-            rgba(245, 247, 250, 0.5));
+    background:var(--bg-primary);
 }
 
 .drawer-content::-webkit-scrollbar {
@@ -2801,7 +2859,7 @@
     padding: var(--spacing-lg);
     background: var(--bg-primary);
     border-radius: var(--border-radius-lg);
-    border: 1px solid var(--border-color);
+    
 }
 
 .form-section h4 {
@@ -5046,14 +5104,14 @@
 
 /* Success button (Publish, Reopen) */
 .posting-actions .action-btn-sm.success {
-    background: linear-gradient(135deg, #28a745, #218838);
+    background: linear-gradient(135deg, var(--success-color), var(--success-dark));
     color: white;
     border: 1px solid transparent;
 }
 
 .posting-actions .action-btn-sm.success:hover {
-    background: linear-gradient(135deg, #218838, #28a745);
-    box-shadow: 0 4px 16px rgba(40, 167, 69, 0.4);
+    background: linear-gradient(135deg, var(--success-dark), var(--success-color));
+    box-shadow: 0 4px 16px rgba(var(--success-rgb), 0.35);
 }
 
 /* Warning button (Close) */
@@ -5083,14 +5141,14 @@
 
 /* Danger button (Delete) */
 .posting-actions .action-btn-sm.danger {
-    background: linear-gradient(135deg, #dc3545, #c82333);
+    background: linear-gradient(135deg, var(--danger-color), var(--danger-dark));
     color: white;
     border: 1px solid transparent;
 }
 
 .posting-actions .action-btn-sm.danger:hover {
-    background: linear-gradient(135deg, #c82333, #dc3545);
-    box-shadow: 0 4px 16px rgba(220, 53, 69, 0.4);
+    background: linear-gradient(135deg, var(--danger-dark), var(--danger-color));
+    box-shadow: 0 4px 16px rgba(var(--danger-rgb), 0.35);
 }
 
 /* Button icons */
@@ -6124,46 +6182,227 @@ input[type="number"].form-control {
    JOB ASSIGNMENT DRAWER STYLES
    ============================================ */
 
-/* Drawer Overlay */
-.drawer-overlay {
+/* Drawer Overlay (scoped) */
+#assignJobDrawer.drawer-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(10, 46, 51, 0.7);
-    backdrop-filter: blur(4px);
+    inset: 0;
     z-index: 10000;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-lg);
+    background-color: rgba(10, 46, 51, 0.7);
+    backdrop-filter: none;
 }
 
-.drawer-overlay.active {
-    opacity: 1;
-    visibility: visible;
+#assignJobDrawer.drawer-overlay.active {
+    display: flex;
 }
 
-/* Drawer Panel */
-.drawer-panel {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 600px;
-    max-width: 90vw;
-    height: 100vh;
-    background: linear-gradient(to bottom, var(--bg-primary), var(--bg-secondary));
-    box-shadow: -8px 0 30px rgba(10, 171, 181, 0.15);
-    transform: translateX(100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Drawer Panel (scoped) */
+#assignJobDrawer .drawer-panel {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: min(720px, 92vw);
+    max-height: 90vh;
+    height: auto;
+    background: var(--text-white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xl);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    z-index: 10001;
+    transform: none;
+    transition: none;
 }
 
-.drawer-overlay.active .drawer-panel {
-    transform: translateX(0);
+#assignJobDrawer .drawer-content {
+    overflow: auto;
+}
+
+/* Make Assign Job header match system (no loud gradient) */
+#assignJobDrawer .drawer-header {
+    background: var(--text-white);
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: none;
+}
+
+#assignJobDrawer .drawer-header::before {
+    display: none;
+}
+
+#assignJobDrawer .drawer-header h3,
+#assignJobDrawer .drawer-header i {
+    color: var(--text-primary);
+}
+
+#assignJobDrawer .close-drawer {
+    background: transparent;
+    backdrop-filter: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+#assignJobDrawer .close-drawer:hover {
+    background: var(--bg-hover);
+    border-color: var(--text-secondary);
+    transform: none;
+    box-shadow: none;
+}
+
+#assignJobDrawer .close-drawer:active {
+    transform: none;
+}
+
+#assignJobDrawer .drawer-content {
+    background: var(--text-white);
+}
+
+/* Cost estimate: remove gradient/pulse and keep it clean */
+#assignJobDrawer .cost-summary {
+    padding: var(--spacing-lg);
+    background: var(--text-white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: none;
+}
+
+#assignJobDrawer .cost-summary::before {
+    display: none;
+}
+
+#assignJobDrawer .cost-item.total {
+    border-top: 1px solid var(--border-color);
+}
+
+#assignJobDrawer .total-value {
+    animation: none;
+    font-size: var(--font-size-lg);
+}
+
+#assignJobDrawer .cost-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: var(--spacing-sm) 0;
+}
+
+/* Remove drawer-only "card sections" so it matches other forms */
+#assignJobDrawer .assign-job-form .form-section {
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+#assignJobDrawer .assign-job-form .form-section:hover {
+    border-color: transparent;
+    box-shadow: none;
+}
+
+#assignJobDrawer .assign-job-form .form-section h4 {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* Use the same form field styles as other company forms (settings/ads) */
+#assignJobDrawer .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+#assignJobDrawer .form-group {
+    margin-bottom: var(--spacing-lg);
+    position: relative;
+    display: block;
+}
+
+#assignJobDrawer .form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    letter-spacing: 0.3px;
+    transition: color 0.3s ease;
+}
+
+#assignJobDrawer .form-group label i {
+    margin-right: var(--spacing-xs);
+    color: var(--primary-color);
+    font-size: 16px;
+}
+
+#assignJobDrawer .form-group:focus-within label {
+    color: var(--primary-color);
+}
+
+#assignJobDrawer .form-group input[type="text"],
+#assignJobDrawer .form-group input[type="email"],
+#assignJobDrawer .form-group input[type="tel"],
+#assignJobDrawer .form-group input[type="url"],
+#assignJobDrawer .form-group input[type="number"],
+#assignJobDrawer .form-group input[type="time"],
+#assignJobDrawer .form-group input[type="password"],
+#assignJobDrawer .form-group input[type="date"],
+#assignJobDrawer .form-group select,
+#assignJobDrawer .form-group textarea {
+    width: 100%;
+    padding: 14px 18px;
+    border: 2px solid transparent;
+    background: linear-gradient(white, white) padding-box,
+        linear-gradient(135deg, rgba(10, 186, 181, 0.2), rgba(6, 149, 143, 0.2)) border-box;
+    border-radius: 12px;
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    font-family: var(--font-family-primary);
+}
+
+#assignJobDrawer .form-group input:focus,
+#assignJobDrawer .form-group select:focus,
+#assignJobDrawer .form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(10, 186, 181, 0.15),
+        0 4px 12px rgba(10, 186, 181, 0.2);
+    transform: translateY(-1px);
+}
+
+#assignJobDrawer .form-group input:hover:not(:focus),
+#assignJobDrawer .form-group select:hover:not(:focus),
+#assignJobDrawer .form-group textarea:hover:not(:focus) {
+    border-color: rgba(10, 186, 181, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+#assignJobDrawer .form-group textarea {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.6;
+}
+
+#assignJobDrawer .form-group select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%230abab5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 45px;
+    cursor: pointer;
+}
+
+#assignJobDrawer .form-group small {
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    padding-left: 4px;
 }
 
 /* Drawer Header */
@@ -7682,14 +7921,14 @@ textarea.form-control {
 
 /* Success Button - Green (Accept) */
 .wf-btn-success {
-    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+    background: linear-gradient(135deg, var(--success-color) 0%, var(--success-dark) 100%);
     color: white;
-    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+    box-shadow: 0 4px 12px rgba(var(--success-rgb), 0.28);
 }
 
 .wf-btn-success:hover {
-    background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
-    box-shadow: 0 6px 20px rgba(39, 174, 96, 0.45);
+    background: linear-gradient(135deg, var(--success-dark) 0%, var(--success-color) 100%);
+    box-shadow: 0 6px 20px rgba(var(--success-rgb), 0.38);
 }
 
 .wf-btn-success:hover i {
@@ -7698,14 +7937,14 @@ textarea.form-control {
 
 /* Danger Button - Red (Decline/Delete) */
 .wf-btn-danger {
-    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    background: linear-gradient(135deg, var(--danger-color) 0%, var(--danger-dark) 100%);
     color: white;
-    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+    box-shadow: 0 4px 12px rgba(var(--danger-rgb), 0.28);
 }
 
 .wf-btn-danger:hover {
-    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
-    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.45);
+    background: linear-gradient(135deg, var(--danger-dark) 0%, var(--danger-color) 100%);
+    box-shadow: 0 6px 20px rgba(var(--danger-rgb), 0.38);
 }
 
 .wf-btn-danger:hover i {
@@ -8690,8 +8929,8 @@ textarea.form-control {
     display: flex;
     gap: 15px;
     padding: 20px 30px;
-    background: #f9fafb;
-    border-top: 1px solid #e5e7eb;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
     position: sticky;
     bottom: 0;
     z-index: 10;
@@ -8703,8 +8942,8 @@ textarea.form-control {
     padding: 12px 24px;
     font-size: 15px;
     font-weight: 600;
-    border-radius: 8px;
-    border: none;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid transparent;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -8714,14 +8953,16 @@ textarea.form-control {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), #4f46e5);
-    color: white;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    background: var(--primary-color);
+    color: var(--text-white);
+    border-color: var(--primary-color);
+    box-shadow: 0 6px 18px rgba(var(--primary-rgb), 0.25);
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #4f46e5, var(--primary-color));
-    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+    box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.35);
     transform: translateY(-2px);
 }
 
@@ -8730,19 +8971,41 @@ textarea.form-control {
 }
 
 .btn-secondary {
-    background: white;
-    color: #6b7280;
-    border: 2px solid #e5e7eb;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
 }
 
 .btn-secondary:hover {
-    background: #f9fafb;
-    border-color: #d1d5db;
-    color: #374151;
+    background: var(--bg-hover);
+    border-color: rgba(var(--primary-rgb), 0.35);
+    color: var(--text-primary);
 }
 
 .btn-secondary:active {
-    background: #f3f4f6;
+    background: var(--bg-hover);
+}
+
+/* Outline button used by freelancer cards */
+.btn-outline {
+    background: transparent;
+    color: var(--primary-color);
+    border: 1px solid rgba(var(--primary-rgb), 0.6);
+}
+
+.btn-outline:hover {
+    background: rgba(var(--primary-rgb), 0.08);
+    border-color: var(--primary-color);
+    color: var(--primary-hover);
+}
+
+.btn:disabled,
+.btn.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+    transform: none;
+    box-shadow: none;
 }
 
 .payment-confirm-btn.loading {
@@ -9491,4 +9754,253 @@ textarea.form-control {
     }
 }
 
+}
+
+/* ------------------------------------------------
+   Clean card layout for DB-rendered freelancer cards
+   (matches markup from assets/javascript/company/freelancers-db.js)
+   ------------------------------------------------ */
+
+.freelancer-card .freelancer-header {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    padding: var(--spacing-lg);
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.freelancer-card .freelancer-avatar,
+.freelancer-card .freelancer-avatar-placeholder {
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+}
+
+.freelancer-card .freelancer-avatar {
+    object-fit: cover;
+    border: 2px solid rgba(var(--primary-rgb), 0.25);
+}
+
+.freelancer-card .freelancer-avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-white);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.22);
+    text-transform: uppercase;
+}
+
+.freelancer-card .freelancer-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.freelancer-card .freelancer-name {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.freelancer-card .freelancer-title {
+    margin-top: 6px;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.freelancer-card .freelancer-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--bg-secondary);
+}
+
+.freelancer-card .freelancer-stats .stat {
+    min-width: 0;
+}
+
+.freelancer-card .freelancer-stats .stat-value {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.freelancer-card .freelancer-stats .stat-label {
+    margin-top: 6px;
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.freelancer-card .freelancer-stats .rating-stars {
+    margin-top: 4px;
+}
+
+.freelancer-card .freelancer-skills {
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-card);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+.freelancer-card .skill-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(var(--primary-rgb), 0.10);
+    color: var(--primary-hover);
+    border: 1px solid rgba(var(--primary-rgb), 0.22);
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.freelancer-card .freelancer-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-lg);
+    background: var(--bg-card);
+}
+
+/* Base button styles for freelancer cards */
+.freelancer-card .btn {
+    width: 100%;
+    height: 44px;
+    padding: 0 var(--spacing-lg);
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.freelancer-card .btn:hover {
+    transform: translateY(-1px);
+}
+
+.freelancer-card .btn:active {
+    transform: translateY(0);
+}
+
+/* Layoff Freelancer Drawer */
+#freelancerLayoffOverlay {
+    z-index: 1200;
+}
+
+#freelancerLayoffOverlay .layoff-drawer-panel {
+    width: min(92vw, 640px);
+    max-width: 640px;
+    height: auto;
+    max-height: 90vh;
+    margin: 0;
+    transform: translateY(24px);
+}
+
+#freelancerLayoffOverlay.active .layoff-drawer-panel {
+    transform: translateY(0);
+}
+
+#freelancerLayoffOverlay .layoff-drawer-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-xl);
+}
+
+#freelancerLayoffOverlay .layoff-helper-text {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-base);
+    line-height: 1.5;
+}
+
+#freelancerLayoffOverlay .layoff-label {
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+#freelancerLayoffOverlay .layoff-label span {
+    color: var(--danger-color);
+}
+
+#freelancerLayoffOverlay .layoff-reason-input {
+    width: 100%;
+    min-height: 130px;
+    resize: vertical;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 12px 14px;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    background: var(--bg-card);
+    transition: all var(--transition-normal);
+}
+
+#freelancerLayoffOverlay .layoff-reason-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
+}
+
+#freelancerLayoffOverlay .layoff-error-text {
+    display: none;
+    margin: 0;
+    color: var(--danger-color);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+}
+
+#freelancerLayoffOverlay .layoff-drawer-actions {
+    padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
+    justify-content: flex-end;
+    gap: var(--spacing-md);
+}
+
+#freelancerLayoffOverlay .layoff-drawer-actions .btn {
+    min-width: 140px;
+}
+
+@media (max-width: 768px) {
+    #freelancerLayoffOverlay .layoff-drawer-panel {
+        width: calc(100vw - 24px);
+        margin: 12px;
+    }
+
+    #freelancerLayoffOverlay .layoff-drawer-content,
+    #freelancerLayoffOverlay .layoff-drawer-actions {
+        padding: var(--spacing-lg);
+    }
+
+    #freelancerLayoffOverlay .layoff-drawer-actions {
+        flex-direction: column-reverse;
+    }
+
+    #freelancerLayoffOverlay .layoff-drawer-actions .btn {
+        width: 100%;
+    }
 }

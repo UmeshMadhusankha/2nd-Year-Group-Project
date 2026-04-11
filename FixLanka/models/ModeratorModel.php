@@ -197,10 +197,32 @@ class ModeratorModel
             $constraints[] = "{$adCount} advertisement(s)";
         }
 
-        // Check ad_schedules table
-        $stmt = $this->pdo->prepare("SELECT COUNT(*) as count FROM ad_schedules WHERE created_by = ?");
-        $stmt->execute([$moderator_id]);
-        $scheduleCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        // Check ad schedules table(s)
+        // This project uses `adschedule` for moderator scheduling. Some databases may also
+        // include a legacy `ad_schedules` table.
+        $scheduleCount = 0;
+
+        // Current flow: adschedule (no created_by column), infer via ads reviewed by moderator.
+        try {
+            $stmt = $this->pdo->prepare(
+                "SELECT COUNT(*) as count\n"
+                . "FROM adschedule\n"
+                . "WHERE ad_id IN (SELECT ad_id FROM advertisement WHERE reviewed_by = ?)"
+            );
+            $stmt->execute([$moderator_id]);
+            $scheduleCount += (int)($stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0);
+        } catch (Exception $e) {
+            // ignore
+        }
+
+        // Legacy flow: ad_schedules
+        try {
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) as count FROM ad_schedules WHERE created_by = ?");
+            $stmt->execute([$moderator_id]);
+            $scheduleCount += (int)($stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0);
+        } catch (Exception $e) {
+            // ignore
+        }
         if ($scheduleCount > 0) {
             $constraints[] = "{$scheduleCount} ad schedule(s)";
         }

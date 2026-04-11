@@ -71,7 +71,7 @@ class AdvertisementFilters {
 
     async loadAdvertisements() {
         try {
-            const response = await fetch('../../api/advertisements.php');
+            const response = await fetch('../../api/advertisements.php', { cache: 'no-store' });
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -85,10 +85,11 @@ class AdvertisementFilters {
                 this.updateStatusCounts(data.counts || {});
                 this.applyFilters();
             } else {
-                console.error('Failed to load advertisements:', data.message);
+                const msg = data.error || data.message || 'Failed to load advertisements';
+                console.error('Failed to load advertisements:', msg);
                 // Ensure advertisements is an empty array on API errors
                 this.advertisements = [];
-                this.showError(data.message || 'Failed to load advertisements');
+                this.showError(msg);
             }
         } catch (error) {
             console.error('Error loading advertisements:', error);
@@ -174,10 +175,16 @@ class AdvertisementFilters {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
+        const getCreatedDate = (ad) => {
+            const value = ad.created_at || ad.submission_date || ad.submissionDate || null;
+            const d = value ? new Date(value) : new Date(NaN);
+            return d;
+        };
+
         switch (this.currentFilters.dateRange) {
             case 'today':
                 return ads.filter(ad => {
-                    const created = new Date(ad.submission_date);
+                    const created = getCreatedDate(ad);
                     return created >= today;
                 });
 
@@ -185,7 +192,7 @@ class AdvertisementFilters {
                 const weekAgo = new Date(today);
                 weekAgo.setDate(weekAgo.getDate() - 7);
                 return ads.filter(ad => {
-                    const created = new Date(ad.submission_date);
+                    const created = getCreatedDate(ad);
                     return created >= weekAgo;
                 });
 
@@ -193,7 +200,7 @@ class AdvertisementFilters {
                 const monthAgo = new Date(today);
                 monthAgo.setMonth(monthAgo.getMonth() - 1);
                 return ads.filter(ad => {
-                    const created = new Date(ad.submission_date);
+                    const created = getCreatedDate(ad);
                     return created >= monthAgo;
                 });
 
@@ -201,14 +208,14 @@ class AdvertisementFilters {
                 const quarterAgo = new Date(today);
                 quarterAgo.setMonth(quarterAgo.getMonth() - 3);
                 return ads.filter(ad => {
-                    const created = new Date(ad.submission_date);
+                    const created = getCreatedDate(ad);
                     return created >= quarterAgo;
                 });
 
             case 'year':
                 const yearStart = new Date(now.getFullYear(), 0, 1);
                 return ads.filter(ad => {
-                    const created = new Date(ad.submission_date);
+                    const created = getCreatedDate(ad);
                     return created >= yearStart;
                 });
 
@@ -217,7 +224,7 @@ class AdvertisementFilters {
                     const start = new Date(this.currentFilters.startDate);
                     const end = new Date(this.currentFilters.endDate);
                     return ads.filter(ad => {
-                        const created = new Date(ad.submission_date);
+                        const created = getCreatedDate(ad);
                         return created >= start && created <= end;
                     });
                 }
@@ -468,7 +475,14 @@ class AdvertisementFilters {
     }
 
     renderMediaPreview(ad) {
-        // Placeholder implementation - customize based on your data
+        const imageUrl = ad.image_url || ad.imageUrl || ad.media_url || '';
+        if (imageUrl) {
+            const safeSrc = this.escapeHtml(imageUrl);
+            const safeAlt = this.escapeHtml(ad.title || 'Advertisement image');
+            return `<img src="${safeSrc}" alt="${safeAlt}" loading="lazy">`;
+        }
+
+        // Fallback placeholder banner when no image is uploaded
         return `
             <div class="ad-banner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <div class="banner-content">
@@ -476,6 +490,15 @@ class AdvertisementFilters {
                 </div>
             </div>
         `;
+    }
+
+    escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
     getStatusIcon(status) {
@@ -640,18 +663,74 @@ class AdvertisementFilters {
             return;
         }
 
-        // TODO: Populate edit modal with ad data
-
-        alert('Edit functionality coming soon!\n\nAdvertisement: ' + ad.title);
+        const statusClass = ad.computed_status || ad.status;
+        if (statusClass !== 'pending') {
+            alert('Only pending advertisements can be edited.');
+            return;
+        }
 
         // Open the existing create modal and populate with data
         const adModal = document.getElementById('adModal');
+        const adForm = document.getElementById('adForm');
         if (adModal) {
-            // Populate form fields here
-            document.getElementById('adTitle').value = ad.title;
-            // ... populate other fields
+            if (adForm) {
+                adForm.dataset.editingAdId = String(adId);
+                adForm.dataset.originalStartDate = ad.start_date ? String(ad.start_date).slice(0, 10) : '';
+                adForm.dataset.originalEndDate = ad.end_date ? String(ad.end_date).slice(0, 10) : '';
+            }
+
+            const modalTitle = document.getElementById('modalTitle');
+            if (modalTitle) {
+                modalTitle.innerHTML = '<i class="fas fa-pen"></i> Edit Advertisement';
+            }
+
+            const submitBtn = document.getElementById('submitAd');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Advertisement';
+            }
+
+            // Prefill key fields
+            const typeRadio = document.querySelector(`input[name="adType"][value="${ad.type}"]`);
+            if (typeRadio) typeRadio.checked = true;
+
+            const titleEl = document.getElementById('adTitle');
+            const descEl = document.getElementById('adDescription');
+            if (titleEl) titleEl.value = ad.title || '';
+            if (descEl) descEl.value = ad.description || '';
+
+            // Prefill schedule dates (required)
+            const startDateEl = document.getElementById('startDate');
+            const endDateEl = document.getElementById('endDate');
+            if (startDateEl && ad.start_date) startDateEl.value = String(ad.start_date).slice(0, 10);
+            if (endDateEl && ad.end_date) endDateEl.value = String(ad.end_date).slice(0, 10);
+
+            // Show existing image preview if available
+            const uploadArea = document.getElementById('uploadArea');
+            const uploadPreview = document.getElementById('uploadPreview');
+            const previewImage = document.getElementById('previewImage');
+            const previewVideo = document.getElementById('previewVideo');
+
+            if (ad.image_url && uploadArea && uploadPreview && previewImage) {
+                uploadArea.style.display = 'none';
+                uploadPreview.style.display = 'block';
+                previewImage.src = ad.image_url;
+                previewImage.style.display = 'block';
+                if (previewVideo) previewVideo.style.display = 'none';
+            }
+
             adModal.classList.add('active');
             document.body.style.overflow = 'hidden';
+
+            if (typeof window.initWizardDefaults === 'function') {
+                window.initWizardDefaults();
+            } else if (typeof initWizardDefaults === 'function') {
+                initWizardDefaults();
+            }
+
+            // Jump wizard to the media/details step to make updating the image easy
+            if (typeof window.__adWizardSetStep === 'function') {
+                window.__adWizardSetStep(2);
+            }
         }
     }
 
@@ -676,7 +755,7 @@ class AdvertisementFilters {
                 alert('Advertisement paused successfully!');
                 this.loadAdvertisements(); // Reload data
             } else {
-                alert('Failed to pause advertisement: ' + (data.message || 'Unknown error'));
+                alert('Failed to pause advertisement: ' + (data.error || data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error pausing advertisement:', error);
@@ -705,7 +784,7 @@ class AdvertisementFilters {
                 alert('Advertisement resumed successfully!');
                 this.loadAdvertisements();
             } else {
-                alert('Failed to resume advertisement: ' + (data.message || 'Unknown error'));
+                alert('Failed to resume advertisement: ' + (data.error || data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error resuming advertisement:', error);
@@ -734,7 +813,7 @@ class AdvertisementFilters {
                 alert('Advertisement started successfully!');
                 this.loadAdvertisements();
             } else {
-                alert('Failed to start advertisement: ' + (data.message || 'Unknown error'));
+                alert('Failed to start advertisement: ' + (data.error || data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error starting advertisement:', error);
@@ -763,7 +842,7 @@ class AdvertisementFilters {
                 alert('Advertisement cancelled successfully!');
                 this.loadAdvertisements();
             } else {
-                alert('Failed to cancel advertisement: ' + (data.message || 'Unknown error'));
+                alert('Failed to cancel advertisement: ' + (data.error || data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error cancelling advertisement:', error);
@@ -791,7 +870,7 @@ class AdvertisementFilters {
                 alert('Advertisement deleted successfully!');
                 this.loadAdvertisements();
             } else {
-                alert('Failed to delete advertisement: ' + (data.message || 'Unknown error'));
+                alert('Failed to delete advertisement: ' + (data.error || data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error deleting advertisement:', error);
@@ -893,7 +972,7 @@ class AdvertisementFilters {
                 alert('Advertisement renewed successfully!');
                 this.loadAdvertisements();
             } else {
-                alert('Failed to renew advertisement: ' + (data.message || 'Unknown error'));
+                alert('Failed to renew advertisement: ' + (data.error || data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error renewing advertisement:', error);
@@ -928,7 +1007,7 @@ class AdvertisementFilters {
                 alert('Advertisement duplicated successfully!');
                 this.loadAdvertisements();
             } else {
-                alert('Failed to duplicate advertisement: ' + (data.message || 'Unknown error'));
+                alert('Failed to duplicate advertisement: ' + (data.error || data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error duplicating advertisement:', error);
@@ -957,7 +1036,7 @@ class AdvertisementFilters {
                 alert('Advertisement archived successfully!');
                 this.loadAdvertisements();
             } else {
-                alert('Failed to archive advertisement: ' + (data.message || 'Unknown error'));
+                alert('Failed to archive advertisement: ' + (data.error || data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error archiving advertisement:', error);

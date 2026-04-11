@@ -48,7 +48,8 @@
 /* Cards and tables with smooth transitions */
 .scheduled-ads-table,
 .calendar-card,
-.analytics-card {
+.analytics-card,
+.rotation-settings-card {
   background-color: var(--bg-card);
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-md);
@@ -57,11 +58,62 @@
   transition: box-shadow var(--transition-normal), transform var(--transition-normal);
 }
 
+/* Make the scheduled ads list scrollable */
+.scheduled-ads-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.scheduled-ads-scroll {
+  max-height: 65vh;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
 .scheduled-ads-table:hover,
 .calendar-card:hover,
-.analytics-card:hover {
+.analytics-card:hover,
+.rotation-settings-card:hover {
   box-shadow: var(--shadow-lg);
   transform: translateY(-2px);
+}
+
+/* Rotation Settings */
+.rotation-grid {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.rotation-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-secondary);
+}
+
+.rotation-label {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.rotation-field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rotation-help {
+  margin-top: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.rotation-actions {
+  margin-top: var(--spacing-md);
 }
 
 /* Sidebar layout */

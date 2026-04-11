@@ -15,6 +15,19 @@ if (!$userId) {
     header('Location: /2nd-Year-Group-Project/FixLanka/login');
     exit;
 }
+
+// Load service categories for the category dropdown (DB-driven)
+$serviceCategories = [];
+try {
+    require_once __DIR__ . '/../../../config/database.php';
+    if (isset($pdo)) {
+        $stmt = $pdo->query('SELECT category_id, name FROM category ORDER BY name');
+        $serviceCategories = $stmt->fetchAll();
+    }
+} catch (Exception $e) {
+    // Non-fatal: dropdown will still render the placeholder.
+    error_log('Failed to load service categories for repairer profile: ' . $e->getMessage());
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -68,7 +81,7 @@ if (!$userId) {
                             <div class="profile-left-column">
                                 <div class="profile-photo-section">
                                     <div class="profile-photo-container">
-                                        <img src="../common/user.png" alt="Profile Photo" class="profile-photo" id="profile-photo">
+                                        <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Profile Photo" class="profile-photo" id="profile-photo">
                                         <div class="profile-photo-overlay">
                                             <button class="photo-upload-btn" id="photo-upload-btn">
                                                 <i class="fas fa-camera"></i>
@@ -146,27 +159,25 @@ if (!$userId) {
                                                 <label for="service-category" class="form-label">Service Category</label>
                                                 <select id="service-category" name="service-category" class="form-select" disabled>
                                                     <option value="">Select Category</option>
-                                                    <option value="1">Plumbing</option>
-                                                    <option value="2">Electrical</option>
-                                                    <option value="3">HVAC</option>
-                                                    <option value="4">Cleaning</option>
-                                                    <option value="5">Carpentry</option>
-                                                    <option value="6">Painting</option>
-                                                    <option value="7">Appliance Repair</option>
-                                                    <option value="8">Roofing</option>
-                                                    <option value="9">Landscaping</option>
-                                                    <option value="10">Pest Control</option>
-                                                    <option value="11">Home Security</option>
-                                                    <option value="12">Interior Design</option>
-                                                    <option value="13">Flooring</option>
-                                                    <option value="14">Masonry</option>
-                                                    <option value="15">Welding</option>
-                                                    <option value="16">Glass & Mirror</option>
-                                                    <option value="17">Tile Work</option>
-                                                    <option value="18">Drywall</option>
-                                                    <option value="19">Insulation</option>
-                                                    <option value="20">Window Installation</option>
+                                                    <?php foreach ($serviceCategories as $cat): ?>
+                                                        <option value="<?php echo htmlspecialchars((string)$cat['category_id']); ?>">
+                                                            <?php echo htmlspecialchars((string)$cat['name']); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
                                                 </select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="service-category-name" class="form-label">Service Category (Current)</label>
+                                                <input type="text" id="service-category-name" class="form-input" value="" readonly>
+                                            </div>
+
+                                            <div class="form-group form-group-full">
+                                                <label class="form-label">Skills (Tags)</label>
+                                                <div class="skills-tag-input">
+                                                    <div class="skill-tags" id="skillsTags"></div>
+                                                    <input type="text" id="skillsInput" class="form-input" placeholder="Type a skill and press Enter" readonly>
+                                                </div>
                                             </div>
                                             <div class="form-group form-group-full">
                                                 <label class="form-label">Working Districts</label>
@@ -380,6 +391,7 @@ if (!$userId) {
         // Pass user ID to JavaScript
         window.currentUserId = <?php echo json_encode((int)$userId); ?>;
     </script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/profile.js"></script>
 </body>
 </html>

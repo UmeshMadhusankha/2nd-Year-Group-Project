@@ -11,6 +11,11 @@ require_once __DIR__ . '/_components/Common.php';
 require_once __DIR__ . '/../../config/databse.php';
 require_once __DIR__ . '/../../models/NotificationModel.php';
 
+$currentUser = function_exists('getCurrentUser') ? getCurrentUser() : null;
+$currentUserId = (int)($currentUser['id'] ?? ($_SESSION['user_id'] ?? 0));
+$currentUserRole = (string)($currentUser['role'] ?? ($_SESSION['user_role'] ?? 'moderator'));
+$currentUserName = (string)($currentUser['name'] ?? ($_SESSION['user_name'] ?? 'Moderator'));
+
 // Handle POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -32,7 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $recipientTypeMap = ['all' => 'all', 'providers' => 'repairer', 'customers' => 'user', 'companies' => 'company'];
                 $recipient_type = $recipientTypeMap[$recipients] ?? 'all';
                 
-                $model->createNotification($title, $message, $recipient_type, 'sent');
+                $model->createNotification($title, $message, $recipient_type, 'sent', [
+                    'id' => $currentUserId,
+                    'role' => $currentUserRole,
+                    'name' => $currentUserName,
+                ]);
                 $_SESSION['success_message'] = 'Notification sent successfully!';
                 break;
                 
@@ -50,7 +59,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $recipientTypeMap = ['all' => 'all', 'providers' => 'repairer', 'customers' => 'user', 'companies' => 'company'];
                 $recipient_type = $recipientTypeMap[$recipients] ?? 'all';
                 
-                $model->updateNotification($notification_id, $title, $message, $recipient_type);
+                $existing = $model->getNotificationById($notification_id);
+                if (!$existing) {
+                    $_SESSION['error_message'] = 'Notification not found';
+                    break;
+                }
+
+                if (strtolower($currentUserRole) === 'moderator' && strtolower((string)($existing['created_by_role'] ?? '')) === 'admin') {
+                    $_SESSION['error_message'] = 'Moderator cannot edit notifications created by admin';
+                    break;
+                }
+
+                $updated = $model->updateNotification($notification_id, $title, $message, $recipient_type, [
+                    'id' => $currentUserId,
+                    'role' => $currentUserRole,
+                    'name' => $currentUserName,
+                ]);
+                if (!$updated) {
+                    $_SESSION['error_message'] = 'Unable to update notification';
+                    break;
+                }
                 $_SESSION['success_message'] = 'Notification updated successfully!';
                 break;
                 
@@ -62,7 +90,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     break;
                 }
                 
-                $rowsAffected = $model->deleteNotification($notification_id);
+                $existing = $model->getNotificationById($notification_id);
+                if (!$existing) {
+                    $_SESSION['error_message'] = 'Notification not found';
+                    break;
+                }
+
+                if (strtolower($currentUserRole) === 'moderator' && strtolower((string)($existing['created_by_role'] ?? '')) === 'admin') {
+                    $_SESSION['error_message'] = 'Moderator cannot delete notifications created by admin';
+                    break;
+                }
+
+                $rowsAffected = $model->deleteNotification($notification_id, [
+                    'id' => $currentUserId,
+                    'role' => $currentUserRole,
+                    'name' => $currentUserName,
+                ]);
                 
                 if ($rowsAffected > 0) {
                     $_SESSION['success_message'] = 'Notification deleted successfully!';
@@ -87,7 +130,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch data
 try {
     $model = new NotificationModel($pdo);
-    $recentNotifications = $model->getRecentNotifications(5);
+    // For moderation/management view, show the latest notifications regardless of recipient type.
+    $recentNotifications = array_slice($model->getAllNotifications(), 0, 5);
     $stats = $model->getNotificationStats();
 } catch (Exception $e) {
     error_log("Error: " . $e->getMessage());
@@ -102,7 +146,7 @@ $successMessage = $_SESSION['success_message'] ?? '';
 $errorMessage = $_SESSION['error_message'] ?? '';
 unset($_SESSION['success_message'], $_SESSION['error_message']);
 
-$pageTitle = 'Notifications Dashboard';
+$pageTitle = 'Notifications';
 $pageDescription = 'Send notifications and manage communication';
 
 require_once __DIR__ . '/_components/notifications/mock-data.php';
@@ -160,7 +204,7 @@ $templates = getNotificationTemplates() ?? [];
                     <!-- Page Header -->
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-3xl font-bold tracking-tight text-foreground">Notifications Dashboard</h2>
+                            <h2 class="text-3xl font-bold tracking-tight text-foreground">Notifications</h2>
                             <p class="text-muted-foreground">Send notifications and manage user communication with powerful filtering and sorting</p>
                         </div>
                         <div class="flex items-center space-x-3">
@@ -282,7 +326,7 @@ $templates = getNotificationTemplates() ?? [];
                                     </div>
                                 </div>
 
-                                <div class="space-y-4">
+                                <div class="space-y-4 recent-notifications-list">
                                     <?php if (empty($recentNotifications)): ?>
                                         <div class="text-center py-8 text-muted-foreground">
                                             <i data-lucide="inbox" class="h-12 w-12 mx-auto mb-2 opacity-50"></i>
@@ -292,10 +336,21 @@ $templates = getNotificationTemplates() ?? [];
                                         <?php foreach ($recentNotifications as $n): 
                                             $recipientDisplay = ['all' => 'All Users', 'repairer' => 'Service Providers', 'user' => 'Customers', 'company' => 'Companies'];
                                             $displayRecipient = $recipientDisplay[$n['recipient_type']] ?? $n['recipient_type'];
+                                            $creatorRole = strtolower((string)($n['created_by_role'] ?? ''));
+                                            $creatorName = trim((string)($n['created_by_name'] ?? ''));
+                                            if ($creatorName === '') {
+                                                $creatorName = $creatorRole === 'admin' ? 'Admin' : ($creatorRole === 'moderator' ? 'Moderator' : 'System');
+                                            }
+                                            $isAdminCreated = $creatorRole === 'admin';
                                             
                                             $statusClass = 'badge-sent';
                                             if ($n['status'] === 'pending') $statusClass = 'badge-pending';
                                             if ($n['status'] === 'failed') $statusClass = 'badge-failed';
+
+                                            $displayDateRaw = $n['send_date'] ?? ($n['created_at'] ?? null);
+                                            if ($displayDateRaw === null && isset($n['date'], $n['time'])) {
+                                                $displayDateRaw = $n['date'] . ' ' . $n['time'];
+                                            }
                                         ?>
                                         <div class="notification-item">
                                             <div class="notification-header">
@@ -311,18 +366,21 @@ $templates = getNotificationTemplates() ?? [];
                                             <div class="notification-meta">
                                                 <div class="flex items-center space-x-4">
                                                     <span>To: <?php echo htmlspecialchars($displayRecipient); ?></span>
-                                                    <span><?php echo date('M d, Y H:i', strtotime($n['send_date'])); ?></span>
+                                                    <span>Created by: <?php echo htmlspecialchars($creatorName); ?></span>
+                                                    <span>
+                                                        <?php echo $displayDateRaw ? date('M d, Y H:i', strtotime((string)$displayDateRaw)) : ''; ?>
+                                                    </span>
                                                 </div>
                                             </div>
                                             
                                             <div class="notification-footer">
                                                 <div class="flex items-center space-x-2">
-                                                    <button type="button" onclick='openEditModal(<?php echo json_encode($n, JSON_HEX_APOS | JSON_HEX_QUOT); ?>)' class="notification-action-btn edit-btn">
+                                                    <button type="button" onclick='openEditModal(<?php echo json_encode($n, JSON_HEX_APOS | JSON_HEX_QUOT); ?>)' class="notification-action-btn edit-btn" <?php echo ($isAdminCreated && $currentUserRole === 'moderator') ? 'disabled title="Admin-created notifications cannot be edited by moderators"' : ''; ?>>
                                                         <i data-lucide="edit" class="h-3 w-3"></i>
                                                         Edit
                                                     </button>
                                                     
-                                                    <button type="button" onclick="openDeleteModal(<?php echo $n['notification_id']; ?>)" class="notification-action-btn delete-btn">
+                                                    <button type="button" onclick="openDeleteModal(<?php echo $n['notification_id']; ?>)" class="notification-action-btn delete-btn" <?php echo ($isAdminCreated && $currentUserRole === 'moderator') ? 'disabled title="Admin-created notifications cannot be deleted by moderators"' : ''; ?>>
                                                         <i data-lucide="trash-2" class="h-3 w-3"></i>
                                                         Delete
                                                     </button>
@@ -440,6 +498,7 @@ $templates = getNotificationTemplates() ?? [];
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
+        const currentUserRole = <?php echo json_encode($currentUserRole); ?>;
         
         // Template use function
         function useTemplate(template) {
@@ -463,6 +522,10 @@ $templates = getNotificationTemplates() ?? [];
         
         // Edit modal functions
         function openEditModal(n) {
+            if (currentUserRole === 'moderator' && String(n.created_by_role || '').toLowerCase() === 'admin') {
+                alert('Admin-created notifications cannot be edited by moderators.');
+                return;
+            }
             const map = {'all': 'all', 'repairer': 'providers', 'user': 'customers', 'company': 'companies'};
             document.getElementById('editNotificationId').value = n.notification_id;
             document.getElementById('editTitle').value = n.title;

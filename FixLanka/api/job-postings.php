@@ -58,16 +58,119 @@ try {
     ]);
 }
 
+function isMissingOrBlankField(array $data, string $field): bool {
+    if (!array_key_exists($field, $data)) {
+        return true;
+    }
+
+    $value = $data[$field];
+    if ($value === null) {
+        return true;
+    }
+
+    if (is_string($value)) {
+        return trim($value) === '';
+    }
+
+    return false;
+}
+
 /**
  * Handle GET requests
  */
 function handleGet($model, $action) {
     switch ($action) {
         case 'browse':
-            // Get all open job postings for repairers to browse
+            // Repairer-side: browse open job postings across companies
+            global $pdo;
+
+            // Ensure `companyjobpost` exists (auto-renames legacy `job_postings`/`job_posting` if present)
+            if (is_object($model) && method_exists($model, 'ensureTable')) {
+                $model->ensureTable();
+            }
+
+            $jobTable = (is_object($model) && method_exists($model, 'getTableName'))
+                ? $model->getTableName()
+                : 'companyjobpost';
+
+            $columnExists = function (string $table, string $column) use ($pdo): bool {
+                try {
+                    $stmt = $pdo->prepare(
+                        'SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS '
+                        . 'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t AND COLUMN_NAME = :c LIMIT 1'
+                    );
+                    $stmt->execute([':t' => $table, ':c' => $column]);
+                    return (bool)$stmt->fetchColumn();
+                } catch (Throwable $e) {
+                    return false;
+                }
+            };
+
+            $firstExistingColumn = function (string $table, array $candidates) use ($columnExists): ?string {
+                foreach ($candidates as $c) {
+                    if ($columnExists($table, (string)$c)) {
+                        return (string)$c;
+                    }
+                }
+                return null;
+            };
+
+            $dateCol = $firstExistingColumn($jobTable, [
+                'created_at',
+                'createdAt',
+                'posted_date',
+                'postedDate',
+                'posting_date',
+                'date_created',
+                'dateCreated',
+                'created_on',
+                'createdOn',
+                'updated_at',
+                'updatedAt',
+            ]);
+
+            $postedDateSelect = $dateCol ? ("jp.`{$dateCol}` AS posted_date") : 'NULL AS posted_date';
+            $orderBy = $dateCol ? ("jp.`{$dateCol}` DESC") : 'jp.posting_id DESC';
+
             $category = $_GET['category'] ?? null;
+            $location = $_GET['location'] ?? null;
             $search = $_GET['search'] ?? null;
-            $postings = $model->getAllOpen($category, $search);
+
+            $sql = "SELECT 
+                        jp.*, 
+                        c.name AS company_name,
+                        {$postedDateSelect},
+                        (SELECT COUNT(*) FROM repairer_applications ra WHERE ra.job_posting_id = jp.posting_id) AS application_count
+                    FROM {$jobTable} jp
+                    JOIN company c ON jp.company_id = c.company_id
+                    WHERE jp.status = 'open'";
+
+            $params = [];
+
+            if (!empty($category) && $category !== 'all') {
+                $sql .= " AND jp.category = ?";
+                $params[] = $category;
+            }
+
+            if (!empty($location) && $location !== 'all') {
+                $sql .= " AND jp.location LIKE ?";
+                $params[] = "%{$location}%";
+            }
+
+            if (!empty($search)) {
+                $sql .= " AND (jp.title LIKE ? OR jp.description LIKE ? OR c.name LIKE ?)";
+                $like = "%{$search}%";
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+            }
+
+            $sql .= " ORDER BY {$orderBy}";
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $postings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
             echo json_encode([
                 'success' => true,
                 'postings' => $postings
@@ -109,6 +212,14 @@ function handleGet($model, $action) {
             if (!$posting) {
                 throw new Exception('Job posting not found');
             }
+
+            // Add company name and posted_date for repairer UI
+            global $pdo;
+            $stmt = $pdo->prepare("SELECT name FROM company WHERE company_id = ? LIMIT 1");
+            $stmt->execute([$posting['company_id']]);
+            $posting['company_name'] = $stmt->fetchColumn() ?: null;
+            $posting['posted_date'] = $posting['created_at']
+                ?? ($posting['createdAt'] ?? ($posting['posted_date'] ?? ($posting['postedDate'] ?? ($posting['date_created'] ?? ($posting['dateCreated'] ?? null)))));
             
             $posting['application_count'] = $model->getApplicationCount($postingId);
             
@@ -170,7 +281,7 @@ function handlePost($model, $action) {
                  'min_experience', 'min_budget', 'max_budget', 'location'];
     
     foreach ($required as $field) {
-        if (empty($data[$field])) {
+        if (isMissingOrBlankField($data, $field)) {
             throw new Exception("Field '$field' is required");
         }
     }
@@ -189,13 +300,33 @@ function handlePost($model, $action) {
     
     // Fetch the created posting
     $posting = $model->getById($postingId);
-    
-    echo json_encode([
+
+    $response = [
         'success' => true,
         'message' => 'Job posting created successfully',
         'posting_id' => $postingId,
         'posting' => $posting
-    ]);
+    ];
+
+    // Debug helper: shows what was received vs what was stored.
+    if (isset($_GET['debug']) && $_GET['debug'] === '1') {
+        $response['debug'] = [
+            'received' => [
+                'application_deadline' => $data['application_deadline'] ?? null,
+                'applicationDeadline' => $data['applicationDeadline'] ?? null,
+                'priority_level' => $data['priority_level'] ?? null,
+                'priorityLevel' => $data['priorityLevel'] ?? null,
+            ],
+            'stored' => [
+                'application_deadline' => $posting['application_deadline'] ?? null,
+                'applicationDeadline' => $posting['applicationDeadline'] ?? null,
+                'priority_level' => $posting['priority_level'] ?? null,
+                'priorityLevel' => $posting['priorityLevel'] ?? null,
+            ]
+        ];
+    }
+    
+    echo json_encode($response);
 }
 
 /**
@@ -242,7 +373,7 @@ function handlePut($model, $action) {
                          'min_experience', 'min_budget', 'max_budget', 'location'];
             
             foreach ($required as $field) {
-                if (empty($data[$field])) {
+                if (isMissingOrBlankField($data, $field)) {
                     throw new Exception("Field '$field' is required");
                 }
             }
@@ -256,12 +387,31 @@ function handlePut($model, $action) {
             
             // Fetch updated posting
             $posting = $model->getById($postingId);
-            
-            echo json_encode([
+
+            $response = [
                 'success' => $success,
                 'message' => 'Job posting updated successfully',
                 'posting' => $posting
-            ]);
+            ];
+
+            if (isset($_GET['debug']) && $_GET['debug'] === '1') {
+                $response['debug'] = [
+                    'received' => [
+                        'application_deadline' => $data['application_deadline'] ?? null,
+                        'applicationDeadline' => $data['applicationDeadline'] ?? null,
+                        'priority_level' => $data['priority_level'] ?? null,
+                        'priorityLevel' => $data['priorityLevel'] ?? null,
+                    ],
+                    'stored' => [
+                        'application_deadline' => $posting['application_deadline'] ?? null,
+                        'applicationDeadline' => $posting['applicationDeadline'] ?? null,
+                        'priority_level' => $posting['priority_level'] ?? null,
+                        'priorityLevel' => $posting['priorityLevel'] ?? null,
+                    ]
+                ];
+            }
+
+            echo json_encode($response);
             break;
     }
 }

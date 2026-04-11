@@ -58,14 +58,14 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: 
+    background-image:
         radial-gradient(circle at 20% 50%, rgba(10, 186, 181, 0.03) 0%, transparent 50%),
         radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.03) 0%, transparent 50%);
     pointer-events: none;
     z-index: 0;
 }
 
-body > * {
+body>* {
     position: relative;
     z-index: 1;
 }
@@ -88,6 +88,7 @@ body > * {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -182,9 +183,12 @@ body > * {
 }
 
 @keyframes iconPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.1);
     }
@@ -212,6 +216,7 @@ body > * {
         opacity: 0;
         transform: translateY(-20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -238,10 +243,13 @@ body > * {
 }
 
 @keyframes alertIconPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
         transform: scale(1);
     }
+
     50% {
         opacity: 0.8;
         transform: scale(1.1);
@@ -362,9 +370,12 @@ body > * {
 }
 
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.05);
     }
@@ -424,9 +435,12 @@ body > * {
 }
 
 @keyframes bounce {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translateY(0);
     }
+
     50% {
         transform: translateY(-3px);
     }
@@ -603,6 +617,7 @@ body > * {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -719,9 +734,12 @@ body > * {
 }
 
 @keyframes urgentPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
     }
+
     50% {
         box-shadow: 0 4px 16px rgba(220, 38, 38, 0.6);
     }
@@ -791,7 +809,7 @@ body > * {
     flex-shrink: 0;
 }
 
-.job-detail > div {
+.job-detail>div {
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -1045,6 +1063,7 @@ body > * {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -1075,9 +1094,12 @@ body > * {
 }
 
 @keyframes float {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translateY(0);
     }
+
     50% {
         transform: translateY(-10px);
     }
@@ -1149,7 +1171,8 @@ body > * {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10001; /* Higher than navbar (10000) */
+    z-index: 10001;
+    /* Higher than navbar (10000) */
     opacity: 0;
     visibility: hidden;
     transition: all var(--transition-normal);
@@ -1339,7 +1362,7 @@ body > * {
     accent-color: var(--primary-color);
 }
 
-.checkbox-item input[type="checkbox"]:checked + .checkbox-label {
+.checkbox-item input[type="checkbox"]:checked+.checkbox-label {
     color: var(--primary-color);
     font-weight: 600;
 }
@@ -1908,7 +1931,8 @@ body > * {
     }
 
     .filter-controls::before {
-        display: none; /* Hide decorative element on mobile */
+        display: none;
+        /* Hide decorative element on mobile */
     }
 
     .filter-tabs {

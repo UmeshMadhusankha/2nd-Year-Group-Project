@@ -187,5 +187,42 @@ class JobRequest {
             return false;
         }
     }
+
+    /**
+     * READ - Get all open job requests (for companies)
+     */
+    public function getAllOpen($filters = []) {
+        try {
+            $sql = "SELECT jr.*, c.name as category_name, CONCAT(u.f_name, ' ', u.l_name) as user_name, l.address, l.district 
+                    FROM JobRequest jr
+                    LEFT JOIN Category c ON jr.category_id = c.category_id
+                    LEFT JOIN User u ON jr.user_id = u.user_id
+                    LEFT JOIN location l ON jr.location_id = l.location_id
+                    WHERE jr.status = 'Open'";
+            
+            $params = [];
+            
+            // Filter by district if provided
+            if (!empty($filters['district'])) {
+                $sql .= " AND l.district = ?";
+                $params[] = $filters['district'];
+            }
+            
+            // Filter by category if provided
+            if (!empty($filters['category_id'])) {
+                $sql .= " AND jr.category_id = ?";
+                $params[] = $filters['category_id'];
+            }
+            
+            $sql .= " ORDER BY jr.dateCreated DESC";
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error getting open job requests: " . $e->getMessage());
+            return [];
+        }
+    }
 }
 ?>

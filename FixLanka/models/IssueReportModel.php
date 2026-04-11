@@ -305,4 +305,161 @@ class IssueReportModel
     {
         return $this->pdo->rollBack();
     }
+
+    private function columnExists(string $table, string $column): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column LIMIT 1");
+            $stmt->execute([
+                ':table' => $table,
+                ':column' => $column
+            ]);
+            return (bool)$stmt->fetchColumn();
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    private function getEnumValues(string $table, string $column): array
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column LIMIT 1");
+            $stmt->execute([
+                ':table' => $table,
+                ':column' => $column
+            ]);
+            $type = (string)$stmt->fetchColumn();
+            if ($type === '' || stripos($type, 'enum(') !== 0) {
+                return [];
+            }
+
+            $inside = substr($type, 5, -1);
+            $parts = str_getcsv($inside, ',', "'");
+            return array_values(array_filter(array_map(static function ($v) {
+                return trim((string)$v);
+            }, $parts)));
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    private function ensureReporterUserId(int $repairerId, string $email, string $name): int
+    {
+        $fallbackId = max(1, $repairerId);
+
+        if ($email !== '') {
+            try {
+                $lookup = $this->pdo->prepare("SELECT user_id FROM User WHERE LOWER(email) = LOWER(:email) LIMIT 1");
+                $lookup->execute([':email' => $email]);
+                $existing = (int)($lookup->fetchColumn() ?: 0);
+                if ($existing > 0) {
+                    return $existing;
+                }
+
+                $parts = preg_split('/\s+/', trim($name));
+                $firstName = trim((string)($parts[0] ?? 'Repairer'));
+                $lastName = trim((string)(count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : 'Reporter'));
+                if ($firstName === '') $firstName = 'Repairer';
+                if ($lastName === '') $lastName = 'Reporter';
+
+                $passwordHash = password_hash(bin2hex(random_bytes(8)), PASSWORD_BCRYPT);
+                $insert = $this->pdo->prepare("INSERT INTO User (f_name, l_name, email, password) VALUES (:f_name, :l_name, :email, :password)");
+                $insert->execute([
+                    ':f_name' => $firstName,
+                    ':l_name' => $lastName,
+                    ':email' => $email,
+                    ':password' => $passwordHash
+                ]);
+
+                $created = (int)$this->pdo->lastInsertId();
+                if ($created > 0) {
+                    return $created;
+                }
+            } catch (Throwable $e) {
+                try {
+                    $retry = $this->pdo->prepare("SELECT user_id FROM User WHERE LOWER(email) = LOWER(:email) LIMIT 1");
+                    $retry->execute([':email' => $email]);
+                    $found = (int)($retry->fetchColumn() ?: 0);
+                    if ($found > 0) {
+                        return $found;
+                    }
+                } catch (Throwable $ignored) {
+                }
+            }
+        }
+
+        return $fallbackId;
+    }
+
+    public function createIssueFromRepairer(int $repairerId, string $subject, string $message, string $reporterEmail = '', string $reporterName = ''): int
+    {
+        $repairerId = (int)$repairerId;
+        if ($repairerId <= 0) {
+            throw new InvalidArgumentException('Invalid repairer id');
+        }
+
+        $subject = trim($subject);
+        $message = trim($message);
+        if ($subject === '' || $message === '') {
+            throw new InvalidArgumentException('Subject and message are required');
+        }
+
+        $reporterUserId = $this->ensureReporterUserId($repairerId, trim($reporterEmail), trim($reporterName));
+        $description = $subject . "\n\n" . $message;
+
+        $columns = ['reportedBy_id', 'target_id', 'target_type', 'description'];
+        $placeholders = [':reported_by_id', ':target_id', ':target_type', ':description'];
+        $params = [
+            ':reported_by_id' => $reporterUserId,
+            ':target_id' => $repairerId,
+            ':target_type' => 'repairer',
+            ':description' => $description,
+        ];
+
+        if ($this->columnExists('IssueReport', 'priority')) {
+            $columns[] = 'priority';
+            $placeholders[] = ':priority';
+            $params[':priority'] = 'medium';
+        }
+
+        if ($this->columnExists('IssueReport', 'status')) {
+            $statusValues = array_map('strtolower', $this->getEnumValues('IssueReport', 'status'));
+            $status = in_array('pending', $statusValues, true) ? 'pending' : 'open';
+            $columns[] = 'status';
+            $placeholders[] = ':status';
+            $params[':status'] = $status;
+        }
+
+        $sql = "INSERT INTO IssueReport (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        return (int)$this->pdo->lastInsertId();
+    }
+
+    public function getIssuesForRepairer(int $repairerId): array
+    {
+        $repairerId = (int)$repairerId;
+        if ($repairerId <= 0) {
+            return [];
+        }
+
+        $hasUpdatedAt = $this->columnExists('IssueReport', 'updated_at');
+
+        $sql = "SELECT issue_id, description, status, date AS created_at"
+            . ($hasUpdatedAt ? ", updated_at" : "")
+            . " FROM IssueReport WHERE target_type = :target_type AND target_id = :repairer_id ORDER BY issue_id DESC";
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                ':target_type' => 'repairer',
+                ':repairer_id' => $repairerId,
+            ]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            error_log('Model Error - getIssuesForRepairer: ' . $e->getMessage());
+            return [];
+        }
+    }
 }

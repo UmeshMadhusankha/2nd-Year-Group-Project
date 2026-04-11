@@ -1,4 +1,6 @@
 <?php
+
+require_once __DIR__ . '/SystemNotificationService.php';
 /**
  * Project Model
  * 
@@ -16,6 +18,7 @@ class Project
      * @var PDO
      */
     private $pdo;
+    private SystemNotificationService $notifier;
 
     /**
      * Status constants for projects
@@ -34,6 +37,7 @@ class Project
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
+        $this->notifier = new SystemNotificationService($pdo);
     }
 
     /**
@@ -99,7 +103,9 @@ class Project
                         u.l_name as customer_last_name,
                         u.email as customer_email,
                         u.address as customer_address,
-                        c.name as company_name
+                        u.district as customer_district,
+                        c.name as company_name,
+                        ct.contract_id
                     FROM Project p
                     LEFT JOIN User u ON p.customer_id = u.user_id
                     LEFT JOIN Company c ON p.company_id = c.company_id
@@ -173,8 +179,8 @@ class Project
                         u.f_name as customer_first_name,
                         u.l_name as customer_last_name,
                         u.email as customer_email,
-                        u.phoneNumber as customer_phone,
                         u.address as customer_address,
+                        u.district as customer_district,
                         c.name as company_name,
                         c.email as company_email,
                         c.contact_no as company_contact
@@ -211,12 +217,17 @@ class Project
      * Start a new project from an accepted contract
      * 
      * @param int $contractId Contract ID
+     * @param int[] $employeeIds Company employee IDs to assign
+     * @param int[] $freelancerAssignmentIds Freelancer assignment IDs to attach
      * @return array Success/error response with project_id
      */
-    public function startFromContract($contractId)
+    public function startFromContract($contractId, array $employeeIds = [], array $freelancerAssignmentIds = [])
     {
         try {
             $this->pdo->beginTransaction();
+
+            $employeeIds = array_values(array_unique(array_filter(array_map('intval', $employeeIds), fn($v) => $v > 0)));
+            $freelancerAssignmentIds = array_values(array_unique(array_filter(array_map('intval', $freelancerAssignmentIds), fn($v) => $v > 0)));
 
             // 1. Fetch Contract Data
             $sqlContract = "SELECT c.*, 'General Maintenance' as category 
@@ -288,12 +299,47 @@ class Project
             $stmtUpdate = $this->pdo->prepare($sqlUpdate);
             $stmtUpdate->execute([':pid' => $projectId, ':cid' => $contractId]);
 
+            // 4. Assign employees (optional)
+            if (count($employeeIds) > 0) {
+                $this->ensureProjectEmployeeAssignmentsTable();
+                $this->assignEmployeesToProject((int)$projectId, (int)$contract['company_id'], $employeeIds);
+            }
+
+            // 5. Attach accepted freelancer offers
+            if (count($freelancerAssignmentIds) > 0) {
+                $this->attachFreelancerAssignmentsToProject((int)$projectId, (int)$contractId, (int)$contract['company_id'], $freelancerAssignmentIds);
+            }
+
             $this->pdo->commit();
+
+            $customerId = (int)($contract['customer_id'] ?? 0);
+            $companyId = (int)($contract['company_id'] ?? 0);
+            $titleLabel = $title;
+            if ($customerId > 0) {
+                $this->notifier->notify(
+                    'Project started',
+                    "Your project has started: {$titleLabel}.",
+                    'user',
+                    $customerId,
+                    ['role' => 'company', 'id' => $companyId, 'name' => 'Company']
+                );
+            }
+            if ($companyId > 0) {
+                $this->notifier->notify(
+                    'Project started',
+                    "Project started successfully from contract #{$contractId}.",
+                    'company',
+                    $companyId,
+                    ['role' => 'company', 'id' => $companyId, 'name' => 'Company']
+                );
+            }
 
             return [
                 'success' => true,
                 'message' => 'Project successfully started from contract.',
-                'project_id' => $projectId
+                'project_id' => $projectId,
+                'assigned_employees_count' => count($employeeIds),
+                'attached_freelancers_count' => count($freelancerAssignmentIds)
             ];
 
         } catch (Exception $e) {
@@ -303,6 +349,94 @@ class Project
                 'message' => $e->getMessage()
             ];
         }
+    }
+
+    private function ensureProjectEmployeeAssignmentsTable(): void
+    {
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS project_employee_assignments (
+            id INT(11) NOT NULL AUTO_INCREMENT,
+            project_id INT(11) NOT NULL,
+            employee_id INT(11) NOT NULL,
+            assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY unique_project_employee (project_id, employee_id),
+            CONSTRAINT fk_pea_project FOREIGN KEY (project_id) REFERENCES project(project_id) ON DELETE CASCADE,
+            CONSTRAINT fk_pea_employee FOREIGN KEY (employee_id) REFERENCES company_employees(employee_id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    }
+
+    private function assignEmployeesToProject(int $projectId, int $companyId, array $employeeIds): void
+    {
+        if (count($employeeIds) === 0) {
+            return;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($employeeIds), '?'));
+        $sql = "SELECT employee_id
+                FROM company_employees
+                WHERE company_id = ?
+                  AND status = 'active'
+                  AND employment_type IN ('full_time','part_time')
+                  AND (job_title IS NULL OR LOWER(job_title) <> 'freelancer')
+                  AND employee_id IN ($placeholders)";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(array_merge([$companyId], $employeeIds));
+        $validIds = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
+        $validIds = array_map('intval', $validIds);
+
+        if (count($validIds) !== count($employeeIds)) {
+            throw new Exception('One or more selected employees are invalid or not active staff for this company.');
+        }
+
+        $values = [];
+        $params = [];
+        foreach ($employeeIds as $eid) {
+            $values[] = '(?, ?)';
+            $params[] = $projectId;
+            $params[] = (int)$eid;
+        }
+
+        $sqlInsert = 'INSERT IGNORE INTO project_employee_assignments (project_id, employee_id) VALUES ' . implode(',', $values);
+        $stmtInsert = $this->pdo->prepare($sqlInsert);
+        $stmtInsert->execute($params);
+    }
+
+    private function attachFreelancerAssignmentsToProject(int $projectId, int $contractId, int $companyId, array $assignmentIds): void
+    {
+        if (count($assignmentIds) === 0) {
+            return;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($assignmentIds), '?'));
+
+        // Lock and validate first (avoid attaching already-linked or wrong-company offers)
+        $sqlCheck = "SELECT assignment_id
+                     FROM freelancer_assignments
+                     WHERE company_id = ?
+                       AND status = 'accepted'
+                       AND project_id IS NULL
+                       AND (contract_id IS NULL OR contract_id = ?)
+                       AND assignment_id IN ($placeholders)
+                     FOR UPDATE";
+        $stmt = $this->pdo->prepare($sqlCheck);
+        $stmt->execute(array_merge([$companyId, $contractId], $assignmentIds));
+        $valid = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
+        $valid = array_map('intval', $valid);
+
+        if (count($valid) !== count($assignmentIds)) {
+            throw new Exception('One or more selected freelancer offers are invalid, not accepted, or already linked to another project.');
+        }
+
+        // Attach to project (and link contract_id if it was NULL)
+        $sqlUpdate = "UPDATE freelancer_assignments
+                      SET project_id = ?, contract_id = COALESCE(contract_id, ?)
+                      WHERE company_id = ?
+                        AND status = 'accepted'
+                        AND project_id IS NULL
+                        AND (contract_id IS NULL OR contract_id = ?)
+                        AND assignment_id IN ($placeholders)";
+        $stmtUp = $this->pdo->prepare($sqlUpdate);
+        $stmtUp->execute(array_merge([$projectId, $contractId, $companyId, $contractId], $assignmentIds));
     }
 
     /**

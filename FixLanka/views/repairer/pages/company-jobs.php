@@ -106,10 +106,6 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                                     <option value="other">Other</option>
                                 </select>
                             </div>
-                            <div class="search-bar">
-                                <i class="fas fa-search"></i>
-                                <input type="text" id="jobSearchInput" placeholder="Search by job title, category, or location..." onkeyup="searchJobs()">
-                            </div>
                         </section>
 
                         <!-- Job Postings Grid -->
@@ -460,7 +456,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                 <button class="btn btn-secondary" onclick="closeJobDetailsDrawer()">
                     <i class="fas fa-times"></i> Close
                 </button>
-                <button class="btn btn-primary" onclick="openApplicationForm()">
+                <button class="btn btn-primary" id="jobApplyBtn" onclick="openApplicationForm()">
                     <i class="fas fa-paper-plane"></i> Apply Now
                 </button>
             </div>
@@ -753,7 +749,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                     <p id="assignmentDescription" style="color: var(--text-secondary); line-height: 1.6;"></p>
                 </div>
 
-                <div class="detail-section">
+                <div class="detail-section" id="assignmentUpdateSection">
                     <h4><i class="fas fa-tasks"></i> Update Status</h4>
                     <select id="jobStatus" class="form-select" onchange="updateAssignmentStatus()" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px;">
                         <option value="assigned">Assigned</option>
@@ -762,7 +758,7 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                     </select>
                 </div>
 
-                <div class="detail-section">
+                <div class="detail-section" id="assignmentNotesSection">
                     <h4><i class="fas fa-sticky-note"></i> Progress Notes</h4>
                     <textarea id="progressNote" rows="4" placeholder="Add notes about progress..." style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
                 </div>
@@ -771,11 +767,11 @@ $currentRepairerId = $_SESSION['user_id'] ?? 1;
                 <button class="btn btn-secondary" onclick="closeAssignmentDetailsDrawer()">
                     <i class="fas fa-times"></i> Close
                 </button>
-                <button class="btn btn-primary" onclick="saveProgressUpdate()">
-                    <i class="fas fa-save"></i> Save Update
+                <button class="btn btn-primary" id="assignmentAcceptBtn" onclick="acceptCurrentOffer()" style="display:none;">
+                    <i class="fas fa-check"></i> Accept Offer
                 </button>
-                <button class="btn btn-success" onclick="markAssignmentComplete()">
-                    <i class="fas fa-check"></i> Mark as Complete
+                <button class="btn btn-outline" id="assignmentDeclineBtn" onclick="declineCurrentOffer()" style="display:none;">
+                    <i class="fas fa-times"></i> Decline Offer
                 </button>
             </div>
         </div>

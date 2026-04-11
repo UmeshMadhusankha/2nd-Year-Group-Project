@@ -2147,8 +2147,10 @@ function submitContractForm(e) {
         contractData[key] = value;
     });
 
-    // Add selected project ID
-    contractData.project_id = document.getElementById('selectedQuotationId').value;
+    // This flow creates a contract from an accepted quotation.
+    // Do not send a fake project_id (it will fail FK constraints). The backend will create a project.
+    contractData.quotation_id = document.getElementById('selectedQuotationId').value;
+    delete contractData.project_id;
 
     const submitBtn = document.getElementById('formSubmitBtn');
     const originalText = submitBtn.innerHTML;

@@ -8,6 +8,7 @@
 const currentRepairerId = window.CURRENT_REPAIRER_ID || 0;
 const API_BASE = '/2nd-Year-Group-Project/FixLanka/api';
 let availableJobs = [];
+let directJobs = [];
 let submittedQuotes = [];
 
 // ===== Initialization =====
@@ -23,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function  () {
     initializeTabs();
     initializeFilters();
     loadAvailableJobs();
+    loadDirectJobs();
     loadSubmittedQuotations();
 });
 
@@ -48,6 +50,8 @@ function switchTab(tabName) {
 
     if (tabName === 'submitted-quotes') {
         loadSubmittedQuotations();
+    } else if (tabName === 'direct-jobs') {
+        loadDirectJobs(getCurrentFilters());
     }
 }
 
@@ -61,13 +65,18 @@ function initializeFilters() {
     if (resetBtn) resetBtn.addEventListener('click', resetFilters);
 }
 
-function applyFilters() {
-    const filters = {
+function getCurrentFilters() {
+    return {
         category: document.getElementById('category-filter')?.value || '',
         district: document.getElementById('location-filter')?.value || '',
         sort: document.getElementById('sort-filter')?.value || 'newest'
     };
+}
+
+function applyFilters() {
+    const filters = getCurrentFilters();
     loadAvailableJobs(filters);
+    loadDirectJobs(filters);
 }
 
 function resetFilters() {
@@ -78,6 +87,7 @@ function resetFilters() {
     if (loc) loc.value = '';
     if (sort) sort.value = 'newest';
     loadAvailableJobs();
+    loadDirectJobs();
 }
 
 // =========================================================================
@@ -85,8 +95,6 @@ function resetFilters() {
 // =========================================================================
 async function loadAvailableJobs(filters = {}) {
     const container = document.getElementById('jobs-grid-container');
-
-    // Show loading state
     container.innerHTML = `
         <div class="loading-state">
             <i class="fas fa-spinner fa-spin"></i>
@@ -119,6 +127,61 @@ async function loadAvailableJobs(filters = {}) {
     }
 }
 
+// =========================================================================
+//  LOAD DIRECT JOBS (READ)
+// =========================================================================
+async function loadDirectJobs(filters = {}) {
+    const container = document.getElementById('direct-jobs-grid-container');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading direct jobs...</p>
+        </div>`;
+
+    try {
+        const params = new URLSearchParams();
+        params.append('repairer_id', currentRepairerId);
+        if (filters.category) params.append('category', filters.category);
+        if (filters.district) params.append('district', filters.district);
+        if (filters.sort) params.append('sort', filters.sort);
+
+        const response = await fetch(`${API_BASE}/repairer-direct-jobs.php?${params.toString()}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const result = await response.json();
+
+        if (result.success) {
+            directJobs = result.data || [];
+            renderDirectJobs(directJobs);
+            updateDirectJobCounts(result.count || directJobs.length);
+        } else {
+            showContainerError('direct-jobs-grid-container', 'Failed to load direct jobs: ' + (result.error || 'Unknown error'));
+        }
+    } catch (err) {
+        console.error('Error loading direct jobs:', err);
+        showContainerError('direct-jobs-grid-container', 'Failed to load direct jobs. ' + err.message);
+    }
+}
+
+function renderDirectJobs(jobs) {
+    const container = document.getElementById('direct-jobs-grid-container');
+    if (!container) return;
+
+    if (!jobs.length) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-bullseye"></i>
+                <h3>No direct jobs</h3>
+                <p>No users have sent direct jobs to you at the moment.</p>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = jobs.map(job => createJobCard(job, true)).join('');
+}
+
 function renderJobs(jobs) {
     const container = document.getElementById('jobs-grid-container');
     if (!jobs.length) {
@@ -133,7 +196,7 @@ function renderJobs(jobs) {
     container.innerHTML = jobs.map(createJobCard).join('');
 }
 
-function createJobCard(job) {
+function createJobCard(job, isDirect = false) {
     const catClass = getCategoryClass(job.category_name);
     const urgClass = job.urgency === 'urgent' ? 'high' : 'low';
     const urgIcon = job.urgency === 'urgent' ? 'fa-exclamation-circle' : 'fa-info-circle';
@@ -142,6 +205,7 @@ function createJobCard(job) {
 
     return `
         <div class="job-card${alreadyQuoted ? ' already-quoted' : ''}" data-job-id="${job.request_id}">
+            ${isDirect ? `<div class="quoted-ribbon"><i class="fas fa-bullseye"></i> Direct Job</div>` : ''}
             ${alreadyQuoted ? `<div class="quoted-ribbon"><i class="fas fa-check-circle"></i> Quote Submitted</div>` : ''}
             <div class="job-header">
                 <div class="job-category-badge ${catClass}">
@@ -185,6 +249,11 @@ function createJobCard(job) {
                 </button>`}
             </div>
         </div>`;
+}
+
+function updateDirectJobCounts(total) {
+    setText('direct-jobs-badge', total);
+    setText('direct-jobs-count', `${total} direct job${total !== 1 ? 's' : ''} available`);
 }
 
 function updateJobCounts(total) {

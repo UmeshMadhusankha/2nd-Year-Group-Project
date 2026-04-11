@@ -2,7 +2,7 @@
 // NotificationController.php - Business logic layer for notification operations
 // Handles validation and coordinates between API and Model
 
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/databse.php';
 require_once __DIR__ . '/../models/NotificationModel.php';
 
 class NotificationController
@@ -78,12 +78,54 @@ class NotificationController
             
             $recipient_type = $recipientTypeMap[$user_type] ?? $user_type;
             
-            $count = $this->model->getNotificationCount($user_id, $recipient_type);
+            $count = $this->model->getUnreadNotificationCount($user_id, $recipient_type);
             
             $this->jsonResponse(['success' => true, 'count' => $count]);
         } catch (PDOException $e) {
             error_log("Error counting notifications: " . $e->getMessage());
             $this->jsonResponse(['success' => false, 'message' => 'Failed to count notifications'], 500);
+        }
+    }
+
+    /**
+     * Mark all notifications as read for a given user and type
+     */
+    public function markAllRead()
+    {
+        try {
+            $user_id = (int)($_POST['user_id'] ?? 0);
+            $user_type = $_POST['user_type'] ?? 'all';
+
+            if (!$user_id || empty($user_type)) {
+                $this->jsonResponse(['success' => false, 'message' => 'Invalid user'], 400);
+                return;
+            }
+
+            $rows = $this->model->markAllRead($user_id, $user_type);
+            $this->jsonResponse(['success' => true, 'updated' => $rows]);
+        } catch (PDOException $e) {
+            error_log("Error marking all notifications as read: " . $e->getMessage());
+            $this->jsonResponse(['success' => false, 'message' => 'Failed to update notifications'], 500);
+        }
+    }
+
+    /**
+     * Mark a single notification as read
+     */
+    public function markRead()
+    {
+        try {
+            $notification_id = (int)($_POST['notification_id'] ?? 0);
+            if (!$notification_id) {
+                $this->jsonResponse(['success' => false, 'message' => 'Notification ID is required'], 400);
+                return;
+            }
+
+            $rows = $this->model->markRead($notification_id);
+            $this->jsonResponse(['success' => true, 'updated' => $rows]);
+        } catch (PDOException $e) {
+            error_log("Error marking notification as read: " . $e->getMessage());
+            $this->jsonResponse(['success' => false, 'message' => 'Failed to update notification'], 500);
         }
     }
 

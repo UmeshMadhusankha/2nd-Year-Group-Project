@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 
+require_once __DIR__ . '/SystemNotificationService.php';
+
 class UserQuotesModel {
     private PDO $pdo;
     private ?bool $companyQuotationHasCompanyId = null;
@@ -65,25 +67,30 @@ class UserQuotesModel {
         $limit = max(1, min(50, (int)$limit));
         $offset = max(0, (int)$offset);
 
-        // IMPORTANT: PDO MySQL can throw "Invalid parameter number" when the same
-        // named placeholder is used multiple times (when emulation is off). Use
-        // distinct placeholders for each occurrence.
         $params = [
             ':user_id_repairer' => $userId,
-            ':user_id_company' => $userId,
+            ':user_id_company'  => $userId,
         ];
         $statusSqlRepairer = '';
-        $statusSqlCompany = '';
+        $statusSqlCompany  = '';
         if ($status !== null) {
             $params[':status_repairer'] = $status;
-            $params[':status_company'] = $status;
+            $params[':status_company']  = $status;
             $statusSqlRepairer = ' AND rq.status = :status_repairer ';
-            $statusSqlCompany = ' AND cq.status = :status_company ';
+            $statusSqlCompany  = ' AND cq.status = :status_company ';
         }
 
-        $hasCompanyId = $this->companyQuotationHasCompanyId();
+        $requestSqlRepairer = '';
+        $requestSqlCompany  = '';
+        if ($requestId !== null) {
+            $params[':request_id_repairer'] = $requestId;
+            $params[':request_id_company']  = $requestId;
+            $requestSqlRepairer = ' AND rq.request_id = :request_id_repairer ';
+            $requestSqlCompany  = ' AND cq.request_id = :request_id_company ';
+        }
 
-        $companyJoinSql = $hasCompanyId ? "LEFT JOIN company c ON cq.company_id = c.company_id" : "";
+        $hasCompanyId          = $this->companyQuotationHasCompanyId();
+        $companyJoinSql        = $hasCompanyId ? "LEFT JOIN company c ON cq.company_id = c.company_id" : "";
         $companyProviderNameSql = $hasCompanyId ? "COALESCE(c.name, 'Company')" : "'Company'";
         $companyProviderIdSql = $hasCompanyId ? "cq.company_id" : "NULL";
 
@@ -128,6 +135,7 @@ class UserQuotesModel {
                 INNER JOIN repairer r ON rq.repairer_id = r.repairer_id
                 WHERE jr.user_id = :user_id_repairer
                 $statusSqlRepairer
+                $requestSqlRepairer
 
                 UNION ALL
 
@@ -170,6 +178,7 @@ class UserQuotesModel {
                 $companyJoinSql
                 WHERE jr.user_id = :user_id_company
                 $statusSqlCompany
+                $requestSqlCompany
             ) q
             ORDER BY q.created_at DESC
             LIMIT :limit OFFSET :offset

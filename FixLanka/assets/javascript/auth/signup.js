@@ -2,6 +2,46 @@
 document.addEventListener('DOMContentLoaded', function() {
     const roleButtons = document.querySelectorAll('.role-btn');
     const forms = document.querySelectorAll('.signup-form');
+
+    // Repairer category: toggle "Other" input
+    const categorySelect = document.getElementById('category_id');
+    const categoryOtherGroup = document.getElementById('category_other_group');
+    const categoryCustomInput = document.getElementById('category_custom');
+
+    function syncCategoryOtherVisibility() {
+        if (!categorySelect || !categoryOtherGroup) return;
+        const isOther = categorySelect.value === 'other';
+        categoryOtherGroup.style.display = isOther ? 'block' : 'none';
+        if (categoryCustomInput) {
+            categoryCustomInput.required = isOther;
+            if (!isOther) categoryCustomInput.value = '';
+        }
+    }
+
+    if (categorySelect) {
+        categorySelect.addEventListener('change', syncCategoryOtherVisibility);
+        syncCategoryOtherVisibility();
+    }
+
+    // Company business type: toggle "Other" text input
+    const companyOtherCheckbox = document.getElementById('company_business_type_other');
+    const companyOtherGroup = document.getElementById('company_business_type_other_group');
+    const companyOtherInput = document.getElementById('company_business_type_other_text');
+
+    function syncCompanyOtherVisibility() {
+        if (!companyOtherCheckbox || !companyOtherGroup) return;
+        const isOtherChecked = companyOtherCheckbox.checked;
+        companyOtherGroup.style.display = isOtherChecked ? 'block' : 'none';
+        if (companyOtherInput) {
+            companyOtherInput.required = isOtherChecked;
+            if (!isOtherChecked) companyOtherInput.value = '';
+        }
+    }
+
+    if (companyOtherCheckbox) {
+        companyOtherCheckbox.addEventListener('change', syncCompanyOtherVisibility);
+        syncCompanyOtherVisibility();
+    }
     
     // Role button click handlers
     roleButtons.forEach(button => {
@@ -62,10 +102,43 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('Please select at least one business type');
                     return false;
                 }
+
+                const otherChecked = Array.from(businessTypeCheckboxes).some(cb => cb.value === 'Other');
+                if (otherChecked) {
+                    const otherText = (this.querySelector('input[name="business_type_other"]')?.value || '').trim();
+                    if (otherText.length === 0) {
+                        e.preventDefault();
+                        alert('Please enter your business type');
+                        this.querySelector('input[name="business_type_other"]')?.focus();
+                        return false;
+                    }
+                }
             }
             
             // Validate file upload for repairer (if provided)
             if (role === 'repairer') {
+                const repairerCategorySelect = this.querySelector('select[name="category_id"]');
+                const repairerCategoryCustom = this.querySelector('input[name="category_custom"]');
+                if (repairerCategorySelect && repairerCategorySelect.value === 'other') {
+                    const customVal = (repairerCategoryCustom?.value || '').trim();
+                    if (customVal.length === 0) {
+                        e.preventDefault();
+                        alert('Please enter your service category');
+                        repairerCategoryCustom?.focus();
+                        return false;
+                    }
+                }
+
+                const expInput = this.querySelector('input[name="experience_initial_years"]');
+                if (expInput) {
+                    const exp = Number(expInput.value);
+                    if (!Number.isFinite(exp) || exp < 0 || exp > 50) {
+                        e.preventDefault();
+                        alert('Please enter a valid initial experience (0 to 50 years)');
+                        return false;
+                    }
+                }
+
                 const fileInput = this.querySelector('input[name="profile_picture"]');
                 if (fileInput && fileInput.files.length > 0) {
                     const file = fileInput.files[0];
@@ -99,9 +172,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (confirmPasswordInput) {
             confirmPasswordInput.addEventListener('input', function() {
                 if (this.value !== passwordInput.value) {
-                    this.style.borderColor = '#ff4444';
+                    this.style.borderColor = 'var(--danger-color)';
                 } else {
-                    this.style.borderColor = '#44ff44';
+                    this.style.borderColor = 'var(--success-color)';
                 }
             });
         }
@@ -118,16 +191,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (password.length === 0) {
                 hint.textContent = 'At least 6 characters';
-                hint.style.color = '#666';
+                hint.style.color = 'var(--text-secondary)';
             } else if (password.length < 6) {
                 hint.textContent = 'Too short';
-                hint.style.color = '#e74c3c';
+                hint.style.color = 'var(--danger-color)';
             } else if (password.length < 8) {
                 hint.textContent = 'Good';
-                hint.style.color = '#f39c12';
+                hint.style.color = 'var(--warning-color)';
             } else {
                 hint.textContent = 'Strong';
-                hint.style.color = '#27ae60';
+                hint.style.color = 'var(--success-color)';
             }
         });
     });

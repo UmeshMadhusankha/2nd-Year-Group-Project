@@ -3,8 +3,84 @@
  * Connects the workforce.php frontend to api/freelancers.php
  */
 
-const FREELANCERS_API_URL = '/2nd-Year-Group-Project/FixLanka/api/freelancers.php';
+// Workforce "Available Freelancers" should show the company's freelance contractors
+// (repairers recruited via job postings), not the company's permanent employees.
+const COMPANY_EMPLOYEES_API_URL = '/2nd-Year-Group-Project/FixLanka/api/company-employees.php';
+const REPAIRER_APPLICATIONS_API_URL = '/2nd-Year-Group-Project/FixLanka/api/repairer-applications.php';
 let freelancersList = [];
+
+// Remember the current filter so it can be re-applied after re-render.
+window.__freelancerFilterState = window.__freelancerFilterState || { key: 'status', value: 'all' };
+
+function applyFreelancerFilterToDom(filterKey, filterValue) {
+    const key = (filterKey || 'status').toString().toLowerCase();
+    const value = (filterValue || 'all').toString().toLowerCase();
+
+    const cards = document.querySelectorAll('.freelancer-list .freelancer-card, #freelancersGrid .freelancer-card');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        let shouldShow = true;
+
+        if (key === 'status') {
+            const cardStatus = (card.dataset.status || '').toString().toLowerCase();
+            const isAssigned = (card.dataset.assigned || '0') === '1';
+
+            if (value === 'all') {
+                shouldShow = true;
+            } else if (value === 'assigned') {
+                shouldShow = isAssigned || cardStatus === 'assigned';
+            } else {
+                shouldShow = cardStatus === value;
+            }
+        }
+
+        card.style.display = shouldShow ? '' : 'none';
+        if (shouldShow) visibleCount++;
+    });
+
+    // Empty state (only for workforce.php grid)
+    const container = document.querySelector('.freelancer-list') || document.getElementById('freelancersGrid');
+    if (!container) return;
+
+    const existingEmpty = container.querySelector('.empty-state[data-filter-empty="1"]');
+    if (visibleCount === 0) {
+        if (!existingEmpty) {
+            const empty = document.createElement('div');
+            empty.className = 'empty-state';
+            empty.dataset.filterEmpty = '1';
+            empty.style.gridColumn = '1 / -1';
+            empty.style.textAlign = 'center';
+            empty.style.padding = '60px 20px';
+            empty.innerHTML = `
+                <i class="fas fa-filter" style="font-size: 48px; color: #d1d5db; margin-bottom: 15px;"></i>
+                <h3 style="color: #6b7280; margin-bottom: 8px;">No freelancers found</h3>
+                <p style="color: #9ca3af;">No ${value === 'all' ? '' : value} freelancers at the moment</p>
+            `;
+            container.appendChild(empty);
+        }
+    } else if (existingEmpty) {
+        existingEmpty.remove();
+    }
+}
+
+// Called by inline onclick in workforce.php
+window.applyFreelancerFilter = function (filterKey, filterValue, buttonEl) {
+    const key = (filterKey || 'status').toString().toLowerCase();
+    const value = (filterValue || 'all').toString().toLowerCase();
+    window.__freelancerFilterState = { key, value };
+
+    const tabs = document.querySelectorAll('.freelancer-filter-tabs .tab-btn');
+    if (tabs && tabs.length) {
+        tabs.forEach(btn => btn.classList.remove('active'));
+
+        // Prefer the passed element; fallback to a matching data-filter-value button.
+        const toActivate = buttonEl || document.querySelector(`.freelancer-filter-tabs .tab-btn[data-filter-value="${CSS.escape(value)}"]`);
+        if (toActivate) toActivate.classList.add('active');
+    }
+
+    applyFreelancerFilterToDom(key, value);
+};
 
 /**
  * Load all freelancers available to the company
@@ -16,7 +92,8 @@ async function loadFreelancers() {
     }
 
     try {
-        const response = await fetch(`${FREELANCERS_API_URL}?company_id=${currentCompanyId}`);
+        // Fetch only freelance contractors for this company
+        const response = await fetch(`${COMPANY_EMPLOYEES_API_URL}?company_id=${currentCompanyId}&employment_type=freelance&order_by=created_at&order_dir=DESC`);
 
         if (!response.ok) {
             throw new Error('Failed to fetch freelancers');
@@ -24,23 +101,101 @@ async function loadFreelancers() {
 
         const data = await response.json();
 
-        if (data.success) {
-            freelancersList = data.freelancers || [];
-            renderFreelancersList(freelancersList);
-        } else {
-            console.error('API Error:', data.error);
+        // company-employees API returns an array
+        const rows = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
+        let normalized = rows.map(normalizeCompanyFreelancer);
+
+        // Fallback: if onboarding rows are missing/misclassified, show accepted recruits
+        // directly from approved applications.
+        if (!normalized || normalized.length === 0) {
+            const approved = await fetchApprovedApplicationsAsFreelancers();
+            if (approved.length > 0) {
+                normalized = approved;
+            }
         }
+
+        // De-duplicate by repairer_id
+        const seen = new Set();
+        freelancersList = (normalized || []).filter(fr => {
+            const key = String(fr.repairer_id || fr.id || '');
+            if (!key) return false;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+
+        renderFreelancersList(freelancersList);
+        updateFreelancersPreview(freelancersList);
 
     } catch (error) {
         console.error('Error loading freelancers:', error);
     }
 }
 
+async function fetchApprovedApplicationsAsFreelancers() {
+    try {
+        const url = `${REPAIRER_APPLICATIONS_API_URL}?action=list&company_id=${currentCompanyId}&status=approved`;
+        const resp = await fetch(url);
+        if (!resp.ok) return [];
+        const data = await resp.json();
+        if (!data || !data.success || !Array.isArray(data.applications)) return [];
+
+        return data.applications.map(app => {
+            return {
+                id: app.repairer_id,
+                employee_id: null,
+                repairer_id: app.repairer_id,
+                first_name: app.first_name || '',
+                last_name: app.last_name || '',
+                email: app.email || '',
+                phone: app.phone || '',
+                specialty: app.specialty || 'General',
+                experience_years: Number(app.experience_years || 0),
+                hourly_rate: Number(app.expected_rate || app.hourly_rate || 0),
+                rating: Number(app.rating || 0),
+                profile_photo: app.profile_photo || null,
+                avatar: null,
+                status: 'Available'
+            };
+        });
+    } catch (e) {
+        console.warn('Fallback approved-applications fetch failed:', e);
+        return [];
+    }
+}
+
+function normalizeCompanyFreelancer(row) {
+    const hourlyRate = Number(row.hourly_rate || row.applicant_hourly_rate || 0);
+    const rating = Number(row.rating || 0);
+    const statusRaw = (row.status || 'active').toLowerCase();
+    const status = statusRaw === 'active' ? 'Available' : 'Unavailable';
+
+    return {
+        // workforce-friendly shape
+        id: row.employee_id || row.repairer_id,
+        employee_id: row.employee_id,
+        repairer_id: row.repairer_id,
+        first_name: row.first_name || '',
+        last_name: row.last_name || '',
+        email: row.email || '',
+        phone: row.phone || '',
+        specialty: row.specialty || 'General',
+        experience_years: Number(row.experience_years || 0),
+        hourly_rate: hourlyRate,
+        rating: rating,
+        success_rate_pct: (row.success_rate_pct === null || row.success_rate_pct === undefined) ? null : Number(row.success_rate_pct),
+        profile_photo: row.profile_photo || null,
+        avatar: row.avatar || null,
+        status: status
+    };
+}
+
 /**
  * Render freelancers grid in the UI
  */
 function renderFreelancersList(freelancers) {
-    const container = document.getElementById('freelancersGrid');
+    // workforce.php uses `.freelancer-list`; other pages may use `#freelancersGrid`
+    const container = document.querySelector('.freelancer-list') || document.getElementById('freelancersGrid');
     if (!container) return;
 
     container.innerHTML = '';
@@ -72,10 +227,10 @@ function renderFreelancersList(freelancers) {
             }
         }
 
-        const isHired = freelancer.is_hired == 1;
-        const buttonHtml = isHired ?
-            `<button class="btn btn-outline" style="width:100%" disabled>Already Hired</button>` :
-            `<button class="btn btn-primary" style="width:100%" onclick="openAssignJobDrawer(${freelancer.repairer_id})">Offer Job</button>`;
+        const buttonHtml = `
+            <button class="btn btn-primary" style="width:100%" onclick="openAssignJobDrawer(${freelancer.repairer_id})">Assign Job</button>
+            <button class="btn btn-outline" style="width:100%; border-color:#e11d48; color:#e11d48;" onclick="layoffFreelancer(${freelancer.repairer_id})">Layoff</button>
+        `;
 
         const avatarHtml = freelancer.profile_photo ?
             `<img src="/2nd-Year-Group-Project/FixLanka/${freelancer.profile_photo}" alt="${freelancer.first_name}" class="freelancer-avatar">` :
@@ -83,6 +238,9 @@ function renderFreelancersList(freelancers) {
 
         const card = document.createElement('div');
         card.className = 'freelancer-card';
+        card.dataset.status = (freelancer.status || '').toString().toLowerCase();
+        // Placeholder until we wire assignments into this list.
+        card.dataset.assigned = '0';
         card.innerHTML = `
             <div class="freelancer-header">
                 ${avatarHtml}
@@ -97,13 +255,13 @@ function renderFreelancersList(freelancers) {
                     <div class="stat-label">Rate</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-value">98%</div>
+                    <div class="stat-value">${Number.isFinite(Number(freelancer.success_rate_pct)) ? `${Number(freelancer.success_rate_pct)}%` : '—'}</div>
                     <div class="stat-label">Success</div>
                 </div>
                 <div class="stat">
                     <div class="stat-value">${freelancer.rating}</div>
                     <div class="stat-label">
-                        <div class="rating-stars" style="color: #ffc107; font-size: 10px;">
+                        <div class="rating-stars">
                             ${ratingHtml}
                         </div>
                     </div>
@@ -119,6 +277,49 @@ function renderFreelancersList(freelancers) {
         `;
         container.appendChild(card);
     });
+
+    // Re-apply the selected tab filter after re-render.
+    const state = window.__freelancerFilterState || { key: 'status', value: 'all' };
+    applyFreelancerFilterToDom(state.key, state.value);
+}
+
+function updateFreelancersPreview(freelancers) {
+    // Dashboard preview card elements exist only on workforce.php
+    const availableEl = document.getElementById('freelancersAvailable');
+    const activeEl = document.getElementById('freelancersActive');
+    const freeEl = document.getElementById('freelancersFree');
+    const topEl = document.getElementById('topFreelancersPreview');
+
+    if (availableEl) availableEl.textContent = String(freelancers.length || 0);
+    if (activeEl) activeEl.textContent = String(freelancers.length || 0);
+    if (freeEl) freeEl.textContent = String(freelancers.length || 0);
+
+    if (topEl) {
+        topEl.innerHTML = '';
+        if (!freelancers || freelancers.length === 0) {
+            topEl.innerHTML = '<p style="color:#718096; font-size:12px; padding: 12px 0;">No freelancers available yet</p>';
+            return;
+        }
+
+        const top = [...freelancers]
+            .sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0))
+            .slice(0, 3);
+
+        topEl.innerHTML = top.map(fr => {
+            const initials = (fr.first_name?.charAt(0) || '') + (fr.last_name?.charAt(0) || '');
+            return `
+                <div class="freelancer-item" style="display:flex; align-items:center; gap:10px; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.06);">
+                    <div class="application-avatar" style="width:32px; height:32px; border-radius:999px; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.06); font-weight: 600;">
+                        ${initials.toUpperCase()}
+                    </div>
+                    <div style="display:flex; flex-direction:column; min-width:0;">
+                        <span style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${fr.first_name} ${fr.last_name}</span>
+                        <span style="font-size:12px; color:#718096;">${fr.specialty || 'General'} • ${Number(fr.rating || 0).toFixed(1)}★</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
 }
 
 /**
@@ -190,36 +391,33 @@ window.openAssignJobDrawer = async function (freelancerId) {
         updateAssignmentCost();
     }
 
-    // Load jobs dynamically
+    // Load projects dynamically
     const jobSelect = document.getElementById('assignJobSelect');
     if (jobSelect && currentCompanyId) {
         try {
-            jobSelect.innerHTML = '<option value="">Loading jobs...</option>';
-            const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-postings.php?company_id=${currentCompanyId}`);
+            jobSelect.innerHTML = '<option value="">Loading projects...</option>';
+            const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/projects.php?company_id=${currentCompanyId}`);
             const result = await response.json();
 
-            jobSelect.innerHTML = '<option value="">-- Select a job --</option>';
-            if (result.success && result.postings) {
-                result.postings.forEach(job => {
-                    if (job.status !== 'closed' && job.status !== 'filled') {
-                        const option = document.createElement('option');
-                        option.value = job.posting_id;
-                        option.textContent = `${job.title} (${job.category})`;
-                        jobSelect.appendChild(option);
-                    }
+            jobSelect.innerHTML = '<option value="">-- Select a project --</option>';
+            if (result.success && Array.isArray(result.data)) {
+                result.data.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.project_id;
+                    option.textContent = `${project.title} (${project.status || '—'})`;
+                    jobSelect.appendChild(option);
                 });
             }
         } catch (error) {
-            console.error('Error loading jobs for select:', error);
-            jobSelect.innerHTML = '<option value="">Error loading jobs</option>';
+            console.error('Error loading projects for select:', error);
+            jobSelect.innerHTML = '<option value="">Error loading projects</option>';
         }
     }
 
     // Open drawer
     const drawer = document.getElementById('assignJobDrawer');
     if (drawer) {
-        drawer.style.display = 'block';
-        setTimeout(() => drawer.classList.add('active'), 10);
+        drawer.classList.add('active');
     }
 };
 
@@ -228,10 +426,10 @@ window.closeAssignJobDrawer = function () {
     if (drawer) {
         drawer.classList.remove('active');
         setTimeout(() => {
-            drawer.style.display = 'none';
-            document.getElementById('assignJobForm').reset();
+            const form = document.getElementById('assignJobForm');
+            if (form) form.reset();
             currentAssignFreelancerId = null;
-        }, 300);
+        }, 150);
     }
 };
 
@@ -306,4 +504,148 @@ window.handleJobAssignment = async function (event) {
     }
 
     return false;
+};
+
+function notifyLayoff(message, type = 'info') {
+    if (typeof window.showNotification === 'function') {
+        window.showNotification(message, type);
+        return;
+    }
+    console.log(`[${type}] ${message}`);
+}
+
+function ensureLayoffModal() {
+    let overlay = document.getElementById('freelancerLayoffOverlay');
+    if (overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.id = 'freelancerLayoffOverlay';
+    overlay.className = 'drawer-overlay';
+    overlay.innerHTML = `
+        <div class="drawer-panel layoff-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="layoffDrawerTitle">
+            <div class="drawer-header">
+                <h3 id="layoffDrawerTitle"><i class="fas fa-user-minus"></i> Layoff Freelancer</h3>
+                <button type="button" class="close-drawer" aria-label="Close" onclick="closeLayoffFreelancerDrawer()">&times;</button>
+            </div>
+            <div class="drawer-content layoff-drawer-content">
+                <p id="layoffFreelancerName" class="layoff-helper-text"></p>
+                <label for="layoffReasonInput" class="layoff-label">Reason for layoff <span>*</span></label>
+                <textarea id="layoffReasonInput" rows="5" class="layoff-reason-input" placeholder="Enter the reason for layoff..."></textarea>
+                <p id="layoffReasonError" class="layoff-error-text">Please enter a reason before continuing.</p>
+            </div>
+            <div class="drawer-actions layoff-drawer-actions">
+                <button type="button" class="btn btn-outline" onclick="closeLayoffFreelancerDrawer()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmLayoffBtn" onclick="submitLayoffFreelancer()">Confirm Layoff</button>
+            </div>
+        </div>
+    `;
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            window.closeLayoffFreelancerDrawer();
+        }
+    });
+
+    document.body.appendChild(overlay);
+    return overlay;
+}
+
+let pendingLayoffRepairerId = null;
+
+window.closeLayoffFreelancerDrawer = function () {
+    const overlay = document.getElementById('freelancerLayoffOverlay');
+    if (!overlay) return;
+
+    overlay.classList.remove('active');
+    pendingLayoffRepairerId = null;
+
+    const input = document.getElementById('layoffReasonInput');
+    const err = document.getElementById('layoffReasonError');
+    if (input) input.value = '';
+    if (err) err.style.display = 'none';
+};
+
+window.submitLayoffFreelancer = async function () {
+    const repairerIdNum = Number(pendingLayoffRepairerId || 0);
+    const reasonInput = document.getElementById('layoffReasonInput');
+    const reasonErr = document.getElementById('layoffReasonError');
+    const confirmBtn = document.getElementById('confirmLayoffBtn');
+
+    const reason = (reasonInput?.value || '').trim();
+    if (!reason) {
+        if (reasonErr) reasonErr.style.display = 'block';
+        return;
+    }
+    if (reasonErr) reasonErr.style.display = 'none';
+
+    if (!currentCompanyId || !repairerIdNum) {
+        notifyLayoff('Unable to process layoff request. Missing company or repairer id.', 'error');
+        return;
+    }
+
+    try {
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        }
+
+        const response = await fetch(COMPANY_EMPLOYEES_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action: 'offboard_freelancer',
+                company_id: Number(currentCompanyId),
+                repairer_id: repairerIdNum,
+                reason
+            })
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || result.error || 'Failed to lay off freelancer');
+        }
+
+        notifyLayoff('Freelancer laid off successfully.', 'success');
+        window.closeLayoffFreelancerDrawer();
+        await loadFreelancers();
+        if (typeof loadDashboardPreviews === 'function') {
+            await loadDashboardPreviews();
+        }
+    } catch (error) {
+        console.error('Error laying off freelancer:', error);
+        notifyLayoff(`Layoff failed: ${error.message || 'Unknown error'}`, 'error');
+    } finally {
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm Layoff';
+        }
+    }
+};
+
+window.layoffFreelancer = async function (repairerId) {
+    const repairerIdNum = Number(repairerId || 0);
+    if (!currentCompanyId || !repairerIdNum) {
+        notifyLayoff('Unable to process layoff request. Missing company or repairer id.', 'error');
+        return;
+    }
+
+    const freelancer = freelancersList.find(f => Number(f.repairer_id) === repairerIdNum);
+    const fullName = freelancer ? `${freelancer.first_name} ${freelancer.last_name}`.trim() : 'this freelancer';
+
+    pendingLayoffRepairerId = repairerIdNum;
+    const overlay = ensureLayoffModal();
+    const nameEl = document.getElementById('layoffFreelancerName');
+    const input = document.getElementById('layoffReasonInput');
+    const err = document.getElementById('layoffReasonError');
+    if (nameEl) {
+        nameEl.textContent = `You are about to lay off ${fullName}. Please provide the reason.`;
+    }
+    if (input) {
+        input.value = '';
+        setTimeout(() => input.focus(), 0);
+    }
+    if (err) err.style.display = 'none';
+    overlay.classList.add('active');
 };

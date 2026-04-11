@@ -68,8 +68,8 @@ class ContractModel {
                     u.f_name as customer_fname,
                     u.l_name as customer_lname,
                     u.email as customer_email,
-                    u_loc.address as customer_address,
-                    u_loc.district as customer_district,
+                    u.address as customer_address,
+                    u.district as customer_district,
                     comp.company_id,
                     comp.name as company_name,
                     comp.registration_no as company_registration_no,
@@ -78,7 +78,6 @@ class ContractModel {
                     comp.email as company_email
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
-                LEFT JOIN location u_loc ON u.location_id = u_loc.location_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id
                 LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
                 WHERE c.contract_id = :contract_id";
@@ -156,27 +155,43 @@ class ContractModel {
      * Create a new contract
      */
     public function create($data) {
-        $query = "INSERT INTO Contract 
-                  (project_id, milestone_plan, total_budget, start_date, end_date, 
-                   contract_date, user_signature, company_signature, terms_conditions, status)
-                  VALUES 
-                  (:project_id, :milestone_plan, :total_budget, :start_date, :end_date,
-                   :contract_date, :user_signature, :company_signature, :terms_conditions, :status)";
-        
+        $allowedFields = [
+            'project_id', 'quotation_id', 'customer_id', 'company_id', 'job_request_id',
+            'project_title', 'project_reference', 'project_location', 'project_description',
+            'scope_description', 'scope_inclusions', 'scope_exclusions', 'scope_standards',
+            'materials_responsibility',
+            'milestone_plan', 'total_budget', 'budget_type', 'budget_min', 'budget_max',
+            'tax_inclusive', 'payment_method', 'pricing_type', 'hourly_rate', 'spending_cap',
+            'advance_payment_pct',
+            'late_payment_penalty', 'pause_work_clause', 'time_extension_clause',
+            'variation_clause',
+            'communication_channel', 'dispute_resolution',
+            'start_date', 'end_date', 'contract_date',
+            'terms_conditions', 'status', 'user_signature', 'company_signature',
+            'auto_generated', 'amount_pending', 'payment_status', 'progress_percentage',
+            'undo_deadline', 'undo_requested', 'chat_active', 'escrow_enabled'
+        ];
+
+        $fields = [];
+        $placeholders = [];
+        $params = [];
+
+        foreach ($allowedFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $fields[] = $field;
+                $placeholders[] = ":$field";
+                $params[":$field"] = $data[$field];
+            }
+        }
+
+        if (empty($fields)) {
+            return false;
+        }
+
+        $query = "INSERT INTO Contract (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
         $stmt = $this->conn->prepare($query);
         
-        $stmt->bindParam(':project_id', $data['project_id']);
-        $stmt->bindParam(':milestone_plan', $data['milestone_plan']);
-        $stmt->bindParam(':total_budget', $data['total_budget']);
-        $stmt->bindParam(':start_date', $data['start_date']);
-        $stmt->bindParam(':end_date', $data['end_date']);
-        $stmt->bindParam(':contract_date', $data['contract_date']);
-        $stmt->bindParam(':user_signature', $data['user_signature']);
-        $stmt->bindParam(':company_signature', $data['company_signature']);
-        $stmt->bindParam(':terms_conditions', $data['terms_conditions']);
-        $stmt->bindParam(':status', $data['status']);
-        
-        if ($stmt->execute()) {
+        if ($stmt->execute($params)) {
             return $this->conn->lastInsertId();
         }
         

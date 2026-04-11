@@ -9,7 +9,7 @@
  */
 
 // Start session and verify authentication
-require_once '../../config/session.php';
+require_once __DIR__ . '/../../config/session.php';
 requireRole('company');
 
 // Retrieve logged-in user data from session
@@ -64,7 +64,7 @@ if (!$companyId) {
                     <div class="header-content">
                         <div class="header-main">
                             <div class="title-section">
-                                <h1><i class="fas fa-users-cog"></i> Workforce Management (DEBUG: Company ID: <?php echo $companyId; ?>)</h1>
+                                <h1><i class="fas fa-users-cog"></i> Workforce Management</h1>
                                 <p class="subtitle">Manage your company employees and freelance contractors</p>
                                 <nav class="breadcrumbs">
                                     <a href="/2nd-Year-Group-Project/FixLanka/company-dashboard"><i class="fas fa-home"></i> Dashboard</a>
@@ -296,16 +296,16 @@ if (!$companyId) {
 
                         <!-- Freelancer Filters -->
                         <div class="freelancer-filter-tabs">
-                            <button class="tab-btn active" onclick="applyFreelancerFilter('status', 'all', this)">
+                            <button class="tab-btn active" data-filter-key="status" data-filter-value="all" onclick="applyFreelancerFilter(this.dataset.filterKey, this.dataset.filterValue, this)">
                                 <i class="fas fa-list"></i> All Freelancers
                             </button>
-                            <button class="tab-btn" onclick="applyFreelancerFilter('status', 'Available', this)">
+                            <button class="tab-btn" data-filter-key="status" data-filter-value="available" onclick="applyFreelancerFilter(this.dataset.filterKey, this.dataset.filterValue, this)">
                                 <i class="fas fa-check-circle"></i> Available
                             </button>
-                            <button class="tab-btn" onclick="applyFreelancerFilter('status', 'Busy', this)">
+                            <button class="tab-btn" data-filter-key="status" data-filter-value="busy" onclick="applyFreelancerFilter(this.dataset.filterKey, this.dataset.filterValue, this)">
                                 <i class="fas fa-clock"></i> Busy
                             </button>
-                            <button class="tab-btn" onclick="applyFreelancerFilter('status', 'assigned', this)">
+                            <button class="tab-btn" data-filter-key="status" data-filter-value="assigned" onclick="applyFreelancerFilter(this.dataset.filterKey, this.dataset.filterValue, this)">
                                 <i class="fas fa-briefcase"></i> Assigned
                             </button>
                         </div>
@@ -399,7 +399,8 @@ if (!$companyId) {
         const freelancersData = [];
         
         // Ensure company ID is globally available
-        const currentCompanyId = window.CURRENT_COMPANY_ID;
+        var currentCompanyId = window.CURRENT_COMPANY_ID;
+        window.currentCompanyId = currentCompanyId;
         
         document.addEventListener('DOMContentLoaded', function () {
              setTimeout(() => {
@@ -965,96 +966,6 @@ if (!$companyId) {
             }
         });
 
-        // Update cost summary in real-time
-        function updateCostSummary() {
-            const pricingModelSelect = document.querySelector('input[name="pricingModel"]:checked');
-            const pricingModel = pricingModelSelect ? pricingModelSelect.value : 'hourly';
-
-            if (pricingModel === 'hourly') {
-                const hours = parseFloat(document.getElementById('estimatedHours').value) || 0;
-                const rate = parseFloat(document.getElementById('agreedRate').value) || 0;
-                const total = hours * rate;
-
-                document.getElementById('summaryHours').textContent = hours > 0 ? `${hours} hrs` : '0 hrs';
-                document.getElementById('summaryRate').textContent = `LKR ${rate.toLocaleString()}`;
-                document.getElementById('summaryTotal').textContent = `LKR ${total.toLocaleString()}`;
-            } else {
-                const fixedPrice = parseFloat(document.getElementById('fixedPriceAmount').value) || 0;
-                document.getElementById('summaryFixedTotal').textContent = `LKR ${fixedPrice.toLocaleString()}`;
-            }
-        }
-
-        // Add event listeners for cost calculation
-        document.addEventListener('DOMContentLoaded', function() {
-            const hoursInput = document.getElementById('estimatedHours');
-            const rateInput = document.getElementById('agreedRate');
-            const fixedInput = document.getElementById('fixedPriceAmount');
-            
-            if (hoursInput) {
-                hoursInput.addEventListener('input', updateCostSummary);
-            }
-            if (rateInput) {
-                rateInput.addEventListener('input', updateCostSummary);
-            }
-            if (fixedInput) {
-                fixedInput.addEventListener('input', updateCostSummary);
-            }
-
-            // Handle assignment form submission
-            const assignForm = document.getElementById('assignJobForm');
-            if (assignForm) {
-                assignForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    handleJobAssignment();
-                });
-            }
-        });
-
-        function handleJobAssignment() {
-            const freelancer = freelancersData.find(f => f.id === currentFreelancerId);
-            if (!freelancer) return;
-
-            const jobSelect = document.getElementById('jobSelect').value;
-            const startDate = document.getElementById('assignmentStartDate').value;
-            const deadline = document.getElementById('assignmentDeadline').value;
-            const hours = document.getElementById('estimatedHours').value;
-            const rate = document.getElementById('agreedRate').value;
-
-            if (!jobSelect || !startDate || !deadline || !hours || !rate) {
-                showNotification('Please fill in all required fields', 'error');
-                return;
-            }
-
-            // Validate dates
-            if (new Date(deadline) < new Date(startDate)) {
-                showNotification('Deadline must be after start date', 'error');
-                return;
-            }
-
-            // Show loading state
-            const submitBtn = document.querySelector('#assignJobForm button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Assigning...';
-            submitBtn.disabled = true;
-
-            // Simulate API call
-            setTimeout(() => {
-                // Update freelancer status to busy
-                freelancer.status = 'Busy';
-                
-                // Reload freelancer list
-                loadFreelancers();
-                
-                // Close drawer and show success
-                closeAssignJobDrawer();
-                showNotification(`Job successfully assigned to ${freelancer.firstName} ${freelancer.lastName}!`, 'success');
-                
-                // Reset button
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }, 1000);
-        }
-
         function approveApplication(applicationId) {
             if (confirm('Are you sure you want to accept this application?')) {
                 alert(`Application ${applicationId} approved`);
@@ -1077,13 +988,15 @@ if (!$companyId) {
 
         // Initialize search functionality
         function initializeSearch() {
-            const searchInput = document.getElementById('workforceSearch');
-            if (searchInput) {
-                searchInput.addEventListener('input', (e) => {
-                    const query = e.target.value.toLowerCase();
-                    filterContent(query);
-                });
-            }
+            const searchInput = document.getElementById('workforceSearch') || document.getElementById('searchInput');
+            if (!searchInput) return;
+            if (searchInput.dataset.searchBound === '1') return;
+            searchInput.dataset.searchBound = '1';
+
+            searchInput.addEventListener('input', (e) => {
+                const query = (e.target.value || '').toLowerCase();
+                filterContent(query);
+            });
         }
 
         // Filter content based on search query
@@ -1196,8 +1109,15 @@ if (!$companyId) {
             // Update skills
             const skillsContainer = document.getElementById('modalSkills');
             skillsContainer.innerHTML = '';
-            if (application.skills && application.skills.length > 0) {
-                application.skills.forEach(skill => {
+            const normalizedSkills = Array.isArray(application.skills)
+                ? application.skills
+                : String(application.skills || '')
+                    .split(',')
+                    .map(s => s.trim())
+                    .filter(Boolean);
+
+            if (normalizedSkills.length > 0) {
+                normalizedSkills.forEach(skill => {
                     const skillTag = document.createElement('span');
                     skillTag.className = 'skill-tag';
                     skillTag.textContent = skill;
@@ -1268,10 +1188,14 @@ if (!$companyId) {
 
             try {
                 // Load applications preview
-                const appResponse = await fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-applications.php?company_id=${companyId}`);
+                const appResponse = await fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-applications.php?action=list&company_id=${companyId}&status=pending`);
                 if (appResponse.ok) {
-                    const applications = await appResponse.json();
-                    updateApplicationsPreview(applications);
+                    const appData = await appResponse.json();
+                    if (appData && appData.success) {
+                        updateApplicationsPreview(appData.applications || []);
+                    } else {
+                        updateApplicationsPreview([]);
+                    }
                 }
 
                 // Load job postings preview
@@ -1289,11 +1213,16 @@ if (!$companyId) {
 
         // Update applications preview in dashboard
         function updateApplicationsPreview(applications) {
+            const pendingApplications = (Array.isArray(applications) ? applications : []).filter(app => {
+                const status = String(app.status || 'pending').toLowerCase();
+                return status === 'pending' || status === 'new';
+            });
+
             // Update counts
-            const total = applications.length;
+            const total = pendingApplications.length;
             const today = new Date().toDateString();
-            const newToday = applications.filter(app => new Date(app.application_date).toDateString() === today).length;
-            const reviewed = applications.filter(app => app.status === 'reviewed' || app.status === 'interview').length;
+            const newToday = pendingApplications.filter(app => new Date(app.applied_date).toDateString() === today).length;
+            const reviewed = pendingApplications.filter(app => app.status === 'reviewed').length;
 
             document.getElementById('applicationCount').textContent = total;
             document.getElementById('newTodayCount').textContent = newToday;
@@ -1301,18 +1230,18 @@ if (!$companyId) {
 
             // Update recent applications list
             const listContainer = document.getElementById('recentApplicationsList');
-            if (applications.length === 0) {
+            if (pendingApplications.length === 0) {
                 listContainer.innerHTML = '<p style="text-align: center; color: #718096; padding: 20px;">No applications yet</p>';
                 return;
             }
 
             // Sort by date and get latest 3
-            const recentApps = applications
-                .sort((a, b) => new Date(b.application_date) - new Date(a.application_date))
+            const recentApps = pendingApplications
+                .sort((a, b) => new Date(b.applied_date) - new Date(a.applied_date))
                 .slice(0, 3);
 
             listContainer.innerHTML = recentApps.map(app => {
-                const daysAgo = Math.floor((new Date() - new Date(app.application_date)) / (1000 * 60 * 60 * 24));
+                const daysAgo = Math.floor((new Date() - new Date(app.applied_date)) / (1000 * 60 * 60 * 24));
                 const timeText = daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`;
                 const initials = (app.first_name?.charAt(0) || '') + (app.last_name?.charAt(0) || '');
                 const statusClass = app.status === 'pending' ? 'pending' : 'new';
@@ -1421,12 +1350,14 @@ if (!$companyId) {
 
         // Load freelancers
         function loadFreelancers() {
-            const container = document.querySelector('.freelancer-list');
-            container.innerHTML = '';
+            // Delegate to DB integration (assets/javascript/company/freelancers-db.js)
+            if (window.freelancersDb && typeof window.freelancersDb.load === 'function') {
+                window.freelancersDb.load();
+                return;
+            }
 
-            // TODO: Load freelancers from API/database
-            // The freelancersData mock has been removed
-            // Implement API call here to fetch real freelancer data
+            const container = document.querySelector('.freelancer-list');
+            if (!container) return;
             container.innerHTML = `
                 <div class="empty-state" style="padding: 60px 20px; text-align: center;">
                     <i class="fas fa-user-tie" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
@@ -1583,10 +1514,24 @@ if (!$companyId) {
             const container = document.querySelector('.applications-list');
             container.innerHTML = '';
 
-            applicationsData.forEach(application => {
+            const pendingApplications = applicationsData.filter(application => {
+                const status = String(application.status || 'pending').toLowerCase();
+                return status === 'pending' || status === 'new';
+            });
+
+            pendingApplications.forEach(application => {
                 const item = createApplicationItem(application);
                 container.appendChild(item);
             });
+
+            if (pendingApplications.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fas fa-inbox" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px;"></i>
+                        <p>No pending applications</p>
+                    </div>
+                `;
+            }
         }
 
         // Create application item
@@ -1594,6 +1539,11 @@ if (!$companyId) {
             const item = document.createElement('div');
             item.className = 'application-card';
             item.dataset.status = application.status || 'new';
+            item.style.cursor = 'pointer';
+
+            item.addEventListener('click', () => {
+                viewApplicationDetails(application.id);
+            });
 
             // Calculate days since application
             const appliedDate = new Date(application.applicationDate);
@@ -1682,18 +1632,15 @@ if (!$companyId) {
                     <h6>
                         <i class="fas fa-file-alt"></i> Cover Letter
                     </h6>
-                    <p>${application.coverLetter.substring(0, 150)}${application.coverLetter.length > 150 ? '... <a href="#" onclick="viewApplicationDetails(\'${application.id}\'); return false;" style="color: var(--primary-color); font-weight: 600;">Read more</a>' : ''}</p>
+                    <p>${application.coverLetter.substring(0, 150)}${application.coverLetter.length > 150 ? '... <a href="#" onclick="event.stopPropagation(); viewApplicationDetails(\'${application.id}\'); return false;" style="color: var(--primary-color); font-weight: 600;">Read more</a>' : ''}</p>
                 </div>
                 ` : ''}
 
                 <div class="application-actions">
-                    <button class="action-btn-sm primary" onclick="viewApplicationDetails('${application.id}')" title="View Full Details">
-                        <i class="fas fa-eye"></i> View Details
-                    </button>
-                    <button class="action-btn-sm success" onclick="approveApplication('${application.id}')" title="Accept Application">
+                    <button class="action-btn-sm success" onclick="event.stopPropagation(); approveApplication('${application.id}')" title="Accept Application">
                         <i class="fas fa-check-circle"></i> Accept
                     </button>
-                    <button class="action-btn-sm danger" onclick="rejectApplication('${application.id}')" title="Decline Application">
+                    <button class="action-btn-sm danger" onclick="event.stopPropagation(); rejectApplication('${application.id}')" title="Decline Application">
                         <i class="fas fa-times-circle"></i> Decline
                     </button>
                 </div>
@@ -2824,7 +2771,11 @@ if (!$companyId) {
             const maxBudget = document.getElementById('maxBudget').value || '0';
             const description = document.getElementById('jobDescription').value || 'Job description will appear here...';
             const skills = document.getElementById('requiredSkills').value;
-            const experience = document.getElementById('minExperience').value;
+            const experienceSelect = document.getElementById('minExperience');
+            const experienceValue = experienceSelect ? experienceSelect.value : '';
+            const experienceLabel = experienceSelect && experienceSelect.selectedIndex >= 0
+                ? experienceSelect.options[experienceSelect.selectedIndex].textContent
+                : '';
             const location = document.getElementById('locationRequirements').value;
             
             document.getElementById('previewTitle').textContent = title;
@@ -2837,9 +2788,9 @@ if (!$companyId) {
             const requirementsList = document.getElementById('previewRequirements');
             requirementsList.innerHTML = '';
             
-            if (experience) {
+            if (experienceValue) {
                 const li = document.createElement('li');
-                li.textContent = `Minimum ${experience} experience`;
+                li.textContent = `Minimum experience: ${experienceLabel || experienceValue}`;
                 requirementsList.appendChild(li);
             }
             
@@ -2968,7 +2919,7 @@ if (!$companyId) {
                 employment_type: document.getElementById('employmentType').value,
                 related_project_id: document.getElementById('relatedProject').value || null,
                 description: document.getElementById('jobDescription').value,
-                min_experience: document.getElementById('minExperience').value,
+                min_experience: Number(document.getElementById('minExperience').value),
                 priority_level: document.getElementById('priorityLevel').value,
                 min_budget: parseFloat(document.getElementById('minBudget').value) || 0,
                 max_budget: parseFloat(document.getElementById('maxBudget').value) || 0,
@@ -3323,10 +3274,9 @@ if (!$companyId) {
                 ? `LKR ${posting.min_budget.toLocaleString()} - ${posting.max_budget.toLocaleString()}/hr`
                 : 'Budget not set';
             
-            // Format deadline
-            const deadline = posting.application_deadline 
-                ? formatDate(posting.application_deadline)
-                : 'No deadline';
+            // Format deadline (schema drift safe)
+            const deadlineRaw = posting.application_deadline ?? posting.applicationDeadline;
+            const deadline = deadlineRaw ? formatDate(deadlineRaw) : 'No deadline';
             
             // Format priority
             const priorityConfig = {
@@ -3395,7 +3345,7 @@ if (!$companyId) {
                     </div>
                     <div class="meta-row">
                         <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(posting.location || 'Location not specified')}</span>
-                        <span><i class="fas fa-calendar-plus"></i> Posted: ${formatDate(posting.created_at)}</span>
+                        <span><i class="fas fa-calendar-plus"></i> Posted: ${formatDate(posting.created_at ?? posting.posted_date ?? posting.postedDate ?? posting.createdAt ?? posting.date_created ?? posting.dateCreated ?? '')}</span>
                     </div>
                 </div>
                 <div class="posting-actions">
@@ -3461,8 +3411,9 @@ if (!$companyId) {
                 document.getElementById('requiredSkills').value = posting.required_skills || '';
                 document.getElementById('locationRequirements').value = posting.location || '';
                 
-                if (posting.application_deadline) {
-                    document.getElementById('applicationDeadline').value = posting.application_deadline;
+                const deadlineRaw = posting.application_deadline ?? posting.applicationDeadline;
+                if (deadlineRaw) {
+                    document.getElementById('applicationDeadline').value = deadlineRaw;
                 }
                 
                 // Set checkboxes
@@ -3750,7 +3701,10 @@ if (!$companyId) {
                                         </div>
                                         <div class="detail-item">
                                             <label><i class="fas fa-star"></i> Experience Level</label>
-                                            <span>${escapeHtml(posting.min_experience || 'Not specified')}</span>
+                                            <span>${(posting.min_experience === 0 || posting.min_experience === '0')
+                                                ? 'No experience required'
+                                                : (posting.min_experience ? escapeHtml(`${posting.min_experience}+ years`) : 'Not specified')}
+                                            </span>
                                         </div>
                                         <div class="detail-item">
                                             <label><i class="fas fa-exclamation-circle"></i> Priority</label>
@@ -3762,7 +3716,7 @@ if (!$companyId) {
                                         </div>
                                         <div class="detail-item">
                                             <label><i class="fas fa-clock"></i> Application Deadline</label>
-                                            <span>${posting.application_deadline ? formatDate(posting.application_deadline) : 'No deadline'}</span>
+                                            <span>${(posting.application_deadline || posting.applicationDeadline) ? formatDate(posting.application_deadline || posting.applicationDeadline) : 'No deadline'}</span>
                                         </div>
                                         <div class="detail-item full-width">
                                             <label><i class="fas fa-map-marker-alt"></i> Location</label>
@@ -3983,26 +3937,6 @@ if (!$companyId) {
                     notification.remove();
                 }
             }, 5000);
-        }
-
-        function initializeSearch() {
-            const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', function () {
-                const term = this.value.toLowerCase();
-                filterWorkforce(term);
-            });
-        }
-
-        function filterWorkforce(searchTerm) {
-            const cards = document.querySelectorAll('.workforce-card');
-            cards.forEach(card => {
-                const text = card.textContent.toLowerCase();
-                if (text.includes(searchTerm)) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
         }
 
         // ====================================
@@ -4288,8 +4222,18 @@ if (!$companyId) {
                         employees: employees
                     })
                 });
-                
-                const result = await response.json();
+
+                const raw = await response.text();
+                let result;
+                try {
+                    result = raw ? JSON.parse(raw) : null;
+                } catch (e) {
+                    throw new Error('Server returned a non-JSON response. Check `FixLanka/api/company-employees.php` for PHP errors.');
+                }
+
+                if (!response.ok) {
+                    throw new Error((result && (result.message || result.error)) || 'Failed to add employees');
+                }
                 
                 if (result.success) {
                     return true;
@@ -4811,40 +4755,70 @@ if (!$companyId) {
             const apiUrl = '/2nd-Year-Group-Project/FixLanka/api/company-employees.php';
             
             try {
-                // Process each reduction category
-                for (const reduction of reductionData) {
-                    // Get employees by specialty
-                    const response = await fetch(`${apiUrl}?company_id=${companyId}&specialty=${encodeURIComponent(reduction.skillCategory)}`);
-                    
+                // 1) Preferred: reduce staffsummary counts (works with bulk staff add flow).
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'reduce_staff',
+                            company_id: companyId,
+                            reductions: reductionData
+                        })
+                    });
+
+                    const raw = await response.text();
+                    let result;
+                    try {
+                        result = raw ? JSON.parse(raw) : null;
+                    } catch (e) {
+                        throw new Error('Server returned a non-JSON response while reducing staff.');
+                    }
+
                     if (!response.ok) {
-                        throw new Error(`Failed to fetch ${reduction.skillCategory} employees`);
+                        throw new Error((result && (result.message || result.error)) || 'Failed to reduce staff');
                     }
-                    
-                    const employees = await response.json();
-                    
-                    if (!employees || employees.length === 0) {
-                        throw new Error(`No ${reduction.skillCategory} employees found`);
+
+                    if (!result || !result.success) {
+                        throw new Error((result && result.message) || 'Failed to reduce staff');
                     }
-                    
-                    if (employees.length < reduction.reductionQuantity) {
-                        throw new Error(`Only ${employees.length} ${reduction.skillCategory} employees available`);
+
+                    return true;
+                } catch (summaryError) {
+                    // 2) Fallback: reduce by deleting roster entries (legacy behavior).
+                    // This keeps existing companies (who never used staffsummary) working.
+                    const msg = (summaryError && summaryError.message) ? summaryError.message : '';
+                    const canFallback = msg.includes('No staff found') || msg.includes('staff') || msg.includes('specialty');
+                    if (!canFallback) {
+                        throw summaryError;
                     }
-                    
-                    // Delete the first N employees
-                    const employeesToDelete = employees.slice(0, reduction.reductionQuantity);
-                    
-                    for (const emp of employeesToDelete) {
-                        const deleteResponse = await fetch(`${apiUrl}?employee_id=${emp.employee_id}`, {
-                            method: 'DELETE'
-                        });
-                        
-                        if (!deleteResponse.ok) {
-                            throw new Error(`Failed to delete employee ${emp.employee_id}`);
+
+                    for (const reduction of reductionData) {
+                        const listResp = await fetch(`${apiUrl}?company_id=${companyId}&specialty=${encodeURIComponent(reduction.skillCategory)}&status=active`);
+                        if (!listResp.ok) {
+                            throw new Error(`Failed to fetch ${reduction.skillCategory} employees`);
+                        }
+                        const employees = await listResp.json();
+                        if (!employees || employees.length === 0) {
+                            throw new Error(`No ${reduction.skillCategory} employees found`);
+                        }
+                        if (employees.length < reduction.reductionQuantity) {
+                            throw new Error(`Only ${employees.length} ${reduction.skillCategory} employees available`);
+                        }
+
+                        const employeesToDelete = employees.slice(0, reduction.reductionQuantity);
+                        for (const emp of employeesToDelete) {
+                            const delResp = await fetch(`${apiUrl}?employee_id=${emp.employee_id}`, { method: 'DELETE' });
+                            if (!delResp.ok) {
+                                throw new Error(`Failed to delete employee ${emp.employee_id}`);
+                            }
                         }
                     }
+
+                    return true;
                 }
-                
-                return true;
             } catch (error) {
                 console.error('Error reducing staff:', error);
                 throw error.message || 'Failed to reduce staff';
@@ -4981,8 +4955,8 @@ if (!$companyId) {
                                         <option value="">Select type</option>
                                         <option value="freelance">Freelance</option>
                                         <option value="contract">Contract</option>
-                                        <option value="part-time">Part Time</option>
-                                        <option value="project-based">Project Based</option>
+                                        <option value="part_time">Part Time</option>
+                                        <option value="full_time">Full Time</option>
                                     </select>
                                 </div>
                             </div>
@@ -5015,11 +4989,11 @@ if (!$companyId) {
                                     <label>Minimum Experience *</label>
                                     <select id="minExperience" required>
                                         <option value="">Select experience level</option>
-                                        <option value="entry">Entry Level (0-1 years)</option>
-                                        <option value="junior">Junior (1-3 years)</option>
-                                        <option value="mid">Mid Level (3-5 years)</option>
-                                        <option value="senior">Senior (5-10 years)</option>
-                                        <option value="expert">Expert (10+ years)</option>
+                                        <option value="0">Entry Level (0-1 years)</option>
+                                        <option value="1">Junior (1-3 years)</option>
+                                        <option value="3">Mid Level (3-5 years)</option>
+                                        <option value="5">Senior (5-10 years)</option>
+                                        <option value="10">Expert (10+ years)</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -5309,6 +5283,7 @@ if (!$companyId) {
                     <button class="drawer-tab active" data-tab="personal">Personal Info</button>
                     <button class="drawer-tab" data-tab="professional">Professional</button>
                     <button class="drawer-tab" data-tab="additional">Additional</button>
+                    <button class="drawer-tab" data-tab="history">Work History</button>
                 </div>
 
                 <!-- Personal Information Tab -->
@@ -5378,6 +5353,19 @@ if (!$companyId) {
                                 <span class="skill-tag">Problem Solving</span>
                                 <span class="skill-tag">Customer Service</span>
                                 <span class="skill-tag">Technical Repair</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Work History Tab (Read-only) -->
+                <div class="drawer-tab-content" id="history">
+                    <div class="details-section">
+                        <h4><i class="fas fa-history"></i> Work History</h4>
+                        <div class="detail-item full-width">
+                            <label>Completed Work:</label>
+                            <div id="modalWorkHistory">
+                                <p style="margin: 0; color: var(--text-secondary);">No history loaded.</p>
                             </div>
                         </div>
                     </div>
@@ -5981,116 +5969,6 @@ if (!$companyId) {
     <div class="drawer-overlay" id="assignJobDrawer">
         <div class="drawer-panel">
             <div class="drawer-header">
-                <h3><i class="fas fa-briefcase"></i> Assign Job to Freelancer</h3>
-                <button class="close-drawer" onclick="closeAssignJobDrawer()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-
-            <div class="drawer-content">
-                <form id="assignJobForm" class="assign-job-form">
-                    <!-- Freelancer Info (Read-only) -->
-                    <div class="form-section">
-                        <h4><i class="fas fa-user"></i> Freelancer</h4>
-                        <div class="selected-freelancer-info">
-                            <div class="freelancer-mini-card">
-                                <div class="freelancer-mini-avatar" id="assignFreelancerAvatar">KP</div>
-                                <div class="freelancer-mini-details">
-                                    <strong id="assignFreelancerName">Kasun Perera</strong>
-                                    <span id="assignFreelancerSpecialty">Mobile Phone Repair</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Job Selection -->
-                    <div class="form-section">
-                        <h4><i class="fas fa-briefcase"></i> Select Job/Project</h4>
-                        <div class="form-group">
-                            <label for="jobSelect"><i class="fas fa-tasks"></i> Available Jobs <span class="required">*</span></label>
-                            <select id="jobSelect" class="form-control" required>
-                                <option value="">-- Select a job to assign --</option>
-                                <option value="job1">Mobile Repair - Customer A (Project #12345)</option>
-                                <option value="job2">Screen Replacement - Customer B (Project #12346)</option>
-                                <option value="job3">Battery Replacement - Customer C (Project #12347)</option>
-                                <option value="job4">Device Diagnostics - Customer D (Project #12348)</option>
-                                <option value="job5">Water Damage Repair - Customer E (Project #12349)</option>
-                            </select>
-                            <span class="helper-text"><i class="fas fa-info-circle"></i> Select the project you want to assign to this freelancer</span>
-                        </div>
-                    </div>
-
-                    <!-- Job Details -->
-                    <div class="form-section">
-                        <h4><i class="fas fa-info-circle"></i> Assignment Details</h4>
-                        
-                        <div class="form-group">
-                            <label for="assignmentStartDate"><i class="fas fa-calendar-day"></i> Start Date <span class="required">*</span></label>
-                            <input type="date" id="assignmentStartDate" class="form-control" required>
-                            <span class="helper-text"><i class="fas fa-info-circle"></i> When should the freelancer begin work?</span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="assignmentDeadline"><i class="fas fa-calendar-check"></i> Deadline <span class="required">*</span></label>
-                            <input type="date" id="assignmentDeadline" class="form-control" required>
-                            <span class="helper-text"><i class="fas fa-info-circle"></i> Expected completion date for this assignment</span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="estimatedHours"><i class="fas fa-clock"></i> Estimated Hours <span class="required">*</span></label>
-                            <input type="number" id="estimatedHours" class="form-control" min="1" step="0.5" placeholder="e.g., 8 or 8.5" required>
-                            <span class="helper-text"><i class="fas fa-info-circle"></i> Approximate hours needed to complete the job</span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="agreedRate"><i class="fas fa-money-bill-wave"></i> Agreed Hourly Rate (LKR) <span class="required">*</span></label>
-                            <input type="number" id="agreedRate" class="form-control" min="0" step="100" placeholder="e.g., 2500" required>
-                            <span class="helper-text"><i class="fas fa-info-circle"></i> Hourly rate for this specific assignment</span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="assignmentNotes"><i class="fas fa-sticky-note"></i> Additional Notes</label>
-                            <textarea id="assignmentNotes" class="form-control" rows="4" placeholder="Add any special instructions, requirements, or notes for the freelancer..."></textarea>
-                            <span class="helper-text"><i class="fas fa-info-circle"></i> Optional: Include any specific requirements or instructions</span>
-                        </div>
-                    </div>
-
-                    <!-- Cost Summary -->
-                    <div class="form-section">
-                        <h4><i class="fas fa-calculator"></i> Cost Estimate</h4>
-                        <div class="cost-summary">
-                            <div class="cost-item">
-                                <span><i class="fas fa-clock"></i> Estimated Hours</span>
-                                <span id="summaryHours">0 hrs</span>
-                            </div>
-                            <div class="cost-item">
-                                <span><i class="fas fa-money-bill"></i> Hourly Rate</span>
-                                <span id="summaryRate">LKR 0</span>
-                            </div>
-                            <div class="cost-item total">
-                                <span><i class="fas fa-calculator"></i> Total Estimated Cost</span>
-                                <span id="summaryTotal">LKR 0</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" class="drawer-btn secondary" onclick="closeAssignJobDrawer()">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                        <button type="submit" class="drawer-btn primary">
-                            <i class="fas fa-check"></i> Confirm Assignment
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Assign Job Drawer -->
-    <div class="drawer-overlay" id="assignJobDrawer">
-        <div class="drawer-panel">
-            <div class="drawer-header">
                 <h3><i class="fas fa-briefcase"></i> Assign Job</h3>
                 <button class="close-drawer" onclick="closeAssignJobDrawer()">
                     <i class="fas fa-times"></i>
@@ -6115,16 +5993,21 @@ if (!$companyId) {
 
                     <!-- Job Selection -->
                     <div class="form-section">
-                        <h4><i class="fas fa-tasks"></i> Select Job/Project <span class="required">*</span></h4>
-                        <small class="form-helper-top">Select the project you want to assign to this freelancer</small>
-                        <select id="assignJobSelect" class="form-control" required>
-                            <option value="">-- Select a job --</option>
-                            <option value="job1">Mobile Repair - Customer A (Project #12345)</option>
-                            <option value="job2">Screen Replacement - Customer B (Project #12346)</option>
-                            <option value="job3">Battery Replacement - Customer C (Project #12347)</option>
-                            <option value="job4">Device Diagnostics - Customer D (Project #12348)</option>
-                            <option value="job5">Water Damage Repair - Customer E (Project #12349)</option>
-                        </select>
+                        <h4><i class="fas fa-tasks"></i> Select Job/Project</h4>
+                        <div class="form-group">
+                            <label for="assignJobSelect">
+                                <i class="fas fa-briefcase"></i> Available Jobs <span class="required">*</span>
+                            </label>
+                            <select id="assignJobSelect" required>
+                                <option value="">-- Select a project --</option>
+                                <option value="job1">Mobile Repair - Customer A (Project #12345)</option>
+                                <option value="job2">Screen Replacement - Customer B (Project #12346)</option>
+                                <option value="job3">Battery Replacement - Customer C (Project #12347)</option>
+                                <option value="job4">Device Diagnostics - Customer D (Project #12348)</option>
+                                <option value="job5">Water Damage Repair - Customer E (Project #12349)</option>
+                            </select>
+                            <small>Select the project you want to assign to this freelancer</small>
+                        </div>
                     </div>
 
                     <!-- Assignment Details -->
@@ -6134,14 +6017,14 @@ if (!$companyId) {
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="assignStartDate">Start Date <span class="required">*</span></label>
-                                <small class="form-helper-top">When should work begin?</small>
-                                <input type="date" id="assignStartDate" class="form-control" required>
+                                <small>When should work begin?</small>
+                                <input type="date" id="assignStartDate" required>
                             </div>
                             
                             <div class="form-group">
                                 <label for="assignDeadline">Deadline <span class="required">*</span></label>
-                                <small class="form-helper-top">Expected completion date</small>
-                                <input type="date" id="assignDeadline" class="form-control" required>
+                                <small>Expected completion date</small>
+                                <input type="date" id="assignDeadline" required>
                             </div>
                         </div>
 
@@ -6161,8 +6044,8 @@ if (!$companyId) {
                         <div class="form-row" id="hourlyPricingMode">
                             <div class="form-group">
                                 <label for="assignEstimatedHours">Estimated Hours <span class="required">*</span></label>
-                                <small class="form-helper-top">Approximate hours needed</small>
-                                <input type="number" id="assignEstimatedHours" class="form-control" 
+                                <small>Approximate hours needed</small>
+                                <input type="number" id="assignEstimatedHours" 
                                        min="1" step="0.5" placeholder="e.g., 8 or 8.5" 
                                        oninput="updateAssignmentCost()" required>
                             </div>
@@ -6171,10 +6054,8 @@ if (!$companyId) {
                                 <label for="assignHourlyRate">
                                     <i class="fas fa-lock"></i> Hourly Rate (LKR)
                                 </label>
-                                <small class="form-helper-top">
-                                    <i class="fas fa-info-circle"></i> Base rate
-                                </small>
-                                <input type="number" id="assignHourlyRate" class="form-control" 
+                                <small><i class="fas fa-info-circle"></i> Base rate</small>
+                                <input type="number" id="assignHourlyRate" 
                                        oninput="updateAssignmentCost()"
                                        min="100" step="100" placeholder="e.g., 2500" required>
                             </div>
@@ -6183,15 +6064,15 @@ if (!$companyId) {
                         <div class="form-row" id="fixedPricingMode" style="display: none;">
                             <div class="form-group">
                                 <label for="assignFixedPrice"><i class="fas fa-tag"></i> Fixed Task Price (LKR) <span class="required">*</span></label>
-                                <small class="form-helper-top">Total amount to pay upon completion</small>
-                                <input type="number" id="assignFixedPrice" class="form-control" min="0" step="100" placeholder="e.g., 15000" oninput="updateAssignmentCost()">
+                                <small>Total amount to pay upon completion</small>
+                                <input type="number" id="assignFixedPrice" min="0" step="100" placeholder="e.g., 15000" oninput="updateAssignmentCost()">
                             </div>
                         </div>
 
                         <div class="form-group">
                             <label for="assignNotes">Additional Notes</label>
-                            <small class="form-helper-top">Optional: Include any specific requirements or instructions</small>
-                            <textarea id="assignNotes" class="form-control" rows="4" 
+                            <small>Optional: Include any specific requirements or instructions</small>
+                            <textarea id="assignNotes" rows="4" 
                                       placeholder="Add any special instructions, requirements, or notes..."></textarea>
                         </div>
                     </div>
@@ -6225,11 +6106,11 @@ if (!$companyId) {
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="drawer-actions">
+                    <div class="modal-actions">
                         <button type="button" class="btn-cancel" onclick="closeAssignJobDrawer()">
                             <i class="fas fa-times"></i> Cancel
                         </button>
-                        <button type="submit" class="btn-confirm">
+                        <button type="submit" class="btn-primary">
                             <i class="fas fa-paper-plane"></i> Send Job Offer
                         </button>
                     </div>

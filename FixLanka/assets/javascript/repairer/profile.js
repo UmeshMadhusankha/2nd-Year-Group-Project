@@ -39,12 +39,34 @@ document.addEventListener('DOMContentLoaded', function () {
     let originalFormData = {};
     let currentProfileData = null;
 
+    // Skills tags
+    const skillsInput = document.getElementById('skillsInput');
+    const skillsTagsContainer = document.getElementById('skillsTags');
+    let skillsTags = [];
+
     // ── Init ──
     init();
 
     function init() {
         loadProfileData();
         addEventListeners();
+    }
+    function syncCategoryNameFromSelect() {
+        var catSelect = document.getElementById('service-category');
+        var catNameInput = document.getElementById('service-category-name');
+        if (!catNameInput) return;
+
+        if (currentProfileData && (currentProfileData.category_name || '').toString().trim() && (!isEditing)) {
+            catNameInput.value = (currentProfileData.category_name || '').toString().trim();
+            return;
+        }
+
+        if (catSelect && catSelect.selectedOptions && catSelect.selectedOptions.length) {
+            var optText = (catSelect.selectedOptions[0].textContent || '').trim();
+            catNameInput.value = (catSelect.value ? optText : '—');
+        } else {
+            catNameInput.value = '—';
+        }
     }
 
     /* ──────────────────────────────────────────────
@@ -102,10 +124,14 @@ document.addEventListener('DOMContentLoaded', function () {
         if (jobsCompleted) jobsCompleted.textContent = data.completedJobsCount || 0;
 
         var successRate = document.getElementById('profileSuccessRate');
-        if (successRate) successRate.textContent = data.completedJobsCount > 0 ? '98%' : '—';
+        if (successRate) {
+            var pct = data.successRatePct;
+            var num = (pct === null || pct === undefined) ? NaN : Number(pct);
+            successRate.textContent = Number.isFinite(num) ? (Math.round(num) + '%') : '—';
+        }
 
         var responseTime = document.getElementById('profileResponseTime');
-        if (responseTime) responseTime.textContent = data.completedJobsCount > 0 ? '< 1 hour' : '—';
+        if (responseTime) responseTime.textContent = '—';
 
         // ── Right column form fields ──
         setVal('full-name', data.full_name || (data.f_name + ' ' + data.l_name));
@@ -114,6 +140,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var catSelect = document.getElementById('service-category');
         if (catSelect && data.category_id) catSelect.value = data.category_id;
+
+        var catNameInput = document.getElementById('service-category-name');
+        if (catNameInput) {
+            var nameFromApi = (data.category_name || '').toString().trim();
+            if (nameFromApi) {
+                catNameInput.value = nameFromApi;
+            } else if (catSelect && catSelect.selectedOptions && catSelect.selectedOptions.length) {
+                var optText = (catSelect.selectedOptions[0].textContent || '').trim();
+                catNameInput.value = (catSelect.value ? optText : '—');
+            } else {
+                catNameInput.value = '—';
+            }
+        }
 
         // Districts
         if (data.districts) {
@@ -129,7 +168,65 @@ document.addEventListener('DOMContentLoaded', function () {
         // Topbar dropdown name + email
         syncTopbarName(data.full_name || (data.f_name + ' ' + data.l_name));
         syncTopbarEmail(data.email || '');
+
+        // Skills
+        setSkillsFromData(data.skills);
+        renderSkillsTags();
     }
+
+    function setSkillsFromData(skillsValue) {
+        if (Array.isArray(skillsValue)) {
+            skillsTags = normalizeTags(skillsValue);
+            return;
+        }
+        const raw = (skillsValue || '').toString();
+        skillsTags = normalizeTags(raw.split(',').map(s => s.trim()).filter(Boolean));
+    }
+
+    function normalizeTags(tags) {
+        const seen = new Set();
+        const out = [];
+        (tags || []).forEach(t => {
+            const cleaned = (t || '').toString().trim().replace(/\s+/g, ' ');
+            if (!cleaned) return;
+            const key = cleaned.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            out.push(cleaned);
+        });
+        return out;
+    }
+
+    function renderSkillsTags() {
+        if (!skillsTagsContainer) return;
+
+        const html = skillsTags.map((tag, idx) => {
+            const removeBtn = isEditing
+                ? `<button type="button" class="skill-tag-remove" data-idx="${idx}" aria-label="Remove ${escapeHtml(tag)}">×</button>`
+                : '';
+            return `<span class="skill-tag">${escapeHtml(tag)}${removeBtn}</span>`;
+        }).join('');
+
+        skillsTagsContainer.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+        return (str || '').toString()
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // Keep category name field in sync with dropdown
+    (function wireCategorySelectSync() {
+        var catSelect = document.getElementById('service-category');
+        if (!catSelect) return;
+        catSelect.addEventListener('change', function () {
+            syncCategoryNameFromSelect();
+        });
+    })();
 
     function renderRatingStars(rating) {
         var container = document.getElementById('profileRatingStars');
@@ -181,6 +278,14 @@ document.addEventListener('DOMContentLoaded', function () {
         districtCheckboxes.forEach(function (cb) { cb.removeAttribute('disabled'); });
         if (sundayClosedCheckbox) sundayClosedCheckbox.removeAttribute('disabled');
 
+        syncCategoryNameFromSelect();
+
+        if (skillsInput) {
+            skillsInput.removeAttribute('readonly');
+            skillsInput.classList.add('editable');
+        }
+        renderSkillsTags();
+
         editProfileBtn.style.display = 'none';
         saveChangesBtn.style.display = 'inline-flex';
         cancelChangesBtn.style.display = 'inline-flex';
@@ -194,6 +299,15 @@ document.addEventListener('DOMContentLoaded', function () {
         formSelects.forEach(function (sel) { sel.setAttribute('disabled', 'disabled'); sel.classList.remove('editable'); });
         districtCheckboxes.forEach(function (cb) { cb.setAttribute('disabled', 'disabled'); });
         if (sundayClosedCheckbox) sundayClosedCheckbox.setAttribute('disabled', 'disabled');
+
+        syncCategoryNameFromSelect();
+
+        if (skillsInput) {
+            skillsInput.setAttribute('readonly', 'readonly');
+            skillsInput.classList.remove('editable');
+            skillsInput.value = '';
+        }
+        renderSkillsTags();
 
         editProfileBtn.style.display = 'inline-flex';
         saveChangesBtn.style.display = 'none';
@@ -220,7 +334,8 @@ document.addEventListener('DOMContentLoaded', function () {
             category_id: document.getElementById('service-category').value || null,
             districts: selectedDistricts.join(', '),
             availability: document.getElementById('availability').value,
-            about: currentProfileData ? (currentProfileData.about || '') : ''
+            about: currentProfileData ? (currentProfileData.about || '') : '',
+            skills: skillsTags.join(', ')
         };
 
         // Loading state
@@ -257,8 +372,35 @@ document.addEventListener('DOMContentLoaded', function () {
     function handleCancelChanges(e) {
         e.preventDefault();
         restoreOriginalFormData();
+        if (currentProfileData) {
+            setSkillsFromData(currentProfileData.skills);
+            renderSkillsTags();
+        }
         exitEditMode();
         showNotification('Changes cancelled.', 'info');
+    }
+
+    function handleSkillsKeydown(e) {
+        if (!isEditing) return;
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+
+        const val = (skillsInput.value || '').trim();
+        if (!val) return;
+
+        skillsTags = normalizeTags(skillsTags.concat([val]));
+        skillsInput.value = '';
+        renderSkillsTags();
+    }
+
+    function handleSkillsTagClick(e) {
+        const btn = e.target.closest('.skill-tag-remove');
+        if (!btn) return;
+        if (!isEditing) return;
+        const idx = parseInt(btn.getAttribute('data-idx'), 10);
+        if (Number.isNaN(idx)) return;
+        skillsTags.splice(idx, 1);
+        renderSkillsTags();
     }
 
     /* ──────────────────────────────────────────────
@@ -495,6 +637,13 @@ document.addEventListener('DOMContentLoaded', function () {
         editProfileBtn.addEventListener('click', toggleEditMode);
         saveChangesBtn.addEventListener('click', handleSaveChanges);
         cancelChangesBtn.addEventListener('click', handleCancelChanges);
+
+        if (skillsInput) {
+            skillsInput.addEventListener('keydown', handleSkillsKeydown);
+        }
+        if (skillsTagsContainer) {
+            skillsTagsContainer.addEventListener('click', handleSkillsTagClick);
+        }
         profileForm.addEventListener('submit', function (e) {
             e.preventDefault();
             if (isEditing) handleSaveChanges(e);

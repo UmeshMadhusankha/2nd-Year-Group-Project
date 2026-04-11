@@ -20,7 +20,20 @@
  * Current company user ID (retrieved from PHP session)
  * @type {number|null}
  */
-const currentCompanyId = window.CURRENT_USER_ID || null;
+// NOTE: Use var to avoid redeclaration errors when multiple company scripts are loaded together.
+var currentCompanyId = window.CURRENT_USER_ID || window.CURRENT_COMPANY_ID || window.currentCompanyId || null;
+
+/**
+ * Optional widget config (used when embedding Repair Requests UI inside other pages, e.g. dashboard)
+ * @type {object|null}
+ */
+const repairRequestsWidgetConfig = window.REPAIR_REQUESTS_WIDGET_CONFIG || null;
+
+/**
+ * True when this script runs in embedded widget mode
+ * @type {boolean}
+ */
+const isWidgetMode = Boolean(repairRequestsWidgetConfig && repairRequestsWidgetConfig.enabled);
 
 /**
  * Array of available job requests
@@ -47,11 +60,23 @@ let companyDefaults = null;
 let editingQuotationId = null;
 
 /**
+ * Prevents duplicate work schedule event bindings
+ * @type {boolean}
+ */
+let workScheduleInitialized = false;
+
+/**
  * DOM element references (initialized after DOM load)
  */
 let quotationModal;
 let quotationForm;
 let requestDetailsModal;
+
+/**
+ * Pending action requested via URL params (repair-requests.php?request_id=...&action=quote|details)
+ * @type {{requestId:number, action:'quote'|'details'|null}|null}
+ */
+let pendingUrlAction = null;
 
 // ================================================================
 // INITIALIZATION
@@ -76,21 +101,45 @@ document.addEventListener('DOMContentLoaded', function () {
     quotationForm = document.getElementById('quotation-form');
     requestDetailsModal = document.getElementById('request-details-modal');
 
+    // Capture URL-driven actions (only used on full page)
+    if (!isWidgetMode) {
+        const params = new URLSearchParams(window.location.search || '');
+        const requestId = Number(params.get('request_id') || params.get('requestId') || 0);
+        const actionRaw = String(params.get('action') || '').toLowerCase();
+        const action = (actionRaw === 'quote' || actionRaw === 'details') ? actionRaw : null;
+        if (requestId > 0 && action) {
+            pendingUrlAction = { requestId, action };
+        }
+    }
 
-    initializeTabs();
-    initializeViewToggle();
-    initializeFilters();
-    initializeModal();
-    initializeCostCalculator();
-    initializeDateValidation();
+
+    // Full-page-only UI (tabs / filters / view toggles)
+    if (!isWidgetMode) {
+        initializeTabs();
+        initializeViewToggle();
+        initializeFilters();
+    }
+
+    // Shared UI (modals + pricing + date validation)
+    if (quotationModal && quotationForm && requestDetailsModal) {
+        initializeModal();
+        initializeCostCalculator();
+        initializeDateValidation();
+    }
 
     // Load company defaults for auto-filling
     loadCompanyDefaults();
 
     // Load initial data from API
+    const shouldLoadRequests = !isWidgetMode || (repairRequestsWidgetConfig.loadRequests !== false);
+    if (shouldLoadRequests) {
+        loadAvailableRequests();
+    }
 
-    loadAvailableRequests();
-    loadSubmittedQuotations();
+    const shouldLoadQuotations = !isWidgetMode || (repairRequestsWidgetConfig.loadQuotations !== false);
+    if (shouldLoadQuotations) {
+        loadSubmittedQuotations();
+    }
 });
 
 // ================================================================
@@ -119,15 +168,64 @@ async function loadAvailableRequests() {
         const result = await response.json();
 
         if (result.success) {
-            availableRequests = result.data || [];
+            availableRequests = (result.data || []).map(r => ({
+                ...r,
+                created_at: r.created_at || r.dateCreated || null
+            }));
+
+            if (isWidgetMode) {
+                const limit = Number(repairRequestsWidgetConfig.limit || 0);
+                availableRequests = [...availableRequests].sort((a, b) => {
+                    const dateDiff = (new Date(b.created_at || 0)) - (new Date(a.created_at || 0));
+                    if (dateDiff !== 0) return dateDiff;
+                    return Number(b.request_id || 0) - Number(a.request_id || 0);
+                });
+                if (limit > 0) {
+                    availableRequests = availableRequests.slice(0, limit);
+                }
+            }
+
             renderAvailableRequests();
-            updateRequestCounts();
+
+            // If the page was opened with a request action, apply it after data load
+            if (!isWidgetMode) {
+                await applyPendingUrlAction();
+            }
+
+            const shouldShowCounts = !isWidgetMode || (repairRequestsWidgetConfig.showCounts !== false);
+            if (shouldShowCounts) {
+                updateRequestCounts();
+            }
         } else {
             showToast(result.message || result.error || 'Failed to load job requests', 'error');
         }
     } catch (error) {
         console.error('Error loading job requests:', error);
         showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function applyPendingUrlAction() {
+    if (!pendingUrlAction) return;
+    const { requestId, action } = pendingUrlAction;
+    pendingUrlAction = null;
+
+    // Ensure data exists (fallback by id) then open requested modal
+    if (action === 'quote') {
+        await openQuotationModal(requestId);
+    } else {
+        await viewRequestDetails(requestId);
+    }
+
+    // Clean URL so refresh doesn't reopen
+    try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('request_id');
+        url.searchParams.delete('requestId');
+        url.searchParams.delete('action');
+        window.history.replaceState({}, document.title, url.toString());
+    } catch {
+        // ignore
     }
 }
 
@@ -160,6 +258,8 @@ async function loadSubmittedQuotations() {
 
             renderSubmittedQuotations();
             updateQuotationCounts();
+            // Successful Contracts section should show completed projects (not contracts)
+            loadCompletedProjectsForLogs();
         } else {
             showToast(result.message || result.error || 'Failed to load quotations', 'error');
         }
@@ -206,7 +306,17 @@ async function loadCompanyDefaults() {
  * Render available job requests
  */
 function renderAvailableRequests() {
-    const container = document.querySelector('.requests-grid');
+    const containerSelector = (isWidgetMode && repairRequestsWidgetConfig && repairRequestsWidgetConfig.containerSelector)
+        ? repairRequestsWidgetConfig.containerSelector
+        : '.requests-grid';
+    const container = document.querySelector(containerSelector);
+
+    if (!container) {
+        // In widget mode, the host page may intentionally not provide a render container.
+        if (isWidgetMode) return;
+        console.warn('Requests container not found:', containerSelector);
+        return;
+    }
 
     if (!availableRequests || availableRequests.length === 0) {
         container.innerHTML = `
@@ -227,7 +337,7 @@ function renderAvailableRequests() {
 function createRequestCard(request) {
     const urgencyClass = request.urgency === 'urgent' ? 'high' : 'low';
     const urgencyText = request.urgency === 'urgent' ? 'High Priority' : 'Low Priority';
-    const initials = getInitials(request.customer_fname, request.customer_lname);
+    const initials = getInitialsFromFullName(request.customer_name || '');
     const datePosted = formatTimeAgo(request.created_at);
     const hasAttachments = request.photos && request.photos.length > 0;
 
@@ -261,7 +371,7 @@ function createRequestCard(request) {
             <div class="customer-info">
                 <div class="customer-avatar">${initials}</div>
                 <div class="customer-details">
-                    <h4>${escapeHtml(request.customer_fname + ' ' + request.customer_lname)}</h4>
+                    <h4>${escapeHtml(request.customer_name || 'Unknown Customer')}</h4>
                 </div>
                 <a href="#" class="view-profile-btn" onclick="event.preventDefault();">View Profile</a>
             </div>
@@ -336,9 +446,15 @@ function renderSubmittedQuotations() {
     }
 
     const pending = submittedQuotations.filter(q => q.status === 'pending');
-    const accepted = submittedQuotations.filter(q => q.status === 'accepted');
+    const isContractSent = (q) => {
+        const sent = q?.contract_sent_to_customer ?? q?.sent_to_customer ?? 0;
+        return Number(sent) === 1;
+    };
+
+    // Accepted section should also include items where a contract was already sent
+    const accepted = submittedQuotations.filter(q => q.status === 'accepted' || isContractSent(q));
     const rejected = submittedQuotations.filter(q => q.status === 'rejected');
-    const successful = submittedQuotations.filter(q => q.status === 'successful');
+    // NOTE: Successful Contracts UI is now driven by completed projects, not quotations.
     const draft = []; // Draft quotations would need separate handling
 
 
@@ -350,7 +466,7 @@ function renderSubmittedQuotations() {
     if (pendingCount) pendingCount.textContent = pending.length;
     if (acceptedCount) acceptedCount.textContent = accepted.length;
     if (rejectedCount) rejectedCount.textContent = rejected.length;
-    if (successfulCount) successfulCount.textContent = successful.length;
+    if (successfulCount) successfulCount.textContent = '0';
     if (draftCount) draftCount.textContent = draft.length;
 
     // Render pending quotations
@@ -412,21 +528,17 @@ function renderSubmittedQuotations() {
         }
     }
 
-    // Render successful contracts
+    // Successful contracts list is rendered by loadCompletedProjectsForLogs()
     if (successfulList) {
-        if (successful.length === 0) {
-            successfulList.innerHTML = `
-                <div class="quotations-empty-state">
-                    <div class="empty-state-icon successful">
-                        <i class="fas fa-trophy"></i>
-                    </div>
-                    <h3 class="empty-state-title">No Completed Contracts</h3>
-                    <p class="empty-state-text">Successfully completed contracts will be displayed here.</p>
+        successfulList.innerHTML = `
+            <div class="quotations-empty-state">
+                <div class="empty-state-icon successful">
+                    <i class="fas fa-spinner fa-spin"></i>
                 </div>
-            `;
-        } else {
-            successfulList.innerHTML = successful.map(q => createQuotationLogItem(q, false, false, true)).join('');
-        }
+                <h3 class="empty-state-title">Loading Completed Projects...</h3>
+                <p class="empty-state-text">Please wait while we fetch your completed projects.</p>
+            </div>
+        `;
     }
 
     // Render draft quotations
@@ -444,6 +556,145 @@ function renderSubmittedQuotations() {
 }
 
 /**
+ * Load completed projects and render them in the "Successful Contracts" section.
+ * This section is intended to show completed projects (not contract cards).
+ */
+async function loadCompletedProjectsForLogs() {
+    const successfulList = document.getElementById('successful-contracts-list');
+    const successfulCount = document.getElementById('successful-contracts-count');
+
+    if (!successfulList) return;
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        const response = await fetch(
+            `/2nd-Year-Group-Project/FixLanka/api/projects.php?company_id=${encodeURIComponent(currentCompanyId)}&status=completed`,
+            { signal: controller.signal }
+        );
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Completed projects API error:', errorText);
+            successfulList.innerHTML = `
+                <div class="quotations-empty-state">
+                    <div class="empty-state-icon rejected">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <h3 class="empty-state-title">Failed to load completed projects</h3>
+                    <p class="empty-state-text">Please try again later.</p>
+                </div>
+            `;
+            if (successfulCount) successfulCount.textContent = '0';
+            return;
+        }
+
+        const result = await response.json();
+        const projects = (result && result.success && Array.isArray(result.data)) ? result.data : [];
+
+        if (successfulCount) successfulCount.textContent = String(projects.length);
+
+        if (projects.length === 0) {
+            successfulList.innerHTML = `
+                <div class="quotations-empty-state">
+                    <div class="empty-state-icon successful">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <h3 class="empty-state-title">No Completed Projects</h3>
+                    <p class="empty-state-text">Completed projects with positive outcomes will be displayed here.</p>
+                </div>
+            `;
+            return;
+        }
+
+        successfulList.innerHTML = projects.map(p => createCompletedProjectLogItem(p)).join('');
+    } catch (error) {
+        console.error('Error loading completed projects:', error);
+        successfulList.innerHTML = `
+            <div class="quotations-empty-state">
+                <div class="empty-state-icon rejected">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <h3 class="empty-state-title">Failed to load completed projects</h3>
+                <p class="empty-state-text">Please try again later.</p>
+            </div>
+        `;
+        if (successfulCount) successfulCount.textContent = '0';
+    }
+}
+
+function createCompletedProjectLogItem(project) {
+    const title = project.title || 'Completed Project';
+    const projectId = project.project_id || project.id || '';
+    const customerName = `${project.customer_first_name || ''} ${project.customer_last_name || ''}`.trim() || 'Customer';
+
+    // Show an approximate month label (prefer end_date, else start_date)
+    const dateSource = project.end_date || project.start_date || null;
+    let formattedDate = '-';
+    if (dateSource) {
+        const d = new Date(dateSource);
+        formattedDate = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    }
+
+    const amountValue = (project.final_cost != null ? project.final_cost : project.budget);
+    const amount = (amountValue != null && amountValue !== '')
+        ? parseFloat(amountValue).toFixed(2)
+        : null;
+
+    return `
+        <div class="quotation-card successful">
+            <div class="quotation-card-main">
+                <div class="quotation-card-left">
+                    <div class="quotation-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="quotation-info-section">
+                        <div class="quotation-header-top">
+                            <h4 class="quotation-title">${escapeHtml(title)}</h4>
+                            <span class="status-badge success"><i class="fas fa-check"></i> Completed</span>
+                        </div>
+                        <div class="quotation-meta">
+                            <span class="meta-item">
+                                <i class="fas fa-hashtag"></i>
+                                Project ${escapeHtml(String(projectId))}
+                            </span>
+                            <span class="meta-separator">&bull;</span>
+                            <span class="meta-item">
+                                <i class="fas fa-user"></i>
+                                ${escapeHtml(customerName)}
+                            </span>
+                            <span class="meta-separator">&bull;</span>
+                            <span class="meta-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                ${formattedDate}
+                            </span>
+                        </div>
+                        ${amount !== null ? `
+                        <div class="quotation-amount-inline">
+                            <span class="amount-label">Total Amount:</span>
+                            <span class="amount-value">LKR ${formatNumber(amount)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <div class="quotation-card-right">
+                    <div class="quotation-actions-vertical">
+                        <a href="/2nd-Year-Group-Project/FixLanka/views/company/projects.php" class="action-btn small success">
+                            <i class="fas fa-project-diagram"></i>
+                            View Projects
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
  * Create quotation log item HTML
  */
 function createQuotationLogItem(quotation, isAccepted = false, isRejected = false, isSuccessful = false) {
@@ -456,6 +707,8 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
     let statusBadge = '';
     let cardClass = 'quotation-card';
 
+    const contractSent = Number(quotation?.contract_sent_to_customer ?? quotation?.sent_to_customer ?? 0) === 1;
+
     if (isSuccessful) {
         iconClass = 'fas fa-check-circle';
         statusBadge = '<span class="status-badge success"><i class="fas fa-check"></i> Completed</span>';
@@ -465,8 +718,10 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
         statusBadge = '<span class="status-badge danger"><i class="fas fa-times"></i> Rejected</span>';
         cardClass += ' rejected';
     } else if (isAccepted) {
-        iconClass = 'fas fa-file-check';
-        statusBadge = '<span class="status-badge info"><i class="fas fa-handshake"></i> Accepted</span>';
+        iconClass = contractSent ? 'fas fa-paper-plane' : 'fas fa-file-check';
+        statusBadge = contractSent
+            ? '<span class="status-badge info"><i class="fas fa-paper-plane"></i> Contract Sent</span>'
+            : '<span class="status-badge info"><i class="fas fa-handshake"></i> Accepted</span>';
         cardClass += ' accepted';
     } else {
         statusBadge = '<span class="status-badge warning"><i class="fas fa-clock"></i> Pending</span>';
@@ -558,12 +813,14 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
  * @param {number} requestId - The ID of the job request to create a quotation for
  * @returns {void}
  */
-function openQuotationModal(requestId) {
+async function openQuotationModal(requestId) {
     editingQuotationId = null;
     quotationForm.reset();
 
-    // Find the requested job request
-    const request = availableRequests.find(r => r.request_id === requestId);
+    // Find the requested job request (fallback to fetch-by-id when not preloaded)
+    await ensureRequestLoaded(requestId);
+
+    const request = availableRequests.find(r => Number(r.request_id) === Number(requestId));
     if (!request) {
         showToast('Request not found', 'error');
         return;
@@ -655,13 +912,9 @@ function openQuotationModal(requestId) {
 
     document.getElementById('estimated-completion-date').value = completionDate.toISOString().split('T')[0];
 
-    // 5. Auto-calculate and fill Estimated Duration
-    const estStartDate = new Date(document.getElementById('estimated-start-date').value);
-    const estCompletionDate = new Date(document.getElementById('estimated-completion-date').value);
-    const durationDays = Math.ceil((estCompletionDate - estStartDate) / (1000 * 60 * 60 * 24));
-    if (durationDays > 0) {
-        document.getElementById('estimated-duration').value = durationDays;
-    }
+    // 5. Auto-calculate daily hours and duration (respects work schedule type)
+    updateDailyWorkHours();
+    autoCalculateDuration();
 
     // 6. Auto-fill Payment Method from company defaults (linked to payment structure)
     if (companyDefaults?.default_payment_terms) {
@@ -1062,8 +1315,10 @@ function closeQuotationModal() {
 /**
  * View request details
  */
-function viewRequestDetails(requestId) {
-    const request = availableRequests.find(r => r.request_id === requestId);
+async function viewRequestDetails(requestId) {
+    await ensureRequestLoaded(requestId);
+
+    const request = availableRequests.find(r => Number(r.request_id) === Number(requestId));
     if (!request) {
         showToast('Request not found', 'error');
         return;
@@ -1099,6 +1354,47 @@ function viewRequestDetails(requestId) {
 function closeRequestDetailsModal() {
     requestDetailsModal.classList.remove('active');
     document.body.style.overflow = '';
+}
+
+/**
+ * Ensure a request is available in `availableRequests` for modal rendering.
+ * On full page, requests are usually preloaded. On dashboard, we may only have the request_id.
+ *
+ * @param {number} requestId
+ * @returns {void|Promise<void>}
+ */
+async function ensureRequestLoaded(requestId) {
+    const id = Number(requestId);
+    if (!id) return false;
+    if (availableRequests.some(r => Number(r.request_id) === id)) return true;
+
+    // Fetch by id from API and cache it
+    try {
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-requests.php?request_id=${encodeURIComponent(id)}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server Error (${response.status}): ${errorText.substring(0, 200)}`);
+        }
+
+        const result = await response.json();
+        const row = (result && result.success && Array.isArray(result.data) && result.data.length > 0)
+            ? result.data[0]
+            : null;
+
+        if (!row) return false;
+
+        // Normalize created_at + photos field
+        row.created_at = row.created_at || row.dateCreated || null;
+        if (row.photos && typeof row.photos === 'string') {
+            row.photos = row.photos.split(',');
+        }
+
+        availableRequests.push(row);
+        return true;
+    } catch (error) {
+        console.error('Error fetching request by id:', error);
+        return false;
+    }
 }
 
 // ================================================================
@@ -1274,6 +1570,7 @@ function autoCalculateDuration() {
     const startDateInput = document.getElementById('estimated-start-date');
     const completionDateInput = document.getElementById('estimated-completion-date');
     const durationInput = document.getElementById('estimated-duration');
+    const scheduleType = document.getElementById('work-schedule-type')?.value || 'weekdays_only';
 
     if (startDateInput && completionDateInput && durationInput) {
         const startDate = new Date(startDateInput.value);
@@ -1297,17 +1594,40 @@ function autoCalculateDuration() {
             completionDateInput.value = fixedCompletion.toISOString().split('T')[0];
 
             // Recalculate with fixed date
-            const fixedDuration = Math.ceil((fixedCompletion - startDate) / (1000 * 60 * 60 * 24));
+            const fixedDuration = calculateWorkingDaysBetweenDates(startDate, fixedCompletion, scheduleType);
             durationInput.value = fixedDuration;
             durationInput.classList.remove('error');
+            calculateTotalWorkHours();
+            updateSchedulePreview();
             return;
         }
 
-        // Calculate duration (in days)
-        const durationDays = Math.ceil((completionDate - startDate) / (1000 * 60 * 60 * 24));
+        // Calculate duration (in working days) based on schedule type
+        let durationDays = calculateWorkingDaysBetweenDates(startDate, completionDate, scheduleType);
 
-        // Warn if duration is 0 (same day completion)
-        if (durationDays === 0) {
+        // Backend requires duration > 0. If the chosen range contains no working days for this schedule,
+        // adjust completion date forward until at least 1 working day exists.
+        if (durationDays <= 0) {
+            const adjustedCompletion = new Date(completionDate);
+            let guard = 0;
+            while (durationDays <= 0 && guard < 31) {
+                adjustedCompletion.setDate(adjustedCompletion.getDate() + 1);
+                durationDays = calculateWorkingDaysBetweenDates(startDate, adjustedCompletion, scheduleType);
+                guard++;
+            }
+
+            if (guard > 0) {
+                completionDateInput.value = adjustedCompletion.toISOString().split('T')[0];
+                showToast('Selected date range has no working days for this schedule. Completion date adjusted.', 'warning', 4000);
+            }
+
+            if (durationDays <= 0) {
+                durationDays = 1;
+            }
+        }
+
+        // Warn if start and completion are the same day
+        if (startDateInput.value === completionDateInput.value) {
             showToast('Same-day completion selected. Are you sure?', 'warning', 3000);
         }
 
@@ -1318,6 +1638,10 @@ function autoCalculateDuration() {
 
         durationInput.value = durationDays;
         durationInput.classList.remove('error');
+
+        // Duration affects total hours + preview
+        calculateTotalWorkHours();
+        updateSchedulePreview();
     }
 }
 
@@ -1370,6 +1694,17 @@ function updateQuotationCounts() {
 function getInitials(firstName, lastName) {
     const first = firstName ? firstName.charAt(0).toUpperCase() : '';
     const last = lastName ? lastName.charAt(0).toUpperCase() : '';
+    return first + last;
+}
+
+/**
+ * Get initials from full name string
+ */
+function getInitialsFromFullName(fullName) {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/);
+    const first = parts[0] ? parts[0].charAt(0).toUpperCase() : '';
+    const last = parts.length > 1 ? parts[parts.length - 1].charAt(0).toUpperCase() : '';
     return first + last;
 }
 
@@ -1480,23 +1815,55 @@ window.closeRequestDetailsModal = closeRequestDetailsModal;
  * Load and render direct requests (future feature)
  * Currently shows empty state as direct requests are not yet implemented
  */
-function loadDirectRequests() {
+async function loadDirectRequests() {
     const emptyState = document.getElementById('direct-requests-empty');
     const table = document.getElementById('direct-requests-table');
 
-    // For now, always show empty state
-    // Future: Fetch from API when direct requests feature is implemented
-    if (emptyState) {
-        emptyState.style.display = 'block';
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-direct-requests.php?limit=100');
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Direct requests API error:', errorText);
+            // Fail closed: show empty state
+            if (emptyState) emptyState.style.display = 'block';
+            if (table) table.style.display = 'none';
+            updateDirectRequestsCount(0);
+            return;
+        }
+
+        const result = await response.json();
+        if (!result || !result.success) {
+            if (emptyState) emptyState.style.display = 'block';
+            if (table) table.style.display = 'none';
+            updateDirectRequestsCount(0);
+            return;
+        }
+
+        const rows = Array.isArray(result.data) ? result.data : [];
+
+        const normalizeStatus = (quoteStatus) => {
+            const s = String(quoteStatus || 'pending').toLowerCase();
+            if (s === 'successful') return 'completed';
+            if (s === 'accepted') return 'accepted';
+            if (s === 'rejected') return 'rejected';
+            return 'pending';
+        };
+
+        const directRequests = rows.map(r => ({
+            ...r,
+            created_at: r.created_at || r.dateCreated || null,
+            status: r.status || normalizeStatus(r.quote_status),
+            customer_name: r.customer_name || `${r.customer_fname || ''} ${r.customer_lname || ''}`.trim()
+        }));
+
+        renderDirectRequests(directRequests);
+    } catch (error) {
+        console.error('Error loading direct requests:', error);
+        if (emptyState) emptyState.style.display = 'block';
+        if (table) table.style.display = 'none';
+        updateDirectRequestsCount(0);
     }
-    if (table) {
-        table.style.display = 'none';
-    }
-
-    // Set count to 0
-    updateDirectRequestsCount(0);
-
-
 }
 
 /**
@@ -1551,16 +1918,24 @@ function renderDirectRequests(requests) {
  * @returns {string} HTML string
  */
 function createDirectRequestRow(request) {
-    const initials = getInitials(request.customer_fname, request.customer_lname);
-    const statusClass = request.status === 'accepted' ? 'accepted' :
-        request.status === 'rejected' ? 'rejected' : 'pending';
-    const statusIcon = request.status === 'accepted' ? 'check' :
-        request.status === 'rejected' ? 'times' : 'clock';
+    const customerName = request.customer_name
+        || `${request.customer_fname || ''} ${request.customer_lname || ''}`.trim()
+        || request.customer
+        || 'Customer';
+    const initials = getInitialsFromFullName(customerName);
+
+    const rawStatus = String(request.status || 'pending').toLowerCase();
+    const statusClass = rawStatus === 'accepted' ? 'accepted' :
+        rawStatus === 'rejected' ? 'rejected' :
+            rawStatus === 'completed' ? 'accepted' : 'pending';
+    const statusIcon = rawStatus === 'accepted' ? 'check' :
+        rawStatus === 'rejected' ? 'times' :
+            rawStatus === 'completed' ? 'check-double' : 'clock';
 
     // Check if expired
-    const deadline = new Date(request.finish_date);
+    const deadline = request.finish_date ? new Date(request.finish_date) : null;
     const today = new Date();
-    const isExpired = deadline < today;
+    const isExpired = deadline ? (deadline < today) : false;
 
     return `
         <tr data-request-id="${request.request_id}">
@@ -1568,7 +1943,7 @@ function createDirectRequestRow(request) {
                 <div>
                     <h5>${escapeHtml(request.title)}</h5>
                     <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
-                        #REQ-${request.request_id} &bull; ${escapeHtml(request.category_name || 'General')}
+                        #REQ-${request.request_id} &bull; ${escapeHtml(request.category_name || request.category || 'General')}
                     </p>
                 </div>
             </td>
@@ -1576,29 +1951,31 @@ function createDirectRequestRow(request) {
                 <div class="table-customer">
                     <div class="table-customer-avatar">${initials}</div>
                     <div class="table-customer-info">
-                        <h5>${escapeHtml(request.customer_fname + ' ' + request.customer_lname)}</h5>
-                        <p>${escapeHtml(request.customer_email || 'No email')}</p>
+                        <h5>${escapeHtml(customerName)}</h5>
+                        <p>${escapeHtml(request.customer_email || request.email || 'No email')}</p>
                     </div>
                 </div>
             </td>
             <td>${formatDate(request.created_at)}</td>
             <td>
-                ${isExpired
-            ? `<span style="color: var(--danger-color); font-weight: 600;">
+                ${deadline
+            ? (isExpired
+                ? `<span style="color: var(--danger-color); font-weight: 600;">
                          <i class="fas fa-exclamation-triangle"></i> Expired
                        </span>`
-            : formatDate(request.finish_date)
+                : formatDate(request.finish_date))
+            : '-'
         }
             </td>
             <td>
                 <span class="status-badge ${statusClass}">
                     <i class="fas fa-${statusIcon}"></i>
-                    ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                    ${rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)}
                 </span>
             </td>
             <td>
                 <div class="table-actions">
-                    ${request.status === 'pending' && !isExpired ? `
+                    ${rawStatus === 'pending' && !isExpired ? `
                         <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
@@ -1611,7 +1988,7 @@ function createDirectRequestRow(request) {
                             <i class="fas fa-times"></i>
                             <span>Decline</span>
                         </button>
-                    ` : request.status === 'accepted' ? `
+                    ` : rawStatus === 'accepted' ? `
                         <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
                             <i class="fas fa-file-contract"></i>
                             <span>View Contract</span>
@@ -1732,7 +2109,15 @@ if (document.readyState === 'loading') {
  * Sets up event listeners and default values for work schedule fields
  */
 function initializeWorkSchedule() {
+    if (workScheduleInitialized) {
+        return;
+    }
+    workScheduleInitialized = true;
+
     console.log('🔧 Initializing work schedule features...');
+
+    const startTimeField = document.getElementById('work-start-time');
+    const endTimeField = document.getElementById('work-end-time');
 
     // Auto-update working days based on schedule type
     const scheduleTypeSelect = document.getElementById('work-schedule-type');
@@ -1766,6 +2151,7 @@ function initializeWorkSchedule() {
             }
 
             // Recalculate total hours and update preview
+            autoCalculateDuration();
             calculateTotalWorkHours();
             updateSchedulePreview();
         });
@@ -1791,19 +2177,42 @@ function initializeWorkSchedule() {
         });
     }
 
-    // Auto-calculate total work hours when relevant fields change
-    const fieldsForCalculation = ['estimated-duration', 'working-days-per-week', 'daily-work-hours'];
-    fieldsForCalculation.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('input', calculateTotalWorkHours);
-        }
-    });
+    // Auto-calculate daily hours when time fields change
+    if (startTimeField) {
+        startTimeField.addEventListener('change', () => {
+            updateDailyWorkHours();
+            calculateTotalWorkHours();
+            updateSchedulePreview();
+        });
+        startTimeField.addEventListener('input', () => {
+            updateDailyWorkHours();
+            calculateTotalWorkHours();
+        });
+    }
+    if (endTimeField) {
+        endTimeField.addEventListener('change', () => {
+            updateDailyWorkHours();
+            calculateTotalWorkHours();
+            updateSchedulePreview();
+        });
+        endTimeField.addEventListener('input', () => {
+            updateDailyWorkHours();
+            calculateTotalWorkHours();
+        });
+    }
+
+    // Auto-calculate total work hours when duration changes (duration is auto-calculated)
+    const durationField = document.getElementById('estimated-duration');
+    if (durationField) {
+        durationField.addEventListener('input', calculateTotalWorkHours);
+        durationField.addEventListener('change', calculateTotalWorkHours);
+    }
 
     // Update preview when any schedule field changes
     const fieldsForPreview = [
         'work-schedule-type', 'working-days-per-week', 'daily-work-hours',
-        'work-start-time', 'work-end-time', 'overtime-available', 'overtime-rate'
+        'work-start-time', 'work-end-time', 'overtime-available', 'overtime-rate',
+        'estimated-start-date', 'estimated-completion-date', 'estimated-duration'
     ];
     fieldsForPreview.forEach(fieldId => {
         const field = document.getElementById(fieldId);
@@ -1814,10 +2223,101 @@ function initializeWorkSchedule() {
     });
 
     // Initial calculation and preview
+    updateDailyWorkHours();
+    autoCalculateDuration();
     calculateTotalWorkHours();
     updateSchedulePreview();
 
     console.log('✅ Work schedule features initialized');
+}
+
+function parseTimeToMinutes(timeString) {
+    if (!timeString || typeof timeString !== 'string') return null;
+    const [hoursStr, minutesStr] = timeString.split(':');
+    const hours = Number(hoursStr);
+    const minutes = Number(minutesStr);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+    return hours * 60 + minutes;
+}
+
+function updateDailyWorkHours() {
+    const startTime = document.getElementById('work-start-time')?.value;
+    const endTime = document.getElementById('work-end-time')?.value;
+    const dailyHoursField = document.getElementById('daily-work-hours');
+
+    if (!dailyHoursField) return;
+    if (!startTime || !endTime) {
+        dailyHoursField.value = '';
+        dailyHoursField.classList.remove('error');
+        return;
+    }
+
+    const startMinutes = parseTimeToMinutes(startTime);
+    const endMinutes = parseTimeToMinutes(endTime);
+
+    if (startMinutes === null || endMinutes === null) {
+        dailyHoursField.value = '';
+        dailyHoursField.classList.add('error');
+        return;
+    }
+
+    const diffMinutes = endMinutes - startMinutes;
+    if (diffMinutes <= 0) {
+        dailyHoursField.value = '';
+        dailyHoursField.classList.add('error');
+        showToast('End time must be after start time!', 'error', 3000);
+        return;
+    }
+
+    dailyHoursField.classList.remove('error');
+    dailyHoursField.value = (diffMinutes / 60).toFixed(2);
+}
+
+function isWorkingDayForScheduleType(dayOfWeek, scheduleType) {
+    // dayOfWeek: 0=Sunday, 1=Monday, ..., 6=Saturday
+    switch (scheduleType) {
+        case 'weekdays_only':
+            return dayOfWeek >= 1 && dayOfWeek <= 5;
+        case 'weekends_included':
+            return dayOfWeek >= 1 && dayOfWeek <= 6;
+        case 'all_days':
+        case 'custom':
+        default:
+            return true;
+    }
+}
+
+function calculateWorkingDaysBetweenDates(startDate, endDate, scheduleType) {
+    // Counts working days in [startDate, endDate] (inclusive)
+    // i.e., start=2026-04-03, end=2026-04-06 => 4 days (if all are working days)
+    if (!(startDate instanceof Date) || !(endDate instanceof Date)) return 0;
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 0;
+
+    const startUtc = new Date(Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()));
+    const endUtc = new Date(Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()));
+    if (endUtc < startUtc) return 0;
+
+    // Custom schedule: approximate working days using the provided working-days-per-week value
+    if (scheduleType === 'custom') {
+        const workingDaysPerWeek = parseFloat(document.getElementById('working-days-per-week')?.value) || 5;
+        const totalCalendarDays = Math.floor((endUtc - startUtc) / (1000 * 60 * 60 * 24)) + 1;
+        const fullWeeks = Math.floor(totalCalendarDays / 7);
+        const remainderDays = totalCalendarDays % 7;
+        const estimatedWorkingDays = (fullWeeks * workingDaysPerWeek) + Math.min(remainderDays, workingDaysPerWeek);
+        return Math.max(0, Math.round(estimatedWorkingDays));
+    }
+
+    let count = 0;
+    const current = new Date(startUtc);
+    while (current <= endUtc) {
+        const dow = current.getUTCDay();
+        if (isWorkingDayForScheduleType(dow, scheduleType)) {
+            count++;
+        }
+        current.setUTCDate(current.getUTCDate() + 1);
+    }
+    return count;
 }
 
 /**
@@ -1826,18 +2326,13 @@ function initializeWorkSchedule() {
  */
 function calculateTotalWorkHours() {
     const estimatedDuration = parseFloat(document.getElementById('estimated-duration')?.value) || 0;
-    const workingDaysPerWeek = parseFloat(document.getElementById('working-days-per-week')?.value) || 5;
-    const dailyWorkHours = parseFloat(document.getElementById('daily-work-hours')?.value) || 8;
+    const dailyWorkHours = parseFloat(document.getElementById('daily-work-hours')?.value) || 0;
 
     const totalHoursField = document.getElementById('total-work-hours');
     const laborHoursField = document.getElementById('labor-quantity'); // Hourly labor pricing field
 
-    if (estimatedDuration > 0 && totalHoursField) {
-        // Convert calendar days to work days
-        // Formula: (calendar_days / 7) * working_days_per_week * hours_per_day
-        const weeksNeeded = Math.ceil(estimatedDuration / 7);
-        const totalWorkDays = weeksNeeded * workingDaysPerWeek;
-        const totalHours = (totalWorkDays * dailyWorkHours).toFixed(2);
+    if (estimatedDuration > 0 && dailyWorkHours > 0 && totalHoursField) {
+        const totalHours = (estimatedDuration * dailyWorkHours).toFixed(2);
 
         // Update work schedule total hours
         totalHoursField.value = totalHours;
@@ -1847,10 +2342,10 @@ function calculateTotalWorkHours() {
             laborHoursField.value = totalHours;
             // Trigger change event to recalculate labor cost
             laborHoursField.dispatchEvent(new Event('input', { bubbles: true }));
-            console.log(`� Auto-filled hourly labor hours: ${totalHours}`);
+            console.log(`✅ Auto-filled hourly labor hours: ${totalHours}`);
         }
 
-        console.log(`�📊 Total work hours calculated: ${totalHours} (${weeksNeeded} weeks × ${workingDaysPerWeek} days × ${dailyWorkHours} hrs)`);
+        console.log(`📊 Total work hours calculated: ${totalHours} (${estimatedDuration} days × ${dailyWorkHours} hrs)`);
     } else if (totalHoursField) {
         totalHoursField.value = '';
         if (laborHoursField) {

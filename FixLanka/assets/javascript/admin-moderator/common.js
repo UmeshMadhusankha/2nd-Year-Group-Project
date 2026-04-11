@@ -74,7 +74,7 @@ function initializeSearch() {
  * Perform search operation
  */
 function performSearch(query) {
-    
+    console.log('Searching for:', query);
     // In a real application, this would make an API call
     // For now, just show a simple message
     showSearchResults(query);
@@ -86,7 +86,7 @@ function performSearch(query) {
 function showSearchResults(query) {
     // This would typically show a dropdown or navigate to search results page
     // For now, just log to console
-    void query;
+    console.log(`Search results for: ${query}`);
 }
 
 /**
@@ -192,7 +192,7 @@ function handleNotificationClick(notificationItem) {
     
     // Get notification details and perform action
     const title = notificationItem.querySelector('.notification-title')?.textContent;
-    void title;
+    console.log('Notification clicked:', title);
     
     // You can add navigation or modal display here
     // For example:
@@ -211,7 +211,7 @@ function markAllNotificationsAsRead() {
     // Update badge count
     updateNotificationBadge();
     
-    
+    console.log('All notifications marked as read');
 }
 
 /**
@@ -333,7 +333,7 @@ function handleProfileMenuAction(action) {
             handleLogout();
             break;
         default:
-            break;
+            console.log('Unknown action:', action);
     }
     
     closeProfileMenu();
@@ -489,6 +489,8 @@ function validateScheduleForm() {
     const adId = document.getElementById('ad_id');
     const startDate = document.getElementById('start_date');
     const endDate = document.getElementById('end_date');
+    const startTime = document.getElementById('start_time');
+    const endTime = document.getElementById('end_time');
     
     if (!adId || !adId.value) {
         showToast('Please select an advertisement', 'error');
@@ -497,32 +499,42 @@ function validateScheduleForm() {
     }
     
     if (!startDate || !startDate.value) {
-        showToast('Please select a start date', 'error');
-        if (startDate) startDate.focus();
+        showToast('Please select an advertisement first', 'error');
+        if (adId) adId.focus();
         return false;
     }
     
     if (!endDate || !endDate.value) {
-        showToast('Please select an end date', 'error');
-        if (endDate) endDate.focus();
+        showToast('Please select an advertisement first', 'error');
+        if (adId) adId.focus();
         return false;
     }
     
     const start = new Date(startDate.value);
     const end = new Date(endDate.value);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (start < today) {
-        showToast('Start date cannot be in the past', 'error');
-        startDate.focus();
-        return false;
-    }
     
     if (end < start) {
         showToast('End date must be after start date', 'error');
         endDate.focus();
         return false;
+    }
+
+    // Enforce time window when both are provided
+    if (startTime && endTime && startTime.value && endTime.value && startTime.value > endTime.value) {
+        showToast('Start time must be before end time', 'error');
+        startTime.focus();
+        return false;
+    }
+
+    // Enforce campaign range (if provided in the dropdown option)
+    const selectedOption = adId && adId.selectedOptions ? adId.selectedOptions[0] : null;
+    const campaignStart = selectedOption?.dataset?.campaignStart || '';
+    const campaignEnd = selectedOption?.dataset?.campaignEnd || '';
+    if (campaignStart && campaignEnd) {
+        if (startDate.value < campaignStart || endDate.value > campaignEnd) {
+            showToast(`Schedule must be within campaign range (${campaignStart} to ${campaignEnd})`, 'error');
+            return false;
+        }
     }
     
     return true;
@@ -548,6 +560,16 @@ function validateEditForm() {
         if (endDate) endDate.focus();
         return false;
     }
+
+    // Enforce campaign range if present on the inputs (set by editSchedule)
+    const campaignStart = startDate?.dataset?.campaignStart || '';
+    const campaignEnd = endDate?.dataset?.campaignEnd || '';
+    if (campaignStart && campaignEnd) {
+        if (startDate.value < campaignStart || endDate.value > campaignEnd) {
+            showToast(`Schedule must be within campaign range (${campaignStart} to ${campaignEnd})`, 'error');
+            return false;
+        }
+    }
     
     return true;
 }
@@ -563,13 +585,77 @@ function editSchedule(schedule) {
     }
     
     document.getElementById('edit_schedule_id').value = schedule.schedule_id;
-    document.getElementById('edit_start_date').value = schedule.start_date;
-    document.getElementById('edit_end_date').value = schedule.end_date;
+    // Dates are not editable by moderator: force to campaign range.
+    document.getElementById('edit_start_date').value = schedule.campaign_start || schedule.start_date || '';
+    document.getElementById('edit_end_date').value = schedule.campaign_end || schedule.end_date || '';
     document.getElementById('edit_start_time').value = schedule.start_time || '00:00';
     document.getElementById('edit_end_time').value = schedule.end_time || '23:59';
+
+    const editStartDisplay = document.getElementById('edit_start_date_display');
+    const editEndDisplay = document.getElementById('edit_end_date_display');
+    if (editStartDisplay) editStartDisplay.value = schedule.campaign_start || schedule.start_date || '';
+    if (editEndDisplay) editEndDisplay.value = schedule.campaign_end || schedule.end_date || '';
+
+    // Apply campaign hint / enforcement to hidden inputs
+    const editStart = document.getElementById('edit_start_date');
+    const editEnd = document.getElementById('edit_end_date');
+    const hint = document.getElementById('editCampaignRangeHint');
+    const campaignStart = schedule.campaign_start || '';
+    const campaignEnd = schedule.campaign_end || '';
+
+    if (editStart && editEnd && campaignStart && campaignEnd) {
+        editStart.dataset.campaignStart = campaignStart;
+        editEnd.dataset.campaignEnd = campaignEnd;
+
+        if (hint) {
+            hint.textContent = `Campaign range: ${campaignStart} to ${campaignEnd}`;
+        }
+    } else {
+        if (hint) {
+            hint.textContent = '';
+        }
+        if (editStart) delete editStart.dataset.campaignStart;
+        if (editEnd) delete editEnd.dataset.campaignEnd;
+    }
     
     openModal('editAdModal');
 }
+
+// Apply campaign range constraints for Create Schedule modal
+document.addEventListener('DOMContentLoaded', function () {
+    const adSelect = document.getElementById('ad_id');
+    const startDate = document.getElementById('start_date');
+    const endDate = document.getElementById('end_date');
+    const hint = document.getElementById('campaignRangeHint');
+    const startDateDisplay = document.getElementById('start_date_display');
+    const endDateDisplay = document.getElementById('end_date_display');
+
+    if (!adSelect || !startDate || !endDate) return;
+
+    function applyCampaignRangeFromSelection() {
+        const opt = adSelect.selectedOptions ? adSelect.selectedOptions[0] : null;
+        const campaignStart = opt?.dataset?.campaignStart || '';
+        const campaignEnd = opt?.dataset?.campaignEnd || '';
+
+        if (campaignStart && campaignEnd) {
+            // Dates are not editable by moderator: force to campaign range.
+            startDate.value = campaignStart;
+            endDate.value = campaignEnd;
+            if (startDateDisplay) startDateDisplay.value = campaignStart;
+            if (endDateDisplay) endDateDisplay.value = campaignEnd;
+            if (hint) hint.textContent = `Campaign range: ${campaignStart} to ${campaignEnd}`;
+        } else {
+            startDate.value = '';
+            endDate.value = '';
+            if (startDateDisplay) startDateDisplay.value = '';
+            if (endDateDisplay) endDateDisplay.value = '';
+            if (hint) hint.textContent = '';
+        }
+    }
+
+    adSelect.addEventListener('change', applyCampaignRangeFromSelection);
+    applyCampaignRangeFromSelection();
+});
 
 /**
  * Generic modal open function

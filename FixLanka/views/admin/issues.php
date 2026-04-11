@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../controllers/IssueReportController.php';
 
 // ✅ FIXED: Proper PDO initialization
 try {
-    $pdo = getDatabaseConnection();
+    // $pdo is provided by config/database.php
     $controller = new IssueReportController($pdo);
     $controller->handlePostRequest();
 } catch (Exception $e) {

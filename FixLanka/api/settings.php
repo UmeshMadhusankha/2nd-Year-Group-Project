@@ -1,6 +1,8 @@
 <?php
 require_once '../config/session.php';
 require_once '../models/CompanyModel.php';
+require_once '../config/database.php';
+require_once 'helpers.php';
 
 // Set JSON header
 header('Content-Type: application/json');
@@ -14,7 +16,21 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'company') {
 
 // Initialize Model
 $companyModel = new CompanyModel();
-$companyId = $_SESSION['user_id']; 
+$userId = (int)($_SESSION['user_id'] ?? 0);
+$companyId = $_SESSION['company_id'] ?? null;
+
+// Fallback: resolve company_id from user_id
+if (!$companyId && $userId > 0) {
+    $companyData = getCompanyByUserId($pdo, $userId);
+    if ($companyData && isset($companyData['company_id'])) {
+        $companyId = (int)$companyData['company_id'];
+    }
+}
+
+// Last fallback for legacy sessions
+if (!$companyId) {
+    $companyId = $userId;
+}
 
 // Handle GET Request (Fetch All Settings Data)
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -63,15 +79,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } 
     elseif ($action === 'get_sessions') {
-        // Get all active sessions for the company
-        $sessions = $companyModel->getActiveSessions($companyId);
-        $sessionCount = $companyModel->getSessionCount($companyId);
-        echo json_encode([
-            'success' => true, 
-            'data' => $sessions,
-            'count' => $sessionCount,
-            'current_session_id' => session_id()
-        ]);
+        try {
+            // Get all active sessions for the company
+            $sessions = $companyModel->getActiveSessions($userId);
+            $sessionCount = $companyModel->getSessionCount($userId);
+            echo json_encode([
+                'success' => true,
+                'data' => $sessions,
+                'count' => $sessionCount,
+                'current_session_id' => session_id()
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Failed to load sessions']);
+        }
     }
     elseif ($action === 'revoke_session') {
         // Revoke a specific session
@@ -80,25 +101,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => false, 'message' => 'Session ID required']);
             exit;
         }
-        
-        $success = $companyModel->revokeSession($companyId, $sessionId);
-        if ($success) {
-            echo json_encode(['success' => true, 'message' => 'Session revoked successfully']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to revoke session or session is current']);
+
+        try {
+            $success = $companyModel->revokeSession($userId, $sessionId);
+            if ($success) {
+                echo json_encode(['success' => true, 'message' => 'Session revoked successfully']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to revoke session or session is current']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Failed to revoke session']);
         }
     }
     elseif ($action === 'revoke_all_sessions') {
         // Revoke all sessions except current
-        $success = $companyModel->revokeAllOtherSessions($companyId);
-        if ($success) {
-            $remainingCount = $companyModel->getSessionCount($companyId);
-            echo json_encode([
-                'success' => true, 
-                'message' => 'All other sessions revoked successfully',
-                'remaining_sessions' => $remainingCount
-            ]);
-        } else {
+        try {
+            $success = $companyModel->revokeAllOtherSessions($userId);
+            if ($success) {
+                $remainingCount = $companyModel->getSessionCount($userId);
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'All other sessions revoked successfully',
+                    'remaining_sessions' => $remainingCount
+                ]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to revoke sessions']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Failed to revoke sessions']);
         }
     }

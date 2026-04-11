@@ -18,6 +18,8 @@ unset($_SESSION['error']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Fix Lanka</title>
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/auth/login.css">
 </head>
 <body>
@@ -36,8 +38,8 @@ unset($_SESSION['error']);
             
             <form action="/2nd-Year-Group-Project/FixLanka/login" method="POST" class="login-form" id="loginForm" autocomplete="off">
                 <div class="form-group">
-                    <label for="email">Email or Username</label>
-                    <input type="text" id="email" name="email" required placeholder="Enter your email or username" autocomplete="off">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required placeholder="Enter your email" autocomplete="off">
                 </div>
                 
                 <div class="form-group">
@@ -50,10 +52,10 @@ unset($_SESSION['error']);
                         <input type="checkbox" name="remember">
                         Remember me
                     </label>
-                    <a href="/forgot-password" class="forgot-link">Forgot Password?</a>
+                    <a href="/2nd-Year-Group-Project/FixLanka/forgot-password" class="forgot-link">Forgot Password?</a>
                 </div>
                 
-                <button type="submit" class="login-submit-btn">Login</button>
+                <button type="submit" class="action-btn primary large login-submit-btn">Login</button>
             </form>
             
             <div class="signup-link">

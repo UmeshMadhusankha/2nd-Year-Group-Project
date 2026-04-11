@@ -1,141 +1,164 @@
 <?php
-/**
- * AdvertisementController.php
- * ✅ MODERATOR CONTROLLER (3-Status System)
- * ✅ Pure MVC with PDO
- * Version: 3.0.0
- */
+
+require_once __DIR__ . '/../models/AdvertisementModel.php';
+require_once __DIR__ . '/../models/AdScheduleModel.php';
 
 class AdvertisementController
 {
-    private $model;
-    private $pdo;
+	private AdvertisementModel $model;
+	private PDO $pdo;
 
-    public function __construct($pdo)
-    {
-        $this->pdo = $pdo;
-        require_once __DIR__ . '/../models/AdvertisementModel.php';
-        $this->model = new AdvertisementModel($this->pdo);
-    }
+	public function __construct(PDO $pdo)
+	{
+		$this->pdo = $pdo;
+		$this->model = new AdvertisementModel($pdo);
+	}
 
-    private function getCurrentModeratorId()
-    {
-        // TODO: Replace with proper session authentication
-        $moderatorId = $_SESSION['moderator_id'] ?? 1;
-        
-        if (!$this->model->moderatorExists($moderatorId)) {
-            error_log("CRITICAL: Moderator ID {$moderatorId} does not exist!");
-            return null;
-        }
-        
-        return $moderatorId;
-    }
+	public function checkTable(): bool
+	{
+		return $this->model->isReady();
+	}
 
-    public function handlePostRequest()
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            return false;
-        }
+	public function handlePostRequest(): void
+	{
+		if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+			return;
+		}
 
-        if (!isset($_POST['action']) || !isset($_POST['ad_id'])) {
-            $_SESSION['message'] = "❌ Invalid request: Missing parameters.";
-            $_SESSION['message_type'] = "error";
-            return false;
-        }
+		$action = trim((string)($_POST['action'] ?? ''));
+		$adId = (int)($_POST['ad_id'] ?? 0);
+		$notes = trim((string)($_POST['notes'] ?? ''));
 
-        $ad_id = intval($_POST['ad_id']);
-        $action = trim($_POST['action']);
-        $notes = trim($_POST['notes'] ?? '');
-        
-        $moderatorId = $this->getCurrentModeratorId();
-        
-        if ($moderatorId === null) {
-            $_SESSION['message'] = "❌ CRITICAL ERROR: No valid moderator found.";
-            $_SESSION['message_type'] = "error";
-            return false;
-        }
-        
-        $ad = $this->model->getAdvertisementById($ad_id);
-        
-        if (!$ad) {
-            $_SESSION['message'] = "❌ Advertisement not found.";
-            $_SESSION['message_type'] = "error";
-            return false;
-        }
-        
-        $statusMap = [
-            'approve' => 'approved',
-            'reject' => 'rejected'
-        ];
-        
-        if (!isset($statusMap[$action])) {
-            $_SESSION['message'] = "❌ Invalid action: '{$action}'.";
-            $_SESSION['message_type'] = "error";
-            return false;
-        }
-        
-        $newStatus = $statusMap[$action];
-        
-        $result = $this->model->updateStatus($ad_id, $newStatus, $moderatorId, $notes);
-        
-        $_SESSION['message'] = $result['message'];
-        $_SESSION['message_type'] = $result['success'] ? "success" : "error";
-        
-        return $result['success'];
-    }
+		if ($adId <= 0) {
+			$this->setMessage('Advertisement ID is required.', 'error');
+			return;
+		}
 
-    public function review($ad_id)
-    {
-        return $this->model->getAdvertisementById(intval($ad_id));
-    }
+		$reviewedBy = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
 
-    public function getViewData()
-    {
-        $filters = [
-            'status' => $_GET['status'] ?? '',
-            'type' => $_GET['type'] ?? '',
-            'search' => $_GET['search'] ?? ''
-        ];
+		try {
+			switch ($action) {
+				case 'approve':
+					$ok = $this->model->reviewAdvertisement($adId, 'approved', $reviewedBy, $notes);
+					if ($ok) {
+						$autoScheduleMessage = $this->attemptAutoSchedule($adId);
+						$msg = 'Advertisement approved.';
+						if ($autoScheduleMessage) {
+							$msg .= ' ' . $autoScheduleMessage;
+						}
+						$this->setMessage($msg, 'success');
+					} else {
+						$this->setMessage('Advertisement not found or already reviewed.', 'error');
+					}
+					break;
+				case 'reject':
+					if ($notes === '') {
+						$this->setMessage('Please add a short reason before rejecting.', 'error');
+						break;
+					}
+					$ok = $this->model->reviewAdvertisement($adId, 'rejected', $reviewedBy, $notes);
+					$this->setMessage($ok ? 'Advertisement rejected.' : 'Advertisement not found or already reviewed.', $ok ? 'success' : 'error');
+					break;
+				default:
+					$this->setMessage('Invalid action.', 'error');
+					break;
+			}
+		} catch (Exception $e) {
+			$this->setMessage($e->getMessage(), 'error');
+		}
+	}
 
-        return [
-            'stats' => $this->model->getStatistics(),
-            'ads' => $this->model->getAdvertisements($filters),
-            'filters' => $filters
-        ];
-    }
+	private function attemptAutoSchedule(int $adId): ?string
+	{
+		// Auto-scheduling is best-effort. Approval should not fail if scheduling cannot be created.
+		try {
+			$scheduleModel = new AdScheduleModel($this->pdo);
+			if (!$scheduleModel->isReady()) {
+				return null;
+			}
 
-    public function getMessages()
-    {
-        $message = $_SESSION['message'] ?? '';
-        $type = $_SESSION['message_type'] ?? 'success';
-        unset($_SESSION['message'], $_SESSION['message_type']);
-        return ['message' => $message, 'type' => $type];
-    }
+			$ad = $this->model->getAdvertisementById($adId);
+			if (!$ad) {
+				return null;
+			}
 
-    public function checkTable()
-    {
-        return $this->model->tableExists();
-    }
+			$campaignStart = (string)($ad['start_date'] ?? '');
+			$campaignEnd = (string)($ad['end_date'] ?? '');
+			if ($campaignStart === '' || $campaignEnd === '') {
+				return 'Scheduling skipped (campaign dates missing).';
+			}
 
-    public function getAllowedActions($advertisement)
-    {
-        $status = strtolower($advertisement['status'] ?? '');
-        
-        if ($status === 'pending') {
-            return ['approve', 'reject'];
-        }
-        
-        return [];
-    }
+			$today = date('Y-m-d');
+			if ($today > $campaignEnd) {
+				return 'Scheduling skipped (campaign already ended).';
+			}
 
-    public function getStatusExplanation($status)
-    {
-        $explanations = [
-            'pending' => 'This advertisement is awaiting review.',
-            'approved' => 'This advertisement has been approved. Only admin can modify.',
-            'rejected' => 'This advertisement has been rejected. Only admin can override.'
-        ];
-        
-        return $explanations[strtolower($status)] ?? 'Unknown status.';
-    }
+			$startDate = max($today, $campaignStart);
+			$endDate = $campaignEnd;
+
+			try {
+				$scheduleModel->createSchedule($adId, $startDate, $endDate, '00:00', '23:59');
+				return 'Auto-scheduled for the campaign period.';
+			} catch (Exception $e) {
+				$message = $e->getMessage();
+				if (stripos($message, 'overlapping schedule') !== false) {
+					return 'Already scheduled.';
+				}
+				return 'Approved, but scheduling needs manual setup: ' . $message;
+			}
+		} catch (Exception $e) {
+			return 'Approved, but auto-scheduling was not available.';
+		}
+	}
+
+	public function review(int $adId): ?array
+	{
+		return $this->model->getAdvertisementById($adId);
+	}
+
+	public function getViewData(): array
+	{
+		$filters = [
+			'status' => isset($_GET['status']) ? trim((string)$_GET['status']) : '',
+			'type' => isset($_GET['type']) ? trim((string)$_GET['type']) : '',
+			'search' => isset($_GET['search']) ? trim((string)$_GET['search']) : '',
+		];
+
+		return [
+			'stats' => $this->model->getStats(),
+			'ads' => $this->model->getAdvertisements($filters),
+			'filters' => $filters,
+		];
+	}
+
+	public function getMessages(): array
+	{
+		$message = $_SESSION['moderator_ads_message'] ?? '';
+		$type = $_SESSION['moderator_ads_message_type'] ?? '';
+		unset($_SESSION['moderator_ads_message'], $_SESSION['moderator_ads_message_type']);
+		return ['message' => $message, 'type' => $type];
+	}
+
+	public function getStatusExplanation(string $status): string
+	{
+		$status = strtolower(trim($status));
+		return match ($status) {
+			'pending' => 'This advertisement is waiting for moderator review.',
+			'approved' => 'This advertisement has been approved and may be scheduled/activated.',
+			'rejected' => 'This advertisement was rejected and will not be shown.',
+			'scheduled' => 'This advertisement is approved and scheduled to run on a future date.',
+			'active' => 'This advertisement is currently active.',
+			'paused' => 'This advertisement is paused and not currently shown.',
+			'inactive' => 'This advertisement is inactive and not currently shown.',
+			'suspended' => 'This advertisement is suspended due to policy or compliance reasons.',
+			default => 'No additional details are available for this status.',
+		};
+	}
+
+	private function setMessage(string $message, string $type): void
+	{
+		$_SESSION['moderator_ads_message'] = $message;
+		$_SESSION['moderator_ads_message_type'] = $type;
+	}
 }
+

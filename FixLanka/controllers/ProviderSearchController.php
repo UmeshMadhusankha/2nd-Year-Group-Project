@@ -48,6 +48,11 @@ class ProviderSearchController {
                 $filters['service_area'] = (string)$location;
             }
 
+            $q = $_GET['q'] ?? null;
+            if ($q !== null && trim((string)$q) !== '') {
+                $filters['q'] = trim((string)$q);
+            }
+
             // If mode=featured but user actually provided filters, treat as search.
             if ($mode === 'featured' && !empty($filters)) {
                 $mode = 'search';

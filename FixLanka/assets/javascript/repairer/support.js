@@ -7,77 +7,135 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeSupportForm();
     initializeTicketModal();
     initializeFileUpload();
-    
-    // Sample ticket data
-    const sampleTickets = [
-        {
-            id: 'TKT-2025-001',
-            subject: 'Payment issue with job completion',
-            status: 'open',
-            created: 'Aug 30, 2025 2:30 PM',
-            updated: 'Aug 30, 2025 2:30 PM',
-            messages: [
-                {
-                    author: 'You',
-                    time: 'Aug 30, 2025 2:30 PM',
-                    text: 'I completed a repair job yesterday but the payment hasn\'t been processed yet. The job was marked as complete by the customer but I still don\'t see the payment in my earnings. Can you please help me with this issue?',
-                    isSupport: false
-                },
-                {
-                    author: 'FixLanka Support',
-                    time: 'Aug 30, 2025 3:45 PM',
-                    text: 'Hello John! Thank you for contacting us about your payment issue. I understand your concern about the delayed payment processing.\n\nI\'ve checked your account and can see the completed job. Payment processing typically takes 1-2 business days after job completion. Since you completed the job yesterday, the payment should be processed by tomorrow.\n\nI\'ll monitor your case and if the payment doesn\'t appear by tomorrow evening, I\'ll escalate this to our payments team immediately.\n\nIs there anything else I can help you with regarding this issue?',
-                    isSupport: true
-                }
-            ]
-        },
-        {
-            id: 'TKT-2025-002',
-            subject: 'Unable to upload profile picture',
-            status: 'resolved',
-            created: 'Aug 28, 2025 10:15 AM',
-            updated: 'Aug 28, 2025 11:15 AM',
-            messages: [
-                {
-                    author: 'You',
-                    time: 'Aug 28, 2025 10:15 AM',
-                    text: 'I\'m trying to upload a new profile picture but it keeps failing. I\'ve tried different image formats but none of them work.',
-                    isSupport: false
-                },
-                {
-                    author: 'FixLanka Support',
-                    time: 'Aug 28, 2025 11:15 AM',
-                    text: 'Hi John! I\'ve identified and fixed the issue with profile picture uploads. Please try uploading your image again. The system now supports JPG, PNG, and GIF formats up to 5MB.\n\nIf you continue to experience issues, please let us know!',
-                    isSupport: true
-                }
-            ]
-        },
-        {
-            id: 'TKT-2025-003',
-            subject: 'App crashes on job search',
-            status: 'in-progress',
-            created: 'Aug 25, 2025 4:45 PM',
-            updated: 'Aug 25, 2025 4:45 PM',
-            messages: [
-                {
-                    author: 'You',
-                    time: 'Aug 25, 2025 4:45 PM',
-                    text: 'The mobile app crashes every time I try to search for jobs in my area. This has been happening for the past 3 days.',
-                    isSupport: false
-                },
-                {
-                    author: 'FixLanka Support',
-                    time: 'Aug 26, 2025 9:30 AM',
-                    text: 'Thank you for reporting this issue. Our development team is currently investigating the crash reports from the mobile app. We\'ll have a fix ready in the next app update.\n\nIn the meantime, you can use the web version to search for jobs.',
-                    isSupport: true
-                }
-            ]
-        }
-    ];
-
-    // Store tickets data
-    window.supportTickets = sampleTickets;
+    prefillSupportFromNotificationQuery();
+    window.supportTickets = [];
+    loadTicketsFromBackend();
 });
+
+function formatDateTime(dateValue) {
+    if (!dateValue) return '—';
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) {
+        return String(dateValue);
+    }
+    return date.toLocaleString();
+}
+
+function parseSubjectAndMessage(description) {
+    const text = String(description || '').trim();
+    if (!text) {
+        return {
+            subject: 'Support Issue',
+            message: 'No message provided.'
+        };
+    }
+
+    const splitIndex = text.indexOf('\n\n');
+    if (splitIndex === -1) {
+        return {
+            subject: text,
+            message: text
+        };
+    }
+
+    return {
+        subject: text.slice(0, splitIndex).trim() || 'Support Issue',
+        message: text.slice(splitIndex + 2).trim() || text.slice(0, splitIndex).trim() || 'No message provided.'
+    };
+}
+
+function mapIssueToTicket(issue) {
+    const issueId = Number(issue.issue_id || 0);
+    const parsed = parseSubjectAndMessage(issue.description);
+    const createdAt = formatDateTime(issue.created_at || issue.date);
+    const updatedAt = formatDateTime(issue.updated_at || issue.created_at || issue.date);
+
+    return {
+        id: issueId > 0 ? `ISSUE-${issueId}` : `ISSUE-${Date.now()}`,
+        subject: parsed.subject,
+        status: String(issue.status || 'pending').toLowerCase(),
+        created: createdAt,
+        updated: updatedAt,
+        messages: [
+            {
+                author: 'You',
+                time: createdAt,
+                text: parsed.message,
+                isSupport: false
+            }
+        ]
+    };
+}
+
+async function loadTicketsFromBackend(showFailureToast = false) {
+    const tbody = document.getElementById('tickets-tbody');
+    const emptyState = document.getElementById('tickets-empty-state');
+
+    if (tbody) {
+        tbody.style.display = '';
+        if (emptyState) emptyState.style.display = 'none';
+        tbody.innerHTML = `
+            <tr id="tickets-loading-row">
+                <td colspan="5" style="text-align:center;padding:40px;color:var(--text-secondary)">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p style="margin-top:12px">Loading tickets...</p>
+                </td>
+            </tr>
+        `;
+    }
+
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/issue-reports.php', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Failed to load support tickets');
+        }
+
+        const issues = Array.isArray(result.issues) ? result.issues : [];
+        window.supportTickets = issues.map(mapIssueToTicket);
+        updateTicketsTable();
+    } catch (error) {
+        console.error('Failed to load support tickets:', error);
+        window.supportTickets = [];
+        updateTicketsTable();
+        if (showFailureToast) {
+            showNotification(error.message || 'Failed to load support tickets.', 'error');
+        }
+    }
+}
+
+function prefillSupportFromNotificationQuery() {
+    const params = new URLSearchParams(window.location.search || '');
+    if (params.get('from_notification') !== '1') {
+        return;
+    }
+
+    const subject = params.get('subject') || '';
+    const message = params.get('message') || '';
+    const notificationId = params.get('notification_id') || '';
+
+    const subjectInput = document.getElementById('issue-subject');
+    const messageInput = document.getElementById('issue-message');
+
+    if (subjectInput && subject) {
+        subjectInput.value = subject;
+    }
+    if (messageInput && message) {
+        messageInput.value = message;
+    }
+
+    if (subjectInput || messageInput) {
+        scrollToForm();
+        const idLabel = notificationId ? ` (#${notificationId})` : '';
+        showNotification(`Notification details copied to Report Issue form${idLabel}.`, 'success');
+    }
+}
 
 // ===== SUPPORT FORM HANDLING =====
 function initializeSupportForm() {
@@ -120,12 +178,11 @@ function initializeSupportForm() {
     }
 }
 
-function handleFormSubmission() {
+async function handleFormSubmission() {
     const form = document.getElementById('support-form');
     const submitBtn = document.getElementById('submit-btn');
     const subject = document.getElementById('issue-subject').value;
     const message = document.getElementById('issue-message').value;
-    const fileInput = document.getElementById('issue-file');
 
     // Validate form
     if (!subject.trim() || !message.trim()) {
@@ -137,53 +194,45 @@ function handleFormSubmission() {
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
     submitBtn.disabled = true;
 
-    // Simulate API call
-    setTimeout(() => {
-        // Create new ticket ID
-        const ticketId = `TKT-2025-${String(Date.now()).slice(-3).padStart(3, '0')}`;
-        
-        // Create new ticket object
-        const newTicket = {
-            id: ticketId,
-            subject: subject,
-            status: 'open',
-            created: new Date().toLocaleString(),
-            updated: new Date().toLocaleString(),
-            messages: [
-                {
-                    author: 'You',
-                    time: new Date().toLocaleString(),
-                    text: message,
-                    isSupport: false
-                }
-            ]
-        };
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/issue-reports.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                subject: subject.trim(),
+                message: message.trim()
+            })
+        });
 
-        // Add to tickets array
-        if (window.supportTickets) {
-            window.supportTickets.unshift(newTicket);
-            updateTicketsTable();
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Failed to submit issue report');
         }
 
-        // Reset form
+        const issueId = Number(result.issue_id || 0);
+        const ticketId = issueId > 0 ? `ISSUE-${issueId}` : `ISSUE-${String(Date.now()).slice(-6)}`;
+
         form.reset();
         clearFileUpload();
 
-        // Show success message
-        showNotification(`Support ticket ${ticketId} has been created successfully!`, 'success');
+        await loadTicketsFromBackend(false);
 
-        // Reset button
+        showNotification(`Issue report ${ticketId} submitted successfully!`, 'success');
+
+        setTimeout(() => {
+            document.getElementById('support-tickets-section').scrollIntoView({
+                behavior: 'smooth'
+            });
+        }, 600);
+    } catch (error) {
+        console.error('Issue report submission failed:', error);
+        showNotification(error.message || 'Failed to submit issue report.', 'error');
+    } finally {
         submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit';
         submitBtn.disabled = false;
-
-        // Scroll to tickets section
-        setTimeout(() => {
-            document.getElementById('support-tickets-section').scrollIntoView({ 
-                behavior: 'smooth' 
-            });
-        }, 1000);
-
-    }, 2000); // Simulate 2 second delay
+    }
 }
 
 function scrollToForm() {
@@ -339,7 +388,7 @@ function createMessageElement(message) {
     if (message.isSupport) {
         avatarDiv.innerHTML = '<div class="support-avatar"><i class="fas fa-headset"></i></div>';
     } else {
-        avatarDiv.innerHTML = '<img src="../common/user.png" alt="You" class="avatar-img">';
+        avatarDiv.innerHTML = '<img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="You" class="avatar-img">';
     }
 
     const contentDiv = document.createElement('div');

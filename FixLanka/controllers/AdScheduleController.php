@@ -1,37 +1,24 @@
 <?php
 /**
  * AdScheduleController.php
- * ✅ 100% CRASH-PROOF CONTROLLER
- * ✅ Business logic and validations only
- * Version: 3.0.1 - FIXED CALENDAR DATA
+ * Moderator scheduling controller (MVC)
  */
 
-// ✅ CRASH PROTECTION
-ini_set('memory_limit', '256M');
-set_time_limit(30);
+require_once __DIR__ . '/../models/AdScheduleModel.php';
 
 class AdScheduleController
 {
-    private $model;
-    private $pdo;
+    private AdScheduleModel $model;
 
-    public function __construct($pdo)
+    public function __construct(PDO $pdo)
     {
-        $this->pdo = $pdo;
-        require_once __DIR__ . '/../models/AdScheduleModel.php';
-        $this->model = new AdScheduleModel($this->pdo);
-
-        if (!$this->model->tableExists()) {
-            $this->model->createTableIfNotExists();
-        }
-
-        $this->model->autoUpdateStatuses();
+        $this->model = new AdScheduleModel($pdo);
     }
 
-    public function handlePostRequest()
+    public function handlePostRequest(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            return false;
+            return;
         }
 
         $action = $_POST['action'] ?? '';
@@ -39,216 +26,190 @@ class AdScheduleController
         try {
             switch ($action) {
                 case 'create_schedule':
-                    return $this->createSchedule();
+                    $this->createSchedule();
+                    break;
                 case 'update_schedule':
-                    return $this->updateSchedule();
+                    $this->updateSchedule();
+                    break;
                 case 'delete_schedule':
-                    return $this->deleteSchedule();
+                    $this->deleteSchedule();
+                    break;
+				case 'update_rotation_settings':
+					$this->updateRotationSettings();
+					break;
                 default:
-                    $_SESSION['error_message'] = '❌ Invalid action';
-                    return false;
+                    $this->setMessage('Invalid action.', 'error');
             }
         } catch (Exception $e) {
-            $_SESSION['error_message'] = $e->getMessage();
-            error_log("Controller Error: " . $e->getMessage());
-            return false;
+            $this->setMessage($e->getMessage(), 'error');
         }
     }
 
-    private function createSchedule()
+    public function getViewData(): array
     {
-        if (empty($_POST['ad_id'])) {
-            $_SESSION['error_message'] = '❌ Please select an advertisement';
-            return false;
-        }
+        $currentMonth = isset($_GET['month']) ? max(1, min(12, (int)$_GET['month'])) : (int)date('n');
+        $currentYear = isset($_GET['year']) ? max(1970, (int)$_GET['year']) : (int)date('Y');
 
-        $ad_id = intval($_POST['ad_id']);
-        $adDetails = $this->model->getAdvertisementById($ad_id);
-        
-        if (!$adDetails) {
-            $_SESSION['error_message'] = '❌ Advertisement not found';
-            return false;
-        }
-
-        if (strtolower($adDetails['status']) !== 'approved') {
-            $_SESSION['error_message'] = '❌ Only APPROVED advertisements can be scheduled';
-            return false;
-        }
-
-        if (empty($_POST['start_date']) || empty($_POST['end_date'])) {
-            $_SESSION['error_message'] = '❌ Start date and end date are required';
-            return false;
-        }
-
-        $start_date = $_POST['start_date'];
-        $end_date = $_POST['end_date'];
-        $today = date('Y-m-d');
-
-        if ($start_date < $today) {
-            $_SESSION['error_message'] = '❌ Start date cannot be in the past';
-            return false;
-        }
-
-        if (strtotime($end_date) < strtotime($start_date)) {
-            $_SESSION['error_message'] = '❌ End date must be after start date';
-            return false;
-        }
-
-        $data = [
-            'ad_id' => $ad_id,
-            'start_date' => $start_date,
-            'end_date' => $end_date,
-            'start_time' => !empty($_POST['start_time']) ? $_POST['start_time'] : '00:00:00',
-            'end_time' => !empty($_POST['end_time']) ? $_POST['end_time'] : '23:59:59'
-        ];
-
-        try {
-            if ($this->model->createSchedule($data)) {
-                $_SESSION['success_message'] = '✅ Advertisement scheduled successfully!';
-                return true;
-            } else {
-                $_SESSION['error_message'] = '❌ Failed to create schedule';
-                return false;
-            }
-        } catch (Exception $e) {
-            $_SESSION['error_message'] = $e->getMessage();
-            return false;
-        }
-    }
-
-    private function updateSchedule()
-    {
-        if (empty($_POST['schedule_id'])) {
-            $_SESSION['error_message'] = '❌ Schedule ID is required';
-            return false;
-        }
-
-        if (empty($_POST['start_date']) || empty($_POST['end_date'])) {
-            $_SESSION['error_message'] = '❌ Start date and end date are required';
-            return false;
-        }
-
-        $today = date('Y-m-d');
-        if ($_POST['start_date'] < $today) {
-            $_SESSION['error_message'] = '❌ Start date cannot be in the past';
-            return false;
-        }
-
-        if (strtotime($_POST['end_date']) < strtotime($_POST['start_date'])) {
-            $_SESSION['error_message'] = '❌ End date must be after start date';
-            return false;
-        }
-
-        $schedule_id = intval($_POST['schedule_id']);
-        $data = [
-            'start_date' => $_POST['start_date'],
-            'end_date' => $_POST['end_date'],
-            'start_time' => $_POST['start_time'] ?? '00:00:00',
-            'end_time' => $_POST['end_time'] ?? '23:59:59'
-        ];
-
-        try {
-            if ($this->model->updateSchedule($schedule_id, $data)) {
-                $_SESSION['success_message'] = '✅ Schedule updated successfully!';
-                return true;
-            } else {
-                $_SESSION['error_message'] = '❌ Failed to update schedule';
-                return false;
-            }
-        } catch (Exception $e) {
-            $_SESSION['error_message'] = $e->getMessage();
-            return false;
-        }
-    }
-
-    private function deleteSchedule()
-    {
-        if (empty($_POST['schedule_id'])) {
-            $_SESSION['error_message'] = '❌ Schedule ID is required';
-            return false;
-        }
-
-        $schedule_id = intval($_POST['schedule_id']);
-
-        try {
-            if ($this->model->deleteSchedule($schedule_id)) {
-                $_SESSION['success_message'] = '✅ Schedule deleted successfully!';
-                return true;
-            } else {
-                $_SESSION['error_message'] = '❌ Failed to delete schedule';
-                return false;
-            }
-        } catch (Exception $e) {
-            $_SESSION['error_message'] = $e->getMessage();
-            return false;
-        }
-    }
-
-    public function getViewData()
-    {
         $filters = [
             'placement' => $_GET['placement'] ?? 'all',
             'status' => $_GET['status'] ?? 'all',
-            'search' => $_GET['search'] ?? ''
+            'search' => trim($_GET['search'] ?? ''),
         ];
 
-        $stats = $this->model->getStatistics();
-        $scheduledAds = $this->model->getScheduledAds($filters);
-        $availableAds = $this->model->getApprovedAdvertisements();
-        $analyticsArray = $this->model->getPlacementAnalytics();
-        
-        $analytics = [];
-        foreach ($analyticsArray as $item) {
-            $placement = strtolower($item['placement']);
-            $analytics[$placement] = $item;
+        $scheduledAds = $this->model->getSchedules($filters);
+        $availableAds = $this->model->getAvailableAds();
+
+        $setupIssues = $this->model->getSetupIssues();
+
+        $calendarEvents = $this->buildCalendarEvents($scheduledAds, $currentYear, $currentMonth);
+
+        $stats = $this->model->getStats();
+        $startingToday = $this->model->countStartingToday();
+
+        $availableSlots = 0;
+        if (is_array($availableAds)) {
+            $availableSlots = (int)count(array_filter($availableAds, function ($ad) {
+                return empty($ad['is_scheduled']);
+            }));
         }
-        
-        $currentMonth = isset($_GET['month']) ? intval($_GET['month']) : date('n');
-        $currentYear = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
-        
-        if ($currentMonth < 1 || $currentMonth > 12) {
-            $currentMonth = date('n');
-        }
-        
-        // ✅ FIXED: Proper calendar event data structure
-        $calendarEventsArray = $this->model->getCalendarEvents($currentMonth, $currentYear);
-        $calendarEvents = [];
-        foreach ($calendarEventsArray as $event) {
-            $date = $event['event_date'];
-            $calendarEvents[$date] = [
-                'count' => $event['event_count'],
-                'titles' => isset($event['event_titles']) ? explode('||', $event['event_titles']) : []
-            ];
-        }
-        
-        $startingToday = $this->model->getStartingTodayCount();
-        $availableSlots = max(0, 24 - ($stats['active_schedules'] ?? 0));
+
+        $analytics = $this->model->getPlacementAnalytics();
+		$rotationSettings = $this->model->getRotationSettings();
 
         return [
+            'setupIssues' => $setupIssues,
             'stats' => $stats,
+            'startingToday' => $startingToday,
+            'availableSlots' => $availableSlots,
+            'filters' => $filters,
             'scheduledAds' => $scheduledAds,
             'availableAds' => $availableAds,
-            'analytics' => $analytics,
-            'placementData' => $analyticsArray,
             'calendarEvents' => $calendarEvents,
-            'availableSlots' => $availableSlots,
+            'analytics' => $analytics,
+			'rotationSettings' => $rotationSettings,
             'currentMonth' => $currentMonth,
             'currentYear' => $currentYear,
-            'filters' => $filters,
-            'startingToday' => $startingToday
         ];
     }
 
-    public function getMessages()
+    public function getMessages(): array
     {
-        $success = $_SESSION['success_message'] ?? '';
-        $error = $_SESSION['error_message'] ?? '';
-        
-        unset($_SESSION['success_message'], $_SESSION['error_message']);
-        
-        return [
-            'message' => $success ?: $error,
-            'type' => $success ? 'success' : ($error ? 'error' : '')
+        $message = $_SESSION['ad_schedule_message'] ?? '';
+        $type = $_SESSION['ad_schedule_message_type'] ?? '';
+        unset($_SESSION['ad_schedule_message'], $_SESSION['ad_schedule_message_type']);
+        return ['message' => $message, 'type' => $type];
+    }
+
+    private function createSchedule(): void
+    {
+        $adId = (int)($_POST['ad_id'] ?? 0);
+        $startTime = trim($_POST['start_time'] ?? '');
+        $endTime = trim($_POST['end_time'] ?? '');
+
+        // Moderator cannot edit date range. Model will enforce campaign start/end.
+        if ($adId <= 0) {
+            throw new InvalidArgumentException('Please select an advertisement.');
+        }
+
+		if ($startTime !== '' && $endTime !== '' && $startTime > $endTime) {
+			throw new InvalidArgumentException('Start time must be before end time.');
+		}
+
+        $startTime = ($startTime === '') ? null : $startTime;
+        $endTime = ($endTime === '') ? null : $endTime;
+
+        $this->model->createSchedule($adId, '', '', $startTime, $endTime);
+        $this->setMessage('Schedule created successfully.', 'success');
+    }
+
+    private function updateSchedule(): void
+    {
+        $scheduleId = (int)($_POST['schedule_id'] ?? 0);
+        $startTime = trim($_POST['start_time'] ?? '');
+        $endTime = trim($_POST['end_time'] ?? '');
+
+        // Moderator cannot edit date range. Model will enforce campaign start/end.
+        if ($scheduleId <= 0) {
+            throw new InvalidArgumentException('Schedule ID is required.');
+        }
+
+		if ($startTime !== '' && $endTime !== '' && $startTime > $endTime) {
+			throw new InvalidArgumentException('Start time must be before end time.');
+		}
+
+        $startTime = ($startTime === '') ? null : $startTime;
+        $endTime = ($endTime === '') ? null : $endTime;
+
+        $this->model->updateSchedule($scheduleId, '', '', $startTime, $endTime);
+        $this->setMessage('Schedule updated successfully.', 'success');
+    }
+
+    private function updateRotationSettings(): void
+    {
+        $settings = [
+            'banner_seconds' => (int)($_POST['banner_seconds'] ?? 0),
+            'featured_seconds' => (int)($_POST['featured_seconds'] ?? 0),
+            'sponsored_seconds' => (int)($_POST['sponsored_seconds'] ?? 0),
+            'banner_capacity' => (int)($_POST['banner_capacity'] ?? 0),
+            'featured_capacity' => (int)($_POST['featured_capacity'] ?? 0),
+            'sponsored_capacity' => (int)($_POST['sponsored_capacity'] ?? 0),
         ];
+
+        $updatedBy = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+        $this->model->updateRotationSettings($settings, $updatedBy);
+        $this->setMessage('Rotation settings updated.', 'success');
+    }
+
+    private function deleteSchedule(): void
+    {
+        $scheduleId = (int)($_POST['schedule_id'] ?? 0);
+        if ($scheduleId <= 0) {
+            throw new InvalidArgumentException('Schedule ID is required.');
+        }
+
+        $this->model->deleteSchedule($scheduleId);
+        $this->setMessage('Schedule deleted successfully.', 'success');
+    }
+
+    private function setMessage(string $message, string $type): void
+    {
+        $_SESSION['ad_schedule_message'] = $message;
+        $_SESSION['ad_schedule_message_type'] = $type;
+    }
+
+    private function buildCalendarEvents(array $scheduledAds, int $year, int $month): array
+    {
+        $firstOfMonth = sprintf('%04d-%02d-01', $year, $month);
+        $lastOfMonth = date('Y-m-t', strtotime($firstOfMonth));
+
+        $events = [];
+
+        foreach ($scheduledAds as $schedule) {
+            $start = $schedule['start_date'] ?? null;
+            $end = $schedule['end_date'] ?? null;
+            if (!$start || !$end) {
+                continue;
+            }
+
+            $rangeStart = max($start, $firstOfMonth);
+            $rangeEnd = min($end, $lastOfMonth);
+
+            $cursor = strtotime($rangeStart);
+            $endTs = strtotime($rangeEnd);
+            if ($cursor === false || $endTs === false) {
+                continue;
+            }
+
+            while ($cursor <= $endTs) {
+                $dateKey = date('Y-m-d', $cursor);
+                if (!isset($events[$dateKey])) {
+                    $events[$dateKey] = ['count' => 0];
+                }
+                $events[$dateKey]['count']++;
+                $cursor = strtotime('+1 day', $cursor);
+            }
+        }
+
+        return $events;
     }
 }

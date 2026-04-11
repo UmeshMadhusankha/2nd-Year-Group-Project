@@ -11,7 +11,7 @@
  */
 
 // Start session and verify authentication
-require_once '../../config/session.php';
+require_once __DIR__ . '/../../config/session.php';
 requireRole('company');
 
 // Retrieve logged-in user data from session
@@ -37,7 +37,7 @@ if (!$companyId) {
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/reviews.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/reviews.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../assets/css/company/reviews.css')); ?>">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -64,11 +64,6 @@ if (!$companyId) {
                 <!-- Page Header -->
                 <header class="page-header">
                     <div class="header-content">
-                        <div class="breadcrumbs">
-                            <a href="/2nd-Year-Group-Project/FixLanka/views/company/dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
-                            <span class="separator">/</span>
-                            <span class="current">Reviews</span>
-                        </div>
                         <div class="header-main">
                             <div class="title-section">
                                 <h1><i class="fas fa-star"></i> Reviews & Feedback</h1>
@@ -82,6 +77,11 @@ if (!$companyId) {
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                        <div class="breadcrumbs">
+                            <a href="/2nd-Year-Group-Project/FixLanka/views/company/dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+                            <span class="separator">/</span>
+                            <span class="current">Reviews</span>
                         </div>
                         <div class="quick-stats">
                             <div class="stat-item">

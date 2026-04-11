@@ -64,13 +64,13 @@ class CompanyQuotation
     public function create($data)
     {
         try {
-            $sql = "INSERT INTO CompanyQuotation (
-                request_id, company_id, user_id, title, description,
+            $sql = "INSERT INTO companyquotation (
+                request_id, user_id, title, description,
                 labor_cost, material_cost, transport_cost, other_charges,
                 total_amount, start_date, completion_date, estimated_duration,
                 payment_terms, warranty_period, additional_terms, status
             ) VALUES (
-                :request_id, :company_id, :user_id, :title, :description,
+                :request_id, :user_id, :title, :description,
                 :labor_cost, :material_cost, :transport_cost, :other_charges,
                 :total_amount, :start_date, :completion_date, :estimated_duration,
                 :payment_terms, :warranty_period, :additional_terms, :status
@@ -78,27 +78,25 @@ class CompanyQuotation
 
             $stmt = $this->pdo->prepare($sql);
 
-            // Set default status if not provided
             $status = $data['status'] ?? self::STATUS_PENDING;
 
             $stmt->execute([
-                ':request_id' => $data['request_id'],
-                ':company_id' => $data['company_id'],
-                ':user_id' => $data['user_id'],
-                ':title' => $data['title'],
-                ':description' => $data['description'] ?? null,
-                ':labor_cost' => $data['labor_cost'],
-                ':material_cost' => $data['material_cost'],
-                ':transport_cost' => $data['transport_cost'] ?? 0.00,
-                ':other_charges' => $data['other_charges'] ?? 0.00,
-                ':total_amount' => $data['total_amount'],
-                ':start_date' => $data['start_date'],
-                ':completion_date' => $data['completion_date'],
-                ':estimated_duration' => $data['estimated_duration'],
-                ':payment_terms' => $data['payment_terms'] ?? null,
-                ':warranty_period' => $data['warranty_period'] ?? null,
-                ':additional_terms' => $data['additional_terms'] ?? null,
-                ':status' => $status
+                ':request_id'        => $data['request_id'],
+                ':user_id'           => $data['user_id'],
+                ':title'             => $data['title'],
+                ':description'       => $data['description'] ?? null,
+                ':labor_cost'        => $data['labor_cost'],
+                ':material_cost'     => $data['material_cost'],
+                ':transport_cost'    => $data['transport_cost'] ?? 0.00,
+                ':other_charges'     => $data['other_charges'] ?? 0.00,
+                ':total_amount'      => $data['total_amount'],
+                ':start_date'        => $data['start_date'],
+                ':completion_date'   => $data['completion_date'],
+                ':estimated_duration'=> $data['estimated_duration'],
+                ':payment_terms'     => $data['payment_terms'] ?? null,
+                ':warranty_period'   => $data['warranty_period'] ?? null,
+                ':additional_terms'  => $data['additional_terms'] ?? null,
+                ':status'            => $status
             ]);
 
             return $this->pdo->lastInsertId();
@@ -130,20 +128,25 @@ class CompanyQuotation
                 cq.*,
                 jr.title as job_title,
                 jr.description as job_description,
-                jr_loc.district,
-                jr_loc.address,
+                jr.district,
+                jr.address,
                 jr.finish_date,
                 jr.urgency,
                 jr.service_provider_type,
                 c.name as category_name,
                 u.f_name as customer_fname,
                 u.l_name as customer_lname,
-                u.email as customer_email
-            FROM CompanyQuotation cq
-            INNER JOIN JobRequest jr ON cq.request_id = jr.request_id
-            LEFT JOIN location jr_loc ON jr.location_id = jr_loc.location_id
-            INNER JOIN User u ON jr.user_id = u.user_id
-            LEFT JOIN Category c ON jr.category_id = c.category_id
+                u.email as customer_email,
+                ct.contract_id as contract_id,
+                ct.sent_to_customer as contract_sent_to_customer,
+                ct.sent_at as contract_sent_at,
+                ct.status as contract_status,
+                ct.customer_response as contract_customer_response
+            FROM companyquotation cq
+            INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
+            INNER JOIN user u ON jr.user_id = u.user_id
+            LEFT JOIN category c ON jr.category_id = c.category_id
+            LEFT JOIN contract ct ON ct.quotation_id = cq.quotation_id
             WHERE 1=1";
 
             $params = [];
@@ -160,7 +163,7 @@ class CompanyQuotation
             }
 
             if (!empty($filters['user_id'])) {
-                $sql .= " AND cq.user_id = :user_id";
+                $sql .= " AND cq.company_id = :user_id";
                 $params[':user_id'] = $filters['user_id'];
             }
 
@@ -197,20 +200,25 @@ class CompanyQuotation
                 cq.*,
                 jr.title as job_title,
                 jr.description as job_description,
-                jr_loc.district,
-                jr_loc.address,
+                jr.district,
+                jr.address,
                 jr.finish_date,
                 jr.urgency,
                 jr.service_provider_type,
                 c.name as category_name,
                 u.f_name as customer_fname,
                 u.l_name as customer_lname,
-                u.email as customer_email
-            FROM CompanyQuotation cq
-            INNER JOIN JobRequest jr ON cq.request_id = jr.request_id
-            LEFT JOIN location jr_loc ON jr.location_id = jr_loc.location_id
-            INNER JOIN User u ON jr.user_id = u.user_id
-            LEFT JOIN Category c ON jr.category_id = c.category_id
+                u.email as customer_email,
+                ct.contract_id as contract_id,
+                ct.sent_to_customer as contract_sent_to_customer,
+                ct.sent_at as contract_sent_at,
+                ct.status as contract_status,
+                ct.customer_response as contract_customer_response
+            FROM companyquotation cq
+            INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
+            INNER JOIN user u ON jr.user_id = u.user_id
+            LEFT JOIN category c ON jr.category_id = c.category_id
+            LEFT JOIN contract ct ON ct.quotation_id = cq.quotation_id
             WHERE cq.quotation_id = :quotation_id";
 
             $stmt = $this->pdo->prepare($sql);
@@ -297,8 +305,7 @@ class CompanyQuotation
     public function delete($quotationId)
     {
         try {
-            // Only allow deletion of pending quotations
-            $sql = "DELETE FROM CompanyQuotation 
+            $sql = "DELETE FROM companyquotation 
                     WHERE quotation_id = :quotation_id 
                     AND status = :status";
 
@@ -329,7 +336,7 @@ class CompanyQuotation
     {
         try {
             $sql = "SELECT COUNT(*) as count 
-                    FROM CompanyQuotation 
+                    FROM companyquotation 
                     WHERE request_id = :request_id 
                     AND status = :status";
 
@@ -373,7 +380,7 @@ class CompanyQuotation
                 return false;
             }
 
-            $sql = "UPDATE CompanyQuotation 
+            $sql = "UPDATE companyquotation 
                     SET status = :status 
                     WHERE quotation_id = :quotation_id";
 
@@ -414,6 +421,19 @@ class CompanyQuotation
     public function createEnhanced($data)
     {
         try {
+            // Fetch the customer's user_id from the job request
+            // The $data['user_id'] passed from the frontend is actually the logged-in company's ID!
+            $stmtUser = $this->pdo->prepare("SELECT user_id FROM jobrequest WHERE request_id = ?");
+            $stmtUser->execute([$data['request_id']]);
+            $customerUserId = $stmtUser->fetchColumn();
+            
+            if (!$customerUserId) {
+                error_log("Error creating enhanced quotation: Could not find requested job.");
+                return false;
+            }
+            
+            $companyId = $data['user_id']; // This is the company ID passed from the frontend/session
+
             // Calculate budget range if flexible
             $budgetMin = null;
             $budgetMax = null;
@@ -424,7 +444,7 @@ class CompanyQuotation
                 $budgetMax = $range['max'];
             }
 
-            $sql = "INSERT INTO CompanyQuotation (
+            $sql = "INSERT INTO companyquotation (
                         request_id, company_id, user_id, title, description,
                         labor_cost, material_cost, transport_cost, other_charges, total_amount,
                         budget_type, budget_min, budget_max,
@@ -447,8 +467,8 @@ class CompanyQuotation
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
                 ':request_id' => $data['request_id'],
-                ':company_id' => $data['company_id'],
-                ':user_id' => $data['user_id'],
+                ':company_id' => $companyId,
+                ':user_id' => $customerUserId,
                 ':title' => $data['title'],
                 ':description' => $data['description'] ?? null,
                 ':labor_cost' => $data['labor_cost'],
@@ -463,8 +483,21 @@ class CompanyQuotation
                 ':completion_date' => $data['completion_date'],
                 ':estimated_duration' => $data['estimated_duration'],
                 ':payment_terms' => $data['payment_terms'] ?? null,
-                ':payment_method' => $data['payment_method'] ?? 'milestone',
-                ':pricing_type' => $data['pricing_type'] ?? 'fixed_price',
+                ':payment_method' => match($data['payment_method'] ?? 'milestone') {
+                    'upfront_final' => 'full_upfront',
+                    'milestone' => 'milestone_based',
+                    '50-50' => '50_50',
+                    '30-70' => '30_70',
+                    'completion' => 'completion',
+                    'time_material' => 'time_and_material',
+                    default => 'milestone_based'
+                },
+                ':pricing_type' => match($data['pricing_type'] ?? 'fixed_price') {
+                    'fixed_price' => 'fixed_price',
+                    'time_based' => 'time_and_material',
+                    'hybrid' => 'fixed_price', // hybrid is technically a fixed_price with unit multipliers in this schema
+                    default => 'fixed_price'
+                },
                 ':hourly_rate' => $data['hourly_rate'] ?? null,
                 ':spending_cap_multiplier' => $data['spending_cap_multiplier'] ?? 1.5,
                 ':work_schedule_type' => $data['work_schedule_type'] ?? 'weekdays_only',
@@ -481,7 +514,9 @@ class CompanyQuotation
             return $this->pdo->lastInsertId();
 
         } catch (PDOException $e) {
-            error_log("Error creating enhanced quotation: " . $e->getMessage());
+            $errorMsg = "Error creating enhanced quotation: " . $e->getMessage();
+            error_log($errorMsg);
+            file_put_contents(__DIR__ . '/../api/sql_error.txt', $errorMsg . "\n" . print_r($data, true));
             return false;
         }
     }
@@ -515,10 +550,9 @@ class CompanyQuotation
     public function getEnhancedById($quotationId)
     {
         try {
-            $sql = "SELECT cq.*, jr.title as job_title, jr_loc.district
-                    FROM CompanyQuotation cq
-                    INNER JOIN JobRequest jr ON cq.request_id = jr.request_id
-                    LEFT JOIN location jr_loc ON jr.location_id = jr_loc.location_id
+            $sql = "SELECT cq.*, jr.title as job_title, jr.district
+                    FROM companyquotation cq
+                    INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
                     WHERE cq.quotation_id = :quotation_id";
 
             $stmt = $this->pdo->prepare($sql);
@@ -568,7 +602,7 @@ class CompanyQuotation
                 $budgetMax = $range['max'];
             }
 
-            $sql = "UPDATE CompanyQuotation 
+            $sql = "UPDATE companyquotation 
                     SET title = :title,
                         description = :description,
                         labor_cost = :labor_cost,

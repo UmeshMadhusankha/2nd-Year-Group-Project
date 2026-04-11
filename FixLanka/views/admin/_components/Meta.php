@@ -24,9 +24,9 @@ function renderMeta($title = 'Advanced PHP Router', $description = 'A Next.js-in
     <!-- Styles -->
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin-moderator/common.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin-moderator/sidebar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin-moderator/topbar.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/admin-moderator/modals.css">
-    <link rel="icon" href="/2nd-Year-Group-Project/FixLanka/assets/images/common/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/2nd-Year-Group-Project/FixLanka/assets/images/admin-moderator/placeholder-logo.png" type="image/png">
 <?php
 }
 ?>
