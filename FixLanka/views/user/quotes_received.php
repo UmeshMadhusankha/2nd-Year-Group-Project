@@ -16,6 +16,8 @@ $userData = getUserData();
     <title>Quotes Received - Fix Lanka</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/common.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/navbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/profile.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/quotes_received.css">
@@ -75,6 +77,7 @@ $userData = getUserData();
         </div>
     </main>
 
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/quotes_received.js"></script>
 </body>
 </html>

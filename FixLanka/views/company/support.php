@@ -12,6 +12,8 @@ $userData = getUserData();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Support - FixLanka</title>
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/common.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/progress-bars.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
@@ -437,6 +439,7 @@ $userData = getUserData();
         </main>
     </div>
 
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/support.js"></script>
     <script src="dashboard.js"></script>
     <script>

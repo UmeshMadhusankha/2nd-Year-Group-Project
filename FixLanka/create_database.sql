@@ -10,6 +10,16 @@ DROP DATABASE IF EXISTS fix_lanka;
 CREATE DATABASE fix_lanka;
 USE fix_lanka;
 
+-- Location Table (NEW)
+-- Centralized addresses and districts for users, companies, and job requests
+CREATE TABLE `location` (
+  `location_id` INT(11) NOT NULL AUTO_INCREMENT,
+  `address` TEXT NOT NULL,
+  `district` VARCHAR(100) NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`location_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- User Table
 CREATE TABLE `user` (
   `user_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -143,6 +153,7 @@ CREATE TABLE `company` (
   `business_type` varchar(255) DEFAULT NULL,
   `registration_no` varchar(100) NOT NULL,
   `tax_id` varchar(100) DEFAULT NULL,
+  `location_id` int(11) DEFAULT NULL,
   `address` text NOT NULL,
   `email` varchar(255) NOT NULL,
   `website` varchar(255) DEFAULT NULL,
@@ -156,7 +167,21 @@ CREATE TABLE `company` (
   PRIMARY KEY (`company_id`),
   UNIQUE KEY `registration_no` (`registration_no`),
   UNIQUE KEY `email` (`email`),
-  KEY `idx_email` (`email`)
+  KEY `idx_email` (`email`),
+  KEY `fk_company_location` (`location_id`),
+  CONSTRAINT `fk_company_location` FOREIGN KEY (`location_id`) REFERENCES `location` (`location_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Service Area (NEW)
+-- Links companies to the districts they serve
+CREATE TABLE `service_area` (
+  `area_id` INT(11) NOT NULL AUTO_INCREMENT,
+  `owner_id` INT(11) NOT NULL,
+  `owner_type` ENUM('company', 'repairer') NOT NULL,
+  `district` VARCHAR(100) NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`area_id`),
+  KEY `idx_owner` (`owner_id`, `owner_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Company Settings
@@ -370,24 +395,27 @@ CREATE TABLE `jobrequest` (
   `request_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `category_id` int(11) NOT NULL,
+  `location_id` int(11) DEFAULT NULL,
   `title` varchar(255) NOT NULL,
   `description` text NOT NULL,
-  `status` enum('pending','accepted','in_progress','completed','cancelled') DEFAULT 'pending',
-  `district` varchar(100) NOT NULL,
-  `address` text NOT NULL,
+  `status` enum('pending','accepted','in_progress','completed','cancelled','Open') DEFAULT 'pending',
+  `district` varchar(100) DEFAULT NULL,
+  `address` text DEFAULT NULL,
   `service_provider_type` varchar(50) NOT NULL,
   `urgency` enum('medium','urgent') DEFAULT 'medium',
   `finish_date` date NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `dateCreated` timestamp NOT NULL DEFAULT current_timestamp(),
   `photos` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`request_id`),
   KEY `category_id` (`category_id`),
   KEY `idx_user` (`user_id`),
   KEY `idx_status` (`status`),
-  KEY `idx_created` (`dateCreated`),
-  KEY `idx_district` (`district`),
+  KEY `idx_created` (`created_at`),
+  KEY `idx_location` (`location_id`),
   CONSTRAINT `jobrequest_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
-  CONSTRAINT `jobrequest_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`)
+  CONSTRAINT `jobrequest_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`),
+  CONSTRAINT `jobrequest_ibfk_3` FOREIGN KEY (`location_id`) REFERENCES `location` (`location_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Company Quotation
@@ -408,6 +436,18 @@ CREATE TABLE `companyquotation` (
   `payment_terms` varchar(100) DEFAULT NULL,
   `warranty_period` varchar(50) DEFAULT NULL,
   `additional_terms` text DEFAULT NULL,
+  `labor_unit_label` varchar(50) DEFAULT NULL COMMENT 'e.g. per hour, per m2, per unit',
+  `material_unit_label` varchar(50) DEFAULT NULL COMMENT 'e.g. per m2, per unit',
+  
+  -- Phase 1: Budget Flexibility & Payment Methods
+  `budget_type` enum('fixed','flexible') DEFAULT 'fixed' COMMENT 'Fixed or Flexible (±10%)',
+  `budget_min` decimal(10,2) DEFAULT NULL COMMENT 'Minimum budget for flexible pricing',
+  `budget_max` decimal(10,2) DEFAULT NULL COMMENT 'Maximum budget for flexible pricing',
+  `payment_method` enum('full_upfront','milestone_based','50_50','30_70','completion','time_and_material') DEFAULT 'full_upfront' COMMENT 'Payment method selected',
+  `pricing_type` enum('fixed_price','time_and_material') DEFAULT 'fixed_price' COMMENT 'Pricing structure type',
+  `hourly_rate` decimal(10,2) DEFAULT NULL COMMENT 'Hourly rate for Time & Material',
+  `spending_cap_multiplier` decimal(3,2) DEFAULT 1.10 COMMENT 'Spending cap multiplier for T&M (default 1.10 = 110%)',
+  
   `status` enum('pending','accepted','rejected','successful') DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -473,14 +513,23 @@ CREATE TABLE `contract_milestone` (
   `amount` decimal(12,2) NOT NULL,
   `percentage` decimal(5,2) DEFAULT NULL,
   `status` enum('pending','in_progress','submitted','under_review','approved','rejected','disputed','paid') DEFAULT 'pending',
+  `unit_label` varchar(50) DEFAULT NULL COMMENT 'e.g. hours, sqft, units',
+  `unit_rate` decimal(12,2) DEFAULT NULL COMMENT 'Price per unit (agreed in contract)',
+  `estimated_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Quantity expected (from quotation)',
+  `actual_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Actual units submitted by company',
+  `actual_amount` decimal(12,2) DEFAULT NULL COMMENT 'actual_quantity * unit_rate',
   `escrow_held` decimal(12,2) DEFAULT 0.00,
   `payment_released` decimal(12,2) DEFAULT 0.00,
   `payment_released_at` datetime DEFAULT NULL,
   `proof_of_work` text DEFAULT NULL,
+  `proof_files` text DEFAULT NULL COMMENT 'JSON array of uploaded proof file paths',
   `submitted_at` datetime DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
   `reviewed_by` int(11) DEFAULT NULL,
   `reviewed_at` datetime DEFAULT NULL,
   `review_comments` text DEFAULT NULL,
+  `comments` text DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`milestone_id`),
@@ -678,48 +727,7 @@ CREATE TABLE IF NOT EXISTS `account_moderation_log` (
   KEY `idx_action_type` (`action_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Create the table if it does not exist
-CREATE TABLE IF NOT EXISTS `system_audit_log` (
-  `audit_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `request_id` char(36) DEFAULT NULL,
-  `occurred_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `actor_user_id` int(11) DEFAULT NULL,
-  `actor_role` varchar(50) DEFAULT NULL,
-  `action` varchar(150) NOT NULL,
-  `entity_type` varchar(100) DEFAULT NULL,
-  `entity_id` varchar(64) DEFAULT NULL,
-  `http_method` varchar(10) DEFAULT NULL,
-  `endpoint` varchar(255) DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `status_code` int(11) DEFAULT NULL,
-  `details` json DEFAULT NULL,
-  PRIMARY KEY (`audit_id`),
-  KEY `idx_audit_actor_time` (`actor_user_id`, `occurred_at`),
-  KEY `idx_audit_action_time` (`action`, `occurred_at`),
-  KEY `idx_audit_entity` (`entity_type`, `entity_id`),
-  KEY `idx_audit_request` (`request_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Ensure append-only triggers exist (recreate safely)
-DROP TRIGGER IF EXISTS `system_audit_log_no_update`;
-DROP TRIGGER IF EXISTS `system_audit_log_no_delete`;
-
-DELIMITER //
-CREATE TRIGGER `system_audit_log_no_update`
-BEFORE UPDATE ON `system_audit_log`
-FOR EACH ROW
-BEGIN
-  SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'system_audit_log is append-only (updates are not allowed)';
-END//
-
-CREATE TRIGGER `system_audit_log_no_delete`
-BEFORE DELETE ON `system_audit_log`
-FOR EACH ROW
-BEGIN
-  SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'system_audit_log is append-only (deletes are not allowed)';
-END//
-DELIMITER ;
+-- (system_audit_log is already defined above)
 
 -- Legacy Milestones (kept for backward compatibility)
 CREATE TABLE `milestone` (
@@ -738,15 +746,30 @@ CREATE TABLE `milestone` (
 
 CREATE TABLE `milestonepayment` (
   `payment_id` int(11) NOT NULL AUTO_INCREMENT,
+  `contract_id` int(11) DEFAULT NULL,
   `milestone_id` int(11) DEFAULT NULL,
-  `amount` decimal(10,2) NOT NULL,
-  `payment_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `amount` decimal(12,2) NOT NULL,
+  `payment_type` enum('milestone', 'upfront', 'final', 'escrow_deposit', 'escrow_release') DEFAULT 'milestone',
+  `payment_percentage` decimal(5,2) DEFAULT NULL,
+  `description` text DEFAULT NULL,
   `method` enum('credit_card','debit_card','bank_transfer','check','cash') NOT NULL,
-  `status` enum('pending','completed','failed') DEFAULT 'pending',
+  `status` enum('pending','completed','failed','held_escrow','released','refunded') DEFAULT 'pending',
+  `escrow_enabled` tinyint(1) DEFAULT 0,
+  `paid_by` int(11) DEFAULT NULL,
+  `paid_to` int(11) DEFAULT NULL,
+  `transaction_id` varchar(100) DEFAULT NULL,
+  `paid_at` datetime DEFAULT NULL,
+  `paid_to_escrow_at` datetime DEFAULT NULL,
+  `escrow_released_at` datetime DEFAULT NULL,
+  `escrow_refunded_at` datetime DEFAULT NULL,
+  `payment_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`payment_id`),
   KEY `idx_milestone` (`milestone_id`),
+  KEY `idx_contract` (`contract_id`),
   KEY `idx_status` (`status`),
-  CONSTRAINT `milestonepayment_ibfk_1` FOREIGN KEY (`milestone_id`) REFERENCES `milestone` (`milestone_id`) ON DELETE CASCADE
+  CONSTRAINT `milestonepayment_ibfk_1` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE SET NULL,
+  CONSTRAINT `milestonepayment_ibfk_2` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Feedback
@@ -1150,6 +1173,7 @@ CREATE TABLE `contract_chats` (
     `contract_id` INT NOT NULL,
     `sender_type` ENUM('company', 'customer') NOT NULL,
     `sender_id` INT NOT NULL,
+  `message_type` ENUM('text', 'system') DEFAULT 'text',
     `message` TEXT NOT NULL,
     `attachment_type` ENUM('text', 'image', 'document', 'pdf') DEFAULT 'text',
     `attachment_url` VARCHAR(500) NULL,
@@ -1163,6 +1187,25 @@ CREATE TABLE `contract_chats` (
     INDEX `idx_contract_sender` (`contract_id`, `sender_type`),
     INDEX `idx_unread` (`is_read`, `created_at`),
     INDEX `idx_created` (`created_at` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Contract Change Requests Table
+-- Customer can request adjustments; company can accept/reject.
+CREATE TABLE `contract_change_requests` (
+  `change_request_id` INT AUTO_INCREMENT PRIMARY KEY,
+  `contract_id` INT NOT NULL,
+  `requested_by_customer_id` INT NOT NULL,
+  `request_text` TEXT NOT NULL,
+  `proposed_changes_json` LONGTEXT NULL,
+  `original_snapshot_json` LONGTEXT NULL,
+  `status` ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
+  `responded_by_company_id` INT NULL,
+  `response_note` TEXT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `responded_at` DATETIME NULL,
+  FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
+  INDEX `idx_contract_status` (`contract_id`, `status`),
+  INDEX `idx_created_at` (`created_at` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Contract Notifications Table
@@ -1266,26 +1309,26 @@ CREATE TABLE `contract_invoices` (
 CREATE TABLE `contract_budget_adjustments` (
     `adjustment_id` INT AUTO_INCREMENT PRIMARY KEY,
     `contract_id` INT NOT NULL,
-    `requested_by` ENUM('company', 'customer') NOT NULL,
-    `requester_id` INT NOT NULL,
-    `requester_name` VARCHAR(255) NULL,
-    `adjustment_type` ENUM('increase', 'decrease') NOT NULL,
-    `original_amount` DECIMAL(10,2) NOT NULL,
-    `requested_amount` DECIMAL(10,2) NOT NULL,
-    `adjustment_amount` DECIMAL(10,2) NOT NULL,
-    `adjustment_percentage` DECIMAL(5,2) NULL,
+    `original_amount` DECIMAL(12,2) NOT NULL,
+    `requested_amount` DECIMAL(12,2) NOT NULL,
+    `adjustment_amount` DECIMAL(12,2) NOT NULL,
+    `adjustment_percentage` DECIMAL(5,2) DEFAULT NULL,
     `reason` TEXT NOT NULL,
-    `justification_documents` TEXT NULL,
+    `justification` TEXT NULL,
+    `supporting_documents` TEXT NULL,
     `status` ENUM('pending', 'approved', 'rejected', 'cancelled') DEFAULT 'pending',
-    `approved_by` INT NULL,
-    `approved_by_name` VARCHAR(255) NULL,
-    `approved_at` DATETIME NULL,
-    `rejection_reason` TEXT NULL,
+    `requested_by` INT NOT NULL COMMENT 'user_id of person requesting',
+    `requested_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `reviewed_by` INT DEFAULT NULL,
+    `reviewed_at` DATETIME DEFAULT NULL,
+    `review_notes` TEXT DEFAULT NULL,
+    `approved_at` DATETIME DEFAULT NULL,
+    `rejected_at` DATETIME DEFAULT NULL,
+    `rejection_reason` TEXT DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
     INDEX `idx_contract_status` (`contract_id`, `status`),
-    INDEX `idx_requester` (`requested_by`, `requester_id`),
     INDEX `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -1321,12 +1364,7 @@ ON DELETE SET NULL;
 ALTER TABLE `companyquotation`
 ADD INDEX `idx_work_schedule` (`work_schedule_type`, `working_days_per_week`);
 
-ALTER TABLE `contract`
-ADD INDEX `idx_undo_deadline` (`undo_deadline`),
-ADD INDEX `idx_chat_active` (`chat_active`);
-
-ALTER TABLE `milestone`
-ADD INDEX `idx_workflow` (`customer_approved`, `work_started`, `work_completed`, `customer_verified`);
+-- trailing index additions integrated into main definitions or verified as correct
 
 -- =====================================================================
 -- PHASE 7 ADDITIONS: Milestone Management Enhancements
@@ -1335,11 +1373,7 @@ ADD INDEX `idx_workflow` (`customer_approved`, `work_started`, `work_completed`,
 
 -- Add explicit completion and approval tracking for milestones
 -- (Note: some overlap with existing fields, but these are used by new logic)
-ALTER TABLE `contract_milestone`
-ADD COLUMN `completed_at` DATETIME NULL AFTER `updated_at`,
-ADD COLUMN `approved_at` DATETIME NULL AFTER `completed_at`,
-ADD COLUMN `proof_files` TEXT NULL AFTER `approved_at`,
-ADD COLUMN `comments` TEXT NULL AFTER `proof_files`;
+-- integrated into contract_milestone table above
 
 -- =====================================================================
 -- PHASE 8 ADDITIONS: Escrow System
@@ -1391,30 +1425,7 @@ ADD COLUMN `escrow_enabled` TINYINT(1) DEFAULT 0 AFTER `payment_method`;
 -- =====================================================================
 
 -- 1. Company Job Post Table
-CREATE TABLE IF NOT EXISTS `companyjobpost` (
-  `posting_id` int(11) NOT NULL AUTO_INCREMENT,
-  `company_id` int(11) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `category` varchar(100) NOT NULL,
-  `category_id` int(11) DEFAULT NULL,
-  `employment_type` enum('full_time','part_time','contract','freelance') NOT NULL,
-  `description` text NOT NULL,
-  `requirements` text,
-  `min_experience` int(11) NOT NULL DEFAULT 0,
-  `priority_level` enum('low','medium','high','urgent') NOT NULL DEFAULT 'medium',
-  `min_budget` decimal(10,2) NOT NULL,
-  `max_budget` decimal(10,2) NOT NULL,
-  `location` varchar(255) NOT NULL,
-  `location_id` int(11) DEFAULT NULL,
-  `location_requirements` text DEFAULT NULL,
-  `required_skills` text DEFAULT NULL,
-  `application_deadline` date DEFAULT NULL,
-  `status` enum('draft','open','closed','filled') DEFAULT 'open',
-  `created_at` timestamp DEFAULT current_timestamp(),
-  `updated_at` timestamp DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`posting_id`),
-  FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- (companyjobpost is already defined above)
 
 -- 2. Repairer Applications Table
 CREATE TABLE IF NOT EXISTS `repairer_applications` (

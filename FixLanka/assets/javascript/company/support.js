@@ -191,9 +191,9 @@ function initializeTicketForm() {
     });
 
     const viewTicketBtn = document.getElementById('viewTicketBtn');
-    if (viewTicketBtn) viewTicketBtn.addEventListener('click', () => {
+    if (viewTicketBtn) viewTicketBtn.addEventListener('click', async () => {
         // Simulate viewing ticket
-        alert('Redirecting to ticket view...'); // TODO: Implement view ticket
+        await window.showAlert('Redirecting to ticket view...', { title: 'Ticket View' }); // TODO: Implement view ticket
         closeModalFunc();
         fetchTickets();
     });
@@ -393,21 +393,21 @@ function initializeTicketForm() {
             handleFiles(Array.from(e.dataTransfer.files));
         });
 
-        function handleFiles(newFiles) {
-            newFiles.forEach(file => {
+        async function handleFiles(newFiles) {
+            for (const file of newFiles) {
                 if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                    alert(`${file.name} is too large. Maximum file size is 5MB.`);
-                    return;
+                    await window.showAlert(`${file.name} is too large. Maximum file size is 5MB.`, { type: 'error' });
+                    continue;
                 }
 
                 if (!isValidFileType(file)) {
-                    alert(`${file.name} is not a supported file type.`);
-                    return;
+                    await window.showAlert(`${file.name} is not a supported file type.`, { type: 'error' });
+                    continue;
                 }
 
                 files.push(file);
                 addFileToDisplay(file);
-            });
+            }
         }
 
         function isValidFileType(file) {
@@ -604,12 +604,12 @@ function initializeTicketForm() {
                 // Refresh list in background
                 fetchTickets();
             } else {
-                alert('Error creating ticket: ' + result.message);
+                await window.showAlert('Error creating ticket: ' + result.message, { type: 'error' });
             }
 
         } catch (error) {
             console.error('Error submitting ticket:', error);
-            alert('An error occurred while creating the ticket.');
+            await window.showAlert('An error occurred while creating the ticket.', { type: 'error' });
         } finally {
             submitBtn.innerHTML = originalBtnText;
             submitBtn.disabled = false;

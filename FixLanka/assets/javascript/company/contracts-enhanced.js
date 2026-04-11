@@ -18,7 +18,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // PHASE 2: Initialize quotation selector when New Contract modal opens
     setupNewContractModalListener();
+
+    // Close menus on scroll to prevent misalignment with fixed positioning
+    window.addEventListener('scroll', closeAllMenus, true);
+    const container = document.getElementById('contractsContainer');
+    if (container) container.addEventListener('scroll', closeAllMenus, true);
 });
+
+function closeAllMenus() {
+    document.querySelectorAll('.card-action-menu.active').forEach(m => {
+        m.classList.remove('active');
+        m.classList.remove('is-fixed');
+    });
+}
 
 /**
  * PHASE 2: Setup listener for New Contract button
@@ -656,18 +668,7 @@ function createContractCard(contract) {
                 </div>
             </div>
 
-            <div class="card-progress-section">
-                <div class="card-progress-header">
-                    <span class="card-progress-label">Progress</span>
-                    <span class="card-progress-value">${progress}%</span>
-                </div>
-                <div class="card-progress-track">
-                    <div class="card-progress-fill" style="width: ${progress}%"></div>
-                </div>
-                <div class="card-progress-footer">
-                    <span class="card-days-info"><i class="${daysInfo.icon}"></i> ${daysInfo.text}</span>
-                </div>
-            </div>
+
 
             <div class="card-actions-row">
                 ${actions}
@@ -778,8 +779,15 @@ function buildCardActions(contract) {
             </button>`;
         }
     } else if (contract.chat_active == 1) {
+        // Unread indicator dot
+        const unreadCount = parseInt(contract.unread_count || contract.unread_messages || 0);
+        const unreadIndicator = unreadCount > 0
+            ? '<span class="chat-unread-dot" style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; background: #ef4444; border: 2px solid white; border-radius: 50%; z-index: 10;"></span>'
+            : '';
+
         html += `<button class="card-action-btn card-action-chat chat-contract-btn" data-contract-id="${id}" title="Chat with Customer" style="position:relative">
             <i class="fas fa-comments"></i>
+            ${unreadIndicator}
         </button>`;
     }
 
@@ -810,17 +818,33 @@ function buildCardActions(contract) {
     return html;
 }
 
-function toggleCardMenu(event, contractId) {
+function toggleCardMenu(event, contractId, btn = null) {
     event.stopPropagation();
     event.preventDefault();
 
     // Close all other menus first
     document.querySelectorAll('.card-action-menu.active').forEach(menu => {
-        menu.classList.remove('active');
+        if (menu.id !== `cardMenu-${contractId}`) {
+            menu.classList.remove('active');
+            menu.classList.remove('is-fixed');
+        }
     });
 
     const menu = document.getElementById(`cardMenu-${contractId}`);
     if (menu) {
+        const isOpening = !menu.classList.contains('active');
+        const triggerBtn = btn || (event.target ? event.target.closest('.more-menu-btn') : null);
+
+        if (isOpening && triggerBtn) {
+            const rect = triggerBtn.getBoundingClientRect();
+            menu.classList.add('is-fixed');
+            menu.style.top = (rect.bottom + 5) + 'px';
+            // Align right edge of menu with right edge of button
+            menu.style.left = 'auto';
+            menu.style.right = (window.innerWidth - rect.right) + 'px';
+        } else {
+            menu.classList.remove('is-fixed');
+        }
         menu.classList.toggle('active');
     }
 }
@@ -828,7 +852,10 @@ function toggleCardMenu(event, contractId) {
 // Close card menus when clicking anywhere outside
 document.addEventListener('click', function (e) {
     if (!e.target.closest('.card-action-more') && !e.target.closest('.more-menu-btn') && !e.target.closest('.card-action-menu')) {
-        document.querySelectorAll('.card-action-menu.active').forEach(m => m.classList.remove('active'));
+        document.querySelectorAll('.card-action-menu.active').forEach(m => {
+            m.classList.remove('active');
+            m.classList.remove('is-fixed');
+        });
     }
 });
 
@@ -1140,7 +1167,7 @@ function initializeContractActions() {
             e.stopPropagation();
             const btn = e.target.closest('.more-menu-btn');
             const contractId = btn.getAttribute('data-contract-id');
-            toggleCardMenu(e, contractId);
+            toggleCardMenu(e, contractId, btn);
             return;
         }
 

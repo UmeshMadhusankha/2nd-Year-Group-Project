@@ -2,7 +2,7 @@
  * Settings Page JavaScript
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeSettingsTabs();
     initializeFormHandlers();
     initializeSaveButtons();
@@ -16,7 +16,7 @@ function initializeSettingsTabs() {
     const panels = document.querySelectorAll('.settings-panel');
 
     tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
+        tab.addEventListener('click', function () {
             const targetTab = this.getAttribute('data-tab');
 
             // Remove active class from all tabs and panels
@@ -54,7 +54,7 @@ function initializeFormHandlers() {
     const confirmPassword = document.getElementById('confirmPassword');
 
     if (confirmPassword) {
-        confirmPassword.addEventListener('blur', function() {
+        confirmPassword.addEventListener('blur', function () {
             if (newPassword.value && confirmPassword.value) {
                 if (newPassword.value !== confirmPassword.value) {
                     confirmPassword.setCustomValidity('Passwords do not match');
@@ -70,7 +70,7 @@ function initializeFormHandlers() {
     // Email validation
     const emailInput = document.getElementById('email');
     if (emailInput) {
-        emailInput.addEventListener('blur', function() {
+        emailInput.addEventListener('blur', function () {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(this.value)) {
                 this.style.borderColor = 'var(--error-color)';
@@ -83,7 +83,7 @@ function initializeFormHandlers() {
     // Phone validation
     const phoneInput = document.getElementById('phone');
     if (phoneInput) {
-        phoneInput.addEventListener('input', function() {
+        phoneInput.addEventListener('input', function () {
             // Remove non-numeric characters except + and space
             this.value = this.value.replace(/[^0-9+\s]/g, '');
         });
@@ -98,10 +98,10 @@ function initializeSaveButtons() {
 
     saveButtons.forEach(button => {
         if (button.textContent.includes('Save')) {
-            button.addEventListener('click', function(e) {
+            button.addEventListener('click', function (e) {
                 const panel = this.closest('.settings-panel');
                 const panelName = panel.id.replace('-panel', '');
-                
+
                 // Show loading state
                 const originalText = this.textContent;
                 this.textContent = 'Saving...';
@@ -123,9 +123,21 @@ function initializeSaveButtons() {
     // Delete account button
     const deleteButton = document.querySelector('.btn-danger');
     if (deleteButton) {
-        deleteButton.addEventListener('click', function() {
-            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
+        deleteButton.addEventListener('click', async function () {
+            const confirmed = await window.showConfirm('Are you sure you want to delete your account? This action cannot be undone.', {
+                title: 'Delete Account',
+                confirmText: 'Delete Account',
+                type: 'danger'
+            });
+
+            if (confirmed) {
+                const doubleConfirmed = await window.showConfirm('This will permanently delete all your data. Are you absolutely sure?', {
+                    title: 'Final Confirmation',
+                    confirmText: 'Yes, Permanently Delete',
+                    type: 'danger'
+                });
+
+                if (doubleConfirmed) {
                     showNotification('Account deletion initiated. You will receive a confirmation email.', 'warning');
                 }
             }
@@ -135,7 +147,7 @@ function initializeSaveButtons() {
     // Cancel button
     const cancelButtons = document.querySelectorAll('.btn-secondary');
     cancelButtons.forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const panel = this.closest('.settings-panel');
             if (panel) {
                 loadSettings(panel.id.replace('-panel', ''), panel);
@@ -166,7 +178,7 @@ function saveSettings(panelName, panel) {
     });
 
     localStorage.setItem(`settings_${panelName}`, JSON.stringify(settings));
-    
+
 }
 
 /**
@@ -174,10 +186,10 @@ function saveSettings(panelName, panel) {
  */
 function loadSettings(panelName, panel) {
     const savedSettings = localStorage.getItem(`settings_${panelName}`);
-    
+
     if (savedSettings) {
         const settings = JSON.parse(savedSettings);
-        
+
         // Restore all form inputs
         Object.keys(settings).forEach(key => {
             const input = panel.querySelector(`#${key}, [name="${key}"]`);
@@ -194,7 +206,7 @@ function loadSettings(panelName, panel) {
             }
         });
 
-        
+
     }
 }
 
@@ -273,7 +285,7 @@ function getNotificationColor(type) {
  */
 const addPaymentBtn = document.querySelector('.add-payment-btn');
 if (addPaymentBtn) {
-    addPaymentBtn.addEventListener('click', function() {
+    addPaymentBtn.addEventListener('click', function () {
         showNotification('Payment method form would open here', 'info');
         // In a real application, this would open a modal with a payment form
     });

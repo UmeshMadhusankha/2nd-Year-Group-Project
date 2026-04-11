@@ -37,6 +37,8 @@ if (!$userId) {
 
     <!-- CSS Files -->
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/common.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/progress-bars.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
@@ -354,6 +356,7 @@ if (!$userId) {
         // Pass PHP session data to JavaScript
         window.CURRENT_USER_ID = <?php echo json_encode($userId); ?>;
     </script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/repair-requests-db.js"></script>
 
@@ -378,12 +381,13 @@ if (!$userId) {
 
                 // Labor calculation inputs
                 const laborUnitPrice = document.getElementById('labor-unit-price');
-                const laborQuantity = document.getElementById('labor-quantity');
                 const laborCost = document.getElementById('labor-cost');
+                const transportCost = document.getElementById('transport-cost');
+                const otherCost = document.getElementById('other-cost');
 
-                if (laborUnitPrice) laborUnitPrice.addEventListener('input', () => this.calculateLaborCost());
-                if (laborQuantity) laborQuantity.addEventListener('input', () => this.calculateLaborCost());
                 if (laborCost) laborCost.addEventListener('input', () => this.updateTotal());
+                if (transportCost) transportCost.addEventListener('input', () => this.updateTotal());
+                if (otherCost) otherCost.addEventListener('input', () => this.updateTotal());
 
                 // Material supply checkbox
                 const materialSupplyCheckbox = document.getElementById('vendor-supplies-materials');
@@ -396,21 +400,8 @@ if (!$userId) {
                     radio.addEventListener('change', (e) => this.handleMaterialMethodChange(e.target.value));
                 });
 
-                // Material calculation inputs
-                const materialUnitPrice = document.getElementById('material-unit-price');
-                const materialQuantity = document.getElementById('material-quantity');
                 const materialCost = document.getElementById('material-cost');
-
-                if (materialUnitPrice) materialUnitPrice.addEventListener('input', () => this.calculateMaterialCost());
-                if (materialQuantity) materialQuantity.addEventListener('input', () => this.calculateMaterialCost());
                 if (materialCost) materialCost.addEventListener('input', () => this.updateTotal());
-
-                // Other costs
-                const transportCost = document.getElementById('transport-cost');
-                const otherCost = document.getElementById('other-cost');
-
-                if (transportCost) transportCost.addEventListener('input', () => this.updateTotal());
-                if (otherCost) otherCost.addEventListener('input', () => this.updateTotal());
             }
 
             // ===== LABOR CALCULATION METHODS =====
@@ -422,86 +413,43 @@ if (!$userId) {
                 const qtyLabel = document.getElementById('labor-quantity-label');
                 const qtyBreakdownLabel = document.getElementById('labor-breakdown-qty-label');
 
-                if (method === 'fixed') {
-                    // Fixed pricing - hide unit pricing, allow manual input
-                    if (unitPricingSection) unitPricingSection.style.display = 'none';
-                    if (laborCostInput) {
-                        laborCostInput.removeAttribute('readonly');
-                        laborCostInput.classList.remove('form-input-calculated');
-                    }
-                } else {
-                    // Unit-based pricing - show unit pricing, make total readonly
-                    if (unitPricingSection) unitPricingSection.style.display = 'block';
-                    if (laborCostInput) {
-                        laborCostInput.setAttribute('readonly', true);
-                        laborCostInput.classList.add('form-input-calculated');
-                    }
+                // Unit-based pricing is now the only option
+                if (unitPricingSection) unitPricingSection.style.display = 'block';
+                if (laborCostInput) {
+                    laborCostInput.removeAttribute('readonly');
+                    laborCostInput.classList.remove('form-input-calculated');
+                }
 
-                    // Update labels based on method
-                    const labelConfig = {
-                        'hourly': {
-                            unitLabel: '(per hour)',
-                            qtyLabel: 'Number of Hours',
-                            placeholder: 'e.g., 8',
-                            breakdownLabel: 'Hours'
-                        },
-                        'per_sqm': {
-                            unitLabel: '(per m²)',
-                            qtyLabel: 'Area (Square Meters)',
-                            placeholder: 'e.g., 50',
-                            breakdownLabel: 'Area (m²)'
-                        },
-                        'per_unit': {
-                            unitLabel: '(per unit)',
-                            qtyLabel: 'Number of Units',
-                            placeholder: 'e.g., 10',
-                            breakdownLabel: 'Units'
-                        }
-                    };
-
-                    const config = labelConfig[method];
-                    if (config) {
-                        if (unitLabel) unitLabel.textContent = config.unitLabel;
-                        if (qtyLabel) qtyLabel.textContent = config.qtyLabel;
-                        if (qtyBreakdownLabel) qtyBreakdownLabel.textContent = config.breakdownLabel;
-                        
-                        const qtyInput = document.getElementById('labor-quantity');
-                        if (qtyInput) qtyInput.placeholder = config.placeholder;
+                // Update labels based on method
+                const labelConfig = {
+                    'hourly': {
+                        unitLabel: '(per hour)',
+                        qtyLabel: 'Rate / Price of One',
+                        breakdownLabel: 'Quantity (Hidden)'
+                    },
+                    'per_sqm': {
+                        unitLabel: '(per m²)',
+                        qtyLabel: 'Rate / Price of One',
+                        breakdownLabel: 'Quantity (Hidden)'
+                    },
+                    'per_unit': {
+                        unitLabel: '(per unit)',
+                        qtyLabel: 'Rate / Price of One',
+                        breakdownLabel: 'Quantity (Hidden)'
                     }
+                };
+
+                const config = labelConfig[method];
+                if (config) {
+                    if (unitLabel) unitLabel.textContent = config.unitLabel;
+                    if (qtyLabel) qtyLabel.textContent = config.qtyLabel;
+                    if (qtyBreakdownLabel) qtyBreakdownLabel.textContent = config.breakdownLabel;
                 }
 
                 this.calculateLaborCost();
             }
 
             calculateLaborCost() {
-                const method = document.querySelector('input[name="labor_pricing_method"]:checked')?.value;
-                const laborCostInput = document.getElementById('labor-cost');
-
-                if (!method || !laborCostInput) return;
-
-                if (method === 'fixed') {
-                    // For fixed pricing, just update the total
-                    this.updateTotal();
-                    return;
-                }
-
-                // Unit-based calculation
-                const unitPrice = parseFloat(document.getElementById('labor-unit-price')?.value) || 0;
-                const quantity = parseFloat(document.getElementById('labor-quantity')?.value) || 0;
-                const totalCost = unitPrice * quantity;
-
-                // Update labor cost input
-                laborCostInput.value = totalCost.toFixed(2);
-
-                // Update breakdown display
-                const breakdownUnit = document.getElementById('labor-breakdown-unit');
-                const breakdownQty = document.getElementById('labor-breakdown-qty');
-                const breakdownTotal = document.getElementById('labor-breakdown-total');
-
-                if (breakdownUnit) breakdownUnit.textContent = `LKR ${unitPrice.toFixed(2)}`;
-                if (breakdownQty) breakdownQty.textContent = quantity.toFixed(2);
-                if (breakdownTotal) breakdownTotal.textContent = `LKR ${totalCost.toFixed(2)}`;
-
                 this.updateTotal();
             }
 
@@ -534,79 +482,38 @@ if (!$userId) {
                 const qtyLabel = document.getElementById('material-quantity-label');
                 const qtyBreakdownLabel = document.getElementById('material-breakdown-qty-label');
 
-                if (method === 'fixed') {
-                    // Fixed pricing
-                    if (unitPricingSection) unitPricingSection.style.display = 'none';
-                    if (materialCostInput) {
-                        materialCostInput.removeAttribute('readonly');
-                        materialCostInput.classList.remove('form-input-calculated');
-                    }
-                } else {
-                    // Unit-based pricing
-                    if (unitPricingSection) unitPricingSection.style.display = 'block';
-                    if (materialCostInput) {
-                        materialCostInput.setAttribute('readonly', true);
-                        materialCostInput.classList.add('form-input-calculated');
-                    }
+                // Unit-based pricing is now the only option
+                if (unitPricingSection) unitPricingSection.style.display = 'block';
+                if (materialCostInput) {
+                    materialCostInput.removeAttribute('readonly');
+                    materialCostInput.classList.remove('form-input-calculated');
+                }
 
-                    // Update labels
-                    const labelConfig = {
-                        'per_sqm': {
-                            unitLabel: '(per m²)',
-                            qtyLabel: 'Area (Square Meters)',
-                            placeholder: 'e.g., 50',
-                            breakdownLabel: 'Area (m²)'
-                        },
-                        'per_unit': {
-                            unitLabel: '(per unit)',
-                            qtyLabel: 'Number of Units',
-                            placeholder: 'e.g., 10',
-                            breakdownLabel: 'Units'
-                        }
-                    };
-
-                    const config = labelConfig[method];
-                    if (config) {
-                        if (unitLabel) unitLabel.textContent = config.unitLabel;
-                        if (qtyLabel) qtyLabel.textContent = config.qtyLabel;
-                        if (qtyBreakdownLabel) qtyBreakdownLabel.textContent = config.breakdownLabel;
-                        
-                        const qtyInput = document.getElementById('material-quantity');
-                        if (qtyInput) qtyInput.placeholder = config.placeholder;
+                // Update labels
+                const labelConfig = {
+                    'per_sqm': {
+                        unitLabel: '(per m²)',
+                        qtyLabel: 'Rate / Price of One',
+                        breakdownLabel: 'Quantity (Hidden)'
+                    },
+                    'per_unit': {
+                        unitLabel: '(per unit)',
+                        qtyLabel: 'Rate / Price of One',
+                        breakdownLabel: 'Quantity (Hidden)'
                     }
+                };
+
+                const config = labelConfig[method];
+                if (config) {
+                    if (unitLabel) unitLabel.textContent = config.unitLabel;
+                    if (qtyLabel) qtyLabel.textContent = config.qtyLabel;
+                    if (qtyBreakdownLabel) qtyBreakdownLabel.textContent = config.breakdownLabel;
                 }
 
                 this.calculateMaterialCost();
             }
 
             calculateMaterialCost() {
-                const method = document.querySelector('input[name="material_pricing_method"]:checked')?.value;
-                const materialCostInput = document.getElementById('material-cost');
-
-                if (!method || !materialCostInput) return;
-
-                if (method === 'fixed') {
-                    this.updateTotal();
-                    return;
-                }
-
-                // Unit-based calculation
-                const unitPrice = parseFloat(document.getElementById('material-unit-price')?.value) || 0;
-                const quantity = parseFloat(document.getElementById('material-quantity')?.value) || 0;
-                const totalCost = unitPrice * quantity;
-
-                // Update material cost input
-                materialCostInput.value = totalCost.toFixed(2);
-
-                // Update breakdown display
-                const breakdownUnit = document.getElementById('material-breakdown-unit');
-                const breakdownQty = document.getElementById('material-breakdown-qty');
-                const breakdownTotal = document.getElementById('material-breakdown-total');
-
-                if (breakdownUnit) breakdownUnit.textContent = `LKR ${unitPrice.toFixed(2)}`;
-                if (breakdownQty) breakdownQty.textContent = quantity.toFixed(2);
-                if (breakdownTotal) breakdownTotal.textContent = `LKR ${totalCost.toFixed(2)}`;
-
                 this.updateTotal();
             }
 
@@ -701,23 +608,11 @@ if (!$userId) {
                     description: 'Payment released in stages as project milestones are completed. Provides security for both parties.',
                     color: '#2196F3'
                 },
-                '50-50': {
-                    icon: 'fas fa-balance-scale',
-                    title: '50-50 Split Payment',
-                    description: '50% paid upfront to start the project, remaining 50% paid upon successful completion.',
+                'completion': {
+                    icon: 'fas fa-check-circle',
+                    title: '100% on Completion',
+                    description: 'Full payment made only after the project is successfully completed and verified.',
                     color: '#4CAF50'
-                },
-                '30-70': {
-                    icon: 'fas fa-percentage',
-                    title: '30-70 Split Payment',
-                    description: '30% paid upfront, 70% paid upon completion. Lower initial commitment.',
-                    color: '#FF9800'
-                },
-                'upfront_final': {
-                    icon: 'fas fa-dollar-sign',
-                    title: '100% Upfront Payment',
-                    description: 'Full payment made before work begins. Usually for trusted relationships or small projects.',
-                    color: '#9C27B0'
                 },
                 'time_material': {
                     icon: 'fas fa-clock',

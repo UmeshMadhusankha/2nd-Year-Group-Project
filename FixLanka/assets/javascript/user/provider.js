@@ -101,10 +101,11 @@ function initializeProfileDropdown() {
 }
 
 // Handle Logout
-function handleLogout() {
-    if (confirm('Are you sure you want to logout?')) {
+async function handleLogout() {
+    const confirmed = await window.showConfirm('Are you sure you want to logout?', { title: 'Logout Confirmation', confirmText: 'Logout', type: 'warning' });
+    if (confirmed) {
 
-        alert('You have been logged out successfully!');
+        await window.showAlert('You have been logged out successfully!', 'success', 'Logged Out');
         // Optionally redirect to login page
         // window.location.href = 'index.html';
     }
@@ -137,7 +138,7 @@ function initializeMessageButton() {
 
 // Show Message Dialog (placeholder)
 function showMessageDialog(providerName) {
-    alert(`Opening message conversation with ${providerName}...\n\nThis would normally open a messaging interface where you can:\n&bull; Send direct messages\n&bull; Share photos\n&bull; Discuss project details\n&bull; Schedule appointments`);
+    window.showAlert(`Opening message conversation with ${providerName}...\n\nThis would normally open a messaging interface where you can:\n• Send direct messages\n• Share photos\n• Discuss project details\n• Schedule appointments`, 'info', 'Message Provider');
 
     // In a real application, this would open a modal or redirect to a messaging page
 
@@ -212,7 +213,7 @@ function initializeStickyHeader() {
 }
 
 // Handle service tag clicks
-document.addEventListener('click', function (e) {
+document.addEventListener('click', async function (e) {
     if (e.target.classList.contains('service-tag')) {
         const serviceName = e.target.textContent;
 
@@ -222,16 +223,12 @@ document.addEventListener('click', function (e) {
             e.target.style.transform = '';
         }, 150);
 
-        // In a real application, this could:
-        // - Show service details modal
-        // - Navigate to booking page for that service
-        // - Show pricing information
-        alert(`Learn more about ${serviceName} service?\n\nThis would show detailed information about the service including:\n&bull; Pricing\n&bull; What's included\n&bull; Estimated duration\n&bull; Book now option`);
+        await window.showAlert(`Learn more about ${serviceName} service?\n\nThis would show detailed information about the service including:\n• Pricing\n• What's included\n• Estimated duration\n• Book now option`, 'info', 'Service Details');
     }
 });
 
 // Contact information click handlers
-document.addEventListener('click', function (e) {
+document.addEventListener('click', async function (e) {
     const contactItem = e.target.closest('.contact-item');
     if (contactItem) {
         const contactIcon = contactItem.querySelector('.contact-icon');
@@ -243,18 +240,20 @@ document.addEventListener('click', function (e) {
 
             if (iconClass.includes('fa-phone')) {
                 // Handle phone click
-                if (confirm(`Call ${value}?`)) {
+                const ok = await window.showConfirm(`Call ${value}?`, { title: 'External Call', confirmText: 'Call Now' });
+                if (ok) {
                     window.open(`tel:${value.replace(/\s/g, '')}`);
                 }
             } else if (iconClass.includes('fa-envelope')) {
                 // Handle email click
-                if (confirm(`Send email to ${value}?`)) {
+                const ok = await window.showConfirm(`Send email to ${value}?`, { title: 'Send Email', confirmText: 'Compose' });
+                if (ok) {
                     window.open(`mailto:${value}`);
                 }
             } else if (iconClass.includes('fa-map-marker-alt')) {
                 // Handle location click
 
-                alert(`Opening map for ${value}...\n\nThis would show the service area on a map.`);
+                await window.showAlert(`Opening map for ${value}...\n\nThis would show the service area on a map.`, 'info', 'Location');
             }
         }
     }

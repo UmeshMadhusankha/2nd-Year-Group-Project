@@ -248,7 +248,7 @@ function setupEventListeners() {
                 validateReviewForm();
             });
 
-            star.addEventListener('keypress', function(e) {
+            star.addEventListener('keypress', function (e) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     this.click();
                 }

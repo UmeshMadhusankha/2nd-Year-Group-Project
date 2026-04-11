@@ -18,7 +18,7 @@ class ChatModel {
      * @return array
      */
     public function getMessages($contractId, $sinceId = 0, $limit = 50) {
-        $sql = "SELECT 
+        $sqlWithMessageType = "SELECT 
                     cc.chat_id,
                     cc.contract_id,
                     cc.sender_id,
@@ -42,12 +42,46 @@ class ChatModel {
                 ORDER BY cc.created_at ASC
                 LIMIT :lim";
 
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindValue(':contract_id', (int)$contractId, PDO::PARAM_INT);
-        $stmt->bindValue(':since_id', (int)$sinceId, PDO::PARAM_INT);
-        $stmt->bindValue(':lim', (int)$limit, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $sqlFallback = "SELECT 
+                    cc.chat_id,
+                    cc.contract_id,
+                    cc.sender_id,
+                    cc.sender_type,
+                    cc.attachment_type AS message_type,
+                    cc.message,
+                    cc.created_at,
+                    cc.is_read,
+                    cc.read_at,
+                    cc.attachment_url,
+                    CASE 
+                        WHEN cc.sender_type = 'company' THEN COALESCE(co.name, 'Company')
+                        ELSE CONCAT(COALESCE(u.f_name, ''), ' ', COALESCE(u.l_name, ''))
+                    END AS sender_name
+                FROM contract_chats cc
+                LEFT JOIN contract ct ON cc.contract_id = ct.contract_id
+                LEFT JOIN company co ON ct.company_id = co.company_id
+                LEFT JOIN user u ON cc.sender_type = 'customer' AND cc.sender_id = u.user_id
+                WHERE cc.contract_id = :contract_id
+                  AND cc.chat_id > :since_id
+                ORDER BY cc.created_at ASC
+                LIMIT :lim";
+
+        try {
+            $stmt = $this->conn->prepare($sqlWithMessageType);
+            $stmt->bindValue(':contract_id', (int)$contractId, PDO::PARAM_INT);
+            $stmt->bindValue(':since_id', (int)$sinceId, PDO::PARAM_INT);
+            $stmt->bindValue(':lim', (int)$limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            // Backward compatible schema (no message_type column)
+            $stmt = $this->conn->prepare($sqlFallback);
+            $stmt->bindValue(':contract_id', (int)$contractId, PDO::PARAM_INT);
+            $stmt->bindValue(':since_id', (int)$sinceId, PDO::PARAM_INT);
+            $stmt->bindValue(':lim', (int)$limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
     }
 
     /**
@@ -59,20 +93,38 @@ class ChatModel {
      * @return int|false  The new chat_id or false on failure
      */
     public function sendMessage($contractId, $senderId, $senderType, $text) {
-        $sql = "INSERT INTO contract_chats 
-                    (contract_id, sender_id, sender_type, message_type, message, created_at)
-                VALUES 
-                    (:contract_id, :sender_id, :sender_type, 'text', :message, NOW())";
+        try {
+            $sql = "INSERT INTO contract_chats 
+                        (contract_id, sender_id, sender_type, message_type, message, created_at)
+                    VALUES 
+                        (:contract_id, :sender_id, :sender_type, 'text', :message, NOW())";
 
-        $stmt = $this->conn->prepare($sql);
-        $ok = $stmt->execute([
-            ':contract_id' => (int)$contractId,
-            ':sender_id'   => (int)$senderId,
-            ':sender_type' => $senderType,
-            ':message'     => $text
-        ]);
+            $stmt = $this->conn->prepare($sql);
+            $ok = $stmt->execute([
+                ':contract_id' => (int)$contractId,
+                ':sender_id'   => (int)$senderId,
+                ':sender_type' => $senderType,
+                ':message'     => $text
+            ]);
 
-        return $ok ? (int)$this->conn->lastInsertId() : false;
+            return $ok ? (int)$this->conn->lastInsertId() : false;
+        } catch (Exception $e) {
+            // Backward compatible schema (no message_type column)
+            $sql = "INSERT INTO contract_chats 
+                        (contract_id, sender_id, sender_type, message, created_at)
+                    VALUES 
+                        (:contract_id, :sender_id, :sender_type, :message, NOW())";
+
+            $stmt = $this->conn->prepare($sql);
+            $ok = $stmt->execute([
+                ':contract_id' => (int)$contractId,
+                ':sender_id'   => (int)$senderId,
+                ':sender_type' => $senderType,
+                ':message'     => $text
+            ]);
+
+            return $ok ? (int)$this->conn->lastInsertId() : false;
+        }
     }
 
     /**

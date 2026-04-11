@@ -11,7 +11,8 @@ $searchPlaceholder = 'Search settings...';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - FixLanka</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/common.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/common/topbar.css">
@@ -325,6 +326,7 @@ $searchPlaceholder = 'Search settings...';
         </div>
     </div>
 
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/settings.js"></script>
 </body>

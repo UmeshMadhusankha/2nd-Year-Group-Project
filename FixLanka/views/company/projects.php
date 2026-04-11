@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Company Projects Page
  * 
@@ -38,6 +38,8 @@ if (!$companyId) {
     
     <!-- CSS Files -->
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/common.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/progress-bars.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
@@ -323,6 +325,7 @@ if (!$companyId) {
     </div>
 
     <!-- Load Sidebar JavaScript -->
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
     
     <!-- Load Projects JavaScript -->

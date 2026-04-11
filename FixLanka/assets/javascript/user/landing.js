@@ -125,7 +125,7 @@ function getLandingRepairerById(repairerId) {
 window.getLandingRepairerById = getLandingRepairerById;
 
 // Initialize the application
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeMobileMenu();
     initializeSearchForm();
     initializeLazyLoading();
@@ -514,9 +514,9 @@ async function submitListedJobRequest() {
 // Mobile Menu Functionality
 function initializeMobileMenu() {
     if (mobileMenuToggle && mobileMenu) {
-        mobileMenuToggle.addEventListener('click', function() {
+        mobileMenuToggle.addEventListener('click', function () {
             mobileMenu.classList.toggle('active');
-            
+
             // Animate hamburger menu
             const hamburgers = mobileMenuToggle.querySelectorAll('.hamburger');
             hamburgers.forEach((line, index) => {
@@ -534,7 +534,7 @@ function initializeMobileMenu() {
         // Close mobile menu when clicking on links
         const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
         mobileNavLinks.forEach(link => {
-            link.addEventListener('click', function() {
+            link.addEventListener('click', function () {
                 mobileMenu.classList.remove('active');
                 // Reset hamburger animation
                 const hamburgers = mobileMenuToggle.querySelectorAll('.hamburger');
@@ -551,20 +551,20 @@ function initializeMobileMenu() {
 function initializeProfileDropdown() {
     if (profileAvatar && profileDropdown) {
         // Toggle dropdown when clicking profile avatar
-        profileAvatar.addEventListener('click', function(e) {
+        profileAvatar.addEventListener('click', function (e) {
             e.stopPropagation();
             profileDropdown.classList.toggle('active');
         });
 
         // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             if (!profileAvatar.contains(e.target) && !profileDropdown.contains(e.target)) {
                 profileDropdown.classList.remove('active');
             }
         });
 
         // Close dropdown on escape key
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && profileDropdown.classList.contains('active')) {
                 profileDropdown.classList.remove('active');
             }
@@ -575,18 +575,18 @@ function initializeProfileDropdown() {
 // Provider Tabs Functionality
 function initializeProviderTabs() {
     providerTabs.forEach(tab => {
-        tab.addEventListener('click', function() {
+        tab.addEventListener('click', function () {
             const type = this.dataset.type;
-            
+
             // Update active tab
             providerTabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
-            
+
             // Show corresponding grid
             document.querySelectorAll('.providers-grid').forEach(grid => {
                 grid.classList.remove('active');
             });
-            
+
             if (type === 'repairers') {
                 repairersGrid.classList.add('active');
                 currentProviderType = 'repairers';
@@ -596,14 +596,14 @@ function initializeProviderTabs() {
                 currentProviderType = 'companies';
                 providersGrid = companiesGrid;
             }
-            
+
             // Reset and reload data
             currentPage = 0;
             allProvidersLoaded = false;
-            
+
             const targetGrid = type === 'repairers' ? repairersGrid : companiesGrid;
             targetGrid.innerHTML = '';
-            
+
             loadInitialProviders();
         });
     });
@@ -612,7 +612,7 @@ function initializeProviderTabs() {
 // Search Form Functionality
 function initializeSearchForm() {
     if (searchForm) {
-        searchForm.addEventListener('submit', function(e) {
+        searchForm.addEventListener('submit', function (e) {
             e.preventDefault();
 
             // Apply filters via API
@@ -1157,37 +1157,37 @@ function generateStars(rating) {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-    
+
     let starsHTML = '';
-    
+
     // Full stars
     for (let i = 0; i < fullStars; i++) {
         starsHTML += '<i class="fas fa-star star"></i>';
     }
-    
+
     // Half star
     if (hasHalfStar) {
         starsHTML += '<i class="fas fa-star-half-alt star"></i>';
     }
-    
+
     // Empty stars
     for (let i = 0; i < emptyStars; i++) {
         starsHTML += '<i class="far fa-star star empty"></i>';
     }
-    
+
     return starsHTML;
 }
 
 // Smooth Scrolling for Navigation Links
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     const target = e.target;
-    
+
     // Handle navigation links with hash
     if (target.matches('a[href^="#"]')) {
         e.preventDefault();
         const targetId = target.getAttribute('href').substring(1);
         const targetElement = document.getElementById(targetId);
-        
+
         if (targetElement) {
             targetElement.scrollIntoView({
                 behavior: 'smooth',
@@ -1198,15 +1198,15 @@ document.addEventListener('click', function(e) {
 });
 
 // Handle Window Resize
-window.addEventListener('resize', function() {
+window.addEventListener('resize', function () {
     // Close mobile menu on resize to larger screen
     if (window.innerWidth > 768) {
         const mobileMenu = document.querySelector('.mobile-menu');
         const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
-        
+
         if (mobileMenu && mobileMenu.classList.contains('active')) {
             mobileMenu.classList.remove('active');
-            
+
             // Reset hamburger animation
             if (mobileMenuToggle) {
                 const hamburgers = mobileMenuToggle.querySelectorAll('.hamburger');
@@ -1217,7 +1217,7 @@ window.addEventListener('resize', function() {
             }
         }
     }
-    
+
     // Close profile dropdown on resize
     if (profileDropdown && profileDropdown.classList.contains('active')) {
         profileDropdown.classList.remove('active');
@@ -1225,7 +1225,7 @@ window.addEventListener('resize', function() {
 });
 
 // Add scroll-based navbar styling (optional enhancement)
-window.addEventListener('scroll', function() {
+window.addEventListener('scroll', function () {
     const navbar = document.querySelector('.navbar');
     if (navbar) {
         if (window.scrollY > 50) {

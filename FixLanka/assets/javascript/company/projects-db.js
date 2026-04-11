@@ -938,7 +938,13 @@ async function updateStatus(projectId, status) {
  * Delete a project
  */
 async function deleteProject(projectId) {
-    if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+    const confirmed = await window.showConfirm('Are you sure you want to delete this project? This action cannot be undone.', {
+        title: 'Delete Project',
+        confirmText: 'Delete',
+        type: 'danger'
+    });
+
+    if (!confirmed) {
         return;
     }
 
@@ -1274,23 +1280,9 @@ async function saveProject(e) {
  * Edit project
  */
 function editProject(projectId) {
-    const project = projectsData.find(p => p.project_id === projectId);
-    if (!project) return;
-
-    // Populate form with project data
-    document.getElementById('modal-title').textContent = 'Edit Project';
-    document.getElementById('project-id').value = project.project_id;
-    document.getElementById('project-title').value = project.title || '';
-    document.getElementById('project-type').value = project.project_type || '';
-    document.getElementById('project-location').value = project.location || '';
-    document.getElementById('project-budget').value = project.budget || '';
-    document.getElementById('project-start-date').value = project.start_date || '';
-    document.getElementById('project-end-date').value = project.end_date || '';
-    document.getElementById('project-status').value = project.status || 'planned';
-    document.getElementById('project-progress').value = project.progress || 0;
-    document.getElementById('project-description').value = project.description || '';
-
-    openProjectModal();
+    // The current modal is for starting projects from contracts.
+    // Editing individual project fields is not yet implemented in this UI.
+    showToast('Edit functionality coming soon. Use the project details drawer to view info.', 'info');
 }
 
 /**
@@ -1674,20 +1666,41 @@ function escapeHtml(text) {
 function showToast(message, type = 'info') {
     // Create toast element
     const toast = document.createElement('div');
-    toast.className = `toast toast - ${type} `;
-    toast.innerHTML = `
-                            < i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}" ></i >
-                                <span>${message}</span>
-                        `;
+    toast.className = `toast toast-${type}`;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        z-index: 99999;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.3s ease;
+        max-width: 350px;
+    `;
+    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i><span>${message}</span>`;
 
     document.body.appendChild(toast);
 
     // Show toast
-    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+    }, 100);
 
     // Remove toast after 3 seconds
     setTimeout(() => {
-        toast.classList.remove('show');
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }

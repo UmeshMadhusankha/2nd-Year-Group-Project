@@ -8,6 +8,125 @@ class ContractModel {
     }
 
     /**
+     * Get all contracts for a specific customer (user) with company details.
+     */
+    public function getAllForCustomer($customerId) {
+        $query = "SELECT 
+                    c.contract_id,
+                    c.project_id,
+                    c.contract_number,
+                    c.total_budget,
+                    c.start_date,
+                    c.end_date,
+                    c.contract_date,
+                    c.status as contract_status,
+                    c.milestone_plan,
+                    c.payment_method,
+                    c.budget_type,
+                    c.sent_to_customer,
+                    c.sent_at,
+                    c.customer_response,
+                    c.customer_response_at,
+                    c.terms_accepted,
+                    c.project_title,
+                    c.project_description,
+                    c.project_location,
+                    c.progress_percentage,
+                    c.company_id,
+                    c.chat_active,
+                    comp.name as company_name,
+                    (
+                        SELECT COUNT(*) 
+                        FROM contract_milestone cm 
+                        WHERE cm.contract_id = c.contract_id
+                    ) as total_milestones,
+                    (
+                        SELECT COUNT(*) 
+                        FROM contract_milestone cm 
+                        WHERE cm.contract_id = c.contract_id AND cm.status = 'approved'
+                    ) as completed_milestones
+                FROM contract c
+                LEFT JOIN company comp ON c.company_id = comp.company_id
+                WHERE c.customer_id = :customer_id
+                ORDER BY c.contract_date DESC";
+
+        try {
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(':customer_id', (int)$customerId, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // Backward compatibility: if contract_milestone doesn't exist yet
+            $fallback = "SELECT 
+                    c.contract_id,
+                    c.project_id,
+                    c.contract_number,
+                    c.total_budget,
+                    c.start_date,
+                    c.end_date,
+                    c.contract_date,
+                    c.status as contract_status,
+                    c.milestone_plan,
+                    c.payment_method,
+                    c.budget_type,
+                    c.sent_to_customer,
+                    c.sent_at,
+                    c.customer_response,
+                    c.customer_response_at,
+                    c.terms_accepted,
+                    c.project_title,
+                    c.project_description,
+                    c.project_location,
+                    c.progress_percentage,
+                    c.company_id,
+                    c.chat_active,
+                    comp.name as company_name,
+                    0 as total_milestones,
+                    0 as completed_milestones
+                FROM contract c
+                LEFT JOIN company comp ON c.company_id = comp.company_id
+                WHERE c.customer_id = :customer_id
+                ORDER BY c.contract_date DESC";
+
+            $stmt = $this->conn->prepare($fallback);
+            $stmt->bindValue(':customer_id', (int)$customerId, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+    }
+
+    /**
+     * Get contract by ID for a specific customer (user) with all details.
+     */
+    public function getByIdForCustomer($contractId, $customerId) {
+        $query = "SELECT 
+                    c.*,
+                    u.user_id as customer_id,
+                    u.f_name as customer_fname,
+                    u.l_name as customer_lname,
+                    u.email as customer_email,
+                    u.address as customer_address,
+                    u.district as customer_district,
+                    comp.company_id,
+                    comp.name as company_name,
+                    comp.registration_no as company_registration_no,
+                    c_loc.address as company_address,
+                    comp.contact_no as company_contact,
+                    comp.email as company_email
+                FROM contract c
+                LEFT JOIN user u ON c.customer_id = u.user_id
+                LEFT JOIN company comp ON c.company_id = comp.company_id
+                LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
+                WHERE c.contract_id = :contract_id AND c.customer_id = :customer_id";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':contract_id', (int)$contractId, PDO::PARAM_INT);
+        $stmt->bindValue(':customer_id', (int)$customerId, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Get all contracts with project and customer details
      */
     public function getAll($companyId = null) {
@@ -37,7 +156,11 @@ class ContractModel {
                     u.email as customer_email,
                     c.company_id,
                     c.chat_active,
-                    comp.name as company_name
+                    comp.name as company_name,
+                    (SELECT COUNT(*) FROM contract_chats cc 
+                     WHERE cc.contract_id = c.contract_id 
+                       AND cc.sender_type = 'customer' 
+                       AND cc.is_read = 0) as unread_messages
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id";
@@ -75,7 +198,11 @@ class ContractModel {
                     comp.registration_no as company_registration_no,
                     c_loc.address as company_address,
                     comp.contact_no as company_contact,
-                    comp.email as company_email
+                    comp.email as company_email,
+                    (SELECT COUNT(*) FROM contract_chats cc 
+                     WHERE cc.contract_id = c.contract_id 
+                       AND cc.sender_type = 'customer' 
+                       AND cc.is_read = 0) as unread_messages
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id
@@ -286,19 +413,24 @@ class ContractModel {
         // Insert new milestones
         if (!empty($milestones)) {
             $insertQuery = "INSERT INTO contract_milestone 
-                (contract_id, milestone_number, title, description, due_date, amount, percentage, status) 
-                VALUES (:cid, :num, :title, :desc, :date, :amount, :pct, 'pending')";
+                (contract_id, milestone_number, title, description, due_date,
+                 amount, percentage, unit_label, unit_rate, estimated_quantity, status) 
+                VALUES (:cid, :num, :title, :desc, :date,
+                        :amount, :pct, :unit_label, :unit_rate, :estimated_quantity, 'pending')";
             $insertStmt = $this->conn->prepare($insertQuery);
             
             foreach ($milestones as $i => $ms) {
                 $insertStmt->execute([
-                    ':cid' => $contractId,
-                    ':num' => $i + 1,
-                    ':title' => $ms['title'] ?? $ms['milestone_name'] ?? 'Milestone ' . ($i + 1),
-                    ':desc' => $ms['description'] ?? '',
-                    ':date' => $ms['due_date'] ?? null,
-                    ':amount' => $ms['amount'] ?? 0,
-                    ':pct' => $ms['percentage'] ?? 0
+                    ':cid'                => $contractId,
+                    ':num'                => $i + 1,
+                    ':title'              => $ms['title'] ?? $ms['milestone_name'] ?? 'Milestone ' . ($i + 1),
+                    ':desc'               => $ms['description'] ?? '',
+                    ':date'               => $ms['due_date'] ?? null,
+                    ':amount'             => $ms['amount'] ?? 0,
+                    ':pct'                => $ms['percentage'] ?? 0,
+                    ':unit_label'         => $ms['unit_label'] ?? null,
+                    ':unit_rate'          => $ms['unit_rate'] ?? null,
+                    ':estimated_quantity' => $ms['estimated_quantity'] ?? null,
                 ]);
             }
             
@@ -664,120 +796,122 @@ class ContractModel {
         }
     }
     /**
-     * Mark milestone as submitted by company (waiting for approval)
+     * Mark milestone as submitted by company (waiting for customer verification).
+     * Accepts the actual units consumed so the billing amount can be pre-computed.
      */
-    public function markMilestoneCompleted($milestoneId, $proofFiles = null, $comments = null) {
+    public function markMilestoneCompleted($milestoneId, $proofFiles = null, $comments = null, $actualQuantity = null) {
+        // Fetch unit_rate so we can calculate actual_amount
+        $fetchStmt = $this->conn->prepare(
+            "SELECT unit_rate, estimated_quantity FROM contract_milestone WHERE milestone_id = ?"
+        );
+        $fetchStmt->execute([$milestoneId]);
+        $row = $fetchStmt->fetch(PDO::FETCH_ASSOC);
+
+        $actualAmount = null;
+        if ($row && $actualQuantity !== null && $actualQuantity !== '') {
+            $rate = (float)($row['unit_rate'] ?? 0);
+            $qty  = (float)$actualQuantity;
+            if ($rate > 0) {
+                $actualAmount = $rate * $qty;
+            }
+        }
+
         $query = "UPDATE contract_milestone 
                   SET status = 'submitted', 
                       completed_at = NOW(), 
                       proof_files = :proof, 
-                      comments = :comments
+                      comments = :comments,
+                      actual_quantity = :actual_qty,
+                      actual_amount   = :actual_amt
                   WHERE milestone_id = :id AND status IN ('pending', 'rejected', 'in_progress')";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':proof', $proofFiles);
-        $stmt->bindValue(':comments', $comments);
-        $stmt->bindValue(':id', $milestoneId);
+        $stmt->bindValue(':proof',      $proofFiles);
+        $stmt->bindValue(':comments',   $comments);
+        $stmt->bindValue(':actual_qty', ($actualQuantity !== null && $actualQuantity !== '') ? (float)$actualQuantity : null);
+        $stmt->bindValue(':actual_amt', $actualAmount);
+        $stmt->bindValue(':id',         $milestoneId);
         
         return $stmt->execute();
     }
 
     /**
-     * Approve milestone by customer
-     * Triggers payment release if escrow is enabled
+     * Approve milestone by customer.
+     * Uses actual_amount (unit_rate × actual_quantity) for billing.
+     * No escrow required — payment is direct after verification.
      */
     public function approveMilestone($milestoneId) {
         try {
             $this->conn->beginTransaction();
 
-            // 1. Update milestone status
-            $query = "UPDATE contract_milestone 
-                      SET status = 'approved', 
-                          approved_at = NOW() 
-                      WHERE milestone_id = :id AND status = 'submitted'";
-            
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindValue(':id', $milestoneId);
-            $stmt->execute();
+            // 1. Fetch milestone data before approve
+            $mFetch = $this->conn->prepare(
+                "SELECT contract_id, actual_amount, amount FROM contract_milestone WHERE milestone_id = ?"
+            );
+            $mFetch->execute([$milestoneId]);
+            $mData = $mFetch->fetch(PDO::FETCH_ASSOC);
 
-            if ($stmt->rowCount() === 0) {
-                // Check if already approved to be idempotent
+            if (!$mData) {
+                throw new Exception("Milestone not found.");
+            }
+
+            // 2. Update milestone status to approved
+            $upd = $this->conn->prepare(
+                "UPDATE contract_milestone 
+                 SET status = 'approved', approved_at = NOW() 
+                 WHERE milestone_id = :id AND status = 'submitted'"
+            );
+            $upd->bindValue(':id', $milestoneId);
+            $upd->execute();
+
+            if ($upd->rowCount() === 0) {
                 $chk = $this->conn->prepare("SELECT status FROM contract_milestone WHERE milestone_id = ?");
                 $chk->execute([$milestoneId]);
                 if ($chk->fetchColumn() === 'approved') {
                     $this->conn->commit();
-                    return true;
+                    return true; // idempotent
                 }
                 throw new Exception("Milestone not found or not in submitted status.");
             }
 
-            // 2. Trigger Escrow Release if enabled
-            // Check Contract for escrow_enabled
-            $cCheck = $this->conn->prepare("SELECT contract_id, company_id, escrow_enabled FROM contract WHERE contract_id = (SELECT contract_id FROM contract_milestone WHERE milestone_id = ?)");
-            $cCheck->execute([$milestoneId]);
-            $contractData = $cCheck->fetch(PDO::FETCH_ASSOC);
+            // 3. Update contract amount_paid / amount_pending using actual billed amount
+            $contractId = $mData['contract_id'];
+            // Prefer actual_amount (unit-based). Fall back to estimated amount.
+            $billedAmount = ($mData['actual_amount'] !== null) ? (float)$mData['actual_amount'] : (float)$mData['amount'];
 
-            if ($contractData && $contractData['escrow_enabled']) {
-                require_once __DIR__ . '/EscrowModel.php';
-                $escrowModel = new EscrowModel($this->conn);
-                
-                // Get Amount to release
-                $mCheck = $this->conn->prepare("SELECT amount, escrow_held FROM contract_milestone WHERE milestone_id = ?");
-                $mCheck->execute([$milestoneId]);
-                $mData = $mCheck->fetch(PDO::FETCH_ASSOC);
-                
-                if ($mData && $mData['escrow_held'] > 0) {
-                     // Release the held amount (or milestone amount, theoretically they match if fully funded)
-                     // Use held amount to be safe against partial funding
-                     $amountToRelease = $mData['escrow_held'];
-                     
-                     // Company ID is in contractData. The EscrowModel now supports company_id.
-                     $companyId = $contractData['company_id'];
-                     
-                     if ($companyId) {
-                         // Pass company_id and type 'company' is handled inside EscrowModel if we pass plain ID?
-                         // The signature is releaseFundsToCompany($companyId, $milestoneId, $amount)
-                         // EscrowModel::releaseFundsToCompany calls getWallet($companyId, 'company').
-                         
-                         if (!$escrowModel->releaseFundsToCompany($companyId, $milestoneId, $amountToRelease)) {
-                             throw new Exception("Failed to release escrow funds.");
-                         }
-                     }
-                }
+            if ($billedAmount > 0) {
+                $this->conn->prepare(
+                    "UPDATE contract
+                     SET amount_paid    = COALESCE(amount_paid, 0) + :billed,
+                         amount_pending = GREATEST(0, COALESCE(amount_pending, 0) - :billed2)
+                     WHERE contract_id  = :cid"
+                )->execute([':billed' => $billedAmount, ':billed2' => $billedAmount, ':cid' => $contractId]);
             }
 
-            // 3. Update Contract Progress
-            // Get contract ID
-            $cStmt = $this->conn->prepare("SELECT contract_id FROM contract_milestone WHERE milestone_id = ?");
-            $cStmt->execute([$milestoneId]);
-            $contractId = $cStmt->fetchColumn();
+            // 4. Recalculate progress
+            $progStmt = $this->conn->prepare(
+                "SELECT COUNT(*) as total,
+                        SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved
+                 FROM contract_milestone WHERE contract_id = ?"
+            );
+            $progStmt->execute([$contractId]);
+            $stats = $progStmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($contractId) {
-                // Recalculate progress
-                $progStmt = $this->conn->prepare("
-                    SELECT 
-                        COUNT(*) as total, 
-                        SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved 
-                    FROM contract_milestone 
-                    WHERE contract_id = ?
-                ");
-                $progStmt->execute([$contractId]);
-                $stats = $progStmt->fetch(PDO::FETCH_ASSOC);
-                
-                if ($stats['total'] > 0) {
-                    $newProgress = round(($stats['approved'] / $stats['total']) * 100);
-                    $updProg = $this->conn->prepare("UPDATE contract SET progress_percentage = ? WHERE contract_id = ?");
-                    $updProg->execute([$newProgress, $contractId]);
+            if ($stats && $stats['total'] > 0) {
+                $newProgress = (int)round(($stats['approved'] / $stats['total']) * 100);
+                $this->conn->prepare(
+                    "UPDATE contract SET progress_percentage = ? WHERE contract_id = ?"
+                )->execute([$newProgress, $contractId]);
 
-                    // If all approved, mark contract completed?
-                    if ($newProgress == 100) {
-                         $this->conn->prepare("UPDATE contract SET status = 'completed' WHERE contract_id = ?")->execute([$contractId]);
-                    }
+                if ($newProgress >= 100) {
+                    $this->conn->prepare(
+                        "UPDATE contract SET status = 'completed' WHERE contract_id = ?"
+                    )->execute([$contractId]);
                 }
             }
 
             $this->conn->commit();
-            return true;
+            return ['success' => true, 'billed_amount' => $billedAmount];
 
         } catch (Exception $e) {
             if ($this->conn->inTransaction()) {

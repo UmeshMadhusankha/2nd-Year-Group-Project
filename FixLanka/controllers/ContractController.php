@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/ContractModel.php';
+require_once __DIR__ . '/../models/EscrowModel.php';
 require_once __DIR__ . '/../models/SystemNotificationService.php';
 
 class ContractController {
@@ -24,6 +25,185 @@ class ContractController {
             return null;
         }
         return $_SESSION['user_id'];
+    }
+
+    /**
+     * Get customer/user ID from session.
+     */
+    private function getCustomerId() {
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role'])) {
+            return null;
+        }
+
+        $role = $_SESSION['user_role'];
+        if ($role !== 'user' && $role !== 'customer') {
+            return null;
+        }
+
+        return $_SESSION['user_id'];
+    }
+
+    /**
+     * Get all contracts for the logged-in customer.
+     */
+    public function getCustomerContracts() {
+        try {
+            $customerId = $this->getCustomerId();
+            if ($customerId === null) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $contracts = $this->model->getAllForCustomer($customerId);
+
+            $formattedContracts = array_map(function($contract) {
+                $actualStatus = $contract['contract_status'] ?? 'draft';
+
+                if (!empty($contract['sent_to_customer']) && empty($contract['terms_accepted'])) {
+                    $actualStatus = 'pending_signature';
+                } else if (($contract['customer_response'] ?? null) === 'rejected') {
+                    $actualStatus = 'terminated';
+                } else if (!empty($contract['terms_accepted'])) {
+                    $actualStatus = $contract['contract_status'] ?? 'active';
+                }
+
+                return [
+                    'contract_id' => (int)$contract['contract_id'],
+                    'project_id' => $contract['project_id'],
+                    'contract_number' => $contract['contract_number'] ?? ('CNT-' . date('Y', strtotime($contract['contract_date'])) . '-' . str_pad($contract['contract_id'], 3, '0', STR_PAD_LEFT)),
+                    'project_title' => $contract['project_title'] ?? 'Untitled Contract',
+                    'project_description' => $contract['project_description'] ?? '',
+                    'project_location' => $contract['project_location'] ?? '—',
+                    'contract_date' => $contract['contract_date'] ?? null,
+                    'start_date' => $contract['start_date'] ?? null,
+                    'end_date' => $contract['end_date'] ?? null,
+                    'total_budget' => $contract['total_budget'] ?? 0,
+                    'payment_method' => $contract['payment_method'] ?? null,
+                    'budget_type' => $contract['budget_type'] ?? null,
+                    'progress_percentage' => (int)($contract['progress_percentage'] ?? 0),
+                    'status' => $actualStatus,
+                    'sent_to_customer' => (bool)($contract['sent_to_customer'] ?? 0),
+                    'sent_at' => $contract['sent_at'] ?? null,
+                    'customer_response' => $contract['customer_response'] ?? 'pending',
+                    'customer_response_at' => $contract['customer_response_at'] ?? null,
+                    'terms_accepted' => (bool)($contract['terms_accepted'] ?? 0),
+                    'chat_active' => (int)($contract['chat_active'] ?? 0),
+                    'company_id' => $contract['company_id'] ?? null,
+                    'company_name' => $contract['company_name'] ?? '—',
+                    'total_milestones' => (int)($contract['total_milestones'] ?? 0),
+                    'completed_milestones' => (int)($contract['completed_milestones'] ?? 0)
+                ];
+            }, $contracts);
+
+            echo json_encode([
+                'success' => true,
+                'data' => $formattedContracts,
+                'count' => count($formattedContracts)
+            ]);
+        } catch (Exception $e) {
+            error_log("[ContractController] Error in getCustomerContracts: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Get a single contract for the logged-in customer.
+     */
+    public function getCustomerContract() {
+        try {
+            $customerId = $this->getCustomerId();
+            if ($customerId === null) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $contractId = $_GET['id'] ?? null;
+            if (!$contractId) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Contract ID required']);
+                return;
+            }
+
+            $contract = $this->model->getByIdForCustomer($contractId, $customerId);
+            if (!$contract) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Contract not found']);
+                return;
+            }
+
+            $milestones = $this->model->getMilestones($contractId);
+            $undoAvailable = $this->model->checkUndoStatus($contractId);
+
+            // Determine actual status based on business logic
+            $actualStatus = $contract['status'] ?? 'draft';
+            if (!empty($contract['sent_to_customer']) && empty($contract['terms_accepted'])) {
+                $actualStatus = 'pending_signature';
+            } else if (($contract['customer_response'] ?? null) === 'rejected') {
+                $actualStatus = 'terminated';
+            } else if (!empty($contract['terms_accepted'])) {
+                $actualStatus = $contract['status'] ?? 'active';
+            }
+
+            $response = [
+                'contract_id' => (int)$contract['contract_id'],
+                'contract_number' => $contract['contract_number'] ?: ('CNT-' . date('Y', strtotime($contract['contract_date'])) . '-' . str_pad($contract['contract_id'], 3, '0', STR_PAD_LEFT)),
+                'status' => $actualStatus,
+                'sent_to_customer' => (bool)($contract['sent_to_customer'] ?? 0),
+                'sent_at' => $contract['sent_at'] ?? null,
+                'customer_response' => $contract['customer_response'] ?? null,
+                'customer_response_at' => $contract['customer_response_at'] ?? null,
+                'terms_accepted' => (bool)($contract['terms_accepted'] ?? 0),
+                'undo_available' => (bool)$undoAvailable,
+                'undo_deadline' => $contract['undo_deadline'] ?? null,
+
+                'project_title' => $contract['project_title'] ?? '',
+                'project_reference' => $contract['project_reference'] ?? '',
+                'project_location' => $contract['project_location'] ?? '',
+                'project_description' => $contract['project_description'] ?? '',
+
+                'company_id' => $contract['company_id'] ?? null,
+                'company_name' => $contract['company_name'] ?? '',
+                'company_registration' => $contract['company_registration_no'] ?? '',
+                'company_email' => $contract['company_email'] ?? '',
+                'company_phone' => $contract['company_contact'] ?? '',
+
+                'customer_id' => $contract['customer_id'] ?? null,
+                'customer_fname' => $contract['customer_fname'] ?? '',
+                'customer_lname' => $contract['customer_lname'] ?? '',
+                'customer_email' => $contract['customer_email'] ?? '',
+
+                'total_budget' => $contract['total_budget'] ?? 0,
+                'budget_type' => $contract['budget_type'] ?? null,
+                'payment_method' => $contract['payment_method'] ?? null,
+                'amount_paid' => $contract['amount_paid'] ?? 0,
+                'amount_pending' => $contract['amount_pending'] ?? 0,
+                'start_date' => $contract['start_date'] ?? null,
+                'end_date' => $contract['end_date'] ?? null,
+                'contract_date' => $contract['contract_date'] ?? null,
+                'progress_percentage' => $contract['progress_percentage'] ?? ($contract['progress'] ?? 0),
+                'milestone_plan' => (bool)($contract['milestone_plan'] ?? 0),
+                'milestones' => $milestones,
+
+                'scope_description' => $contract['scope_description'] ?? '',
+                'scope_inclusions' => $contract['scope_inclusions'] ?? '',
+                'scope_exclusions' => $contract['scope_exclusions'] ?? '',
+                'materials_responsibility' => $contract['materials_responsibility'] ?? '',
+                'late_payment_penalty' => $contract['late_payment_penalty'] ?? '',
+                'variation_clause' => (bool)($contract['variation_clause'] ?? 0),
+                'communication_channel' => $contract['communication_channel'] ?? '',
+                'dispute_resolution' => $contract['dispute_resolution'] ?? '',
+                'terms_conditions' => $contract['terms_conditions'] ?? ''
+            ];
+
+            echo json_encode(['success' => true, 'data' => $response]);
+        } catch (Exception $e) {
+            error_log("[ContractController] Error in getCustomerContract: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -83,7 +263,8 @@ class ContractController {
                     'customer_response' => $contract['customer_response'] ?? 'pending',
                     'customer_response_at' => $contract['customer_response_at'] ?? null,
                     'terms_accepted' => (bool)($contract['terms_accepted'] ?? 0),
-                    'chat_active' => (int)($contract['chat_active'] ?? 0)
+                    'chat_active' => (int)($contract['chat_active'] ?? 0),
+                    'unread_messages' => (int)($contract['unread_messages'] ?? 0)
                 ];
             }, $contracts);
 
@@ -1086,113 +1267,128 @@ class ContractController {
      */
     private function generateMilestones($totalAmount, $paymentMethod, $startDate, $endDate) {
         $milestones = [];
-        
-        // Calculate duration in days
-        $start = new DateTime($startDate);
-        $end = new DateTime($endDate);
+
+        $start    = new DateTime($startDate);
+        $end      = new DateTime($endDate);
         $duration = $start->diff($end)->days;
-        
+
         switch ($paymentMethod) {
             case 'full_upfront':
-                // Single milestone at start
+                // Legacy: single payment at project start
                 $milestones[] = [
-                    'milestone_number' => 1,
-                    'title' => 'Full Payment',
-                    'description' => 'Complete project payment upfront',
-                    'due_date' => $startDate,
-                    'amount' => $totalAmount,
-                    'percentage' => 100
+                    'milestone_number'    => 1,
+                    'title'               => 'Full Payment',
+                    'description'         => 'Complete project payment upfront',
+                    'due_date'            => $startDate,
+                    'amount'              => $totalAmount,
+                    'percentage'          => 100
                 ];
                 break;
-                
+
             case 'milestone_based':
-                // 3 milestones: 30% start, 40% middle, 30% end
-                $milestones[] = [
-                    'milestone_number' => 1,
-                    'title' => 'Initial Payment',
-                    'description' => 'Project initiation and setup',
-                    'due_date' => $startDate,
-                    'amount' => $totalAmount * 0.30,
-                    'percentage' => 30
-                ];
-                
+                // New model: NO upfront. All 3 stages billed upon completion + customer approval.
+                // Amounts are estimates; actual billing uses unit_rate × actual_quantity.
                 $midDate = clone $start;
-                $midDate->add(new DateInterval('P' . floor($duration / 2) . 'D'));
-                
+                $midDate->add(new DateInterval('P' . max(1, floor($duration / 2)) . 'D'));
+
                 $milestones[] = [
-                    'milestone_number' => 2,
-                    'title' => 'Mid-Project Payment',
-                    'description' => 'Progress payment for ongoing work',
-                    'due_date' => $midDate->format('Y-m-d'),
-                    'amount' => $totalAmount * 0.40,
-                    'percentage' => 40
+                    'milestone_number'    => 1,
+                    'title'               => 'Stage 1 — Foundation & Setup',
+                    'description'         => 'Initial preparation and setup work. Payment triggered after actual units verified.',
+                    'due_date'            => $midDate->format('Y-m-d'),
+                    'amount'              => $totalAmount * 0.40,
+                    'percentage'          => 40
                 ];
-                
+
                 $milestones[] = [
-                    'milestone_number' => 3,
-                    'title' => 'Final Payment',
-                    'description' => 'Project completion and handover',
-                    'due_date' => $endDate,
-                    'amount' => $totalAmount * 0.30,
-                    'percentage' => 30
+                    'milestone_number'    => 2,
+                    'title'               => 'Stage 2 — Core Work',
+                    'description'         => 'Main body of work. Payment triggered after actual units verified.',
+                    'due_date'            => $midDate->format('Y-m-d'),
+                    'amount'              => $totalAmount * 0.35,
+                    'percentage'          => 35
                 ];
-                break;
-                
-            case '50_50':
-                // 50% start, 50% end
+
                 $milestones[] = [
-                    'milestone_number' => 1,
-                    'title' => 'Initial Payment (50%)',
-                    'description' => 'First half payment at project start',
-                    'due_date' => $startDate,
-                    'amount' => $totalAmount * 0.50,
-                    'percentage' => 50
-                ];
-                
-                $milestones[] = [
-                    'milestone_number' => 2,
-                    'title' => 'Final Payment (50%)',
-                    'description' => 'Second half payment upon completion',
-                    'due_date' => $endDate,
-                    'amount' => $totalAmount * 0.50,
-                    'percentage' => 50
+                    'milestone_number'    => 3,
+                    'title'               => 'Stage 3 — Completion & Handover',
+                    'description'         => 'Final stage, completion and handover. Payment triggered after customer confirmation.',
+                    'due_date'            => $endDate,
+                    'amount'              => $totalAmount * 0.25,
+                    'percentage'          => 25
                 ];
                 break;
-                
-            case '30_70':
-                // 30% start, 70% end
-                $milestones[] = [
-                    'milestone_number' => 1,
-                    'title' => 'Initial Payment (30%)',
-                    'description' => 'Advance payment at project start',
-                    'due_date' => $startDate,
-                    'amount' => $totalAmount * 0.30,
-                    'percentage' => 30
-                ];
-                
-                $milestones[] = [
-                    'milestone_number' => 2,
-                    'title' => 'Final Payment (70%)',
-                    'description' => 'Completion payment upon delivery',
-                    'due_date' => $endDate,
-                    'amount' => $totalAmount * 0.70,
-                    'percentage' => 70
-                ];
-                break;
-                
+
             case 'completion':
-                // Single milestone at end
+                // 100% payment after full project completion
                 $milestones[] = [
-                    'milestone_number' => 1,
-                    'title' => 'Payment on Completion',
-                    'description' => 'Full payment after project completion',
-                    'due_date' => $endDate,
-                    'amount' => $totalAmount,
-                    'percentage' => 100
+                    'milestone_number'    => 1,
+                    'title'               => 'Final Payment on Completion',
+                    'description'         => 'Full project payment after completion and customer verification.',
+                    'due_date'            => $endDate,
+                    'amount'              => $totalAmount,
+                    'percentage'          => 100
+                ];
+                break;
+
+            case 'time_material':
+                // Dynamic: billing happens per verified time/material log
+                // Generate 3 review checkpoints for the customer to approve logged work
+                $step1 = clone $start;
+                $step1->add(new DateInterval('P' . max(1, intval($duration / 3)) . 'D'));
+                $step2 = clone $start;
+                $step2->add(new DateInterval('P' . max(2, intval($duration * 2 / 3)) . 'D'));
+
+                $milestones[] = [
+                    'milestone_number'    => 1,
+                    'title'               => 'T&M Review Checkpoint 1',
+                    'description'         => 'First billing review: company submits hours/materials used. Amount calculated from actual units.',
+                    'due_date'            => $step1->format('Y-m-d'),
+                    'amount'              => 0,
+                    'percentage'          => 0
+                ];
+                $milestones[] = [
+                    'milestone_number'    => 2,
+                    'title'               => 'T&M Review Checkpoint 2',
+                    'description'         => 'Second billing review: company submits hours/materials used. Amount calculated from actual units.',
+                    'due_date'            => $step2->format('Y-m-d'),
+                    'amount'              => 0,
+                    'percentage'          => 0
+                ];
+                $milestones[] = [
+                    'milestone_number'    => 3,
+                    'title'               => 'T&M Final Billing',
+                    'description'         => 'Final billing review on project close-out.',
+                    'due_date'            => $endDate,
+                    'amount'              => 0,
+                    'percentage'          => 0
+                ];
+                break;
+
+            // Legacy cases (kept for backward compatibility)
+            case '50_50':
+                $milestones[] = ['milestone_number' => 1, 'title' => 'Initial Payment (50%)', 'description' => 'First half at project start', 'due_date' => $startDate, 'amount' => $totalAmount * 0.50, 'percentage' => 50];
+                $milestones[] = ['milestone_number' => 2, 'title' => 'Final Payment (50%)',   'description' => 'Second half upon completion', 'due_date' => $endDate,   'amount' => $totalAmount * 0.50, 'percentage' => 50];
+                break;
+
+            case '30_70':
+                $milestones[] = ['milestone_number' => 1, 'title' => 'Initial Payment (30%)', 'description' => 'Advance at project start',    'due_date' => $startDate, 'amount' => $totalAmount * 0.30, 'percentage' => 30];
+                $milestones[] = ['milestone_number' => 2, 'title' => 'Final Payment (70%)',   'description' => 'Completion payment on delivery', 'due_date' => $endDate,  'amount' => $totalAmount * 0.70, 'percentage' => 70];
+                break;
+
+            default:
+                // Fallback: single payment at the end
+                $milestones[] = [
+                    'milestone_number'    => 1,
+                    'title'               => 'Payment on Completion',
+                    'description'         => 'Full payment after project completion',
+                    'due_date'            => $endDate,
+                    'amount'              => $totalAmount,
+                    'percentage'          => 100
                 ];
                 break;
         }
-        
+
         return $milestones;
     }
 
@@ -2155,7 +2351,7 @@ class ContractController {
     public function respondToContract() {
         try {
             // Validate session
-            if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'customer') {
+            if (!isset($_SESSION['user_id']) || !in_array(($_SESSION['user_role'] ?? ''), ['customer', 'user'], true)) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'message' => 'Unauthorized']);
                 return;
@@ -2251,15 +2447,7 @@ class ContractController {
                     throw new Exception("Contract not found or not authorized to accept.");
                 }
 
-                // Make the associated project active (in_progress)
-                $stmtProj = $this->pdo->prepare("
-                    UPDATE project p
-                    INNER JOIN contract c ON p.project_id = c.project_id
-                    SET p.status = 'in_progress',
-                        p.progress_percentage = 0
-                    WHERE c.contract_id = ?
-                ");
-                $stmtProj->execute([$contractId]);
+
 
                 $this->addTimelineEvent($contractId, 'contract_accepted', 'Contract accepted by customer');
 
@@ -2363,6 +2551,129 @@ class ContractController {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Atomic Pay & Accept flow
+     */
+    public function payAndAccept() {
+        try {
+            if (!isset($_SESSION['user_id']) || !in_array(($_SESSION['user_role'] ?? ''), ['customer', 'user'], true)) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            $contractId = $data['contract_id'] ?? null;
+
+            if (!$contractId) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Missing contract ID']);
+                return;
+            }
+
+            $this->pdo->beginTransaction();
+
+            // 1. Get contract and check upfront requirements
+            $contract = $this->model->getByIdForCustomer($contractId, $_SESSION['user_id']);
+            if (!$contract) {
+                throw new Exception("Contract not found.");
+            }
+
+            // Get initial milestones (due on or before start_date)
+            $stmt = $this->pdo->prepare("SELECT * FROM contract_milestone WHERE contract_id = ? AND due_date <= ? ORDER BY milestone_number ASC");
+            $stmt->execute([$contractId, $contract['start_date']]);
+            $initialMilestones = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $totalUpfront = 0;
+            foreach ($initialMilestones as $ms) {
+                $totalUpfront += (float)$ms['amount'];
+            }
+
+            // 2. Process Payment (Simulated)
+            if ($totalUpfront > 0) {
+                $escrowModel = new EscrowModel($this->pdo);
+                
+                // Add funds to user wallet first (Simulate deposit from card)
+                $escrowModel->deposit($_SESSION['user_id'], $totalUpfront, 'user', "Initial deposit for Contract #{$contractId}");
+                
+                // Then hold for each initial milestone
+                foreach ($initialMilestones as $ms) {
+                    $success = $escrowModel->holdFundsForMilestone($_SESSION['user_id'], $ms['milestone_id'], $ms['amount']);
+                    if (!$success) {
+                        throw new Exception("Failed to hold escrow funds for Milestone #{$ms['milestone_id']}");
+                    }
+                }
+
+                // Record in payment history
+                $stmt = $this->pdo->prepare("INSERT INTO contract_payment_history (contract_id, amount, payment_type, status, paid_by, notes) VALUES (?, ?, 'escrow_deposit', 'completed', ?, ?)");
+                $stmt->execute([$contractId, $totalUpfront, $_SESSION['user_id'], "Upfront payment for project start"]);
+            }
+
+            // 3. Accept Contract (Signature logic)
+            $this->forceAcceptContract($contractId, $contract);
+
+            $this->pdo->commit();
+            echo json_encode(['success' => true, 'message' => 'Payment processed and contract accepted.']);
+
+        } catch (Exception $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log("[ContractController] Error in payAndAccept: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    private function forceAcceptContract($contractId, $contract) {
+        // Build e-sign metadata
+        $custStmt = $this->pdo->prepare("SELECT f_name, l_name, email FROM user WHERE user_id = ?");
+        $custStmt->execute([$_SESSION['user_id']]);
+        $cust = $custStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $signatureName = trim(($cust['f_name'] ?? '') . ' ' . ($cust['l_name'] ?? ''));
+        
+        $signatureMeta = [
+            'type' => 'pay_and_accept_confirmation',
+            'signed_by_user_id' => (int)$_SESSION['user_id'],
+            'signed_by_name' => $signatureName,
+            'signed_at' => gmdate('c'),
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? null
+        ];
+
+        $stmt = $this->pdo->prepare("
+            UPDATE contract 
+            SET status = 'active', 
+                terms_accepted = 1, 
+                terms_accepted_at = NOW(),
+                customer_response = 'accepted', 
+                customer_response_at = NOW(),
+                user_signature = 'E-SIGNED (PAID & ACCEPTED)',
+                customer_signature = ?,
+                signed_at = NOW(),
+                locked = 1,
+                escrow_enabled = 1
+            WHERE contract_id = ? AND customer_id = ?
+        ");
+        $stmt->execute([
+            json_encode($signatureMeta),
+            $contractId,
+            $_SESSION['user_id']
+        ]);
+
+        $this->addTimelineEvent($contractId, 'contract_accepted_paid', 'Contract accepted with initial payment received into Escrow');
+        
+        // Notify
+        $projectTitle = $contract['project_title'] ?? ('Contract #' . $contractId);
+        $companyId = $contract['company_id'];
+        $this->notifier->notify(
+            'Contract accepted & paid',
+            "Customer accepted and paid upfront for {$projectTitle}. You can now start the job.",
+            'company',
+            $companyId,
+            ['role' => 'user', 'id' => (int)$_SESSION['user_id'], 'name' => 'Customer']
+        );
     }
 
     /**
@@ -2560,64 +2871,158 @@ class ContractController {
     // ========================================
 
     public function submitMilestone() {
-        $milestoneId = $_POST['milestone_id'] ?? null;
-        $description = $_POST['completion_description'] ?? '';
-        
+        $milestoneId     = $_POST['milestone_id']          ?? null;
+        $comments        = $_POST['completion_description'] ?? '';
+        $actualQuantity  = $_POST['actual_quantity']        ?? null;
+        $proofFiles      = null; // future: handle file uploads as JSON
+
         if (!$milestoneId) {
             echo json_encode(['success' => false, 'message' => 'Milestone ID required']);
             return;
         }
-        
+
         try {
-            $this->pdo->beginTransaction();
-            
-            $stmt = $this->pdo->prepare("UPDATE milestone SET submitted_for_approval = 1, submitted_at = NOW(), completion_description = ? WHERE milestone_id = ?");
-            $stmt->execute([$description, $milestoneId]);
-            
-            $stmt = $this->pdo->prepare("SELECT contract_id, milestone_name FROM milestone WHERE milestone_id = ?");
-            $stmt->execute([$milestoneId]);
-            $milestone = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            $this->addTimelineEvent($milestone['contract_id'], 'milestone_submitted', "Milestone '{$milestone['milestone_name']}' submitted for approval");
-            $this->createNotification($milestone['contract_id'], 'milestone_submitted', "Milestone '{$milestone['milestone_name']}' is ready for your approval", 'customer');
-            
-            $this->pdo->commit();
-            echo json_encode(['success' => true, 'message' => 'Milestone submitted for approval']);
+            // Verify this milestone belongs to a contract owned by the logged-in company
+            $chk = $this->pdo->prepare("
+                SELECT cm.contract_id, cm.title as milestone_name, cm.unit_rate, cm.estimated_quantity,
+                       c.project_title, c.customer_id
+                FROM contract_milestone cm
+                JOIN contract c ON cm.contract_id = c.contract_id
+                WHERE cm.milestone_id = ? AND c.company_id = ?
+            ");
+            $companyId = $this->getCompanyId();
+            if (!$companyId) {
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+            $chk->execute([$milestoneId, $companyId]);
+            $m = $chk->fetch(PDO::FETCH_ASSOC);
+
+            if (!$m) {
+                echo json_encode(['success' => false, 'message' => 'Milestone not found or unauthorized']);
+                return;
+            }
+
+            $result = $this->model->markMilestoneCompleted(
+                $milestoneId,
+                $proofFiles,
+                $comments,
+                ($actualQuantity !== null && $actualQuantity !== '') ? (float)$actualQuantity : null
+            );
+
+            if (!$result) {
+                echo json_encode(['success' => false, 'message' => 'Could not submit milestone (check status)']);
+                return;
+            }
+
+            // Compute billing preview for response
+            $billingPreview = null;
+            if ($actualQuantity !== null && (float)($m['unit_rate'] ?? 0) > 0) {
+                $billingPreview = (float)$m['unit_rate'] * (float)$actualQuantity;
+            }
+
+            $this->addTimelineEvent(
+                $m['contract_id'],
+                'milestone_submitted',
+                "Milestone '{$m['milestone_name']}' submitted for verification"
+            );
+            $this->createNotification(
+                $m['contract_id'],
+                'milestone_submitted',
+                "Milestone '{$m['milestone_name']}' submitted — please verify the actual units and confirm payment.",
+                'customer'
+            );
+
+            echo json_encode([
+                'success'          => true,
+                'message'          => 'Milestone submitted for customer verification',
+                'billing_preview'  => $billingPreview,
+                'actual_quantity'  => $actualQuantity !== null ? (float)$actualQuantity : null,
+                'unit_rate'        => $m['unit_rate'] !== null ? (float)$m['unit_rate'] : null,
+            ]);
         } catch (Exception $e) {
-            $this->pdo->rollBack();
             error_log("Submit milestone error: " . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => 'Database error']);
+            echo json_encode(['success' => false, 'message' => 'Server error']);
         }
     }
 
     public function approveMilestone() {
         $milestoneId = $_POST['milestone_id'] ?? null;
-        
+
         if (!$milestoneId) {
             echo json_encode(['success' => false, 'message' => 'Milestone ID required']);
             return;
         }
-        
+
+        // Verify customer owns this contract
+        $customerId = $this->getCustomerId();
+        if (!$customerId) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
         try {
-            $this->pdo->beginTransaction();
-            
-            $stmt = $this->pdo->prepare("UPDATE milestone SET customer_approved = 1, customer_approved_at = NOW(), customer_verified = 1, customer_verified_at = NOW() WHERE milestone_id = ?");
+            // Check if this is a contract_milestone (new) or legacy milestone
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM contract_milestone WHERE milestone_id = ?");
             $stmt->execute([$milestoneId]);
-            
-            $stmt = $this->pdo->prepare("SELECT contract_id, milestone_name, amount FROM milestone WHERE milestone_id = ?");
-            $stmt->execute([$milestoneId]);
-            $milestone = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            $this->addTimelineEvent($milestone['contract_id'], 'milestone_approved', "Milestone '{$milestone['milestone_name']}' approved by customer");
-            $this->createNotification($milestone['contract_id'], 'milestone_approved', "Milestone '{$milestone['milestone_name']}' has been approved", 'company');
-            $this->createEscrowReleaseRequest($milestone['contract_id'], $milestoneId, $milestone['amount']);
-            
-            $this->pdo->commit();
-            echo json_encode(['success' => true, 'message' => 'Milestone approved successfully']);
+            $isNewMilestone = $stmt->fetchColumn() > 0;
+
+            if ($isNewMilestone) {
+                // Verify ownership
+                $ownStmt = $this->pdo->prepare("
+                    SELECT cm.contract_id, cm.title as milestone_name, c.company_id, c.project_title
+                    FROM contract_milestone cm
+                    JOIN contract c ON cm.contract_id = c.contract_id
+                    WHERE cm.milestone_id = ? AND c.customer_id = ?
+                ");
+                $ownStmt->execute([$milestoneId, $customerId]);
+                $m = $ownStmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$m) {
+                    echo json_encode(['success' => false, 'message' => 'Milestone not found or unauthorized']);
+                    return;
+                }
+
+                $result = $this->model->approveMilestone($milestoneId);
+
+                if ($result) {
+                    $billedAmount = is_array($result) ? ($result['billed_amount'] ?? 0) : 0;
+
+                    $this->addTimelineEvent($m['contract_id'], 'milestone_approved', "Milestone '{$m['milestone_name']}' verified and approved by customer");
+                    $this->createNotification(
+                        $m['contract_id'],
+                        'milestone_approved',
+                        "Milestone '{$m['milestone_name']}' approved — LKR " . number_format($billedAmount, 2) . " recorded as paid.",
+                        'company'
+                    );
+
+                    echo json_encode([
+                        'success'       => true,
+                        'message'       => 'Milestone approved and payment recorded',
+                        'billed_amount' => $billedAmount,
+                    ]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Failed to approve milestone']);
+                }
+            } else {
+                // Fallback legacy path
+                $this->pdo->beginTransaction();
+                $stmt = $this->pdo->prepare("UPDATE milestone SET customer_approved = 1, customer_approved_at = NOW(), customer_verified = 1, customer_verified_at = NOW() WHERE milestone_id = ?");
+                $stmt->execute([$milestoneId]);
+                $stmt = $this->pdo->prepare("SELECT contract_id, milestone_name, amount FROM milestone WHERE milestone_id = ?");
+                $stmt->execute([$milestoneId]);
+                $milestone = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($milestone) {
+                    $this->addTimelineEvent($milestone['contract_id'], 'milestone_approved', "Milestone '{$milestone['milestone_name']}' approved");
+                }
+                $this->pdo->commit();
+                echo json_encode(['success' => true, 'message' => 'Milestone approved successfully']);
+            }
         } catch (Exception $e) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
             error_log("Approve milestone error: " . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => 'Database error']);
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
 
@@ -4551,6 +4956,734 @@ class ContractController {
             error_log("[ContractController] Error in undoContract: " . $e->getMessage());
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    // ========================================
+    // CONTRACT CHANGE REQUESTS (Customer → Company)
+    // ========================================
+
+    private const CONTRACT_CHANGE_STRUCTURED_MARKER = "\n__STRUCTURED_JSON__:";
+
+    private function insertContractChatMessage($contractId, $senderType, $senderId, $message, $messageType = 'system') {
+        // Support both schemas (with/without message_type column)
+        try {
+            $stmt = $this->pdo->prepare("INSERT INTO contract_chats (contract_id, sender_type, sender_id, message_type, message, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
+            $stmt->execute([(int)$contractId, $senderType, (int)$senderId, $messageType, $message]);
+            return (int)$this->pdo->lastInsertId();
+        } catch (Exception $e) {
+            // Fallback if message_type column doesn't exist
+            $stmt = $this->pdo->prepare("INSERT INTO contract_chats (contract_id, sender_type, sender_id, message, created_at) VALUES (?, ?, ?, ?, NOW())");
+            $stmt->execute([(int)$contractId, $senderType, (int)$senderId, $message]);
+            return (int)$this->pdo->lastInsertId();
+        }
+    }
+
+    private function validateStructuredContractChange($contractRow, $proposedChanges) {
+        if (!is_array($proposedChanges)) {
+            throw new Exception('Invalid proposed_changes');
+        }
+
+        // Date range validation
+        $start = $proposedChanges['start_date'] ?? ($contractRow['start_date'] ?? null);
+        $end = $proposedChanges['end_date'] ?? ($contractRow['end_date'] ?? null);
+        if (!$start || !$end) {
+            throw new Exception('Start date and end date are required');
+        }
+        $startDT = new DateTime($start);
+        $endDT = new DateTime($end);
+        if ($endDT < $startDT) {
+            throw new Exception('End date must be after start date');
+        }
+
+        // Budget validation
+        if (array_key_exists('total_budget', $proposedChanges) && $proposedChanges['total_budget'] !== null && $proposedChanges['total_budget'] !== '') {
+            if (!is_numeric($proposedChanges['total_budget']) || (float)$proposedChanges['total_budget'] < 0) {
+                throw new Exception('Invalid total budget');
+            }
+        }
+
+        // Milestone validations (only if present)
+        if (isset($proposedChanges['milestones']) && is_array($proposedChanges['milestones'])) {
+            $milestones = $proposedChanges['milestones'];
+            $count = count($milestones);
+            if ($count < 2) {
+                throw new Exception('Minimum 2 milestones required');
+            }
+            if ($count > 10) {
+                throw new Exception('Maximum 10 milestones allowed');
+            }
+
+            $sumPct = 0.0;
+            foreach ($milestones as $m) {
+                if (!is_array($m)) {
+                    throw new Exception('Invalid milestone');
+                }
+
+                $title = trim((string)($m['title'] ?? ''));
+                if ($title === '') {
+                    throw new Exception('Milestone title is required');
+                }
+
+                $due = $m['due_date'] ?? null;
+                if (!$due) {
+                    throw new Exception('Milestone due date is required');
+                }
+                $dueDT = new DateTime($due);
+                if ($dueDT < $startDT || $dueDT > $endDT) {
+                    throw new Exception('Milestone due date must be within the contract date range');
+                }
+
+                // Percentage must sum to 100%
+                $pct = $m['percentage'] ?? null;
+                if ($pct === null || $pct === '') {
+                    throw new Exception('Milestone percentage is required');
+                }
+                if (!is_numeric($pct) || (float)$pct <= 0 || (float)$pct > 100) {
+                    throw new Exception('Invalid milestone percentage');
+                }
+                $sumPct += (float)$pct;
+
+                // Amount (if provided) must be numeric
+                if (array_key_exists('amount', $m) && $m['amount'] !== null && $m['amount'] !== '') {
+                    if (!is_numeric($m['amount']) || (float)$m['amount'] < 0) {
+                        throw new Exception('Invalid milestone amount');
+                    }
+                }
+            }
+
+            if (abs($sumPct - 100.0) > 0.01) {
+                throw new Exception('Milestone percentages must total 100%');
+            }
+        }
+    }
+
+    /**
+     * List change requests for a contract (participant-only).
+     * GET: ?contract_id=
+     */
+    public function listContractChangeRequests() {
+        try {
+            $contractId = (int)($_GET['contract_id'] ?? 0);
+            if (!$contractId) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Missing contract_id']);
+                return;
+            }
+
+            $role = $_SESSION['user_role'] ?? null;
+            $userId = (int)($_SESSION['user_id'] ?? 0);
+            if (!$userId) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            if ($role === 'company') {
+                $stmt = $this->pdo->prepare("SELECT contract_id FROM contract WHERE contract_id = ? AND company_id = ?");
+                $stmt->execute([$contractId, $userId]);
+                if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+                    http_response_code(403);
+                    echo json_encode(['success' => false, 'message' => 'Access denied']);
+                    return;
+                }
+            } else if (in_array($role, ['user', 'customer'], true)) {
+                $stmt = $this->pdo->prepare("SELECT contract_id FROM contract WHERE contract_id = ? AND customer_id = ?");
+                $stmt->execute([$contractId, $userId]);
+                if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+                    http_response_code(403);
+                    echo json_encode(['success' => false, 'message' => 'Access denied']);
+                    return;
+                }
+            } else {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $stmt = $this->pdo->prepare("
+                SELECT 
+                    change_request_id,
+                    contract_id,
+                    requested_by_customer_id,
+                    request_text,
+                    status,
+                    responded_by_company_id,
+                    response_note,
+                    created_at,
+                    responded_at
+                FROM contract_change_requests
+                WHERE contract_id = ?
+                ORDER BY created_at DESC
+            ");
+            $stmt->execute([$contractId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Backward-compatible: hide structured payload marker from consumers
+            foreach ($rows as &$r) {
+                $hasStructured = false;
+                $rt = (string)($r['request_text'] ?? '');
+                $markerPos = strpos($rt, self::CONTRACT_CHANGE_STRUCTURED_MARKER);
+                if ($markerPos !== false) {
+                    $hasStructured = true;
+                    $r['request_text'] = trim(substr($rt, 0, $markerPos));
+                }
+                $r['has_structured'] = $hasStructured;
+            }
+            unset($r);
+
+            echo json_encode(['success' => true, 'data' => $rows]);
+        } catch (Exception $e) {
+            error_log('[ContractController] listContractChangeRequests error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Customer submits a contract adjustment request.
+     * POST JSON: { contract_id, request_text }
+     */
+    public function requestContractChange() {
+        try {
+            $role = $_SESSION['user_role'] ?? null;
+            if (!in_array($role, ['user', 'customer'], true)) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!$data) $data = $_POST;
+
+            $contractId = (int)($data['contract_id'] ?? 0);
+            $requestText = trim((string)($data['request_text'] ?? ''));
+
+            $proposedChanges = $data['proposed_changes'] ?? null;
+            if (is_string($proposedChanges) && $proposedChanges !== '') {
+                $decoded = json_decode($proposedChanges, true);
+                if (is_array($decoded)) $proposedChanges = $decoded;
+            }
+            if (!is_array($proposedChanges)) $proposedChanges = null;
+
+            if (!$contractId || ($requestText === '' && $proposedChanges === null)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Missing contract_id and/or changes']);
+                return;
+            }
+
+            $userId = (int)($_SESSION['user_id'] ?? 0);
+
+            // Ensure customer owns contract
+            $stmt = $this->pdo->prepare("SELECT contract_id, company_id, project_title, start_date, end_date, total_budget, payment_method FROM contract WHERE contract_id = ? AND customer_id = ?");
+            $stmt->execute([$contractId, $userId]);
+            $contract = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$contract) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Access denied']);
+                return;
+            }
+
+            if ($proposedChanges !== null) {
+                $this->validateStructuredContractChange($contract, $proposedChanges);
+            }
+
+            $this->pdo->beginTransaction();
+
+            // Capture original snapshot for diffing/apply-on-accept
+            $originalSnapshot = null;
+            $proposedJson = null;
+            $originalJson = null;
+            if ($proposedChanges !== null) {
+                $orig = $this->model->getByIdForCustomer($contractId, $userId);
+                $origMilestones = $this->model->getMilestones($contractId);
+                $originalSnapshot = [
+                    'start_date' => $orig['start_date'] ?? null,
+                    'end_date' => $orig['end_date'] ?? null,
+                    'total_budget' => $orig['total_budget'] ?? null,
+                    'payment_method' => $orig['payment_method'] ?? null,
+                    'milestones' => array_map(function ($m) {
+                        return [
+                            'milestone_number' => $m['milestone_number'] ?? null,
+                            'title' => $m['title'] ?? ($m['milestone_name'] ?? null),
+                            'description' => $m['description'] ?? ($m['milestone_description'] ?? null),
+                            'due_date' => $m['due_date'] ?? ($m['planned_end_date'] ?? null),
+                            'amount' => $m['payment_amount'] ?? ($m['amount'] ?? null),
+                            'percentage' => $m['payment_percentage'] ?? ($m['percentage'] ?? null)
+                        ];
+                    }, is_array($origMilestones) ? $origMilestones : [])
+                ];
+                $proposedJson = json_encode($proposedChanges, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                $originalJson = json_encode($originalSnapshot, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            }
+
+            // Insert (supports both schemas; fallback stores structured JSON in request_text)
+            $dbRequestText = $requestText;
+            if ($proposedChanges !== null && $proposedJson) {
+                $dbRequestText = ($dbRequestText !== '' ? $dbRequestText : 'Contract adjustment request')
+                    . self::CONTRACT_CHANGE_STRUCTURED_MARKER
+                    . $proposedJson;
+            }
+
+            try {
+                $stmt = $this->pdo->prepare("
+                    INSERT INTO contract_change_requests (
+                        contract_id,
+                        requested_by_customer_id,
+                        request_text,
+                        proposed_changes_json,
+                        original_snapshot_json,
+                        status,
+                        created_at
+                    ) VALUES (?, ?, ?, ?, ?, 'pending', NOW())
+                ");
+                $stmt->execute([$contractId, $userId, $requestText !== '' ? $requestText : 'Contract adjustment request', $proposedJson, $originalJson]);
+            } catch (Exception $e) {
+                $stmt = $this->pdo->prepare("
+                    INSERT INTO contract_change_requests (contract_id, requested_by_customer_id, request_text, status, created_at)
+                    VALUES (?, ?, ?, 'pending', NOW())
+                ");
+                $stmt->execute([$contractId, $userId, $dbRequestText]);
+            }
+            $changeRequestId = (int)$this->pdo->lastInsertId();
+
+            // Log into chat as a special marker message (rendered as clickable card)
+            $displayRequestText = $requestText !== '' ? $requestText : 'Contract adjustment request';
+            $payload = json_encode([
+                'change_request_id' => $changeRequestId,
+                'request_text' => $displayRequestText,
+                'has_structured' => $proposedChanges !== null
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            $this->insertContractChatMessage(
+                $contractId,
+                'customer',
+                $userId,
+                '__CONTRACT_CHANGE_REQUEST__:' . $payload,
+                'system'
+            );
+
+            // Notify company
+            $companyId = (int)($contract['company_id'] ?? 0);
+            $projectTitle = (string)($contract['project_title'] ?? ('Contract #' . $contractId));
+            if ($companyId > 0) {
+                $this->notifier->notify(
+                    'Contract change request',
+                    "Customer requested adjustments for {$projectTitle}.",
+                    'company',
+                    $companyId,
+                    ['role' => 'user', 'id' => $userId, 'name' => 'Customer']
+                );
+            }
+
+            $this->pdo->commit();
+
+            echo json_encode([
+                'success' => true,
+                'change_request_id' => $changeRequestId,
+                'message' => 'Change request submitted'
+            ]);
+        } catch (Exception $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('[ContractController] requestContractChange error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Preview a change request (participant-only), returning original + proposed + diff.
+     * GET: ?change_request_id=
+     */
+    public function getContractChangePreview() {
+        try {
+            $changeRequestId = (int)($_GET['change_request_id'] ?? 0);
+            if (!$changeRequestId) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Missing change_request_id']);
+                return;
+            }
+
+            $role = $_SESSION['user_role'] ?? null;
+            $userId = (int)($_SESSION['user_id'] ?? 0);
+            if (!$userId) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+            if (!in_array($role, ['company', 'user', 'customer'], true)) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            // Load change request + contract ids (supports both schemas)
+            $row = null;
+            try {
+                $stmt = $this->pdo->prepare("SELECT change_request_id, contract_id, request_text, status, proposed_changes_json, original_snapshot_json, created_at, responded_at, response_note FROM contract_change_requests WHERE change_request_id = ?");
+                $stmt->execute([$changeRequestId]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            } catch (Exception $e) {
+                $stmt = $this->pdo->prepare("SELECT change_request_id, contract_id, request_text, status, created_at, responded_at, response_note FROM contract_change_requests WHERE change_request_id = ?");
+                $stmt->execute([$changeRequestId]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+
+            if (!$row) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Change request not found']);
+                return;
+            }
+
+            $contractId = (int)$row['contract_id'];
+
+            // Role-based contract load + access check
+            if ($role === 'company') {
+                $contract = $this->model->getById($contractId, $userId);
+            } else {
+                $contract = $this->model->getByIdForCustomer($contractId, $userId);
+            }
+
+            if (!$contract) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Access denied']);
+                return;
+            }
+
+            $milestones = $this->model->getMilestones($contractId);
+            $contract['milestones'] = $milestones;
+
+            // Get structured payload (new columns or marker fallback)
+            $requestText = (string)($row['request_text'] ?? '');
+            $markerPos = strpos($requestText, self::CONTRACT_CHANGE_STRUCTURED_MARKER);
+            $markerJson = null;
+            if ($markerPos !== false) {
+                $markerJson = trim(substr($requestText, $markerPos + strlen(self::CONTRACT_CHANGE_STRUCTURED_MARKER)));
+                $requestText = trim(substr($requestText, 0, $markerPos));
+            }
+
+            $proposed = null;
+            $original = null;
+            if (!empty($row['proposed_changes_json'])) {
+                $proposed = json_decode((string)$row['proposed_changes_json'], true);
+            } elseif ($markerJson) {
+                $proposed = json_decode($markerJson, true);
+            }
+
+            if (!empty($row['original_snapshot_json'])) {
+                $original = json_decode((string)$row['original_snapshot_json'], true);
+            }
+
+            if (!is_array($proposed)) $proposed = null;
+            if (!is_array($original)) $original = null;
+
+            $diff = $this->computeContractChangeDiff($original, $proposed);
+
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'change_request' => [
+                        'change_request_id' => (int)$row['change_request_id'],
+                        'contract_id' => $contractId,
+                        'request_text' => $requestText,
+                        'status' => $row['status'] ?? 'pending',
+                        'created_at' => $row['created_at'] ?? null,
+                        'responded_at' => $row['responded_at'] ?? null,
+                        'response_note' => $row['response_note'] ?? null
+                    ],
+                    'contract' => $contract,
+                    'original_snapshot' => $original,
+                    'proposed_changes' => $proposed,
+                    'diff' => $diff
+                ]
+            ]);
+        } catch (Exception $e) {
+            error_log('[ContractController] getContractChangePreview error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    private function computeContractChangeDiff($originalSnapshot, $proposedChanges) {
+        if (!is_array($originalSnapshot) || !is_array($proposedChanges)) {
+            return [
+                'has_structured' => false,
+                'fields' => new stdClass(),
+                'milestones' => []
+            ];
+        }
+
+        $fields = [];
+        foreach (['start_date', 'end_date', 'total_budget', 'payment_method'] as $k) {
+            if (array_key_exists($k, $proposedChanges)) {
+                $a = (string)($originalSnapshot[$k] ?? '');
+                $b = (string)($proposedChanges[$k] ?? '');
+                if ($a !== $b) $fields[$k] = true;
+            }
+        }
+
+        $origMs = is_array($originalSnapshot['milestones'] ?? null) ? $originalSnapshot['milestones'] : [];
+        $propMs = is_array($proposedChanges['milestones'] ?? null) ? $proposedChanges['milestones'] : [];
+        $max = max(count($origMs), count($propMs));
+        $milestones = [];
+        for ($i = 0; $i < $max; $i++) {
+            $o = is_array($origMs[$i] ?? null) ? $origMs[$i] : null;
+            $p = is_array($propMs[$i] ?? null) ? $propMs[$i] : null;
+            $entry = [
+                'index' => $i,
+                'exists' => [
+                    'original' => $o !== null,
+                    'proposed' => $p !== null
+                ],
+                'changed' => []
+            ];
+
+            if ($o === null || $p === null) {
+                $entry['changed']['row'] = true;
+            } else {
+                foreach (['title', 'description', 'due_date', 'amount', 'percentage'] as $mk) {
+                    $a = (string)($o[$mk] ?? '');
+                    $b = (string)($p[$mk] ?? '');
+                    if ($a !== $b) $entry['changed'][$mk] = true;
+                }
+            }
+
+            if (!empty($entry['changed'])) $milestones[] = $entry;
+        }
+
+        return [
+            'has_structured' => true,
+            'fields' => $fields,
+            'milestones' => $milestones
+        ];
+    }
+
+    /**
+     * Company responds to a contract change request (accept/reject).
+     * POST JSON: { change_request_id, decision, response_note? }
+     */
+    public function respondContractChange() {
+        try {
+            if (($_SESSION['user_role'] ?? null) !== 'company') {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!$data) $data = $_POST;
+
+            $changeRequestId = (int)($data['change_request_id'] ?? 0);
+            $decision = $data['decision'] ?? '';
+            $responseNote = trim((string)($data['response_note'] ?? ''));
+
+            if (!$changeRequestId || !in_array($decision, ['accepted', 'rejected'], true)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Missing change_request_id or invalid decision']);
+                return;
+            }
+
+            $companyId = (int)($_SESSION['user_id'] ?? 0);
+
+            // Verify request belongs to this company via contract (supports both schemas)
+            try {
+                $stmt = $this->pdo->prepare("
+                    SELECT 
+                        cr.change_request_id,
+                        cr.contract_id,
+                        cr.status,
+                        cr.request_text,
+                        cr.proposed_changes_json,
+                        cr.original_snapshot_json,
+                        c.company_id,
+                        c.customer_id,
+                        c.project_title
+                    FROM contract_change_requests cr
+                    INNER JOIN contract c ON cr.contract_id = c.contract_id
+                    WHERE cr.change_request_id = ?
+                ");
+                $stmt->execute([$changeRequestId]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            } catch (Exception $e) {
+                $stmt = $this->pdo->prepare("
+                    SELECT 
+                        cr.change_request_id,
+                        cr.contract_id,
+                        cr.status,
+                        cr.request_text,
+                        c.company_id,
+                        c.customer_id,
+                        c.project_title
+                    FROM contract_change_requests cr
+                    INNER JOIN contract c ON cr.contract_id = c.contract_id
+                    WHERE cr.change_request_id = ?
+                ");
+                $stmt->execute([$changeRequestId]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            if (!$row || (int)$row['company_id'] !== $companyId) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Access denied']);
+                return;
+            }
+
+            if (($row['status'] ?? '') !== 'pending') {
+                echo json_encode(['success' => false, 'message' => 'This request is already ' . ($row['status'] ?? 'processed')]);
+                return;
+            }
+
+            $this->pdo->beginTransaction();
+
+            // Apply structured changes before marking accepted
+            if ($decision === 'accepted') {
+                $proposed = null;
+                if (!empty($row['proposed_changes_json'])) {
+                    $proposed = json_decode((string)$row['proposed_changes_json'], true);
+                }
+                if (!is_array($proposed)) {
+                    // Fallback: parse from marker stored in request_text (old schema)
+                    $rt = (string)($row['request_text'] ?? '');
+                    $markerPos = strpos($rt, self::CONTRACT_CHANGE_STRUCTURED_MARKER);
+                    if ($markerPos !== false) {
+                        $markerJson = trim(substr($rt, $markerPos + strlen(self::CONTRACT_CHANGE_STRUCTURED_MARKER)));
+                        $decoded = json_decode($markerJson, true);
+                        if (is_array($decoded)) $proposed = $decoded;
+                    }
+                }
+
+                if (is_array($proposed)) {
+                    $this->applyStructuredContractChange((int)$row['contract_id'], $proposed, $companyId);
+                }
+            }
+
+            $stmt = $this->pdo->prepare("
+                UPDATE contract_change_requests
+                SET status = ?, responded_by_company_id = ?, response_note = ?, responded_at = NOW()
+                WHERE change_request_id = ?
+            ");
+            $stmt->execute([$decision, $companyId, $responseNote !== '' ? $responseNote : null, $changeRequestId]);
+
+            // Chat log response
+            $payload = json_encode([
+                'change_request_id' => $changeRequestId,
+                'decision' => $decision,
+                'response_note' => $responseNote
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            $this->insertContractChatMessage(
+                (int)$row['contract_id'],
+                'company',
+                $companyId,
+                '__CONTRACT_CHANGE_RESPONSE__:' . $payload,
+                'system'
+            );
+
+            // Notify customer
+            $customerId = (int)($row['customer_id'] ?? 0);
+            $projectTitle = (string)($row['project_title'] ?? ('Contract #' . (int)$row['contract_id']));
+            if ($customerId > 0) {
+                $this->notifier->notify(
+                    'Contract change request updated',
+                    "Company {$decision} your change request for {$projectTitle}.",
+                    'user',
+                    $customerId,
+                    ['role' => 'company', 'id' => $companyId, 'name' => 'Company']
+                );
+            }
+
+            $this->pdo->commit();
+
+            echo json_encode(['success' => true, 'message' => 'Change request ' . $decision]);
+        } catch (Exception $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('[ContractController] respondContractChange error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    private function applyStructuredContractChange($contractId, $proposed, $companyId) {
+        // Only allow a limited set of fields
+        $allowedFields = ['start_date', 'end_date', 'total_budget', 'payment_method'];
+
+        // Update contract fields
+        $setParts = [];
+        $params = [];
+        foreach ($allowedFields as $f) {
+            if (array_key_exists($f, $proposed) && $proposed[$f] !== null && $proposed[$f] !== '') {
+                $setParts[] = "{$f} = ?";
+                $params[] = $proposed[$f];
+            }
+        }
+
+        if (!empty($setParts)) {
+            $params[] = $contractId;
+            $stmt = $this->pdo->prepare("UPDATE contract SET " . implode(', ', $setParts) . " WHERE contract_id = ?");
+            $stmt->execute($params);
+        }
+
+        // Update milestones (only if provided)
+        if (isset($proposed['milestones']) && is_array($proposed['milestones'])) {
+            // Safety: do not rewrite milestones if any are already progressed
+            $stmt = $this->pdo->prepare("SELECT status FROM contract_milestone WHERE contract_id = ?");
+            $stmt->execute([$contractId]);
+            $existing = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($existing as $st) {
+                if ($st && $st !== 'pending') {
+                    throw new Exception('Cannot apply milestone changes once work has started.');
+                }
+            }
+
+            $stmt = $this->pdo->prepare("DELETE FROM contract_milestone WHERE contract_id = ?");
+            $stmt->execute([$contractId]);
+
+            // Try to persist percentage if column exists
+            try {
+                $ins = $this->pdo->prepare("
+                    INSERT INTO contract_milestone (contract_id, milestone_number, title, description, due_date, amount, percentage, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+                ");
+                $withPct = true;
+            } catch (Exception $e) {
+                $ins = $this->pdo->prepare("
+                    INSERT INTO contract_milestone (contract_id, milestone_number, title, description, due_date, amount, status)
+                    VALUES (?, ?, ?, ?, ?, ?, 'pending')
+                ");
+                $withPct = false;
+            }
+
+            $i = 1;
+            foreach ($proposed['milestones'] as $m) {
+                if (!is_array($m)) continue;
+                $title = trim((string)($m['title'] ?? ''));
+                if ($title === '') continue;
+                $desc = (string)($m['description'] ?? '');
+                $due = $m['due_date'] ?? null;
+                $amt = $m['amount'] ?? null;
+                $pct = $m['percentage'] ?? null;
+                if ($withPct) {
+                    $ins->execute([$contractId, $i, $title, $desc, $due, $amt, $pct]);
+                } else {
+                    $ins->execute([$contractId, $i, $title, $desc, $due, $amt]);
+                }
+                $i++;
+            }
+        }
+
+        // Audit log (best-effort)
+        try {
+            $this->logAuditEvent(
+                $contractId,
+                null,
+                'contract_change_applied',
+                $companyId,
+                'company',
+                json_encode(['proposed' => $proposed], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+            );
+        } catch (Exception $e) {
+            // ignore
         }
     }
 }
