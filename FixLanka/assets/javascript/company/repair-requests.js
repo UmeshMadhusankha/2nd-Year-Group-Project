@@ -108,7 +108,7 @@ function viewQuotationDetails(quotationId) {
 
     const details = `
 Quotation Details:
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+--------------------------------
 Title: ${quotation.title}
 Request ID: ${quotation.request_id}
 Status: ${quotation.status.toUpperCase()}
@@ -118,7 +118,7 @@ Cost Breakdown:
 &bull; Material: LKR ${formatCurrency(quotation.material_cost)}
 &bull; Transport: LKR ${formatCurrency(quotation.transport_cost)}
 &bull; Other: LKR ${formatCurrency(quotation.other_cost)}
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+--------------------------------
 Total: LKR ${formatCurrency(quotation.total_price)}
 
 Timeline:
@@ -152,7 +152,7 @@ function simulateAcceptQuotation(quotationId) {
 
 // Clear all quotations from localStorage
 function clearAllQuotations() {
-    if (confirm('âš ï¸ This will delete ALL quotations (including mock data).\n\nAre you sure you want to continue?\n\nYou can reload the page to restore mock data.')) {
+    if (confirm('This will delete ALL quotations (including mock data).\n\nAre you sure you want to continue?\n\nYou can reload the page to restore mock data.')) {
         localStorage.removeItem('quotations');
         quotations = [];
         loadQuotationsToLogs();

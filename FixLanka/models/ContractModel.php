@@ -134,6 +134,7 @@ class ContractModel {
                     c.contract_id,
                     c.project_id,
                     c.contract_number,
+                    c.quotation_id,
                     c.total_budget,
                     c.start_date,
                     c.end_date,
@@ -157,13 +158,29 @@ class ContractModel {
                     c.company_id,
                     c.chat_active,
                     comp.name as company_name,
+                                        COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                                        COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
+                                        COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
+                                        COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
+                                        COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
+                                        COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc 
                      WHERE cc.contract_id = c.contract_id 
                        AND cc.sender_type = 'customer' 
                        AND cc.is_read = 0) as unread_messages
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
-                LEFT JOIN company comp ON c.company_id = comp.company_id";
+                                LEFT JOIN company comp ON c.company_id = comp.company_id
+                                LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
+                                LEFT JOIN companyquotation cq_req ON cq_req.quotation_id = (
+                                        SELECT q2.quotation_id
+                                        FROM companyquotation q2
+                                        WHERE q2.request_id = c.job_request_id
+                                            AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
+                                            AND q2.status IN ('accepted', 'successful')
+                                        ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
+                                        LIMIT 1
+                                )";
         
         if ($companyId !== null) {
             $query .= " WHERE c.company_id = :company_id";
@@ -459,6 +476,35 @@ class ContractModel {
         $stmt->bindParam(':contract_id', $contractId, PDO::PARAM_INT);
         
         return $stmt->execute();
+    }
+
+    /**
+     * Delete contract and its milestones (used for cancellation)
+     */
+    public function deleteWithMilestones($contractId, $companyId = null) {
+        if ($companyId !== null) {
+            $contract = $this->getById($contractId, $companyId);
+            if (!$contract) {
+                return false;
+            }
+        }
+
+        try {
+            $this->conn->beginTransaction();
+
+            $delMilestones = $this->conn->prepare("DELETE FROM contract_milestone WHERE contract_id = :cid");
+            $delMilestones->execute([':cid' => $contractId]);
+
+            $delContract = $this->conn->prepare("DELETE FROM Contract WHERE contract_id = :contract_id");
+            $delContract->execute([':contract_id' => $contractId]);
+
+            $this->conn->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->conn->rollBack();
+            error_log("Error deleting contract with milestones: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**

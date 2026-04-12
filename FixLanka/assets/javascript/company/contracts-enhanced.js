@@ -206,7 +206,7 @@ function autoFillContractForm(q) {
     setFieldValue('customerId', q.customer_id);
 
     // Step 1: Party Information (client and company details)
-    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '—'; };
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '-'; };
     
     setText('partyClientName', `${q.customer_fname} ${q.customer_lname}`);
     setText('partyClientEmail', q.customer_email);
@@ -227,9 +227,22 @@ function autoFillContractForm(q) {
     setFieldValue('clientEmail', q.customer_email);
     setFieldValue('clientPhone', q.customer_phone || '');
     setFieldValue('projectTitle', q.title);
-    setFieldValue('projectType', q.request_title || 'Service Request');
-    setFieldValue('projectLocation', q.location || '');
-    setFieldValue('projectDescription', q.description || q.request_title || '');
+
+    const resolvedProjectType =
+        q.request_category_name ||
+        q.category_name ||
+        q.project_type ||
+        'Service Request';
+
+    const resolvedProjectLocationParts = [
+        q.request_address || q.location,
+        q.request_district || q.district
+    ].filter(Boolean);
+    const resolvedProjectLocation = resolvedProjectLocationParts.join(', ');
+
+    setFieldValue('projectType', resolvedProjectType);
+    setFieldValue('projectLocation', resolvedProjectLocation || q.location || q.district || '');
+    setFieldValue('projectDescription', q.description || q.request_description || q.request_title || '');
 
     // Step 3: Financial Terms (Phase 1 Business Logic)
     setFieldValue('contractValue', q.total_amount);
@@ -425,6 +438,7 @@ function initializeContractsPage() {
     initializeNewContractForm();
     initializeSendContractModal();
     initializeDeleteModal();
+    initializeCancelModal();
     initializeScrollToTop();
     initializeExportModal();
 }
@@ -599,6 +613,20 @@ function createContractCard(contract) {
 
     // Format currency
     const formattedValue = formatCurrency(contract.value);
+    const laborPerLabel = resolveQuotationPerLabel(contract.labor_unit_label, 'labor');
+    const materialPerLabel = resolveQuotationPerLabel(contract.material_unit_label, 'material');
+    const laborPriceText = formatUnitPrice(contract.labor_cost);
+    const materialPriceText = formatUnitPrice(contract.material_cost);
+
+    const hasLaborOrMaterialPrice = laborPriceText !== null || materialPriceText !== null;
+    const valueBlock = hasLaborOrMaterialPrice
+        ? `
+            <div class="card-unit-price-block" aria-label="Unit price breakdown">
+                ${laborPriceText ? `<div class="card-unit-price-item"><span class="card-unit-price-label">${escapeHtml(formatCostLabel('Labor', laborPerLabel))}</span><span class="card-unit-price-value">${laborPriceText}</span></div>` : ''}
+                ${materialPriceText ? `<div class="card-unit-price-item"><span class="card-unit-price-label">${escapeHtml(formatCostLabel('Material', materialPerLabel))}</span><span class="card-unit-price-value">${materialPriceText}</span></div>` : ''}
+            </div>
+        `
+        : `<div class="card-value-badge">${formattedValue}</div>`;
 
     // Format dates
     const startDate = formatDate(contract.start_date);
@@ -650,7 +678,7 @@ function createContractCard(contract) {
                     <span class="card-client-name">${escapeHtml(contract.client_name)}</span>
                     <span class="card-client-email">${escapeHtml(contract.client_email || '')}</span>
                 </div>
-                <div class="card-value-badge">${formattedValue}</div>
+                ${valueBlock}
             </div>
 
             <div class="card-meta-grid">
@@ -691,6 +719,54 @@ function createContractCard(contract) {
             </div>
         </div>
     `;
+}
+
+function formatUnitPrice(value) {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) {
+        return null;
+    }
+
+    return formatCurrency(numericValue);
+}
+
+function resolveQuotationPerLabel(rawUnitLabel, type) {
+    if (!rawUnitLabel || typeof rawUnitLabel !== 'string') {
+        return '';
+    }
+
+    const normalized = rawUnitLabel.trim().toLowerCase();
+    if (!normalized) {
+        return '';
+    }
+
+    if (normalized.includes('hour')) {
+        return type === 'material' ? '' : 'per hour';
+    }
+
+    if (
+        normalized.includes('m²') ||
+        normalized.includes('m2') ||
+        normalized.includes('sqm') ||
+        normalized.includes('sqft') ||
+        normalized.includes('area')
+    ) {
+        return 'per area';
+    }
+
+    if (normalized.includes('unit')) {
+        return 'per no. of units';
+    }
+
+    return '';
+}
+
+function formatCostLabel(baseLabel, perLabel) {
+    return perLabel ? `${baseLabel} (${perLabel})` : baseLabel;
 }
 
 function formatStatusText(status) {
@@ -876,9 +952,102 @@ document.addEventListener('click', function (e) {
 });
 
 function handleTerminateContract(contractId) {
-    if (confirm('Are you sure you want to cancel this contract? This action cannot be undone.')) {
-        // TODO: Implement cancel contract API call
-        alert('Cancel Contract  This feature will be available soon.');
+    openCancelModal(contractId);
+}
+
+// ===================================
+// CANCEL CONTRACT MODAL
+// ===================================
+
+function initializeCancelModal() {
+    const modal = document.getElementById('cancelModal');
+    const closeBtn = document.getElementById('cancelModalClose');
+    const cancelBtn = document.getElementById('cancelCancelBtn');
+    const confirmBtn = document.getElementById('cancelConfirmBtn');
+
+    if (closeBtn) closeBtn.addEventListener('click', closeCancelModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeCancelModal);
+    if (confirmBtn) confirmBtn.addEventListener('click', confirmCancelContract);
+
+    if (modal) {
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) closeCancelModal();
+        });
+    }
+}
+
+let contractToCancel = null;
+
+async function openCancelModal(contractId) {
+    contractToCancel = contractId;
+
+    try {
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=get&id=${contractId}`);
+        const result = await response.json();
+
+        if (result.success && result.data) {
+            const info = result.data?.client?.name
+                ? `${result.data.client.name} - ${result.data.title || 'Contract'}`
+                : (result.data.title || 'Contract');
+            const infoElement = document.getElementById('cancelContractInfo');
+            if (infoElement) infoElement.textContent = info;
+        }
+    } catch (error) {
+        console.error('Error loading contract for cancellation:', error);
+    }
+
+    const modal = document.getElementById('cancelModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeCancelModal() {
+    const modal = document.getElementById('cancelModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+        contractToCancel = null;
+    }
+}
+
+async function confirmCancelContract() {
+    if (!contractToCancel) return;
+
+    const confirmBtn = document.getElementById('cancelConfirmBtn');
+    const originalText = confirmBtn ? confirmBtn.innerHTML : null;
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+    }
+
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts.php?action=cancel_contract', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ contract_id: contractToCancel })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to cancel contract');
+        }
+
+        showNotification('Contract cancelled. You can now send a new contract for this project.', 'success');
+        closeCancelModal();
+        loadContractsData();
+    } catch (error) {
+        console.error('Cancel contract failed:', error);
+        showNotification(error.message || 'Failed to cancel contract', 'error');
+    } finally {
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = originalText;
+        }
     }
 }
 

@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Log to console
         
         // Show success message
-        alert('âœ… Job posted successfully!\n\nYour job has been submitted and will be visible to repairers shortly.');
+        alert('Job posted successfully!\n\nYour job has been submitted and will be visible to repairers shortly.');
 
         // Optional: Reset form
         // form.reset();

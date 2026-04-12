@@ -242,6 +242,7 @@ class ContractController {
                 return [
                     'contract_id' => $contract['contract_id'],
                     'project_id' => $contract['project_id'],
+                    'quotation_id' => $contract['quotation_id'] ?? null,
                     'contract_number' => $contract['contract_number'] ?? ('CNT-' . date('Y', strtotime($contract['contract_date'])) . '-' . str_pad($contract['contract_id'], 3, '0', STR_PAD_LEFT)),
                     'title' => $contract['project_title'] ?? 'Untitled Contract',
                     'description' => $contract['project_description'] ?? '',
@@ -264,7 +265,13 @@ class ContractController {
                     'customer_response_at' => $contract['customer_response_at'] ?? null,
                     'terms_accepted' => (bool)($contract['terms_accepted'] ?? 0),
                     'chat_active' => (int)($contract['chat_active'] ?? 0),
-                    'unread_messages' => (int)($contract['unread_messages'] ?? 0)
+                    'unread_messages' => (int)($contract['unread_messages'] ?? 0),
+                    'labor_cost' => isset($contract['labor_cost']) ? (float)$contract['labor_cost'] : null,
+                    'material_cost' => isset($contract['material_cost']) ? (float)$contract['material_cost'] : null,
+                    'transport_cost' => isset($contract['transport_cost']) ? (float)$contract['transport_cost'] : null,
+                    'other_charges' => isset($contract['other_charges']) ? (float)$contract['other_charges'] : null,
+                    'labor_unit_label' => $contract['labor_unit_label'] ?? null,
+                    'material_unit_label' => $contract['material_unit_label'] ?? null
                 ];
             }, $contracts);
 
@@ -484,9 +491,11 @@ class ContractController {
                                jr.title AS request_title,
                                jr.description AS request_description,
                                jr.address,
-                               jr.district
+                                                             jr.district,
+                                                             cat.name AS request_category_name
                         FROM companyquotation q
                         INNER JOIN jobrequest jr ON q.request_id = jr.request_id
+                                                LEFT JOIN category cat ON jr.category_id = cat.category_id
                         WHERE q.quotation_id = ?
                           AND q.status = 'accepted'
                           AND q.company_id = ?
@@ -507,6 +516,9 @@ class ContractController {
                     if ($resolvedProjectLocation === '') {
                         $resolvedProjectLocation = $quotation['district'] ?? 'N/A';
                     }
+                    $resolvedProjectType = (isset($data['project_type']) && trim($data['project_type']) !== '')
+                        ? trim($data['project_type'])
+                        : ($quotation['request_category_name'] ?? null);
 
                     $resolvedTotalBudget = isset($data['total_budget']) && $data['total_budget'] !== '' ? (float)$data['total_budget'] : (float)$quotation['total_amount'];
                     $resolvedStartDate = !empty($data['start_date']) ? $data['start_date'] : ($quotation['start_date'] ?? null);
@@ -526,7 +538,7 @@ class ContractController {
                         $quotation['customer_id'],
                         $resolvedProjectTitle,
                         $resolvedProjectDescription,
-                        (isset($data['project_type']) && trim($data['project_type']) !== '' ? trim($data['project_type']) : null),
+                        $resolvedProjectType,
                         $resolvedProjectLocation,
                         $resolvedTotalBudget,
                         $resolvedStartDate,
@@ -542,6 +554,7 @@ class ContractController {
                     $data['quotation_id'] = $data['quotation_id'] ?? (int)$quotationId;
                     $data['project_title'] = $data['project_title'] ?? $resolvedProjectTitle;
                     $data['project_location'] = $data['project_location'] ?? $resolvedProjectLocation;
+                    $data['project_type'] = $data['project_type'] ?? $resolvedProjectType;
                     $data['project_description'] = $data['project_description'] ?? $resolvedProjectDescription;
                     $data['end_date'] = $data['end_date'] ?? $resolvedEndDate;
                 }
@@ -692,6 +705,59 @@ class ContractController {
 
         } catch (Exception $e) {
             error_log("[ContractController] Error in deleteContract: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Cancel contract (delete and re-enable quotation for new contract)
+     */
+    public function cancelContract() {
+        try {
+            $companyId = $this->getCompanyId();
+
+            if ($companyId === null) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            $contractId = $_POST['contract_id'] ?? $data['contract_id'] ?? null;
+
+            if (!$contractId) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Contract ID required']);
+                return;
+            }
+
+            $contract = $this->model->getById($contractId, $companyId);
+            if (!$contract) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Contract not found or unauthorized']);
+                return;
+            }
+
+            $result = $this->model->deleteWithMilestones($contractId, $companyId);
+
+            if ($result) {
+                if (!empty($contract['quotation_id'])) {
+                    $stmt = $this->pdo->prepare("UPDATE companyquotation SET status = 'accepted' WHERE quotation_id = ? AND status IN ('accepted', 'successful')");
+                    $stmt->execute([(int)$contract['quotation_id']]);
+                }
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Contract cancelled successfully'
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Failed to cancel contract']);
+            }
+
+        } catch (Exception $e) {
+            error_log("[ContractController] Error in cancelContract: " . $e->getMessage());
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
         }
@@ -1093,12 +1159,18 @@ class ContractController {
                     q.material_cost,
                     q.transport_cost,
                     q.other_charges,
+                    q.labor_unit_label,
+                    q.material_unit_label,
                     q.warranty_period,
                     q.payment_terms,
                     q.additional_terms,
+                    r.address as request_address,
+                    r.district as request_district,
                     r.address as location,
                     r.district,
                     r.title as request_title,
+                    cat.name as category_name,
+                    cat.name as request_category_name,
                     u.user_id as customer_id,
                     u.f_name as customer_fname,
                     u.l_name as customer_lname,
@@ -1112,6 +1184,7 @@ class ContractController {
                     COALESCE(comp.email, uc.email) as company_email
                 FROM companyquotation q
                 INNER JOIN jobrequest r ON q.request_id = r.request_id
+                LEFT JOIN category cat ON r.category_id = cat.category_id
                 INNER JOIN user u ON r.user_id = u.user_id
                 LEFT JOIN user uc ON uc.user_id = COALESCE(q.company_id, q.user_id)
                 LEFT JOIN company comp ON comp.company_id = COALESCE(q.company_id, q.user_id)
@@ -1459,7 +1532,12 @@ class ContractController {
                 }
 
                 // Get job request details for defaults (title/location/description)
-                $reqStmt = $pdo->prepare("SELECT title, description, address, district FROM jobrequest WHERE request_id = ?");
+                $reqStmt = $pdo->prepare(" 
+                    SELECT jr.title, jr.description, jr.address, jr.district, c.name AS category_name
+                    FROM jobrequest jr
+                    LEFT JOIN category c ON jr.category_id = c.category_id
+                    WHERE jr.request_id = ?
+                ");
                 $reqStmt->execute([$quotation['request_id']]);
                 $request = $reqStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
@@ -1474,6 +1552,7 @@ class ContractController {
                 if ($resolvedProjectLocation === '') {
                     $resolvedProjectLocation = $request['district'] ?? 'N/A';
                 }
+                $resolvedProjectType = $projectType !== '' ? $projectType : ($request['category_name'] ?? null);
 
                 $resolvedTotalBudget = $totalBudget !== null && $totalBudget !== '' ? (float)$totalBudget : (float)$quotation['total_amount'];
                 $resolvedBudgetType = $budgetType ?: ($quotation['budget_type'] ?? 'fixed');
@@ -1515,7 +1594,7 @@ class ContractController {
                     $quotation['customer_id'],
                     $resolvedProjectTitle,
                     $resolvedProjectDescription,
-                    ($projectType !== '' ? $projectType : null),
+                    $resolvedProjectType,
                     $resolvedProjectLocation,
                     $resolvedTotalBudget,
                     $startDate,

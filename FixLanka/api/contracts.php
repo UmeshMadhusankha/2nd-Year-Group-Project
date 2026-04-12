@@ -95,6 +95,15 @@ switch ($action) {
         }
         $controller->deleteContract();
         break;
+
+    case 'cancel_contract':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+        $controller->cancelContract();
+        break;
     
     case 'filterByStatus':
         $controller->filterByStatus();

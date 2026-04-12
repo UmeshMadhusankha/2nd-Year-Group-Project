@@ -173,7 +173,7 @@ class CompanyQuotation
             }
 
             if (!empty($filters['user_id'])) {
-                $sql .= " AND cq.company_id = :user_id";
+                $sql .= " AND COALESCE(cq.company_id, cq.user_id) = :user_id";
                 $params[':user_id'] = $filters['user_id'];
             }
 
@@ -316,16 +316,18 @@ class CompanyQuotation
      * @param int $quotationId The ID of the quotation to delete
      * @return bool True if deletion successful, false if quotation not found or not deletable
      */
-    public function delete($quotationId)
+    public function delete($quotationId, $companyId)
     {
         try {
-            $sql = "DELETE FROM companyquotation 
-                    WHERE quotation_id = :quotation_id 
-                    AND status = :status";
+                        $sql = "DELETE FROM companyquotation
+                                        WHERE quotation_id = :quotation_id
+                                            AND COALESCE(company_id, user_id) = :company_id
+                                            AND status = :status";
 
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
                 ':quotation_id' => $quotationId,
+                ':company_id' => $companyId,
                 ':status' => self::STATUS_PENDING
             ]);
 
@@ -565,7 +567,7 @@ class CompanyQuotation
      * @param int $quotationId The quotation ID
      * @return array|false Quotation data or false if not found
      */
-    public function getEnhancedById($quotationId)
+    public function getEnhancedById($quotationId, $companyId = null)
     {
         try {
             $sql = "SELECT cq.*, jr.title as job_title, jr.district
@@ -573,8 +575,15 @@ class CompanyQuotation
                     INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
                     WHERE cq.quotation_id = :quotation_id";
 
+            $params = [':quotation_id' => $quotationId];
+
+            if ($companyId !== null) {
+                $sql .= " AND cq.company_id = :company_id";
+                $params[':company_id'] = $companyId;
+            }
+
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute([':quotation_id' => $quotationId]);
+            $stmt->execute($params);
             
             $quotation = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -601,12 +610,17 @@ class CompanyQuotation
      * @param array $data Updated quotation data
      * @return bool True on success, false on failure
      */
-    public function updateEnhanced($quotationId, $data)
+    public function updateEnhanced($quotationId, $companyId, $data)
     {
         try {
             // First check if quotation exists and is pending
             $current = $this->getById($quotationId);
             if (!$current || $current['status'] !== self::STATUS_PENDING) {
+                return false;
+            }
+
+            // Ownership check (company actor only)
+            if ((int)($current['company_id'] ?? 0) !== (int)$companyId) {
                 return false;
             }
 
@@ -649,11 +663,13 @@ class CompanyQuotation
                         material_unit_label = :material_unit_label,
                         warranty_period = :warranty_period,
                         additional_terms = :additional_terms
-                    WHERE quotation_id = :quotation_id";
+                                        WHERE quotation_id = :quotation_id
+                                            AND company_id = :company_id";
 
             $stmt = $this->pdo->prepare($sql);
             return $stmt->execute([
                 ':quotation_id' => $quotationId,
+                ':company_id' => $companyId,
                 ':title' => $data['title'],
                 ':description' => $data['description'] ?? null,
                 ':labor_cost' => $data['labor_cost'],

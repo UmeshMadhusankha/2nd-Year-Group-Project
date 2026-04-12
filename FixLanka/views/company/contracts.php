@@ -209,8 +209,8 @@ if (!$userId) {
                     <!-- Legal Document Header -->
                     <div class="preview-header">
                         <h2>CONSTRUCTION SERVICE AGREEMENT</h2>
-                        <p class="preview-ref" id="viewRef">Contract Reference: â€”</p>
-                        <p class="preview-date">Date: <span id="viewDate">â€”</span></p>
+                        <p class="preview-ref" id="viewRef">Contract Reference: -</p>
+                        <p class="preview-date">Date: <span id="viewDate">-</span></p>
                         <div class="contract-status-badge" id="viewStatus">Draft</div>
                     </div>
 
@@ -220,13 +220,13 @@ if (!$userId) {
                         <div class="preview-parties">
                             <div>
                                 <strong>First Party (Client):</strong>
-                                <span id="viewClientName">â€”</span><br>
-                                <small id="viewClientDetails">â€”</small>
+                                <span id="viewClientName">-</span><br>
+                                <small id="viewClientDetails">-</small>
                             </div>
                             <div>
                                 <strong>Second Party (Contractor):</strong>
-                                <span id="viewCompanyName">â€”</span><br>
-                                <small id="viewCompanyDetails">â€”</small>
+                                <span id="viewCompanyName">-</span><br>
+                                <small id="viewCompanyDetails">-</small>
                             </div>
                         </div>
                     </div>
@@ -235,37 +235,37 @@ if (!$userId) {
                     <div class="preview-section">
                         <h4>2. PROJECT OVERVIEW</h4>
                         <div class="preview-grid">
-                            <div><strong>Title:</strong> <span id="viewTitle">â€”</span></div>
-                            <div><strong>Reference:</strong> <span id="viewProjectRef">â€”</span></div>
-                            <div><strong>Location:</strong> <span id="viewLocation">â€”</span></div>
-                            <div><strong>Type:</strong> <span id="viewType">â€”</span></div>
+                            <div><strong>Title:</strong> <span id="viewTitle">-</span></div>
+                            <div><strong>Reference:</strong> <span id="viewProjectRef">-</span></div>
+                            <div><strong>Location:</strong> <span id="viewLocation">-</span></div>
+                            <div><strong>Type:</strong> <span id="viewType">-</span></div>
                         </div>
-                        <p id="viewDescription" style="margin-top:8px;color:#4a5568;">â€”</p>
+                        <p id="viewDescription" style="margin-top:8px;color:#4a5568;">-</p>
                     </div>
 
                     <!-- Section 3: Scope -->
                     <div class="preview-section" id="viewScopeSection">
                         <h4>3. SCOPE OF WORK</h4>
-                        <p id="viewScopeDesc">â€”</p>
+                        <p id="viewScopeDesc">-</p>
                         <div class="preview-grid" style="margin-top:10px;">
                             <div>
                                 <strong>Inclusions:</strong>
-                                <pre id="viewInclusions" class="preview-pre">â€”</pre>
+                                <pre id="viewInclusions" class="preview-pre">-</pre>
                             </div>
                             <div>
                                 <strong>Exclusions:</strong>
-                                <pre id="viewExclusions" class="preview-pre">â€”</pre>
+                                <pre id="viewExclusions" class="preview-pre">-</pre>
                             </div>
                         </div>
-                        <p><strong>Materials:</strong> <span id="viewMaterials">â€”</span></p>
+                        <p><strong>Materials:</strong> <span id="viewMaterials">-</span></p>
                     </div>
 
                     <!-- Section 4: Timeline & Milestones -->
                     <div class="preview-section">
                         <h4>4. PROJECT DURATION & MILESTONES</h4>
                         <div class="preview-grid cols-3">
-                            <div><strong>Start:</strong> <span id="viewStartDate">â€”</span></div>
-                            <div><strong>Completion:</strong> <span id="viewEndDate">â€”</span></div>
+                            <div><strong>Start:</strong> <span id="viewStartDate">-</span></div>
+                            <div><strong>Completion:</strong> <span id="viewEndDate">-</span></div>
                             <div><strong>Progress:</strong> <span id="viewProgress">0%</span></div>
                         </div>
                         <div id="viewMilestonesContainer" style="margin-top:10px;"></div>
@@ -275,13 +275,13 @@ if (!$userId) {
                     <div class="preview-section">
                         <h4>5. PRICING, PAYMENTS & DELAYS</h4>
                         <div class="preview-grid cols-3">
-                            <div><strong>Contract Value:</strong> <span id="viewValue" class="preview-value">â€”</span></div>
-                            <div><strong>Budget Type:</strong> <span id="viewBudgetType">â€”</span></div>
-                            <div><strong>Payment Method:</strong> <span id="viewPaymentMethod">â€”</span></div>
+                            <div><strong>Contract Value:</strong> <span id="viewValue" class="preview-value">-</span></div>
+                            <div><strong>Budget Type:</strong> <span id="viewBudgetType">-</span></div>
+                            <div><strong>Payment Method:</strong> <span id="viewPaymentMethod">-</span></div>
                         </div>
                         <div class="preview-grid" style="margin-top:10px;">
                             <div><strong>Amount Paid:</strong> <span id="viewAmountPaid">LKR 0</span></div>
-                            <div><strong>Remaining:</strong> <span id="viewAmountPending">â€”</span></div>
+                            <div><strong>Remaining:</strong> <span id="viewAmountPending">-</span></div>
                         </div>
                         <!-- Payment Schedule Breakdown -->
                         <div id="viewPaymentSchedule" style="margin-top:12px; border-top: 1px solid #e2e8f0; padding-top: 10px;"></div>
@@ -297,11 +297,11 @@ if (!$userId) {
                                 <div id="budgetRangeInfo" style="display:none; margin-top: 10px;">
                                     <p><strong>Allowed Budget Range:</strong></p>
                                     <div class="preview-grid cols-2" style="margin-top: 5px;">
-                                        <div>Minimum: <span id="viewBudgetMin" class="preview-value">â€”</span></div>
-                                        <div>Maximum: <span id="viewBudgetMax" class="preview-value">â€”</span></div>
+                                        <div>Minimum: <span id="viewBudgetMin" class="preview-value">-</span></div>
+                                        <div>Maximum: <span id="viewBudgetMax" class="preview-value">-</span></div>
                                     </div>
                                     <p style="margin-top: 8px; font-size: 13px; color: #666;">
-                                        <em>Final cost may vary within Â±10% range to accommodate material price changes or necessary adjustments. All changes require customer approval.</em>
+                                        <em>Final cost may vary within +/-10% range to accommodate material price changes or necessary adjustments. All changes require customer approval.</em>
                                     </p>
                                 </div>
                                 <div id="budgetFixedInfo" style="display:none; margin-top: 10px;">
@@ -319,22 +319,22 @@ if (!$userId) {
                     <!-- Section 6: Variations -->
                     <div class="preview-section">
                         <h4>6. VARIATIONS & CHANGES</h4>
-                        <p id="viewVariation">â€”</p>
+                        <p id="viewVariation">-</p>
                     </div>
 
                     <!-- Section 7: Communication & Disputes -->
                     <div class="preview-section">
                         <h4>7. COMMUNICATION & DISPUTE RESOLUTION</h4>
-                        <p><strong>Channel:</strong> <span id="viewCommChannel">â€”</span></p>
-                        <p id="viewDisputeRes">â€”</p>
+                        <p><strong>Channel:</strong> <span id="viewCommChannel">-</span></p>
+                        <p id="viewDisputeRes">-</p>
                     </div>
 
                     <!-- Customer Response Status -->
                     <div class="preview-section" id="viewCustomerResponseSection" style="display:none;">
                         <h4>8. CUSTOMER RESPONSE</h4>
                         <div class="preview-grid">
-                            <div><strong>Sent to Customer:</strong> <span id="viewSentStatus">â€”</span></div>
-                            <div><strong>Response:</strong> <span id="viewCustomerResponse">â€”</span></div>
+                            <div><strong>Sent to Customer:</strong> <span id="viewSentStatus">-</span></div>
+                            <div><strong>Response:</strong> <span id="viewCustomerResponse">-</span></div>
                         </div>
                     </div>
                 </div>
@@ -674,7 +674,7 @@ if (!$userId) {
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="2">
                         <div class="step-header">
-                            <h3><i class="fas fa-users"></i> Section 1 â€” Parties to the Contract</h3>
+                            <h3><i class="fas fa-users"></i> Section 1 - Parties to the Contract</h3>
                             <p class="step-description">This section defines who is legally bound. All data is auto-filled and <strong>read-only</strong> to prevent legal errors.</p>
                         </div>
 
@@ -688,21 +688,21 @@ if (!$userId) {
                                 <div class="party-card-body">
                                     <div class="party-field">
                                         <label>Full Name</label>
-                                        <div class="party-value" id="partyClientName">â€”</div>
+                                        <div class="party-value" id="partyClientName">-</div>
                                         <input type="hidden" id="clientName" name="client_name">
                                     </div>
                                     <div class="party-field">
                                         <label>Address</label>
-                                        <div class="party-value" id="partyClientAddress">â€”</div>
+                                        <div class="party-value" id="partyClientAddress">-</div>
                                     </div>
                                     <div class="party-field">
                                         <label>Email</label>
-                                        <div class="party-value" id="partyClientEmail">â€”</div>
+                                        <div class="party-value" id="partyClientEmail">-</div>
                                         <input type="hidden" id="clientEmail" name="client_email">
                                     </div>
                                     <div class="party-field">
                                         <label>District</label>
-                                        <div class="party-value" id="partyClientDistrict">â€”</div>
+                                        <div class="party-value" id="partyClientDistrict">-</div>
                                     </div>
                                 </div>
                             </div>
@@ -716,19 +716,19 @@ if (!$userId) {
                                 <div class="party-card-body">
                                     <div class="party-field">
                                         <label>Company Name</label>
-                                        <div class="party-value" id="partyCompanyName">â€”</div>
+                                        <div class="party-value" id="partyCompanyName">-</div>
                                     </div>
                                     <div class="party-field">
                                         <label>Business Registration No.</label>
-                                        <div class="party-value" id="partyCompanyReg">â€”</div>
+                                        <div class="party-value" id="partyCompanyReg">-</div>
                                     </div>
                                     <div class="party-field">
                                         <label>Registered Address</label>
-                                        <div class="party-value" id="partyCompanyAddress">â€”</div>
+                                        <div class="party-value" id="partyCompanyAddress">-</div>
                                     </div>
                                     <div class="party-field">
                                         <label>Contact</label>
-                                        <div class="party-value" id="partyCompanyContact">â€”</div>
+                                        <div class="party-value" id="partyCompanyContact">-</div>
                                     </div>
                                 </div>
                             </div>
@@ -745,7 +745,7 @@ if (!$userId) {
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="3">
                         <div class="step-header">
-                            <h3><i class="fas fa-project-diagram"></i> Section 2 â€” Project Overview</h3>
+                            <h3><i class="fas fa-project-diagram"></i> Section 2 - Project Overview</h3>
                             <p class="step-description">Clearly identify which project this contract applies to. Auto-filled from the quotation; editable while in draft.</p>
                         </div>
 
@@ -753,7 +753,7 @@ if (!$userId) {
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="projectTitle">Project Title <span class="required">*</span></label>
-                                    <input type="text" id="projectTitle" name="project_title" required placeholder="e.g., Roof Repair â€“ Colombo 7">
+                                    <input type="text" id="projectTitle" name="project_title" required placeholder="e.g., Roof Repair - Colombo 7">
                                 </div>
                                 <div class="form-group">
                                     <label for="projectReference">Project Reference ID</label>
@@ -780,7 +780,7 @@ if (!$userId) {
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="4">
                         <div class="step-header">
-                            <h3><i class="fas fa-tasks"></i> Section 3 â€” Scope of Work</h3>
+                            <h3><i class="fas fa-tasks"></i> Section 3 - Scope of Work</h3>
                             <p class="step-description">This is the <strong>most critical section</strong>. Define exactly what work is included and excluded.</p>
                         </div>
 
@@ -846,7 +846,7 @@ if (!$userId) {
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="5">
                         <div class="step-header">
-                            <h3><i class="fas fa-file-invoice-dollar"></i> Section 4 â€” Payment Terms</h3>
+                            <h3><i class="fas fa-file-invoice-dollar"></i> Section 4 - Payment Terms</h3>
                             <p class="step-description">Define the financial terms of the contract including pricing structure, payment schedule, and consequences for delays.</p>
                         </div>
 
@@ -854,17 +854,16 @@ if (!$userId) {
                             <!-- Pricing -->
                             <div class="subsection">
                                 <h4 class="subsection-title"><i class="fas fa-tags"></i> Contract Pricing</h4>
-                                <div class="form-grid cols-3">
-                                    <div class="form-group">
-                                        <label for="contractValue">Total Contract Value (LKR) <span class="required">*</span></label>
-                                        <input type="number" id="contractValue" name="total_budget" required min="0" step="100" placeholder="From quotation">
-                                    </div>
+                                <!-- Total budget is pulled from the selected quotation and submitted as a hidden value -->
+                                <input type="hidden" id="contractValue" name="total_budget">
+
+                                <div class="form-grid">
                                     <div class="form-group">
                                         <label for="budgetType">Contract Type <span class="required">*</span></label>
                                         <select id="budgetType" name="budget_type" required>
                                             <option value="fixed">Fixed Price</option>
                                             <option value="time_based">Time-Based</option>
-                                            <option value="flexible">Flexible (Â±10%)</option>
+                                            <option value="flexible">Flexible (+/-10%)</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
@@ -890,12 +889,17 @@ if (!$userId) {
                                 <div class="cost-breakdown" id="costBreakdown" style="display:none;">
                                     <h5>Cost Breakdown (from Quotation)</h5>
                                     <div class="breakdown-grid">
-                                        <div class="breakdown-item"><span>Labour</span><span id="bdLabour">â€”</span></div>
-                                        <div class="breakdown-item"><span>Materials</span><span id="bdMaterials">â€”</span></div>
-                                        <div class="breakdown-item"><span>Transport</span><span id="bdTransport">â€”</span></div>
-                                        <div class="breakdown-item"><span>Other</span><span id="bdOther">â€”</span></div>
-                                        <div class="breakdown-item total"><span>Total</span><span id="bdTotal">â€”</span></div>
+                                        <div class="breakdown-item"><span id="bdLabourLabel">Labour</span><span id="bdLabour">-</span></div>
+                                        <div class="breakdown-item"><span id="bdMaterialsLabel">Materials</span><span id="bdMaterials">-</span></div>
+                                        <div class="breakdown-item"><span id="bdTransportLabel">Transport</span><span id="bdTransport">-</span></div>
+                                        <div class="breakdown-item"><span id="bdOtherLabel">Other</span><span id="bdOther">-</span></div>
+                                        <div class="breakdown-item total"><span>Total</span><span id="bdTotal">-</span></div>
                                     </div>
+                                </div>
+
+                                <div class="qs-info" id="unitMeasurementInfo" style="display:none;">
+                                    <i class="fas fa-ruler-combined"></i>
+                                    <span id="unitMeasurementText">Unit measurement: -</span>
                                 </div>
                             </div>
 
@@ -967,7 +971,7 @@ if (!$userId) {
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="6">
                         <div class="step-header">
-                            <h3><i class="fas fa-calendar-alt"></i> Section 5 â€” Project Duration & Milestones</h3>
+                            <h3><i class="fas fa-calendar-alt"></i> Section 5 - Project Duration & Milestones</h3>
                             <p class="step-description">Set the project timeline and define key milestones for tracking contract progress.</p>
                         </div>
 
@@ -996,7 +1000,7 @@ if (!$userId) {
                                         <div class="tooltip-container" style="position: relative; display: inline-block; margin-left: 8px;">
                                             <i class="fas fa-info-circle ms-info-icon" style="font-size: 0.8em; color: #6c757d; cursor: help;"></i>
                                             <div class="custom-tooltip" style="visibility: hidden; width: 250px; background-color: #1e293b; color: #f8fafc; text-align: center; border-radius: 8px; padding: 12px; position: absolute; z-index: 100; bottom: 150%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s, visibility 0.2s; font-size: 12px; font-weight: normal; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); line-height: 1.5; text-transform: none;">
-                                                Define key checkpoints (phases) for the project. These are used to track progress and schedule payments.
+                                                Define key checkpoints (phases) for the project. Use only phase name, description, and target date to track progress.
                                                 <div style="position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #1e293b transparent transparent transparent;"></div>
                                             </div>
                                         </div>
@@ -1014,8 +1018,6 @@ if (!$userId) {
                                                 <th>Phase Name</th>
                                                 <th>Description</th>
                                                 <th>Target Date</th>
-                                                <th class="ms-payment-col">% of Total</th>
-                                                <th class="ms-payment-col">Amount (LKR)</th>
                                                 <th></th>
                                             </tr>
                                         </thead>
@@ -1025,8 +1027,6 @@ if (!$userId) {
                                                 <td><input type="text" name="ms_name[]" placeholder="Project Start" value="Project Commencement"></td>
                                                 <td><input type="text" name="ms_desc[]" placeholder="Description" value="Site preparation and initial setup"></td>
                                                 <td><input type="date" name="ms_date[]"></td>
-                                                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" min="0" max="100" step="1" placeholder="%" value="30"></td>
-                                                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" min="0" step="100" placeholder="Amount" readonly></td>
                                                 <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
                                             </tr>
                                             <tr class="milestone-row">
@@ -1034,8 +1034,6 @@ if (!$userId) {
                                                 <td><input type="text" name="ms_name[]" placeholder="Midpoint" value="Mid-Project Review"></td>
                                                 <td><input type="text" name="ms_desc[]" placeholder="Description" value="Progress inspection and quality check"></td>
                                                 <td><input type="date" name="ms_date[]"></td>
-                                                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" min="0" max="100" step="1" placeholder="%" value="40"></td>
-                                                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" min="0" step="100" placeholder="Amount" readonly></td>
                                                 <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
                                             </tr>
                                             <tr class="milestone-row">
@@ -1043,27 +1041,11 @@ if (!$userId) {
                                                 <td><input type="text" name="ms_name[]" placeholder="Completion" value="Project Handover"></td>
                                                 <td><input type="text" name="ms_desc[]" placeholder="Description" value="Final inspection, cleanup, and handover"></td>
                                                 <td><input type="date" name="ms_date[]"></td>
-                                                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" min="0" max="100" step="1" placeholder="%" value="30"></td>
-                                                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" min="0" step="100" placeholder="Amount" readonly></td>
                                                 <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
                                             </tr>
                                         </tbody>
-                                        <tfoot id="milestonesTotalRow">
-                                            <tr>
-                                                <td colspan="4" style="text-align:right; font-weight:600;">Total:</td>
-                                                <td><strong id="msTotalPct">100</strong>%</td>
-                                                <td><strong>LKR <span id="msTotalAmount">0</span></strong></td>
-                                                <td></td>
-                                            </tr>
-                                        </tfoot>
                                     </table>
                                 </div>
-                                <!-- Milestone total validation message -->
-                                <div class="milestone-total-warning" id="msTotalWarning" style="display:none;">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <span id="msTotalWarningText">Phase percentages must total 100%</span>
-                                </div>
-
                             </div>
                         </div>
                     </div>
@@ -1074,7 +1056,7 @@ if (!$userId) {
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="7">
                         <div class="step-header">
-                            <h3><i class="fas fa-gavel"></i> Sections 6 & 7 â€” Variations, Communication & Additional Terms</h3>
+                            <h3><i class="fas fa-gavel"></i> Sections 6 & 7 - Variations, Communication & Additional Terms</h3>
                             <p class="step-description">Legal clauses for change control, dispute resolution, and any additional terms.</p>
                         </div>
 
@@ -1112,7 +1094,7 @@ if (!$userId) {
                                 </div>
                                 <div class="form-group full-width">
                                     <label for="disputeResolution">Dispute Resolution Process</label>
-                                    <textarea id="disputeResolution" name="dispute_resolution" rows="3" placeholder="Default: Negotiation â†’ Mediation via FixLanka â†’ External arbitration">Both parties agree to attempt resolution through negotiation via the FixLanka platform before seeking external mediation or arbitration. A message log of all communications will be maintained as part of the contract record.</textarea>
+                                    <textarea id="disputeResolution" name="dispute_resolution" rows="3" placeholder="Default: Negotiation -> Mediation via FixLanka -> External arbitration">Both parties agree to attempt resolution through negotiation via the FixLanka platform before seeking external mediation or arbitration. A message log of all communications will be maintained as part of the contract record.</textarea>
                                 </div>
                             </div>
 
@@ -1142,7 +1124,7 @@ if (!$userId) {
                     <!-- =============================== -->
                     <div class="form-step-content" data-step="8">
                         <div class="step-header">
-                            <h3><i class="fas fa-check-double"></i> Section 8 â€” Review & Finalize</h3>
+                            <h3><i class="fas fa-check-double"></i> Section 8 - Review & Finalize</h3>
                             <p class="step-description">Review the complete contract before sending to customer. This preview mirrors the final legal document.</p>
                         </div>
 
@@ -1150,7 +1132,7 @@ if (!$userId) {
                             <!-- Legal Document Header -->
                             <div class="preview-header">
                                 <h2>CONSTRUCTION SERVICE AGREEMENT</h2>
-                                <p class="preview-ref" id="previewRef">Contract Reference: â€”</p>
+                                <p class="preview-ref" id="previewRef">Contract Reference: -</p>
                                 <p class="preview-date">Date: <span id="previewDate"></span></p>
                             </div>
 
@@ -1160,13 +1142,13 @@ if (!$userId) {
                                 <div class="preview-parties">
                                     <div>
                                         <strong>First Party (Client):</strong>
-                                        <span id="previewClientName">â€”</span><br>
-                                        <small id="previewClientDetails">â€”</small>
+                                        <span id="previewClientName">-</span><br>
+                                        <small id="previewClientDetails">-</small>
                                     </div>
                                     <div>
                                         <strong>Second Party (Contractor):</strong>
-                                        <span id="previewCompanyName">â€”</span><br>
-                                        <small id="previewCompanyDetails">â€”</small>
+                                        <span id="previewCompanyName">-</span><br>
+                                        <small id="previewCompanyDetails">-</small>
                                     </div>
                                 </div>
                             </div>
@@ -1175,38 +1157,38 @@ if (!$userId) {
                             <div class="preview-section">
                                 <h4>2. PROJECT OVERVIEW</h4>
                                 <div class="preview-grid">
-                                    <div><strong>Title:</strong> <span id="previewProjectTitle">â€”</span></div>
-                                    <div><strong>Reference:</strong> <span id="previewProjectRef">â€”</span></div>
-                                    <div><strong>Location:</strong> <span id="previewProjectLocation">â€”</span></div>
-                                    <div><strong>Type:</strong> <span id="previewProjectType">â€”</span></div>
+                                    <div><strong>Title:</strong> <span id="previewProjectTitle">-</span></div>
+                                    <div><strong>Reference:</strong> <span id="previewProjectRef">-</span></div>
+                                    <div><strong>Location:</strong> <span id="previewProjectLocation">-</span></div>
+                                    <div><strong>Type:</strong> <span id="previewProjectType">-</span></div>
                                 </div>
-                                <p id="previewProjectDesc" style="margin-top:8px;color:#4a5568;">â€”</p>
+                                <p id="previewProjectDesc" style="margin-top:8px;color:#4a5568;">-</p>
                             </div>
 
                             <!-- Section 3: Scope -->
                             <div class="preview-section">
                                 <h4>3. SCOPE OF WORK</h4>
-                                <p id="previewScopeDesc">â€”</p>
+                                <p id="previewScopeDesc">-</p>
                                 <div class="preview-grid" style="margin-top:10px;">
                                     <div>
                                         <strong>Inclusions:</strong>
-                                        <pre id="previewInclusions" class="preview-pre">â€”</pre>
+                                        <pre id="previewInclusions" class="preview-pre">-</pre>
                                     </div>
                                     <div>
                                         <strong>Exclusions:</strong>
-                                        <pre id="previewExclusions" class="preview-pre">â€”</pre>
+                                        <pre id="previewExclusions" class="preview-pre">-</pre>
                                     </div>
                                 </div>
-                                <p><strong>Materials:</strong> <span id="previewMaterials">â€”</span></p>
+                                <p><strong>Materials:</strong> <span id="previewMaterials">-</span></p>
                             </div>
 
                             <!-- Section 4: Timeline -->
                             <div class="preview-section">
                                 <h4>4. PROJECT DURATION & MILESTONES</h4>
                                 <div class="preview-grid cols-3">
-                                    <div><strong>Start:</strong> <span id="previewStartDate">â€”</span></div>
-                                    <div><strong>Completion:</strong> <span id="previewEndDate">â€”</span></div>
-                                    <div><strong>Duration:</strong> <span id="previewDuration">â€”</span> days</div>
+                                    <div><strong>Start:</strong> <span id="previewStartDate">-</span></div>
+                                    <div><strong>Completion:</strong> <span id="previewEndDate">-</span></div>
+                                    <div><strong>Duration:</strong> <span id="previewDuration">-</span> days</div>
                                 </div>
                                 <table class="preview-milestones-table" id="previewMilestonesTable" style="margin-top:10px;">
                                     <thead><tr><th>#</th><th>Milestone</th><th>Date</th></tr></thead>
@@ -1218,29 +1200,29 @@ if (!$userId) {
                             <div class="preview-section">
                                 <h4>5. PRICING, PAYMENTS & DELAYS</h4>
                                 <div class="preview-grid cols-3">
-                                    <div><strong>Contract Value:</strong> <span id="previewValue">â€”</span></div>
-                                    <div><strong>Type:</strong> <span id="previewBudgetType">â€”</span></div>
-                                    <div><strong>Payment:</strong> <span id="previewPaymentMethod">â€”</span></div>
+                                    <div><strong>Quotation Total:</strong> <span id="previewValue">-</span></div>
+                                    <div><strong>Type:</strong> <span id="previewBudgetType">-</span></div>
+                                    <div><strong>Payment:</strong> <span id="previewPaymentMethod">-</span></div>
                                 </div>
                                 <div id="previewPaymentSchedule" style="margin-top:10px;"></div>
-                                <p style="margin-top:8px;"><strong>Late Payment:</strong> <span id="previewLatePayment">â€”</span></p>
+                                <p style="margin-top:8px;"><strong>Late Payment:</strong> <span id="previewLatePayment">-</span></p>
                             </div>
 
                             <!-- Section 6 & 7: Clauses -->
                             <div class="preview-section">
                                 <h4>6. VARIATIONS & CHANGES</h4>
-                                <p id="previewVariation">â€”</p>
+                                <p id="previewVariation">-</p>
                             </div>
                             <div class="preview-section">
                                 <h4>7. COMMUNICATION & DISPUTE RESOLUTION</h4>
-                                <p><strong>Channel:</strong> <span id="previewCommChannel">â€”</span></p>
-                                <p id="previewDisputeRes">â€”</p>
+                                <p><strong>Channel:</strong> <span id="previewCommChannel">-</span></p>
+                                <p id="previewDisputeRes">-</p>
                             </div>
 
                             <!-- Additional -->
                             <div class="preview-section" id="previewAdditionalSection" style="display:none;">
                                 <h4>ADDITIONAL TERMS</h4>
-                                <p id="previewAdditionalTerms">â€”</p>
+                                <p id="previewAdditionalTerms">-</p>
                             </div>
                         </div>
                     </div>
@@ -1289,8 +1271,8 @@ if (!$userId) {
                     <p style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
                         Send this contract to the customer?
                     </p>
-                    <p id="sendContractTitle" style="font-size: 14px; color: #666; margin-bottom: 5px;">â€”</p>
-                    <p id="sendContractClient" style="font-size: 14px; color: #666; margin-bottom: 20px;">â€”</p>
+                    <p id="sendContractTitle" style="font-size: 14px; color: #666; margin-bottom: 5px;">-</p>
+                    <p id="sendContractClient" style="font-size: 14px; color: #666; margin-bottom: 20px;">-</p>
                     <div style="background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 8px; padding: 12px 16px; text-align: left; font-size: 13px; color: #555;">
                         <i class="fas fa-info-circle" style="color: var(--primary-color, #0abab5); margin-right: 6px;"></i>
                         The customer will be able to <strong>view</strong>, <strong>accept</strong>, or <strong>decline</strong> this contract from their dashboard.
@@ -1329,6 +1311,31 @@ if (!$userId) {
                 </button>
                 <button type="button" class="btn btn-danger" id="deleteConfirmBtn">
                     <i class="fas fa-trash"></i> Delete Contract
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Contract Confirmation Modal -->
+    <div class="modal-overlay" id="cancelModal">
+        <div class="modal-container confirmation-modal">
+            <div class="modal-header warning">
+                <h2><i class="fas fa-times-circle"></i> Cancel Contract</h2>
+                <button class="modal-close" id="cancelModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <p class="warning-text">Are you sure you want to cancel this contract?</p>
+                <p class="contract-info-text" id="cancelContractInfo">Contract</p>
+                <p class="warning-note"><strong>Note:</strong> This will remove the contract and allow a new contract to be sent for the same project.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="cancelCancelBtn">
+                    <i class="fas fa-times"></i> Keep Contract
+                </button>
+                <button type="button" class="btn btn-danger" id="cancelConfirmBtn">
+                    <i class="fas fa-trash"></i> Cancel Contract
                 </button>
             </div>
         </div>
@@ -1496,10 +1503,10 @@ if (!$userId) {
     </div>
 
     <!-- Scripts -->
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/chat.js?v=6.4"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contracts-enhanced.js?v=6.4"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contract-form-enhanced.js?v=6.4"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/budget-adjustment.js?v=6.4"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/chat.js?v=6.5"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contracts-enhanced.js?v=6.6"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contract-form-enhanced.js?v=6.7"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/budget-adjustment.js?v=6.5"></script>
     <script>
         // Store current contract for budget adjustment
         let currentContractData = null;
@@ -1589,7 +1596,7 @@ if (!$userId) {
             
             if (contract.budget_type === 'flexible') {
                 // Flexible budget
-                budgetTypeBadge.innerHTML = 'ðŸ”„ Flexible Budget (Â±10%)';
+                budgetTypeBadge.innerHTML = 'Flexible Budget (+/-10%)';
                 budgetTypeBadge.className = 'badge badge-flexible';
                 budgetTypeBadge.style.background = '#3498db';
                 budgetTypeBadge.style.color = 'white';
@@ -1607,7 +1614,7 @@ if (!$userId) {
                 
             } else {
                 // Fixed budget
-                budgetTypeBadge.innerHTML = 'ðŸ”’ Fixed Budget';
+                budgetTypeBadge.innerHTML = 'Fixed Budget';
                 budgetTypeBadge.className = 'badge badge-fixed';
                 budgetTypeBadge.style.background = '#95a5a6';
                 budgetTypeBadge.style.color = 'white';
