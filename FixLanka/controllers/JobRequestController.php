@@ -112,6 +112,7 @@ class JobRequestController {
         
         $userId = $_SESSION['user_id'];
         $jobRequests = $this->jobRequestModel->getAllByUser($userId);
+        $directJobRequests = $this->jobRequestModel->getAllDirectByUser($userId);
         
         require_once __DIR__ . '/../views/user/job_history.php';
     }
