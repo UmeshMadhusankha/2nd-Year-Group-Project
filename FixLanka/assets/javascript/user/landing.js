@@ -1,54 +1,283 @@
 ﻿// Fix Lanka Landing Page JavaScript
 // ===================================
 
-// App + API endpoints
-const APP_BASE = '/2nd-Year-Group-Project/FixLanka';
-const API_ENDPOINTS = Object.freeze({
-    providerSearch: `${APP_BASE}/api/user/loadLandingProviders.php`,
-    companies: `${APP_BASE}/api/companies.php`,
-    listedJobs: `${APP_BASE}/api/user/listed-job-requests.php`,
-    directRequestQuotes: `${APP_BASE}/api/user/direct-request-quotes.php`,
-    directJobRequests: `${APP_BASE}/api/user/direct-job-requests.php`
-});
-
-/*
-|-------------------------------------------------------------------------------
-| Landing Providers Data Flow (Quick Reference)
-|-------------------------------------------------------------------------------
-| 1) API is called from: loadProviders()
-| 2) Request URL: API_ENDPOINTS.providerSearch (/api/user/loadLandingProviders.php)
-| 3) Raw API response is stored in: lastLandingProvidersResponse
-| 4) Providers array (result.data) is stored in: lastLandingProvidersBatch
-| 5) Rendering happens via:
-|    - renderProviderCard(provider)  -> repairers grid
-|    - renderCompanyCard(company)    -> companies grid
-*/
-
-const LANDING_PROVIDER_BLUEPRINTS = Object.freeze({
-    repairer: {
-        source: 'Repairer table',
-        identity: ['repairer_id', 'provider_type'],
-        primaryDisplay: ['full_name', 'category_name'],
-        ratingAndStats: ['ratings', 'completedJobsCount'],
-        media: ['profilePicture'],
-        location: ['districts', 'address'],
-        contact: ['phoneNumber', 'email'],
-        detailText: ['about', 'availability']
+// Sample provider data for demonstration (Individual Repairers)
+const providerData = [
+    {
+        id: 1,
+        name: "Kamal Silva",
+        title: "Master Electrician",
+        rating: 4.9,
+        reviews: 156,
+        distance: "0.8 km away",
+        description: "Certified electrician with 15+ years of experience. Specializes in residential and commercial electrical work.",
+        avatar: "KS"
     },
-    company: {
-        source: 'Company table',
-        identity: ['company_id', 'provider_type'],
-        primaryDisplay: ['name', 'business_type'],
-        ratingAndStats: ['ratings', 'date_of_joined'],
-        location: ['districts', 'address'],
-        contact: ['contact_no', 'email', 'website'],
-        detailText: ['description']
+    {
+        id: 2,
+        name: "Nimal Perera",
+        title: "Plumbing Expert",
+        rating: 4.8,
+        reviews: 243,
+        distance: "1.2 km away",
+        description: "Licensed plumber offering 24/7 emergency services. Expert in pipe repairs and bathroom installations.",
+        avatar: "NP"
+    },
+    {
+        id: 3,
+        name: "Saman Fernando",
+        title: "HVAC Technician",
+        rating: 4.7,
+        reviews: 89,
+        distance: "2.1 km away",
+        description: "Air conditioning and heating specialist. Quick diagnostics and reliable repair services.",
+        avatar: "SF"
+    },
+    {
+        id: 4,
+        name: "Ranjith Kumar",
+        title: "Carpentry Specialist",
+        rating: 4.6,
+        reviews: 127,
+        distance: "3.5 km away",
+        description: "Expert carpenter specializing in custom furniture, kitchen cabinets, and home renovations. Quality craftsmanship guaranteed.",
+        avatar: "RK"
+    },
+    {
+        id: 5,
+        name: "Pradeep Bandara",
+        title: "Painting Professional",
+        rating: 4.5,
+        reviews: 93,
+        distance: "1.8 km away",
+        description: "Professional painting contractor for interior and exterior projects. High-quality finishes with premium paints.",
+        avatar: "PB"
+    },
+    {
+        id: 6,
+        name: "Amara Jayasinghe",
+        title: "House Cleaning Pro",
+        rating: 5.0,
+        reviews: 178,
+        distance: "0.5 km away",
+        description: "Professional cleaning service with eco-friendly products. Trusted by 200+ families.",
+        avatar: "AJ"
+    },
+    {
+        id: 7,
+        name: "Lakshmi Wijeratne",
+        title: "Interior Painter",
+        rating: 4.9,
+        reviews: 267,
+        distance: "1.5 km away",
+        description: "Professional painter with attention to detail. Transforms spaces with quality finishes.",
+        avatar: "LW"
+    },
+    {
+        id: 8,
+        name: "Roshan Mendis",
+        title: "Appliance Repair",
+        rating: 4.5,
+        reviews: 98,
+        distance: "2.3 km away",
+        description: "Expert in washing machine, refrigerator, and microwave repairs. Same-day service available.",
+        avatar: "RM"
+    },
+    {
+        id: 9,
+        name: "Priya Gunasekara",
+        title: "Garden Maintenance",
+        rating: 4.8,
+        reviews: 156,
+        distance: "1.1 km away",
+        description: "Professional gardener offering lawn care, pruning, and landscape design services.",
+        avatar: "PG"
+    },
+    {
+        id: 10,
+        name: "Dinesh Amarasinghe",
+        title: "Tile Installation Expert",
+        rating: 4.7,
+        reviews: 112,
+        distance: "1.9 km away",
+        description: "Specialist in ceramic, marble, and porcelain tile installation. Precise workmanship.",
+        avatar: "DA"
+    },
+    {
+        id: 11,
+        name: "Kumari Abeysekera",
+        title: "Home Security Specialist",
+        rating: 4.9,
+        reviews: 87,
+        distance: "2.5 km away",
+        description: "Security system installation and maintenance. Keeping your home safe and secure.",
+        avatar: "KA"
+    },
+    {
+        id: 12,
+        name: "Janaka Rodrigo",
+        title: "Pest Control Expert",
+        rating: 4.6,
+        reviews: 145,
+        distance: "1.7 km away",
+        description: "Eco-friendly pest control solutions. Effective treatment for all types of pest problems.",
+        avatar: "JR"
+    },
+    {
+        id: 13,
+        name: "Sanduni Perera",
+        title: "Window Cleaning Pro",
+        rating: 4.8,
+        reviews: 203,
+        distance: "0.9 km away",
+        description: "Professional window cleaning for residential and commercial properties. Streak-free results.",
+        avatar: "SP"
     }
-});
+];
 
-// Latest payload storage (before populating grids)
-let lastLandingProvidersResponse = null;
-let lastLandingProvidersBatch = [];
+// Sample company data for demonstration
+const companyData = [
+    {
+        id: 1,
+        name: "Lanka Build Solutions",
+        type: "Construction & Renovation",
+        rating: 4.9,
+        reviews: 342,
+        location: "Colombo 5",
+        employees: 45,
+        projects: 280,
+        yearsFounded: "Est. 2010",
+        services: ["Construction", "Renovation", "Interior Design", "Electrical"],
+        description: "Leading construction company with over 13 years of experience in residential and commercial projects. Committed to quality and timely delivery.",
+        logo: "LBS"
+    },
+    {
+        id: 2,
+        name: "HomeFix Services Ltd",
+        type: "Multi-Service Company",
+        rating: 4.8,
+        reviews: 567,
+        location: "Nugegoda",
+        employees: 82,
+        projects: 850,
+        yearsFounded: "Est. 2008",
+        services: ["Plumbing", "Electrical", "HVAC", "Carpentry", "Painting"],
+        description: "One-stop solution for all your home repair and maintenance needs. Professional team available 24/7 for emergency services.",
+        logo: "HF"
+    },
+    {
+        id: 3,
+        name: "CleanPro Lanka",
+        type: "Cleaning Services",
+        rating: 4.9,
+        reviews: 789,
+        location: "Kandy",
+        employees: 120,
+        projects: 1200,
+        yearsFounded: "Est. 2012",
+        services: ["House Cleaning", "Office Cleaning", "Deep Cleaning", "Pest Control"],
+        description: "Premier cleaning service provider with eco-friendly solutions. Trusted by over 500 corporate clients and 5000+ residential customers.",
+        logo: "CP"
+    },
+    {
+        id: 4,
+        name: "TechElectric Solutions",
+        type: "Electrical Services",
+        rating: 4.7,
+        reviews: 423,
+        location: "Dehiwala",
+        employees: 35,
+        projects: 650,
+        yearsFounded: "Est. 2015",
+        services: ["Electrical Installation", "Wiring", "Solar Panels", "Smart Home"],
+        description: "Specialized in modern electrical solutions including smart home automation and solar energy systems. Certified technicians.",
+        logo: "TE"
+    },
+    {
+        id: 5,
+        name: "AquaFlow Plumbing Co",
+        type: "Plumbing & Water Solutions",
+        rating: 4.8,
+        reviews: 312,
+        location: "Moratuwa",
+        employees: 28,
+        projects: 520,
+        yearsFounded: "Est. 2013",
+        services: ["Plumbing", "Water Tank Installation", "Drainage", "Bathroom Fitting"],
+        description: "Expert plumbing services with 24/7 emergency response. Specialists in water management and modern bathroom installations.",
+        logo: "AF"
+    },
+    {
+        id: 6,
+        name: "CoolAir HVAC Systems",
+        type: "Air Conditioning Services",
+        rating: 4.9,
+        reviews: 456,
+        location: "Colombo 7",
+        employees: 40,
+        projects: 720,
+        yearsFounded: "Est. 2011",
+        services: ["AC Installation", "AC Repair", "Maintenance", "Ventilation"],
+        description: "Leading HVAC company providing installation, repair, and maintenance services. Authorized dealers for major AC brands.",
+        logo: "CA"
+    },
+    {
+        id: 7,
+        name: "WoodCraft Interiors",
+        type: "Carpentry & Furniture",
+        rating: 4.7,
+        reviews: 234,
+        location: "Maharagama",
+        employees: 32,
+        projects: 380,
+        yearsFounded: "Est. 2014",
+        services: ["Custom Furniture", "Kitchen Cabinets", "Wardrobes", "Doors & Windows"],
+        description: "Premium carpentry services with custom designs. Expert craftsmen creating beautiful and functional wooden solutions.",
+        logo: "WC"
+    },
+    {
+        id: 8,
+        name: "PaintPro Lanka",
+        type: "Painting & Decorating",
+        rating: 4.8,
+        reviews: 398,
+        location: "Galle",
+        employees: 55,
+        projects: 890,
+        yearsFounded: "Est. 2009",
+        services: ["Interior Painting", "Exterior Painting", "Wall Texturing", "Waterproofing"],
+        description: "Professional painting company using premium quality paints. Experts in color consultation and decorative finishes.",
+        logo: "PP"
+    },
+    {
+        id: 9,
+        name: "SecureHome Systems",
+        type: "Security & Automation",
+        rating: 4.9,
+        reviews: 287,
+        location: "Colombo 3",
+        employees: 38,
+        projects: 420,
+        yearsFounded: "Est. 2016",
+        services: ["CCTV Installation", "Alarm Systems", "Access Control", "Home Automation"],
+        description: "Advanced security solutions with smart home integration. Protecting homes and businesses with cutting-edge technology.",
+        logo: "SH"
+    },
+    {
+        id: 10,
+        name: "GreenScape Gardens",
+        type: "Landscaping & Gardening",
+        rating: 4.6,
+        reviews: 178,
+        location: "Kotte",
+        employees: 25,
+        projects: 310,
+        yearsFounded: "Est. 2017",
+        services: ["Landscape Design", "Garden Maintenance", "Irrigation", "Tree Services"],
+        description: "Professional landscaping and garden maintenance services. Creating and maintaining beautiful outdoor spaces.",
+        logo: "GS"
+    }
+];
 
 // DOM Elements
 const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
@@ -61,29 +290,6 @@ const scrollTrigger = document.getElementById('scrollTrigger');
 const profileAvatar = document.getElementById('profileAvatar');
 const profileDropdown = document.getElementById('profileDropdown');
 const providerTabs = document.querySelectorAll('.provider-tab');
-const listedJobRequestModal = document.getElementById('listedJobRequestModal');
-const listedJobRequestCloseBtn = document.getElementById('listedJobRequestCloseBtn');
-const listedJobRequestCancelBtn = document.getElementById('listedJobRequestCancelBtn');
-const listedJobRequestSubmitBtn = document.getElementById('listedJobRequestSubmitBtn');
-const listedJobRequestList = document.getElementById('listedJobRequestList');
-const listedJobRequestError = document.getElementById('listedJobRequestError');
-const listedJobRequestProviderTypeLabel = document.getElementById('listedJobRequestProviderTypeLabel');
-const directJobRequestModal = document.getElementById('directJobRequestModal');
-const directJobRequestCloseBtn = document.getElementById('directJobRequestCloseBtn');
-const directJobRequestCancelBtn = document.getElementById('directJobRequestCancelBtn');
-const directJobRequestForm = document.getElementById('directJobRequestForm');
-const directJobRequestError = document.getElementById('directJobRequestError');
-const directJobRequestSuccess = document.getElementById('directJobRequestSuccess');
-const directJobRequestProviderLabel = document.getElementById('directJobRequestProviderLabel');
-const directJobProviderId = document.getElementById('directJobProviderId');
-const directJobProviderType = document.getElementById('directJobProviderType');
-const directJobFinishDate = document.getElementById('directJobFinishDate');
-const directJobPhotos = document.getElementById('directJobPhotos');
-const directJobPhotoPreview = document.getElementById('directJobPhotoPreview');
-const directJobRequestSubmitBtn = document.getElementById('directJobRequestSubmitBtn');
-
-// Active grid pointer (used by loader + no-results helpers)
-let providersGrid = repairersGrid;
 
 // State variables
 let currentPage = 0;
@@ -91,38 +297,6 @@ const itemsPerPage = 6;
 let isLoading = false;
 let allProvidersLoaded = false;
 let currentProviderType = 'repairers';
-const landingRepairersById = new Map();
-let selectedListedJobRequestId = null;
-let listedJobRequestContext = {
-    providerId: null,
-    providerType: null
-};
-let directJobRequestContext = {
-    providerId: null,
-    providerType: null
-};
-
-function cacheLandingRepairers(providers) {
-    if (!Array.isArray(providers)) return;
-
-    providers.forEach((provider) => {
-        const type = normalizeProviderType(provider?.provider_type || currentProviderType);
-        if (type !== 'individual') return;
-
-        const repairerId = Number(provider?.repairer_id);
-        if (!Number.isFinite(repairerId) || repairerId <= 0) return;
-
-        landingRepairersById.set(repairerId, provider);
-    });
-}
-
-function getLandingRepairerById(repairerId) {
-    const numericId = Number(repairerId);
-    if (!Number.isFinite(numericId) || numericId <= 0) return null;
-    return landingRepairersById.get(numericId) || null;
-}
-
-window.getLandingRepairerById = getLandingRepairerById;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function () {
@@ -131,385 +305,8 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeLazyLoading();
     initializeProfileDropdown();
     initializeProviderTabs();
-    initializeListedJobRequestModal();
-    initializeDirectJobRequestModal();
     loadInitialProviders();
 });
-
-function initializeDirectJobRequestModal() {
-    if (!directJobRequestModal || !directJobRequestForm) return;
-
-    if (directJobRequestCloseBtn) {
-        directJobRequestCloseBtn.addEventListener('click', closeDirectJobRequestModal);
-    }
-
-    if (directJobRequestCancelBtn) {
-        directJobRequestCancelBtn.addEventListener('click', closeDirectJobRequestModal);
-    }
-
-    directJobRequestModal.addEventListener('click', (event) => {
-        if (event.target === directJobRequestModal) {
-            closeDirectJobRequestModal();
-        }
-    });
-
-    directJobRequestForm.addEventListener('submit', submitDirectJobRequest);
-
-    if (directJobFinishDate) {
-        const today = new Date().toISOString().split('T')[0];
-        directJobFinishDate.setAttribute('min', today);
-    }
-
-    if (directJobPhotos && directJobPhotoPreview) {
-        directJobPhotos.addEventListener('change', () => {
-            const file = directJobPhotos.files && directJobPhotos.files[0] ? directJobPhotos.files[0] : null;
-            directJobPhotoPreview.textContent = file ? `Selected: ${file.name}` : '';
-        });
-    }
-}
-
-function closeDirectJobRequestModal() {
-    if (!directJobRequestModal || !directJobRequestForm) return;
-
-    directJobRequestModal.classList.remove('show');
-    directJobRequestModal.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
-
-    directJobRequestForm.reset();
-    directJobRequestContext = { providerId: null, providerType: null };
-
-    if (directJobProviderId) directJobProviderId.value = '';
-    if (directJobProviderType) directJobProviderType.value = '';
-    if (directJobPhotoPreview) directJobPhotoPreview.textContent = '';
-
-    if (directJobRequestError) {
-        directJobRequestError.style.display = 'none';
-        directJobRequestError.textContent = '';
-    }
-    if (directJobRequestSuccess) {
-        directJobRequestSuccess.style.display = 'none';
-        directJobRequestSuccess.textContent = '';
-    }
-
-    if (directJobRequestSubmitBtn) {
-        directJobRequestSubmitBtn.disabled = false;
-        directJobRequestSubmitBtn.textContent = 'Request';
-    }
-}
-
-function openDirectJobRequestModal(providerType, providerId) {
-    if (!directJobRequestModal || !directJobRequestForm) {
-        alert('New job request popup is not available right now.');
-        return;
-    }
-
-    const normalizedType = normalizeProviderType(providerType) === 'company' ? 'company' : 'individual';
-    const numericProviderId = Number(providerId);
-
-    if (!Number.isFinite(numericProviderId) || numericProviderId <= 0) {
-        alert('Invalid provider selection. Please reopen the profile and try again.');
-        return;
-    }
-
-    // Close profile popups first as requested.
-    if (normalizedType === 'company' && typeof window.closeCompanyModal === 'function') {
-        window.closeCompanyModal();
-    }
-    if (normalizedType === 'individual' && typeof window.closeRepairerProfile === 'function') {
-        window.closeRepairerProfile();
-    }
-
-    directJobRequestContext = {
-        providerId: numericProviderId,
-        providerType: normalizedType
-    };
-
-    directJobRequestForm.reset();
-    if (directJobProviderId) directJobProviderId.value = String(numericProviderId);
-    if (directJobProviderType) directJobProviderType.value = normalizedType;
-    if (directJobRequestProviderLabel) {
-        directJobRequestProviderLabel.textContent = normalizedType === 'company' ? 'this company' : 'this repairer';
-    }
-
-    if (directJobFinishDate) {
-        const today = new Date().toISOString().split('T')[0];
-        directJobFinishDate.setAttribute('min', today);
-    }
-
-    if (directJobPhotoPreview) directJobPhotoPreview.textContent = '';
-
-    if (directJobRequestError) {
-        directJobRequestError.style.display = 'none';
-        directJobRequestError.textContent = '';
-    }
-    if (directJobRequestSuccess) {
-        directJobRequestSuccess.style.display = 'none';
-        directJobRequestSuccess.textContent = '';
-    }
-
-    if (directJobRequestSubmitBtn) {
-        directJobRequestSubmitBtn.disabled = false;
-        directJobRequestSubmitBtn.textContent = 'Request';
-    }
-
-    directJobRequestModal.classList.add('show');
-    directJobRequestModal.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-}
-
-async function submitDirectJobRequest(event) {
-    event.preventDefault();
-
-    if (!directJobRequestForm) return;
-    if (!directJobRequestContext.providerId || !directJobRequestContext.providerType) return;
-
-    const formData = new FormData(directJobRequestForm);
-    formData.set('provider_id', String(directJobRequestContext.providerId));
-    formData.set('provider_type', directJobRequestContext.providerType);
-
-    if (directJobRequestError) {
-        directJobRequestError.style.display = 'none';
-        directJobRequestError.textContent = '';
-    }
-    if (directJobRequestSuccess) {
-        directJobRequestSuccess.style.display = 'none';
-        directJobRequestSuccess.textContent = '';
-    }
-
-    if (directJobRequestSubmitBtn) {
-        directJobRequestSubmitBtn.disabled = true;
-        directJobRequestSubmitBtn.textContent = 'Requesting...';
-    }
-
-    try {
-        const response = await fetch(API_ENDPOINTS.directJobRequests, {
-            method: 'POST',
-            body: formData,
-            headers: { 'Accept': 'application/json' }
-        });
-
-        const result = await response.json();
-        if (!response.ok || !result?.success) {
-            throw new Error(result?.message || `Failed to create direct job request (${response.status})`);
-        }
-
-        if (directJobRequestSuccess) {
-            directJobRequestSuccess.textContent = result.message || 'Direct job request created successfully.';
-            directJobRequestSuccess.style.display = 'block';
-        }
-
-        setTimeout(() => {
-            closeDirectJobRequestModal();
-        }, 700);
-    } catch (error) {
-        console.error('Failed to submit direct job request:', error);
-        if (directJobRequestError) {
-            directJobRequestError.textContent = error.message || 'Failed to create direct request. Please try again.';
-            directJobRequestError.style.display = 'block';
-        }
-    } finally {
-        if (directJobRequestSubmitBtn) {
-            directJobRequestSubmitBtn.disabled = false;
-            directJobRequestSubmitBtn.textContent = 'Request';
-        }
-    }
-}
-
-function initializeListedJobRequestModal() {
-    if (!listedJobRequestModal) return;
-
-    if (listedJobRequestCloseBtn) {
-        listedJobRequestCloseBtn.addEventListener('click', closeListedJobRequestModal);
-    }
-
-    if (listedJobRequestCancelBtn) {
-        listedJobRequestCancelBtn.addEventListener('click', closeListedJobRequestModal);
-    }
-
-    if (listedJobRequestSubmitBtn) {
-        listedJobRequestSubmitBtn.addEventListener('click', submitListedJobRequest);
-    }
-
-    if (listedJobRequestList) {
-        listedJobRequestList.addEventListener('change', (event) => {
-            const target = event.target;
-            if (!target || target.name !== 'listedJobRequestId') return;
-
-            selectedListedJobRequestId = Number(target.value);
-            if (listedJobRequestSubmitBtn) {
-                listedJobRequestSubmitBtn.disabled = !Number.isFinite(selectedListedJobRequestId) || selectedListedJobRequestId <= 0;
-            }
-        });
-    }
-
-    listedJobRequestModal.addEventListener('click', (event) => {
-        if (event.target === listedJobRequestModal) {
-            closeListedJobRequestModal();
-        }
-    });
-}
-
-function closeListedJobRequestModal() {
-    if (!listedJobRequestModal) return;
-
-    listedJobRequestModal.classList.remove('show');
-    listedJobRequestModal.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
-
-    selectedListedJobRequestId = null;
-    listedJobRequestContext = { providerId: null, providerType: null };
-
-    if (listedJobRequestSubmitBtn) {
-        listedJobRequestSubmitBtn.disabled = true;
-    }
-
-    if (listedJobRequestError) {
-        listedJobRequestError.style.display = 'none';
-        listedJobRequestError.textContent = '';
-    }
-
-    if (listedJobRequestList) {
-        listedJobRequestList.innerHTML = '<p class="listed-job-placeholder">Loading your pending jobs...</p>';
-    }
-}
-
-async function openListedJobRequestModal(providerType, providerId) {
-    if (!listedJobRequestModal || !listedJobRequestList) {
-        alert('Listed-job request popup is not available right now.');
-        return;
-    }
-
-    const normalizedType = normalizeProviderType(providerType) === 'company' ? 'company' : 'individual';
-    const numericProviderId = Number(providerId);
-
-    listedJobRequestContext = {
-        providerId: Number.isFinite(numericProviderId) && numericProviderId > 0 ? numericProviderId : null,
-        providerType: normalizedType
-    };
-
-    selectedListedJobRequestId = null;
-    if (listedJobRequestSubmitBtn) listedJobRequestSubmitBtn.disabled = true;
-
-    if (listedJobRequestProviderTypeLabel) {
-        listedJobRequestProviderTypeLabel.textContent = normalizedType === 'company' ? 'this company' : 'this repairer';
-    }
-
-    if (listedJobRequestError) {
-        listedJobRequestError.style.display = 'none';
-        listedJobRequestError.textContent = '';
-    }
-
-    listedJobRequestList.innerHTML = '<p class="listed-job-placeholder">Loading your pending jobs...</p>';
-
-    listedJobRequestModal.classList.add('show');
-    listedJobRequestModal.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-
-    try {
-        const params = new URLSearchParams();
-        params.set('provider_type', normalizedType);
-
-        const response = await fetch(`${API_ENDPOINTS.listedJobs}?${params.toString()}`, {
-            headers: { 'Accept': 'application/json' }
-        });
-
-        const result = await response.json();
-        if (!response.ok || !result?.success) {
-            throw new Error(result?.message || `Failed to load pending jobs (${response.status})`);
-        }
-
-        renderListedJobRequestOptions(Array.isArray(result.data) ? result.data : []);
-    } catch (error) {
-        console.error('Failed to load listed job requests:', error);
-        if (listedJobRequestError) {
-            listedJobRequestError.textContent = error.message || 'Failed to load your listed jobs.';
-            listedJobRequestError.style.display = 'block';
-        }
-        listedJobRequestList.innerHTML = '<p class="listed-job-placeholder">Could not load jobs. Please try again.</p>';
-    }
-}
-
-function renderListedJobRequestOptions(jobs) {
-    if (!listedJobRequestList) return;
-
-    if (!jobs.length) {
-        listedJobRequestList.innerHTML = '<p class="listed-job-placeholder">No pending listed jobs match this provider type.</p>';
-        return;
-    }
-
-    const html = jobs.map((job) => {
-        const requestId = Number(job.request_id);
-        const title = escapeHtml(String(job.title || `Job #${requestId}`));
-        const category = escapeHtml(String(job.category_name || 'Uncategorized'));
-        const district = escapeHtml(String(job.district || 'N/A'));
-        const finishDate = escapeHtml(String(job.finish_date || 'N/A'));
-
-        return `
-            <div class="listed-job-item">
-                <label>
-                    <input type="radio" name="listedJobRequestId" value="${requestId}">
-                    <span>
-                        <p class="listed-job-item-title">${title}</p>
-                        <p class="listed-job-item-meta">Category: ${category} | District: ${district} | Finish by: ${finishDate}</p>
-                    </span>
-                </label>
-            </div>
-        `;
-    }).join('');
-
-    listedJobRequestList.innerHTML = html;
-}
-
-async function submitListedJobRequest() {
-    if (!Number.isFinite(selectedListedJobRequestId) || selectedListedJobRequestId <= 0) return;
-    if (!listedJobRequestContext.providerType || !listedJobRequestContext.providerId) return;
-
-    if (listedJobRequestSubmitBtn) {
-        listedJobRequestSubmitBtn.disabled = true;
-        listedJobRequestSubmitBtn.textContent = 'Requesting...';
-    }
-
-    if (listedJobRequestError) {
-        listedJobRequestError.style.display = 'none';
-        listedJobRequestError.textContent = '';
-    }
-
-    try {
-        const payload = {
-            provider_type: listedJobRequestContext.providerType,
-            request_id: selectedListedJobRequestId,
-            provider_id: listedJobRequestContext.providerId
-        };
-
-        const response = await fetch(API_ENDPOINTS.directRequestQuotes, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-
-        const result = await response.json();
-        if (!response.ok || !result?.success) {
-            throw new Error(result?.message || `Failed to submit request (${response.status})`);
-        }
-
-        alert(result.message || 'Request sent successfully.');
-        closeListedJobRequestModal();
-    } catch (error) {
-        console.error('Failed to submit listed-job request:', error);
-        if (listedJobRequestError) {
-            listedJobRequestError.textContent = error.message || 'Failed to send request. Please try again.';
-            listedJobRequestError.style.display = 'block';
-        }
-    } finally {
-        if (listedJobRequestSubmitBtn) {
-            listedJobRequestSubmitBtn.textContent = 'Request';
-            listedJobRequestSubmitBtn.disabled = !Number.isFinite(selectedListedJobRequestId) || selectedListedJobRequestId <= 0;
-        }
-    }
-}
 
 // Mobile Menu Functionality
 function initializeMobileMenu() {
@@ -1146,7 +943,10 @@ if (searchForm) {
 
 // Send Repair Request Function (Placeholder - No functionality yet)
 function sendRepairRequest(type, providerId) {
-    openListedJobRequestModal(type, providerId);
+
+    window.showAlert(`Send Repair Request feature will be implemented soon!\n\nProvider Type: ${type}\nProvider ID: ${providerId || 'Current profile'}`, 'info', 'Coming Soon');
+    // TODO: Implement repair request functionality
+    // This will redirect to post-job page or open a request form
 }
 
 // Contact Company Function (Placeholder)
@@ -1158,12 +958,9 @@ function contactCompany(companyId) {
 
 // Request Company Quote Function (Placeholder)
 function requestCompanyQuote(companyId) {
-    openDirectJobRequestModal('company', companyId);
-}
 
-// Request Repairer Quote / New Job Function (Placeholder)
-function requestRepairerQuote(repairerId) {
-    openDirectJobRequestModal('individual', repairerId);
+    window.showAlert('Request Company Quote feature will be implemented soon!', 'info', 'Coming Soon');
+    // TODO: Implement company quote request functionality
 }
 
 // Console log for debugging

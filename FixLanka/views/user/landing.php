@@ -40,8 +40,6 @@ if (!empty($aboutContent['body'])) {
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/landing.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/navbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/repairer-profile-popup.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/listed-job-request-popup.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/direct-job-request-popup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -198,12 +196,7 @@ if (!empty($aboutContent['body'])) {
     <!-- Repairer Profile Popup -->
     <?php include 'repairer-profile-popup.php'; ?>
 
-    <!-- Listed Job Request Popup -->
-    <?php include 'listed-job-request-popup.php'; ?>
-
-    <!-- Direct New Job Request Popup -->
-    <?php include 'direct-job-request-popup.php'; ?>
-
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/landing.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/repairer-profile-popup.js"></script>
 </body>

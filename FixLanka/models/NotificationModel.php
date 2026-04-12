@@ -1,6 +1,5 @@
 <?php
 // NotificationModel.php - Handles all database operations for Notification table
-require_once __DIR__ . '/../config/database.php';
 
 class NotificationModel
 {
@@ -9,11 +8,8 @@ class NotificationModel
     private ?array $columnCache = null;
     private bool $creatorColumnsEnsured = false;
 
-    public function __construct($pdo = null)
+    public function __construct($pdo)
     {
-        if (!($pdo instanceof PDO)) {
-            $pdo = getDatabaseConnection();
-        }
         $this->pdo = $pdo;
     }
 

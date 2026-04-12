@@ -8,9 +8,6 @@ class UserQuotesController {
 
     public function __construct() {
         global $pdo;
-        if (!($pdo instanceof PDO)) {
-            $pdo = getDatabaseConnection();
-        }
         $this->model = new UserQuotesModel($pdo);
     }
 
@@ -48,9 +45,6 @@ class UserQuotesController {
         if ($limit <= 0) $limit = 20;
         if ($limit > 50) $limit = 50;
         if ($offset < 0) $offset = 0;
-        if (!in_array($status, ['pending', 'accepted', 'rejected'], true)) {
-            $status = 'pending';
-        }
 
         $quotes = $this->model->getUserQuotes((int)$user['id'], $limit, $offset, $status, $requestId);
         $pendingCount = $this->model->getUserPendingCount((int)$user['id']);
