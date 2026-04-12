@@ -125,7 +125,7 @@ function getLandingRepairerById(repairerId) {
 window.getLandingRepairerById = getLandingRepairerById;
 
 // Initialize the application
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
     initializeMobileMenu();
     initializeSearchForm();
     initializeLazyLoading();
@@ -514,9 +514,9 @@ async function submitListedJobRequest() {
 // Mobile Menu Functionality
 function initializeMobileMenu() {
     if (mobileMenuToggle && mobileMenu) {
-        mobileMenuToggle.addEventListener('click', function () {
+        mobileMenuToggle.addEventListener('click', function() {
             mobileMenu.classList.toggle('active');
-
+            
             // Animate hamburger menu
             const hamburgers = mobileMenuToggle.querySelectorAll('.hamburger');
             hamburgers.forEach((line, index) => {
@@ -534,7 +534,7 @@ function initializeMobileMenu() {
         // Close mobile menu when clicking on links
         const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
         mobileNavLinks.forEach(link => {
-            link.addEventListener('click', function () {
+            link.addEventListener('click', function() {
                 mobileMenu.classList.remove('active');
                 // Reset hamburger animation
                 const hamburgers = mobileMenuToggle.querySelectorAll('.hamburger');
@@ -551,20 +551,20 @@ function initializeMobileMenu() {
 function initializeProfileDropdown() {
     if (profileAvatar && profileDropdown) {
         // Toggle dropdown when clicking profile avatar
-        profileAvatar.addEventListener('click', function (e) {
+        profileAvatar.addEventListener('click', function(e) {
             e.stopPropagation();
             profileDropdown.classList.toggle('active');
         });
 
         // Close dropdown when clicking outside
-        document.addEventListener('click', function (e) {
+        document.addEventListener('click', function(e) {
             if (!profileAvatar.contains(e.target) && !profileDropdown.contains(e.target)) {
                 profileDropdown.classList.remove('active');
             }
         });
 
         // Close dropdown on escape key
-        document.addEventListener('keydown', function (e) {
+        document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && profileDropdown.classList.contains('active')) {
                 profileDropdown.classList.remove('active');
             }
@@ -575,33 +575,35 @@ function initializeProfileDropdown() {
 // Provider Tabs Functionality
 function initializeProviderTabs() {
     providerTabs.forEach(tab => {
-        tab.addEventListener('click', function () {
+        tab.addEventListener('click', function() {
             const type = this.dataset.type;
-
+            
             // Update active tab
             providerTabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
-
+            
             // Show corresponding grid
             document.querySelectorAll('.providers-grid').forEach(grid => {
                 grid.classList.remove('active');
             });
-
+            
             if (type === 'repairers') {
                 repairersGrid.classList.add('active');
                 currentProviderType = 'repairers';
+                providersGrid = repairersGrid;
             } else {
                 companiesGrid.classList.add('active');
                 currentProviderType = 'companies';
+                providersGrid = companiesGrid;
             }
-
+            
             // Reset and reload data
             currentPage = 0;
             allProvidersLoaded = false;
-
+            
             const targetGrid = type === 'repairers' ? repairersGrid : companiesGrid;
             targetGrid.innerHTML = '';
-
+            
             loadInitialProviders();
         });
     });
@@ -610,25 +612,114 @@ function initializeProviderTabs() {
 // Search Form Functionality
 function initializeSearchForm() {
     if (searchForm) {
-        searchForm.addEventListener('submit', function (e) {
+        searchForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const service = document.getElementById('serviceSelect').value;
-            const rating = document.getElementById('ratingSelect').value;
-            const location = document.getElementById('locationInput').value;
-
-            // Simulate search functionality
-
-            // Show loading state
-            showSearchLoading();
-
-            // Simulate API call delay
-            setTimeout(() => {
-                hideSearchLoading();
-                filterProviders({ service, rating, location });
-            }, 1000);
+            // Apply filters via API
+            filterProviders();
+            updateActiveFilters();
         });
+        
+        // Also trigger filter on dropdown change
+        const filterInputs = ['serviceSelect', 'ratingSelect', 'districtSelect'];
+        filterInputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.addEventListener('change', function() {
+                    filterProviders();
+                    updateActiveFilters();
+                });
+            }
+        });
+        
+        // Clear filters button
+        const clearBtn = document.getElementById('clearFiltersBtn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                clearAllFilters();
+            });
+        }
     }
+}
+
+// Update active filters display
+function updateActiveFilters() {
+    const activeFiltersDiv = document.getElementById('activeFilters');
+    const filterTagsDiv = document.getElementById('filterTags');
+    
+    if (!activeFiltersDiv || !filterTagsDiv) return;
+    
+    const service = document.getElementById('serviceSelect');
+    const rating = document.getElementById('ratingSelect');
+    const district = document.getElementById('districtSelect');
+    
+    let hasFilters = false;
+    filterTagsDiv.innerHTML = '';
+    
+    // Add service tag
+    if (service && service.value) {
+        hasFilters = true;
+        const tag = createFilterTag('Service', service.options[service.selectedIndex].text, () => {
+            service.value = '';
+            filterProviders();
+            updateActiveFilters();
+        });
+        filterTagsDiv.appendChild(tag);
+    }
+    
+    // Add district tag
+    if (district && district.value) {
+        hasFilters = true;
+        const tag = createFilterTag('District', district.value, () => {
+            district.value = '';
+            filterProviders();
+            updateActiveFilters();
+        });
+        filterTagsDiv.appendChild(tag);
+    }
+    
+    // Add rating tag
+    if (rating && rating.value) {
+        hasFilters = true;
+        const tag = createFilterTag('Rating', rating.options[rating.selectedIndex].text, () => {
+            rating.value = '';
+            filterProviders();
+            updateActiveFilters();
+        });
+        filterTagsDiv.appendChild(tag);
+    }
+    
+    activeFiltersDiv.style.display = hasFilters ? 'flex' : 'none';
+}
+
+// Create filter tag element
+function createFilterTag(label, value, onRemove) {
+    const tag = document.createElement('span');
+    tag.className = 'filter-tag';
+    tag.innerHTML = `
+        <span class="filter-tag-label">${label}:</span>
+        <span class="filter-tag-value">${value}</span>
+        <button class="filter-tag-remove" aria-label="Remove filter">×</button>
+    `;
+    
+    const removeBtn = tag.querySelector('.filter-tag-remove');
+    removeBtn.addEventListener('click', onRemove);
+    
+    return tag;
+}
+
+// Clear all filters
+function clearAllFilters() {
+    const service = document.getElementById('serviceSelect');
+    const rating = document.getElementById('ratingSelect');
+    const district = document.getElementById('districtSelect');
+    
+    if (service) service.value = '';
+    if (rating) rating.value = '';
+    if (district) district.value = '';
+    
+    filterProviders();
+    updateActiveFilters();
 }
 
 // Search Loading States
@@ -643,39 +734,31 @@ function showSearchLoading() {
 function hideSearchLoading() {
     const searchBtn = document.querySelector('.search-btn');
     if (searchBtn) {
-        searchBtn.innerHTML = '<i class="fas fa-search"></i> Search';
+        searchBtn.innerHTML = '<i class="fas fa-filter"></i> Apply Filters';
         searchBtn.disabled = false;
     }
 }
 
-// Filter Providers (simplified for demo)
-function filterProviders(filters) {
-    let filteredData = [...providerData];
-
-    // Filter by service (simplified matching)
-    if (filters.service) {
-        filteredData = filteredData.filter(provider =>
-            provider.title.toLowerCase().includes(filters.service.toLowerCase()) ||
-            provider.description.toLowerCase().includes(filters.service.toLowerCase())
-        );
-    }
-
-    // Filter by rating
-    if (filters.rating) {
-        const minRating = parseFloat(filters.rating);
-        filteredData = filteredData.filter(provider => provider.rating >= minRating);
-    }
-
+// Filter Providers - now uses real API
+async function filterProviders() {
     // Clear current grid and reset pagination
-    providersGrid.innerHTML = '';
+    if (providersGrid) {
+        providersGrid.innerHTML = '';
+    }
     currentPage = 0;
     allProvidersLoaded = false;
-
-    // Update provider data temporarily for this search
-    window.currentFilteredData = filteredData;
-
-    // Load filtered results
-    loadProviders(true);
+    if (scrollTrigger) {
+        scrollTrigger.style.display = 'block';
+    }
+    
+    // Show loading state
+    showSearchLoading();
+    
+    // Load filtered results from API
+    await loadProviders();
+    
+    // Hide loading state
+    hideSearchLoading();
 }
 
 // Lazy Loading Functionality
@@ -703,49 +786,92 @@ function loadInitialProviders() {
 }
 
 // Load Providers with Pagination
-function loadProviders(isFiltered = false) {
-    if (isLoading) return;
+async function loadProviders() {
+    if (isLoading || allProvidersLoaded) return;
 
     isLoading = true;
     showLoading();
 
-    // Select data source based on current provider type
-    const dataSource = currentProviderType === 'repairers'
-        ? (window.currentFilteredData || providerData)
-        : companyData;
+    try {
+        const service = document.getElementById('serviceSelect')?.value || '';
+        const rating = document.getElementById('ratingSelect')?.value || '';
+        const district = document.getElementById('districtSelect')?.value || '';
 
-    // Calculate start and end indices
-    const startIndex = currentPage * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, dataSource.length);
+        const providerType = currentProviderType === 'companies' ? 'company' : 'individual';
+        const hasFilters = Boolean(service || rating || district);
 
-    // Get current batch of providers
-    const currentBatch = dataSource.slice(startIndex, endIndex);
+        const params = new URLSearchParams();
+        params.set('mode', hasFilters ? 'search' : 'featured');
+        params.set('provider_type', providerType);
+        params.set('limit', String(itemsPerPage));
+        params.set('offset', String(currentPage * itemsPerPage));
 
-    // Simulate network delay
-    setTimeout(() => {
-        // Render providers based on type
-        currentBatch.forEach((provider, index) => {
-            setTimeout(() => {
-                if (currentProviderType === 'repairers') {
-                    renderProviderCard(provider);
-                } else {
-                    renderCompanyCard(provider);
-                }
-            }, index * 100); // Stagger animation
+        if (service) params.set('category', service);
+        if (rating) params.set('rating', rating);
+        if (district) params.set('location', district);
+
+        const apiUrl = `${API_ENDPOINTS.providerSearch}?${params.toString()}`;
+        const response = await fetch(apiUrl, {
+            headers: {
+                'Accept': 'application/json'
+            }
         });
 
-        // Update pagination state
-        currentPage++;
-        isLoading = false;
-        hideLoading();
-
-        // Check if all providers are loaded
-        if (endIndex >= dataSource.length) {
-            allProvidersLoaded = true;
-            scrollTrigger.style.display = 'none';
+        if (!response.ok) {
+            throw new Error(`Failed to fetch providers (${response.status})`);
         }
 
-    }, 800); // Simulate loading delay
+        const result = await response.json();
+        const providers = (result && result.success && Array.isArray(result.data)) ? result.data : [];
+
+        // Store API payload before rendering (useful for filter/debug decisions)
+        lastLandingProvidersResponse = result;
+        lastLandingProvidersBatch = providers;
+        cacheLandingRepairers(providers);
+
+        if (providers.length === 0 && currentPage === 0) {
+            showNoResults();
+            allProvidersLoaded = true;
+            if (scrollTrigger) scrollTrigger.style.display = 'none';
+            return;
+        }
+
+        hideNoResults();
+
+        providers.forEach((provider, index) => {
+            setTimeout(() => {
+                if (providerType === 'company') {
+                    renderCompanyCard(provider);
+                } else {
+                    renderProviderCard(provider);
+                }
+            }, index * 80);
+        });
+
+        currentPage++;
+
+        if (result.pagination) {
+            allProvidersLoaded = !result.pagination.hasMore;
+        } else if (providers.length < itemsPerPage) {
+            allProvidersLoaded = true;
+        }
+
+        if (allProvidersLoaded && scrollTrigger) {
+            scrollTrigger.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error loading providers:', error);
+        if (currentPage === 0) {
+            showNoResults();
+        }
+        allProvidersLoaded = true;
+        if (scrollTrigger) {
+            scrollTrigger.style.display = 'none';
+        }
+    } finally {
+        isLoading = false;
+        hideLoading();
+    }
 }
 
 // Show Loading Indicator
@@ -762,256 +888,264 @@ function hideLoading() {
     }
 }
 
+// Show No Results Message
+function showNoResults() {
+    if (!providersGrid) return;
+    
+    const noResultsDiv = document.createElement('div');
+    noResultsDiv.id = 'noResultsMessage';
+    noResultsDiv.className = 'no-results';
+    noResultsDiv.innerHTML = `
+        <div class="no-results-icon">
+            <i class="fas fa-search"></i>
+        </div>
+        <h3>No Providers Found</h3>
+        <p>We couldn't find any providers matching your criteria.</p>
+        <p>Try adjusting your filters or clearing them to see all providers.</p>
+        <button class="btn-primary" onclick="clearAllFilters()">Clear All Filters</button>
+    `;
+    
+    providersGrid.appendChild(noResultsDiv);
+}
+
+// Hide No Results Message
+function hideNoResults() {
+    const noResultsMsg = document.getElementById('noResultsMessage');
+    if (noResultsMsg) {
+        noResultsMsg.remove();
+    }
+}
+
 // Render Provider Card
 function renderProviderCard(provider) {
     const card = document.createElement('div');
     card.className = 'provider-card';
     card.style.animationDelay = '0s'; // Reset animation delay
 
+    const pictureUrl = resolveAssetUrl(provider.profilePicture);
+    
+    // Generate avatar initials or use profile picture
+    const avatar = pictureUrl
+        ? `<img src="${pictureUrl}" alt="${provider.full_name || provider.name}" class="avatar-img">`
+        : generateAvatarInitials(provider.full_name || provider.name);
+    
+    // Determine provider type and display info
+    const providerType = normalizeProviderType(provider.provider_type || 'individual');
+    const providerName = provider.full_name || provider.name || 'Unknown';
+    const providerTitle = provider.category_name || (providerType === 'company' ? 'Service Company' : 'Service Provider');
+    const rating = Number(provider.ratings ?? provider.rating ?? 0);
+    const completedJobs = Number(provider.completedJobsCount ?? 0);
+    const about = provider.about || provider.address || 'Professional service provider';
+    const availability = provider.availability || 'available';
+    const serviceAreas = String(provider.districts || provider.address || 'Available in your area');
+    
+    // Provider ID and type for viewing details
+    const providerId = providerType === 'individual' ? provider.repairer_id : provider.company_id;
+    const safeProviderId = Number(providerId);
+    if (DEBUG_PROFILE_FLOW) {
+        console.log('[ProfileFlow] renderProviderCard()', {
+            providerTypeRaw: provider.provider_type,
+            providerType,
+            providerId,
+            safeProviderId,
+            providerName
+        });
+    }
+    
     card.innerHTML = `
         <div class="provider-header">
             <div class="provider-avatar">
-                ${provider.avatar}
+                ${avatar}
             </div>
             <div class="provider-info">
-                <h3 class="provider-name">${provider.name}</h3>
-                <p class="provider-title">${provider.title}</p>
+                <h3 class="provider-name">${escapeHtml(providerName)}</h3>
+                <p class="provider-title">${escapeHtml(providerTitle)}</p>
+                ${providerType === 'company' ? '<span class="provider-badge company-badge">Company</span>' : ''}
+                ${availability === 'available' ? '<span class="provider-badge available-badge">Available</span>' : ''}
             </div>
         </div>
         
         <div class="provider-rating">
             <div class="stars">
-                ${generateStars(provider.rating)}
+                ${generateStars(rating)}
             </div>
-            <span class="rating-text">${provider.rating} (${provider.reviews} reviews)</span>
+            <span class="rating-text">${(Number.isFinite(rating) ? rating : 0).toFixed(1)} ${completedJobs > 0 ? `(${completedJobs} jobs)` : ''}</span>
         </div>
         
         <div class="provider-distance">
             <i class="fas fa-map-marker-alt"></i>
-            ${provider.distance}
+            ${escapeHtml(serviceAreas.substring(0, 50))}${serviceAreas.length > 50 ? '...' : ''}
         </div>
         
         <p class="provider-description">
-            ${provider.description}
+            ${escapeHtml(about.substring(0, 120))}${about.length > 120 ? '...' : ''}
         </p>
         
         <div class="provider-actions">
-            <button class="view-profile-btn" onclick="viewProfile(${provider.id})">
+            <button class="view-profile-btn" data-provider-id="${escapeHtml(String(safeProviderId || ''))}" data-provider-type="${escapeHtml(providerType)}" onclick="viewProviderProfile(${safeProviderId || 'null'}, '${providerType}')">
                 <i class="fas fa-user"></i>
                 View Profile
             </button>
         </div>
     `;
-
-    if (repairersGrid) {
-        repairersGrid.appendChild(card);
+    
+    if (providersGrid) {
+        providersGrid.appendChild(card);
     }
 }
 
 // Render Company Card
 function renderCompanyCard(company) {
+    // Render API company cards
     const card = document.createElement('div');
     card.className = 'company-card';
     card.style.animationDelay = '0s';
 
-    const servicesHTML = company.services.slice(0, 4).map(service =>
-        `<span class="service-tag">${service}</span>`
-    ).join('');
+    const companyName = company.name || 'Company';
+    const companyType = company.business_type || 'Service Company';
+    const rating = Number(company.ratings ?? company.rating ?? 0);
+    const location = company.districts || company.address || '';
+    const description = company.description || 'Professional service company';
+    const founded = company.date_of_joined ? String(company.date_of_joined).slice(0, 4) : '-';
 
     card.innerHTML = `
         <div class="company-header">
-            <div class="company-logo">
-                ${company.logo}
-            </div>
+            <div class="company-logo">${generateAvatarInitials(companyName)}</div>
             <div class="company-info">
-                <h3 class="company-name">${company.name}</h3>
-                <span class="company-type">${company.type}</span>
+                <h3 class="company-name">${escapeHtml(companyName)}</h3>
+                <span class="company-type">${escapeHtml(companyType)}</span>
             </div>
         </div>
-        
+
         <div class="company-stats">
             <div class="company-stat">
-                <span class="stat-value">${company.employees}+</span>
-                <span class="stat-label">Employees</span>
+                <span class="stat-value">${rating.toFixed(1)}</span>
+                <span class="stat-label">Rating</span>
             </div>
             <div class="company-stat">
-                <span class="stat-value">${company.projects}+</span>
-                <span class="stat-label">Projects</span>
+                <span class="stat-value">${escapeHtml(String((company.districts || '').split(',').filter(Boolean).length || 1))}</span>
+                <span class="stat-label">Areas</span>
             </div>
             <div class="company-stat">
-                <span class="stat-value">${company.yearsFounded.split(' ')[1]}</span>
-                <span class="stat-label">Founded</span>
+                <span class="stat-value">${escapeHtml(founded)}</span>
+                <span class="stat-label">Joined</span>
             </div>
         </div>
-        
+
         <div class="company-rating">
-            <div class="stars">
-                ${generateStars(company.rating)}
-            </div>
-            <span class="rating-text">${company.rating} (${company.reviews} reviews)</span>
+            <div class="stars">${generateStars(rating)}</div>
+            <span class="rating-text">${rating.toFixed(1)}</span>
         </div>
-        
+
         <div class="company-location">
             <i class="fas fa-map-marker-alt"></i>
-            ${company.location}
+            ${escapeHtml(String(location).substring(0, 60))}${String(location).length > 60 ? '...' : ''}
         </div>
-        
-        <div class="company-services">
-            <p class="services-label">Services Offered:</p>
-            <div class="services-tags">
-                ${servicesHTML}
-                ${company.services.length > 4 ? `<span class="service-tag">+${company.services.length - 4} more</span>` : ''}
-            </div>
-        </div>
-        
-        <p class="company-description">
-            ${company.description}
-        </p>
-        
+
+        <p class="company-description">${escapeHtml(String(description).substring(0, 140))}${String(description).length > 140 ? '...' : ''}</p>
+
         <div class="company-actions">
-            <button class="view-company-btn" onclick="viewCompanyDetails(${company.id})">
+            <button class="view-company-btn" data-provider-id="${escapeHtml(String(company.company_id ?? ''))}" data-provider-type="company" onclick="viewProviderProfile(${Number(company.company_id) || 'null'}, 'company')">
                 <i class="fas fa-building"></i>
                 View Company Details
             </button>
         </div>
     `;
 
-    if (companiesGrid) {
-        companiesGrid.appendChild(card);
+    if (providersGrid) {
+        providersGrid.appendChild(card);
     }
 }
 
-// View Company Details
-function viewCompanyDetails(companyId) {
-    const company = companyData.find(c => c.id === companyId);
-    if (!company) return;
+function resolveAssetUrl(path) {
+    if (!path) return '';
+    const trimmed = String(path).trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+    if (trimmed.startsWith('/')) return trimmed;
+    return `${APP_BASE}/${trimmed}`;
+}
 
-    // Create modal HTML
-    const modalHTML = `
-        <div class="company-modal-overlay" id="companyModal">
-            <div class="company-modal-container">
-                <div class="company-modal-header">
-                    <div class="company-modal-logo">
-                        ${company.logo}
-                    </div>
-                    <div class="company-modal-title-section">
-                        <h2 class="company-modal-title">${company.name}</h2>
-                        <p class="company-modal-type">${company.type}</p>
-                    </div>
-                    <button class="company-modal-close" onclick="closeCompanyModal()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                
-                <div class="company-modal-content">
-                    <div class="company-modal-rating">
-                        <div class="stars">
-                            ${generateStars(company.rating)}
-                        </div>
-                        <span class="rating-text">${company.rating} / 5.0 (${company.reviews} reviews)</span>
-                    </div>
-                    
-                    <div class="company-modal-info-grid">
-                        <div class="company-modal-info-item">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <div>
-                                <span class="info-label">Location</span>
-                                <span class="info-value">${company.location}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="company-modal-info-item">
-                            <i class="fas fa-users"></i>
-                            <div>
-                                <span class="info-label">Team Size</span>
-                                <span class="info-value">${company.employees}+ Employees</span>
-                            </div>
-                        </div>
-                        
-                        <div class="company-modal-info-item">
-                            <i class="fas fa-briefcase"></i>
-                            <div>
-                                <span class="info-label">Projects Completed</span>
-                                <span class="info-value">${company.projects}+</span>
-                            </div>
-                        </div>
-                        
-                        <div class="company-modal-info-item">
-                            <i class="fas fa-calendar-alt"></i>
-                            <div>
-                                <span class="info-label">Established</span>
-                                <span class="info-value">${company.yearsFounded}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="company-modal-section">
-                        <h3 class="modal-section-title">
-                            <i class="fas fa-info-circle"></i>
-                            About Company
-                        </h3>
-                        <p class="company-modal-description">${company.description}</p>
-                    </div>
-                    
-                    <div class="company-modal-section">
-                        <h3 class="modal-section-title">
-                            <i class="fas fa-tools"></i>
-                            Services Offered
-                        </h3>
-                        <div class="company-modal-services">
-                            ${company.services.map(service =>
-        `<span class="modal-service-tag">
-                                    <i class="fas fa-check-circle"></i>
-                                    ${service}
-                                </span>`
-    ).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="company-modal-actions">
-                        <button class="btn-primary" onclick="sendRepairRequest('company', ${companyId})">
-                            <i class="fas fa-tools"></i>
-                            Send Repair Request
-                        </button>
-                        <button class="btn-secondary" onclick="contactCompany(${companyId})">
-                            <i class="fas fa-comment"></i>
-                            Contact Company
-                        </button>
-                        <button class="btn-outline" onclick="requestCompanyQuote(${companyId})">
-                            <i class="fas fa-file-invoice"></i>
-                            Request Quote
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+const DEBUG_PROFILE_FLOW = true;
 
-    // Add modal to body
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
+function normalizeProviderType(type) {
+    const value = String(type || '').trim().toLowerCase();
+    if (value === 'individual' || value === 'repairer' || value === 'repairers') return 'individual';
+    if (value === 'company' || value === 'companies') return 'company';
+    return value || 'individual';
+}
 
-    // Show modal with animation
-    setTimeout(() => {
-        document.getElementById('companyModal').classList.add('show');
-    }, 10);
+// Unified handler used by cards; repairer popup is mock-based for now
+function viewProviderProfile(providerId, providerType) {
+    const normalizedType = normalizeProviderType(providerType);
+    const numericId = Number(providerId);
 
-    // Close on outside click
-    document.getElementById('companyModal').addEventListener('click', function (e) {
-        if (e.target === this) {
-            closeCompanyModal();
+    if (DEBUG_PROFILE_FLOW) {
+        console.groupCollapsed('[ProfileFlow] viewProviderProfile()');
+        console.log('providerId (raw):', providerId);
+        console.log('providerType (raw):', providerType);
+        console.log('providerType (normalized):', normalizedType);
+        console.log('providerId (number):', numericId);
+        console.log('openRepairerProfile available:', typeof openRepairerProfile);
+        console.groupEnd();
+    }
+
+    if (!Number.isFinite(numericId) || numericId <= 0) {
+        console.error('[ProfileFlow] Invalid providerId, aborting:', providerId, providerType);
+        return;
+    }
+
+    if (normalizedType === 'individual') {
+        if (typeof openRepairerProfile === 'function') {
+            const repairer = getLandingRepairerById(numericId);
+            openRepairerProfile(numericId, repairer);
+        } else {
+            console.error('[ProfileFlow] openRepairerProfile() is not available. Check script load order for repairer-profile-popup.js');
+            alert('Repairer profile popup is not available right now.');
         }
-    });
+        return;
+    }
+
+    openCompanyProfile(numericId);
 }
 
-// Close Company Modal
-function closeCompanyModal() {
-    const modal = document.getElementById('companyModal');
-    if (modal) {
-        modal.classList.remove('show');
-        setTimeout(() => {
-            modal.remove();
-        }, 300);
+// Make sure inline onclick can always find it
+window.viewProviderProfile = viewProviderProfile;
+
+// Defensive: handle clicks even if inline handlers break
+document.addEventListener('click', (e) => {
+    const btn = e.target?.closest?.('.view-profile-btn, .view-company-btn');
+    if (!btn) return;
+
+    // Prefer data-* if present
+    const dataId = btn.getAttribute('data-provider-id');
+    const dataType = btn.getAttribute('data-provider-type');
+
+    if (DEBUG_PROFILE_FLOW) {
+        console.log('[ProfileFlow] Click detected on view button', { dataId, dataType, className: btn.className });
     }
+
+    if (dataId) {
+        e.preventDefault();
+        viewProviderProfile(dataId, dataType || (btn.classList.contains('view-company-btn') ? 'company' : 'individual'));
+    }
+});
+
+// Generate avatar initials from name
+function generateAvatarInitials(name) {
+    if (!name) return 'SP';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Generate Star Rating HTML
@@ -1019,59 +1153,37 @@ function generateStars(rating) {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
+    
     let starsHTML = '';
-
+    
     // Full stars
     for (let i = 0; i < fullStars; i++) {
         starsHTML += '<i class="fas fa-star star"></i>';
     }
-
+    
     // Half star
     if (hasHalfStar) {
         starsHTML += '<i class="fas fa-star-half-alt star"></i>';
     }
-
+    
     // Empty stars
     for (let i = 0; i < emptyStars; i++) {
         starsHTML += '<i class="far fa-star star empty"></i>';
     }
-
+    
     return starsHTML;
 }
 
-// View Profile Function
-function viewProfile(providerId) {
-    const provider = providerData.find(p => p.id === providerId);
-    if (!provider) return;
-
-    // Only show popup for repairers with detailed profiles (IDs 1-5)
-    // ID 1: Kamal Silva (Electrician)
-    // ID 2: Nimal Perera (Plumber)
-    // ID 3: Saman Fernando (HVAC)
-    // ID 4: Ranjith Kumar (Carpenter) - mapped from Chaminda
-    // ID 5: Pradeep Bandara (Painter) - mapped from Lakshmi
-
-    if (providerId >= 1 && providerId <= 5) {
-        // Open the detailed profile popup
-        openRepairerProfile(providerId);
-    } else {
-        // For other providers, show placeholder message
-        window.showAlert(`Viewing profile for ${provider.name}\n\nDetailed profile coming soon!`, 'info', 'Profile Preview');
-
-    }
-}
-
 // Smooth Scrolling for Navigation Links
-document.addEventListener('click', function (e) {
+document.addEventListener('click', function(e) {
     const target = e.target;
-
+    
     // Handle navigation links with hash
     if (target.matches('a[href^="#"]')) {
         e.preventDefault();
         const targetId = target.getAttribute('href').substring(1);
         const targetElement = document.getElementById(targetId);
-
+        
         if (targetElement) {
             targetElement.scrollIntoView({
                 behavior: 'smooth',
@@ -1082,15 +1194,15 @@ document.addEventListener('click', function (e) {
 });
 
 // Handle Window Resize
-window.addEventListener('resize', function () {
+window.addEventListener('resize', function() {
     // Close mobile menu on resize to larger screen
     if (window.innerWidth > 768) {
         const mobileMenu = document.querySelector('.mobile-menu');
         const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
-
+        
         if (mobileMenu && mobileMenu.classList.contains('active')) {
             mobileMenu.classList.remove('active');
-
+            
             // Reset hamburger animation
             if (mobileMenuToggle) {
                 const hamburgers = mobileMenuToggle.querySelectorAll('.hamburger');
@@ -1101,7 +1213,7 @@ window.addEventListener('resize', function () {
             }
         }
     }
-
+    
     // Close profile dropdown on resize
     if (profileDropdown && profileDropdown.classList.contains('active')) {
         profileDropdown.classList.remove('active');
@@ -1109,7 +1221,7 @@ window.addEventListener('resize', function () {
 });
 
 // Add scroll-based navbar styling (optional enhancement)
-window.addEventListener('scroll', function () {
+window.addEventListener('scroll', function() {
     const navbar = document.querySelector('.navbar');
     if (navbar) {
         if (window.scrollY > 50) {
@@ -1122,38 +1234,33 @@ window.addEventListener('scroll', function () {
     }
 });
 
-// Form Validation Enhancement
-function validateSearchForm() {
-    const location = document.getElementById('locationInput').value.trim();
-
-    if (location.length < 3) {
-        window.showAlert('Please enter a valid location (at least 3 characters)', 'warning');
-        return false;
+// Provider Type Filter Function
+function filterByProviderType(type, buttonElement) {
+    // Update current provider type
+    currentProviderType = type;
+    
+    // Update button active states
+    const allButtons = document.querySelectorAll('.provider-type-btn');
+    allButtons.forEach(btn => btn.classList.remove('active'));
+    buttonElement.classList.add('active');
+    
+    // Clear current providers and reset pagination
+    if (providersGrid) {
+        providersGrid.innerHTML = '';
     }
-
-    return true;
-}
-
-// Add form validation to search form
-if (searchForm) {
-    searchForm.addEventListener('submit', function (e) {
-        if (!validateSearchForm()) {
-            e.preventDefault();
-            return false;
-        }
-    });
+    currentPage = 0;
+    allProvidersLoaded = false;
+    if (scrollTrigger) {
+        scrollTrigger.style.display = 'block';
+    }
+    
+    // Reload providers with new filter
+    loadProviders();
 }
 
 // Send Repair Request Function (Placeholder - No functionality yet)
 function sendRepairRequest(type, providerId) {
     openListedJobRequestModal(type, providerId);
-}
-
-// Contact Company Function (Placeholder)
-function contactCompany(companyId) {
-
-    window.showAlert('Contact Company feature will be implemented soon!', 'info', 'Coming Soon');
-    // TODO: Implement contact company functionality
 }
 
 // Request Company Quote Function (Placeholder)
