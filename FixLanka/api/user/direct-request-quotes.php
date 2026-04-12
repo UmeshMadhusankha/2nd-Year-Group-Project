@@ -68,7 +68,9 @@ if ($userId <= 0 || $requestId <= 0 || $providerId <= 0 || $providerType === nul
 }
 
 try {
-    $pdo = getDatabaseConnection();
+    if (!isset($pdo) || !($pdo instanceof PDO)) {
+        throw new RuntimeException('Database connection is not initialized');
+    }
 
     // Ensure the selected request belongs to the authenticated user and is still pending.
     $checkRequestSql = "

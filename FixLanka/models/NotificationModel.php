@@ -223,7 +223,7 @@ class NotificationModel
                     FROM `{$table}`
                     WHERE
                         (recipient_id = :user_id AND recipient_type = :user_type)
-                        OR (recipient_id IS NULL AND recipient_type = :user_type)
+                        OR (recipient_id IS NULL AND recipient_type = :user_type_broadcast)
                         OR (recipient_type = 'all')
                     ORDER BY " . ($this->hasColumn('date') && $this->hasColumn('time')
                         ? 'date DESC, time DESC'
@@ -234,6 +234,7 @@ class NotificationModel
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
                 $stmt->bindValue(':user_type', $user_type, PDO::PARAM_STR);
+                $stmt->bindValue(':user_type_broadcast', $user_type, PDO::PARAM_STR);
                 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
                 $stmt->execute();
                 return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -489,12 +490,13 @@ class NotificationModel
                     FROM `{$table}`
                     WHERE
                         (recipient_id = :user_id AND recipient_type = :user_type)
-                        OR (recipient_id IS NULL AND recipient_type = :user_type)
+                        OR (recipient_id IS NULL AND recipient_type = :user_type_broadcast)
                         OR (recipient_type = 'all')
                 ";
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
                 $stmt->bindValue(':user_type', $user_type, PDO::PARAM_STR);
+                $stmt->bindValue(':user_type_broadcast', $user_type, PDO::PARAM_STR);
                 $stmt->execute();
                 return (int)$stmt->fetchColumn();
             }
@@ -533,7 +535,7 @@ class NotificationModel
                     WHERE
                         (
                             (recipient_id = :user_id AND recipient_type = :user_type)
-                            OR (recipient_id IS NULL AND recipient_type = :user_type)
+                            OR (recipient_id IS NULL AND recipient_type = :user_type_broadcast)
                             OR (recipient_type = 'all')
                         )
                         AND (is_read = 0 OR is_read IS NULL)
@@ -541,6 +543,7 @@ class NotificationModel
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
                 $stmt->bindValue(':user_type', $user_type, PDO::PARAM_STR);
+                $stmt->bindValue(':user_type_broadcast', $user_type, PDO::PARAM_STR);
                 $stmt->execute();
                 return (int)$stmt->fetchColumn();
             }
@@ -582,13 +585,14 @@ class NotificationModel
                     WHERE
                         (
                             (recipient_id = :user_id AND recipient_type = :user_type)
-                            OR (recipient_id IS NULL AND recipient_type = :user_type)
+                            OR (recipient_id IS NULL AND recipient_type = :user_type_broadcast)
                             OR (recipient_type = 'all')
                         )
                 ";
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->bindValue(':user_id', (int)$user_id, PDO::PARAM_INT);
                 $stmt->bindValue(':user_type', $user_type, PDO::PARAM_STR);
+                $stmt->bindValue(':user_type_broadcast', $user_type, PDO::PARAM_STR);
                 $stmt->execute();
                 return $stmt->rowCount();
             }

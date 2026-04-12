@@ -37,7 +37,9 @@ if ($providerType === null) {
 }
 
 try {
-    $pdo = getDatabaseConnection();
+    if (!isset($pdo) || !($pdo instanceof PDO)) {
+        throw new RuntimeException('Database connection is not initialized');
+    }
 
     $sql = "
         SELECT
