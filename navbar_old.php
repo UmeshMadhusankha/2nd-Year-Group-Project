@@ -36,7 +36,7 @@ $userData = getUserData();
                 <!-- Logged In User Section -->
                 <div class="notification-bell" id="notificationBell">
                     <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="notificationBadge"></span>
+
                     <div class="notification-dropdown" id="notificationDropdown" style="display:none;">
                         <div class="notification-dropdown-header">
                             <span>Notifications</span>
@@ -86,23 +86,6 @@ $userData = getUserData();
                                 </a>
                             </li>
                             <li class="dropdown-item">
-                                <a href="/2nd-Year-Group-Project/FixLanka/help-center" class="dropdown-link">
-                                    <i class="fas fa-question-circle"></i>
-                                    Help Center
-                                </a>
-                            </li>
-                            <li class="dropdown-divider"></li>
-                            <li class="dropdown-item">
-                                <form action="/2nd-Year-Group-Project/FixLanka/logout" method="POST" id="logoutForm" style="margin: 0;">
-                                    <button type="submit" class="dropdown-link logout" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: inherit; font-family: inherit; padding: 12px 20px;">
-                                        <i class="fas fa-sign-out-alt"></i>
-                                        Logout
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
                                 <a href="/2nd-Year-Group-Project/FixLanka/help-center" class="dropdown-link">
                                     <i class="fas fa-question-circle"></i>
                                     Help Center

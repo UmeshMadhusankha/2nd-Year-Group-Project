@@ -1,283 +1,11 @@
 ﻿// Fix Lanka Landing Page JavaScript
 // ===================================
+// All provider data is now fetched from the database via API endpoints
 
-// Sample provider data for demonstration (Individual Repairers)
-const providerData = [
-    {
-        id: 1,
-        name: "Kamal Silva",
-        title: "Master Electrician",
-        rating: 4.9,
-        reviews: 156,
-        distance: "0.8 km away",
-        description: "Certified electrician with 15+ years of experience. Specializes in residential and commercial electrical work.",
-        avatar: "KS"
-    },
-    {
-        id: 2,
-        name: "Nimal Perera",
-        title: "Plumbing Expert",
-        rating: 4.8,
-        reviews: 243,
-        distance: "1.2 km away",
-        description: "Licensed plumber offering 24/7 emergency services. Expert in pipe repairs and bathroom installations.",
-        avatar: "NP"
-    },
-    {
-        id: 3,
-        name: "Saman Fernando",
-        title: "HVAC Technician",
-        rating: 4.7,
-        reviews: 89,
-        distance: "2.1 km away",
-        description: "Air conditioning and heating specialist. Quick diagnostics and reliable repair services.",
-        avatar: "SF"
-    },
-    {
-        id: 4,
-        name: "Ranjith Kumar",
-        title: "Carpentry Specialist",
-        rating: 4.6,
-        reviews: 127,
-        distance: "3.5 km away",
-        description: "Expert carpenter specializing in custom furniture, kitchen cabinets, and home renovations. Quality craftsmanship guaranteed.",
-        avatar: "RK"
-    },
-    {
-        id: 5,
-        name: "Pradeep Bandara",
-        title: "Painting Professional",
-        rating: 4.5,
-        reviews: 93,
-        distance: "1.8 km away",
-        description: "Professional painting contractor for interior and exterior projects. High-quality finishes with premium paints.",
-        avatar: "PB"
-    },
-    {
-        id: 6,
-        name: "Amara Jayasinghe",
-        title: "House Cleaning Pro",
-        rating: 5.0,
-        reviews: 178,
-        distance: "0.5 km away",
-        description: "Professional cleaning service with eco-friendly products. Trusted by 200+ families.",
-        avatar: "AJ"
-    },
-    {
-        id: 7,
-        name: "Lakshmi Wijeratne",
-        title: "Interior Painter",
-        rating: 4.9,
-        reviews: 267,
-        distance: "1.5 km away",
-        description: "Professional painter with attention to detail. Transforms spaces with quality finishes.",
-        avatar: "LW"
-    },
-    {
-        id: 8,
-        name: "Roshan Mendis",
-        title: "Appliance Repair",
-        rating: 4.5,
-        reviews: 98,
-        distance: "2.3 km away",
-        description: "Expert in washing machine, refrigerator, and microwave repairs. Same-day service available.",
-        avatar: "RM"
-    },
-    {
-        id: 9,
-        name: "Priya Gunasekara",
-        title: "Garden Maintenance",
-        rating: 4.8,
-        reviews: 156,
-        distance: "1.1 km away",
-        description: "Professional gardener offering lawn care, pruning, and landscape design services.",
-        avatar: "PG"
-    },
-    {
-        id: 10,
-        name: "Dinesh Amarasinghe",
-        title: "Tile Installation Expert",
-        rating: 4.7,
-        reviews: 112,
-        distance: "1.9 km away",
-        description: "Specialist in ceramic, marble, and porcelain tile installation. Precise workmanship.",
-        avatar: "DA"
-    },
-    {
-        id: 11,
-        name: "Kumari Abeysekera",
-        title: "Home Security Specialist",
-        rating: 4.9,
-        reviews: 87,
-        distance: "2.5 km away",
-        description: "Security system installation and maintenance. Keeping your home safe and secure.",
-        avatar: "KA"
-    },
-    {
-        id: 12,
-        name: "Janaka Rodrigo",
-        title: "Pest Control Expert",
-        rating: 4.6,
-        reviews: 145,
-        distance: "1.7 km away",
-        description: "Eco-friendly pest control solutions. Effective treatment for all types of pest problems.",
-        avatar: "JR"
-    },
-    {
-        id: 13,
-        name: "Sanduni Perera",
-        title: "Window Cleaning Pro",
-        rating: 4.8,
-        reviews: 203,
-        distance: "0.9 km away",
-        description: "Professional window cleaning for residential and commercial properties. Streak-free results.",
-        avatar: "SP"
-    }
-];
-
-// Sample company data for demonstration
-const companyData = [
-    {
-        id: 1,
-        name: "Lanka Build Solutions",
-        type: "Construction & Renovation",
-        rating: 4.9,
-        reviews: 342,
-        location: "Colombo 5",
-        employees: 45,
-        projects: 280,
-        yearsFounded: "Est. 2010",
-        services: ["Construction", "Renovation", "Interior Design", "Electrical"],
-        description: "Leading construction company with over 13 years of experience in residential and commercial projects. Committed to quality and timely delivery.",
-        logo: "LBS"
-    },
-    {
-        id: 2,
-        name: "HomeFix Services Ltd",
-        type: "Multi-Service Company",
-        rating: 4.8,
-        reviews: 567,
-        location: "Nugegoda",
-        employees: 82,
-        projects: 850,
-        yearsFounded: "Est. 2008",
-        services: ["Plumbing", "Electrical", "HVAC", "Carpentry", "Painting"],
-        description: "One-stop solution for all your home repair and maintenance needs. Professional team available 24/7 for emergency services.",
-        logo: "HF"
-    },
-    {
-        id: 3,
-        name: "CleanPro Lanka",
-        type: "Cleaning Services",
-        rating: 4.9,
-        reviews: 789,
-        location: "Kandy",
-        employees: 120,
-        projects: 1200,
-        yearsFounded: "Est. 2012",
-        services: ["House Cleaning", "Office Cleaning", "Deep Cleaning", "Pest Control"],
-        description: "Premier cleaning service provider with eco-friendly solutions. Trusted by over 500 corporate clients and 5000+ residential customers.",
-        logo: "CP"
-    },
-    {
-        id: 4,
-        name: "TechElectric Solutions",
-        type: "Electrical Services",
-        rating: 4.7,
-        reviews: 423,
-        location: "Dehiwala",
-        employees: 35,
-        projects: 650,
-        yearsFounded: "Est. 2015",
-        services: ["Electrical Installation", "Wiring", "Solar Panels", "Smart Home"],
-        description: "Specialized in modern electrical solutions including smart home automation and solar energy systems. Certified technicians.",
-        logo: "TE"
-    },
-    {
-        id: 5,
-        name: "AquaFlow Plumbing Co",
-        type: "Plumbing & Water Solutions",
-        rating: 4.8,
-        reviews: 312,
-        location: "Moratuwa",
-        employees: 28,
-        projects: 520,
-        yearsFounded: "Est. 2013",
-        services: ["Plumbing", "Water Tank Installation", "Drainage", "Bathroom Fitting"],
-        description: "Expert plumbing services with 24/7 emergency response. Specialists in water management and modern bathroom installations.",
-        logo: "AF"
-    },
-    {
-        id: 6,
-        name: "CoolAir HVAC Systems",
-        type: "Air Conditioning Services",
-        rating: 4.9,
-        reviews: 456,
-        location: "Colombo 7",
-        employees: 40,
-        projects: 720,
-        yearsFounded: "Est. 2011",
-        services: ["AC Installation", "AC Repair", "Maintenance", "Ventilation"],
-        description: "Leading HVAC company providing installation, repair, and maintenance services. Authorized dealers for major AC brands.",
-        logo: "CA"
-    },
-    {
-        id: 7,
-        name: "WoodCraft Interiors",
-        type: "Carpentry & Furniture",
-        rating: 4.7,
-        reviews: 234,
-        location: "Maharagama",
-        employees: 32,
-        projects: 380,
-        yearsFounded: "Est. 2014",
-        services: ["Custom Furniture", "Kitchen Cabinets", "Wardrobes", "Doors & Windows"],
-        description: "Premium carpentry services with custom designs. Expert craftsmen creating beautiful and functional wooden solutions.",
-        logo: "WC"
-    },
-    {
-        id: 8,
-        name: "PaintPro Lanka",
-        type: "Painting & Decorating",
-        rating: 4.8,
-        reviews: 398,
-        location: "Galle",
-        employees: 55,
-        projects: 890,
-        yearsFounded: "Est. 2009",
-        services: ["Interior Painting", "Exterior Painting", "Wall Texturing", "Waterproofing"],
-        description: "Professional painting company using premium quality paints. Experts in color consultation and decorative finishes.",
-        logo: "PP"
-    },
-    {
-        id: 9,
-        name: "SecureHome Systems",
-        type: "Security & Automation",
-        rating: 4.9,
-        reviews: 287,
-        location: "Colombo 3",
-        employees: 38,
-        projects: 420,
-        yearsFounded: "Est. 2016",
-        services: ["CCTV Installation", "Alarm Systems", "Access Control", "Home Automation"],
-        description: "Advanced security solutions with smart home integration. Protecting homes and businesses with cutting-edge technology.",
-        logo: "SH"
-    },
-    {
-        id: 10,
-        name: "GreenScape Gardens",
-        type: "Landscaping & Gardening",
-        rating: 4.6,
-        reviews: 178,
-        location: "Kotte",
-        employees: 25,
-        projects: 310,
-        yearsFounded: "Est. 2017",
-        services: ["Landscape Design", "Garden Maintenance", "Irrigation", "Tree Services"],
-        description: "Professional landscaping and garden maintenance services. Creating and maintaining beautiful outdoor spaces.",
-        logo: "GS"
-    }
-];
+// TODO: Replace mock data with API calls
+// Placeholder arrays for future API integration
+const providerData = [];
+const companyData = [];
 
 // DOM Elements
 const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
@@ -411,8 +139,8 @@ function initializeSearchForm() {
             e.preventDefault();
 
             const service = document.getElementById('serviceSelect').value;
+            const district = document.getElementById('districtSelect').value;
             const rating = document.getElementById('ratingSelect').value;
-            const location = document.getElementById('locationInput').value;
 
             // Simulate search functionality
 
@@ -422,8 +150,29 @@ function initializeSearchForm() {
             // Simulate API call delay
             setTimeout(() => {
                 hideSearchLoading();
-                filterProviders({ service, rating, location });
+                filterProviders({ service, district, rating });
             }, 1000);
+        });
+    }
+
+    // Clear button handler
+    const clearBtn = document.getElementById('clearBtn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.getElementById('serviceSelect').value = '';
+            document.getElementById('districtSelect').value = '';
+            document.getElementById('ratingSelect').value = '';
+            
+            // Reset providers display
+            currentPage = 0;
+            allProvidersLoaded = false;
+            
+            if (currentProviderType === 'repairers' && repairersGrid) {
+                repairersGrid.innerHTML = '';
+            } else if (companiesGrid) {
+                companiesGrid.innerHTML = '';
+            }
         });
     }
 }
@@ -447,7 +196,8 @@ function hideSearchLoading() {
 
 // Filter Providers (simplified for demo)
 function filterProviders(filters) {
-    let filteredData = [...providerData];
+    // TODO: Implement API-based filtering
+    let filteredData = window.currentFilteredData || providerData || [];
 
     // Filter by service (simplified matching)
     if (filters.service) {
@@ -507,9 +257,10 @@ function loadProviders(isFiltered = false) {
     showLoading();
 
     // Select data source based on current provider type
+    // TODO: Fetch from API endpoints instead of mock data
     const dataSource = currentProviderType === 'repairers'
-        ? (window.currentFilteredData || providerData)
-        : companyData;
+        ? (window.currentFilteredData || providerData || [])
+        : (companyData || []);
 
     // Calculate start and end indices
     const startIndex = currentPage * itemsPerPage;
@@ -680,8 +431,12 @@ function renderCompanyCard(company) {
 
 // View Company Details
 function viewCompanyDetails(companyId) {
-    const company = companyData.find(c => c.id === companyId);
-    if (!company) return;
+    // TODO: Fetch company data from API instead of mock data
+    const company = companyData && companyData.find(c => c.id === companyId);
+    if (!company) {
+        window.showAlert('Company data is loading or not available. Please try opening from the company profile popup instead.', 'warning');
+        return;
+    }
 
     // Create modal HTML
     const modalHTML = `
@@ -839,24 +594,9 @@ function generateStars(rating) {
 
 // View Profile Function
 function viewProfile(providerId) {
-    const provider = providerData.find(p => p.id === providerId);
-    if (!provider) return;
-
-    // Only show popup for repairers with detailed profiles (IDs 1-5)
-    // ID 1: Kamal Silva (Electrician)
-    // ID 2: Nimal Perera (Plumber)
-    // ID 3: Saman Fernando (HVAC)
-    // ID 4: Ranjith Kumar (Carpenter) - mapped from Chaminda
-    // ID 5: Pradeep Bandara (Painter) - mapped from Lakshmi
-
-    if (providerId >= 1 && providerId <= 5) {
-        // Open the detailed profile popup
-        openRepairerProfile(providerId);
-    } else {
-        // For other providers, show placeholder message
-        window.showAlert(`Viewing profile for ${provider.name}\n\nDetailed profile coming soon!`, 'info', 'Profile Preview');
-
-    }
+    // Open repairer profile popup with the given ID
+    // All data is fetched from the database via the repairer-profile-popup.js
+    openRepairerProfile(providerId);
 }
 
 // Smooth Scrolling for Navigation Links

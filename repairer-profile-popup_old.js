@@ -14,6 +14,13 @@ if (DEBUG_REPAIRER_POPUP) {
  * @param {object|null} repairerData - Optional repairer data from landing cache
  */
 function openRepairerProfile(repairerId, repairerData = null) {
+    const numericId = Number(repairerId);
+    if (Number.isFinite(numericId) && numericId > 0) {
+        activeRepairerId = numericId;
+    } else {
+        activeRepairerId = null;
+    }
+
     if (DEBUG_REPAIRER_POPUP) {
         console.groupCollapsed('[RepairerPopup] openRepairerProfile()');
         console.log('repairerId (raw):', repairerId);
@@ -21,7 +28,7 @@ function openRepairerProfile(repairerId, repairerData = null) {
     }
 
     const modal = document.getElementById('repairerProfileModal');
-
+    
     if (!modal) {
         console.error('Profile modal not found');
         if (DEBUG_REPAIRER_POPUP) console.groupEnd();
@@ -49,6 +56,7 @@ function closeRepairerProfile() {
     if (modal) {
         modal.classList.remove('show');
         document.body.style.overflow = '';
+        activeRepairerId = null;
         if (DEBUG_REPAIRER_POPUP) {
             console.log('[RepairerPopup] closeRepairerProfile(): modal hidden');
         }
@@ -120,7 +128,6 @@ function loadRepairerProfile(repairerId, repairerData = null) {
         };
 
         if (DEBUG_REPAIRER_POPUP) console.log('Mapped profile data from landing cache:', data);
-        activeRepairerId = data.id;  // Store the active repairer ID
         displayProfile(data);
         if (DEBUG_REPAIRER_POPUP) console.groupEnd();
     } catch (err) {
@@ -305,7 +312,7 @@ function generateStarsHTML(rating) {
  */
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
-
+    
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now - date);
@@ -315,7 +322,7 @@ function formatDate(dateString) {
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-
+    
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
@@ -334,53 +341,49 @@ function escapeHtml(text) {
  * Request quote from repairer
  */
 function requestQuote() {
-    window.showAlert('Opening quote request form... (This will redirect to post job page in the actual application)', 'info');
+    if (!activeRepairerId) {
+        alert('Repairer ID is not available right now. Please reopen the profile and try again.');
+        return;
+    }
+
+    if (typeof window.requestRepairerQuote === 'function') {
+        window.requestRepairerQuote(activeRepairerId);
+        return;
+    }
+
+    alert(`Opening new job request form for repairer #${activeRepairerId}...`);
 }
 
-/**
- * Send request for a listed job to repairer
- */
 window.sendRepairerListedJobRequest = function sendRepairerListedJobRequest() {
     if (!activeRepairerId) {
-        console.error('No active repairer ID');
+        alert('Repairer ID is not available right now. Please reopen the profile and try again.');
         return;
     }
-    // Open listed job request modal for this repairer
-    if (typeof window.openListedJobRequestModal === 'function') {
-        window.openListedJobRequestModal(activeRepairerId, 'repairer');
-    } else {
-        window.showAlert('Listed job request modal not available', 'error');
+
+    if (typeof window.sendRepairRequest === 'function') {
+        window.sendRepairRequest('repairer', activeRepairerId);
+        return;
     }
+
+    alert(`Opening listed job request flow for repairer #${activeRepairerId}...`);
 };
 
-/**
- * Send request for a new job to repairer
- */
 window.requestRepairerNewJobRequest = function requestRepairerNewJobRequest() {
-    if (!activeRepairerId) {
-        console.error('No active repairer ID');
-        return;
-    }
-    // Open direct job request modal for this repairer
-    if (typeof window.openDirectJobRequestModal === 'function') {
-        window.openDirectJobRequestModal(activeRepairerId, 'repairer');
-    } else {
-        window.showAlert('New job request modal not available', 'error');
-    }
+    requestQuote();
 };
 
 // Close modal on ESC key
-document.addEventListener('keydown', function (event) {
+document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeRepairerProfile();
     }
 });
 
 // Prevent clicks inside modal content from closing the modal
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
     const modalContent = document.querySelector('.repairer-modal-content');
     if (modalContent) {
-        modalContent.addEventListener('click', function (event) {
+        modalContent.addEventListener('click', function(event) {
             event.stopPropagation();
         });
     }
