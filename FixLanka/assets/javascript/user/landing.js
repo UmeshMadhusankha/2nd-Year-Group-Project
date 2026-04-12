@@ -986,6 +986,10 @@ function renderProviderCard(provider) {
                 <i class="fas fa-user"></i>
                 View Profile
             </button>
+            ${providerType === 'individual' && provider.phoneNumber ? 
+                `<a href="tel:${provider.phoneNumber}" class="contact-btn">
+                    <i class="fas fa-phone"></i>
+                </a>` : ''}
         </div>
     `;
     

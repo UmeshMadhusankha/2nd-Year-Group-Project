@@ -168,15 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function respondToQuote(source, quoteId, decision, buttonEl) {
-        const actionText = decision === 'accepted' ? 'accept' : 'decline';
-        const confirmed = await window.showConfirm(`Are you sure you want to ${actionText} this quote?`, {
-            title: decision === 'accepted' ? 'Accept Quotation' : 'Decline Quotation',
-            confirmText: decision === 'accepted' ? 'Accept' : 'Decline',
-            type: decision === 'accepted' ? 'question' : 'danger'
-        });
-
-        if (!confirmed) return;
-
         try {
             if (buttonEl) buttonEl.disabled = true;
             await fetchJson(`${API}?action=respond`, {
@@ -185,12 +176,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ source, quote_id: Number(quoteId), decision })
             });
 
-            await window.showAlert(`Quote ${decision} successfully!`, 'success');
             // refresh list (simple + safe)
             await loadQuotes(true);
         } catch (e) {
             if (buttonEl) buttonEl.disabled = false;
-            await window.showAlert(e.message || 'Failed to update quote', 'danger', 'Error');
+            alert(e.message || 'Failed to update quote');
         }
     }
 

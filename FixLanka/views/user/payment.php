@@ -38,8 +38,7 @@ if ($contractId) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/common.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
+    <title>Secure Payment - Fix Lanka</title>
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/payment.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -469,7 +468,6 @@ if ($contractId) {
         <i class="fas fa-headset"></i>
     </a>
 
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/payment.js"></script>
 <?php endif; ?>
 </body>
