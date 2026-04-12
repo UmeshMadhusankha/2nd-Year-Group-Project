@@ -412,7 +412,7 @@
                 result.data.forEach(q => {
                     const opt = document.createElement('option');
                     opt.value = q.quotation_id;
-                    opt.textContent = `${q.title} — LKR ${parseFloat(q.total_amount).toLocaleString()} (${q.customer_fname} ${q.customer_lname})`;
+                    opt.textContent = `${q.title} (${q.customer_fname} ${q.customer_lname})`;
                     opt.dataset.quotation = JSON.stringify(q);
                     selector.appendChild(opt);
                 });
@@ -463,7 +463,6 @@
                 </div>
                 <div class="qs-preview-grid">
                     <div><span>Customer</span><strong>${esc(selectedQuotation.customer_fname)} ${esc(selectedQuotation.customer_lname)}</strong></div>
-                    <div><span>Amount</span><strong>LKR ${parseFloat(selectedQuotation.total_amount).toLocaleString()} ${selectedQuotation.labor_unit_label || selectedQuotation.material_unit_label ? ' (per unit)' : ''}</strong></div>
                     <div><span>Duration</span><strong>${selectedQuotation.estimated_duration || 'TBD'} days</strong></div>
                     <div><span>Payment</span><strong>${formatPaymentMethodLabel(selectedQuotation.payment_method)}</strong></div>
                 </div>

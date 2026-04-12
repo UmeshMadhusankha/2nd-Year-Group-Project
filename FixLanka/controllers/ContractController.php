@@ -1105,15 +1105,16 @@ class ContractController {
                     u.email as customer_email,
                     u.address as customer_address,
                     u.district as customer_district,
-                    comp.name as company_name,
+                    COALESCE(comp.name, CONCAT(u.f_name, ' ', u.l_name)) as company_name,
                     comp.registration_no as company_registration,
-                    comp.address as company_address,
+                    COALESCE(comp.address, uc.address) as company_address,
                     comp.contact_no as company_contact,
-                    comp.email as company_email
+                    COALESCE(comp.email, uc.email) as company_email
                 FROM companyquotation q
                 INNER JOIN jobrequest r ON q.request_id = r.request_id
                 INNER JOIN user u ON r.user_id = u.user_id
-                LEFT JOIN company comp ON q.company_id = comp.company_id
+                LEFT JOIN user uc ON uc.user_id = COALESCE(q.company_id, q.user_id)
+                LEFT JOIN company comp ON comp.company_id = COALESCE(q.company_id, q.user_id)
                 LEFT JOIN contract c ON c.quotation_id = q.quotation_id
                 WHERE q.status = 'accepted'
                 AND (q.company_id = ? OR (q.company_id IS NULL AND q.user_id = ?))

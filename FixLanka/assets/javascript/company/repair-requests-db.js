@@ -672,10 +672,26 @@ function createCompletedProjectLogItem(project) {
                                 ${formattedDate}
                             </span>
                         </div>
-                        ${amount !== null ? `
-                        <div class="quotation-amount-inline">
-                            <span class="amount-label">Total Amount${project.labor_unit_label || project.material_unit_label ? ' (per unit)' : ''}:</span>
-                            <span class="amount-value">LKR ${formatNumber(amount)}</span>
+                        ${project.labor_cost || project.material_cost || project.transport_cost ? `
+                        <div class="quotation-cost-breakdown">
+                            ${project.labor_cost ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Labor${project.labor_unit_label ? ` (per ${project.labor_unit_label})` : ''}:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(project.labor_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${project.material_cost ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Material${project.material_unit_label ? ` (per ${project.material_unit_label})` : ''}:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(project.material_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${project.transport_cost && parseFloat(project.transport_cost) > 0 ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Transport:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(project.transport_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
                         </div>
                         ` : ''}
                     </div>
@@ -759,9 +775,31 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
                                 ${formattedDate}
                             </span>
                         </div>
-                        <div class="quotation-amount-inline">
-                            <span class="amount-label">Total Amount${quotation.labor_unit_label || quotation.material_unit_label ? ' (per unit)' : ''}:</span>
-                            <span class="amount-value">LKR ${formatNumber(amount)}</span>
+                        <div class="quotation-cost-breakdown">
+                            ${quotation.labor_cost ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Labor${quotation.labor_unit_label ? ` (per ${quotation.labor_unit_label})` : ''}:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(quotation.labor_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${quotation.material_cost ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Material${quotation.material_unit_label ? ` (per ${quotation.material_unit_label})` : ''}:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(quotation.material_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${quotation.transport_cost && parseFloat(quotation.transport_cost) > 0 ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Transport:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(quotation.transport_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${quotation.other_charges && parseFloat(quotation.other_charges) > 0 ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Other Charges:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(quotation.other_charges).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
                         </div>
                         ${isRejected && quotation.rejection_reason ? `
                         <div class="quotation-rejection-reason-inline">

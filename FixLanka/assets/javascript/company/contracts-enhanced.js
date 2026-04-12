@@ -111,7 +111,7 @@ function populateQuotationSelector(quotations) {
     quotations.forEach(q => {
         const option = document.createElement('option');
         option.value = q.quotation_id;
-        option.textContent = `${q.title} - LKR ${parseFloat(q.total_amount).toLocaleString()} (${q.customer_fname} ${q.customer_lname})`;
+        option.textContent = `${q.title} (${q.customer_fname} ${q.customer_lname})`;
         option.dataset.quotation = JSON.stringify(q);
         selector.appendChild(option);
     });
@@ -181,7 +181,6 @@ function showQuotationPreview(q) {
         </h4>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; font-size: 13px; margin-bottom: 15px;">
             <div><strong>Customer:</strong> ${escapeHtml(q.customer_fname)} ${escapeHtml(q.customer_lname)}</div>
-            <div><strong>Amount:</strong> LKR ${parseFloat(q.total_amount).toLocaleString()}</div>
             <div><strong>Budget Type:</strong> ${q.budget_type ? q.budget_type.toUpperCase() : 'Fixed'}</div>
             <div><strong>Payment:</strong> ${formatPaymentMethod(q.payment_method)}</div>
             <div><strong>Pricing:</strong> ${q.pricing_type ? (q.pricing_type === 'time_and_material' ? 'Time & Material' : 'Fixed Price') : 'Fixed Price'}</div>
@@ -205,6 +204,23 @@ function autoFillContractForm(q) {
     setFieldValue('selectedQuotationId', q.quotation_id);
     setFieldValue('selectedRequestId', q.request_id);
     setFieldValue('customerId', q.customer_id);
+
+    // Step 1: Party Information (client and company details)
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '—'; };
+    
+    setText('partyClientName', `${q.customer_fname} ${q.customer_lname}`);
+    setText('partyClientEmail', q.customer_email);
+    setText('partyClientAddress', q.customer_address);
+    setText('partyClientDistrict', q.customer_district);
+    
+    setText('partyCompanyName', q.company_name);
+    setText('partyCompanyReg', q.company_registration);
+    setText('partyCompanyAddress', q.company_address);
+    setText('partyCompanyContact', q.company_contact);
+    
+    // Show the parties section
+    const partiesSection = document.getElementById('partiesSection');
+    if (partiesSection) partiesSection.style.display = 'block';
 
     // Step 2: Client & Project Information
     setFieldValue('clientName', `${q.customer_fname} ${q.customer_lname}`);
