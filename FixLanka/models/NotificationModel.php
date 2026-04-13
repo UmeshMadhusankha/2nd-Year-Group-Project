@@ -218,8 +218,8 @@ class NotificationModel
                     SELECT {$select}
                     FROM `{$table}`
                     WHERE
-                        (recipient_id = :user_id AND recipient_type = :user_type)
-                        OR (recipient_id IS NULL AND recipient_type = :user_type)
+                        (recipient_id = :user_id AND recipient_type = :user_type_1)
+                        OR (recipient_id IS NULL AND recipient_type = :user_type_2)
                         OR (recipient_type = 'all')
                     ORDER BY " . ($this->hasColumn('date') && $this->hasColumn('time')
                         ? 'date DESC, time DESC'
@@ -229,7 +229,8 @@ class NotificationModel
 
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
-                $stmt->bindValue(':user_type', $user_type, PDO::PARAM_STR);
+                $stmt->bindValue(':user_type_1', $user_type, PDO::PARAM_STR);
+                $stmt->bindValue(':user_type_2', $user_type, PDO::PARAM_STR);
                 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
                 $stmt->execute();
                 return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -484,13 +485,14 @@ class NotificationModel
                     SELECT COUNT(*)
                     FROM `{$table}`
                     WHERE
-                        (recipient_id = :user_id AND recipient_type = :user_type)
-                        OR (recipient_id IS NULL AND recipient_type = :user_type)
+                        (recipient_id = :user_id AND recipient_type = :user_type_1)
+                        OR (recipient_id IS NULL AND recipient_type = :user_type_2)
                         OR (recipient_type = 'all')
                 ";
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
-                $stmt->bindValue(':user_type', $user_type, PDO::PARAM_STR);
+                $stmt->bindValue(':user_type_1', $user_type, PDO::PARAM_STR);
+                $stmt->bindValue(':user_type_2', $user_type, PDO::PARAM_STR);
                 $stmt->execute();
                 return (int)$stmt->fetchColumn();
             }
@@ -522,26 +524,8 @@ class NotificationModel
                 return 0;
             }
 
-            if ($this->hasColumn('recipient_id')) {
-                $sql = "
-                    SELECT COUNT(*)
-                    FROM `{$table}`
-                    WHERE
-                        (
-                            (recipient_id = :user_id AND recipient_type = :user_type)
-                            OR (recipient_id IS NULL AND recipient_type = :user_type)
-                            OR (recipient_type = 'all')
-                        )
-                        AND (is_read = 0 OR is_read IS NULL)
-                ";
-                $stmt = $this->pdo->prepare($sql);
-                $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
-                $stmt->bindValue(':user_type', $user_type, PDO::PARAM_STR);
-                $stmt->execute();
-                return (int)$stmt->fetchColumn();
-            }
-
-            // Broadcast-only schema with is_read.
+            // Broadcast-style notification schema used by the current app.
+            // We count both targeted and global notifications for the user role.
             $sql = "
                 SELECT COUNT(*)
                 FROM `{$table}`
@@ -569,24 +553,6 @@ class NotificationModel
             $table = $this->tableName();
             if (!$this->hasColumn('is_read')) {
                 return 0;
-            }
-
-            if ($this->hasColumn('recipient_id')) {
-                $sql = "
-                    UPDATE `{$table}`
-                    SET is_read = 1
-                    WHERE
-                        (
-                            (recipient_id = :user_id AND recipient_type = :user_type)
-                            OR (recipient_id IS NULL AND recipient_type = :user_type)
-                            OR (recipient_type = 'all')
-                        )
-                ";
-                $stmt = $this->pdo->prepare($sql);
-                $stmt->bindValue(':user_id', (int)$user_id, PDO::PARAM_INT);
-                $stmt->bindValue(':user_type', $user_type, PDO::PARAM_STR);
-                $stmt->execute();
-                return $stmt->rowCount();
             }
 
             $sql = "UPDATE `{$table}` SET is_read = 1 WHERE recipient_type IN ('all', :user_type)";

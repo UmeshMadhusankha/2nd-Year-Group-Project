@@ -12,8 +12,8 @@
  * @param user_id - Company user ID
  */
 
-require_once '../../config/database.php';
-require_once '../../config/session.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/session.php';
 
 header('Content-Type: application/json');
 
@@ -30,26 +30,47 @@ try {
         exit;
     }
 
-    // Get company details and defaults
-    $query = "SELECT 
-                u.id as user_id,
-                u_loc.district,
-                c.company_name,
-                c.payment_terms as default_payment_terms,
-                c.warranty_period as default_warranty,
-                c.standard_terms as standard_terms_template,
-                c.quotation_validity_days,
-                c.standard_lead_time_days
-              FROM users u
-              LEFT JOIN location u_loc ON u.location_id = u_loc.location_id
-              LEFT JOIN companies c ON u.id = c.user_id
-              WHERE u.id = :user_id AND u.user_type = 'company'";
+        // Get current company profile plus the latest quotation defaults.
+        $profileQuery = "SELECT 
+                                                c.company_id AS user_id,
+                                                c.name AS company_name,
+                                                c.address,
+                                                c.contact_no,
+                                                c.email,
+                                                c.districts AS district
+                                            FROM company c
+                                            WHERE c.company_id = :user_id AND COALESCE(c.is_deleted, 0) = 0
+                                            LIMIT 1";
 
-    $stmt = $pdo->prepare($query);
-    $stmt->bindParam(':user_id', $userId);
-    $stmt->execute();
+        $stmt = $pdo->prepare($profileQuery);
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC) ?: [
+                'user_id' => $userId,
+                'company_name' => null,
+                'address' => null,
+                'contact_no' => null,
+                'email' => null,
+                'district' => null,
+        ];
 
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $defaultsQuery = "SELECT
+                                                payment_terms AS default_payment_terms,
+                                                warranty_period AS default_warranty,
+                                                additional_terms AS standard_terms_template
+                                            FROM companyquotation
+                                            WHERE company_id = :user_id
+                                            ORDER BY updated_at DESC
+                                            LIMIT 1";
+
+        $stmt = $pdo->prepare($defaultsQuery);
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        $defaults = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        $result = array_merge($result, $defaults);
+        $result['quotation_validity_days'] = $result['quotation_validity_days'] ?? 30;
+        $result['standard_lead_time_days'] = $result['standard_lead_time_days'] ?? 3;
 
     if ($result) {
         // Set defaults if not in database
@@ -76,8 +97,8 @@ try {
             'success' => true,
             'data' => [
                 'user_id' => $userId,
-                'district' => null,
                 'company_name' => null,
+                'district' => null,
                 'default_payment_terms' => '50_50',
                 'default_warranty' => '6_months',
                 'standard_terms_template' => null,

@@ -672,18 +672,24 @@ $userData = getUserData();
         fetch('/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php')
             .then(response => response.text())
             .then(data => {
-                document.getElementById('sidebar-container').innerHTML = data;
-                // Add active class
-                setTimeout(() => {
-                    const paymentsLink = document.querySelector('#sidebar-container a[href*="payments"]');
-                    if(paymentsLink) paymentsLink.parentElement.classList.add('active');
-                }, 100);
+                const sidebarContainer = document.getElementById('sidebar-container');
+                if (sidebarContainer) {
+                    sidebarContainer.innerHTML = data;
+                    // Add active class
+                    setTimeout(() => {
+                        const paymentsLink = document.querySelector('#sidebar-container a[href*="payments"]');
+                        if (paymentsLink) paymentsLink.parentElement.classList.add('active');
+                    }, 100);
+                }
             });
 
         fetch('/2nd-Year-Group-Project/FixLanka/views/company/topbar.php?page=payments')
             .then(response => response.text())
             .then(data => {
-                document.getElementById('topbar-container').innerHTML = data;
+                const topbarContainer = document.getElementById('topbar-container');
+                if (topbarContainer) {
+                    topbarContainer.innerHTML = data;
+                }
             });
 
         // Main Payment Logic
