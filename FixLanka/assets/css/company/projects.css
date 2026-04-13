@@ -799,7 +799,7 @@ body {
 /* Table View — visibility controlled by JS inline display */
 
 .table-container {
-  background: white;
+  background: var(--bg-card);
   border-radius: var(--border-radius-lg);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   overflow: auto;
@@ -817,15 +817,15 @@ body {
 }
 
 .projects-table th {
-  background: linear-gradient(135deg, #f8fffe 0%, #f0faf9 100%);
+  background: var(--bg-primary);
   padding: 14px 18px;
   text-align: left;
   font-weight: 700;
-  color: var(--text-secondary, #64748b);
+  color: var(--text-muted);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  border-bottom: 2px solid rgba(10, 186, 181, 0.15);
+  border-bottom: 2px solid rgba(var(--primary-rgb), 0.15);
   white-space: nowrap;
 }
 
@@ -835,7 +835,7 @@ body {
 }
 
 .projects-table tbody tr:hover {
-  background: rgba(10, 186, 181, 0.03);
+  background: rgba(var(--primary-rgb), 0.03);
 }
 
 .projects-table td {
@@ -6592,7 +6592,7 @@ body {
 .table-container {
   overflow-x: auto;
   border-radius: 12px;
-  background: white;
+  background: var(--bg-card);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
@@ -6603,8 +6603,8 @@ body {
 }
 
 .projects-table thead {
-  background: linear-gradient(135deg, #f8fffe 0%, #f0faf9 100%);
-  border-bottom: 2px solid rgba(10, 186, 181, 0.15);
+  background: var(--bg-primary);
+  border-bottom: 2px solid rgba(var(--primary-rgb), 0.15);
 }
 
 .projects-table thead th {
@@ -6614,7 +6614,8 @@ body {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: var(--text-secondary);
+  background: var(--bg-primary);
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
@@ -6624,7 +6625,7 @@ body {
 }
 
 .projects-table tbody tr:hover {
-  background: rgba(10, 186, 181, 0.03);
+  background: rgba(var(--primary-rgb), 0.03);
 }
 
 .projects-table tbody td {

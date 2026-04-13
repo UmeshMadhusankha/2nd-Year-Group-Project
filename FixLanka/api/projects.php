@@ -134,9 +134,6 @@ function handleGet()
     
     if (isset($_GET['status'])) {
         $filters['status'] = $_GET['status'];
-    } else {
-        // By default, do not show 'planned' projects (those awaiting contract acceptance)
-        $filters['exclude_status'] = 'planned';
     }
     
     if (isset($_GET['project_type'])) {
@@ -184,9 +181,11 @@ function handlePost()
     if ($action === 'complete_phase' && isset($_POST['milestone_id'])) {
         $milestoneId = intval($_POST['milestone_id']);
         $description = $_POST['description'] ?? '';
+        $actualQuantity = $_POST['actual_quantity'] ?? null;
+        $actualUnitRate = $_POST['actual_unit_rate'] ?? null;
         $files = $_FILES['proof_files'] ?? [];
         
-        $result = $projectModel->submitPhaseProof($milestoneId, $description, $files);
+        $result = $projectModel->submitPhaseProof($milestoneId, $description, $files, $actualQuantity, $actualUnitRate);
         echo json_encode($result);
         return;
     }
@@ -220,7 +219,12 @@ function handlePost()
             }
             $freelancerAssignmentIds = array_values(array_unique(array_filter(array_map('intval', $freelancerAssignmentIds), fn($v) => $v > 0)));
 
-            $result = $projectModel->startFromContract($contractId, $employeeIds, $freelancerAssignmentIds);
+            $staffRequirements = $input['staff_requirements'] ?? [];
+            if (!is_array($staffRequirements)) {
+                $staffRequirements = [];
+            }
+
+            $result = $projectModel->startFromContract($contractId, $employeeIds, $freelancerAssignmentIds, $staffRequirements);
             echo json_encode($result);
             return;
         } else {

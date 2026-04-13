@@ -257,7 +257,21 @@
         const companyName = c.company_name || '—';
         const initials = getInitials(companyName);
 
-        const value = formatCurrency(c.total_budget);
+        const formattedValue = formatCurrency((c.value !== undefined && c.value !== null && c.value !== '') ? c.value : c.total_budget);
+        const laborPerLabel = resolveQuotationPerLabel(c.labor_unit_label, 'labor');
+        const materialPerLabel = resolveQuotationPerLabel(c.material_unit_label, 'material');
+        const laborPriceText = formatUnitPrice(c.labor_cost);
+        const materialPriceText = formatUnitPrice(c.material_cost);
+
+        const hasLaborOrMaterialPrice = laborPriceText !== null || materialPriceText !== null;
+        const valueBlock = hasLaborOrMaterialPrice
+            ? `
+                <div class="card-unit-price-block" aria-label="Unit price breakdown">
+                    ${laborPriceText ? `<div class="card-unit-price-item"><span class="card-unit-price-label">${esc(formatCostLabel('Labor', laborPerLabel))}</span><span class="card-unit-price-value">${laborPriceText}</span></div>` : ''}
+                    ${materialPriceText ? `<div class="card-unit-price-item"><span class="card-unit-price-label">${esc(formatCostLabel('Material', materialPerLabel))}</span><span class="card-unit-price-value">${materialPriceText}</span></div>` : ''}
+                </div>
+            `
+            : `<div class="card-value-badge">${formattedValue}</div>`;
         const startDate = c.start_date ? formatDate(c.start_date) : '—';
         const endDate = c.end_date ? formatDate(c.end_date) : '—';
         const paymentLabel = formatPaymentMethod(c.payment_method);
@@ -301,7 +315,7 @@
                     <span class="card-client-name">${esc(companyName)}</span>
                     <span class="card-client-email">${esc(c.project_location || '')}</span>
                 </div>
-                <div class="card-value-badge">${value}</div>
+                ${valueBlock}
             </div>
 
             <div class="card-meta-grid">
@@ -485,8 +499,12 @@
         const headerSub = document.getElementById('cdHeaderSub');
         const footer = document.getElementById('cdFooter');
 
-        if (headerText) headerText.textContent = c.project_title || 'Contract Details';
-        if (headerSub) headerSub.textContent = c.contract_number || '';
+        if (headerText) headerText.textContent = 'Contract Details';
+        if (headerSub) {
+            const ref = c.contract_number || (c.contract_id ? ('Contract #' + c.contract_id) : '') || '';
+            const company = c.company_name || '';
+            headerSub.textContent = [ref, company].filter(Boolean).join(' • ');
+        }
 
         // Parse terms
         let terms = {};
@@ -495,18 +513,37 @@
             try { terms = JSON.parse(c.terms_conditions); } catch (e) { }
         }
 
-        const progress = parseInt(c.progress_percentage) || 0;
-        const paymentLabel = formatPaymentMethod(c.payment_method);
         const milestones = c.milestones || [];
         const isMilestoneBased = c.payment_method === 'milestone_based';
 
-        body.innerHTML = renderLegalContractPreview(c, {
-            terms,
-            progress,
-            paymentLabel,
-            milestones,
-            isMilestoneBased
-        });
+        const shared = window.ContractPreview;
+        if (shared && typeof shared.renderHTML === 'function') {
+            body.innerHTML = shared.renderHTML(c, {
+                isMilestoneBased,
+                paymentLabel: formatPaymentMethod(c.payment_method),
+                renderMilestoneAction: (ms) => {
+                    const msStatus = String(ms?.status || 'pending');
+                    if (msStatus === 'submitted') {
+                        return `<button class="action-btn secondary small" onclick="openProofModal(${ms.milestone_id})"><i class="fas fa-eye"></i> Review</button>`;
+                    }
+                    if (msStatus === 'approved' || msStatus === 'paid') {
+                        return '<span class="text-success"><i class="fas fa-check"></i> Paid</span>';
+                    }
+                    return '—';
+                }
+            });
+        } else {
+            // Fallback to legacy renderer
+            const progress = parseInt(c.progress_percentage) || 0;
+            const paymentLabel = formatPaymentMethod(c.payment_method);
+            body.innerHTML = renderLegalContractPreview(c, {
+                terms,
+                progress,
+                paymentLabel,
+                milestones,
+                isMilestoneBased
+            });
+        }
 
         // Footer action buttons
         if (footer) {
@@ -596,11 +633,20 @@
 
         const budgetTypes = {
             fixed: 'Fixed Price',
-            time_based: 'Time-Based',
             flexible: 'Flexible (±10%)'
         };
 
         const hasScope = Boolean(c.scope_description || c.scope_inclusions || c.scope_exclusions || c.materials_responsibility);
+
+        const hasUnitMilestones = Array.isArray(milestones) && milestones.some(ms => {
+            const ul = (ms && ms.unit_label != null) ? String(ms.unit_label).trim() : '';
+            const ur = (ms && ms.unit_rate != null && ms.unit_rate !== '') ? parseFloat(ms.unit_rate) : 0;
+            return ul !== '' || (ur > 0);
+        });
+        const isFlexibleBudget = String(c.budget_type || '') === 'flexible';
+        const budgetMin = (c.budget_min != null && c.budget_min !== '') ? parseFloat(c.budget_min) : null;
+        const budgetMax = (c.budget_max != null && c.budget_max !== '') ? parseFloat(c.budget_max) : null;
+        const showBudgetFlex = isFlexibleBudget && (budgetMin != null || budgetMax != null);
 
         return `
             <div class="contract-preview">
@@ -682,7 +728,23 @@
                         ${renderPaymentSchedulePreview(c, milestones)}
                     </div>
 
+                    ${hasUnitMilestones ? `
+                        <p class="preview-paragraph" style="margin-top:10px;">
+                            <strong>Unit-priced settlement:</strong> final billed amounts are calculated from submitted actual units and (if applicable) actual unit rates, then verified by you before payment.
+                        </p>` : ''}
+
                     <p style="margin-top:10px;"><strong>Late Payment:</strong> <span>${esc(c.late_payment_penalty || (terms.delays && terms.delays.late_payment_penalty) || 'As per standard terms')}</span></p>
+                </div>
+
+                <div class="preview-section" style="${showBudgetFlex ? '' : 'display:none;'}">
+                    <h4>5.1 BUDGET FLEXIBILITY</h4>
+                    <div class="preview-grid" style="margin-top:10px;">
+                        <div><strong>Minimum:</strong> <span class="preview-value">${budgetMin != null ? formatCurrency(budgetMin) : '—'}</span></div>
+                        <div><strong>Maximum:</strong> <span class="preview-value">${budgetMax != null ? formatCurrency(budgetMax) : '—'}</span></div>
+                    </div>
+                    <p class="preview-paragraph" style="margin-top:10px;">
+                        Final cost may vary within the allowed range to accommodate material price changes or necessary adjustments. All changes require your approval.
+                    </p>
                 </div>
 
                 <div class="preview-section">
@@ -710,6 +772,22 @@
     function renderPreviewMilestonesTable(milestones, isMilestoneBased) {
         currentContractMilestones = milestones || [];
 
+        const hasUnitMilestones = Array.isArray(milestones) && milestones.some(ms => {
+            const ul = (ms && ms.unit_label != null) ? String(ms.unit_label).trim() : '';
+            const ur = (ms && ms.unit_rate != null && ms.unit_rate !== '') ? parseFloat(ms.unit_rate) : 0;
+            return ul !== '' || (ur > 0);
+        });
+
+        const computeBilledAmount = (ms) => {
+            const agreedRate = parseFloat(ms?.unit_rate || 0);
+            const actualRate = parseFloat(ms?.actual_unit_rate || 0);
+            const unitRate = (actualRate > 0) ? actualRate : agreedRate;
+            const actualQty = parseFloat(ms?.actual_quantity || 0);
+            if (unitRate > 0 && actualQty > 0) return unitRate * actualQty;
+            const stored = parseFloat(ms?.actual_amount ?? ms?.amount ?? ms?.payment_amount ?? 0);
+            return Number.isFinite(stored) ? stored : 0;
+        };
+
         let html = `<table class="preview-milestones-table">
             <thead><tr>
                 <th>#</th>
@@ -734,9 +812,33 @@
 
             html += `<tr>
                 <td>${i + 1}</td>
-                <td><strong>${esc(ms.title || ms.milestone_name || ('Milestone ' + (i + 1)))}</strong>${ms.description ? '<br><small style="color:var(--text-muted)">' + esc(ms.description) + '</small>' : ''}</td>
+                <td>
+                    <strong>${esc(ms.title || ms.milestone_name || ('Milestone ' + (i + 1)))}</strong>
+                    ${ms.description ? '<br><small style="color:var(--text-muted)">' + esc(ms.description) + '</small>' : ''}
+                    ${hasUnitMilestones && (ms.unit_label || ms.unit_rate) ? (() => {
+                        const unitLabel = (ms.unit_label || '').toString().trim() || 'units';
+                        const agreedRate = parseFloat(ms.unit_rate || 0);
+                        const actualRate = parseFloat(ms.actual_unit_rate || 0);
+                        const unitRate = (actualRate > 0) ? actualRate : agreedRate;
+                        const actualQty = parseFloat(ms.actual_quantity || 0);
+                        const billed = computeBilledAmount(ms);
+                        const rateStr = (unitRate > 0) ? (formatCurrency(unitRate) + ' / ' + esc(unitLabel)) : '—';
+
+                        const unitLine = `<br><small style="color:var(--text-muted)">Unit: ${esc(unitLabel)} • Rate: ${rateStr}</small>`;
+                        const actualLine = (actualQty > 0 && unitRate > 0)
+                            ? `<br><small style="color:var(--text-muted)">Submitted: ${actualQty} ${esc(unitLabel)} • Billed: <strong>${formatCurrency(billed)}</strong></small>`
+                            : '';
+                        return unitLine + actualLine;
+                    })() : ''}
+                </td>
                 <td>${formatDate(ms.due_date)}</td>
-                ${isMilestoneBased ? `<td>${formatCurrency(ms.amount || ms.payment_amount)}</td>` : ''}
+                ${isMilestoneBased ? (() => {
+                    if (hasUnitMilestones && (ms.unit_label || ms.unit_rate)) {
+                        const actualQty = parseFloat(ms?.actual_quantity || 0);
+                        return `<td>${actualQty > 0 ? formatCurrency(computeBilledAmount(ms)) : '—'}</td>`;
+                    }
+                    return `<td>${formatCurrency(ms.amount || ms.payment_amount)}</td>`;
+                })() : ''}
                 <td><span class="ms-status-badge ${statusClass}">${esc(statusText)}</span></td>
                 <td>${actionBtn}</td>
             </tr>`;
@@ -750,9 +852,30 @@
         const totalVal = parseFloat(c.total_budget || 0) || 0;
         const method = c.payment_method || 'full_upfront';
 
+        const hasUnitMilestones = Array.isArray(milestones) && milestones.some(ms => {
+            const ul = (ms && ms.unit_label != null) ? String(ms.unit_label).trim() : '';
+            const ur = (ms && ms.unit_rate != null && ms.unit_rate !== '') ? parseFloat(ms.unit_rate) : 0;
+            return ul !== '' || (ur > 0);
+        });
+
         let scheduleHTML = '<h5 class="preview-schedule-title"><i class="fas fa-receipt"></i> Payment Schedule</h5>';
 
         if (method === 'milestone_based' && milestones && milestones.length > 0) {
+            if (hasUnitMilestones) {
+                scheduleHTML += '<p class="preview-muted" style="margin-bottom:10px;">Unit-priced milestones are billed from verified actual units (and actual unit rates if provided).</p>';
+                scheduleHTML += '<table class="preview-milestones-table"><thead><tr><th>#</th><th>Milestone</th><th>Rate (per unit)</th></tr></thead><tbody>';
+                milestones.forEach((ms, i) => {
+                    const unitLabel = (ms.unit_label || '').toString().trim() || 'units';
+                    const agreedRate = parseFloat(ms.unit_rate || 0);
+                    const actualRate = parseFloat(ms.actual_unit_rate || 0);
+                    const unitRate = (actualRate > 0) ? actualRate : agreedRate;
+                    const rateStr = (unitRate > 0) ? (formatCurrency(unitRate) + ' / ' + esc(unitLabel)) : '—';
+                    scheduleHTML += `<tr><td>${i + 1}</td><td>${esc(ms.title || ms.milestone_name || ('Milestone ' + (i + 1)))}</td><td>${rateStr}</td></tr>`;
+                });
+                scheduleHTML += '</tbody></table>';
+                return scheduleHTML;
+            }
+
             scheduleHTML += '<table class="preview-milestones-table"><thead><tr><th>#</th><th>Milestone</th><th>%</th><th>Amount</th></tr></thead><tbody>';
             milestones.forEach((ms, i) => {
                 const pct = parseFloat(ms.payment_percentage || ms.percentage || 0) || 0;
@@ -781,8 +904,7 @@
     }
 
     function formatCommunicationChannel(channel) {
-        const channels = { system: 'FixLanka Platform', email: 'Email', both: 'Platform + Email' };
-        return channels[channel] || 'FixLanka Platform';
+        return 'FixLanka Platform';
     }
 
     function formatCustomerResponse(resp) {
@@ -841,6 +963,21 @@
         return null;
     }
 
+    function _isUnitPricedContract(contract) {
+        if (!contract || contract.payment_method !== 'milestone_based') return false;
+        const milestones = Array.isArray(contract.milestones) ? contract.milestones : [];
+        return milestones.some(m => {
+            const unitLabel = m?.unit_label ?? m?.unitLabel ?? null;
+            const unitRate = m?.unit_rate ?? m?.unitRate ?? null;
+            return (unitLabel != null && String(unitLabel).trim() !== '') || (unitRate != null && unitRate !== '');
+        });
+    }
+
+    function _getAdjustMode() {
+        const overlay = document.getElementById('contractAdjustOverlay');
+        return overlay?.dataset?.adjustMode || 'milestone';
+    }
+
     function _ensureAdjustModalDOM() {
         if (document.getElementById('contractAdjustOverlay')) return;
 
@@ -866,18 +1003,14 @@
                             <span>End date</span>
                             <input type="date" id="caEndDate" />
                         </label>
-                        <label class="ca-field">
-                            <span>Total budget</span>
-                            <input type="number" id="caBudget" min="0" step="0.01" />
-                        </label>
                     </div>
 
                     <div class="ca-section" id="caMilestonesSection" style="display:none">
                         <div class="ca-section-head">
-                            <h4>Milestones</h4>
+                            <h4 id="caMilestonesTitle">Milestones</h4>
                             <button type="button" class="btn-secondary" id="caAddMilestoneBtn"><i class="fas fa-plus"></i> Add</button>
                         </div>
-                        <div class="ca-muted">Edit only what you need. Amount totals should match the budget.</div>
+                        <div class="ca-muted" id="caMilestonesHint">Edit only what you need.</div>
                         <div class="ca-ms-wrap" id="caMilestonesWrap"></div>
                     </div>
 
@@ -902,13 +1035,6 @@
 
         document.getElementById('caCloseBtn').addEventListener('click', _closeAdjustModal);
         document.getElementById('caCancelBtn').addEventListener('click', _closeAdjustModal);
-        const budgetEl = document.getElementById('caBudget');
-        if (budgetEl) {
-            budgetEl.addEventListener('input', () => {
-                _recalcMilestoneAmounts();
-                _updateMilestoneTotalsHint();
-            });
-        }
     }
 
     function _openAdjustModal(contract) {
@@ -922,25 +1048,39 @@
 
         const startEl = document.getElementById('caStartDate');
         const endEl = document.getElementById('caEndDate');
-        const budgetEl = document.getElementById('caBudget');
         const noteEl = document.getElementById('caNote');
 
         if (startEl) startEl.value = (contract.start_date || '').slice(0, 10);
         if (endEl) endEl.value = (contract.end_date || '').slice(0, 10);
-        if (budgetEl) budgetEl.value = contract.total_budget != null ? String(contract.total_budget) : '';
         if (noteEl) noteEl.value = '';
 
         const isMilestoneBased = contract.payment_method === 'milestone_based';
+        const isUnitPriced = isMilestoneBased && _isUnitPricedContract(contract);
+        overlay.dataset.adjustMode = isUnitPriced ? 'unit' : 'milestone';
+
         const msSection = document.getElementById('caMilestonesSection');
         if (msSection) msSection.style.display = isMilestoneBased ? 'block' : 'none';
 
         if (isMilestoneBased) {
-            _renderMilestoneEditor(contract.milestones || []);
             const addBtn = document.getElementById('caAddMilestoneBtn');
-            if (addBtn) {
-                addBtn.onclick = () => {
-                    _appendMilestoneRow({ title: '', due_date: '', amount: '', description: '' });
-                };
+            const titleEl = document.getElementById('caMilestonesTitle');
+            const hintEl = document.getElementById('caMilestonesHint');
+
+            if (isUnitPriced) {
+                if (titleEl) titleEl.textContent = 'Unit rates';
+                if (hintEl) hintEl.textContent = 'Unit-priced contract: you can propose new unit rates here. Milestone %/amount adjustments are not used for unit-priced billing.';
+                if (addBtn) addBtn.style.display = 'none';
+                _renderUnitRateEditor(contract.milestones || []);
+            } else {
+                if (titleEl) titleEl.textContent = 'Milestones';
+                if (hintEl) hintEl.textContent = 'Edit only what you need.';
+                if (addBtn) {
+                    addBtn.style.display = '';
+                    addBtn.onclick = () => {
+                        _appendMilestoneRow({ title: '', due_date: '', amount: '', description: '' });
+                    };
+                }
+                _renderMilestoneEditor(contract.milestones || []);
             }
         }
 
@@ -963,6 +1103,8 @@
     function _renderMilestoneEditor(milestones) {
         const wrap = document.getElementById('caMilestonesWrap');
         if (!wrap) return;
+
+        wrap.dataset.mode = 'milestone';
 
         const budgetRaw = document.getElementById('caBudget')?.value;
         const budget = budgetRaw !== '' && budgetRaw != null ? Number(budgetRaw) : null;
@@ -1019,6 +1161,77 @@
         _updateMilestoneTotalsHint();
     }
 
+    function _renderUnitRateEditor(milestones) {
+        const wrap = document.getElementById('caMilestonesWrap');
+        if (!wrap) return;
+
+        wrap.dataset.mode = 'unit';
+        const unitRows = Array.isArray(milestones) ? milestones.filter(m => {
+            const unitLabel = m?.unit_label ?? m?.unitLabel ?? null;
+            const unitRate = m?.unit_rate ?? m?.unitRate ?? null;
+            return (unitLabel != null && String(unitLabel).trim() !== '') || (unitRate != null && unitRate !== '');
+        }) : [];
+
+        const rows = unitRows.map(m => ({
+            milestone_id: m.milestone_id ?? null,
+            milestone_number: m.milestone_number ?? null,
+            title: m.title || m.milestone_name || '',
+            unit_label: (m.unit_label ?? m.unitLabel ?? '').toString(),
+            unit_rate: (m.unit_rate ?? m.unitRate ?? ''),
+            proposed_unit_rate: ''
+        }));
+
+        wrap.innerHTML = `
+            <table class="ca-ms-table">
+                <thead>
+                    <tr>
+                        <th style="width:28px">#</th>
+                        <th>Item</th>
+                        <th style="width:180px">Unit</th>
+                        <th style="width:160px">Current rate</th>
+                        <th style="width:180px">Proposed rate</th>
+                    </tr>
+                </thead>
+                <tbody id="caUnitTbody"></tbody>
+            </table>
+            <div class="ca-ms-help">Enter proposed unit rates if you want to renegotiate pricing. Explain any changes in the note.</div>
+            <div class="ca-ms-totals" id="caMsTotals"></div>
+        `;
+
+        const tbody = document.getElementById('caUnitTbody');
+        if (!tbody) return;
+
+        rows.forEach((r, idx) => {
+            const tr = document.createElement('tr');
+            tr.className = 'ca-unit-row';
+            tr.dataset.milestoneId = r.milestone_id != null ? String(r.milestone_id) : '';
+            tr.dataset.milestoneNumber = r.milestone_number != null ? String(r.milestone_number) : '';
+            tr.dataset.title = (r.title || '').trim();
+            tr.dataset.unitLabel = (r.unit_label || '').trim();
+            tr.dataset.currentUnitRate = (r.unit_rate != null ? String(r.unit_rate) : '');
+            tr.innerHTML = `
+                <td class="ca-ms-idx">${idx + 1}</td>
+                <td>${escAttr(r.title)}</td>
+                <td>${escAttr((r.unit_label || '').trim() || '—')}</td>
+                <td>Rs. ${escAttr((r.unit_rate != null && r.unit_rate !== '') ? String(r.unit_rate) : '—')}</td>
+                <td>
+                    <input type="number" min="0" step="0.01" class="ca-unit-proposed-rate" value="" placeholder="Leave blank to keep" />
+                </td>
+            `;
+            tbody.appendChild(tr);
+
+            const proposedEl = tr.querySelector('.ca-unit-proposed-rate');
+            if (proposedEl) {
+                proposedEl.addEventListener('input', () => {
+                    _setInputError(proposedEl, false);
+                    _updateMilestoneTotalsHint();
+                });
+            }
+        });
+
+        _updateMilestoneTotalsHint();
+    }
+
     function _appendMilestoneRow(row, tbodyOverride) {
         const tbody = tbodyOverride || document.getElementById('caMsTbody');
         if (!tbody) return;
@@ -1062,6 +1275,7 @@
     }
 
     function _recalcMilestoneAmounts() {
+        if (document.getElementById('caMilestonesWrap')?.dataset?.mode === 'unit') return;
         const budgetRaw = document.getElementById('caBudget')?.value;
         const budget = budgetRaw !== '' && budgetRaw != null ? Number(budgetRaw) : null;
         if (!budget || !Number.isFinite(budget) || budget <= 0) return;
@@ -1082,6 +1296,20 @@
     function _updateMilestoneTotalsHint() {
         const el = document.getElementById('caMsTotals');
         if (!el) return;
+
+        const mode = document.getElementById('caMilestonesWrap')?.dataset?.mode;
+        if (mode === 'unit') {
+            const rows = Array.from(document.querySelectorAll('#caUnitTbody .ca-unit-row'));
+            const withProposed = rows.filter(r => {
+                const v = r.querySelector('.ca-unit-proposed-rate')?.value;
+                return v !== '' && v != null;
+            }).length;
+            el.innerHTML = `
+                <span class="ca-ms-total ok">Unit-priced milestones: ${rows.length} item(s)</span>
+                <span class="ca-ms-total ${withProposed > 0 ? 'ok' : ''}">${withProposed} proposed rate change(s)</span>
+            `;
+            return;
+        }
 
         const rows = Array.from(document.querySelectorAll('#caMsTbody .ca-ms-row'));
         const sumPct = rows.reduce((acc, r) => acc + (Number(r.querySelector('.ca-ms-pct')?.value) || 0), 0);
@@ -1163,6 +1391,25 @@
         }).filter(m => m.title);
     }
 
+    function _collectUnitRateProposalsFromEditor() {
+        const rows = Array.from(document.querySelectorAll('#caUnitTbody .ca-unit-row'));
+        return rows.map(r => {
+            const proposedRaw = r.querySelector('.ca-unit-proposed-rate')?.value;
+            const proposed = proposedRaw !== '' && proposedRaw != null ? Number(proposedRaw) : null;
+            const currentRaw = r.dataset.currentUnitRate;
+            const current = currentRaw !== '' && currentRaw != null ? Number(currentRaw) : null;
+
+            return {
+                milestone_id: r.dataset.milestoneId ? Number(r.dataset.milestoneId) : null,
+                milestone_number: r.dataset.milestoneNumber ? Number(r.dataset.milestoneNumber) : null,
+                title: (r.dataset.title || '').trim() || null,
+                unit_label: (r.dataset.unitLabel || '').trim() || null,
+                current_unit_rate: Number.isFinite(current) ? current : null,
+                proposed_unit_rate: Number.isFinite(proposed) ? proposed : null
+            };
+        }).filter(x => x.proposed_unit_rate != null);
+    }
+
     function _setInputError(el, isError) {
         if (!el) return;
         el.classList.toggle('ca-error', !!isError);
@@ -1175,13 +1422,10 @@
         try {
             const startDate = document.getElementById('caStartDate')?.value || null;
             const endDate = document.getElementById('caEndDate')?.value || null;
-            const budgetRaw = document.getElementById('caBudget')?.value;
-            const budget = budgetRaw !== '' && budgetRaw != null ? Number(budgetRaw) : null;
-            const note = (document.getElementById('caNote')?.value || '').trim();
+            let note = (document.getElementById('caNote')?.value || '').trim();
 
             _setInputError(document.getElementById('caStartDate'), false);
             _setInputError(document.getElementById('caEndDate'), false);
-            _setInputError(document.getElementById('caBudget'), false);
 
             if (!startDate || !endDate) {
                 _setInputError(document.getElementById('caStartDate'), !startDate);
@@ -1196,94 +1440,123 @@
                 await window.showAlert('End date must be after start date.', 'warning');
                 return;
             }
-            if (budget != null && (!Number.isFinite(budget) || budget < 0)) {
-                _setInputError(document.getElementById('caBudget'), true);
-                await window.showAlert('Please enter a valid budget.', 'warning');
-                return;
-            }
 
             const proposed = {
                 start_date: startDate,
-                end_date: endDate,
-                total_budget: budget
+                end_date: endDate
             };
 
             if (contract.payment_method === 'milestone_based') {
-                const milestones = _collectMilestonesFromEditor();
-                proposed.milestones = milestones;
+                const isUnitPriced = _isUnitPricedContract(contract);
 
-                // Company-side style validations
-                if (milestones.length < 2) {
-                    await window.showAlert('Minimum 2 milestones required.', 'warning');
-                    return;
-                }
-                if (milestones.length > 10) {
-                    await window.showAlert('Maximum 10 milestones allowed.', 'warning');
-                    return;
-                }
-
-                // Field validations per milestone
-                const start = new Date(startDate);
-                const end = new Date(endDate);
-                let sumPct = 0;
-                let hasBad = false;
-
-                const rows = Array.from(document.querySelectorAll('#caMsTbody .ca-ms-row'));
-                rows.forEach((r) => {
-                    _setInputError(r.querySelector('.ca-ms-title'), false);
-                    _setInputError(r.querySelector('.ca-ms-date'), false);
-                    _setInputError(r.querySelector('.ca-ms-pct'), false);
-                });
-
-                milestones.forEach((m, idx) => {
-                    const rowEl = rows[idx];
-                    if (!m.title) {
-                        _setInputError(rowEl?.querySelector('.ca-ms-title'), true);
-                        hasBad = true;
+                if (isUnitPriced) {
+                    // Unit-priced contracts cannot submit milestone % changes (backend requires % totals).
+                    // Instead, allow proposing unit rate changes as a separate payload.
+                    const unitRows = Array.from(document.querySelectorAll('#caUnitTbody .ca-unit-row'));
+                    let badRate = false;
+                    unitRows.forEach(r => {
+                        const el = r.querySelector('.ca-unit-proposed-rate');
+                        if (!el) return;
+                        _setInputError(el, false);
+                        const raw = el.value;
+                        if (raw === '' || raw == null) return;
+                        const n = Number(raw);
+                        if (!Number.isFinite(n) || n < 0) {
+                            _setInputError(el, true);
+                            badRate = true;
+                        }
+                    });
+                    if (badRate) {
+                        await window.showAlert('Please enter valid proposed unit rates (0 or higher), or leave them blank.', 'warning');
+                        _updateMilestoneTotalsHint();
+                        return;
                     }
-                    if (!m.due_date) {
-                        _setInputError(rowEl?.querySelector('.ca-ms-date'), true);
-                        hasBad = true;
-                    } else {
-                        const d = new Date(m.due_date);
-                        if (d < start || d > end) {
-                            _setInputError(rowEl?.querySelector('.ca-ms-date'), true);
+
+                    const proposals = _collectUnitRateProposalsFromEditor();
+                    if (proposals.length) proposed.unit_rate_proposals = proposals;
+
+                    if (proposals.length) {
+                        const lines = proposals.map(p => {
+                            const name = p.title || 'Unit item';
+                            const unit = p.unit_label ? ` per ${p.unit_label}` : '';
+                            const cur = (p.current_unit_rate != null) ? ` (current: Rs. ${Number(p.current_unit_rate).toFixed(2)})` : '';
+                            return `- ${name}: Rs. ${Number(p.proposed_unit_rate).toFixed(2)}${unit}${cur}`;
+                        });
+                        const summary = `Proposed unit rates:\n${lines.join('\n')}`;
+                        note = note ? `${note}\n\n${summary}` : summary;
+                    }
+
+                    _updateMilestoneTotalsHint();
+                } else {
+                    const milestones = _collectMilestonesFromEditor();
+                    proposed.milestones = milestones;
+
+                    // Company-side style validations
+                    if (milestones.length < 2) {
+                        await window.showAlert('Minimum 2 milestones required.', 'warning');
+                        return;
+                    }
+                    if (milestones.length > 10) {
+                        await window.showAlert('Maximum 10 milestones allowed.', 'warning');
+                        return;
+                    }
+
+                    // Field validations per milestone
+                    const start = new Date(startDate);
+                    const end = new Date(endDate);
+                    let sumPct = 0;
+                    let hasBad = false;
+
+                    const rows = Array.from(document.querySelectorAll('#caMsTbody .ca-ms-row'));
+                    rows.forEach((r) => {
+                        _setInputError(r.querySelector('.ca-ms-title'), false);
+                        _setInputError(r.querySelector('.ca-ms-date'), false);
+                        _setInputError(r.querySelector('.ca-ms-pct'), false);
+                    });
+
+                    milestones.forEach((m, idx) => {
+                        const rowEl = rows[idx];
+                        if (!m.title) {
+                            _setInputError(rowEl?.querySelector('.ca-ms-title'), true);
                             hasBad = true;
                         }
+                        if (!m.due_date) {
+                            _setInputError(rowEl?.querySelector('.ca-ms-date'), true);
+                            hasBad = true;
+                        } else {
+                            const d = new Date(m.due_date);
+                            if (d < start || d > end) {
+                                _setInputError(rowEl?.querySelector('.ca-ms-date'), true);
+                                hasBad = true;
+                            }
+                        }
+                        const pct = Number(m.percentage);
+                        if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
+                            _setInputError(rowEl?.querySelector('.ca-ms-pct'), true);
+                            hasBad = true;
+                        } else {
+                            sumPct += pct;
+                        }
+                    });
+
+                    if (hasBad) {
+                        await window.showAlert('Please fix milestone fields (title, due date within range, and valid percentage).', 'warning');
+                        _updateMilestoneTotalsHint();
+                        return;
                     }
-                    const pct = Number(m.percentage);
-                    if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
-                        _setInputError(rowEl?.querySelector('.ca-ms-pct'), true);
-                        hasBad = true;
-                    } else {
-                        sumPct += pct;
+
+                    if (Math.abs(sumPct - 100) > 0.01) {
+                        await window.showAlert(`Milestone percentages must total 100% (currently: ${sumPct.toFixed(2)}%).`, 'warning');
+                        _updateMilestoneTotalsHint();
+                        return;
                     }
-                });
 
-                if (hasBad) {
-                    await window.showAlert('Please fix milestone fields (title, due date within range, and valid percentage).', 'warning');
+                    // Ensure amounts are synced from percentages + budget
+                    _recalcMilestoneAmounts();
+                    const sumAmt = milestones.reduce((acc, mm) => acc + (Number(mm.amount) || 0), 0);
+
                     _updateMilestoneTotalsHint();
-                    return;
                 }
-
-                if (Math.abs(sumPct - 100) > 0.01) {
-                    await window.showAlert(`Milestone percentages must total 100% (currently: ${sumPct.toFixed(2)}%).`, 'warning');
-                    _updateMilestoneTotalsHint();
-                    return;
-                }
-
-                // Ensure amounts are synced from percentages + budget
-                _recalcMilestoneAmounts();
-                const sumAmt = milestones.reduce((acc, mm) => acc + (Number(mm.amount) || 0), 0);
-                if (budget != null && Number.isFinite(budget) && Math.abs(sumAmt - budget) > 0.05) {
-                    const ok = await window.showConfirm(
-                        `Milestone amounts (Rs. ${sumAmt.toFixed(2)}) do not match the total budget (Rs. ${budget.toFixed(2)}). Send anyway?`,
-                        { title: 'Amount Check', type: 'warning' }
-                    );
-                    if (!ok) return;
-                }
-
-                _updateMilestoneTotalsHint();
             }
 
             const res = await fetch(API, {
@@ -1462,124 +1735,86 @@
     window.respondContract = async function (contractId, response) {
         if (response !== 'accepted') {
             const label = 'decline';
-            showCustomConfirm({
-                title: 'Decline Contract',
-                message: `Are you sure you want to ${label} this contract?`,
-                icon: 'fas fa-times-circle',
-                confirmText: 'Yes, Decline',
-                confirmClass: 'btn-danger',
-                onConfirm: async () => {
-                    try {
-                        const res = await fetch(API, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                action: 'respond',
-                                contract_id: contractId,
-                                response: response
-                            })
-                        });
-                        const json = await res.json();
-                        if (json.success) {
-                            showToast(`Contract ${label}ed successfully!`);
-                            closeDetail();
-                            loadContracts();
-                        } else {
-                            showToast('Error: ' + json.message, 'error');
-                        }
-                    } catch (err) {
-                        console.error('Respond error:', err);
-                        showToast('Could not process your response.', 'error');
-                    }
+            const confirmed = await window.showConfirm(
+                `Are you sure you want to ${label} this contract?`,
+                { title: 'Decline Contract', type: 'danger', confirmText: 'Yes, Decline' }
+            );
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'respond',
+                        contract_id: contractId,
+                        response: response
+                    })
+                });
+                const json = await res.json();
+                if (json.success) {
+                    showToast(`Contract ${label}ed successfully!`);
+                    closeDetail();
+                    loadContracts();
+                } else {
+                    await window.showAlert('Error: ' + (json.message || 'Unknown error'), 'danger', 'Error');
                 }
-            });
+            } catch (err) {
+                console.error('Respond error:', err);
+                await window.showAlert('Could not process your response.', 'danger', 'Error');
+            }
             return;
         }
 
-        // Handle Acceptance with Upfront Check
-        try {
-            // Fetch latest contract details to check milestones
-            const res = await fetch(`${API}?action=get&id=${contractId}`);
-            const json = await res.json();
-            if (!json.success) throw new Error(json.message);
-
-            const contract = json.data;
-            const milestones = contract.milestones || [];
-
-            const contractStartDate = contract.start_date ? contract.start_date.substring(0, 10) : '';
-            const upfrontMilestones = milestones.filter(m => {
-                const milestoneDueDate = m.due_date ? m.due_date.substring(0, 10) : '';
-                return milestoneDueDate <= contractStartDate;
-            });
-            const upfrontAmount = upfrontMilestones.reduce((sum, m) => {
-                const amt = m.payment_amount || m.amount || 0;
-                return sum + Number(amt);
-            }, 0);
-
-            // Robust check: either we have a calculated amount, or the plan itself is explicitly upfront
-            const isUpfrontPlan = ['full_upfront', '30_70', '50_50', 'milestone_based'].includes(contract.payment_method);
-            const needsUpfront = upfrontAmount > 0 || (isUpfrontPlan && contract.payment_method !== 'completion');
-
-            if (needsUpfront) {
-                // Show Payment Modal BEFORE signature confirmation
-                showEscrowPaymentModal(contract, upfrontAmount);
-            } else {
-                // No upfront needed, show signature confirmation directly
-                triggerSignatureConfirmation(contractId, false);
-            }
-        } catch (err) {
-            console.error('Accept error:', err);
-            showToast('Error processing acceptance: ' + err.message, 'error');
-        }
+        // Acceptance flow (NO initial deposit step): go straight to e-sign confirmation.
+        triggerSignatureConfirmation(contractId);
     };
 
     /**
      * Final E-Sign Confirmation Modal
      */
-    function triggerSignatureConfirmation(contractId, isPayAndAccept = false) {
-        showCustomConfirm({
-            title: 'Electronic Signature Confirmation',
-            message: 'By clicking Confirm, you confirm you have read and agree to the contract terms, and you electronically sign this contract in FixLanka.',
-            icon: 'fas fa-pen-nib',
-            iconClass: 'primary',
-            confirmText: 'Confirm & Sign',
-            onConfirm: async () => {
-                try {
-                    const action = isPayAndAccept ? 'pay_and_accept' : 'respond';
-                    const payload = isPayAndAccept ? { contract_id: contractId } : {
-                        action: 'respond',
-                        contract_id: contractId,
-                        response: 'accepted',
-                        esign_consent: true
-                    };
+    async function triggerSignatureConfirmation(contractId) {
+        const confirmed = await window.showConfirm(
+            'By clicking Confirm, you confirm you have read and agree to the contract terms, and you electronically sign this contract in FixLanka.',
+            { title: 'Electronic Signature Confirmation', confirmText: 'Confirm & Sign' }
+        );
+        if (!confirmed) return;
 
-                    const endpoint = isPayAndAccept ? `${API}?action=pay_and_accept` : API;
-
-                    const acceptRes = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    const acceptJson = await acceptRes.json();
-                    if (acceptJson.success) {
-                        showToast(isPayAndAccept ? 'Payment successful and contract signed!' : 'Contract accepted successfully!');
-                        closeDetail();
-                        loadContracts();
-                    } else {
-                        showToast('Error: ' + acceptJson.message, 'error');
-                    }
-                } catch (err) {
-                    console.error('Accept error:', err);
-                    showToast('Could not sign contract.', 'error');
-                }
+        try {
+            const acceptRes = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'respond',
+                    contract_id: contractId,
+                    response: 'accepted',
+                    esign_consent: true
+                })
+            });
+            const acceptJson = await acceptRes.json();
+            if (acceptJson.success) {
+                showToast('Contract accepted successfully!');
+                closeDetail();
+                loadContracts();
+            } else {
+                await window.showAlert('Error: ' + (acceptJson.message || 'Unknown error'), 'danger', 'Error');
             }
-        });
+        } catch (err) {
+            console.error('Accept error:', err);
+            await window.showAlert('Could not sign contract. Please try again.', 'danger', 'Error');
+        }
     }
 
     /**
      * Shows a simulated payment modal for the upfront escrow deposit
      */
     function showEscrowPaymentModal(contract, amount) {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Initial deposit is not required. Please continue with signing.', 'info', 'Notice');
+        }
+        triggerSignatureConfirmation(contract.contract_id);
+        return;
+
         let overlay = document.getElementById('escrowPaymentOverlay');
         if (!overlay) {
             overlay = document.createElement('div');
@@ -1608,7 +1843,7 @@
 
                 <div class="payment-amount-box">
                     <div class="payment-label">Required Initial Deposit</div>
-                    <div class="payment-value">LKR ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div class="payment-value">LKR ${numericAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
 
                 <div class="payment-info">
@@ -1654,11 +1889,15 @@
     // UNDO CONTRACT
     // =========================================
     window.undoContract = async function (contractId) {
-        const reason = prompt("Please provide a reason for cancelling this contract:");
-        if (reason === null) return; // User cancelled prompt
+        const reason = await window.showPrompt(
+            'Please provide a reason for cancelling this contract (required):',
+            '',
+            { title: 'Cancel Contract', placeholder: 'Reason...', confirmText: 'Continue' }
+        );
+        if (reason === null) return;
 
-        if (reason.trim() === "") {
-            await window.showAlert("Please provide a reason.", "warning");
+        if (!String(reason).trim()) {
+            await window.showAlert('Please provide a reason.', 'warning');
             return;
         }
 
@@ -1676,7 +1915,7 @@
             const res = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts/undo', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contract_id: contractId, reason: reason })
+                body: JSON.stringify({ contract_id: contractId, reason: String(reason).trim() })
             });
             const json = await res.json();
 
@@ -1711,6 +1950,54 @@
     function formatCurrency(val) {
         const num = parseFloat(val) || 0;
         return 'LKR ' + num.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatUnitPrice(value) {
+        if (value === null || value === undefined || value === '') {
+            return null;
+        }
+
+        const numericValue = Number(value);
+        if (!Number.isFinite(numericValue)) {
+            return null;
+        }
+
+        return formatCurrency(numericValue);
+    }
+
+    function resolveQuotationPerLabel(rawUnitLabel, type) {
+        if (!rawUnitLabel || typeof rawUnitLabel !== 'string') {
+            return '';
+        }
+
+        const normalized = rawUnitLabel.trim().toLowerCase();
+        if (!normalized) {
+            return '';
+        }
+
+        if (normalized.includes('hour')) {
+            return type === 'material' ? '' : 'per hour';
+        }
+
+        if (
+            normalized.includes('m²') ||
+            normalized.includes('m2') ||
+            normalized.includes('sqm') ||
+            normalized.includes('sqft') ||
+            normalized.includes('area')
+        ) {
+            return 'per area';
+        }
+
+        if (normalized.includes('unit')) {
+            return 'per no. of units';
+        }
+
+        return '';
+    }
+
+    function formatCostLabel(baseLabel, perLabel) {
+        return perLabel ? `${baseLabel} (${perLabel})` : baseLabel;
     }
 
     function formatDate(d) {
@@ -1781,12 +2068,14 @@
 
         // Unit billing summary
         const unitLabel = ms.unit_label || 'units';
-        const unitRate = parseFloat(ms.unit_rate || 0);
+        const agreedRate = parseFloat(ms.unit_rate || 0);
+        const actualRate = parseFloat(ms.actual_unit_rate || 0);
+        const unitRate = (actualRate > 0) ? actualRate : agreedRate;
         const estQty = parseFloat(ms.estimated_quantity || 0);
         const actualQty = parseFloat(ms.actual_quantity || 0);
         const hasDynamicBill = unitRate > 0 && actualQty > 0;
         const billedAmount = hasDynamicBill ? unitRate * actualQty : parseFloat(ms.actual_amount || ms.amount || 0);
-        const estimatedTotal = unitRate > 0 ? unitRate * estQty : parseFloat(ms.amount || 0);
+        const estimatedTotal = agreedRate > 0 ? agreedRate * estQty : parseFloat(ms.amount || 0);
 
         const billingHtml = hasDynamicBill ? `
             <div class="unit-billing-card">
@@ -1794,8 +2083,13 @@
                 <div class="unit-billing-grid">
                     <div class="ub-row">
                         <span class="ub-label">Agreed Rate</span>
-                        <span class="ub-value">${formatCurrency(unitRate)} / ${esc(unitLabel)}</span>
+                        <span class="ub-value">${formatCurrency(agreedRate)} / ${esc(unitLabel)}</span>
                     </div>
+                    ${actualRate > 0 && Math.abs(actualRate - agreedRate) > 0.009 ? `
+                    <div class="ub-row">
+                        <span class="ub-label">Actual Rate <span class="ub-sub">(material variation)</span></span>
+                        <span class="ub-value ub-actual">${formatCurrency(actualRate)} / ${esc(unitLabel)}</span>
+                    </div>` : ''}
                     <div class="ub-row">
                         <span class="ub-label">Estimated <span class="ub-sub">(from quotation)</span></span>
                         <span class="ub-value ub-estimate">${estQty > 0 ? estQty + ' ' + esc(unitLabel) : '—'}
@@ -1851,7 +2145,9 @@
         if (!currentReviewMilestoneId) return;
 
         const ms = currentContractMilestones.find(m => m.milestone_id == currentReviewMilestoneId);
-        const unitRate = parseFloat(ms?.unit_rate || 0);
+        const agreedRate = parseFloat(ms?.unit_rate || 0);
+        const actualRate = parseFloat(ms?.actual_unit_rate || 0);
+        const unitRate = (actualRate > 0) ? actualRate : agreedRate;
         const actualQty = parseFloat(ms?.actual_quantity || 0);
         const billedAmt = (unitRate > 0 && actualQty > 0) ? unitRate * actualQty : parseFloat(ms?.actual_amount || ms?.amount || 0);
         const unitLabel = ms?.unit_label || 'units';

@@ -30,7 +30,7 @@ if (!$userId) {
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/navbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/contracts.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/contracts.css?v=1.1">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/chat.css">
 </head>
 <body>
@@ -137,8 +137,9 @@ if (!$userId) {
     </div>
 
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/chat.js"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/contracts.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/chat.js?v=6.8"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/contract-preview.js?v=1.1"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/contracts.js?v=2.7"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/budget-adjustment.js"></script>
     <script>
         // Customer-specific budget adjustment functions

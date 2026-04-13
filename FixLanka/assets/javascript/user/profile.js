@@ -241,8 +241,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                         <div class="quote-amount">
-                            <span class="amount-label">Quote</span>
-                            <span class="amount-value">LKR ${quote.amount.toLocaleString()}</span>
+                            ${quote.labor_cost ? `<div><strong>Labor${quote.labor_unit_label ? ` (per ${quote.labor_unit_label})` : ''}:</strong> LKR ${quote.labor_cost.toLocaleString()}</div>` : ''}
+                            ${quote.material_cost ? `<div><strong>Material${quote.material_unit_label ? ` (per ${quote.material_unit_label})` : ''}:</strong> LKR ${quote.material_cost.toLocaleString()}</div>` : ''}
+                            ${quote.transport_cost && quote.transport_cost > 0 ? `<div><strong>Transport:</strong> LKR ${quote.transport_cost.toLocaleString()}</div>` : ''}
+                            ${quote.other_charges && quote.other_charges > 0 ? `<div><strong>Other Charges:</strong> LKR ${quote.other_charges.toLocaleString()}</div>` : ''}
                         </div>
                     </div>
                     <p class="quote-job-title">${quote.jobTitle}</p>

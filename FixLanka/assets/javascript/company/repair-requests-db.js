@@ -672,10 +672,26 @@ function createCompletedProjectLogItem(project) {
                                 ${formattedDate}
                             </span>
                         </div>
-                        ${amount !== null ? `
-                        <div class="quotation-amount-inline">
-                            <span class="amount-label">Total Amount${project.labor_unit_label || project.material_unit_label ? ' (per unit)' : ''}:</span>
-                            <span class="amount-value">LKR ${formatNumber(amount)}</span>
+                        ${project.labor_cost || project.material_cost || project.transport_cost ? `
+                        <div class="quotation-cost-breakdown">
+                            ${project.labor_cost ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Labor${formatUnitSuffix(project.labor_unit_label)}:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(project.labor_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${project.material_cost ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Material${formatUnitSuffix(project.material_unit_label)}:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(project.material_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${project.transport_cost && parseFloat(project.transport_cost) > 0 ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Transport:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(project.transport_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
                         </div>
                         ` : ''}
                     </div>
@@ -759,9 +775,31 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
                                 ${formattedDate}
                             </span>
                         </div>
-                        <div class="quotation-amount-inline">
-                            <span class="amount-label">Total Amount${quotation.labor_unit_label || quotation.material_unit_label ? ' (per unit)' : ''}:</span>
-                            <span class="amount-value">LKR ${formatNumber(amount)}</span>
+                        <div class="quotation-cost-breakdown">
+                            ${quotation.labor_cost ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Labor${formatUnitSuffix(quotation.labor_unit_label)}:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(quotation.labor_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${quotation.material_cost ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Material${formatUnitSuffix(quotation.material_unit_label)}:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(quotation.material_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${quotation.transport_cost && parseFloat(quotation.transport_cost) > 0 ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Transport:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(quotation.transport_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${quotation.other_charges && parseFloat(quotation.other_charges) > 0 ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Other Charges:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(quotation.other_charges).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
                         </div>
                         ${isRejected && quotation.rejection_reason ? `
                         <div class="quotation-rejection-reason-inline">
@@ -841,7 +879,7 @@ async function openQuotationModal(requestId) {
         // Show detailed error modal
         const daysExpired = Math.ceil((currentDate - requestDeadline) / (1000 * 60 * 60 * 24));
         await window.showAlert(
-            `âŒ Request Expired\n\n` +
+            `Request Expired\n\n` +
             `This service request expired ${daysExpired} day(s) ago.\n` +
             `Deadline was: ${formatDate(request.finish_date)}\n\n` +
             `You cannot submit quotations for expired requests.`
@@ -1138,6 +1176,16 @@ async function submitQuotation() {
         } else if (materialMethod === 'per_unit') {
             material_unit_label = 'per unit';
         }
+    }
+
+    if (!labor_unit_label) {
+        const laborLabelText = document.getElementById('labor-unit-label')?.textContent?.trim() || '';
+        labor_unit_label = laborLabelText.replace(/[()]/g, '').trim() || null;
+    }
+
+    if (!material_unit_label) {
+        const materialLabelText = document.getElementById('material-unit-label')?.textContent?.trim() || '';
+        material_unit_label = materialLabelText.replace(/[()]/g, '').trim() || null;
     }
 
     // Override if payment method is time_material
@@ -1561,9 +1609,14 @@ function calculateTotal() {
     const subtotal = labor + material + transport + other;
     const total = subtotal;
 
-    document.getElementById('subtotal-amount').textContent = `LKR ${formatNumber(subtotal.toFixed(2))}`;
-    document.getElementById('total-amount').textContent = `LKR ${formatNumber(total.toFixed(2))}`;
-    document.getElementById('total-price').value = total.toFixed(2);
+    const subtotalEl = document.getElementById('subtotal-amount');
+    if (subtotalEl) subtotalEl.textContent = `LKR ${formatNumber(subtotal.toFixed(2))}`;
+
+    const totalEl = document.getElementById('total-amount');
+    if (totalEl) totalEl.textContent = `LKR ${formatNumber(total.toFixed(2))}`;
+
+    const totalPriceInput = document.getElementById('total-price');
+    if (totalPriceInput) totalPriceInput.value = total.toFixed(2);
 }
 
 /**
@@ -1690,6 +1743,23 @@ function formatTimeAgo(dateString) {
  */
 function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function formatUnitSuffix(unitLabel) {
+    const raw = String(unitLabel || '').trim();
+    if (!raw) return '';
+
+    // Strip outer parentheses if present.
+    let normalized = raw.replace(/^\((.*)\)$/, '$1').trim();
+
+    // Guard against accidental double-prefix like "per per hour".
+    normalized = normalized.replace(/^per\s+per\s+/i, 'per ');
+
+    if (/^per\s+/i.test(normalized)) {
+        normalized = normalized.replace(/^per\s+/i, 'per ').trim();
+        return ` (${normalized})`;
+    }
+    return ` (per ${normalized})`;
 }
 
 /**

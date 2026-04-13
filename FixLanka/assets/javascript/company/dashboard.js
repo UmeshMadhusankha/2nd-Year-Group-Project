@@ -491,9 +491,9 @@ function generateStars(rating) {
     const hasHalfStar = rating % 1 >= 0.5;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
-    return 'â˜…'.repeat(fullStars) +
-        (hasHalfStar ? 'â˜†' : '') +
-        'â˜†'.repeat(emptyStars);
+    return '*'.repeat(fullStars) +
+        (hasHalfStar ? '*' : '') +
+        '-'.repeat(emptyStars);
 }
 
 // Add required styles
@@ -1705,7 +1705,7 @@ function formatDateString(date) {
     return `${year}-${month}-${day}`;
 }
 
-// âœ… FIX: Same local-safe version for input fields
+// FIX: Same local-safe version for input fields
 function formatDateForInput(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');

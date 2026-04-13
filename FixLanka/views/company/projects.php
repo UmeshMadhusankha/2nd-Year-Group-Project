@@ -213,7 +213,7 @@ if (!$companyId) {
                         <p style="margin: 6px 0 10px; color: var(--text-secondary); font-size: 0.9rem;">
                             Select any employees you want to work on this project.
                         </p>
-                        <div id="start-project-employees" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; max-height: 180px; overflow: auto;">
+                        <div id="start-project-employees" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
                             <div style="color: var(--text-secondary); font-size: 0.9rem;"><i class="fas fa-spinner fa-spin"></i> Loading employees...</div>
                         </div>
                     </div>
@@ -295,6 +295,32 @@ if (!$companyId) {
             <div class="modal-body">
                 <form id="proof-form" enctype="multipart/form-data">
                     <input type="hidden" id="proof-milestone-id" name="milestone_id">
+
+                    <div class="form-group" id="proof-unit-info" style="display:none;">
+                        <label><i class="fas fa-ruler-combined"></i> Unit Billing</label>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:180px;">
+                                <small style="display:block; color:#64748b;">Agreed rate</small>
+                                <div id="proof-agreed-rate" style="font-weight:600;">-</div>
+                            </div>
+                            <div style="flex:1; min-width:180px;">
+                                <small style="display:block; color:#64748b;">Unit</small>
+                                <div id="proof-unit-label" style="font-weight:600;">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="proof-actual-qty-row" style="display:none;">
+                        <label><i class="fas fa-hashtag"></i> Actual Units Completed <span class="required">*</span></label>
+                        <input type="number" id="proof-actual-qty" name="actual_quantity" min="0" step="0.01" placeholder="e.g., 12.5" />
+                        <small>Enter the actual completed units for this milestone.</small>
+                    </div>
+
+                    <div class="form-group" id="proof-actual-rate-row" style="display:none;">
+                        <label><i class="fas fa-tag"></i> Actual Unit Rate (Material variation)</label>
+                        <input type="number" id="proof-actual-rate" name="actual_unit_rate" min="0" step="0.01" placeholder="Leave blank if unchanged" />
+                        <small>Only use if material prices changed from the agreed rate.</small>
+                    </div>
                     
                     <div class="form-group">
                         <label><i class="fas fa-align-left"></i> Description *</label>
