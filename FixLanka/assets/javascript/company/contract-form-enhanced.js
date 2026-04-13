@@ -14,6 +14,7 @@
     let currentStep = 1;
     let selectedQuotation = null;
     let quotationFullData = null; // Full data from enhanced API
+    let unitPricingMode = { active: false, laborUnitLabel: '', materialUnitLabel: '' };
     let autoSaveTimer = null;
     let formDirty = false;
 
@@ -80,6 +81,12 @@
         // Budget type change
         const budgetType = document.getElementById('budgetType');
         if (budgetType) budgetType.addEventListener('change', onBudgetTypeChange);
+        // Flexible percent change (materials-based)
+        const budgetFlexPercent = document.getElementById('budgetFlexPercent');
+        if (budgetFlexPercent) {
+            budgetFlexPercent.addEventListener('input', onBudgetTypeChange);
+            budgetFlexPercent.addEventListener('change', onBudgetTypeChange);
+        }
 
         // Pricing type change
         const pricingType = document.getElementById('pricingType');
@@ -99,6 +106,9 @@
         if (startDate) startDate.addEventListener('change', onDateChange);
         if (endDate) endDate.addEventListener('change', onDateChange);
 
+        // Apply bounds immediately for any prefilled values
+        onDateChange();
+
         // Milestone buttons
         const addMsBtn = document.getElementById('addMilestoneBtn');
         if (addMsBtn) addMsBtn.addEventListener('click', addMilestoneRow);
@@ -110,6 +120,18 @@
         document.addEventListener('click', function (e) {
             const btn = e.target.closest('.btn-remove-ms');
             if (btn && document.getElementById('milestonesBody')?.contains(btn)) {
+                // In unit-priced mode: protect the required unit-billing rows (Labour/Materials)
+                if (unitPricingMode.active) {
+                    const reqCount = ((unitPricingMode.laborUnitLabel || '').trim() ? 1 : 0) + ((unitPricingMode.materialUnitLabel || '').trim() ? 1 : 0);
+                    const row = btn.closest('tr');
+                    const rowsArr = Array.from(document.querySelectorAll('#milestonesBody .milestone-row'));
+                    const idx = rowsArr.indexOf(row);
+                    if (reqCount > 0 && idx > -1 && idx < reqCount) {
+                        showNotification('error', 'Action Denied', 'The Labour/Materials unit-billing phases cannot be removed in unit-priced mode.');
+                        return;
+                    }
+                }
+
                 // Feature: Prevent deletion of last remaining phase
                 const rows = document.querySelectorAll('#milestonesBody .milestone-row');
                 if (rows.length <= 1) {
@@ -207,6 +229,7 @@
         currentStep = 1;
         selectedQuotation = null;
         quotationFullData = null;
+        unitPricingMode = { active: false, laborUnitLabel: '', materialUnitLabel: '' };
         formDirty = false;
 
         const form = document.getElementById('contractForm');
@@ -225,6 +248,9 @@
 
         // Reset default milestone rows
         resetMilestones();
+
+        // Unlock any unit-pricing restrictions
+        applyUnitPricingLocks();
     }
 
     // ===================================
@@ -456,6 +482,9 @@
             if (bd) bd.style.display = 'none';
             const unitInfo = document.getElementById('unitMeasurementInfo');
             if (unitInfo) unitInfo.style.display = 'none';
+
+            unitPricingMode = { active: false, laborUnitLabel: '', materialUnitLabel: '' };
+            applyUnitPricingLocks();
             return;
         }
 
@@ -552,6 +581,7 @@
         // Step 5: Financial (Payments)
         setVal('contractValue', d.total_amount || '');
         setVal('budgetType', d.budget_type || 'fixed');
+        setVal('budgetFlexPercent', (d.budget_type === 'flexible') ? '10' : '');
         onBudgetTypeChange();
 
         // Payment method: quotation table has this column but it's NEVER populated
@@ -633,6 +663,7 @@
         // Financial
         setVal('contractValue', q.total_amount || '');
         setVal('budgetType', q.budget_type || 'fixed');
+        setVal('budgetFlexPercent', (q.budget_type === 'flexible') ? '10' : '');
         onBudgetTypeChange();
 
         // Payment method: NOT stored in quotation (always NULL)
@@ -665,14 +696,35 @@
     function onBudgetTypeChange() {
         const type = document.getElementById('budgetType')?.value;
         const row = document.getElementById('budgetRangeRow');
+        const flexRow = document.getElementById('budgetFlexRow');
         const val = parseFloat(document.getElementById('contractValue')?.value || 0);
 
+        const pctEl = document.getElementById('budgetFlexPercent');
+        let flexPct = parseFloat(pctEl?.value || '');
+        if (!isFinite(flexPct) || flexPct < 0) flexPct = 10;
+        if (pctEl && (pctEl.value === '' || !isFinite(parseFloat(pctEl.value)))) {
+            pctEl.value = String(flexPct);
+        }
+
+        const materialCost = parseFloat(
+            (quotationFullData && quotationFullData.material_cost) ??
+            (selectedQuotation && selectedQuotation.material_cost) ??
+            0
+        );
+        const baseForFlex = materialCost > 0 ? materialCost : val;
+
         if (type === 'flexible' && val > 0) {
-            setVal('budgetMin', (val * 0.9).toFixed(0));
-            setVal('budgetMax', (val * 1.1).toFixed(0));
+            const delta = baseForFlex * (flexPct / 100);
+            const minV = Math.max(0, val - delta);
+            const maxV = val + delta;
+
+            setVal('budgetMin', minV.toFixed(0));
+            setVal('budgetMax', maxV.toFixed(0));
             if (row) row.style.display = 'grid';
+            if (flexRow) flexRow.style.display = 'grid';
         } else {
             if (row) row.style.display = 'none';
+            if (flexRow) flexRow.style.display = 'none';
         }
     }
 
@@ -726,6 +778,12 @@
     // PAYMENT METHOD CHANGE HANDLER
     // ===================================
     function onPaymentMethodChange() {
+        if (unitPricingMode.active) {
+            setVal('paymentMethod', 'milestone_based');
+            const paymentMethodEl = document.getElementById('paymentMethod');
+            if (paymentMethodEl) paymentMethodEl.value = 'milestone_based';
+        }
+
         const method = document.getElementById('paymentMethod')?.value;
         const isMilestone = method === 'milestone_based';
 
@@ -758,6 +816,7 @@
             'full_upfront': [100],
             'completion': [100],
             '50_50': [50, 50],
+            budget_flexibility_percentage: getVal('budgetFlexPercent'),
             '30_70': [30, 70]
         };
 
@@ -925,9 +984,40 @@
     // ===================================
     // TIMELINE & MILESTONES
     // ===================================
+    function enforceDateBounds() {
+        const startEl = document.getElementById('startDate');
+        const endEl = document.getElementById('endDate');
+        if (!startEl || !endEl) return;
+
+        const start = startEl.value;
+        const end = endEl.value;
+
+        if (start) {
+            endEl.min = start;
+        } else {
+            endEl.removeAttribute('min');
+        }
+
+        if (end) {
+            startEl.max = end;
+        } else {
+            startEl.removeAttribute('max');
+        }
+
+        if (start && end) {
+            const s = new Date(start);
+            const e = new Date(end);
+            if (e < s) {
+                endEl.value = start;
+            }
+        }
+    }
+
     function onDateChange() {
         const start = document.getElementById('startDate')?.value;
         const end = document.getElementById('endDate')?.value;
+
+        enforceDateBounds();
 
         if (start && end) {
             const s = new Date(start);
@@ -987,6 +1077,72 @@
 
         const method = document.getElementById('paymentMethod')?.value || 'milestone_based';
 
+        if (unitPricingMode.active) {
+            const laborUnitLabel = (unitPricingMode.laborUnitLabel || '').trim();
+            const materialUnitLabel = (unitPricingMode.materialUnitLabel || '').trim();
+
+            const unitRows = [];
+            if (laborUnitLabel) {
+                unitRows.push({
+                    name: `Labour (${laborUnitLabel})`,
+                    desc: 'Submit actual labour units after completion for customer verification.'
+                });
+            }
+            if (materialUnitLabel) {
+                unitRows.push({
+                    name: `Materials (${materialUnitLabel})`,
+                    desc: 'Submit actual material units (and actual rate if changed) for customer verification.'
+                });
+            }
+
+            if (unitRows.length > 0) {
+                const end = document.getElementById('endDate')?.value || '';
+                const existing = Array.from(tbody.querySelectorAll('.milestone-row'));
+
+                // If the table is empty, seed it with required unit rows
+                if (existing.length === 0) {
+                    tbody.innerHTML = unitRows.map((r, i) => `
+                        <tr class="milestone-row">
+                            <td>${i + 1}</td>
+                            <td><input type="text" name="ms_name[]" value="${esc(r.name)}"></td>
+                            <td><input type="text" name="ms_desc[]" value="${esc(r.desc)}"></td>
+                            <td><input type="date" name="ms_date[]" value="${end}"></td>
+                            <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
+                        </tr>
+                    `).join('');
+                } else {
+                    // Ensure required rows exist at the top, but do not overwrite user edits.
+                    for (let i = 0; i < unitRows.length; i++) {
+                        let row = tbody.querySelectorAll('.milestone-row')[i];
+                        if (!row) {
+                            const tr = document.createElement('tr');
+                            tr.className = 'milestone-row';
+                            tr.innerHTML = `
+                                <td>${i + 1}</td>
+                                <td><input type="text" name="ms_name[]" value="${esc(unitRows[i].name)}"></td>
+                                <td><input type="text" name="ms_desc[]" value="${esc(unitRows[i].desc)}"></td>
+                                <td><input type="date" name="ms_date[]" value="${end}"></td>
+                                <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
+                            `;
+                            tbody.appendChild(tr);
+                            row = tr;
+                        }
+
+                        const nameInput = row.querySelector('input[name="ms_name[]"]');
+                        const descInput = row.querySelector('input[name="ms_desc[]"]');
+                        const dateInput = row.querySelector('input[name="ms_date[]"]');
+                        if (nameInput && !nameInput.value.trim()) nameInput.value = unitRows[i].name;
+                        if (descInput && !descInput.value.trim()) descInput.value = unitRows[i].desc;
+                        if (dateInput && !dateInput.value) dateInput.value = end;
+                    }
+                }
+
+                // Renumber after any adjustments
+                if (typeof renumberMilestones === 'function') renumberMilestones();
+                return;
+            }
+        }
+
         // Define templates keyed by payment method
         // Each entry: array of { name, desc }
         const templates = {
@@ -1035,7 +1191,137 @@
     // ===================================
     // REVIEW / PREVIEW
     // ===================================
+    function buildSharedPreviewContractObject() {
+        const today = new Date();
+        const ref = getVal('projectReference') || `CTR-${today.getFullYear()}-XXXX`;
+
+        const paymentMethod = getVal('paymentMethod');
+        const totalVal = parseFloat(getVal('contractValue') || 0);
+
+        const budgetTypeKey = getVal('budgetType') || 'fixed';
+        const flexPct = parseFloat(getVal('budgetFlexPercent') || 10);
+        const isFlexible = budgetTypeKey === 'flexible' && isFinite(flexPct) && flexPct > 0;
+
+        const matVal = document.querySelector('input[name="materials_responsibility"]:checked')?.value || 'company';
+
+        const unitLabel = String(
+            quotationFullData?.labor_unit_label ||
+            quotationFullData?.material_unit_label ||
+            ''
+        ).trim();
+        const isUnitBased = Boolean(unitLabel);
+
+        const milestones = [];
+        document.querySelectorAll('#milestonesBody .milestone-row').forEach((row, i) => {
+            const title = row.querySelector('input[name="ms_name[]"]')?.value || `Milestone ${i + 1}`;
+            const description = row.querySelector('input[name="ms_desc[]"]')?.value || '';
+            const due_date = row.querySelector('input[name="ms_date[]"]')?.value || '';
+
+            const ms = {
+                title,
+                description,
+                due_date,
+                status: 'pending'
+            };
+
+            // For unit-priced flow, show the agreed unit + rate in preview
+            if (isUnitBased) {
+                ms.unit_label = unitLabel;
+                ms.unit_rate = isFinite(totalVal) ? totalVal : 0;
+            }
+
+            milestones.push(ms);
+        });
+
+        const contractObj = {
+            status: 'draft',
+            contract_number: ref,
+            contract_date: today.toISOString().slice(0, 10),
+
+            // Parties
+            client: {
+                name: getVal('clientName') || getText('partyClientName') || '—',
+                email: getText('partyClientEmail') || '',
+                address: getText('partyClientAddress') || '',
+                district: ''
+            },
+            company: {
+                name: getText('partyCompanyName') || '—',
+                registration_no: getText('partyCompanyReg') || '',
+                address: getText('partyCompanyAddress') || '',
+                contact: getText('partyCompanyPhone') || ''
+            },
+
+            // Project
+            project_title: getVal('projectTitle') || '',
+            project_reference: getVal('projectReference') || '',
+            project_location: getVal('projectLocation') || '',
+            project_type: getVal('projectType') || '',
+            project_description: getVal('projectDescription') || '',
+
+            // Scope
+            scope_description: getVal('scopeDescription') || '',
+            scope_inclusions: getVal('scopeInclusions') || 'As per quotation',
+            scope_exclusions: getVal('scopeExclusions') || 'None specified',
+            materials_responsibility: matVal,
+
+            // Duration
+            start_date: getVal('startDate') || '',
+            end_date: getVal('endDate') || '',
+            progress_percentage: 0,
+
+            // Financial
+            total_budget: isFinite(totalVal) ? totalVal : 0,
+            value: isFinite(totalVal) ? totalVal : 0,
+            budget_type: budgetTypeKey,
+            budget_min: isFlexible ? (totalVal * (1 - flexPct / 100)) : null,
+            budget_max: isFlexible ? (totalVal * (1 + flexPct / 100)) : null,
+            payment_method: paymentMethod,
+            amount_paid: 0,
+            amount_pending: isFinite(totalVal) ? totalVal : 0,
+            late_payment_penalty: getVal('latePaymentPenalty') || 'As per standard terms',
+
+            // Clauses
+            variation_clause: !!document.getElementById('variationClause')?.checked,
+            dispute_resolution: getVal('disputeResolution') || 'Disputes shall be resolved through mediation via the FixLanka platform.',
+
+            // Misc
+            sent_to_customer: false,
+            milestones
+        };
+
+        // Keep legacy top-level fields too (shared renderer supports both)
+        contractObj.company_name = contractObj.company.name;
+        contractObj.company_registration = contractObj.company.registration_no;
+        contractObj.company_phone = contractObj.company.contact;
+        contractObj.customer_email = contractObj.client.email;
+
+        return contractObj;
+    }
+
+    function renderReviewViaSharedRenderer() {
+        if (!window.ContractPreview || typeof window.ContractPreview.renderHTML !== 'function') return false;
+
+        const host = document.getElementById('contractPreview');
+        if (!host) return false;
+
+        // Avoid nested .contract-preview wrappers
+        host.classList.remove('contract-preview');
+
+        const c = buildSharedPreviewContractObject();
+        const method = c.payment_method;
+        host.innerHTML = window.ContractPreview.renderHTML(c, {
+            isMilestoneBased: method === 'milestone_based',
+            paymentLabel: formatPaymentMethodLabel(method),
+            renderMilestoneAction: () => '—'
+        });
+        return true;
+    }
+
     function populateReview() {
+        // Prefer shared renderer so “preview before create” === “preview after create”
+        if (renderReviewViaSharedRenderer()) return;
+
         const today = new Date();
         setText('previewDate', today.toLocaleDateString('en-LK', { year: 'numeric', month: 'long', day: 'numeric' }));
 
@@ -1092,8 +1378,12 @@
         const isUnitBased = quotationFullData?.labor_unit_label || quotationFullData?.material_unit_label;
         const totalSuffix = isUnitBased ? ' (per unit)' : '';
         setText('previewValue', `LKR ${totalVal.toLocaleString()}${totalSuffix}`);
-        const budgetTypes = { 'fixed': 'Fixed Price', 'time_based': 'Time-Based', 'flexible': 'Flexible (±10%)' };
-        setText('previewBudgetType', budgetTypes[getVal('budgetType')] || 'Fixed');
+        const budgetTypeKey = getVal('budgetType') || 'fixed';
+        const pct = parseFloat(getVal('budgetFlexPercent') || 10);
+        const budgetLabel = budgetTypeKey === 'flexible'
+            ? `Flexible (Materials ±${isFinite(pct) ? pct : 10}%)`
+            : 'Fixed Price';
+        setText('previewBudgetType', budgetLabel);
         setText('previewPaymentMethod', formatPaymentMethodLabel(getVal('paymentMethod')));
 
         // Payment schedule in preview
@@ -1109,8 +1399,7 @@
         );
 
         // Communication
-        const channels = { 'system': 'FixLanka Platform', 'email': 'Email', 'both': 'Platform + Email' };
-        setText('previewCommChannel', channels[getVal('communicationChannel')] || 'FixLanka Platform');
+        setText('previewCommChannel', 'FixLanka Platform');
         setText('previewDisputeRes', getVal('disputeResolution') || 'As per standard terms');
 
         // Additional
@@ -1313,7 +1602,7 @@
 
             // Clauses
             variation_clause: document.getElementById('variationClause')?.checked ? 1 : 0,
-            communication_channel: getVal('communicationChannel'),
+            communication_channel: 'system',
             dispute_resolution: getVal('disputeResolution'),
 
             // Additional
@@ -1560,6 +1849,12 @@
         const materialUnitLabel = (d.material_unit_label || '').trim();
         const isUnitBased = Boolean(laborUnitLabel || materialUnitLabel);
 
+        unitPricingMode = {
+            active: isUnitBased,
+            laborUnitLabel,
+            materialUnitLabel
+        };
+
         // Build a human-readable unit measurement summary.
         let measurementText = 'Lump sum (per job)';
         if (isUnitBased) {
@@ -1594,6 +1889,76 @@
             }
             unitSpan.textContent = isUnitBased ? ` (${measurementText})` : ' (per job)';
         }
+
+        applyUnitPricingLocks();
+    }
+
+    function applyUnitPricingLocks() {
+        const paymentMethodEl = document.getElementById('paymentMethod');
+        const pricingTypeEl = document.getElementById('pricingType');
+        const hourlyRow = document.getElementById('hourlyRateRow');
+        const addMsBtn = document.getElementById('addMilestoneBtn');
+
+        if (!unitPricingMode.active) {
+            if (paymentMethodEl) {
+                paymentMethodEl.disabled = false;
+                Array.from(paymentMethodEl.options || []).forEach(opt => {
+                    opt.disabled = false;
+                    opt.hidden = false;
+                });
+            }
+            if (pricingTypeEl) {
+                pricingTypeEl.disabled = false;
+            }
+            if (hourlyRow) {
+                hourlyRow.style.display = 'none';
+            }
+            if (addMsBtn) {
+                addMsBtn.disabled = false;
+            }
+
+            document.querySelectorAll('#milestonesBody .btn-remove-ms').forEach(btn => {
+                btn.style.display = '';
+            });
+            return;
+        }
+
+        // Unit-priced mode: milestone-based only.
+        if (paymentMethodEl) {
+            paymentMethodEl.value = 'milestone_based';
+            Array.from(paymentMethodEl.options || []).forEach(opt => {
+                const keep = opt.value === 'milestone_based';
+                opt.disabled = !keep;
+                opt.hidden = !keep;
+            });
+            paymentMethodEl.disabled = true;
+        }
+        setVal('paymentMethod', 'milestone_based');
+
+        // Unit-priced mode: fixed pricing type (no hourly/time-based pricing).
+        if (pricingTypeEl) {
+            pricingTypeEl.value = 'fixed_price';
+            pricingTypeEl.disabled = true;
+        }
+        setVal('pricingType', 'fixed_price');
+        setVal('hourlyRate', '');
+        setVal('spendingCap', '');
+        if (hourlyRow) hourlyRow.style.display = 'none';
+
+        // Lock milestones to unit billing phases
+        if (addMsBtn) addMsBtn.disabled = false;
+        resetMilestones();
+
+        // Hide remove button only for the required unit-billing rows
+        const reqCount = ((unitPricingMode.laborUnitLabel || '').trim() ? 1 : 0) + ((unitPricingMode.materialUnitLabel || '').trim() ? 1 : 0);
+        const rows = Array.from(document.querySelectorAll('#milestonesBody .milestone-row'));
+        rows.forEach((row, idx) => {
+            const rm = row.querySelector('.btn-remove-ms');
+            if (!rm) return;
+            rm.style.display = (idx < reqCount) ? 'none' : '';
+        });
+
+        generatePaymentPreview();
     }
 
     function esc(str) {

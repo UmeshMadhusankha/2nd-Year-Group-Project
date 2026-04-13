@@ -852,13 +852,18 @@ function buildCardActions(contract) {
     const id = contract.contract_id;
     const status = contract.status || 'draft';
     const isSent = contract.sent_to_customer == 1;
+    const isAcceptedByCustomer =
+        contract?.terms_accepted === true ||
+        contract?.terms_accepted === 1 ||
+        String(contract?.customer_response || '') === 'accepted' ||
+        String(status) === 'accepted';
 
     // 1) Primary action button (Send, Chat, Start Project, or View Project)
     if (!isSent) {
         html += `<button class="card-action-btn card-action-send send-contract-btn" data-contract-id="${id}" title="Send to Customer">
             <i class="fas fa-paper-plane"></i>
         </button>`;
-    } else if (status === 'accepted') {
+    } else if (isAcceptedByCustomer) {
         if (!contract.project_id) {
             // Contract accepted, project not started
             html += `<button class="card-action-btn" onclick="handleStartProjectFromContract(${id})" style="background: var(--primary-color); border: none; color: white; width: auto; padding: 0 16px; border-radius: 6px; font-weight: 600;" title="Start Project">
@@ -1673,6 +1678,22 @@ function closeContractDetailsModal() {
 }
 
 function populateModalContent(data) {
+    // Prefer shared renderer so company + customer views stay identical
+    if (window.ContractPreview && typeof window.ContractPreview.renderHTML === 'function') {
+        const container = document.getElementById('viewContractPreview');
+        if (container) {
+            container.innerHTML = window.ContractPreview.renderHTML(data, {
+                isMilestoneBased: data.payment_method === 'milestone_based',
+                paymentLabel: (function () {
+                    const map = { 'full_upfront': 'Full Upfront', 'milestone_based': 'Milestone-Based', '50_50': '50/50 Split', '30_70': '30/70 Split', 'completion': 'On Completion' };
+                    return map[data.payment_method] || 'Standard';
+                })(),
+                renderMilestoneAction: () => '—'
+            });
+        }
+        return;
+    }
+
     // Helper
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || ''; };
     const formatDate = (d) => { if (!d) return ''; const dt = new Date(d); return dt.toLocaleDateString('en-LK', { year: 'numeric', month: 'long', day: 'numeric' }); };
@@ -1802,8 +1823,7 @@ function populateModalContent(data) {
         : 'Variation control is not enabled for this contract.');
 
     // Section 7: Communication
-    const channels = { 'system': 'FixLanka Platform', 'email': 'Email', 'both': 'Platform + Email' };
-    set('viewCommChannel', channels[data.communication_channel] || 'FixLanka Platform');
+    set('viewCommChannel', 'FixLanka Platform');
     set('viewDisputeRes', data.dispute_resolution || 'Disputes shall be resolved through mediation via the FixLanka platform.');
 
     // Section 8: Customer Response
@@ -2260,7 +2280,7 @@ function populateFormWithContract(data) {
 
     // Step 7: Terms & Clauses
     setCheck('variationClause', data.variation_clause);
-    setVal('communicationChannel', data.communication_channel || 'system');
+    setVal('communicationChannel', 'system');
     setVal('disputeResolution', data.dispute_resolution || '');
     setVal('additionalTerms', data.terms_conditions || '');
 
@@ -3365,42 +3385,83 @@ console.log('? Phase 2A: Milestone features loaded');
  * Handle instantly starting a project from an accepted contract card
  */
 function handleStartProjectFromContract(contractId) {
-    if (!confirm('Are you ready to start this project? This will create a new tracking instance on your Projects dashboard.')) {
-        return;
+    // If our cached list already knows a project exists, redirect.
+    try {
+        const existing = Array.isArray(window.contractsData)
+            ? window.contractsData.find(c => String(c?.contract_id) === String(contractId))
+            : (Array.isArray(contractsData) ? contractsData.find(c => String(c?.contract_id) === String(contractId)) : null);
+        const existingPid = existing?.project_id;
+        if (existingPid) {
+            showNotification(`Project already started (Project #${existingPid}). Redirecting...`, 'info');
+            setTimeout(() => { window.location.href = 'projects.php'; }, 600);
+            return;
+        }
+    } catch (_) {
+        // ignore
     }
 
-    const btn = document.querySelector(`.card-action-btn[onclick="handleStartProjectFromContract(${contractId})"]`);
-    if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
-        btn.disabled = true;
-    }
+    const confirmPromise = (window.showConfirm && typeof window.showConfirm === 'function')
+        ? window.showConfirm('Are you ready to start this project? This will create a new tracking instance on your Projects dashboard.', {
+            title: 'Start Project',
+            confirmText: 'Start',
+            type: 'info'
+        })
+        : Promise.resolve(confirm('Are you ready to start this project? This will create a new tracking instance on your Projects dashboard.'));
 
-    fetch('/2nd-Year-Group-Project/FixLanka/api/projects.php?action=start_from_contract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contract_id: contractId })
-    })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                showNotification('Project started successfully! Redirecting...', 'success');
-                setTimeout(() => {
-                    window.location.href = 'projects.php';
-                }, 1000);
-            } else {
-                showNotification(data.message || 'Failed to start project.', 'error');
+    confirmPromise.then(confirmed => {
+        if (!confirmed) return;
+
+        const btn = document.querySelector(`.card-action-btn[onclick="handleStartProjectFromContract(${contractId})"]`);
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+            btn.disabled = true;
+        }
+
+        fetch('/2nd-Year-Group-Project/FixLanka/api/projects.php?action=start_from_contract', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contract_id: contractId })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Project started successfully! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'projects.php';
+                    }, 1000);
+                    return;
+                }
+
+                const code = String(data.code || '');
+                const existingProjectId = data.project_id || data.projectId;
+                const msg = String(data.message || 'Failed to start project.');
+
+                if (code === 'already_started' || /already\s+been\s+started/i.test(msg)) {
+                    showNotification(
+                        existingProjectId
+                            ? `Project already started (Project #${existingProjectId}). Redirecting...`
+                            : 'Project already started. Redirecting...',
+                        'info'
+                    );
+                    setTimeout(() => {
+                        window.location.href = 'projects.php';
+                    }, 800);
+                    return;
+                }
+
+                showNotification(msg, 'error');
                 if (btn) {
                     btn.innerHTML = '<i class="fas fa-rocket"></i> Start Project';
                     btn.disabled = false;
                 }
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            showNotification('An error occurred while starting the project.', 'error');
-            if (btn) {
-                btn.innerHTML = '<i class="fas fa-rocket"></i> Start Project';
-                btn.disabled = false;
-            }
-        });
+            })
+            .catch(err => {
+                console.error(err);
+                showNotification('An error occurred while starting the project.', 'error');
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-rocket"></i> Start Project';
+                    btn.disabled = false;
+                }
+            });
+    });
 }

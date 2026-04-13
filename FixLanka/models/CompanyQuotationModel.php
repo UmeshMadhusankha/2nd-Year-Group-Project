@@ -142,7 +142,7 @@ class CompanyQuotation
                 u.address as customer_address,
                 NULL as customer_phone,
                 COALESCE(cmp.name, CONCAT(u.f_name, ' ', u.l_name)) as company_name,
-                COALESCE(cmp.address, uc.address) as company_address,
+                COALESCE(c_loc.address, cmp.address, uc.address) as company_address,
                 cmp.registration_no as company_registration_no,
                 cmp.contact_no as company_phone,
                 ct.contract_id as contract_id,
@@ -155,6 +155,7 @@ class CompanyQuotation
             INNER JOIN user u ON jr.user_id = u.user_id
             LEFT JOIN user uc ON uc.user_id = COALESCE(cq.company_id, cq.user_id)
             LEFT JOIN company cmp ON cmp.company_id = COALESCE(cq.company_id, cq.user_id)
+            LEFT JOIN location c_loc ON cmp.location_id = c_loc.location_id
             LEFT JOIN category c ON jr.category_id = c.category_id
             LEFT JOIN contract ct ON ct.quotation_id = cq.quotation_id
             WHERE 1=1";

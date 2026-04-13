@@ -173,6 +173,7 @@ async function loadProjectTimeline(projectId) {
 
         if (result.success && result.data && result.data.length > 0) {
             const phases = result.data;
+            window.currentContractPhases = phases;
             let html = `
                 <div class="table-container" style="padding: 20px;">
                     <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
@@ -545,7 +546,92 @@ async function startPhase(milestoneId) {
 
 // Proof Modal Logic
 function openProofModal(milestoneId) {
+    const proofForm = document.getElementById('proof-form');
+    if (proofForm) {
+        proofForm.reset();
+    }
+
+    const fileList = document.getElementById('file-list');
+    if (fileList) {
+        fileList.innerHTML = '';
+    }
+
     document.getElementById('proof-milestone-id').value = milestoneId;
+
+    const unitInfo = document.getElementById('proof-unit-info');
+    const agreedRateEl = document.getElementById('proof-agreed-rate');
+    const unitLabelEl = document.getElementById('proof-unit-label');
+    const actualQtyRow = document.getElementById('proof-actual-qty-row');
+    const actualQtyInput = document.getElementById('proof-actual-qty');
+    const actualRateRow = document.getElementById('proof-actual-rate-row');
+    const actualRateInput = document.getElementById('proof-actual-rate');
+
+    const hideEl = (el) => {
+        if (el) el.style.display = 'none';
+    };
+
+    hideEl(unitInfo);
+    hideEl(actualQtyRow);
+    hideEl(actualRateRow);
+
+    if (actualQtyInput) {
+        actualQtyInput.required = false;
+        actualQtyInput.value = '';
+    }
+    if (actualRateInput) {
+        actualRateInput.value = '';
+    }
+
+    const phases = window.currentContractPhases || [];
+    const phase = phases.find(p => String(p.milestone_id || p.id) === String(milestoneId));
+
+    const toNumber = (v) => {
+        if (v === null || v === undefined || v === '') return null;
+        const n = parseFloat(v);
+        return Number.isFinite(n) ? n : null;
+    };
+
+    const formatLkr = (amount) => {
+        const n = toNumber(amount);
+        if (n === null) return '-';
+        return new Intl.NumberFormat('en-LK', {
+            style: 'decimal',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(n);
+    };
+
+    const isMaterialsPhase = (p) => {
+        const name = (p?.phase_name || p?.title || '').toString().toLowerCase();
+        return name.includes('material');
+    };
+
+    if (phase) {
+        const unitLabel = (phase.unit_label || '').toString().trim();
+        const unitRate = toNumber(phase.unit_rate);
+
+        if (unitLabel && unitRate !== null && unitRate >= 0) {
+            if (unitInfo) unitInfo.style.display = '';
+            if (agreedRateEl) agreedRateEl.textContent = `LKR ${formatLkr(unitRate)} per ${unitLabel}`;
+            if (unitLabelEl) unitLabelEl.textContent = unitLabel;
+
+            if (actualQtyRow) actualQtyRow.style.display = '';
+            if (actualQtyInput) {
+                actualQtyInput.required = true;
+                const existingQty = toNumber(phase.actual_quantity);
+                if (existingQty !== null) actualQtyInput.value = String(existingQty);
+            }
+
+            if (isMaterialsPhase(phase)) {
+                if (actualRateRow) actualRateRow.style.display = '';
+                if (actualRateInput) {
+                    const existingRate = toNumber(phase.actual_unit_rate);
+                    if (existingRate !== null) actualRateInput.value = String(existingRate);
+                }
+            }
+        }
+    }
+
     document.getElementById('proof-modal').classList.add('active');
 }
 
@@ -553,6 +639,16 @@ function closeProofModal() {
     document.getElementById('proof-modal').classList.remove('active');
     document.getElementById('proof-form').reset();
     document.getElementById('file-list').innerHTML = '';
+
+    const unitInfo = document.getElementById('proof-unit-info');
+    const actualQtyRow = document.getElementById('proof-actual-qty-row');
+    const actualRateRow = document.getElementById('proof-actual-rate-row');
+    if (unitInfo) unitInfo.style.display = 'none';
+    if (actualQtyRow) actualQtyRow.style.display = 'none';
+    if (actualRateRow) actualRateRow.style.display = 'none';
+
+    const actualQtyInput = document.getElementById('proof-actual-qty');
+    if (actualQtyInput) actualQtyInput.required = false;
 }
 
 // File input change handler for preview
@@ -573,6 +669,36 @@ document.addEventListener('DOMContentLoaded', function () {
     if (proofForm) {
         proofForm.addEventListener('submit', async function (e) {
             e.preventDefault();
+
+            const actualQtyRow = document.getElementById('proof-actual-qty-row');
+            const actualQtyInput = document.getElementById('proof-actual-qty');
+            const actualRateRow = document.getElementById('proof-actual-rate-row');
+            const actualRateInput = document.getElementById('proof-actual-rate');
+
+            const rowVisible = (rowEl) => {
+                if (!rowEl) return false;
+                return rowEl.style.display !== 'none';
+            };
+
+            if (rowVisible(actualQtyRow)) {
+                const raw = actualQtyInput?.value;
+                const qty = raw === '' || raw === null || raw === undefined ? NaN : parseFloat(raw);
+                if (!Number.isFinite(qty) || qty < 0) {
+                    showToast('Please enter a valid actual units value', 'error');
+                    return;
+                }
+            }
+
+            if (rowVisible(actualRateRow)) {
+                const rawRate = actualRateInput?.value;
+                if (rawRate !== '' && rawRate !== null && rawRate !== undefined) {
+                    const rate = parseFloat(rawRate);
+                    if (!Number.isFinite(rate) || rate < 0) {
+                        showToast('Please enter a valid actual unit rate (or leave it blank)', 'error');
+                        return;
+                    }
+                }
+            }
 
             const formData = new FormData(this);
             const submitBtn = this.querySelector('button[type="submit"]');
@@ -985,6 +1111,9 @@ async function openStartProjectModal() {
     if (projectModal && projectForm) {
         projectForm.reset();
 
+        // Map selected contract -> existing project (when already started)
+        window._startProjectExistingProjectByContractId = {};
+
         // Fetch eligible contracts
         const selector = document.getElementById('contract-selector');
         selector.innerHTML = '<option value="">Loading available contracts...</option>';
@@ -1001,11 +1130,39 @@ async function openStartProjectModal() {
             const result = await response.json();
 
             if (result.success && result.data) {
-                // Filter for accepted and no project_id
-                const eligibleContracts = result.data.filter(c => c.status === 'accepted' && !c.project_id);
+                const isAcceptedByCustomer = (c) => (
+                    c?.terms_accepted === true ||
+                    c?.terms_accepted === 1 ||
+                    String(c?.customer_response || '') === 'accepted' ||
+                    String(c?.status || '') === 'accepted'
+                );
+
+                const acceptedContracts = result.data.filter(isAcceptedByCustomer);
+                const eligibleContracts = acceptedContracts.filter(c => !c.project_id);
+                const alreadyStartedContracts = acceptedContracts.filter(c => !!c.project_id);
 
                 if (eligibleContracts.length === 0) {
-                    selector.innerHTML = '<option value="">No accepted contracts available to start.</option>';
+                    if (alreadyStartedContracts.length === 0) {
+                        selector.innerHTML = '<option value="">No accepted contracts available to start.</option>';
+                    } else {
+                        selector.innerHTML = '<option value="">-- Select an Accepted Contract --</option>';
+                        alreadyStartedContracts.forEach(c => {
+                            const option = document.createElement('option');
+                            option.value = c.contract_id;
+
+                            const clientName = c.client_name || 'Client';
+                            const total = c.value ? ` (LKR ${formatNumber(c.value)})` : '';
+                            const projectId = c.project_id;
+                            option.textContent = `Contract #${c.contract_id} - ${clientName}${total} (Project #${projectId} already started)`;
+                            option.dataset.projectId = String(projectId);
+                            selector.appendChild(option);
+
+                            window._startProjectExistingProjectByContractId[String(c.contract_id)] = String(projectId);
+                        });
+
+                        selector.disabled = false;
+                        setStartProjectFreelancersLoading(false, 'Project already started for this contract. Manage assignments in Projects.');
+                    }
                 } else {
                     selector.innerHTML = '<option value="">-- Select an Accepted Contract --</option>';
                     eligibleContracts.forEach(c => {
@@ -1120,14 +1277,289 @@ function renderStartProjectCheckboxList(containerId, items, options) {
     container.appendChild(wrapper);
 }
 
+function renderStartProjectInfoList(containerId, items, options) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!items || items.length === 0) {
+        container.innerHTML = `<div style="color: var(--text-secondary); font-size: 0.9rem;">${options?.emptyText || 'No items found.'}</div>`;
+        return;
+    }
+
+    const frag = document.createDocumentFragment();
+
+    if (options?.introText) {
+        const intro = document.createElement('div');
+        intro.style.fontSize = '0.85rem';
+        intro.style.color = 'var(--text-secondary)';
+        intro.style.padding = '6px 6px 10px 6px';
+        intro.textContent = options.introText;
+        frag.appendChild(intro);
+    }
+
+    items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'start-project-info-row';
+        row.style.display = 'flex';
+        row.style.flexDirection = 'column';
+        row.style.padding = '8px 6px';
+        row.style.borderBottom = '1px solid var(--border-color)';
+
+        const primary = document.createElement('div');
+        primary.style.fontWeight = '600';
+        primary.style.color = 'var(--text-primary)';
+        primary.textContent = item.primaryText;
+
+        const secondary = document.createElement('div');
+        secondary.style.fontSize = '0.85rem';
+        secondary.style.color = 'var(--text-secondary)';
+        secondary.textContent = item.secondaryText || '';
+
+        row.appendChild(primary);
+        if (item.secondaryText) row.appendChild(secondary);
+        frag.appendChild(row);
+    });
+
+    // Remove last border
+    const wrapper = document.createElement('div');
+    wrapper.appendChild(frag);
+    const rows = wrapper.querySelectorAll('.start-project-info-row');
+    if (rows.length > 0) {
+        rows[rows.length - 1].style.borderBottom = 'none';
+    }
+
+    container.innerHTML = '';
+    container.appendChild(wrapper);
+}
+
+function renderStartProjectStaffRequirements(containerId, specialties) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    window._startProjectStaffSummaryMode = true;
+
+    // Normalize categories and keep an availability map
+    const categories = (specialties || [])
+        .map(s => {
+            const specialty = String(s.specialty || '').trim();
+            if (!specialty) return null;
+            const available = Math.max(0, Number(s.available_count ?? s.active_count ?? s.total_count ?? 0) || 0);
+            return { specialty, available };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.specialty.localeCompare(b.specialty));
+
+    if (!categories || categories.length === 0) {
+        container.innerHTML = `<div style="color: var(--text-secondary); font-size: 0.9rem;">No categories found.</div>`;
+        return;
+    }
+
+    const wrapper = document.createElement('div');
+
+    const intro = document.createElement('div');
+    intro.style.fontSize = '0.85rem';
+    intro.style.color = 'var(--text-secondary)';
+    intro.style.padding = '6px 6px 10px 6px';
+    intro.textContent = 'Select a category and set the required count (limited to availability).';
+    wrapper.appendChild(intro);
+
+    const rowsContainer = document.createElement('div');
+    rowsContainer.id = 'start-project-staff-rows';
+    wrapper.appendChild(rowsContainer);
+
+    const actions = document.createElement('div');
+    actions.style.display = 'flex';
+    actions.style.justifyContent = 'flex-start';
+    actions.style.padding = '10px 6px 0 6px';
+
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'btn-secondary';
+    addBtn.style.padding = '8px 12px';
+    addBtn.innerHTML = '<i class="fas fa-plus"></i> Add Category';
+    actions.appendChild(addBtn);
+    wrapper.appendChild(actions);
+
+    const getSelectedTotals = () => {
+        const map = {};
+        const inputs = rowsContainer.querySelectorAll('input.start-project-required-count');
+        inputs.forEach(input => {
+            const spec = String(input.getAttribute('data-specialty') || '').trim();
+            const req = Number(input.value || 0);
+            if (!spec || !Number.isFinite(req) || req <= 0) return;
+            map[spec] = (map[spec] || 0) + Math.floor(req);
+        });
+        return map;
+    };
+
+    const clamp = (value, min, max) => {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return min;
+        return Math.max(min, Math.min(max, n));
+    };
+
+    const getAvailableFor = (specialty, excludeRowEl) => {
+        const base = categories.find(c => c.specialty === specialty)?.available ?? 0;
+        // remaining = base - (sum of requirements for same specialty in other rows)
+        let used = 0;
+        const inputs = rowsContainer.querySelectorAll('input.start-project-required-count');
+        inputs.forEach(input => {
+            if (excludeRowEl && excludeRowEl.contains(input)) return;
+            const spec = String(input.getAttribute('data-specialty') || '').trim();
+            if (spec !== specialty) return;
+            const req = Number(input.value || 0);
+            if (!Number.isFinite(req) || req <= 0) return;
+            used += Math.floor(req);
+        });
+        const remaining = base - used;
+        return remaining > 0 ? remaining : 0;
+    };
+
+    const updateRowLimits = () => {
+        const rowEls = rowsContainer.querySelectorAll('.start-project-staff-row');
+        rowEls.forEach(rowEl => {
+            const select = rowEl.querySelector('select.start-project-category-select');
+            const input = rowEl.querySelector('input.start-project-required-count');
+            const hint = rowEl.querySelector('.start-project-available-hint');
+            if (!select || !input) return;
+
+            const spec = String(select.value || '').trim();
+            if (!spec) {
+                input.disabled = true;
+                input.value = '0';
+                input.max = '0';
+                if (hint) hint.textContent = 'Available: —';
+                input.setAttribute('data-specialty', '');
+                input.setAttribute('data-available', '0');
+                return;
+            }
+
+            const remaining = getAvailableFor(spec, rowEl);
+            input.disabled = false;
+            input.setAttribute('data-specialty', spec);
+            input.setAttribute('data-available', String(remaining));
+            input.max = String(remaining);
+            const current = clamp(input.value, 0, remaining);
+            input.value = String(current);
+            if (hint) hint.textContent = `Available: ${remaining.toLocaleString()}`;
+        });
+    };
+
+    const createRow = () => {
+        const row = document.createElement('div');
+        row.className = 'start-project-staff-row';
+        row.style.display = 'grid';
+        row.style.gridTemplateColumns = '1fr 110px 40px';
+        row.style.gridTemplateRows = 'auto auto';
+        row.style.gridTemplateAreas = '"select input remove" "hint hint hint"';
+        row.style.alignItems = 'center';
+        row.style.gap = '10px';
+        row.style.padding = '8px 6px';
+        row.style.borderBottom = '1px solid var(--border-color)';
+
+        const select = document.createElement('select');
+        select.className = 'start-project-category-select';
+        select.style.gridArea = 'select';
+        select.style.width = '100%';
+        select.style.padding = '8px 10px';
+        select.style.borderRadius = '8px';
+        select.style.border = '1px solid var(--border-color)';
+        select.style.height = '40px';
+
+        const opt0 = document.createElement('option');
+        opt0.value = '';
+        opt0.textContent = '-- Select Category --';
+        select.appendChild(opt0);
+        categories.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.specialty;
+            opt.textContent = c.specialty;
+            select.appendChild(opt);
+        });
+
+        const hint = document.createElement('div');
+        hint.className = 'start-project-available-hint';
+        hint.style.gridArea = 'hint';
+        hint.style.fontSize = '0.85rem';
+        hint.style.color = 'var(--text-secondary)';
+        hint.style.paddingTop = '2px';
+        hint.textContent = 'Available: —';
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'start-project-required-count';
+        input.style.gridArea = 'input';
+        input.min = '0';
+        input.max = '0';
+        input.step = '1';
+        input.value = '0';
+        input.disabled = true;
+        input.setAttribute('data-specialty', '');
+        input.setAttribute('data-available', '0');
+        input.setAttribute('aria-label', 'Required count');
+        input.style.width = '110px';
+        input.style.padding = '8px 10px';
+        input.style.borderRadius = '8px';
+        input.style.border = '1px solid var(--border-color)';
+        input.style.height = '40px';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn-secondary';
+        removeBtn.style.gridArea = 'remove';
+        removeBtn.style.padding = '8px 10px';
+        removeBtn.style.height = '40px';
+        removeBtn.style.display = 'flex';
+        removeBtn.style.alignItems = 'center';
+        removeBtn.style.justifyContent = 'center';
+        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+
+        select.addEventListener('change', () => {
+            updateRowLimits();
+        });
+
+        input.addEventListener('input', () => {
+            const max = Number(input.getAttribute('data-available') || input.max || 0);
+            const raw = Number(input.value || 0);
+            if (Number.isFinite(raw) && Number.isFinite(max) && raw > max) {
+                showToast(`Only ${max} available for this category. Add more from the Workforce page.`, 'error');
+            }
+            input.value = String(clamp(input.value, 0, max));
+            updateRowLimits();
+        });
+
+        removeBtn.addEventListener('click', () => {
+            row.remove();
+            updateRowLimits();
+        });
+
+        row.appendChild(select);
+        row.appendChild(input);
+        row.appendChild(removeBtn);
+        row.appendChild(hint);
+        rowsContainer.appendChild(row);
+
+        updateRowLimits();
+    };
+
+    addBtn.addEventListener('click', () => createRow());
+
+    // Start with one empty row
+    createRow();
+
+    container.innerHTML = '';
+    container.appendChild(wrapper);
+}
+
 async function loadStartProjectEmployees() {
-    const companyId = window.CURRENT_COMPANY_ID;
+    const companyId = currentCompanyId;
     if (!companyId) {
         setStartProjectEmployeesLoading(false, 'Company not found in session.');
         return;
     }
 
     setStartProjectEmployeesLoading(true, 'Loading employees...');
+    window._startProjectStaffSummaryMode = false;
 
     try {
         const url = `/2nd-Year-Group-Project/FixLanka/api/company-employees.php?company_id=${encodeURIComponent(companyId)}&employment_type=full_time,part_time&status=active&order_by=created_at&order_dir=DESC`;
@@ -1136,6 +1568,31 @@ async function loadStartProjectEmployees() {
 
         // API returns an array (not wrapped)
         const employees = Array.isArray(result) ? result : [];
+
+        // If the company uses staffsummary counts (not individual employee roster), show those counts
+        // so the modal doesn't incorrectly imply there are no employees.
+        if (employees.length === 0) {
+            try {
+                // Use availability endpoint so the UI is capped by remaining capacity (after other project allocations)
+                const availUrl = `/2nd-Year-Group-Project/FixLanka/api/company-employees.php?action=availability&company_id=${encodeURIComponent(companyId)}`;
+                const availRes = await fetch(availUrl);
+                const availJson = await availRes.json();
+                const data = Array.isArray(availJson?.data) ? availJson.data : [];
+                const usable = data.filter(s => (s?.specialty || '').trim() !== '');
+                if (usable.length > 0) {
+                    renderStartProjectStaffRequirements('start-project-employees', usable);
+                    return;
+                }
+            } catch (err) {
+                console.warn('Failed to load staff availability for start-project employees:', err);
+            }
+
+            renderStartProjectCheckboxList('start-project-employees', [], {
+                checkboxName: 'start_project_employee_ids[]',
+                emptyText: 'No active employee profiles found. Add employees (individual profiles) to assign them to a project.'
+            });
+            return;
+        }
 
         const items = employees.map(emp => {
             const name = `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || `Employee #${emp.employee_id}`;
@@ -1226,9 +1683,52 @@ async function saveProject(e) {
             return;
         }
 
+        // If the selected contract already has a project, just go to Projects.
+        const selectedOption = contractSelect?.selectedOptions?.[0];
+        const existingProjectId = selectedOption?.dataset?.projectId || window._startProjectExistingProjectByContractId?.[String(contractId)];
+        if (existingProjectId) {
+            showToast(`Project already started for this contract (Project #${existingProjectId}). Redirecting...`, 'info');
+            closeProjectModal();
+            setTimeout(() => {
+                window.location.href = 'projects.php';
+            }, 400);
+            return;
+        }
+
         const selectedEmployeeIds = Array.from(document.querySelectorAll('input[name="start_project_employee_ids[]"]:checked'))
             .map(el => parseInt(el.value, 10))
             .filter(n => Number.isFinite(n) && n > 0);
+
+        // Staff summary mode: collect per-category required counts (limited to availability in UI and re-validated server-side)
+        const staffRequirements = Array.from(document.querySelectorAll('input.start-project-required-count'))
+            .map(input => {
+                const specialty = String(input.getAttribute('data-specialty') || '').trim();
+                const available = Number(input.getAttribute('data-available') || input.max || 0);
+                const required = Number(input.value || 0);
+                if (!specialty) return null;
+                if (!Number.isFinite(required) || required <= 0) return null;
+                if (!Number.isFinite(available) || available < 0) return null;
+                if (required > available) {
+                    // UI should prevent this, but keep safe
+                    return { specialty, required_count: Math.floor(available) };
+                }
+                return { specialty, required_count: Math.floor(required) };
+            })
+            .filter(Boolean);
+
+        // If user attempted to exceed availability, show an alert
+        const bad = Array.from(document.querySelectorAll('input.start-project-required-count'))
+            .some(input => {
+                const spec = String(input.getAttribute('data-specialty') || '').trim();
+                if (!spec) return false;
+                const max = Number(input.getAttribute('data-available') || input.max || 0);
+                const val = Number(input.value || 0);
+                return Number.isFinite(val) && Number.isFinite(max) && val > max;
+            });
+        if (bad) {
+            showToast('Required count exceeds availability. Add more staff from the Workforce page.', 'error');
+            return;
+        }
 
         const selectedFreelancerAssignmentIds = Array.from(document.querySelectorAll('input[name="start_project_freelancer_assignment_ids[]"]:checked'))
             .map(el => parseInt(el.value, 10))
@@ -1248,7 +1748,8 @@ async function saveProject(e) {
             body: JSON.stringify({
                 contract_id: contractId,
                 employee_ids: selectedEmployeeIds,
-                freelancer_assignment_ids: selectedFreelancerAssignmentIds
+                freelancer_assignment_ids: selectedFreelancerAssignmentIds,
+                staff_requirements: staffRequirements
             })
         });
 
@@ -1262,7 +1763,25 @@ async function saveProject(e) {
             await loadProjects();
             await loadStatistics();
         } else {
-            showToast(result.message || 'Failed to start project', 'error');
+            const code = String(result.code || '');
+            const existingProjectId = result.project_id || result.projectId;
+            const msg = String(result.message || '');
+
+            if (code === 'already_started' || /already\s+been\s+started/i.test(msg)) {
+                showToast(
+                    existingProjectId
+                        ? `Project already started for this contract (Project #${existingProjectId}). Redirecting...`
+                        : 'Project already started for this contract. Redirecting...',
+                    'info'
+                );
+                closeProjectModal();
+                setTimeout(() => {
+                    window.location.href = 'projects.php';
+                }, 400);
+                return;
+            }
+
+            showToast(msg || 'Failed to start project', 'error');
         }
     } catch (error) {
         console.error('Error starting project:', error);

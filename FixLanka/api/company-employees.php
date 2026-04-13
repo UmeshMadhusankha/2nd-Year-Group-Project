@@ -64,6 +64,19 @@ switch ($method) {
  * Handle GET requests
  */
 function handleGet($model) {
+    // Get staff availability (staffsummary minus allocations to active projects)
+    if (isset($_GET['action']) && $_GET['action'] === 'availability') {
+        if (!isset($_GET['company_id'])) {
+            respondJson(['error' => 'Company ID is required'], 400);
+            return;
+        }
+
+        $companyId = (int)$_GET['company_id'];
+        $availability = $model->getStaffAvailability($companyId);
+        respondJson(['success' => true, 'data' => $availability]);
+        return;
+    }
+
     // Get statistics
     if (isset($_GET['action']) && $_GET['action'] === 'stats') {
         if (!isset($_GET['company_id'])) {

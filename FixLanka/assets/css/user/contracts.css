@@ -2010,6 +2010,38 @@ body.modal-open {
     flex-shrink: 0;
 }
 
+.contracts-container.list-view .card-unit-price-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 12px;
+    border-radius: var(--border-radius);
+    background: rgba(var(--primary-rgb), 0.08);
+    border: 1px solid rgba(var(--primary-rgb), 0.20);
+    min-width: 178px;
+    flex-shrink: 0;
+}
+
+.contracts-container.list-view .card-unit-price-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.contracts-container.list-view .card-unit-price-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--text-muted);
+}
+
+.contracts-container.list-view .card-unit-price-value {
+    font-size: 0.78rem;
+    font-weight: 900;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
 /* Meta columns */
 .contracts-container.list-view .card-meta-grid {
     display: flex;

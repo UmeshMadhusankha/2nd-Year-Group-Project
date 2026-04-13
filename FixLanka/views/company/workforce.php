@@ -6406,7 +6406,7 @@ if (!$companyId) {
     </div>
 
     <!-- Load Company Employees Database Integration -->
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/company-employees-db.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/company-employees-db.js?v=2026-04-13-2"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/freelancers-db.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/applications-db.js"></script>
 

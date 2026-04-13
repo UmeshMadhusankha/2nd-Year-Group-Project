@@ -917,7 +917,8 @@
     margin-top: var(--spacing-sm);
 }
 
-.category-card--summary .hourly-range {
+.category-card--summary .hourly-range,
+.category-card--summary .repairer-count {
     white-space: nowrap;
 }
 

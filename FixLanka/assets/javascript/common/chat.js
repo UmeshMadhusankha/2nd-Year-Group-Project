@@ -208,13 +208,12 @@ const ChatWidget = (() => {
             if (proposed && typeof proposed === 'object') {
                 if (proposed.start_date != null) effective.start_date = proposed.start_date;
                 if (proposed.end_date != null) effective.end_date = proposed.end_date;
-                if (proposed.total_budget != null) effective.total_budget = proposed.total_budget;
                 if (proposed.payment_method != null) effective.payment_method = proposed.payment_method;
                 if (Array.isArray(proposed.milestones)) effective.milestones = proposed.milestones;
             }
 
             const status = String(cr.status || 'pending');
-            _crBody.innerHTML = _renderChangePreview(effective, cr, diff);
+            _crBody.innerHTML = _renderChangePreview(effective, cr, diff, proposed);
 
             // Footer actions
             _crFooter.innerHTML = `<button type="button" class="chat-cr-btn" id="chatCrPreviewCloseBtn2">Close</button>`;
@@ -226,10 +225,16 @@ const ChatWidget = (() => {
                 rejectBtn.className = 'chat-cr-btn reject';
                 rejectBtn.textContent = 'Reject';
                 rejectBtn.addEventListener('click', async () => {
-                    const note = prompt('Reason for rejection (optional):') || '';
+                    const note = (typeof window.showPrompt === 'function')
+                        ? await window.showPrompt('Reason for rejection (optional):', '', { title: 'Reject Change Request', placeholder: 'Add a short reason (optional)...', confirmText: 'Reject', type: 'warning', icon: 'fas fa-times-circle' })
+                        : (prompt('Reason for rejection (optional):') || '');
+
+                    // Cancelled
+                    if (note === null) return;
+
                     rejectBtn.disabled = true;
-                    await _respondToChangeRequest(changeRequestId, 'rejected', note);
-                    _closeChangeRequestPreview();
+                    const ok = await _respondToChangeRequest(changeRequestId, 'rejected', String(note || ''));
+                    if (ok) _closeChangeRequestPreview();
                 });
 
                 const acceptBtn = document.createElement('button');
@@ -250,7 +255,7 @@ const ChatWidget = (() => {
         }
     }
 
-    function _renderChangePreview(contract, cr, diff) {
+    function _renderChangePreview(contract, cr, diff, proposedChanges) {
         const fields = (diff && diff.fields) ? diff.fields : {};
         const msDiff = Array.isArray(diff && diff.milestones) ? diff.milestones : [];
         const msChangedByIndex = new Map();
@@ -269,39 +274,75 @@ const ChatWidget = (() => {
 
         const start = markIf('start_date', contract.start_date ? String(contract.start_date).slice(0, 10) : '—');
         const end = markIf('end_date', contract.end_date ? String(contract.end_date).slice(0, 10) : '—');
-        const budget = markIf('total_budget', contract.total_budget != null ? `Rs. ${Number(contract.total_budget).toLocaleString()}` : '—');
-        const pay = markIf('payment_method', contract.payment_method || '—');
-
-        const totalBudgetNum = (contract.total_budget != null && contract.total_budget !== '') ? Number(contract.total_budget) : null;
-        const hasBudget = totalBudgetNum != null && Number.isFinite(totalBudgetNum) && totalBudgetNum > 0;
 
         const milestones = Array.isArray(contract.milestones) ? contract.milestones : [];
+        const proposals = (proposedChanges && Array.isArray(proposedChanges.unit_rate_proposals)) ? proposedChanges.unit_rate_proposals : [];
+        const hasUnitPricing = milestones.some(m => {
+            const ul = m?.unit_label ?? null;
+            const ur = m?.unit_rate ?? null;
+            return (ul != null && String(ul).trim() !== '') || (ur != null && ur !== '');
+        });
+        const isUnitNegotiation = proposals.length > 0 || hasUnitPricing;
+
         let msHtml = '';
-        if (milestones.length) {
-            msHtml += '<table class="chat-cr-ms-table"><thead><tr><th>#</th><th>Milestone</th><th>Due</th><th>%</th><th>Amount</th></tr></thead><tbody>';
-            milestones.forEach((m, idx) => {
-                const changed = msChangedByIndex.get(idx) || {};
-                const rowChanged = !!(changed && Object.keys(changed).length);
-                const title = changed.title ? `<span class="cr-diff">${h(m.title || m.milestone_name || '')}</span>` : h(m.title || m.milestone_name || '—');
-                const due = changed.due_date ? `<span class="cr-diff">${h(m.due_date ? String(m.due_date).slice(0, 10) : '—')}</span>` : h(m.due_date ? String(m.due_date).slice(0, 10) : '—');
-                const amtVal = (m.amount ?? m.payment_amount ?? null);
-                const pctRaw = (m.percentage ?? m.payment_percentage ?? null);
-                let pctNum = (pctRaw != null && pctRaw !== '') ? Number(pctRaw) : null;
-                if ((pctNum == null || !Number.isFinite(pctNum)) && hasBudget && amtVal != null && amtVal !== '' && Number.isFinite(Number(amtVal))) {
-                    pctNum = (Number(amtVal) / totalBudgetNum) * 100;
-                }
-                const pctText = (pctNum != null && Number.isFinite(pctNum)) ? `${pctNum.toFixed(2)}%` : '—';
-                const pctShouldHighlight = !!changed.percentage || (!!changed.amount && (pctRaw == null || pctRaw === ''));
-                const pct = pctShouldHighlight ? `<span class="cr-diff">${h(pctText)}</span>` : h(pctText);
-                const amt = changed.amount ? `<span class="cr-diff">${h(amtVal != null ? `Rs. ${Number(amtVal).toLocaleString()}` : '—')}</span>` : h(amtVal != null ? `Rs. ${Number(amtVal).toLocaleString()}` : '—');
-                msHtml += `<tr class="chat-cr-ms-row${rowChanged ? ' changed' : ''}"><td>${idx + 1}</td><td>${title}</td><td>${due}</td><td>${pct}</td><td>${amt}</td></tr>`;
-                if ((changed.description) && (m.description || m.milestone_description)) {
-                    msHtml += `<tr class="chat-cr-ms-desc"><td></td><td colspan="4"><span class="cr-diff">${h(m.description || m.milestone_description)}</span></td></tr>`;
-                }
+        if (isUnitNegotiation) {
+            const byId = new Map();
+            const byNum = new Map();
+            proposals.forEach(p => {
+                if (p && p.milestone_id != null) byId.set(String(p.milestone_id), p);
+                if (p && p.milestone_number != null) byNum.set(String(p.milestone_number), p);
             });
-            msHtml += '</tbody></table>';
+
+            const unitMs = milestones.filter(m => {
+                const ul = m?.unit_label ?? null;
+                const ur = m?.unit_rate ?? null;
+                return (ul != null && String(ul).trim() !== '') || (ur != null && ur !== '');
+            });
+
+            if (!unitMs.length) {
+                msHtml = '<div class="chat-cr-muted">No unit-priced milestones found.</div>';
+            } else {
+                msHtml += '<table class="chat-cr-ms-table"><thead><tr><th>#</th><th>Item</th><th>Unit</th><th>Current rate</th><th>Proposed rate</th></tr></thead><tbody>';
+                unitMs.forEach((m, idx) => {
+                    const idKey = m.milestone_id != null ? String(m.milestone_id) : '';
+                    const numKey = m.milestone_number != null ? String(m.milestone_number) : '';
+                    const p = (idKey && byId.get(idKey)) || (numKey && byNum.get(numKey)) || null;
+
+                    const title = h(m.title || m.milestone_name || '—');
+                    const unitLabel = h((m.unit_label || '').trim() || '—');
+                    const curRate = (m.unit_rate != null && m.unit_rate !== '') ? `Rs. ${Number(m.unit_rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—';
+                    const propRateRaw = p && p.proposed_unit_rate != null ? Number(p.proposed_unit_rate) : null;
+                    const propRate = (propRateRaw != null && Number.isFinite(propRateRaw))
+                        ? `<span class="cr-diff">Rs. ${propRateRaw.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`
+                        : '—';
+
+                    msHtml += `<tr class="chat-cr-ms-row${p ? ' changed' : ''}"><td>${idx + 1}</td><td>${title}</td><td>${unitLabel}</td><td>${h(curRate)}</td><td>${propRate}</td></tr>`;
+                });
+                msHtml += '</tbody></table>';
+            }
         } else {
-            msHtml = '<div class="chat-cr-muted">No milestones provided.</div>';
+            if (milestones.length) {
+                msHtml += '<table class="chat-cr-ms-table"><thead><tr><th>#</th><th>Milestone</th><th>Due</th><th>%</th><th>Amount</th></tr></thead><tbody>';
+                milestones.forEach((m, idx) => {
+                    const changed = msChangedByIndex.get(idx) || {};
+                    const rowChanged = !!(changed && Object.keys(changed).length);
+                    const title = changed.title ? `<span class="cr-diff">${h(m.title || m.milestone_name || '')}</span>` : h(m.title || m.milestone_name || '—');
+                    const due = changed.due_date ? `<span class="cr-diff">${h(m.due_date ? String(m.due_date).slice(0, 10) : '—')}</span>` : h(m.due_date ? String(m.due_date).slice(0, 10) : '—');
+                    const amtVal = (m.amount ?? m.payment_amount ?? null);
+                    const pctRaw = (m.percentage ?? m.payment_percentage ?? null);
+                    const pctNum = (pctRaw != null && pctRaw !== '' && Number.isFinite(Number(pctRaw))) ? Number(pctRaw) : null;
+                    const pctText = (pctNum != null && Number.isFinite(pctNum)) ? `${pctNum.toFixed(2)}%` : '—';
+                    const pct = changed.percentage ? `<span class="cr-diff">${h(pctText)}</span>` : h(pctText);
+                    const amt = changed.amount ? `<span class="cr-diff">${h(amtVal != null ? `Rs. ${Number(amtVal).toLocaleString()}` : '—')}</span>` : h(amtVal != null ? `Rs. ${Number(amtVal).toLocaleString()}` : '—');
+                    msHtml += `<tr class="chat-cr-ms-row${rowChanged ? ' changed' : ''}"><td>${idx + 1}</td><td>${title}</td><td>${due}</td><td>${pct}</td><td>${amt}</td></tr>`;
+                    if ((changed.description) && (m.description || m.milestone_description)) {
+                        msHtml += `<tr class="chat-cr-ms-desc"><td></td><td colspan="4"><span class="cr-diff">${h(m.description || m.milestone_description)}</span></td></tr>`;
+                    }
+                });
+                msHtml += '</tbody></table>';
+            } else {
+                msHtml = '<div class="chat-cr-muted">No milestones provided.</div>';
+            }
         }
 
         return `
@@ -326,18 +367,10 @@ const ChatWidget = (() => {
                     <div class="chat-cr-doc-k">End date</div>
                     <div class="chat-cr-doc-v">${end}</div>
                 </div>
-                <div>
-                    <div class="chat-cr-doc-k">Total budget</div>
-                    <div class="chat-cr-doc-v">${budget}</div>
-                </div>
-                <div>
-                    <div class="chat-cr-doc-k">Payment method</div>
-                    <div class="chat-cr-doc-v">${pay}</div>
-                </div>
             </div>
 
             <div class="chat-cr-doc-sec">
-                <div class="chat-cr-doc-k">Milestones</div>
+                <div class="chat-cr-doc-k">${isUnitNegotiation ? 'Unit rates' : 'Milestones'}</div>
                 ${msHtml}
             </div>
         </div>`;
@@ -586,10 +619,16 @@ const ChatWidget = (() => {
             });
 
             rejectBtn.addEventListener('click', async () => {
-                const note = prompt('Reason for rejection (optional):') || '';
+                const note = (typeof window.showPrompt === 'function')
+                    ? await window.showPrompt('Reason for rejection (optional):', '', { title: 'Reject Change Request', placeholder: 'Add a short reason (optional)...', confirmText: 'Reject', type: 'warning', icon: 'fas fa-times-circle' })
+                    : (prompt('Reason for rejection (optional):') || '');
+
+                // Cancelled
+                if (note === null) return;
+
                 acceptBtn.disabled = true;
                 rejectBtn.disabled = true;
-                await _respondToChangeRequest(changeRequestId, 'rejected', note);
+                await _respondToChangeRequest(changeRequestId, 'rejected', String(note || ''));
             });
 
             actions.appendChild(rejectBtn);
@@ -625,16 +664,27 @@ const ChatWidget = (() => {
             });
             const data = await res.json();
             if (!data.success) {
-                alert(data.message || 'Failed to update change request');
-                return;
+                if (typeof window.showAlert === 'function') {
+                    await window.showAlert(data.message || 'Failed to update change request', 'danger', 'Error');
+                } else {
+                    alert(data.message || 'Failed to update change request');
+                }
+                return false;
             }
 
             // Refresh status cache and messages
             await _loadChangeRequests();
             await _loadMessages(false);
         } catch (e) {
-            alert('Network error. Please try again.');
+            if (typeof window.showAlert === 'function') {
+                await window.showAlert('Network error. Please try again.', 'danger', 'Error');
+            } else {
+                alert('Network error. Please try again.');
+            }
+            return false;
         }
+
+        return true;
     }
 
     // ── Send message ──

@@ -99,7 +99,7 @@ try {
 
 					COALESCE(comp.name, CONCAT(u.f_name, ' ', u.l_name)) AS company_name,
 					comp.registration_no AS company_registration,
-					COALESCE(comp.address, uc.address) AS company_address,
+					COALESCE(c_loc.address, comp.address, uc.address) AS company_address,
 					comp.contact_no AS company_phone,
 					COALESCE(comp.email, uc.email) AS company_email
 				FROM companyquotation q
@@ -108,6 +108,7 @@ try {
 				INNER JOIN user u ON r.user_id = u.user_id
 				LEFT JOIN user uc ON uc.user_id = COALESCE(q.company_id, q.user_id)
 				LEFT JOIN company comp ON comp.company_id = COALESCE(q.company_id, q.user_id)
+				LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
 				WHERE q.quotation_id = ?
 				  AND (q.company_id = ? OR (q.company_id IS NULL AND q.user_id = ?))
 				LIMIT 1

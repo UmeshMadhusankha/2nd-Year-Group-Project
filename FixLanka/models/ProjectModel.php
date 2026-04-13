@@ -224,50 +224,59 @@ class Project
      * @param int[] $freelancerAssignmentIds Freelancer assignment IDs to attach
      * @return array Success/error response with project_id
      */
-    public function startFromContract($contractId, array $employeeIds = [], array $freelancerAssignmentIds = [])
+    public function startFromContract($contractId, array $employeeIds = [], array $freelancerAssignmentIds = [], array $staffRequirements = [])
     {
         try {
             $this->pdo->beginTransaction();
 
             $employeeIds = array_values(array_unique(array_filter(array_map('intval', $employeeIds), fn($v) => $v > 0)));
             $freelancerAssignmentIds = array_values(array_unique(array_filter(array_map('intval', $freelancerAssignmentIds), fn($v) => $v > 0)));
+            $staffRequirements = $this->normalizeStaffRequirements($staffRequirements);
 
             // 1. Fetch Contract Data
-            $sqlContract = "SELECT c.*, 'General Maintenance' as category 
-                            FROM Contract c 
-                            WHERE c.contract_id = :cat_id AND c.status = 'accepted' LIMIT 1";
+            // Note: Contract acceptance in this app is tracked via terms_accepted/customer_response (status is often 'active').
+            $sqlContract = "SELECT c.*, 'General Maintenance' as category
+                            FROM contract c
+                            WHERE c.contract_id = :cid
+                            LIMIT 1";
             $stmtC = $this->pdo->prepare($sqlContract);
-            $stmtC->execute([':cat_id' => $contractId]);
+            $stmtC->execute([':cid' => $contractId]);
             $contract = $stmtC->fetch(PDO::FETCH_ASSOC);
 
             if (!$contract) {
-                // Also check if contract exists without status='accepted' or missing category
-                $sqlCheck = "SELECT status, project_id FROM Contract WHERE contract_id = :cid";
-                $stmtCheck = $this->pdo->prepare($sqlCheck);
-                $stmtCheck->execute([':cid' => $contractId]);
-                $c = $stmtCheck->fetch(PDO::FETCH_ASSOC);
-
-                if (!$c) {
-                    throw new Exception("Contract not found.");
-                }
-                if ($c['status'] !== 'accepted') {
-                    throw new Exception("Contract must be accepted before starting a project.");
-                }
-                if (!empty($c['project_id'])) {
-                    throw new Exception("Project already generated for this contract.");
-                }
-                
-                // fallback generic category
-                $contract = $c;
-                $contract['category'] = 'General Maintenance';
-                $contract['company_id'] = $c['company_id'];
-                $contract['customer_id'] = $c['customer_id'];
-                $contract['address'] = 'Specified in chat';
-                $contract['total_price'] = $c['total_price'] ?? 0;
+                throw new Exception('Contract not found.');
             }
 
+            $isAccepted = ((int)($contract['terms_accepted'] ?? 0) === 1) || ((string)($contract['customer_response'] ?? '') === 'accepted');
+            if (!$isAccepted) {
+                throw new Exception('Contract must be accepted before starting a project.');
+            }
+
+            // If the contract is already linked to a project, do not create a second one.
+            // However, if the referenced project row no longer exists (deleted/cleanup),
+            // clear the link and allow re-start.
             if (!empty($contract['project_id'])) {
-                throw new Exception("A project has already been started for this contract.");
+                $existingProjectId = (int)$contract['project_id'];
+
+                $stmtP = $this->pdo->prepare('SELECT project_id, company_id FROM Project WHERE project_id = :pid LIMIT 1');
+                $stmtP->execute([':pid' => $existingProjectId]);
+                $projRow = $stmtP->fetch(PDO::FETCH_ASSOC);
+
+                if (!$projRow) {
+                    // Heal stale linkage
+                    $stmtClr = $this->pdo->prepare('UPDATE Contract SET project_id = NULL WHERE contract_id = :cid');
+                    $stmtClr->execute([':cid' => $contractId]);
+                    $contract['project_id'] = null;
+                } else {
+                    // If it's a real project, block starting and provide the project_id
+                    $this->pdo->rollBack();
+                    return [
+                        'success' => false,
+                        'code' => 'already_started',
+                        'message' => 'A project has already been started for this contract.',
+                        'project_id' => (int)$projRow['project_id']
+                    ];
+                }
             }
 
             // 2. Create the Project record
@@ -283,6 +292,9 @@ class Project
             
             $title = "Project #" . $contractId . " (" . substr($contract['category'] ?? 'General', 0, 15) . ")";
 
+            $location = $contract['address'] ?? $contract['project_location'] ?? 'Specified by customer';
+            $budget = $contract['total_price'] ?? $contract['total_budget'] ?? 0;
+
             $stmtInsert = $this->pdo->prepare($sqlInsert);
             $stmtInsert->execute([
                 ':company_id' => $contract['company_id'],
@@ -290,8 +302,8 @@ class Project
                 ':title' => $title,
                 ':description' => "Automatically generated from accepted Contract #" . $contractId,
                 ':project_type' => $contract['category'] ?? 'General',
-                ':location' => $contract['address'] ?? 'Specified by customer',
-                ':budget' => $contract['total_price'] ?? 0,
+                ':location' => $location,
+                ':budget' => $budget,
                 ':status' => self::STATUS_PLANNED
             ]);
 
@@ -311,6 +323,12 @@ class Project
             // 5. Attach accepted freelancer offers
             if (count($freelancerAssignmentIds) > 0) {
                 $this->attachFreelancerAssignmentsToProject((int)$projectId, (int)$contractId, (int)$contract['company_id'], $freelancerAssignmentIds);
+            }
+
+            // 6. Save staff-category requirements (optional, from staffsummary mode)
+            if (count($staffRequirements) > 0) {
+                $this->ensureProjectStaffRequirementsTable();
+                $this->validateAndSaveStaffRequirements((int)$projectId, (int)$contract['company_id'], $staffRequirements);
             }
 
             $this->pdo->commit();
@@ -342,7 +360,8 @@ class Project
                 'message' => 'Project successfully started from contract.',
                 'project_id' => $projectId,
                 'assigned_employees_count' => count($employeeIds),
-                'attached_freelancers_count' => count($freelancerAssignmentIds)
+                'attached_freelancers_count' => count($freelancerAssignmentIds),
+                'staff_requirements_count' => count($staffRequirements)
             ];
 
         } catch (Exception $e) {
@@ -351,6 +370,101 @@ class Project
                 'success' => false,
                 'message' => $e->getMessage()
             ];
+        }
+    }
+
+    private function normalizeStaffRequirements(array $staffRequirements): array
+    {
+        $out = [];
+        foreach ($staffRequirements as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $specialty = trim((string)($row['specialty'] ?? ''));
+            if ($specialty === '') {
+                continue;
+            }
+            $required = (int)($row['required_count'] ?? 0);
+            if ($required <= 0) {
+                continue;
+            }
+
+            if (!isset($out[$specialty])) {
+                $out[$specialty] = 0;
+            }
+            $out[$specialty] += $required;
+        }
+
+        // Convert to stable list
+        $list = [];
+        foreach ($out as $specialty => $required) {
+            $list[] = ['specialty' => $specialty, 'required_count' => $required];
+        }
+        return $list;
+    }
+
+    private function ensureProjectStaffRequirementsTable(): void
+    {
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS project_staff_requirements (
+            id INT(11) NOT NULL AUTO_INCREMENT,
+            project_id INT(11) NOT NULL,
+            company_id INT(11) NOT NULL,
+            specialty VARCHAR(100) NOT NULL,
+            required_count INT(11) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY unique_project_specialty (project_id, specialty),
+            KEY idx_company_specialty (company_id, specialty),
+            CONSTRAINT fk_psr_project FOREIGN KEY (project_id) REFERENCES project(project_id) ON DELETE CASCADE,
+            CONSTRAINT fk_psr_company FOREIGN KEY (company_id) REFERENCES company(company_id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    }
+
+    private function validateAndSaveStaffRequirements(int $projectId, int $companyId, array $staffRequirements): void
+    {
+        // Validate availability against staffsummary capacity minus allocations to other open projects.
+        $stmtCheck = $this->pdo->prepare('SELECT active_count, total_count FROM staffsummary WHERE company_id = ? AND specialty = ? LIMIT 1');
+        $stmtAllocated = $this->pdo->prepare(
+            "SELECT COALESCE(SUM(psr.required_count),0) AS allocated
+             FROM project_staff_requirements psr
+             INNER JOIN project p ON p.project_id = psr.project_id
+             WHERE psr.company_id = ?
+               AND psr.specialty = ?
+               AND p.status IN ('planned','in_progress','on_hold')"
+        );
+        $stmtInsert = $this->pdo->prepare('INSERT INTO project_staff_requirements (project_id, company_id, specialty, required_count) VALUES (?,?,?,?)');
+
+        foreach ($staffRequirements as $r) {
+            $specialty = trim((string)($r['specialty'] ?? ''));
+            $required = (int)($r['required_count'] ?? 0);
+            if ($specialty === '' || $required <= 0) {
+                continue;
+            }
+
+            $stmtCheck->execute([$companyId, $specialty]);
+            $row = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+            if (!$row) {
+                throw new Exception("Category '{$specialty}' is not available in the system.");
+            }
+
+            $active = (int)($row['active_count'] ?? 0);
+            $total = (int)($row['total_count'] ?? 0);
+
+            $capacity = $active > 0 ? $active : $total;
+
+            $stmtAllocated->execute([$companyId, $specialty]);
+            $allocated = (int)($stmtAllocated->fetchColumn() ?? 0);
+
+            $available = $capacity - $allocated;
+            if ($available < 0) {
+                $available = 0;
+            }
+
+            if ($required > $available) {
+                throw new Exception("Only {$available} '{$specialty}' available. Add more from the Workforce page.");
+            }
+
+            $stmtInsert->execute([$projectId, $companyId, $specialty, $required]);
         }
     }
 
@@ -886,18 +1000,24 @@ class Project
 
             // 2. Get Milestones
             // Try contract_milestone first (new table)
-            $sqlMilestones = "SELECT 
-                                milestone_id,
-                                milestone_number as sort_order,
-                                title as phase_name, 
-                                description, 
-                                due_date as target_date, 
-                                percentage as pct_of_total, 
-                                amount as amount_lkr,
-                                status
-                              FROM contract_milestone 
-                              WHERE contract_id = :contract_id 
-                              ORDER BY milestone_number ASC";
+                        $sqlMilestones = "SELECT 
+                                                                milestone_id,
+                                                                milestone_number as sort_order,
+                                                                title as phase_name, 
+                                                                description, 
+                                                                due_date as target_date, 
+                                                                percentage as pct_of_total, 
+                                                                amount as amount_lkr,
+                                                                status,
+                                                                unit_label,
+                                                                unit_rate,
+                                                                actual_unit_rate,
+                                                                estimated_quantity,
+                                                                actual_quantity,
+                                                                actual_amount
+                                                            FROM contract_milestone 
+                                                            WHERE contract_id = :contract_id 
+                                                            ORDER BY milestone_number ASC";
             
             $stmtMilestone = $this->pdo->prepare($sqlMilestones);
             $stmtMilestone->execute([':contract_id' => $contractId]);
@@ -978,9 +1098,30 @@ class Project
      * @param array $files Uploaded files
      * @return array
      */
-    public function submitPhaseProof($milestoneId, $description, $files)
+    public function submitPhaseProof($milestoneId, $description, $files, $actualQuantity = null, $actualUnitRate = null)
     {
         try {
+            // Fetch agreed unit rate for billing calculations (if unit-based)
+            $mStmt = $this->pdo->prepare("SELECT unit_rate FROM contract_milestone WHERE milestone_id = :id LIMIT 1");
+            $mStmt->execute([':id' => $milestoneId]);
+            $milestone = $mStmt->fetch(PDO::FETCH_ASSOC);
+
+            $agreedRate = $milestone && $milestone['unit_rate'] !== null ? (float)$milestone['unit_rate'] : 0.0;
+            $effectiveRate = $agreedRate;
+            if ($actualUnitRate !== null && $actualUnitRate !== '' && is_numeric($actualUnitRate) && (float)$actualUnitRate > 0) {
+                $effectiveRate = (float)$actualUnitRate;
+            }
+
+            $qty = null;
+            if ($actualQuantity !== null && $actualQuantity !== '' && is_numeric($actualQuantity)) {
+                $qty = (float)$actualQuantity;
+            }
+
+            $actualAmount = null;
+            if ($qty !== null && $qty > 0 && $effectiveRate > 0) {
+                $actualAmount = $effectiveRate * $qty;
+            }
+
             $uploadedPaths = [];
             $uploadDir = __DIR__ . '/../uploads/proofs/';
             
@@ -1010,13 +1151,19 @@ class Project
                     SET status = 'submitted', 
                         completed_at = NOW(),
                         proof_of_work = :proof_of_work,
-                        proof_files = :proof_files
+                        proof_files = :proof_files,
+                        actual_quantity = :actual_qty,
+                        actual_unit_rate = :actual_unit_rate,
+                        actual_amount = :actual_amount
                     WHERE milestone_id = :milestone_id";
             
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
                 ':proof_of_work' => $description,
                 ':proof_files' => $filesJson,
+                ':actual_qty' => $qty,
+                ':actual_unit_rate' => ($actualUnitRate !== null && $actualUnitRate !== '' && is_numeric($actualUnitRate) && (float)$actualUnitRate > 0) ? (float)$actualUnitRate : null,
+                ':actual_amount' => $actualAmount,
                 ':milestone_id' => $milestoneId
             ]);
 
@@ -1039,8 +1186,8 @@ class Project
         try {
             $this->pdo->beginTransaction();
 
-            // 1. Get milestone details (amount, contract_id)
-            $stmt = $this->pdo->prepare("SELECT contract_id, amount, title FROM contract_milestone WHERE milestone_id = :id");
+            // 1. Get milestone details (prefer actual_amount for unit-based billing)
+            $stmt = $this->pdo->prepare("SELECT contract_id, title, status, COALESCE(actual_amount, amount) AS billed_amount FROM contract_milestone WHERE milestone_id = :id");
             $stmt->execute([':id' => $milestoneId]);
             $milestone = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -1049,79 +1196,68 @@ class Project
                 return ['success' => false, 'message' => 'Milestone not found'];
             }
 
+            $billedAmount = (float)($milestone['billed_amount'] ?? 0);
+
             if ($action === 'approve') {
-                // UPDATE STATUS
+                // UPDATE STATUS (idempotent-safe)
                 $sql = "UPDATE contract_milestone 
                         SET status = 'approved', 
                             approved_at = NOW() 
-                        WHERE milestone_id = :id";
+                        WHERE milestone_id = :id AND status = 'submitted'";
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->execute([':id' => $milestoneId]);
 
-                // RELEASE ESCROW
-                // Check if escrow account exists
-                $stmt = $this->pdo->prepare("SELECT escrow_id, balance FROM escrow_accounts WHERE contract_id = :cid");
-                $stmt->execute([':cid' => $milestone['contract_id']]);
-                $escrow = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                if ($escrow && $escrow['balance'] >= $milestone['amount']) {
-                    // Deduct from escrow
-                    $stmt = $this->pdo->prepare("UPDATE escrow_accounts SET balance = balance - :amt, updated_at = NOW() WHERE escrow_id = :eid");
-                    $stmt->execute([':amt' => $milestone['amount'], ':eid' => $escrow['escrow_id']]);
-
-                    // Log transaction
-                    $stmt = $this->pdo->prepare("INSERT INTO escrow_transactions (escrow_id, transaction_type, amount, balance_after, reason, created_at) VALUES (:eid, 'release', :amt, :bal, :reason, NOW())");
-                    $stmt->execute([
-                        ':eid' => $escrow['escrow_id'],
-                        ':amt' => $milestone['amount'],
-                        ':bal' => $escrow['balance'] - $milestone['amount'],
-                        ':reason' => "Milestone '{$milestone['title']}' Approved"
-                    ]);
-                } else {
-                    // Optional: Log warning if no escrow or insufficient funds
-                    // For now, we proceed with approval but note the payment issue? 
-                    // Or we could fail the approval. Let's fail if strictly escrow-based.
-                    // But for this project, let's allow approval even if escrow is empty (manual payment fallback).
+                if ($stmt->rowCount() === 0) {
+                    if (($milestone['status'] ?? '') === 'approved') {
+                        $this->pdo->commit();
+                        return ['success' => true, 'message' => 'Phase already approved', 'billed_amount' => $billedAmount];
+                    }
+                    $this->pdo->rollBack();
+                    return ['success' => false, 'message' => 'Phase not in submitted status'];
                 }
 
-                $message = 'Phase approved and payment released from escrow';
+                // Update contract totals (unit-based billed amount)
+                if ($billedAmount > 0) {
+                    $this->pdo->prepare(
+                        "UPDATE contract
+                         SET amount_paid    = COALESCE(amount_paid, 0) + :billed,
+                             amount_pending = GREATEST(0, COALESCE(amount_pending, 0) - :billed2)
+                         WHERE contract_id  = :cid"
+                    )->execute([':billed' => $billedAmount, ':billed2' => $billedAmount, ':cid' => $milestone['contract_id']]);
+                }
+
+                $message = 'Phase approved';
 
             } elseif ($action === 'reject') {
-                // REVERT STATUS
                 $sql = "UPDATE contract_milestone 
-                        SET status = 'in_progress', 
-                            proof_of_work = NULL, 
-                            proof_files = NULL,
-                            completed_at = NULL 
-                        WHERE milestone_id = :id";
-                // Note: We might want to keep proof for history, but typically 'reject' means 'do it again'.
-                // Let's NOT clear the proof text, but maybe move it to a history log? 
-                // For simplicity: We keep valid current columns but status 'in_progress' implies it needs work.
-                // Actually, clearing proof fields signals "not done".
-                
-                $sql = "UPDATE contract_milestone 
-                        SET status = 'in_progress'
-                        WHERE milestone_id = :id"; // Keep proof for reference? No, let's reset status primarily.
-
+                        SET status = 'rejected',
+                            reviewed_at = NOW(),
+                            review_comments = :fb
+                        WHERE milestone_id = :id AND status = 'submitted'";
                 $stmt = $this->pdo->prepare($sql);
-                $stmt->execute([':id' => $milestoneId]);
+                $stmt->execute([':fb' => $feedback ?: null, ':id' => $milestoneId]);
 
-                // We ideally need a "feedback" column. 
-                // Since we don't have one in schema yet, we can append to description or description?
-                // Let's check schema... `description` exists.
-                if ($feedback) {
-                    $stmt = $this->pdo->prepare("UPDATE contract_milestone SET description = CONCAT(description, '\n\n[REJECTION FEEDBACK]: ', :fb) WHERE milestone_id = :id");
-                    $stmt->execute([':fb' => $feedback, ':id' => $milestoneId]);
+                if ($stmt->rowCount() === 0) {
+                    if (($milestone['status'] ?? '') === 'rejected') {
+                        $this->pdo->commit();
+                        return ['success' => true, 'message' => 'Phase already rejected'];
+                    }
+                    $this->pdo->rollBack();
+                    return ['success' => false, 'message' => 'Phase not in submitted status'];
                 }
 
-                $message = 'Phase rejected and returned to progress';
+                $message = 'Phase rejected';
             } else {
                 $this->pdo->rollBack();
                 return ['success' => false, 'message' => 'Invalid action'];
             }
 
             $this->pdo->commit();
-            return ['success' => true, 'message' => $message];
+            $resp = ['success' => true, 'message' => $message];
+            if ($action === 'approve') {
+                $resp['billed_amount'] = $billedAmount;
+            }
+            return $resp;
 
         } catch (PDOException $e) {
             if ($this->pdo->inTransaction()) {
@@ -1180,11 +1316,11 @@ class Project
             // 4. Get Milestones Totals
             // Try contract_milestone first (new table)
             // approved means paid out, others are pending
-            $sqlMilestones = "SELECT 
-                                SUM(CASE WHEN status = 'approved' THEN amount ELSE 0 END) as total_paid,
-                                SUM(CASE WHEN status IN ('pending', 'in_progress', 'submitted', 'rejected') THEN amount ELSE 0 END) as total_pending
-                              FROM contract_milestone 
-                              WHERE contract_id = :contract_id";
+                        $sqlMilestones = "SELECT 
+                                                                SUM(CASE WHEN status IN ('approved', 'paid') THEN COALESCE(actual_amount, amount) ELSE 0 END) as total_paid,
+                                                                SUM(CASE WHEN status IN ('pending', 'in_progress', 'submitted', 'rejected', 'under_review') THEN COALESCE(actual_amount, amount) ELSE 0 END) as total_pending
+                                                            FROM contract_milestone 
+                                                            WHERE contract_id = :contract_id";
             
             $stmtMilestone = $this->pdo->prepare($sqlMilestones);
             $stmtMilestone->execute([':contract_id' => $contractId]);

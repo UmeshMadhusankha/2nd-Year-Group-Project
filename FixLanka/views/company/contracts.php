@@ -862,8 +862,7 @@ if (!$userId) {
                                         <label for="budgetType">Contract Type <span class="required">*</span></label>
                                         <select id="budgetType" name="budget_type" required>
                                             <option value="fixed">Fixed Price</option>
-                                            <option value="time_based">Time-Based</option>
-                                            <option value="flexible">Flexible (+/-10%)</option>
+                                            <option value="flexible">Flexible (Materials)</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
@@ -872,6 +871,14 @@ if (!$userId) {
                                             <option value="1">All taxes included</option>
                                             <option value="0">Taxes additional</option>
                                         </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-grid" id="budgetFlexRow" style="display:none;">
+                                    <div class="form-group">
+                                        <label for="budgetFlexPercent">Material Price Flexibility (%)</label>
+                                        <input type="number" id="budgetFlexPercent" name="budget_flexibility_percentage" min="0" max="100" step="0.5" value="10">
+                                        <small>Applies to materials cost only (increase/decrease)</small>
                                     </div>
                                 </div>
                                 <div class="form-grid" id="budgetRangeRow" style="display:none;">
@@ -921,7 +928,6 @@ if (!$userId) {
                                         <label for="pricingType">Pricing Structure</label>
                                         <select id="pricingType" name="pricing_type">
                                             <option value="fixed_price">Fixed Price</option>
-                                            <option value="time_and_material">Time & Material (Hourly)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1087,10 +1093,8 @@ if (!$userId) {
                                     <label for="communicationChannel">Official Communication Channel</label>
                                     <select id="communicationChannel" name="communication_channel">
                                         <option value="system">FixLanka Platform Messaging (Recommended)</option>
-                                        <option value="email">Email Only</option>
-                                        <option value="both">Platform + Email</option>
                                     </select>
-                                    <small class="field-hint">All contract-related communication must go through this channel.</small>
+                                    <small class="field-hint">All contract-related communication must use FixLanka chat (email is not supported).</small>
                                 </div>
                                 <div class="form-group full-width">
                                     <label for="disputeResolution">Dispute Resolution Process</label>
@@ -1503,9 +1507,10 @@ if (!$userId) {
     </div>
 
     <!-- Scripts -->
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/chat.js?v=6.5"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contracts-enhanced.js?v=6.6"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contract-form-enhanced.js?v=6.7"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/chat.js?v=6.8"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/contract-preview.js?v=1.1"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contracts-enhanced.js?v=6.9"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contract-form-enhanced.js?v=7.1"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/budget-adjustment.js?v=6.5"></script>
     <script>
         // Store current contract for budget adjustment
@@ -1596,21 +1601,32 @@ if (!$userId) {
             
             if (contract.budget_type === 'flexible') {
                 // Flexible budget
-                budgetTypeBadge.innerHTML = 'Flexible Budget (+/-10%)';
+                const budgetValue = parseFloat(contract.value || contract.total_budget || 0);
+                const minBudget = contract.budget_min || null;
+                const maxBudget = contract.budget_max || null;
+                let overallPct = null;
+                if (budgetValue > 0 && maxBudget !== null && maxBudget !== undefined && maxBudget !== '') {
+                    const maxNum = parseFloat(maxBudget);
+                    if (!isNaN(maxNum) && maxNum >= budgetValue) {
+                        overallPct = ((maxNum - budgetValue) / budgetValue) * 100;
+                    }
+                }
+                const pctText = overallPct !== null ? ` (±${overallPct.toFixed(1)}%)` : '';
+
+                budgetTypeBadge.innerHTML = `Flexible Budget${pctText}`;
                 budgetTypeBadge.className = 'badge badge-flexible';
                 budgetTypeBadge.style.background = '#3498db';
                 budgetTypeBadge.style.color = 'white';
                 
                 // Calculate range if not provided
-                const budgetValue = parseFloat(contract.value || contract.total_budget || 0);
-                const minBudget = contract.budget_min || (budgetValue * 0.9);
-                const maxBudget = contract.budget_max || (budgetValue * 1.1);
+                const resolvedMin = minBudget !== null && minBudget !== undefined && minBudget !== '' ? parseFloat(minBudget) : (budgetValue > 0 ? budgetValue : 0);
+                const resolvedMax = maxBudget !== null && maxBudget !== undefined && maxBudget !== '' ? parseFloat(maxBudget) : (budgetValue > 0 ? budgetValue : 0);
                 
                 // Display range
                 budgetRangeInfo.style.display = 'block';
                 budgetFixedInfo.style.display = 'none';
-                budgetMinSpan.textContent = formatCurrency(minBudget);
-                budgetMaxSpan.textContent = formatCurrency(maxBudget);
+                budgetMinSpan.textContent = formatCurrency(resolvedMin);
+                budgetMaxSpan.textContent = formatCurrency(resolvedMax);
                 
             } else {
                 // Fixed budget
