@@ -72,6 +72,9 @@ let quotationModal;
 let quotationForm;
 let requestDetailsModal;
 
+// Cache for direct job requests (directjobrequest table)
+let directRequestsCache = [];
+
 /**
  * Pending action requested via URL params (repair-requests.php?request_id=...&action=quote|details)
  * @type {{requestId:number, action:'quote'|'details'|null}|null}
@@ -1297,6 +1300,29 @@ async function submitQuotation() {
 
         if (result.success) {
             showToast(editingQuotationId ? 'Quotation updated successfully!' : 'Quotation submitted successfully!', 'success');
+
+            // Short undo window for newly submitted quotation
+            if (!editingQuotationId && typeof window.showUndoToast === 'function') {
+                const quotationId = result.data?.quotation_id || result.data?.id;
+                const seconds = (result.undo && result.undo.undo_seconds) ? Number(result.undo.undo_seconds) : 30;
+                if (quotationId) {
+                    window.showUndoToast('Quotation submitted. Undo available', async () => {
+                        const undoRes = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?action=undo_submit', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ quotation_id: quotationId })
+                        });
+                        const undoJson = await undoRes.json();
+                        if (undoJson.success) {
+                            showToast('Quotation undone', 'info');
+                            await loadSubmittedQuotations();
+                            await loadAvailableRequests();
+                        } else {
+                            showToast(undoJson.error || undoJson.message || 'Undo failed', 'error');
+                        }
+                    }, seconds);
+                }
+            }
             closeQuotationModal();
 
 
@@ -1416,6 +1442,7 @@ async function viewRequestDetails(requestId) {
     `;
 
     // Set button action
+    setRequestDetailsQuoteButtonVisible(true);
     document.getElementById('submit-quote-from-details').onclick = () => {
         closeRequestDetailsModal();
         openQuotationModal(requestId);
@@ -1813,6 +1840,7 @@ window.submitQuotation = submitQuotation;
 window.editQuotation = editQuotation;
 window.deleteQuotation = deleteQuotation;
 window.viewRequestDetails = viewRequestDetails;
+window.viewDirectRequestDetails = viewDirectRequestDetails;
 window.closeRequestDetailsModal = closeRequestDetailsModal;
 
 // ================================================================
@@ -1850,18 +1878,10 @@ async function loadDirectRequests() {
 
         const rows = Array.isArray(result.data) ? result.data : [];
 
-        const normalizeStatus = (quoteStatus) => {
-            const s = String(quoteStatus || 'pending').toLowerCase();
-            if (s === 'successful') return 'completed';
-            if (s === 'accepted') return 'accepted';
-            if (s === 'rejected') return 'rejected';
-            return 'pending';
-        };
-
         const directRequests = rows.map(r => ({
             ...r,
             created_at: r.created_at || r.dateCreated || null,
-            status: r.status || normalizeStatus(r.quote_status),
+            status: r.status || 'pending',
             customer_name: r.customer_name || `${r.customer_fname || ''} ${r.customer_lname || ''}`.trim()
         }));
 
@@ -1915,6 +1935,9 @@ function renderDirectRequests(requests) {
 
     // Update counts
     updateDirectRequestsCount(requests.length);
+
+    // Cache for modal rendering
+    directRequestsCache = Array.isArray(requests) ? requests : [];
 
     // Render rows
     tbody.innerHTML = requests.map(request => createDirectRequestRow(request)).join('');
@@ -1984,7 +2007,7 @@ function createDirectRequestRow(request) {
             <td>
                 <div class="table-actions">
                     ${rawStatus === 'pending' && !isExpired ? `
-                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                        <button class="table-action-btn view" onclick="viewDirectRequestDetails(${request.request_id})">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
                         </button>
@@ -1997,12 +2020,12 @@ function createDirectRequestRow(request) {
                             <span>Decline</span>
                         </button>
                     ` : rawStatus === 'accepted' ? `
-                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                        <button class="table-action-btn view" onclick="viewDirectRequestDetails(${request.request_id})">
                             <i class="fas fa-file-contract"></i>
                             <span>View Contract</span>
                         </button>
                     ` : isExpired ? `
-                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                        <button class="table-action-btn view" onclick="viewDirectRequestDetails(${request.request_id})">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
                         </button>
@@ -2011,7 +2034,7 @@ function createDirectRequestRow(request) {
                             <span>Contact</span>
                         </button>
                     ` : `
-                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                        <button class="table-action-btn view" onclick="viewDirectRequestDetails(${request.request_id})">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
                         </button>
@@ -2020,6 +2043,61 @@ function createDirectRequestRow(request) {
             </td>
         </tr>
     `;
+}
+
+function setRequestDetailsQuoteButtonVisible(isVisible) {
+    const btn = document.getElementById('submit-quote-from-details');
+    if (!btn) return;
+    btn.style.display = isVisible ? '' : 'none';
+    if (!isVisible) {
+        btn.onclick = null;
+    }
+}
+
+/**
+ * View direct-request details (directjobrequest)
+ */
+async function viewDirectRequestDetails(requestId) {
+    const id = Number(requestId);
+    if (!id) {
+        showToast('Request not found', 'error');
+        return;
+    }
+
+    const request = (Array.isArray(directRequestsCache) ? directRequestsCache : []).find(r => Number(r.request_id) === id);
+    if (!request) {
+        showToast('Request not found', 'error');
+        return;
+    }
+
+    const detailsContainer = document.getElementById('request-details-content');
+    if (!detailsContainer) {
+        showToast('Request details popup unavailable', 'error');
+        return;
+    }
+
+    const customerName = request.customer_name
+        || `${request.customer_fname || ''} ${request.customer_lname || ''}`.trim()
+        || 'Customer';
+
+    detailsContainer.innerHTML = `
+        <div style="padding: var(--spacing-md);">
+            <h3>${escapeHtml(request.title)}</h3>
+            <p><strong>Customer:</strong> ${escapeHtml(customerName)}</p>
+            <p><strong>Category:</strong> ${escapeHtml(request.category_name || request.category || 'General')}</p>
+            <p><strong>District:</strong> ${escapeHtml(request.district || '')}</p>
+            <p><strong>Address:</strong> ${escapeHtml(request.address || '')}</p>
+            <p><strong>Deadline:</strong> ${request.finish_date ? formatDate(request.finish_date) : '-'}</p>
+            <p><strong>Description:</strong></p>
+            <p>${escapeHtml(request.description || '')}</p>
+        </div>
+    `;
+
+    // Direct requests should not show the "Submit Quote" CTA
+    setRequestDetailsQuoteButtonVisible(false);
+
+    requestDetailsModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
 
 /**
