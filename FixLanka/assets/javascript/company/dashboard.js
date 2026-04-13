@@ -1546,14 +1546,24 @@ function editEvent(eventId) {
     }
 }
 
-function deleteEvent(eventId) {
+async function deleteEvent(eventId) {
     const systemEvent = calendarState.systemEvents.find(e => e.id === eventId);
     if (systemEvent) {
         showNotification('System events cannot be deleted', 'info');
         return;
     }
 
-    if (confirm('Are you sure you want to delete this event?')) {
+    const confirmed = window.systemConfirm
+        ? await window.systemConfirm('Are you sure you want to delete this event?', {
+            title: 'Delete Event',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            type: 'danger',
+            icon: 'fas fa-trash'
+        })
+        : confirm('Are you sure you want to delete this event?');
+
+    if (confirmed) {
         calendarState.events = calendarState.events.filter(e => e.id !== eventId);
         saveCalendarEvents();
         updateCalendarDisplay();

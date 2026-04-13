@@ -40,6 +40,7 @@ if (!$companyId) {
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/common.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/chat.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/progress-bars.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
@@ -297,29 +298,59 @@ if (!$companyId) {
                     <input type="hidden" id="proof-milestone-id" name="milestone_id">
 
                     <div class="form-group" id="proof-unit-info" style="display:none;">
-                        <label><i class="fas fa-ruler-combined"></i> Unit Billing</label>
-                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <div style="flex:1; min-width:180px;">
-                                <small style="display:block; color:#64748b;">Agreed rate</small>
-                                <div id="proof-agreed-rate" style="font-weight:600;">-</div>
+                        <label><i class="fas fa-calculator"></i> Payment (this milestone)</label>
+
+                        <div class="proof-unit-grid">
+                            <div class="proof-unit-card">
+                                <div class="proof-unit-title">Labour</div>
+                                <div id="proof-labor-agreed-rate" class="proof-unit-value">-</div>
+                                <div id="proof-labor-unit-label" class="proof-unit-subvalue">-</div>
                             </div>
-                            <div style="flex:1; min-width:180px;">
-                                <small style="display:block; color:#64748b;">Unit</small>
-                                <div id="proof-unit-label" style="font-weight:600;">-</div>
+
+                            <div class="proof-unit-card">
+                                <div class="proof-unit-title">Materials</div>
+                                <div id="proof-material-agreed-rate" class="proof-unit-value">-</div>
+                                <div id="proof-material-unit-label" class="proof-unit-subvalue">-</div>
                             </div>
                         </div>
+
+                        <div id="proof-payment-help" class="helper-text">Fill only what applies for this milestone.</div>
                     </div>
 
-                    <div class="form-group" id="proof-actual-qty-row" style="display:none;">
-                        <label><i class="fas fa-hashtag"></i> Actual Units Completed <span class="required">*</span></label>
-                        <input type="number" id="proof-actual-qty" name="actual_quantity" min="0" step="0.01" placeholder="e.g., 12.5" />
-                        <small>Enter the actual completed units for this milestone.</small>
+                    <div class="form-group" id="proof-nonpaying-row" style="display:none;">
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                            <input type="checkbox" id="proof-nonpaying" name="non_paying" value="1" />
+                            <span><i class="fas fa-ban"></i> Non-paying milestone (inspection / no measurable units)</span>
+                        </label>
+                        <div id="proof-nonpaying-help" class="helper-text">No payment for this milestone. Still requires customer approval.</div>
                     </div>
 
-                    <div class="form-group" id="proof-actual-rate-row" style="display:none;">
-                        <label><i class="fas fa-tag"></i> Actual Unit Rate (Material variation)</label>
-                        <input type="number" id="proof-actual-rate" name="actual_unit_rate" min="0" step="0.01" placeholder="Leave blank if unchanged" />
-                        <small>Only use if material prices changed from the agreed rate.</small>
+                    <div class="form-group" id="proof-labor-qty-row" style="display:none;">
+                        <label><i class="fas fa-hashtag"></i> Labour units</label>
+                        <input type="number" id="proof-labor-qty" name="labor_quantity" min="0" step="0.01" placeholder="e.g., 12.5" />
+                        <div id="proof-labor-qty-help" class="helper-text" style="display:none;"></div>
+                    </div>
+
+                    <div class="form-group" id="proof-material-qty-row" style="display:none;">
+                        <label><i class="fas fa-hashtag"></i> Material units</label>
+                        <input type="number" id="proof-material-qty" name="material_quantity" min="0" step="0.01" placeholder="e.g., 3" />
+                        <div id="proof-material-qty-help" class="helper-text" style="display:none;"></div>
+                    </div>
+
+                    <div class="form-group" id="proof-material-rate-row" style="display:none;">
+                        <label><i class="fas fa-tag"></i> Material rate override (optional)</label>
+                        <input type="number" id="proof-material-rate" name="material_unit_rate" min="0" step="0.01" placeholder="Leave blank if unchanged" />
+                        <div id="proof-material-rate-help" class="helper-text" style="display:none;"></div>
+                    </div>
+
+                    <div class="form-group" id="proof-extra-amount-row" style="display:none;">
+                        <label><i class="fas fa-plus-circle"></i> Extra amount (LKR)</label>
+                        <input type="number" id="proof-extra-amount" name="extra_amount" min="0" step="0.01" placeholder="e.g., 1500.00" />
+                        <div id="proof-extra-amount-help" class="helper-text" style="display:none;"></div>
+                    </div>
+
+                    <div class="form-divider">
+                        <h4><i class="fas fa-file-signature"></i> Proof details</h4>
                     </div>
                     
                     <div class="form-group">

@@ -171,7 +171,19 @@ async function loadProjectTimeline(projectId) {
         const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/projects.php?action=phases&project_id=${projectId}`);
         const result = await response.json();
 
-        if (result.success && result.data && result.data.length > 0) {
+        if (!result || result.success === false) {
+            const msg = (result && result.message) ? String(result.message) : 'Failed to load contract phases';
+            timelineContainer.innerHTML = `
+                <div class="error-state" style="padding: 30px; text-align: center; color: #ef4444;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 32px; margin-bottom: 12px;"></i>
+                    <p style="margin: 0 0 10px 0;">${escapeHtml(msg)}</p>
+                    <button onclick="loadProjectTimeline(${projectId})" class="btn-secondary-small" style="margin-top: 6px;">Try Again</button>
+                </div>
+            `;
+            return;
+        }
+
+        if (Array.isArray(result.data) && result.data.length > 0) {
             const phases = result.data;
             window.currentContractPhases = phases;
             let html = `
@@ -213,23 +225,17 @@ async function loadProjectTimeline(projectId) {
             };
 
             const getStatusBadge = (status) => {
-                const colors = {
-                    'pending': '#f1f5f9', 'text': '#475569',
-                    'in_progress': '#dbeafe', 'text_color': '#1e40af',
-                    'submitted': '#fef3c7', 'text_color': '#92400e',
-                    'approved': '#d1fae5', 'text_color': '#065f46',
-                    'rejected': '#fee2e2', 'text_color': '#b91c1c'
-                };
-
-                let bg = colors[status] || '#f1f5f9';
-                let col = colors['text_color'] || (colors[status] ? colors['text_' + status] : '#475569');
-                // Fix map logic slightly for simplicity
+                let bg = '#f1f5f9';
+                let col = '#475569';
                 if (status === 'in_progress') { bg = '#dbeafe'; col = '#1e40af'; }
-                if (status === 'submitted') { bg = '#fef3c7'; col = '#92400e'; }
-                if (status === 'approved' || status === 'completed') { bg = '#d1fae5'; col = '#065f46'; }
+                if (status === 'submitted' || status === 'under_review') { bg = '#fef3c7'; col = '#92400e'; }
+                if (status === 'approved' || status === 'completed' || status === 'paid') { bg = '#d1fae5'; col = '#065f46'; }
                 if (status === 'rejected') { bg = '#fee2e2'; col = '#b91c1c'; }
 
-                const label = status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1);
+                const label = (status === 'submitted' || status === 'under_review')
+                    ? 'In Review'
+                    : status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1);
+
                 return `<span style="background-color: ${bg}; color: ${col}; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap;">${label}</span>`;
             };
 
@@ -237,20 +243,23 @@ async function loadProjectTimeline(projectId) {
             let totalAmount = 0;
 
             phases.forEach((item, index) => {
-                const amount = parseFloat(item.amount_lkr || 0);
+                const plannedAmount = parseFloat(item.amount_lkr || 0);
+                const actualAmountRaw = item.actual_amount;
+                const actualAmount = actualAmountRaw === null || actualAmountRaw === undefined || actualAmountRaw === '' ? null : parseFloat(actualAmountRaw);
+                const hasUnitPricing = (String(item.is_unit_priced || '') === '1' || item.is_unit_priced === 1 || item.is_unit_priced === true)
+                    || ((item.unit_label !== null && item.unit_label !== undefined && String(item.unit_label).trim() !== '') && (item.unit_rate !== null && item.unit_rate !== undefined && item.unit_rate !== ''));
                 const pct = parseFloat(item.pct_of_total || 0);
                 const milestoneId = item.id || item.milestone_id; // Handle both legacy and new ID names if needed
-                // Note: SQL query selects 'milestone_number' as 'sort_order'. We should ensure we have the ID.
-                // The query in ProjectModel.php does NOT currently select the ID! 
-                // We need to update ProjectModel.php to select 'milestone_id'. 
-                // Assuming it's selected as we'll fix it, or let's use a workaround for now but really we need the ID.
-                // Actually the query is: SELECT milestone_number as sort_order, ... 
-                // It misses milestone_id! I need to fix the backend query first.
-                // Waait, I can't restart backend task easily.
-                // Let's assume I will fix the backend query right after this.
+                const amountForTotals = (actualAmount !== null && Number.isFinite(actualAmount))
+                    ? actualAmount
+                    : (!hasUnitPricing ? (Number.isFinite(plannedAmount) ? plannedAmount : 0) : 0);
 
-                totalAmount += amount;
+                totalAmount += amountForTotals;
                 totalPercent += pct;
+
+                const amountCell = (actualAmount !== null && Number.isFinite(actualAmount))
+                    ? formatCurrency(actualAmount)
+                    : (hasUnitPricing ? '-' : formatCurrency(Number.isFinite(plannedAmount) ? plannedAmount : 0));
 
                 let actionBtn = '';
                 // Logic based on status
@@ -258,7 +267,7 @@ async function loadProjectTimeline(projectId) {
                     actionBtn = `<button onclick="startPhase(${item.milestone_id || item.id})" class="btn-primary-small" style="padding: 4px 8px; font-size: 11px;"><i class="fas fa-play"></i> Start</button>`;
                 } else if (item.status === 'in_progress') {
                     actionBtn = `<button onclick="openProofModal(${item.milestone_id || item.id})" class="btn-success-small" style="padding: 4px 8px; font-size: 11px; background-color: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;"><i class="fas fa-check"></i> Complete</button>`;
-                } else if (item.status === 'submitted') {
+                } else if (item.status === 'submitted' || item.status === 'under_review') {
                     actionBtn = `<span style="font-size: 11px; color: #d97706;"><i class="fas fa-clock"></i> In Review</span>`;
                 } else {
                     actionBtn = `<span style="font-size: 11px; color: #059669;"><i class="fas fa-check-double"></i> Done</span>`;
@@ -270,7 +279,7 @@ async function loadProjectTimeline(projectId) {
                         <td style="padding: 12px; font-weight: 500; color: #334155;">${item.phase_name}</td>
                         <td style="padding: 12px; color: #64748b; font-size: 13px;">${item.description || '-'}</td>
                         <td style="padding: 12px; color: #64748b;">${formatDate(item.target_date)}</td>
-                        <td style="padding: 12px; text-align: right; font-family: monospace; color: #334155;">${formatCurrency(amount)}</td>
+                        <td style="padding: 12px; text-align: right; font-family: monospace; color: #334155;">${amountCell}</td>
                         <td style="padding: 12px; text-align: center;">${getStatusBadge(item.status || 'pending')}</td>
                         <td style="padding: 12px; text-align: right;">${actionBtn}</td>
                     </tr>
@@ -291,6 +300,7 @@ async function loadProjectTimeline(projectId) {
             `;
             timelineContainer.innerHTML = html;
         } else {
+            window.currentContractPhases = [];
             timelineContainer.innerHTML = `
                 <div class="no-data-card" style="padding: 40px; text-align: center;">
                     <i class="fas fa-file-contract" style="font-size: 48px; color: #cbd5e1; margin-bottom: 16px;"></i>
@@ -382,28 +392,6 @@ async function loadProjectFinancials(projectId) {
                             </div>
                             <div style="font-size: 24px; font-weight: 700; color: #ca8a04;">${formatCurrency(data.total_pending || 0)}</div>
                         </div>
-
-                        <!-- Escrow Balance Card -->
-                        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                                <div style="width: 40px; height: 40px; border-radius: 8px; background: #f3e8ff; color: #9333ea; display: flex; align-items: center; justify-content: center; font-size: 18px;">
-                                    <i class="fas fa-lock"></i>
-                                </div>
-                                <div>
-                                    <h4 style="margin: 0; color: #64748b; font-size: 13px; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
-                                        Escrow Balance
-                                        <div class="tooltip-container" style="position: relative; display: inline-block;">
-                                            <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 14px; cursor: help;"></i>
-                                            <div class="custom-tooltip" style="visibility: hidden; width: 250px; background-color: #1e293b; color: #f8fafc; text-align: center; border-radius: 8px; padding: 12px; position: absolute; z-index: 100; bottom: 150%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s, visibility 0.2s; font-size: 12px; font-weight: normal; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); line-height: 1.5; text-transform: none;">
-                                                Funds securely held by the platform. These will be released to you automatically as the customer approves your milestones.
-                                                <div style="position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #1e293b transparent transparent transparent;"></div>
-                                            </div>
-                                        </div>
-                                    </h4>
-                                </div>
-                            </div>
-                            <div style="font-size: 24px; font-weight: 700; color: #9333ea;">${formatCurrency(data.escrow_balance || 0)}</div>
-                        </div>
                     </div>
 
                     <!-- Progress Bar -->
@@ -440,15 +428,20 @@ async function loadProjectFinancials(projectId) {
                 `;
 
                 data.payments.forEach(payment => {
+                    const normalizePaymentStatus = (s) => {
+                        const st = (s || 'pending').toString().toLowerCase();
+                        if (st === 'released') return 'completed';
+                        if (st === 'held_escrow') return 'pending';
+                        return st;
+                    };
+
                     const statusColors = {
                         'pending': { bg: '#f1f5f9', text: '#475569' },
                         'completed': { bg: '#dcfce7', text: '#16a34a' },
-                        'held_escrow': { bg: '#f3e8ff', text: '#9333ea' },
-                        'released': { bg: '#d1fae5', text: '#059669' },
                         'refunded': { bg: '#fee2e2', text: '#b91c1c' }
                     };
 
-                    const paymentStatus = payment.status || 'pending';
+                    const paymentStatus = normalizePaymentStatus(payment.status);
                     const colors = statusColors[paymentStatus] || statusColors['pending'];
                     const statusLabel = paymentStatus.replace('_', ' ').charAt(0).toUpperCase() + paymentStatus.replace('_', ' ').slice(1);
                     const badgeHtml = `<span style="background-color: ${colors.bg}; color: ${colors.text}; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block; white-space: nowrap;">${statusLabel}</span>`;
@@ -512,7 +505,17 @@ async function loadProjectFinancials(projectId) {
 
 // Start Phase
 async function startPhase(milestoneId) {
-    if (!confirm('Are you sure you want to start this phase?')) return;
+    const confirmed = await (window.showConfirm
+        ? window.showConfirm('Are you sure you want to start this phase?', {
+            title: 'Start Phase',
+            confirmText: 'Start',
+            cancelText: 'Cancel',
+            type: 'question',
+            icon: 'fas fa-play'
+        })
+        : Promise.resolve(confirm('Are you sure you want to start this phase?')));
+
+    if (!confirmed) return;
 
     try {
         const formData = new FormData();
@@ -534,7 +537,10 @@ async function startPhase(milestoneId) {
             // Helper: Find the project ID from the DOM or variable.
             // Assumption: we won't fix the reload perfectly right now, let user refresh.
             // Better: store currentProjectId when opening drawer.
-            if (window.currentOpenProjectId) loadProjectTimeline(window.currentOpenProjectId);
+            if (window.currentOpenProjectId) {
+                loadProjectTimeline(window.currentOpenProjectId);
+                loadProjectFinancials(window.currentOpenProjectId);
+            }
         } else {
             showToast(result.message || 'Failed to start phase', 'error');
         }
@@ -559,28 +565,66 @@ function openProofModal(milestoneId) {
     document.getElementById('proof-milestone-id').value = milestoneId;
 
     const unitInfo = document.getElementById('proof-unit-info');
-    const agreedRateEl = document.getElementById('proof-agreed-rate');
-    const unitLabelEl = document.getElementById('proof-unit-label');
-    const actualQtyRow = document.getElementById('proof-actual-qty-row');
-    const actualQtyInput = document.getElementById('proof-actual-qty');
-    const actualRateRow = document.getElementById('proof-actual-rate-row');
-    const actualRateInput = document.getElementById('proof-actual-rate');
+    const nonPayingRow = document.getElementById('proof-nonpaying-row');
+    const nonPayingCheckbox = document.getElementById('proof-nonpaying');
+    const nonPayingHelp = document.getElementById('proof-nonpaying-help');
+    const paymentHelp = document.getElementById('proof-payment-help');
+
+    const laborAgreedRateEl = document.getElementById('proof-labor-agreed-rate');
+    const laborUnitLabelEl = document.getElementById('proof-labor-unit-label');
+    const materialAgreedRateEl = document.getElementById('proof-material-agreed-rate');
+    const materialUnitLabelEl = document.getElementById('proof-material-unit-label');
+
+    const laborQtyRow = document.getElementById('proof-labor-qty-row');
+    const laborQtyInput = document.getElementById('proof-labor-qty');
+    const laborQtyHelp = document.getElementById('proof-labor-qty-help');
+
+    const materialQtyRow = document.getElementById('proof-material-qty-row');
+    const materialQtyInput = document.getElementById('proof-material-qty');
+    const materialQtyHelp = document.getElementById('proof-material-qty-help');
+
+    const materialRateRow = document.getElementById('proof-material-rate-row');
+    const materialRateInput = document.getElementById('proof-material-rate');
+    const materialRateHelp = document.getElementById('proof-material-rate-help');
+
+    const extraAmountRow = document.getElementById('proof-extra-amount-row');
+    const extraAmountInput = document.getElementById('proof-extra-amount');
+    const extraAmountHelp = document.getElementById('proof-extra-amount-help');
 
     const hideEl = (el) => {
         if (el) el.style.display = 'none';
     };
 
     hideEl(unitInfo);
-    hideEl(actualQtyRow);
-    hideEl(actualRateRow);
+    if (nonPayingRow) nonPayingRow.style.display = '';
+    hideEl(laborQtyRow);
+    hideEl(materialQtyRow);
+    hideEl(materialRateRow);
+    hideEl(extraAmountRow);
 
-    if (actualQtyInput) {
-        actualQtyInput.required = false;
-        actualQtyInput.value = '';
+    if (nonPayingCheckbox) {
+        nonPayingCheckbox.checked = false;
     }
-    if (actualRateInput) {
-        actualRateInput.value = '';
+
+    if (nonPayingHelp) {
+        nonPayingHelp.textContent = 'No payment for this milestone. Still requires customer approval.';
     }
+
+    if (paymentHelp) {
+        paymentHelp.textContent = 'Fill only what applies for this milestone.';
+    }
+
+    const resetNumberInput = (inputEl, placeholder) => {
+        if (!inputEl) return;
+        inputEl.value = '';
+        if (placeholder !== undefined) inputEl.placeholder = placeholder;
+        inputEl.disabled = false;
+    };
+
+    resetNumberInput(laborQtyInput, 'e.g., 12.5');
+    resetNumberInput(materialQtyInput, 'e.g., 3');
+    resetNumberInput(materialRateInput, 'Leave blank if unchanged');
+    resetNumberInput(extraAmountInput, 'e.g., 1500.00');
 
     const phases = window.currentContractPhases || [];
     const phase = phases.find(p => String(p.milestone_id || p.id) === String(milestoneId));
@@ -601,34 +645,76 @@ function openProofModal(milestoneId) {
         }).format(n);
     };
 
-    const isMaterialsPhase = (p) => {
-        const name = (p?.phase_name || p?.title || '').toString().toLowerCase();
-        return name.includes('material');
-    };
-
     if (phase) {
-        const unitLabel = (phase.unit_label || '').toString().trim();
-        const unitRate = toNumber(phase.unit_rate);
+        const isUnitPriced = String(phase.is_unit_priced || '') === '1' || phase.is_unit_priced === 1 || phase.is_unit_priced === true;
+        const isNonPayingPersisted = String(phase.is_non_paying || '') === '1' || phase.is_non_paying === 1 || phase.is_non_paying === true;
 
-        if (unitLabel && unitRate !== null && unitRate >= 0) {
+        const laborUnitLabel = (phase.labor_unit_label || '').toString().trim();
+        const materialUnitLabel = (phase.material_unit_label || '').toString().trim();
+        const laborRate = toNumber(phase.labor_unit_rate);
+        const materialRate = toNumber(phase.material_unit_rate);
+
+        if (isUnitPriced) {
             if (unitInfo) unitInfo.style.display = '';
-            if (agreedRateEl) agreedRateEl.textContent = `LKR ${formatLkr(unitRate)} per ${unitLabel}`;
-            if (unitLabelEl) unitLabelEl.textContent = unitLabel;
 
-            if (actualQtyRow) actualQtyRow.style.display = '';
-            if (actualQtyInput) {
-                actualQtyInput.required = true;
-                const existingQty = toNumber(phase.actual_quantity);
-                if (existingQty !== null) actualQtyInput.value = String(existingQty);
+            if (laborAgreedRateEl) {
+                laborAgreedRateEl.textContent = (laborRate !== null) ? `LKR ${formatLkr(laborRate)} per ${laborUnitLabel || 'unit'}` : '-';
+            }
+            if (laborUnitLabelEl) {
+                laborUnitLabelEl.textContent = laborUnitLabel || '-';
+            }
+            if (materialAgreedRateEl) {
+                materialAgreedRateEl.textContent = (materialRate !== null) ? `LKR ${formatLkr(materialRate)} per ${materialUnitLabel || 'unit'}` : '-';
+            }
+            if (materialUnitLabelEl) {
+                materialUnitLabelEl.textContent = materialUnitLabel || '-';
             }
 
-            if (isMaterialsPhase(phase)) {
-                if (actualRateRow) actualRateRow.style.display = '';
-                if (actualRateInput) {
-                    const existingRate = toNumber(phase.actual_unit_rate);
-                    if (existingRate !== null) actualRateInput.value = String(existingRate);
-                }
+            if (laborQtyRow) laborQtyRow.style.display = '';
+            if (materialQtyRow) materialQtyRow.style.display = '';
+            if (materialRateRow) materialRateRow.style.display = '';
+            if (extraAmountRow) extraAmountRow.style.display = '';
+
+            if (laborQtyInput) laborQtyInput.placeholder = laborUnitLabel ? `e.g., 12.5 (${laborUnitLabel})` : 'e.g., 12.5';
+            if (materialQtyInput) materialQtyInput.placeholder = materialUnitLabel ? `e.g., 3 (${materialUnitLabel})` : 'e.g., 3';
+
+            if (laborQtyHelp) laborQtyHelp.textContent = laborUnitLabel ? `Enter how many ${laborUnitLabel} of labour you completed for this milestone.` : 'Enter the labour units completed for this milestone.';
+            if (materialQtyHelp) materialQtyHelp.textContent = materialUnitLabel ? `Material used in ${materialUnitLabel}.` : 'Material used (units).';
+            if (materialRateHelp) materialRateHelp.textContent = materialUnitLabel ? `Override LKR per ${materialUnitLabel} (optional).` : 'Override rate (optional).';
+            if (extraAmountHelp) extraAmountHelp.textContent = 'Extra cost for this milestone (optional).';
+
+            const existingLaborQty = toNumber(phase.actual_labor_quantity);
+            const existingMaterialQty = toNumber(phase.actual_material_quantity);
+            const existingExtra = toNumber(phase.actual_extra_amount);
+            const existingMatRate = toNumber(phase.actual_material_unit_rate ?? phase.actual_unit_rate);
+
+            if (laborQtyInput && existingLaborQty !== null) laborQtyInput.value = String(existingLaborQty);
+            if (materialQtyInput && existingMaterialQty !== null) materialQtyInput.value = String(existingMaterialQty);
+            if (extraAmountInput && existingExtra !== null) extraAmountInput.value = String(existingExtra);
+            if (materialRateInput && existingMatRate !== null) materialRateInput.value = String(existingMatRate);
+
+            if (nonPayingCheckbox) {
+                nonPayingCheckbox.checked = !!isNonPayingPersisted;
             }
+
+            const applyNonPayingState = () => {
+                const isNonPaying = !!nonPayingCheckbox?.checked;
+                const inputs = [laborQtyInput, materialQtyInput, materialRateInput, extraAmountInput];
+                inputs.forEach((inp) => {
+                    if (!inp) return;
+                    inp.disabled = isNonPaying;
+                    if (isNonPaying) inp.value = '';
+                });
+            };
+
+            if (nonPayingCheckbox) {
+                nonPayingCheckbox.onchange = applyNonPayingState;
+                applyNonPayingState();
+            }
+        } else {
+            // If not unit priced, default to non-paying to avoid confusing payment inputs.
+            if (nonPayingCheckbox) nonPayingCheckbox.checked = true;
+            if (nonPayingHelp) nonPayingHelp.textContent = 'This milestone has no unit-based payment configured. Submit as non-paying; customer approval is still required.';
         }
     }
 
@@ -641,14 +727,29 @@ function closeProofModal() {
     document.getElementById('file-list').innerHTML = '';
 
     const unitInfo = document.getElementById('proof-unit-info');
-    const actualQtyRow = document.getElementById('proof-actual-qty-row');
-    const actualRateRow = document.getElementById('proof-actual-rate-row');
+    const nonPayingRow = document.getElementById('proof-nonpaying-row');
+    const nonPayingCheckbox = document.getElementById('proof-nonpaying');
+    const laborQtyRow = document.getElementById('proof-labor-qty-row');
+    const materialQtyRow = document.getElementById('proof-material-qty-row');
+    const materialRateRow = document.getElementById('proof-material-rate-row');
+    const extraAmountRow = document.getElementById('proof-extra-amount-row');
     if (unitInfo) unitInfo.style.display = 'none';
-    if (actualQtyRow) actualQtyRow.style.display = 'none';
-    if (actualRateRow) actualRateRow.style.display = 'none';
+    if (nonPayingRow) nonPayingRow.style.display = 'none';
+    if (nonPayingCheckbox) nonPayingCheckbox.checked = false;
+    if (laborQtyRow) laborQtyRow.style.display = 'none';
+    if (materialQtyRow) materialQtyRow.style.display = 'none';
+    if (materialRateRow) materialRateRow.style.display = 'none';
+    if (extraAmountRow) extraAmountRow.style.display = 'none';
 
-    const actualQtyInput = document.getElementById('proof-actual-qty');
-    if (actualQtyInput) actualQtyInput.required = false;
+    const resetInput = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = false;
+    };
+    resetInput('proof-labor-qty');
+    resetInput('proof-material-qty');
+    resetInput('proof-material-rate');
+    resetInput('proof-extra-amount');
 }
 
 // File input change handler for preview
@@ -670,33 +771,40 @@ document.addEventListener('DOMContentLoaded', function () {
         proofForm.addEventListener('submit', async function (e) {
             e.preventDefault();
 
-            const actualQtyRow = document.getElementById('proof-actual-qty-row');
-            const actualQtyInput = document.getElementById('proof-actual-qty');
-            const actualRateRow = document.getElementById('proof-actual-rate-row');
-            const actualRateInput = document.getElementById('proof-actual-rate');
+            const laborQtyInput = document.getElementById('proof-labor-qty');
+            const materialQtyInput = document.getElementById('proof-material-qty');
+            const materialRateInput = document.getElementById('proof-material-rate');
+            const extraAmountInput = document.getElementById('proof-extra-amount');
+            const nonPayingCheckbox = document.getElementById('proof-nonpaying');
+            const isNonPaying = !!nonPayingCheckbox?.checked;
 
-            const rowVisible = (rowEl) => {
-                if (!rowEl) return false;
-                return rowEl.style.display !== 'none';
+            const toFloatOrNull = (v) => {
+                if (v === '' || v === null || v === undefined) return null;
+                const n = parseFloat(v);
+                return Number.isFinite(n) ? n : NaN;
             };
 
-            if (rowVisible(actualQtyRow)) {
-                const raw = actualQtyInput?.value;
-                const qty = raw === '' || raw === null || raw === undefined ? NaN : parseFloat(raw);
-                if (!Number.isFinite(qty) || qty < 0) {
-                    showToast('Please enter a valid actual units value', 'error');
+            if (!isNonPaying) {
+                const laborQty = toFloatOrNull(laborQtyInput?.value);
+                const materialQty = toFloatOrNull(materialQtyInput?.value);
+                const extraAmt = toFloatOrNull(extraAmountInput?.value);
+
+                const invalid = (n) => n !== null && (!Number.isFinite(n) || n < 0);
+                if (invalid(laborQty) || invalid(materialQty) || invalid(extraAmt)) {
+                    showToast('Please enter valid non-negative numbers for labour/material/extra amount', 'error');
                     return;
                 }
-            }
 
-            if (rowVisible(actualRateRow)) {
-                const rawRate = actualRateInput?.value;
-                if (rawRate !== '' && rawRate !== null && rawRate !== undefined) {
-                    const rate = parseFloat(rawRate);
-                    if (!Number.isFinite(rate) || rate < 0) {
-                        showToast('Please enter a valid actual unit rate (or leave it blank)', 'error');
-                        return;
-                    }
+                const hasAnyPayable = ((laborQty || 0) > 0) || ((materialQty || 0) > 0) || ((extraAmt || 0) > 0);
+                if (!hasAnyPayable) {
+                    showToast('Enter labour units, material units, or extra amount (or select Non-paying)', 'error');
+                    return;
+                }
+
+                const matRate = toFloatOrNull(materialRateInput?.value);
+                if (matRate !== null && (!Number.isFinite(matRate) || matRate < 0)) {
+                    showToast('Please enter a valid material unit rate (or leave it blank)', 'error');
+                    return;
                 }
             }
 
@@ -717,7 +825,35 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (result.success) {
                     showToast('Proof submitted successfully!', 'success');
                     closeProofModal();
-                    if (window.currentOpenProjectId) loadProjectTimeline(window.currentOpenProjectId);
+                    if (window.currentOpenProjectId) {
+                        loadProjectTimeline(window.currentOpenProjectId);
+                        loadProjectFinancials(window.currentOpenProjectId);
+                    }
+
+                    const milestoneId = formData.get('milestone_id');
+                    const undo = result.undo || null;
+                    const seconds = (undo && undo.undo_seconds) ? Number(undo.undo_seconds) : 30;
+                    if (milestoneId && typeof window.showUndoToast === 'function') {
+                        window.showUndoToast('Milestone submitted. Undo available', async () => {
+                            const fd = new FormData();
+                            fd.append('milestone_id', milestoneId);
+
+                            const undoRes = await fetch('/2nd-Year-Group-Project/FixLanka/api/projects.php?action=undo_complete_phase', {
+                                method: 'POST',
+                                body: fd
+                            });
+                            const undoJson = await undoRes.json();
+                            if (undoJson.success) {
+                                showToast('Submission undone', 'info');
+                                if (window.currentOpenProjectId) {
+                                    loadProjectTimeline(window.currentOpenProjectId);
+                                    loadProjectFinancials(window.currentOpenProjectId);
+                                }
+                            } else {
+                                showToast(undoJson.message || 'Undo failed', 'error');
+                            }
+                        }, seconds);
+                    }
                 } else {
                     showToast(result.message || 'Upload failed', 'error');
                 }
@@ -1926,25 +2062,10 @@ function viewProjectDetails(projectId) {
         </div>
     `;
 
-    // Populate Chat Tab
+    // Populate Chat Tab (embed the same Contract chat widget UI here)
     const chatContent = `
-        <div class="project-details-container" style="height: 100%; display: flex; flex-direction: column; padding: 0;">
-            <div class="chat-wrapper" style="flex: 1; display: flex; flex-direction: column; height: 500px;">
-                <div class="chat-header" style="padding: 15px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
-                    <div class="chat-title" style="font-weight: 600; color: #1e293b;">
-                        <i class="fas fa-comments"></i> Chat with ${escapeHtml(project.customer_name || 'Customer')}
-                    </div>
-                </div>
-                <div class="chat-messages" id="chat-messages" style="flex: 1; overflow-y: auto; padding: 20px; background: #f1f5f9; display: flex; flex-direction: column; gap: 15px;">
-                    <!-- Messages will be loaded here -->
-                </div>
-                <div class="chat-input-area" style="padding: 15px; border-top: 1px solid #e2e8f0; background: white; display: flex; gap: 10px;">
-                    <input type="text" id="chat-message-input" placeholder="Type your message..." style="flex: 1; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 20px; outline: none; transition: border-color 0.2s;">
-                        <button id="send-chat-btn" onclick="sendMessage(${project.contract_id})" style="background: var(--primary-color); color: white; border: none; border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                </div>
-            </div>
+        <div class="project-details-container" style="height: 100%; padding: 16px;">
+            <div id="project-chat-mount" style="position: relative; width: 100%; height: 520px;"></div>
         </div>
     `;
 
@@ -1956,10 +2077,29 @@ function viewProjectDetails(projectId) {
         if (typeof loadProjectFinancials === 'function') {
             loadProjectFinancials(project.project_id);
         }
-        if (typeof loadProjectChat === 'function') {
-            loadProjectChat(project.contract_id);
-        }
     }, 100);
+
+    // Mount contract chat widget inline in the chat tab
+    setTimeout(() => {
+        const mountEl = document.getElementById('project-chat-mount');
+        if (!mountEl) return;
+
+        const contractId = project.contract_id;
+        if (!contractId) {
+            mountEl.innerHTML = '<div style="padding:16px; color:#64748b; text-align:center;">No contract linked to this project.</div>';
+            return;
+        }
+
+        if (typeof ChatWidget !== 'undefined' && ChatWidget && typeof ChatWidget.mountInline === 'function') {
+            ChatWidget.mountInline(contractId, mountEl, {
+                name: project.customer_name || 'Customer',
+                contractNumber: project.contract_number || `Contract #${contractId}`
+            });
+            return;
+        }
+
+        mountEl.innerHTML = '<div style="padding:16px; color:#ef4444; text-align:center;">Chat widget is not available on this page.</div>';
+    }, 0);
 
     // Update drawer content
     document.getElementById('tab-overview').innerHTML = overviewContent;
@@ -1990,6 +2130,11 @@ function closeProjectDrawer() {
     if (drawer) {
         drawer.classList.remove('active');
         document.body.style.overflow = '';
+    }
+
+    // Stop contract chat polling if mounted inline
+    if (typeof ChatWidget !== 'undefined' && ChatWidget && typeof ChatWidget.close === 'function') {
+        ChatWidget.close();
     }
 }
 
@@ -2242,11 +2387,11 @@ function renderProjectChatMessages(messages, userRole) {
 
     if (!messages || messages.length === 0) {
         messagesContainer.innerHTML = `
-                            < div style = "flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; height: 100%;" >
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; height: 100%;">
                 <i class="fas fa-comments" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
                 <p>No messages yet. Start the conversation!</p>
-            </div >
-                            `;
+            </div>
+        `;
         return;
     }
 
@@ -2269,22 +2414,22 @@ function renderProjectChatMessages(messages, userRole) {
             else displayDate = msgDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
             html += `
-                            < div style = "text-align: center; margin: 15px 0;" >
+                <div style="text-align: center; margin: 15px 0;">
                                 <span style="background: #e2e8f0; color: #64748b; font-size: 11px; padding: 4px 10px; border-radius: 12px; font-weight: 500;">
                                     ${displayDate}
                                 </span>
-                </div >
-                            `;
+                </div>
+            `;
         }
 
         if (msg.message_type === 'system') {
             html += `
-                            < div style = "text-align: center; margin: 10px 0;" >
+                <div style="text-align: center; margin: 10px 0;">
                                 <span style="background: #f1f5f9; color: #64748b; font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
                                     <i class="fas fa-info-circle"></i> ${escapeHtml(msg.message)}
                                 </span>
-                </div >
-                            `;
+                </div>
+            `;
             return;
         }
 
@@ -2293,26 +2438,26 @@ function renderProjectChatMessages(messages, userRole) {
 
         if (isMine) {
             html += `
-                            < div style = "display: flex; justify-content: flex-end; margin-bottom: 10px;" >
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-end;">
                                     <div style="background: var(--primary-color, #0abab5); color: white; padding: 10px 15px; border-radius: 15px 15px 0 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-wrap: break-word;">
                                         ${escapeHtml(msg.message)}
                                     </div>
                                     <span style="font-size: 10px; color: #94a3b8; margin-top: 4px;">${timeStr}</span>
                                 </div>
-                </div >
-                            `;
+                </div>
+            `;
         } else {
             html += `
-                            < div style = "display: flex; justify-content: flex-start; margin-bottom: 10px;" >
+                <div style="display: flex; justify-content: flex-start; margin-bottom: 10px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-start;">
                                     <div style="background: white; color: #1e293b; padding: 10px 15px; border-radius: 15px 15px 15px 0; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); word-wrap: break-word;">
                                         ${escapeHtml(msg.message)}
                                     </div>
                                     <span style="font-size: 10px; color: #94a3b8; margin-top: 4px;">${timeStr}</span>
                                 </div>
-                </div >
-                            `;
+                </div>
+            `;
         }
     });
 
@@ -2406,10 +2551,18 @@ async function sendMessage(contractId) {
             // Refresh instantly inline
             loadProjectChat(contractId);
         } else {
-            alert('Failed to send message: ' + (data.message || 'Unknown error'));
+            if (typeof showToast === 'function') {
+                showToast(data.message ? `Failed to send message: ${data.message}` : 'Failed to send message', 'error');
+            } else if (window.showAlert) {
+                window.showAlert(data.message ? `Failed to send message: ${data.message}` : 'Failed to send message', 'danger', 'Chat');
+            }
         }
     } catch (e) {
-        alert('Error sending message');
+        if (typeof showToast === 'function') {
+            showToast('Error sending message', 'error');
+        } else if (window.showAlert) {
+            window.showAlert('Error sending message', 'danger', 'Chat');
+        }
     } finally {
         sendBtn.disabled = false;
         inputField.disabled = false;

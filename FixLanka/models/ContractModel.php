@@ -150,10 +150,26 @@ class ContractModel {
                     comp.registration_no as company_registration_no,
                     c_loc.address as company_address,
                     comp.contact_no as company_contact,
-                    comp.email as company_email
+                    comp.email as company_email,
+                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
+                    COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
+                    COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
+                    COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id
+                LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
+                LEFT JOIN companyquotation cq_req ON cq_req.quotation_id = (
+                        SELECT q2.quotation_id
+                        FROM companyquotation q2
+                        WHERE q2.request_id = c.job_request_id
+                            AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
+                            AND q2.status IN ('accepted', 'successful')
+                        ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
+                        LIMIT 1
+                )
                 LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
                 WHERE c.contract_id = :contract_id AND c.customer_id = :customer_id";
 
@@ -190,6 +206,8 @@ class ContractModel {
                     c.project_description,
                     c.project_location as location,
                     c.progress_percentage as progress,
+                    p.status as project_status,
+                    p.start_date as project_start_date,
                     u.f_name as customer_fname,
                     u.l_name as customer_lname,
                     u.email as customer_email,
@@ -207,6 +225,7 @@ class ContractModel {
                        AND cc.sender_type = 'customer' 
                        AND cc.is_read = 0) as unread_messages
                 FROM contract c
+                LEFT JOIN project p ON c.project_id = p.project_id
                 LEFT JOIN user u ON c.customer_id = u.user_id
                                 LEFT JOIN company comp ON c.company_id = comp.company_id
                                 LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
@@ -254,6 +273,12 @@ class ContractModel {
                     c_loc.address as company_address,
                     comp.contact_no as company_contact,
                     comp.email as company_email,
+                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
+                    COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
+                    COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
+                    COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc 
                      WHERE cc.contract_id = c.contract_id 
                        AND cc.sender_type = 'customer' 
@@ -261,6 +286,16 @@ class ContractModel {
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id
+                LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
+                LEFT JOIN companyquotation cq_req ON cq_req.quotation_id = (
+                        SELECT q2.quotation_id
+                        FROM companyquotation q2
+                        WHERE q2.request_id = c.job_request_id
+                            AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
+                            AND q2.status IN ('accepted', 'successful')
+                        ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
+                        LIMIT 1
+                )
                 LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
                 WHERE c.contract_id = :contract_id";
         

@@ -66,6 +66,47 @@
         });
     }
 
+    function toNumber(val) {
+        const num = parseFloat(val);
+        return Number.isFinite(num) ? num : 0;
+    }
+
+    function getUnitPricingSummary(c) {
+        const laborUnitLabel = String(c?.labor_unit_label ?? '').trim();
+        const materialUnitLabel = String(c?.material_unit_label ?? '').trim();
+
+        const isUnitBased = Boolean(laborUnitLabel || materialUnitLabel);
+
+        const laborUnitPrice = toNumber(c?.labor_cost);
+        const materialUnitPrice = toNumber(c?.material_cost);
+
+        const items = [];
+        if (isUnitBased && (laborUnitLabel || laborUnitPrice > 0)) {
+            items.push({ category: 'Labour', unitLabel: laborUnitLabel || 'units', unitPrice: laborUnitPrice });
+        }
+        if (isUnitBased && (materialUnitLabel || materialUnitPrice > 0)) {
+            items.push({ category: 'Materials', unitLabel: materialUnitLabel || 'units', unitPrice: materialUnitPrice });
+        }
+
+        return {
+            isUnitBased,
+            items
+        };
+    }
+
+    function renderUnitPricingTable(summary) {
+        const items = summary?.items || [];
+        if (items.length === 0) return '<p class="preview-muted">No unit pricing defined.</p>';
+
+        let html = '<h5 class="preview-schedule-title"><i class="fas fa-tags"></i> Unit Pricing</h5>';
+        html += '<table class="preview-milestones-table"><thead><tr><th>Category</th><th>Unit Category</th><th>Unit Price</th></tr></thead><tbody>';
+        items.forEach(item => {
+            html += `<tr><td>${esc(item.category)}</td><td>${esc(item.unitLabel)}</td><td>${formatCurrency(item.unitPrice)}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        return html;
+    }
+
     function computeBilledAmount(ms) {
         const agreedRate = parseFloat(ms?.unit_rate || 0);
         const actualRate = parseFloat(ms?.actual_unit_rate || 0);
@@ -77,23 +118,9 @@
     }
 
     function renderMilestonesTable(milestones, options) {
-        const isMilestoneBased = options.isMilestoneBased;
-        const unitBased = hasUnitPricing(milestones);
-        const renderAction = typeof options.renderMilestoneAction === 'function'
-            ? options.renderMilestoneAction
-            : () => '—';
-
         let html = '<table class="preview-milestones-table">';
         html += '<thead><tr>';
-        html += '<th>#</th><th>Milestone</th><th>Due Date</th>';
-
-        if (isMilestoneBased && unitBased) {
-            html += '<th>Unit / Rate</th><th>Submitted</th><th>Billed</th>';
-        } else if (isMilestoneBased) {
-            html += '<th>Amount</th>';
-        }
-
-        html += '<th>Status</th><th>Action</th>';
+        html += '<th>#</th><th>Milestone</th><th>Due Date</th><th>Status</th>';
         html += '</tr></thead><tbody>';
 
         (milestones || []).forEach((ms, i) => {
@@ -103,40 +130,11 @@
             const status = String(ms?.status || 'pending');
             const statusText = status.replace(/_/g, ' ');
 
-            let unitCell = '';
-            let submittedCell = '';
-            let billedCell = '';
-            let amountCell = '';
-
-            if (isMilestoneBased && unitBased) {
-                const unitLabel = String(ms?.unit_label || '').trim() || 'units';
-                const agreedRate = parseFloat(ms?.unit_rate || 0);
-                const actualRate = parseFloat(ms?.actual_unit_rate || 0);
-                const unitRate = (actualRate > 0) ? actualRate : agreedRate;
-                const actualQty = parseFloat(ms?.actual_quantity || 0);
-
-                const rateStr = unitRate > 0 ? `${formatCurrency(unitRate)} / ${esc(unitLabel)}` : '—';
-                const agreedStr = (agreedRate > 0 && Math.abs(unitRate - agreedRate) > 0.009)
-                    ? `<br><small style="color:var(--text-muted)">Agreed: ${formatCurrency(agreedRate)} / ${esc(unitLabel)}</small>`
-                    : '';
-
-                unitCell = `<td>${esc(unitLabel)}<br><small style="color:var(--text-muted)">Rate: ${rateStr}</small>${agreedStr}</td>`;
-                submittedCell = `<td>${actualQty > 0 ? (actualQty + ' ' + esc(unitLabel)) : '—'}</td>`;
-                billedCell = `<td>${actualQty > 0 && unitRate > 0 ? formatCurrency(computeBilledAmount(ms)) : '—'}</td>`;
-            } else if (isMilestoneBased) {
-                amountCell = `<td>${formatCurrency(ms?.amount || ms?.payment_amount || 0)}</td>`;
-            }
-
             html += '<tr>';
             html += `<td>${i + 1}</td>`;
             html += `<td><strong>${esc(title)}</strong>${desc}</td>`;
             html += `<td>${due}</td>`;
-            html += unitCell || '';
-            html += submittedCell || '';
-            html += billedCell || '';
-            html += amountCell || '';
             html += `<td>${esc(statusText)}</td>`;
-            html += `<td>${renderAction(ms, i) || '—'}</td>`;
             html += '</tr>';
         });
 
@@ -236,6 +234,9 @@
         const paymentLabel = opts.paymentLabel || formatPaymentMethod(c.payment_method);
         const isMilestoneBased = (opts.isMilestoneBased != null) ? !!opts.isMilestoneBased : (c.payment_method === 'milestone_based');
 
+        const unitPricing = getUnitPricingSummary(c);
+        const showUnitPricingOnly = unitPricing.isUnitBased;
+
         const hasScope = Boolean(c.scope_description || c.scope_inclusions || c.scope_exclusions || c.materials_responsibility);
 
         // Optional signature metadata (for print/download views)
@@ -329,19 +330,28 @@
 
                 <div class="preview-section">
                     <h4>5. PRICING, PAYMENTS & DELAYS</h4>
-                    <div class="preview-grid cols-3">
-                        <div><strong>Contract Value:</strong> <span class="preview-value">${formatCurrency(c.total_budget ?? c.value ?? 0)}</span></div>
-                        <div><strong>Budget Type:</strong> <span>${esc(budgetTypes[c.budget_type] || 'Fixed Price')}</span></div>
-                        <div><strong>Payment Method:</strong> <span>${esc(paymentLabel || '—')}</span></div>
-                    </div>
-                    <div class="preview-grid" style="margin-top:10px;">
-                        <div><strong>Amount Paid:</strong> <span>${formatCurrency(c.amount_paid || 0)}</span></div>
-                        <div><strong>Remaining:</strong> <span>${formatCurrency(c.amount_pending ?? (c.total_budget ?? c.value ?? 0))}</span></div>
-                    </div>
+                    ${showUnitPricingOnly
+                        ? `
+                            <div class="preview-schedule" style="margin-top:12px;">
+                                ${renderUnitPricingTable(unitPricing)}
+                            </div>
+                        `
+                        : `
+                            <div class="preview-grid cols-3">
+                                <div><strong>Contract Value:</strong> <span class="preview-value">${formatCurrency(c.total_budget ?? c.value ?? 0)}</span></div>
+                                <div><strong>Budget Type:</strong> <span>${esc(budgetTypes[c.budget_type] || 'Fixed Price')}</span></div>
+                                <div><strong>Payment Method:</strong> <span>${esc(paymentLabel || '—')}</span></div>
+                            </div>
+                            <div class="preview-grid" style="margin-top:10px;">
+                                <div><strong>Amount Paid:</strong> <span>${formatCurrency(c.amount_paid || 0)}</span></div>
+                                <div><strong>Remaining:</strong> <span>${formatCurrency(c.amount_pending ?? (c.total_budget ?? c.value ?? 0))}</span></div>
+                            </div>
 
-                    <div class="preview-schedule" style="margin-top:12px;">
-                        ${renderPaymentSchedule(c, milestones)}
-                    </div>
+                            <div class="preview-schedule" style="margin-top:12px;">
+                                ${renderPaymentSchedule(c, milestones)}
+                            </div>
+                        `
+                    }
 
                     <p style="margin-top:10px;"><strong>Late Payment:</strong> <span>${esc(c.late_payment_penalty || 'As per standard terms')}</span></p>
                 </div>

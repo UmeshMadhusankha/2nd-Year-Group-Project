@@ -181,11 +181,61 @@ function handlePost()
     if ($action === 'complete_phase' && isset($_POST['milestone_id'])) {
         $milestoneId = intval($_POST['milestone_id']);
         $description = $_POST['description'] ?? '';
+        // New (per-milestone split-unit) inputs
+        $laborQty = $_POST['labor_quantity'] ?? null;
+        $materialQty = $_POST['material_quantity'] ?? null;
+        $materialUnitRate = $_POST['material_unit_rate'] ?? null;
+        $extraAmount = $_POST['extra_amount'] ?? null;
+
+        // Backward-compatible (legacy single-unit) inputs
         $actualQuantity = $_POST['actual_quantity'] ?? null;
         $actualUnitRate = $_POST['actual_unit_rate'] ?? null;
+
+        $nonPaying = isset($_POST['non_paying']) && $_POST['non_paying'] == '1';
         $files = $_FILES['proof_files'] ?? [];
-        
-        $result = $projectModel->submitPhaseProof($milestoneId, $description, $files, $actualQuantity, $actualUnitRate);
+
+        // If the new fields are present, prefer the new split-unit workflow.
+        $hasSplitInputs = ($laborQty !== null || $materialQty !== null || $materialUnitRate !== null || $extraAmount !== null);
+        if ($hasSplitInputs) {
+            $result = $projectModel->submitPhaseProof(
+                $milestoneId,
+                $description,
+                $files,
+                $laborQty,
+                $materialQty,
+                $materialUnitRate,
+                $extraAmount,
+                $nonPaying
+            );
+        } else {
+            // Legacy single-unit workflow
+            $result = $projectModel->submitPhaseProof(
+                $milestoneId,
+                $description,
+                $files,
+                $actualQuantity,
+                $actualUnitRate,
+                null,
+                null,
+                $nonPaying
+            );
+        }
+        echo json_encode($result);
+        return;
+    }
+
+    // Undo Phase Submission (short grace period)
+    if ($action === 'undo_complete_phase' && isset($_POST['milestone_id'])) {
+        require_once __DIR__ . '/../config/session.php';
+        if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? null) !== 'company') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Company access only']);
+            return;
+        }
+
+        $milestoneId = intval($_POST['milestone_id']);
+        $companyId = intval($_SESSION['user_id']);
+        $result = $projectModel->undoSubmittedPhase($milestoneId, $companyId);
         echo json_encode($result);
         return;
     }

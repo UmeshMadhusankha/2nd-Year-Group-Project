@@ -252,13 +252,16 @@ class Project
                 throw new Exception('Contract must be accepted before starting a project.');
             }
 
+            $projectId = null;
+            $title = "Project #" . $contractId . " (" . substr($contract['category'] ?? 'General', 0, 15) . ")";
+
             // If the contract is already linked to a project, do not create a second one.
             // However, if the referenced project row no longer exists (deleted/cleanup),
             // clear the link and allow re-start.
             if (!empty($contract['project_id'])) {
                 $existingProjectId = (int)$contract['project_id'];
 
-                $stmtP = $this->pdo->prepare('SELECT project_id, company_id FROM Project WHERE project_id = :pid LIMIT 1');
+                $stmtP = $this->pdo->prepare('SELECT project_id, company_id, title FROM Project WHERE project_id = :pid LIMIT 1');
                 $stmtP->execute([':pid' => $existingProjectId]);
                 $projRow = $stmtP->fetch(PDO::FETCH_ASSOC);
 
@@ -268,51 +271,64 @@ class Project
                     $stmtClr->execute([':cid' => $contractId]);
                     $contract['project_id'] = null;
                 } else {
-                    // If it's a real project, block starting and provide the project_id
-                    $this->pdo->rollBack();
-                    return [
-                        'success' => false,
-                        'code' => 'already_started',
-                        'message' => 'A project has already been started for this contract.',
-                        'project_id' => (int)$projRow['project_id']
-                    ];
+                    if ((int)($projRow['company_id'] ?? 0) !== (int)($contract['company_id'] ?? 0)) {
+                        throw new Exception('Linked project does not belong to this company.');
+                    }
+
+                    // Use the already-linked project (often created as a placeholder during contract creation)
+                    $projectId = (int)$projRow['project_id'];
+                    if (!empty($projRow['title'])) {
+                        $title = (string)$projRow['title'];
+                    }
                 }
             }
 
-            // 2. Create the Project record
-            $sqlInsert = "INSERT INTO Project (
-                            company_id, customer_id, title, description, 
-                            project_type, location, budget, start_date, 
-                            end_date, status, progress
-                        ) VALUES (
-                            :company_id, :customer_id, :title, :description,
-                            :project_type, :location, :budget, NOW(),
-                            NULL, :status, 0
-                        )";
-            
-            $title = "Project #" . $contractId . " (" . substr($contract['category'] ?? 'General', 0, 15) . ")";
+            // 2. Create the Project record if none exists yet
+            if (empty($projectId)) {
+                $sqlInsert = "INSERT INTO Project (
+                                company_id, customer_id, title, description, 
+                                project_type, location, budget, start_date, 
+                                end_date, status, progress
+                            ) VALUES (
+                                :company_id, :customer_id, :title, :description,
+                                :project_type, :location, :budget, CURDATE(),
+                                NULL, :status, 0
+                            )";
+                
+                $location = $contract['address'] ?? $contract['project_location'] ?? 'Specified by customer';
+                $budget = $contract['total_price'] ?? $contract['total_budget'] ?? 0;
 
-            $location = $contract['address'] ?? $contract['project_location'] ?? 'Specified by customer';
-            $budget = $contract['total_price'] ?? $contract['total_budget'] ?? 0;
+                $stmtInsert = $this->pdo->prepare($sqlInsert);
+                $stmtInsert->execute([
+                    ':company_id' => $contract['company_id'],
+                    ':customer_id' => $contract['customer_id'] ?? 0,
+                    ':title' => $title,
+                    ':description' => "Automatically generated from accepted Contract #" . $contractId,
+                    ':project_type' => $contract['category'] ?? 'General',
+                    ':location' => $location,
+                    ':budget' => $budget,
+                    ':status' => self::STATUS_IN_PROGRESS
+                ]);
 
-            $stmtInsert = $this->pdo->prepare($sqlInsert);
-            $stmtInsert->execute([
-                ':company_id' => $contract['company_id'],
-                ':customer_id' => $contract['customer_id'] ?? 0,
-                ':title' => $title,
-                ':description' => "Automatically generated from accepted Contract #" . $contractId,
-                ':project_type' => $contract['category'] ?? 'General',
-                ':location' => $location,
-                ':budget' => $budget,
-                ':status' => self::STATUS_PLANNED
-            ]);
+                $projectId = (int)$this->pdo->lastInsertId();
 
-            $projectId = $this->pdo->lastInsertId();
-
-            // 3. Link Project back to Contract
-            $sqlUpdate = "UPDATE Contract SET project_id = :pid WHERE contract_id = :cid";
-            $stmtUpdate = $this->pdo->prepare($sqlUpdate);
-            $stmtUpdate->execute([':pid' => $projectId, ':cid' => $contractId]);
+                // 3. Link Project back to Contract
+                $sqlUpdate = "UPDATE Contract SET project_id = :pid WHERE contract_id = :cid";
+                $stmtUpdate = $this->pdo->prepare($sqlUpdate);
+                $stmtUpdate->execute([':pid' => $projectId, ':cid' => $contractId]);
+            } else {
+                // Start/update the existing linked project
+                $stmtStart = $this->pdo->prepare("
+                    UPDATE Project
+                    SET status = :status,
+                        start_date = CURDATE()
+                    WHERE project_id = :pid
+                ");
+                $stmtStart->execute([
+                    ':status' => self::STATUS_IN_PROGRESS,
+                    ':pid' => (int)$projectId
+                ]);
+            }
 
             // 4. Assign employees (optional)
             if (count($employeeIds) > 0) {
@@ -358,7 +374,7 @@ class Project
             return [
                 'success' => true,
                 'message' => 'Project successfully started from contract.',
-                'project_id' => $projectId,
+                'project_id' => (int)$projectId,
                 'assigned_employees_count' => count($employeeIds),
                 'attached_freelancers_count' => count($freelancerAssignmentIds),
                 'staff_requirements_count' => count($staffRequirements)
@@ -983,7 +999,7 @@ class Project
         try {
             // 1. Get Contract details
             // Added total_budget to selection
-            $sqlContract = "SELECT contract_id, payment_method, total_budget FROM Contract WHERE project_id = :project_id ORDER BY contract_id DESC LIMIT 1";
+            $sqlContract = "SELECT contract_id, payment_method, total_budget, quotation_id, end_date FROM Contract WHERE project_id = :project_id ORDER BY contract_id DESC LIMIT 1";
             $stmtContract = $this->pdo->prepare($sqlContract);
             $stmtContract->execute([':project_id' => $projectId]);
             $contract = $stmtContract->fetch(PDO::FETCH_ASSOC);
@@ -997,6 +1013,52 @@ class Project
 
             $contractId = $contract['contract_id'];
             $totalBudget = floatval($contract['total_budget'] ?? 0);
+
+            // Unit pricing is contract-level (from quotation). Units are entered per milestone.
+            $quotationId = $contract['quotation_id'] ?? null;
+            $unitPricing = [
+                'labor_unit_label' => null,
+                'material_unit_label' => null,
+                'labor_unit_rate' => null,
+                'material_unit_rate' => null,
+                'is_unit_priced' => false,
+            ];
+
+            if ($quotationId !== null && $quotationId !== '' && is_numeric($quotationId)) {
+                try {
+                    $qStmt = $this->pdo->prepare("SELECT labor_unit_label, material_unit_label, labor_cost, material_cost, transport_cost, other_charges, total_amount FROM companyquotation WHERE quotation_id = :qid LIMIT 1");
+                    $qStmt->execute([':qid' => (int)$quotationId]);
+                    $q = $qStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+                    if ($q) {
+                        $labUnit = trim((string)($q['labor_unit_label'] ?? ''));
+                        $matUnit = trim((string)($q['material_unit_label'] ?? ''));
+                        $unitPricing['labor_unit_label'] = $labUnit !== '' ? $labUnit : null;
+                        $unitPricing['material_unit_label'] = $matUnit !== '' ? $matUnit : null;
+
+                        $laborRate = null;
+                        if (isset($q['labor_cost']) && $q['labor_cost'] !== null && $q['labor_cost'] !== '' && is_numeric($q['labor_cost'])) {
+                            $laborRate = (float)$q['labor_cost'];
+                        }
+                        $unitPricing['labor_unit_rate'] = $laborRate;
+
+                        $materialRate = 0.0;
+                        foreach (['material_cost', 'transport_cost', 'other_charges'] as $k) {
+                            $v = $q[$k] ?? 0;
+                            if ($v !== null && $v !== '' && is_numeric($v)) {
+                                $materialRate += (float)$v;
+                            }
+                        }
+                        if ($materialRate <= 0 && isset($q['total_amount']) && $q['total_amount'] !== null && $q['total_amount'] !== '' && is_numeric($q['total_amount'])) {
+                            $materialRate = max(0.0, (float)$q['total_amount'] - (float)($laborRate ?? 0));
+                        }
+                        $unitPricing['material_unit_rate'] = $materialRate;
+
+                        $unitPricing['is_unit_priced'] = ($labUnit !== '' || $matUnit !== '') && ($laborRate !== null || $materialRate > 0);
+                    }
+                } catch (Exception $e) {
+                    // Ignore quotation fetch errors to avoid breaking timeline.
+                }
+            }
 
             // 2. Get Milestones
             // Try contract_milestone first (new table)
@@ -1014,7 +1076,12 @@ class Project
                                                                 actual_unit_rate,
                                                                 estimated_quantity,
                                                                 actual_quantity,
-                                                                actual_amount
+                                                                actual_amount,
+                                                                is_non_paying,
+                                                                actual_labor_quantity,
+                                                                actual_material_quantity,
+                                                                actual_material_unit_rate,
+                                                                actual_extra_amount
                                                             FROM contract_milestone 
                                                             WHERE contract_id = :contract_id 
                                                             ORDER BY milestone_number ASC";
@@ -1045,6 +1112,45 @@ class Project
             if (count($phases) === 1 && floatval($phases[0]['amount_lkr']) == 0 && $totalBudget > 0) {
                 $phases[0]['amount_lkr'] = $totalBudget;
                 $phases[0]['pct_of_total'] = 100;
+            }
+
+            // Remove legacy auto-generated unit-billing rows ("Labour"/"Materials") from the timeline.
+            // Unit quantities are now entered inside each milestone completion form.
+            if (!empty($phases) && ($unitPricing['is_unit_priced'] ?? false)) {
+                $phases = array_values(array_filter($phases, function ($p) {
+                    $title = strtolower(trim((string)($p['phase_name'] ?? '')));
+                    if ($title !== 'labour' && $title !== 'materials') {
+                        return true;
+                    }
+
+                    $desc = strtolower(trim((string)($p['description'] ?? '')));
+                    $isAutoDesc = (
+                        strpos($desc, 'company submits actual labour units') === 0
+                        || strpos($desc, 'company submits actual material units') === 0
+                    );
+
+                    $amount = isset($p['amount_lkr']) && is_numeric($p['amount_lkr']) ? (float)$p['amount_lkr'] : null;
+                    $unitLabel = trim((string)($p['unit_label'] ?? ''));
+                    $unitRate = $p['unit_rate'] ?? null;
+
+                    // Only filter when it matches the known system-generated pattern.
+                    if ($isAutoDesc && ($amount === 0.0 || $amount === 0) && $unitLabel !== '' && $unitRate !== null) {
+                        return false;
+                    }
+                    return true;
+                }));
+            }
+
+            // Attach contract-level unit pricing info to every milestone (used by completion form)
+            if (!empty($phases)) {
+                foreach ($phases as &$p) {
+                    $p['labor_unit_label'] = $unitPricing['labor_unit_label'];
+                    $p['material_unit_label'] = $unitPricing['material_unit_label'];
+                    $p['labor_unit_rate'] = $unitPricing['labor_unit_rate'];
+                    $p['material_unit_rate'] = $unitPricing['material_unit_rate'];
+                    $p['is_unit_priced'] = $unitPricing['is_unit_priced'] ? 1 : 0;
+                }
+                unset($p);
             }
 
             return [
@@ -1098,28 +1204,127 @@ class Project
      * @param array $files Uploaded files
      * @return array
      */
-    public function submitPhaseProof($milestoneId, $description, $files, $actualQuantity = null, $actualUnitRate = null)
+    public function submitPhaseProof(
+        $milestoneId,
+        $description,
+        $files,
+        $laborQuantityOrLegacyQty = null,
+        $materialQuantity = null,
+        $materialUnitRate = null,
+        $extraAmount = null,
+        $nonPaying = false
+    )
     {
         try {
-            // Fetch agreed unit rate for billing calculations (if unit-based)
-            $mStmt = $this->pdo->prepare("SELECT unit_rate FROM contract_milestone WHERE milestone_id = :id LIMIT 1");
-            $mStmt->execute([':id' => $milestoneId]);
-            $milestone = $mStmt->fetch(PDO::FETCH_ASSOC);
+            require_once __DIR__ . '/../includes/undo.php';
 
-            $agreedRate = $milestone && $milestone['unit_rate'] !== null ? (float)$milestone['unit_rate'] : 0.0;
-            $effectiveRate = $agreedRate;
-            if ($actualUnitRate !== null && $actualUnitRate !== '' && is_numeric($actualUnitRate) && (float)$actualUnitRate > 0) {
-                $effectiveRate = (float)$actualUnitRate;
+            $splitMode = ($materialQuantity !== null || $materialUnitRate !== null || $extraAmount !== null);
+
+            // Rates/labels are derived from quotation for unit-priced contracts.
+            // Legacy mode uses contract_milestone.unit_rate + (optional) actual_unit_rate.
+            $agreedLaborRate = 0.0;
+            $agreedMaterialRate = 0.0;
+
+            if ($splitMode) {
+                $qStmt = $this->pdo->prepare(
+                    "SELECT c.quotation_id,
+                            q.labor_cost, q.material_cost, q.transport_cost, q.other_charges, q.total_amount
+                     FROM contract_milestone m
+                     JOIN contract c ON c.contract_id = m.contract_id
+                     LEFT JOIN companyquotation q ON q.quotation_id = c.quotation_id
+                     WHERE m.milestone_id = :id
+                     LIMIT 1"
+                );
+                $qStmt->execute([':id' => $milestoneId]);
+                $q = $qStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+                if ($q) {
+                    if (isset($q['labor_cost']) && $q['labor_cost'] !== null && $q['labor_cost'] !== '' && is_numeric($q['labor_cost'])) {
+                        $agreedLaborRate = (float)$q['labor_cost'];
+                    }
+
+                    $materialRate = 0.0;
+                    foreach (['material_cost', 'transport_cost', 'other_charges'] as $k) {
+                        $v = $q[$k] ?? 0;
+                        if ($v !== null && $v !== '' && is_numeric($v)) {
+                            $materialRate += (float)$v;
+                        }
+                    }
+                    if ($materialRate <= 0 && isset($q['total_amount']) && $q['total_amount'] !== null && $q['total_amount'] !== '' && is_numeric($q['total_amount'])) {
+                        $materialRate = max(0.0, (float)$q['total_amount'] - $agreedLaborRate);
+                    }
+                    $agreedMaterialRate = $materialRate;
+                }
             }
 
-            $qty = null;
-            if ($actualQuantity !== null && $actualQuantity !== '' && is_numeric($actualQuantity)) {
-                $qty = (float)$actualQuantity;
+            $toNullableFloat = function ($v) {
+                if ($v === null) return null;
+                if ($v === '') return null;
+                if (!is_numeric($v)) return null;
+                return (float)$v;
+            };
+
+            $laborQty = $toNullableFloat($laborQuantityOrLegacyQty);
+            $materialQty = $toNullableFloat($materialQuantity);
+            $extra = $toNullableFloat($extraAmount);
+            $matRateOverride = $toNullableFloat($materialUnitRate);
+
+            foreach ([['Labour units', $laborQty], ['Material units', $materialQty], ['Extra amount', $extra], ['Material unit rate', $matRateOverride]] as $pair) {
+                $label = $pair[0];
+                $val = $pair[1];
+                if ($val !== null && $val < 0) {
+                    return ['success' => false, 'message' => $label . ' must be 0 or greater'];
+                }
             }
 
+            $isNonPaying = (bool)$nonPaying;
+
+            // Compute actual_amount
             $actualAmount = null;
-            if ($qty !== null && $qty > 0 && $effectiveRate > 0) {
-                $actualAmount = $effectiveRate * $qty;
+            $actualLaborQty = null;
+            $actualMaterialQty = null;
+            $actualMaterialRate = null;
+            $actualExtra = null;
+
+            if ($isNonPaying) {
+                $actualAmount = 0.0;
+            } else {
+                if ($splitMode) {
+                    $actualLaborQty = $laborQty;
+                    $actualMaterialQty = $materialQty;
+                    $actualExtra = $extra;
+
+                    $effectiveMatRate = $agreedMaterialRate;
+                    if ($matRateOverride !== null && $matRateOverride > 0) {
+                        $effectiveMatRate = $matRateOverride;
+                        $actualMaterialRate = $matRateOverride;
+                    }
+
+                    $laborPart = ($actualLaborQty !== null) ? ($agreedLaborRate * $actualLaborQty) : 0.0;
+                    $materialPart = ($actualMaterialQty !== null) ? ($effectiveMatRate * $actualMaterialQty) : 0.0;
+                    $extraPart = ($actualExtra !== null) ? $actualExtra : 0.0;
+
+                    $actualAmount = round($laborPart + $materialPart + $extraPart, 2);
+                } else {
+                    // Legacy: single-unit billing (actual_quantity × COALESCE(actual_unit_rate, unit_rate))
+                    $mStmt = $this->pdo->prepare("SELECT unit_rate FROM contract_milestone WHERE milestone_id = :id LIMIT 1");
+                    $mStmt->execute([':id' => $milestoneId]);
+                    $milestone = $mStmt->fetch(PDO::FETCH_ASSOC);
+
+                    $agreedRate = $milestone && $milestone['unit_rate'] !== null ? (float)$milestone['unit_rate'] : 0.0;
+                    $effectiveRate = $agreedRate;
+                    if ($matRateOverride !== null && $matRateOverride > 0) {
+                        $effectiveRate = $matRateOverride;
+                    }
+
+                    $qty = $laborQty;
+                    if ($qty !== null && $qty > 0 && $effectiveRate > 0) {
+                        $actualAmount = round($effectiveRate * $qty, 2);
+                    }
+
+                    $actualLaborQty = $qty;
+                    $actualMaterialRate = ($matRateOverride !== null && $matRateOverride > 0) ? $matRateOverride : null;
+                }
             }
 
             $uploadedPaths = [];
@@ -1152,24 +1357,156 @@ class Project
                         completed_at = NOW(),
                         proof_of_work = :proof_of_work,
                         proof_files = :proof_files,
-                        actual_quantity = :actual_qty,
-                        actual_unit_rate = :actual_unit_rate,
-                        actual_amount = :actual_amount
+                        is_non_paying = :is_non_paying,
+                        actual_labor_quantity = :actual_labor_qty,
+                        actual_material_quantity = :actual_material_qty,
+                        actual_material_unit_rate = :actual_material_unit_rate,
+                        actual_extra_amount = :actual_extra_amount,
+                        actual_amount = :actual_amount,
+                        -- legacy fields (no longer primary for billing)
+                        actual_quantity = :legacy_actual_qty,
+                        actual_unit_rate = :legacy_actual_unit_rate
                     WHERE milestone_id = :milestone_id";
             
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
                 ':proof_of_work' => $description,
                 ':proof_files' => $filesJson,
-                ':actual_qty' => $qty,
-                ':actual_unit_rate' => ($actualUnitRate !== null && $actualUnitRate !== '' && is_numeric($actualUnitRate) && (float)$actualUnitRate > 0) ? (float)$actualUnitRate : null,
+                ':is_non_paying' => $isNonPaying ? 1 : 0,
+                ':actual_labor_qty' => $isNonPaying ? null : $actualLaborQty,
+                ':actual_material_qty' => $isNonPaying ? null : $actualMaterialQty,
+                ':actual_material_unit_rate' => $isNonPaying ? null : $actualMaterialRate,
+                ':actual_extra_amount' => $isNonPaying ? null : $actualExtra,
                 ':actual_amount' => $actualAmount,
+                ':legacy_actual_qty' => ($splitMode || $isNonPaying) ? null : $actualLaborQty,
+                ':legacy_actual_unit_rate' => ($splitMode || $isNonPaying) ? null : $actualMaterialRate,
                 ':milestone_id' => $milestoneId
             ]);
 
-            return ['success' => true, 'message' => 'Phase submitted for review'];
+            // Create short undo window (company can revert submission quickly)
+            $undo = undo_create(
+                $this->pdo,
+                'milestone',
+                (int)$milestoneId,
+                'submit_proof',
+                [
+                    'entity' => 'contract_milestone',
+                    'note' => 'Undo milestone proof submission'
+                ],
+                null,
+                null,
+                null
+            );
+
+            return [
+                'success' => true,
+                'message' => 'Phase submitted for review',
+                'undo' => $undo
+            ];
 
         } catch (PDOException $e) {
+            return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Undo a submitted phase (within short grace period).
+     */
+    public function undoSubmittedPhase(int $milestoneId, int $companyId): array
+    {
+        require_once __DIR__ . '/../includes/undo.php';
+
+        try {
+            $this->pdo->beginTransaction();
+
+            $stmt = $this->pdo->prepare(
+                "SELECT m.milestone_id, m.contract_id, m.status, m.completed_at,
+                        m.approved_at, m.reviewed_at,
+                        c.company_id
+                 FROM contract_milestone m
+                 JOIN contract c ON c.contract_id = m.contract_id
+                 WHERE m.milestone_id = :id
+                 LIMIT 1"
+            );
+            $stmt->execute([':id' => $milestoneId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                $this->pdo->rollBack();
+                return ['success' => false, 'message' => 'Milestone not found'];
+            }
+            if ((int)$row['company_id'] !== (int)$companyId) {
+                $this->pdo->rollBack();
+                return ['success' => false, 'message' => 'Unauthorized'];
+            }
+            if (($row['status'] ?? '') !== 'submitted') {
+                $this->pdo->rollBack();
+                return ['success' => false, 'message' => 'Only submitted milestones can be undone'];
+            }
+            if (!empty($row['approved_at']) || !empty($row['reviewed_at'])) {
+                $this->pdo->rollBack();
+                return ['success' => false, 'message' => 'Undo is not available after review'];
+            }
+
+            // Check active undo window (fallback to completed_at timing)
+            $active = undo_get_active($this->pdo, 'milestone', (int)$milestoneId, 'submit_proof');
+            $secondsRemaining = $active['seconds_remaining'] ?? null;
+
+            if ($active === null) {
+                // Backward-compatible fallback: 30s from completed_at
+                if (empty($row['completed_at'])) {
+                    $this->pdo->rollBack();
+                    return ['success' => false, 'message' => 'Undo window is not available'];
+                }
+                $diffStmt = $this->pdo->prepare("SELECT TIMESTAMPDIFF(SECOND, completed_at, NOW()) AS s FROM contract_milestone WHERE milestone_id = :id");
+                $diffStmt->execute([':id' => $milestoneId]);
+                $s = (int)($diffStmt->fetch(PDO::FETCH_ASSOC)['s'] ?? 999999);
+                if ($s > undo_window_seconds()) {
+                    $this->pdo->rollBack();
+                    return ['success' => false, 'message' => 'Undo window has expired'];
+                }
+            }
+
+            // Revert submission back to in_progress and clear proof/billing fields
+            $upd = $this->pdo->prepare(
+                "UPDATE contract_milestone
+                 SET status = 'in_progress',
+                     completed_at = NULL,
+                     proof_of_work = NULL,
+                     proof_files = NULL,
+                     is_non_paying = 0,
+                     actual_labor_quantity = NULL,
+                     actual_material_quantity = NULL,
+                     actual_material_unit_rate = NULL,
+                     actual_extra_amount = NULL,
+                     actual_amount = NULL,
+                     actual_quantity = NULL,
+                     actual_unit_rate = NULL,
+                     updated_at = NOW()
+                 WHERE milestone_id = :id AND status = 'submitted'"
+            );
+            $upd->execute([':id' => $milestoneId]);
+
+            if ($upd->rowCount() === 0) {
+                $this->pdo->rollBack();
+                return ['success' => false, 'message' => 'Nothing to undo'];
+            }
+
+            if ($active && !empty($active['undo_id'])) {
+                $uid = $_SESSION['user_id'] ?? null;
+                $role = $_SESSION['user_role'] ?? null;
+                undo_mark_used($this->pdo, (int)$active['undo_id'], $uid ? (int)$uid : null, $role ? (string)$role : null);
+            }
+
+            $this->pdo->commit();
+            return [
+                'success' => true,
+                'message' => 'Milestone submission undone',
+                'seconds_remaining' => $secondsRemaining
+            ];
+
+        } catch (PDOException $e) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
             return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
         }
     }
@@ -1297,7 +1634,6 @@ class Project
                     'success' => true,
                     'data' => [
                         'total_budget' => $totalBudget,
-                        'escrow_balance' => 0,
                         'total_paid' => 0,
                         'total_pending' => 0,
                         'has_contract' => false
@@ -1307,13 +1643,7 @@ class Project
 
             $contractId = $contract['contract_id'];
 
-            // 3. Get Escrow Balance
-            $stmtEscrow = $this->pdo->prepare("SELECT held_amount FROM escrow_accounts WHERE contract_id = :contract_id");
-            $stmtEscrow->execute([':contract_id' => $contractId]);
-            $escrow = $stmtEscrow->fetch(PDO::FETCH_ASSOC);
-            $escrowBalance = $escrow ? floatval($escrow['held_amount']) : 0;
-
-            // 4. Get Milestones Totals
+            // 3. Get Milestones Totals
             // Try contract_milestone first (new table)
             // approved means paid out, others are pending
                         $sqlMilestones = "SELECT 
@@ -1348,7 +1678,6 @@ class Project
                 'success' => true,
                 'data' => [
                     'total_budget' => $totalBudget,
-                    'escrow_balance' => $escrowBalance,
                     'total_paid' => $totalPaid,
                     'total_pending' => $totalPending,
                     'has_contract' => true,

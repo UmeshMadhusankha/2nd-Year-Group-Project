@@ -105,7 +105,8 @@ const ChatWidget = (() => {
         // Close
         document.getElementById('chatCloseBtn').addEventListener('click', close);
         _overlay.addEventListener('click', e => {
-            if (e.target === _overlay) close();
+            // In inline/embedded mode we don't want backdrop-click to close
+            if (e.target === _overlay && _overlay.getAttribute('data-inline') !== '1') close();
         });
 
         // Send on click
@@ -379,6 +380,12 @@ const ChatWidget = (() => {
     // ── Public: Open chat ──
     function open(contractId, opts = {}) {
         _ensureDOM();
+
+        // Reset any inline mode (callers can re-enable after open if needed)
+        if (_overlay) {
+            _overlay.classList.remove('inline');
+            _overlay.removeAttribute('data-inline');
+        }
         _contractId = contractId;
         _lastMessageId = 0;
         _userRole = null;
@@ -409,6 +416,23 @@ const ChatWidget = (() => {
 
         // Start polling
         _startPolling();
+    }
+
+    // Optional: Render chat inside a specific element instead of full-screen modal.
+    // This reuses the same DOM/CSS and API, just changes how the overlay is positioned.
+    function mountInline(contractId, mountEl, opts = {}) {
+        if (!mountEl) return;
+        open(contractId, opts);
+
+        const overlay = document.getElementById('chatModalOverlay');
+        if (!overlay) return;
+
+        // Move overlay inside provided container
+        mountEl.innerHTML = '';
+        mountEl.appendChild(overlay);
+        overlay.classList.add('inline');
+        overlay.setAttribute('data-inline', '1');
+        overlay.classList.add('active');
     }
 
     async function _loadChangeRequests() {
@@ -775,5 +799,5 @@ const ChatWidget = (() => {
     }
 
     // ── Public API ──
-    return { open, close };
+    return { open, close, mountInline };
 })();

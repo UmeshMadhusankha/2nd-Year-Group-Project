@@ -1508,9 +1508,9 @@ if (!$userId) {
 
     <!-- Scripts -->
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/chat.js?v=6.8"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/contract-preview.js?v=1.1"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contracts-enhanced.js?v=6.9"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contract-form-enhanced.js?v=7.1"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/contract-preview.js?v=1.3"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contracts-enhanced.js?v=7.0"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/contract-form-enhanced.js?v=7.3"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/budget-adjustment.js?v=6.5"></script>
     <script>
         // Store current contract for budget adjustment
