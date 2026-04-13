@@ -361,7 +361,7 @@ CREATE TABLE `jobrequest` (
   CONSTRAINT `jobrequest_ibfk_3` FOREIGN KEY (`location_id`) REFERENCES `location` (`location_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Direct Job Request (Customer selects a specific provider)
+-- Direct Job Request (Customer -> specific provider)
 CREATE TABLE `directjobrequest` (
   `request_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -377,16 +377,17 @@ CREATE TABLE `directjobrequest` (
   `date_created` timestamp NOT NULL DEFAULT current_timestamp(),
   `photos` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`request_id`),
-  KEY `idx_djr_user` (`user_id`),
-  KEY `idx_djr_category` (`category_id`),
-  KEY `idx_djr_provider` (`provider_id`,`provider_type`),
-  KEY `idx_djr_status` (`status`),
-  KEY `idx_djr_created` (`date_created`),
+  KEY `idx_direct_user` (`user_id`),
+  KEY `idx_direct_category` (`category_id`),
+  KEY `idx_direct_provider` (`provider_id`),
+  KEY `idx_direct_provider_type` (`provider_type`),
+  KEY `idx_direct_status` (`status`),
+  KEY `idx_direct_date_created` (`date_created`),
   CONSTRAINT `directjobrequest_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
   CONSTRAINT `directjobrequest_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Direct Request Quotes mapping (used by some flows)
+-- Direct Request Quotes (optional linkage table)
 CREATE TABLE `directrequestquotes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -396,9 +397,9 @@ CREATE TABLE `directrequestquotes` (
   PRIMARY KEY (`id`),
   KEY `idx_drq_user` (`user_id`),
   KEY `idx_drq_request` (`request_id`),
-  KEY `idx_drq_provider` (`provider_id`,`provider_type`),
+  KEY `idx_drq_provider` (`provider_id`),
   CONSTRAINT `directrequestquotes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
-  CONSTRAINT `directrequestquotes_ibfk_2` FOREIGN KEY (`request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE
+  CONSTRAINT `directrequestquotes_ibfk_2` FOREIGN KEY (`request_id`) REFERENCES `directjobrequest` (`request_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Company Quotation

@@ -14,6 +14,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 require_once '../config/database.php';
 require_once '../config/session.php';
 require_once '../models/CompanyQuotationModel.php';
+require_once '../includes/undo.php';
 
 $quotationModel = new CompanyQuotation($pdo);
 
@@ -50,7 +51,9 @@ switch ($method) {
         break;
 
     case 'POST':
-        if ($action === 'create_enhanced') {
+        if ($action === 'undo_submit') {
+            handleUndoSubmit();
+        } else if ($action === 'create_enhanced') {
             handlePostEnhanced();
         } else {
             handlePost();
@@ -210,12 +213,24 @@ function handlePost()
             throw new Exception('Failed to insert quotation into database');
         }
 
+        $undo = undo_create(
+            $GLOBALS['pdo'],
+            'quotation',
+            (int)$quotationId,
+            'submit',
+            ['request_id' => (int)($input['request_id'] ?? 0)],
+            (int)$AUTH_COMPANY_ID,
+            'company',
+            null
+        );
+
         $quotation = $quotationModel->getById($quotationId);
         http_response_code(201);
         echo json_encode([
             'success' => true,
             'message' => 'Quotation submitted successfully',
-            'data' => $quotation
+            'data' => $quotation,
+            'undo' => $undo
         ]);
     } catch (Exception $e) {
         http_response_code(500);
@@ -395,16 +410,73 @@ function handlePostEnhanced()
             return;
         }
 
+        $undo = undo_create(
+            $GLOBALS['pdo'],
+            'quotation',
+            (int)$quotationId,
+            'submit',
+            ['request_id' => (int)($input['request_id'] ?? 0), 'enhanced' => true],
+            (int)$AUTH_COMPANY_ID,
+            'company',
+            null
+        );
+
         $quotation = $quotationModel->getEnhancedById($quotationId, $AUTH_COMPANY_ID);
         echo json_encode([
             'success' => true,
             'message' => 'Enhanced quotation created successfully',
-            'data' => $quotation
+            'data' => $quotation,
+            'undo' => $undo
         ]);
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
     }
+}
+
+function handleUndoSubmit()
+{
+    global $quotationModel, $AUTH_COMPANY_ID;
+
+    $input = readJsonBody();
+    if (!is_array($input)) {
+        $input = $_POST;
+    }
+
+    $quotationId = (int)($input['quotation_id'] ?? 0);
+    if ($quotationId <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Missing quotation_id']);
+        return;
+    }
+
+    // Must be within undo window
+    $active = undo_get_active($GLOBALS['pdo'], 'quotation', $quotationId, 'submit');
+    if (!$active) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Undo window has expired']);
+        return;
+    }
+
+    // Block if a contract has been created from this quotation
+    $stmt = $GLOBALS['pdo']->prepare("SELECT 1 FROM contract WHERE quotation_id = ? LIMIT 1");
+    $stmt->execute([$quotationId]);
+    if ($stmt->fetchColumn()) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Undo not available: quotation already processed into a contract']);
+        return;
+    }
+
+    // Delete only if still pending and owned by company
+    $ok = $quotationModel->delete($quotationId, $AUTH_COMPANY_ID);
+    if (!$ok) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Undo not available: quotation is not pending or not owned']);
+        return;
+    }
+
+    undo_mark_used($GLOBALS['pdo'], (int)$active['undo_id'], (int)$AUTH_COMPANY_ID, 'company');
+    echo json_encode(['success' => true, 'message' => 'Quotation submission undone']);
 }
 
 function handlePutEnhanced()

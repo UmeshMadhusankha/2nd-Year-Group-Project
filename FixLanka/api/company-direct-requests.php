@@ -53,26 +53,18 @@ if ($requestId < 0) {
 }
 
 try {
-    // Direct requests are stored in `directjobrequest`.
-    // Note: provider_id in this table maps to the selected company (provider_type = 'company').
-    $whereRequest = '';
-    $params = [$companyId];
-    if ($requestId > 0) {
-        $whereRequest = ' AND djr.request_id = ?';
-        $params[] = $requestId;
-    }
-
-    $stmt = $pdo->prepare("\
+    $stmt = $pdo->prepare("
         SELECT
             djr.request_id,
             djr.user_id,
             djr.title,
             djr.description,
-            djr.date_created AS created_at,
-            djr.finish_date,
             djr.status,
             djr.district,
             djr.address,
+            djr.finish_date,
+            djr.date_created AS created_at,
+            djr.photos,
             c.name AS category_name,
             u.f_name AS customer_fname,
             u.l_name AS customer_lname,
@@ -82,25 +74,17 @@ try {
         INNER JOIN user u ON u.user_id = djr.user_id
         WHERE djr.provider_type = 'company'
           AND djr.provider_id = ?
-          AND djr.finish_date >= CURDATE()
-          {$whereRequest}
         ORDER BY djr.date_created DESC
         LIMIT {$limit}
     ");
 
-    $stmt->execute($params);
+    $stmt->execute([$companyId]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode(['success' => true, 'data' => $rows]);
     exit;
 
 } catch (PDOException $e) {
-    // If direct-request tables don't exist yet, fail closed to empty list (don't break UI).
-    if (($e->getCode() ?? '') === '42S02') {
-        echo json_encode(['success' => true, 'data' => []]);
-        exit;
-    }
-
     error_log('company-direct-requests error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Server error']);

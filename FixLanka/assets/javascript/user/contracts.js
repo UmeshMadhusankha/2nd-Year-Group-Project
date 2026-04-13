@@ -521,17 +521,30 @@
             body.innerHTML = shared.renderHTML(c, {
                 isMilestoneBased,
                 paymentLabel: formatPaymentMethod(c.payment_method),
-                renderMilestoneAction: (ms) => {
-                    const msStatus = String(ms?.status || 'pending');
-                    if (msStatus === 'submitted') {
-                        return `<button class="action-btn secondary small" onclick="openProofModal(${ms.milestone_id})"><i class="fas fa-eye"></i> Review</button>`;
-                    }
-                    if (msStatus === 'approved' || msStatus === 'paid') {
-                        return '<span class="text-success"><i class="fas fa-check"></i> Paid</span>';
-                    }
-                    return '—';
-                }
+                // Milestone actions are intentionally NOT rendered inside the contract document.
             });
+
+            // Keep functionality: allow reviewing submitted milestones by clicking the milestone row.
+            // (Replaces the old "Action" column.)
+            try {
+                const submitted = (c.milestones || []).filter(m => String(m?.status || '') === 'submitted' && m.milestone_id);
+                if (submitted.length > 0) {
+                    const rows = body.querySelectorAll('table.preview-milestones-table tbody tr');
+                    rows.forEach((row, idx) => {
+                        const ms = (c.milestones || [])[idx];
+                        if (!ms || String(ms.status || '') !== 'submitted' || !ms.milestone_id) return;
+                        row.style.cursor = 'pointer';
+                        row.title = 'Click to review submitted proof';
+                        row.addEventListener('click', () => {
+                            if (typeof window.openProofModal === 'function') {
+                                window.openProofModal(ms.milestone_id);
+                            }
+                        });
+                    });
+                }
+            } catch (e) {
+                // no-op
+            }
         } else {
             // Fallback to legacy renderer
             const progress = parseInt(c.progress_percentage) || 0;
@@ -1754,6 +1767,25 @@
                 const json = await res.json();
                 if (json.success) {
                     showToast(`Contract ${label}ed successfully!`);
+
+                    const seconds = (json.undo && json.undo.undo_seconds) ? Number(json.undo.undo_seconds) : 30;
+                    if (typeof window.showUndoToast === 'function') {
+                        window.showUndoToast('Contract response saved. Undo available', async () => {
+                            const undoRes = await fetch(API, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'undo_customer_response', contract_id: contractId })
+                            });
+                            const undoJson = await undoRes.json();
+                            if (undoJson.success) {
+                                showToast('Undo successful', 'info');
+                                loadContracts();
+                            } else {
+                                await window.showAlert(undoJson.message || 'Undo failed', 'danger', 'Undo');
+                            }
+                        }, seconds);
+                    }
+
                     closeDetail();
                     loadContracts();
                 } else {
@@ -1794,6 +1826,25 @@
             const acceptJson = await acceptRes.json();
             if (acceptJson.success) {
                 showToast('Contract accepted successfully!');
+
+                const seconds = (acceptJson.undo && acceptJson.undo.undo_seconds) ? Number(acceptJson.undo.undo_seconds) : 30;
+                if (typeof window.showUndoToast === 'function') {
+                    window.showUndoToast('Contract signed. Undo available', async () => {
+                        const undoRes = await fetch(API, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'undo_customer_response', contract_id: contractId })
+                        });
+                        const undoJson = await undoRes.json();
+                        if (undoJson.success) {
+                            showToast('Undo successful', 'info');
+                            loadContracts();
+                        } else {
+                            await window.showAlert(undoJson.message || 'Undo failed', 'danger', 'Undo');
+                        }
+                    }, seconds);
+                }
+
                 closeDetail();
                 loadContracts();
             } else {

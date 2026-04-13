@@ -864,8 +864,11 @@ function buildCardActions(contract) {
             <i class="fas fa-paper-plane"></i>
         </button>`;
     } else if (isAcceptedByCustomer) {
-        if (!contract.project_id) {
-            // Contract accepted, project not started
+        const projectStatus = String(contract.project_status || '').toLowerCase();
+        const isProjectStarted = projectStatus !== '' && projectStatus !== 'planned';
+
+        if (!isProjectStarted) {
+            // Contract accepted, project not started (placeholder project is still planned)
             html += `<button class="card-action-btn" onclick="handleStartProjectFromContract(${id})" style="background: var(--primary-color); border: none; color: white; width: auto; padding: 0 16px; border-radius: 6px; font-weight: 600;" title="Start Project">
                 <i class="fas fa-rocket"></i> Start Project
             </button>`;
@@ -2591,6 +2594,24 @@ async function submitSendContract() {
             showNotification('Contract sent to customer successfully!', 'success');
             closeSendContractModal();
 
+            const seconds = (result.undo && result.undo.undo_seconds) ? Number(result.undo.undo_seconds) : 30;
+            if (typeof window.showUndoToast === 'function') {
+                window.showUndoToast('Contract sent. Undo available', async () => {
+                    const undoRes = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'undo_send_to_customer', contract_id: contractId })
+                    });
+                    const undoJson = await undoRes.json();
+                    if (undoJson.success) {
+                        showNotification('Send undone', 'success');
+                        await loadContracts();
+                    } else {
+                        showNotification(undoJson.message || 'Undo failed', 'error');
+                    }
+                }, seconds);
+            }
+
             // Update the local data so the card reflects sent + new status
             const contract = contractsData.find(c => c.contract_id == contractId);
             if (contract) {
@@ -3391,7 +3412,11 @@ function handleStartProjectFromContract(contractId) {
             ? window.contractsData.find(c => String(c?.contract_id) === String(contractId))
             : (Array.isArray(contractsData) ? contractsData.find(c => String(c?.contract_id) === String(contractId)) : null);
         const existingPid = existing?.project_id;
-        if (existingPid) {
+        const existingStatus = String(existing?.project_status || '').toLowerCase();
+
+        // A placeholder project record is created during contract creation (FK requirement).
+        // Only treat it as “already started” if it's beyond planned.
+        if (existingPid && existingStatus && existingStatus !== 'planned') {
             showNotification(`Project already started (Project #${existingPid}). Redirecting...`, 'info');
             setTimeout(() => { window.location.href = 'projects.php'; }, 600);
             return;
@@ -3400,11 +3425,13 @@ function handleStartProjectFromContract(contractId) {
         // ignore
     }
 
-    const confirmPromise = (window.showConfirm && typeof window.showConfirm === 'function')
-        ? window.showConfirm('Are you ready to start this project? This will create a new tracking instance on your Projects dashboard.', {
+    const confirmPromise = (window.systemConfirm && typeof window.systemConfirm === 'function')
+        ? window.systemConfirm('Are you ready to start this project? This will create a new tracking instance on your Projects dashboard.', {
             title: 'Start Project',
             confirmText: 'Start',
-            type: 'info'
+            cancelText: 'Cancel',
+            type: 'question',
+            icon: 'fas fa-rocket'
         })
         : Promise.resolve(confirm('Are you ready to start this project? This will create a new tracking instance on your Projects dashboard.'));
 

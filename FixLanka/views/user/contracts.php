@@ -138,8 +138,8 @@ if (!$userId) {
 
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/chat.js?v=6.8"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/contract-preview.js?v=1.1"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/contracts.js?v=2.7"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/contract-preview.js?v=1.3"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/contracts.js?v=2.8"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/budget-adjustment.js"></script>
     <script>
         // Customer-specific budget adjustment functions

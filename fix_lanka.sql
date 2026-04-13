@@ -1032,7 +1032,12 @@ CREATE TABLE `contract_milestone` (
   `unit_rate` decimal(12,2) DEFAULT NULL COMMENT 'Price per unit',
   `estimated_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Quantity from quotation',
   `actual_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Actual units submitted',
-  `actual_amount` decimal(12,2) DEFAULT NULL COMMENT 'actual_quantity * unit_rate'
+  `actual_amount` decimal(12,2) DEFAULT NULL COMMENT 'actual_quantity * unit_rate',
+  `is_non_paying` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 if this milestone is non-paying (inspection / no measurable units)',
+  `actual_labor_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Actual labour units submitted by company',
+  `actual_material_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Actual material units submitted by company',
+  `actual_material_unit_rate` decimal(12,2) DEFAULT NULL COMMENT 'Actual material unit rate submitted by company (optional variation)',
+  `actual_extra_amount` decimal(12,2) DEFAULT NULL COMMENT 'Additional amount outside labour/material for this milestone'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

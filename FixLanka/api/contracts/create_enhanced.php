@@ -56,7 +56,7 @@ try {
 				api_error(400, 'Missing quotation_id');
 			}
 
-				$stmt = $pdo->prepare("\
+				$stmt = $pdo->prepare("
 				SELECT
 					q.quotation_id,
 					q.request_id,
@@ -121,7 +121,7 @@ try {
 			}
 
 			// Include any existing draft for this quotation (best-effort)
-			$draftStmt = $pdo->prepare("\
+			$draftStmt = $pdo->prepare("
 				SELECT draft_id, form_data, current_step, updated_at
 				FROM contract_draft
 				WHERE company_id = ? AND quotation_id = ?
@@ -159,7 +159,7 @@ try {
 			if ($currentStep < 1) $currentStep = 1;
 
 			// Verify quotation belongs to this company
-			$qStmt = $pdo->prepare("\
+			$qStmt = $pdo->prepare("
 				SELECT 1
 				FROM companyquotation
 				WHERE quotation_id = ?
@@ -177,7 +177,7 @@ try {
 			}
 
 			// Upsert by (company_id, quotation_id)
-			$existingStmt = $pdo->prepare("\
+			$existingStmt = $pdo->prepare("
 				SELECT draft_id
 				FROM contract_draft
 				WHERE company_id = ? AND quotation_id = ?
@@ -187,7 +187,7 @@ try {
 			$existingId = $existingStmt->fetchColumn();
 
 			if ($existingId) {
-				$upd = $pdo->prepare("\
+				$upd = $pdo->prepare("
 					UPDATE contract_draft
 					SET form_data = ?, current_step = ?
 					WHERE draft_id = ? AND company_id = ?
@@ -197,7 +197,7 @@ try {
 				exit;
 			}
 
-			$ins = $pdo->prepare("\
+			$ins = $pdo->prepare("
 				INSERT INTO contract_draft (company_id, quotation_id, form_data, current_step)
 				VALUES (?, ?, ?, ?)
 			");

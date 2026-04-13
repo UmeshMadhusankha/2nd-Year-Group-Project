@@ -117,7 +117,7 @@
 
 
         // Delegation for remove milestone buttons and milestone field changes
-        document.addEventListener('click', function (e) {
+        document.addEventListener('click', async function (e) {
             const btn = e.target.closest('.btn-remove-ms');
             if (btn && document.getElementById('milestonesBody')?.contains(btn)) {
                 // In unit-priced mode: protect the required unit-billing rows (Labour/Materials)
@@ -140,7 +140,17 @@
                 }
 
                 // Feature: Two-step confirmation
-                if (confirm('Are you sure you want to delete this phase? This action cannot be undone.')) {
+                const confirmed = window.systemConfirm
+                    ? await window.systemConfirm('Are you sure you want to delete this phase? This action cannot be undone.', {
+                        title: 'Delete Phase',
+                        confirmText: 'Delete',
+                        cancelText: 'Cancel',
+                        type: 'danger',
+                        icon: 'fas fa-trash'
+                    })
+                    : confirm('Are you sure you want to delete this phase? This action cannot be undone.');
+
+                if (confirmed) {
                     btn.closest('tr').remove();
                     if (typeof renumberMilestones === 'function') renumberMilestones();
                     if (typeof generatePaymentPreview === 'function') generatePaymentPreview();
@@ -212,9 +222,19 @@
         }
     }
 
-    function closeModal() {
+    async function closeModal() {
         if (formDirty) {
-            if (!confirm('You have unsaved changes. Are you sure you want to close?')) return;
+            const confirmed = window.systemConfirm
+                ? await window.systemConfirm('You have unsaved changes. Are you sure you want to close?', {
+                    title: 'Discard Changes?',
+                    confirmText: 'Close',
+                    cancelText: 'Keep Editing',
+                    type: 'warning',
+                    icon: 'fas fa-exclamation-triangle'
+                })
+                : confirm('You have unsaved changes. Are you sure you want to close?');
+
+            if (!confirmed) return;
         }
         const modal = document.getElementById('newContractModal');
         if (modal) {
@@ -1198,18 +1218,21 @@
         const paymentMethod = getVal('paymentMethod');
         const totalVal = parseFloat(getVal('contractValue') || 0);
 
+        const q = quotationFullData || selectedQuotation || {};
+        // NOTE: unitPricingMode labels can be empty-string while async quotation load is in-flight.
+        // Use the first non-empty label so preview matches post-create rendering.
+        const laborUnitLabel = String(unitPricingMode?.laborUnitLabel || q?.labor_unit_label || q?.labour_unit_label || '').trim();
+        const materialUnitLabel = String(unitPricingMode?.materialUnitLabel || q?.material_unit_label || q?.material_unit || '').trim();
+        const laborCost = q?.labor_cost ?? q?.labour_cost ?? null;
+        const materialCost = q?.material_cost ?? null;
+        const transportCost = q?.transport_cost ?? null;
+        const otherCharges = q?.other_charges ?? null;
+
         const budgetTypeKey = getVal('budgetType') || 'fixed';
         const flexPct = parseFloat(getVal('budgetFlexPercent') || 10);
         const isFlexible = budgetTypeKey === 'flexible' && isFinite(flexPct) && flexPct > 0;
 
         const matVal = document.querySelector('input[name="materials_responsibility"]:checked')?.value || 'company';
-
-        const unitLabel = String(
-            quotationFullData?.labor_unit_label ||
-            quotationFullData?.material_unit_label ||
-            ''
-        ).trim();
-        const isUnitBased = Boolean(unitLabel);
 
         const milestones = [];
         document.querySelectorAll('#milestonesBody .milestone-row').forEach((row, i) => {
@@ -1223,12 +1246,6 @@
                 due_date,
                 status: 'pending'
             };
-
-            // For unit-priced flow, show the agreed unit + rate in preview
-            if (isUnitBased) {
-                ms.unit_label = unitLabel;
-                ms.unit_rate = isFinite(totalVal) ? totalVal : 0;
-            }
 
             milestones.push(ms);
         });
@@ -1279,6 +1296,12 @@
             payment_method: paymentMethod,
             amount_paid: 0,
             amount_pending: isFinite(totalVal) ? totalVal : 0,
+            labor_unit_label: laborUnitLabel || null,
+            material_unit_label: materialUnitLabel || null,
+            labor_cost: laborCost,
+            material_cost: materialCost,
+            transport_cost: transportCost,
+            other_charges: otherCharges,
             late_payment_penalty: getVal('latePaymentPenalty') || 'As per standard terms',
 
             // Clauses
