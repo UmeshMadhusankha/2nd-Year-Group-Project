@@ -823,9 +823,6 @@ function renderTableView() {
                     <button class="action-icon-btn" onclick="viewProjectDetails(${project.project_id})" title="View Details">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="action-icon-btn" onclick="editProject(${project.project_id})" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
                     <button class="action-icon-btn delete" onclick="deleteProject(${project.project_id})" title="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -898,9 +895,6 @@ function renderCardView() {
             <div class="card-actions">
                 <button class="btn-secondary-small" onclick="viewProjectDetails(${project.project_id})">
                     <i class="fas fa-eye"></i> View
-                </button>
-                <button class="btn-primary-small" onclick="editProject(${project.project_id})">
-                    <i class="fas fa-edit"></i> Edit
                 </button>
                 <button class="btn-danger-small" onclick="deleteProject(${project.project_id})">
                     <i class="fas fa-trash"></i> Delete
@@ -1796,15 +1790,6 @@ async function saveProject(e) {
 }
 
 /**
- * Edit project
- */
-function editProject(projectId) {
-    // The current modal is for starting projects from contracts.
-    // Editing individual project fields is not yet implemented in this UI.
-    showToast('Edit functionality coming soon. Use the project details drawer to view info.', 'info');
-}
-
-/**
  * View project details
  */
 function viewProjectDetails(projectId) {
@@ -2095,7 +2080,7 @@ function initializeModal() {
             // Add active class to clicked tab and corresponding content
             tab.classList.add('active');
             const tabName = tab.getAttribute('data-tab');
-            const content = document.getElementById(`tab - ${tabName} `);
+            const content = document.getElementById(`tab-${tabName}`);
             if (content) {
                 content.classList.add('active');
             }
@@ -2244,7 +2229,6 @@ function hideLoader() {
 window.openProjectModal = openStartProjectModal;
 window.openStartProjectModal = openStartProjectModal;
 window.closeProjectModal = closeProjectModal;
-window.editProject = editProject;
 window.viewProjectDetails = viewProjectDetails;
 window.closeProjectDrawer = closeProjectDrawer;
 window.deleteProject = deleteProject;

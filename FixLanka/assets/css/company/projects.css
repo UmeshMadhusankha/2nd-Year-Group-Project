@@ -828,6 +828,10 @@ body {
   border-bottom: 2px solid rgba(var(--primary-rgb), 0.15);
   white-space: nowrap;
 }
+/* need to add a background color for id="projects-table-body" */
+#projects-table-body {
+  background: var(--bg-primary) !important;
+}
 
 .projects-table tbody tr {
   border-bottom: 1px solid #f0f0f0;
