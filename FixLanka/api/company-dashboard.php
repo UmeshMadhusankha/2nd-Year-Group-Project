@@ -59,7 +59,7 @@ try {
     try {
                 // IMPORTANT: Don't count 'planned' projects unless the customer has accepted/signed the contract.
                 // This avoids showing projects as active when the contract is only sent but not accepted.
-                $stmt = $pdo->prepare("\
+                $stmt = $pdo->prepare("
                         SELECT COUNT(DISTINCT p.project_id) AS cnt
                         FROM project p
                         WHERE p.company_id = ?
@@ -395,7 +395,7 @@ try {
     $calendarSystemEvents = [];
     try {
         // Project start/end dates (keep it bounded to avoid heavy payloads)
-        $stmt = $pdo->prepare("\
+        $stmt = $pdo->prepare("
             SELECT project_id, title, start_date, end_date
             FROM project
             WHERE company_id = ?
@@ -443,7 +443,7 @@ try {
 
     try {
         // Milestone due dates (new table)
-        $stmt = $pdo->prepare("\
+        $stmt = $pdo->prepare("
             SELECT
                 p.project_id,
                 p.title AS project_title,

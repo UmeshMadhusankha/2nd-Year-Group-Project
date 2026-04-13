@@ -1297,6 +1297,29 @@ async function submitQuotation() {
 
         if (result.success) {
             showToast(editingQuotationId ? 'Quotation updated successfully!' : 'Quotation submitted successfully!', 'success');
+
+            // Short undo window for newly submitted quotation
+            if (!editingQuotationId && typeof window.showUndoToast === 'function') {
+                const quotationId = result.data?.quotation_id || result.data?.id;
+                const seconds = (result.undo && result.undo.undo_seconds) ? Number(result.undo.undo_seconds) : 30;
+                if (quotationId) {
+                    window.showUndoToast('Quotation submitted. Undo available', async () => {
+                        const undoRes = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?action=undo_submit', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ quotation_id: quotationId })
+                        });
+                        const undoJson = await undoRes.json();
+                        if (undoJson.success) {
+                            showToast('Quotation undone', 'info');
+                            await loadSubmittedQuotations();
+                            await loadAvailableRequests();
+                        } else {
+                            showToast(undoJson.error || undoJson.message || 'Undo failed', 'error');
+                        }
+                    }, seconds);
+                }
+            }
             closeQuotationModal();
 
 
@@ -1392,8 +1415,8 @@ function closeQuotationModal() {
 /**
  * View request details
  */
-async function viewRequestDetails(requestId) {
-    await ensureRequestLoaded(requestId);
+async function viewRequestDetails(requestId, type = 'job') {
+    await ensureRequestLoaded(requestId, type);
 
     const request = availableRequests.find(r => Number(r.request_id) === Number(requestId));
     if (!request) {
@@ -1406,20 +1429,29 @@ async function viewRequestDetails(requestId) {
         <div style="padding: var(--spacing-md);">
             <h3>${escapeHtml(request.title)}</h3>
             <p><strong>Category:</strong> ${escapeHtml(request.category_name || 'General')}</p>
-            <p><strong>District:</strong> ${escapeHtml(request.district)}</p>
-            <p><strong>Address:</strong> ${escapeHtml(request.address)}</p>
+            <p><strong>District:</strong> ${escapeHtml(request.district || '-')}</p>
+            <p><strong>Address:</strong> ${escapeHtml(request.address || '-')}</p>
             <p><strong>Deadline:</strong> ${formatDate(request.finish_date)}</p>
-            <p><strong>Urgency:</strong> ${request.urgency}</p>
+            <p><strong>Urgency:</strong> ${escapeHtml(request.urgency || '-')}</p>
             <p><strong>Description:</strong></p>
             <p>${escapeHtml(request.description)}</p>
         </div>
     `;
 
     // Set button action
-    document.getElementById('submit-quote-from-details').onclick = () => {
-        closeRequestDetailsModal();
-        openQuotationModal(requestId);
-    };
+    const quoteFromDetailsBtn = document.getElementById('submit-quote-from-details');
+    if (quoteFromDetailsBtn) {
+        // Direct requests don't use the quotation flow yet.
+        if (String(type).toLowerCase() === 'direct') {
+            quoteFromDetailsBtn.style.display = 'none';
+        } else {
+            quoteFromDetailsBtn.style.display = '';
+            quoteFromDetailsBtn.onclick = () => {
+                closeRequestDetailsModal();
+                openQuotationModal(requestId);
+            };
+        }
+    }
 
     requestDetailsModal.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -1440,14 +1472,23 @@ function closeRequestDetailsModal() {
  * @param {number} requestId
  * @returns {void|Promise<void>}
  */
-async function ensureRequestLoaded(requestId) {
+async function ensureRequestLoaded(requestId, type = 'job') {
     const id = Number(requestId);
     if (!id) return false;
     if (availableRequests.some(r => Number(r.request_id) === id)) return true;
 
+    const normalizedType = String(type || 'job').toLowerCase();
+
     // Fetch by id from API and cache it
     try {
-        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-requests.php?request_id=${encodeURIComponent(id)}`);
+        let response;
+
+        if (normalizedType === 'direct') {
+            response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-direct-requests.php?request_id=${encodeURIComponent(id)}&limit=1`);
+        } else {
+            response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-requests.php?request_id=${encodeURIComponent(id)}`);
+        }
+
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`Server Error (${response.status}): ${errorText.substring(0, 200)}`);
@@ -1984,7 +2025,7 @@ function createDirectRequestRow(request) {
             <td>
                 <div class="table-actions">
                     ${rawStatus === 'pending' && !isExpired ? `
-                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id}, 'direct')">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
                         </button>
@@ -1997,12 +2038,12 @@ function createDirectRequestRow(request) {
                             <span>Decline</span>
                         </button>
                     ` : rawStatus === 'accepted' ? `
-                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id}, 'direct')">
                             <i class="fas fa-file-contract"></i>
                             <span>View Contract</span>
                         </button>
                     ` : isExpired ? `
-                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id}, 'direct')">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
                         </button>
@@ -2011,7 +2052,7 @@ function createDirectRequestRow(request) {
                             <span>Contact</span>
                         </button>
                     ` : `
-                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id}, 'direct')">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
                         </button>

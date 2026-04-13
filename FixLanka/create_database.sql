@@ -361,6 +361,46 @@ CREATE TABLE `jobrequest` (
   CONSTRAINT `jobrequest_ibfk_3` FOREIGN KEY (`location_id`) REFERENCES `location` (`location_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Direct Job Request (Customer selects a specific provider)
+CREATE TABLE `directjobrequest` (
+  `request_id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `category_id` int(11) NOT NULL,
+  `provider_id` int(11) NOT NULL,
+  `provider_type` varchar(20) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'pending',
+  `district` varchar(100) NOT NULL,
+  `address` text NOT NULL,
+  `finish_date` date NOT NULL,
+  `date_created` timestamp NOT NULL DEFAULT current_timestamp(),
+  `photos` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`request_id`),
+  KEY `idx_djr_user` (`user_id`),
+  KEY `idx_djr_category` (`category_id`),
+  KEY `idx_djr_provider` (`provider_id`,`provider_type`),
+  KEY `idx_djr_status` (`status`),
+  KEY `idx_djr_created` (`date_created`),
+  CONSTRAINT `directjobrequest_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  CONSTRAINT `directjobrequest_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Direct Request Quotes mapping (used by some flows)
+CREATE TABLE `directrequestquotes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `request_id` int(11) NOT NULL,
+  `provider_id` int(11) NOT NULL,
+  `provider_type` varchar(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_drq_user` (`user_id`),
+  KEY `idx_drq_request` (`request_id`),
+  KEY `idx_drq_provider` (`provider_id`,`provider_type`),
+  CONSTRAINT `directrequestquotes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  CONSTRAINT `directrequestquotes_ibfk_2` FOREIGN KEY (`request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- Company Quotation
 CREATE TABLE `companyquotation` (
   `quotation_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -548,6 +588,11 @@ CREATE TABLE `contract_milestone` (
   `estimated_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Quantity expected (from quotation)',
   `actual_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Actual units submitted by company',
   `actual_amount` decimal(12,2) DEFAULT NULL COMMENT 'actual_quantity * COALESCE(actual_unit_rate, unit_rate)',
+  `is_non_paying` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 if this milestone is non-paying (inspection / no measurable units)',
+  `actual_labor_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Actual labour units submitted by company',
+  `actual_material_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Actual material units submitted by company',
+  `actual_material_unit_rate` decimal(12,2) DEFAULT NULL COMMENT 'Actual material unit rate submitted by company (optional variation)',
+  `actual_extra_amount` decimal(12,2) DEFAULT NULL COMMENT 'Additional amount outside labour/material for this milestone',
   `escrow_held` decimal(12,2) DEFAULT 0.00,
   `payment_released` decimal(12,2) DEFAULT 0.00,
   `payment_released_at` datetime DEFAULT NULL,
