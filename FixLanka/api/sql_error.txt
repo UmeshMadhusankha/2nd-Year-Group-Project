@@ -12,3 +12,17 @@
             SELECT
                 p.project_id,
                 p.title...' at line 1
+[2026-04-14 21:17:16] company-dashboard kpi_active_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+                        SELECT COUNT(DISTINCT p.project_id) AS cnt
+      ...' at line 1
+[2026-04-14 21:17:16] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-14 21:17:16] company-dashboard requests_direct_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-14 21:17:16] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-14 21:17:16] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-14 21:17:16] company-dashboard calendar_projects: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT project_id, title, start_date, end_date
+            FR...' at line 1
+[2026-04-14 21:17:16] company-dashboard calendar_milestones: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\
+            SELECT
+                p.project_id,
+                p.title...' at line 1

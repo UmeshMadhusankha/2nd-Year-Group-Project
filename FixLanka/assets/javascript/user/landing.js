@@ -77,10 +77,20 @@ const directJobRequestSuccess = document.getElementById('directJobRequestSuccess
 const directJobRequestProviderLabel = document.getElementById('directJobRequestProviderLabel');
 const directJobProviderId = document.getElementById('directJobProviderId');
 const directJobProviderType = document.getElementById('directJobProviderType');
+const directJobCategory = document.getElementById('directJobCategory');
+const directJobCategoryDisplay = document.getElementById('directJobCategoryDisplay');
+const directJobCategoryList = document.getElementById('directJobCategoryList');
+const directJobAddress = document.getElementById('directJobAddress');
+const directJobDistrict = document.getElementById('directJobDistrict');
+const directJobUseHomeAddress = document.getElementById('directJobUseHomeAddress');
 const directJobFinishDate = document.getElementById('directJobFinishDate');
 const directJobPhotos = document.getElementById('directJobPhotos');
 const directJobPhotoPreview = document.getElementById('directJobPhotoPreview');
 const directJobRequestSubmitBtn = document.getElementById('directJobRequestSubmitBtn');
+const directJobSuccessModal = document.getElementById('directJobSuccessModal');
+const directJobSuccessMessage = document.getElementById('directJobSuccessMessage');
+const directJobSuccessOkBtn = document.getElementById('directJobSuccessOkBtn');
+const directJobSuccessCloseBtn = document.getElementById('directJobSuccessCloseBtn');
 
 // Active grid pointer (used by loader + no-results helpers)
 let providersGrid = repairersGrid;
@@ -92,27 +102,40 @@ let isLoading = false;
 let allProvidersLoaded = false;
 let currentProviderType = 'repairers';
 const landingRepairersById = new Map();
+const landingCompaniesById = new Map();
 let selectedListedJobRequestId = null;
 let listedJobRequestContext = {
     providerId: null,
-    providerType: null
+    providerType: null,
+    allowedCategoryIds: []
 };
 let directJobRequestContext = {
     providerId: null,
-    providerType: null
+    providerType: null,
+    allowedCategories: []
 };
+let currentUserHomeAddress = '';
+let currentUserHomeDistrict = '';
+let directJobManualAddress = '';
+let directJobManualDistrict = '';
 
 function cacheLandingRepairers(providers) {
     if (!Array.isArray(providers)) return;
 
     providers.forEach((provider) => {
         const type = normalizeProviderType(provider?.provider_type || currentProviderType);
-        if (type !== 'individual') return;
+        if (type === 'individual') {
+            const repairerId = Number(provider?.repairer_id);
+            if (!Number.isFinite(repairerId) || repairerId <= 0) return;
+            landingRepairersById.set(repairerId, provider);
+            return;
+        }
 
-        const repairerId = Number(provider?.repairer_id);
-        if (!Number.isFinite(repairerId) || repairerId <= 0) return;
-
-        landingRepairersById.set(repairerId, provider);
+        if (type === 'company') {
+            const companyId = Number(provider?.company_id);
+            if (!Number.isFinite(companyId) || companyId <= 0) return;
+            landingCompaniesById.set(companyId, provider);
+        }
     });
 }
 
@@ -122,7 +145,174 @@ function getLandingRepairerById(repairerId) {
     return landingRepairersById.get(numericId) || null;
 }
 
+function getLandingCompanyById(companyId) {
+    const numericId = Number(companyId);
+    if (!Number.isFinite(numericId) || numericId <= 0) return null;
+    return landingCompaniesById.get(numericId) || null;
+}
+
+function getCategoryLookupMaps() {
+    const serviceSelect = document.getElementById('serviceSelect');
+    const byId = new Map();
+    const byName = new Map();
+
+    if (serviceSelect) {
+        Array.from(serviceSelect.options || []).forEach((option) => {
+            const id = Number(option.value);
+            const name = String(option.textContent || '').trim();
+            if (!Number.isFinite(id) || id <= 0 || !name) return;
+            byId.set(id, name);
+            byName.set(name.toLowerCase(), id);
+        });
+    }
+
+    return { byId, byName };
+}
+
+function parseCategoryIdValues(value) {
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => Number(item))
+            .filter((item) => Number.isFinite(item) && item > 0);
+    }
+
+    const raw = String(value ?? '').trim();
+    if (!raw) return [];
+
+    return raw
+        .split(',')
+        .map((part) => Number(String(part).trim()))
+        .filter((item) => Number.isFinite(item) && item > 0);
+}
+
+function getProviderCategories(providerType, providerId) {
+    const normalizedType = normalizeProviderType(providerType);
+    const numericProviderId = Number(providerId);
+    if (!Number.isFinite(numericProviderId) || numericProviderId <= 0) return [];
+
+    const { byId, byName } = getCategoryLookupMaps();
+    const uniqueById = new Map();
+
+    if (normalizedType === 'individual') {
+        const repairer = getLandingRepairerById(numericProviderId);
+        if (!repairer) return [];
+
+        const categoryIds = parseCategoryIdValues(repairer.category_id);
+        categoryIds.forEach((categoryId) => {
+            const categoryName = byId.get(categoryId) || repairer.category_name || `Category #${categoryId}`;
+            uniqueById.set(categoryId, {
+                id: categoryId,
+                name: String(categoryName).trim() || `Category #${categoryId}`
+            });
+        });
+
+        if (uniqueById.size === 0) {
+            const fallbackName = String(repairer.category_name || '').trim();
+            const fallbackId = byName.get(fallbackName.toLowerCase());
+            if (fallbackName && Number.isFinite(fallbackId) && fallbackId > 0) {
+                uniqueById.set(fallbackId, { id: fallbackId, name: fallbackName });
+            }
+        }
+    } else {
+        const company = getLandingCompanyById(numericProviderId);
+        if (!company) return [];
+
+        const businessTypes = String(company.business_type || '')
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+        businessTypes.forEach((typeName) => {
+            const categoryId = byName.get(typeName.toLowerCase());
+            if (Number.isFinite(categoryId) && categoryId > 0) {
+                uniqueById.set(categoryId, { id: categoryId, name: typeName });
+            }
+        });
+    }
+
+    return Array.from(uniqueById.values());
+}
+
+function renderDirectJobCategoryOptions(categories) {
+    if (!directJobCategoryDisplay || !directJobCategory || !directJobCategoryList) return;
+
+    const validCategories = Array.isArray(categories)
+        ? categories.filter((item) => Number.isFinite(Number(item?.id)) && Number(item.id) > 0)
+        : [];
+
+    directJobCategoryList.innerHTML = '';
+    directJobCategoryList.style.display = 'none';
+
+    if (validCategories.length === 0) {
+        directJobCategory.value = '';
+        directJobCategoryDisplay.value = '';
+        return;
+    }
+
+    const first = validCategories[0];
+    directJobCategory.value = String(Number(first.id));
+    directJobCategoryDisplay.value = String(first.name || '').trim();
+
+    if (validCategories.length <= 1) {
+        return;
+    }
+
+    directJobCategoryList.style.display = 'grid';
+    directJobCategoryList.innerHTML = validCategories.map((category, index) => {
+        const id = Number(category.id);
+        const checked = index === 0 ? 'checked' : '';
+        return `
+            <label class="direct-job-category-option">
+                <input type="radio" name="directJobCategoryChoice" value="${id}" ${checked}>
+                <span>${escapeHtml(String(category.name || `Category #${id}`))}</span>
+            </label>
+        `;
+    }).join('');
+
+    const radios = directJobCategoryList.querySelectorAll('input[name="directJobCategoryChoice"]');
+    radios.forEach((radio) => {
+        radio.addEventListener('change', () => {
+            if (!radio.checked) return;
+            const selectedId = Number(radio.value);
+            const selectedCategory = validCategories.find((item) => Number(item.id) === selectedId);
+            if (!selectedCategory) return;
+
+            directJobCategory.value = String(selectedId);
+            directJobCategoryDisplay.value = String(selectedCategory.name || `Category #${selectedId}`);
+        });
+    });
+}
+
+async function loadCurrentUserHomeAddress() {
+    try {
+        const response = await fetch(`${APP_BASE}/api/user/loadCurrentUserAddress.php`, {
+            headers: { 'Accept': 'application/json' }
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result?.success) {
+            throw new Error(result?.message || 'Failed to load home address');
+        }
+
+        currentUserHomeAddress = String(result.data?.address || '').trim();
+        currentUserHomeDistrict = String(result.data?.district || '').trim();
+
+        if (directJobUseHomeAddress?.checked) {
+            if (directJobAddress && currentUserHomeAddress) {
+                directJobAddress.value = currentUserHomeAddress;
+            }
+            if (directJobDistrict && currentUserHomeDistrict) {
+                directJobDistrict.value = currentUserHomeDistrict;
+            }
+        }
+    } catch (error) {
+        currentUserHomeAddress = '';
+        currentUserHomeDistrict = '';
+    }
+}
+
 window.getLandingRepairerById = getLandingRepairerById;
+window.getLandingCompanyById = getLandingCompanyById;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -133,8 +323,47 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeProviderTabs();
     initializeListedJobRequestModal();
     initializeDirectJobRequestModal();
+    initializeDirectJobSuccessModal();
     loadInitialProviders();
 });
+
+function initializeDirectJobSuccessModal() {
+    if (!directJobSuccessModal) return;
+
+    if (directJobSuccessOkBtn) {
+        directJobSuccessOkBtn.addEventListener('click', closeDirectJobSuccessModal);
+    }
+
+    if (directJobSuccessCloseBtn) {
+        directJobSuccessCloseBtn.addEventListener('click', closeDirectJobSuccessModal);
+    }
+
+    directJobSuccessModal.addEventListener('click', (event) => {
+        if (event.target === directJobSuccessModal) {
+            closeDirectJobSuccessModal();
+        }
+    });
+}
+
+function openDirectJobSuccessModal(message) {
+    if (!directJobSuccessModal) return;
+
+    if (directJobSuccessMessage) {
+        directJobSuccessMessage.textContent = String(message || 'Job request sent successfully.');
+    }
+
+    directJobSuccessModal.classList.add('show');
+    directJobSuccessModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDirectJobSuccessModal() {
+    if (!directJobSuccessModal) return;
+
+    directJobSuccessModal.classList.remove('show');
+    directJobSuccessModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+}
 
 function initializeDirectJobRequestModal() {
     if (!directJobRequestModal || !directJobRequestForm) return;
@@ -166,6 +395,44 @@ function initializeDirectJobRequestModal() {
             directJobPhotoPreview.textContent = file ? `Selected: ${file.name}` : '';
         });
     }
+
+    if (directJobAddress && directJobUseHomeAddress) {
+        directJobAddress.addEventListener('input', () => {
+            if (!directJobUseHomeAddress.checked) {
+                directJobManualAddress = directJobAddress.value;
+            }
+        });
+
+        if (directJobDistrict) {
+            directJobDistrict.addEventListener('change', () => {
+                if (!directJobUseHomeAddress.checked) {
+                    directJobManualDistrict = directJobDistrict.value;
+                }
+            });
+        }
+
+        directJobUseHomeAddress.addEventListener('change', function() {
+            if (this.checked) {
+                directJobManualAddress = directJobAddress.value;
+                if (directJobDistrict) {
+                    directJobManualDistrict = directJobDistrict.value;
+                }
+                directJobAddress.value = currentUserHomeAddress || directJobAddress.value;
+                if (directJobDistrict && currentUserHomeDistrict) {
+                    directJobDistrict.value = currentUserHomeDistrict;
+                }
+                directJobAddress.readOnly = true;
+                directJobAddress.classList.add('is-readonly');
+            } else {
+                directJobAddress.readOnly = false;
+                directJobAddress.classList.remove('is-readonly');
+                directJobAddress.value = directJobManualAddress;
+                if (directJobDistrict) {
+                    directJobDistrict.value = directJobManualDistrict;
+                }
+            }
+        });
+    }
 }
 
 function closeDirectJobRequestModal() {
@@ -176,10 +443,24 @@ function closeDirectJobRequestModal() {
     document.body.style.overflow = '';
 
     directJobRequestForm.reset();
-    directJobRequestContext = { providerId: null, providerType: null };
+    directJobRequestContext = { providerId: null, providerType: null, allowedCategories: [] };
 
     if (directJobProviderId) directJobProviderId.value = '';
     if (directJobProviderType) directJobProviderType.value = '';
+    if (directJobCategory) directJobCategory.value = '';
+    if (directJobCategoryDisplay) directJobCategoryDisplay.value = '';
+    if (directJobCategoryList) {
+        directJobCategoryList.innerHTML = '';
+        directJobCategoryList.style.display = 'none';
+    }
+    if (directJobAddress && directJobUseHomeAddress) {
+        directJobUseHomeAddress.checked = false;
+        directJobAddress.readOnly = false;
+        directJobAddress.classList.remove('is-readonly');
+    }
+    if (directJobDistrict) {
+        directJobDistrict.value = directJobManualDistrict || '';
+    }
     if (directJobPhotoPreview) directJobPhotoPreview.textContent = '';
 
     if (directJobRequestError) {
@@ -221,14 +502,34 @@ function openDirectJobRequestModal(providerType, providerId) {
 
     directJobRequestContext = {
         providerId: numericProviderId,
-        providerType: normalizedType
+        providerType: normalizedType,
+        allowedCategories: []
     };
+
+    const providerCategories = getProviderCategories(normalizedType, numericProviderId);
+    if (!providerCategories.length) {
+        alert('Could not determine supported service categories for this provider. Please try another provider.');
+        return;
+    }
+
+    directJobRequestContext.allowedCategories = providerCategories;
 
     directJobRequestForm.reset();
     if (directJobProviderId) directJobProviderId.value = String(numericProviderId);
     if (directJobProviderType) directJobProviderType.value = normalizedType;
+    renderDirectJobCategoryOptions(providerCategories);
     if (directJobRequestProviderLabel) {
         directJobRequestProviderLabel.textContent = normalizedType === 'company' ? 'this company' : 'this repairer';
+    }
+
+    if (directJobAddress && directJobUseHomeAddress) {
+        directJobUseHomeAddress.checked = false;
+        directJobAddress.readOnly = false;
+        directJobAddress.classList.remove('is-readonly');
+        directJobAddress.value = '';
+        directJobManualAddress = '';
+        directJobManualDistrict = '';
+        loadCurrentUserHomeAddress();
     }
 
     if (directJobFinishDate) {
@@ -263,9 +564,19 @@ async function submitDirectJobRequest(event) {
     if (!directJobRequestForm) return;
     if (!directJobRequestContext.providerId || !directJobRequestContext.providerType) return;
 
+    const selectedCategoryId = Number(directJobCategory?.value || 0);
+    if (!Number.isFinite(selectedCategoryId) || selectedCategoryId <= 0) {
+        if (directJobRequestError) {
+            directJobRequestError.textContent = 'A valid provider service category is required for this request.';
+            directJobRequestError.style.display = 'block';
+        }
+        return;
+    }
+
     const formData = new FormData(directJobRequestForm);
     formData.set('provider_id', String(directJobRequestContext.providerId));
     formData.set('provider_type', directJobRequestContext.providerType);
+    formData.set('category_id', String(selectedCategoryId));
 
     if (directJobRequestError) {
         directJobRequestError.style.display = 'none';
@@ -298,9 +609,8 @@ async function submitDirectJobRequest(event) {
             directJobRequestSuccess.style.display = 'block';
         }
 
-        setTimeout(() => {
-            closeDirectJobRequestModal();
-        }, 700);
+        closeDirectJobRequestModal();
+        openDirectJobSuccessModal(result.message || 'Job request sent successfully.');
     } catch (error) {
         console.error('Failed to submit direct job request:', error);
         if (directJobRequestError) {
@@ -334,6 +644,13 @@ function initializeListedJobRequestModal() {
         listedJobRequestList.addEventListener('change', (event) => {
             const target = event.target;
             if (!target || target.name !== 'listedJobRequestId') return;
+            if (target.disabled) {
+                selectedListedJobRequestId = null;
+                if (listedJobRequestSubmitBtn) {
+                    listedJobRequestSubmitBtn.disabled = true;
+                }
+                return;
+            }
 
             selectedListedJobRequestId = Number(target.value);
             if (listedJobRequestSubmitBtn) {
@@ -357,7 +674,7 @@ function closeListedJobRequestModal() {
     document.body.style.overflow = '';
 
     selectedListedJobRequestId = null;
-    listedJobRequestContext = { providerId: null, providerType: null };
+    listedJobRequestContext = { providerId: null, providerType: null, allowedCategoryIds: [] };
 
     if (listedJobRequestSubmitBtn) {
         listedJobRequestSubmitBtn.disabled = true;
@@ -384,8 +701,14 @@ async function openListedJobRequestModal(providerType, providerId) {
 
     listedJobRequestContext = {
         providerId: Number.isFinite(numericProviderId) && numericProviderId > 0 ? numericProviderId : null,
-        providerType: normalizedType
+        providerType: normalizedType,
+        allowedCategoryIds: []
     };
+
+    const providerCategories = getProviderCategories(normalizedType, numericProviderId);
+    listedJobRequestContext.allowedCategoryIds = providerCategories
+        .map((item) => Number(item.id))
+        .filter((value) => Number.isFinite(value) && value > 0);
 
     selectedListedJobRequestId = null;
     if (listedJobRequestSubmitBtn) listedJobRequestSubmitBtn.disabled = true;
@@ -432,6 +755,10 @@ async function openListedJobRequestModal(providerType, providerId) {
 function renderListedJobRequestOptions(jobs) {
     if (!listedJobRequestList) return;
 
+    const allowedCategoryIds = Array.isArray(listedJobRequestContext.allowedCategoryIds)
+        ? listedJobRequestContext.allowedCategoryIds
+        : [];
+
     if (!jobs.length) {
         listedJobRequestList.innerHTML = '<p class="listed-job-placeholder">No pending listed jobs match this provider type.</p>';
         return;
@@ -443,14 +770,22 @@ function renderListedJobRequestOptions(jobs) {
         const category = escapeHtml(String(job.category_name || 'Uncategorized'));
         const district = escapeHtml(String(job.district || 'N/A'));
         const finishDate = escapeHtml(String(job.finish_date || 'N/A'));
+        const categoryId = Number(job.category_id);
+        const isSelectable = Number.isFinite(categoryId) && allowedCategoryIds.includes(categoryId);
+        const disabledAttr = isSelectable ? '' : 'disabled';
+        const unavailableNote = isSelectable
+            ? ''
+            : '<p class="listed-job-item-warning">This service provider does not provide this job type.</p>';
+        const disabledClass = isSelectable ? '' : ' listed-job-item-disabled';
 
         return `
-            <div class="listed-job-item">
+            <div class="listed-job-item${disabledClass}">
                 <label>
-                    <input type="radio" name="listedJobRequestId" value="${requestId}">
+                    <input type="radio" name="listedJobRequestId" value="${requestId}" ${disabledAttr}>
                     <span>
                         <p class="listed-job-item-title">${title}</p>
                         <p class="listed-job-item-meta">Category: ${category} | District: ${district} | Finish by: ${finishDate}</p>
+                        ${unavailableNote}
                     </span>
                 </label>
             </div>

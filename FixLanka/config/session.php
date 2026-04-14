@@ -4,8 +4,34 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+function getValidRoles() {
+    return ['user', 'admin', 'moderator', 'company', 'repairer'];
+}
+
 function isLoggedIn() {
-    return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+    if (!isset($_SESSION['user_id']) || empty($_SESSION['user_id'])) {
+        return false;
+    }
+
+    $role = $_SESSION['user_role'] ?? null;
+    if (!is_string($role) || $role === '') {
+        return false;
+    }
+
+    return in_array($role, getValidRoles(), true);
+}
+
+function hasRole($roles) {
+    if (!isLoggedIn()) {
+        return false;
+    }
+
+    if (!is_array($roles)) {
+        $roles = [$roles];
+    }
+
+    $currentRole = $_SESSION['user_role'] ?? null;
+    return in_array($currentRole, $roles, true);
 }
 
 function getUserData() {
@@ -36,9 +62,32 @@ function requireRole($allowedRoles) {
     
     if (!in_array($currentRole, $allowedRoles)) {
         $_SESSION['error'] = 'You do not have permission to access this page';
-        header('Location: /2nd-Year-Group-Project/FixLanka/');
+        header('Location: ' . getRoleHomePath($currentRole));
         exit;
     }
+}
+
+function getRoleHomePath($role = null) {
+    $resolvedRole = is_string($role) && $role !== '' ? $role : ($_SESSION['user_role'] ?? null);
+
+    switch ($resolvedRole) {
+        case 'admin':
+            return '/2nd-Year-Group-Project/FixLanka/admin-dashboard';
+        case 'moderator':
+            return '/2nd-Year-Group-Project/FixLanka/moderator-dashboard';
+        case 'company':
+            return '/2nd-Year-Group-Project/FixLanka/company-dashboard';
+        case 'repairer':
+            return '/2nd-Year-Group-Project/FixLanka/repairer-welcome';
+        case 'user':
+        default:
+            return '/2nd-Year-Group-Project/FixLanka/';
+    }
+}
+
+function redirectToRoleHome($role = null) {
+    header('Location: ' . getRoleHomePath($role));
+    exit;
 }
 
 function getUserRole() {

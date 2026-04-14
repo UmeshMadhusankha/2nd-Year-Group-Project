@@ -598,6 +598,17 @@ body > * {
     border: 1px solid rgba(37, 99, 235, 0.18);
 }
 
+.direct-job-note {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.15);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+}
+
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -976,6 +987,17 @@ body > * {
     background: linear-gradient(135deg, var(--warning-dark) 0%, var(--warning-color) 100%);
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+}
+
+.btn-view-quotes {
+    background: linear-gradient(135deg, #1d4ed8 0%, #0891b2 100%);
+    color: #ffffff;
+}
+
+.btn-view-quotes:hover {
+    background: linear-gradient(135deg, #1e40af 0%, #0e7490 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(30, 64, 175, 0.3);
 }
 
 .read-only-badge {
@@ -2057,6 +2079,26 @@ body > * {
     gap: var(--spacing-md);
 }
 
+.quotes-request-modal-container {
+    max-width: 900px;
+}
+
+.quote-details-modal-container {
+    max-width: 860px;
+}
+
+.quotes-request-subtitle {
+    margin: 0 0 var(--spacing-md);
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.quotes-request-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+}
+
 .quote-item {
     display: flex;
     flex-direction: column;
@@ -2066,6 +2108,12 @@ body > * {
     border-radius: var(--border-radius-lg);
     background: var(--bg-card);
     box-shadow: var(--shadow-md);
+    cursor: pointer;
+}
+
+.quote-item:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
 }
 
 .quote-card-top {
@@ -2198,6 +2246,30 @@ body > * {
     gap: var(--spacing-sm);
     justify-content: flex-end;
     margin-top: auto;
+}
+
+.quote-actions-inline {
+    justify-content: flex-start;
+}
+
+.quote-item-compact .quote-meta-grid {
+    grid-template-columns: 1fr;
+}
+
+.quote-meta-grid-compact {
+    grid-template-columns: 1fr;
+}
+
+.quote-details-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.quote-details-actions {
+    flex-wrap: wrap;
 }
 
 .btn-success-sm,
