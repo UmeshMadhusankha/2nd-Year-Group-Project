@@ -2,6 +2,10 @@
 // filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\views\user\landing.php
 require_once __DIR__ . '/../../config/session.php';
 
+if (isLoggedIn() && !hasRole('user')) {
+    redirectToRoleHome();
+}
+
 $isLoggedIn = isLoggedIn();
 ?>
 <!DOCTYPE html>

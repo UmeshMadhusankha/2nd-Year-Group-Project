@@ -116,50 +116,68 @@ class UserQuotesModel {
         $limit = max(1, min(50, (int)$limit));
         $offset = max(0, (int)$offset);
 
-        $params = [
-            ':user_id_repairer' => $userId,
-            ':user_id_company'  => $userId,
-            ':user_id_repairer_direct' => $userId,
-            ':user_id_company_direct'  => $userId,
-        ];
-        $statusSqlRepairer = '';
-        $statusSqlCompany  = '';
-        if ($status !== null) {
-            $params[':status_repairer'] = $status;
-            $params[':status_company']  = $status;
-            $statusSqlRepairer = ' AND rq.status = :status_repairer ';
-            $statusSqlCompany  = ' AND cq.status = :status_company ';
-        }
-
-        $requestSqlRepairer = '';
-        $requestSqlCompany  = '';
-        if ($requestId !== null) {
-            $params[':request_id_repairer'] = $requestId;
-            $params[':request_id_company']  = $requestId;
-            $params[':request_id_repairer_direct'] = $requestId;
-            $params[':request_id_company_direct'] = $requestId;
-            $requestSqlRepairer = ' AND rq.request_id = :request_id_repairer ';
-            $requestSqlCompany  = ' AND cq.request_id = :request_id_company ';
-        }
-
-        $requestSqlRepairerDirect = '';
-        $requestSqlCompanyDirect = '';
-        if ($requestId !== null) {
-            $requestSqlRepairerDirect = ' AND rq.request_id = :request_id_repairer_direct ';
-            $requestSqlCompanyDirect = ' AND cq.request_id = :request_id_company_direct ';
-        }
-
         $requestType = $requestType !== null ? strtolower(trim($requestType)) : null;
         $includeRegular = $requestType === null || $requestType === '' || $requestType === 'regular';
         $includeDirect = $requestType === null || $requestType === '' || $requestType === 'direct';
+
+        $params = [];
+
+        $statusSqlRepairerRegular = '';
+        $statusSqlCompanyRegular = '';
+        $statusSqlRepairerDirect = '';
+        $statusSqlCompanyDirect = '';
+
+        $requestSqlRepairerRegular = '';
+        $requestSqlCompanyRegular = '';
+        $requestSqlRepairerDirect = '';
+        $requestSqlCompanyDirect = '';
+
+        if ($includeRegular) {
+            $params[':user_id_repairer_regular'] = $userId;
+            $params[':user_id_company_regular'] = $userId;
+
+            if ($status !== null) {
+                $params[':status_repairer_regular'] = $status;
+                $params[':status_company_regular'] = $status;
+                $statusSqlRepairerRegular = ' AND rq.status = :status_repairer_regular ';
+                $statusSqlCompanyRegular = ' AND cq.status = :status_company_regular ';
+            }
+
+            if ($requestId !== null) {
+                $params[':request_id_repairer_regular'] = $requestId;
+                $params[':request_id_company_regular'] = $requestId;
+                $requestSqlRepairerRegular = ' AND rq.request_id = :request_id_repairer_regular ';
+                $requestSqlCompanyRegular = ' AND cq.request_id = :request_id_company_regular ';
+            }
+        }
+
+        if ($includeDirect) {
+            $params[':user_id_repairer_direct'] = $userId;
+            $params[':user_id_company_direct'] = $userId;
+
+            if ($status !== null) {
+                $params[':status_repairer_direct'] = $status;
+                $params[':status_company_direct'] = $status;
+                $statusSqlRepairerDirect = ' AND rq.status = :status_repairer_direct ';
+                $statusSqlCompanyDirect = ' AND cq.status = :status_company_direct ';
+            }
+
+            if ($requestId !== null) {
+                $params[':request_id_repairer_direct'] = $requestId;
+                $params[':request_id_company_direct'] = $requestId;
+                $requestSqlRepairerDirect = ' AND rq.request_id = :request_id_repairer_direct ';
+                $requestSqlCompanyDirect = ' AND cq.request_id = :request_id_company_direct ';
+            }
+        }
 
         if (!$includeRegular && !$includeDirect) {
             return [];
         }
 
         $hasCompanyId          = $this->companyQuotationHasCompanyId();
-        $companyJoinSql        = $hasCompanyId ? "LEFT JOIN company c ON cq.company_id = c.company_id" : "";
-        $companyProviderNameSql = $hasCompanyId ? "COALESCE(c.name, 'Company')" : "'Company'";
+        $companyJoinSql        = $hasCompanyId ? "LEFT JOIN company comp ON cq.company_id = comp.company_id" : "";
+        $companyProviderNameSql = $hasCompanyId ? "COALESCE(comp.name, 'Company')" : "'Company'";
+        $companyProviderIdSql   = $hasCompanyId ? "cq.company_id" : "0";
 
         $parts = [];
 
@@ -207,9 +225,9 @@ class UserQuotesModel {
                 INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
                 LEFT JOIN category c ON c.category_id = jr.category_id
                 INNER JOIN repairer r ON rq.repairer_id = r.repairer_id
-                WHERE jr.user_id = :user_id_repairer
-                $statusSqlRepairer
-                $requestSqlRepairer
+                WHERE jr.user_id = :user_id_repairer_regular
+                $statusSqlRepairerRegular
+                $requestSqlRepairerRegular
             ";
 
             $parts[] = "
@@ -226,7 +244,7 @@ class UserQuotesModel {
                     jr.status AS job_status,
                     jr.service_provider_type AS job_provider_preference,
                     c.name AS category_name,
-                    cq.company_id AS provider_id,
+                    $companyProviderIdSql AS provider_id,
                     $companyProviderNameSql AS provider_name,
                     'Company' AS provider_type,
                     NULL AS provider_avatar,
@@ -255,9 +273,9 @@ class UserQuotesModel {
                 INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
                 LEFT JOIN category c ON c.category_id = jr.category_id
                 $companyJoinSql
-                WHERE cq.user_id = :user_id_company
-                $statusSqlCompany
-                $requestSqlCompany
+                WHERE jr.user_id = :user_id_company_regular
+                $statusSqlCompanyRegular
+                $requestSqlCompanyRegular
             ";
         }
 
@@ -306,7 +324,7 @@ class UserQuotesModel {
                 LEFT JOIN category c ON c.category_id = djr.category_id
                 INNER JOIN repairer r ON rq.repairer_id = r.repairer_id
                 WHERE djr.user_id = :user_id_repairer_direct
-                $statusSqlRepairer
+                $statusSqlRepairerDirect
                 $requestSqlRepairerDirect
             ";
 
@@ -324,7 +342,7 @@ class UserQuotesModel {
                     djr.status AS job_status,
                     djr.provider_type AS job_provider_preference,
                     c.name AS category_name,
-                    cq.company_id AS provider_id,
+                    $companyProviderIdSql AS provider_id,
                     $companyProviderNameSql AS provider_name,
                     'Company' AS provider_type,
                     NULL AS provider_avatar,
@@ -354,7 +372,7 @@ class UserQuotesModel {
                 LEFT JOIN category c ON c.category_id = djr.category_id
                 $companyJoinSql
                 WHERE djr.user_id = :user_id_company_direct
-                $statusSqlCompany
+                $statusSqlCompanyDirect
                 $requestSqlCompanyDirect
             ";
         }
@@ -396,7 +414,8 @@ class UserQuotesModel {
                 (
                     SELECT COUNT(*)
                     FROM companyquotation cq
-                    WHERE cq.user_id = :user_id_company AND cq.status = 'pending'
+                    INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
+                    WHERE jr.user_id = :user_id_company AND cq.status = 'pending'
                 )
                 +
                 (

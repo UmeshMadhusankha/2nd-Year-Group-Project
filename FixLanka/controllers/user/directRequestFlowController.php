@@ -102,7 +102,7 @@ class DirectRequestFlowController {
             $this->respondSuccess([
                 'request_id' => $requestId,
                 'category_id' => $categoryId,
-            ], 'Successfully sent.');
+            ], 'Job request sent successfully.');
         } catch (Throwable $e) {
             error_log('direct-job-requests controller error: ' . $e->getMessage());
             $this->respondError('Failed to create direct job request', 500);

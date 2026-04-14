@@ -44,7 +44,8 @@ $completedCount = 0;
 $cancelledCount = 0;
 
 foreach ($allJobRequests as $job) {
-    switch ($job['status']) {
+    $normalizedStatus = strtolower(trim((string)($job['status'] ?? '')));
+    switch ($normalizedStatus) {
         case 'pending':
             $pendingCount++;
             break;
@@ -152,11 +153,12 @@ foreach ($allJobRequests as $job) {
                 <?php else: ?>
                     <?php foreach ($allJobRequests as $job): ?>
                         <?php
-                        $statusClass = strtolower($job['status']);
+                        $statusValue = strtolower(trim((string)($job['status'] ?? '')));
+                        $statusClass = $statusValue !== '' ? $statusValue : 'unknown';
                         $isDirectRequest = ($job['request_type'] ?? 'regular') === 'direct';
-                        $isPendingRegular = $job['status'] === 'pending' && !$isDirectRequest;
-                        $isPendingDirect = $job['status'] === 'pending' && $isDirectRequest;
-                        $statusLabel = ucfirst(str_replace('_', ' ', $job['status']));
+                        $isPendingRegular = $statusValue === 'pending' && !$isDirectRequest;
+                        $isPendingDirect = $statusValue === 'pending' && $isDirectRequest;
+                        $statusLabel = ucfirst(str_replace('_', ' ', $statusClass));
                         $providerType = str_replace(',', ', ', (string)($job['service_provider_type'] ?? 'individual'));
                         $providerType = ucwords(str_replace('_', ' ', $providerType));
                         $postedDate = $job['posted_date'] ?? null;
@@ -170,7 +172,7 @@ foreach ($allJobRequests as $job) {
                         }
                         ?>
                             <div class="job-card <?php echo $isDirectRequest ? 'direct-job-card' : ''; ?>"
-                                data-status="<?php echo htmlspecialchars($job['status']); ?>"
+                                data-status="<?php echo htmlspecialchars($statusClass); ?>"
                                 data-request-type="<?php echo htmlspecialchars($job['request_type']); ?>"
                                 data-request-id="<?php echo (int)$job['request_id']; ?>"
                                 data-provider-id="<?php echo (int)($job['provider_id'] ?? 0); ?>"
@@ -453,7 +455,6 @@ foreach ($allJobRequests as $job) {
                 </button>
             </div>
             <div class="modal-content">
-                <p class="quotes-request-subtitle" id="jobQuotesSubtitle">Quotes filtered for the selected request.</p>
                 <div class="quotes-request-list" id="jobQuotesList">
                     <div class="quote-empty-state">Loading quotes...</div>
                 </div>
@@ -587,10 +588,20 @@ foreach ($allJobRequests as $job) {
         try {
             result = JSON.parse(text);
         } catch (error) {
+            console.error('[QuotesAPI] Invalid JSON response', {
+                url,
+                status: response.status,
+                preview: String(text || '').slice(0, 500)
+            });
             throw new Error('Invalid JSON response');
         }
 
         if (!response.ok || result?.success === false) {
+            console.error('[QuotesAPI] Request failed', {
+                url,
+                status: response.status,
+                result
+            });
             throw new Error(result?.message || `Request failed (${response.status})`);
         }
 
@@ -691,7 +702,8 @@ foreach ($allJobRequests as $job) {
     }
 
     async function loadQuotesForRequest(requestId, requestType) {
-        const url = `${USER_QUOTES_API}?action=list&limit=50&offset=0&request_id=${encodeURIComponent(String(requestId))}&request_type=${encodeURIComponent(String(requestType))}`;
+        const normalizedRequestType = String(requestType || '').toLowerCase() === 'direct' ? 'direct' : 'regular';
+        const url = `${USER_QUOTES_API}?action=list&limit=50&offset=0&request_id=${encodeURIComponent(String(requestId))}&request_type=${encodeURIComponent(normalizedRequestType)}`;
         const result = await fetchJson(url);
         return Array.isArray(result.quotes) ? result.quotes : [];
     }
@@ -706,13 +718,17 @@ foreach ($allJobRequests as $job) {
             setQuotesPill(parseInt(result.pending_count, 10) || 0);
 
             if (!quotes.length) {
-                quotesReceivedList.innerHTML = `<div class="quote-empty-state">No ${escapeHtml(currentQuoteStatusFilter)} quotes found.</div>`;
+                quotesReceivedList.innerHTML = '<div class="quote-empty-state">No quotes received.</div>';
                 return;
             }
 
             quotesReceivedList.innerHTML = quotes.map((quote) => renderQuoteCard(quote, 'section')).join('');
             window.__lastQuotes = quotes;
         } catch (error) {
+            console.error('[QuotesReceived] Failed to load list', {
+                statusFilter: currentQuoteStatusFilter,
+                error: error && error.message ? error.message : error
+            });
             quotesReceivedList.innerHTML = '<div class="quote-empty-state">Failed to load quotes.</div>';
             setQuotesPill(0);
         }
@@ -721,24 +737,30 @@ foreach ($allJobRequests as $job) {
     async function openJobQuotesModal(requestId, requestType) {
         if (!jobQuotesModal || !jobQuotesList) return;
 
-        currentRequestQuotesContext = { requestId: Number(requestId), requestType: String(requestType || 'regular') };
-        jobQuotesSubtitle.textContent = `Quotes filtered for request #${requestId} (${requestType}).`;
+        const normalizedRequestType = String(requestType || '').toLowerCase() === 'direct' ? 'direct' : 'regular';
+        currentRequestQuotesContext = { requestId: Number(requestId), requestType: normalizedRequestType };
         jobQuotesList.innerHTML = '<div class="quote-empty-state">Loading quotes...</div>';
 
         jobQuotesModal.classList.add('show');
         document.body.style.overflow = 'hidden';
 
         try {
-            const quotes = await loadQuotesForRequest(requestId, requestType);
+            const quotes = await loadQuotesForRequest(requestId, normalizedRequestType);
             if (!quotes.length) {
-                jobQuotesList.innerHTML = '<div class="quote-empty-state">No quotations found for this request yet.</div>';
+                jobQuotesList.innerHTML = '<div class="quote-empty-state">No quotes received</div>';
                 return;
             }
 
             jobQuotesList.innerHTML = quotes.map((quote) => renderQuoteCard(quote, 'request')).join('');
             window.__lastRequestQuotes = quotes;
         } catch (error) {
-            jobQuotesList.innerHTML = '<div class="quote-empty-state">Failed to load request quotations.</div>';
+            console.error('[JobQuotesModal] Failed to load request quotes', {
+                requestId,
+                requestType: normalizedRequestType,
+                error: error && error.message ? error.message : error
+            });
+            const message = error && error.message ? error.message : 'Failed to load request quotations.';
+            jobQuotesList.innerHTML = `<div class="quote-empty-state">${escapeHtml(message)}</div>`;
         }
     }
 

@@ -87,6 +87,10 @@ const directJobFinishDate = document.getElementById('directJobFinishDate');
 const directJobPhotos = document.getElementById('directJobPhotos');
 const directJobPhotoPreview = document.getElementById('directJobPhotoPreview');
 const directJobRequestSubmitBtn = document.getElementById('directJobRequestSubmitBtn');
+const directJobSuccessModal = document.getElementById('directJobSuccessModal');
+const directJobSuccessMessage = document.getElementById('directJobSuccessMessage');
+const directJobSuccessOkBtn = document.getElementById('directJobSuccessOkBtn');
+const directJobSuccessCloseBtn = document.getElementById('directJobSuccessCloseBtn');
 
 // Active grid pointer (used by loader + no-results helpers)
 let providersGrid = repairersGrid;
@@ -319,8 +323,47 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeProviderTabs();
     initializeListedJobRequestModal();
     initializeDirectJobRequestModal();
+    initializeDirectJobSuccessModal();
     loadInitialProviders();
 });
+
+function initializeDirectJobSuccessModal() {
+    if (!directJobSuccessModal) return;
+
+    if (directJobSuccessOkBtn) {
+        directJobSuccessOkBtn.addEventListener('click', closeDirectJobSuccessModal);
+    }
+
+    if (directJobSuccessCloseBtn) {
+        directJobSuccessCloseBtn.addEventListener('click', closeDirectJobSuccessModal);
+    }
+
+    directJobSuccessModal.addEventListener('click', (event) => {
+        if (event.target === directJobSuccessModal) {
+            closeDirectJobSuccessModal();
+        }
+    });
+}
+
+function openDirectJobSuccessModal(message) {
+    if (!directJobSuccessModal) return;
+
+    if (directJobSuccessMessage) {
+        directJobSuccessMessage.textContent = String(message || 'Job request sent successfully.');
+    }
+
+    directJobSuccessModal.classList.add('show');
+    directJobSuccessModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDirectJobSuccessModal() {
+    if (!directJobSuccessModal) return;
+
+    directJobSuccessModal.classList.remove('show');
+    directJobSuccessModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+}
 
 function initializeDirectJobRequestModal() {
     if (!directJobRequestModal || !directJobRequestForm) return;
@@ -566,8 +609,8 @@ async function submitDirectJobRequest(event) {
             directJobRequestSuccess.style.display = 'block';
         }
 
-        alert(result.message || 'Successfully sent.');
         closeDirectJobRequestModal();
+        openDirectJobSuccessModal(result.message || 'Job request sent successfully.');
     } catch (error) {
         console.error('Failed to submit direct job request:', error);
         if (directJobRequestError) {

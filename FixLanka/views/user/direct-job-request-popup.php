@@ -98,5 +98,26 @@
             <button type="button" class="btn-outline" id="directJobRequestCancelBtn">Cancel</button>
             <button type="submit" form="directJobRequestForm" class="btn-primary" id="directJobRequestSubmitBtn">Request</button>
         </div>
+        
+    </div>
+</div>
+
+<!-- Direct Job Request Success Modal -->
+<div class="direct-job-success-overlay" id="directJobSuccessModal" aria-hidden="true">
+    <div class="direct-job-success-container" role="dialog" aria-modal="true" aria-labelledby="directJobSuccessTitle">
+        <button type="button" class="direct-job-success-close" id="directJobSuccessCloseBtn" aria-label="Close">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <div class="direct-job-success-icon" aria-hidden="true">
+            <i class="fas fa-check"></i>
+        </div>
+
+        <h3 id="directJobSuccessTitle">Request Submitted</h3>
+        <p id="directJobSuccessMessage">Job request sent successfully.</p>
+
+        <div class="direct-job-success-actions">
+            <button type="button" class="btn-primary" id="directJobSuccessOkBtn">OK</button>
+        </div>
     </div>
 </div>
