@@ -8,8 +8,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const backendData = window.profilePageData || {};
 
     const profileState = {
+        firstName: backendData.firstName || '',
+        lastName: backendData.lastName || '',
         fullName: backendData.fullName || 'User',
         email: backendData.email || '',
+        address: backendData.address || '',
+        district: backendData.district || '',
         location: backendData.location || 'Sri Lanka',
         avatar: backendData.avatar || '',
         jobStats: {
@@ -139,13 +143,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function prefillEditForm() {
-        const fullNameInput = document.getElementById('editFullName');
+        const firstNameInput = document.getElementById('editFirstName');
+        const lastNameInput = document.getElementById('editLastName');
         const emailInput = document.getElementById('editEmail');
-        const locationInput = document.getElementById('editLocation');
+        const addressInput = document.getElementById('editAddress');
+        const districtInput = document.getElementById('editDistrict');
 
-        if (fullNameInput) fullNameInput.value = profileState.fullName || '';
+        if (firstNameInput) firstNameInput.value = profileState.firstName || '';
+        if (lastNameInput) lastNameInput.value = profileState.lastName || '';
         if (emailInput) emailInput.value = profileState.email || '';
-        if (locationInput) locationInput.value = profileState.location || '';
+        if (addressInput) addressInput.value = profileState.address || '';
+        if (districtInput) districtInput.value = profileState.district || '';
     }
 
     function getSetupRules() {
@@ -238,12 +246,14 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleProfileUpdate(e) {
         e.preventDefault();
 
-        const fullName = String(document.getElementById('editFullName')?.value || '').trim();
+        const firstName = String(document.getElementById('editFirstName')?.value || '').trim();
+        const lastName = String(document.getElementById('editLastName')?.value || '').trim();
         const email = String(document.getElementById('editEmail')?.value || '').trim();
-        const location = String(document.getElementById('editLocation')?.value || '').trim();
+        const address = String(document.getElementById('editAddress')?.value || '').trim();
+        const district = String(document.getElementById('editDistrict')?.value || '').trim();
 
-        if (!fullName || !email || !location) {
-            showToast('Name, email and location are required', 'error');
+        if (!firstName || !lastName || !email || !address) {
+            showToast('First name, last name, email and address are required', 'error');
             return;
         }
 
@@ -258,13 +268,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await fetchJson(UPDATE_USER_API, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fullName, email, location })
+                body: JSON.stringify({ firstName, lastName, email, address, district })
             });
 
             const updated = result?.user || {};
-            profileState.fullName = String(updated.fullName || fullName);
+            const mergedFullName = `${String(updated.firstName || firstName).trim()} ${String(updated.lastName || lastName).trim()}`.trim();
+            profileState.firstName = String(updated.firstName || firstName);
+            profileState.lastName = String(updated.lastName || lastName);
+            profileState.fullName = String(updated.fullName || mergedFullName);
             profileState.email = String(updated.email || email);
-            profileState.location = String(updated.location || location);
+            profileState.address = String(updated.address || address);
+            profileState.district = String(updated.district || district);
+            profileState.location = [profileState.address, profileState.district].filter(Boolean).join(', ') || 'Sri Lanka';
             profileState.avatar = String(updated.avatar || profileState.avatar || '');
 
             renderProfile();

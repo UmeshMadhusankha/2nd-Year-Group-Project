@@ -566,9 +566,8 @@ async function submitDirectJobRequest(event) {
             directJobRequestSuccess.style.display = 'block';
         }
 
-        setTimeout(() => {
-            closeDirectJobRequestModal();
-        }, 700);
+        alert(result.message || 'Successfully sent.');
+        closeDirectJobRequestModal();
     } catch (error) {
         console.error('Failed to submit direct job request:', error);
         if (directJobRequestError) {

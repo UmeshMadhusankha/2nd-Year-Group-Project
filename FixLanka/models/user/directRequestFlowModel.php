@@ -70,6 +70,59 @@ class DirectRequestFlowModel {
         return (int)$this->pdo->lastInsertId();
     }
 
+    public function getDirectJobRequestById(int $userId, int $requestId): ?array {
+        $stmt = $this->pdo->prepare("\n            SELECT\n                dr.request_id,\n                dr.user_id,\n                dr.category_id,\n                dr.provider_id,\n                dr.provider_type,\n                dr.title,\n                dr.description,\n                dr.status,\n                dr.district,\n                dr.address,\n                dr.finish_date,\n                dr.date_created,\n                dr.photos,\n                c.name AS category_name\n            FROM directjobrequest dr\n            LEFT JOIN category c ON c.category_id = dr.category_id\n            WHERE dr.request_id = :request_id\n              AND dr.user_id = :user_id\n            LIMIT 1\n        ");
+
+        $stmt->execute([
+            ':request_id' => $requestId,
+            ':user_id' => $userId,
+        ]);
+
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    public function updateDirectJobRequest(int $userId, int $requestId, array $payload): bool {
+        $stmt = $this->pdo->prepare("\n            UPDATE directjobrequest\n            SET\n                category_id = :category_id,\n                title = :title,\n                description = :description,\n                district = :district,\n                address = :address,\n                finish_date = :finish_date,\n                photos = COALESCE(:photos, photos)\n            WHERE request_id = :request_id\n              AND user_id = :user_id\n              AND LOWER(status) = 'pending'\n        ");
+
+        $stmt->execute([
+            ':category_id' => (int)$payload['category_id'],
+            ':title' => (string)$payload['title'],
+            ':description' => (string)$payload['description'],
+            ':district' => (string)$payload['district'],
+            ':address' => (string)$payload['address'],
+            ':finish_date' => (string)$payload['finish_date'],
+            ':photos' => $payload['photos'] ?? null,
+            ':request_id' => $requestId,
+            ':user_id' => $userId,
+        ]);
+
+        return $stmt->rowCount() > 0;
+    }
+
+    public function deleteDirectJobRequest(int $userId, int $requestId): bool {
+        $stmt = $this->pdo->prepare("\n            DELETE FROM directjobrequest\n            WHERE request_id = :request_id\n              AND user_id = :user_id\n              AND LOWER(status) = 'pending'\n        ");
+
+        $stmt->execute([
+            ':request_id' => $requestId,
+            ':user_id' => $userId,
+        ]);
+
+        return $stmt->rowCount() > 0;
+    }
+
+    public function getProviderCategories(string $providerType, int $providerId): array {
+        $ids = $this->getAllowedCategoryIdsForProvider($providerType, $providerId);
+        if (!$ids) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $this->pdo->prepare("SELECT category_id, name FROM category WHERE category_id IN ($placeholders) ORDER BY name ASC");
+        $stmt->execute($ids);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
     public function createDirectRequestQuote(int $userId, int $requestId, int $providerId, string $providerType): int {
         $requestStmt = $this->pdo->prepare("\n            SELECT request_id, user_id, category_id\n            FROM jobrequest\n            WHERE request_id = :request_id\n            LIMIT 1\n        ");
         $requestStmt->execute([':request_id' => $requestId]);

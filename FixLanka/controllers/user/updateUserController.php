@@ -42,13 +42,15 @@ class UpdateUserController {
             exit;
         }
 
-        $fullName = trim((string)($payload['fullName'] ?? ''));
+        $firstName = trim((string)($payload['firstName'] ?? ''));
+        $lastName = trim((string)($payload['lastName'] ?? ''));
         $email = trim((string)($payload['email'] ?? ''));
-        $location = trim((string)($payload['location'] ?? ''));
+        $address = trim((string)($payload['address'] ?? ''));
+        $district = trim((string)($payload['district'] ?? ''));
 
-        if ($fullName === '' || $email === '' || $location === '') {
+        if ($firstName === '' || $lastName === '' || $email === '' || $address === '') {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Full name, email and location are required']);
+            echo json_encode(['success' => false, 'message' => 'First name, last name, email and address are required']);
             exit;
         }
 
@@ -60,9 +62,11 @@ class UpdateUserController {
 
         try {
             $updated = $this->model->updateUser((int)$user['id'], [
-                'full_name' => $fullName,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
                 'email' => $email,
-                'location' => $location,
+                'address' => $address,
+                'district' => $district,
             ]);
 
             if (!$updated) {
@@ -84,15 +88,15 @@ class UpdateUserController {
 
             $address = trim((string)($fresh['address'] ?? ''));
             $district = trim((string)($fresh['district'] ?? ''));
-            $locationValue = trim($address !== '' && $district !== '' ? ($address . ', ' . $district) : ($address ?: $district));
 
             echo json_encode([
                 'success' => true,
                 'message' => 'Profile updated successfully',
                 'user' => [
+                    'firstName' => (string)($fresh['f_name'] ?? ''),
+                    'lastName' => (string)($fresh['l_name'] ?? ''),
                     'fullName' => $freshFullName,
                     'email' => (string)($fresh['email'] ?? ''),
-                    'location' => $locationValue,
                     'address' => $address,
                     'district' => $district,
                     'avatar' => (string)($fresh['profilePicture'] ?? ''),

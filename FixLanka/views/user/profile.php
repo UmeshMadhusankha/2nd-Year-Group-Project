@@ -55,6 +55,8 @@ if ($displayName === '') {
 }
 
 $displayEmail = trim((string)($dbUser['email'] ?? ($userData['email'] ?? '')));
+$firstName = trim((string)($dbUser['f_name'] ?? ''));
+$lastName = trim((string)($dbUser['l_name'] ?? ''));
 $rawAddress = trim((string)($dbUser['address'] ?? ''));
 $rawDistrict = trim((string)($dbUser['district'] ?? ''));
 $displayLocation = trim($rawAddress !== '' && $rawDistrict !== '' ? ($rawAddress . ', ' . $rawDistrict) : ($rawAddress ?: ($rawDistrict ?: 'Sri Lanka')));
@@ -67,7 +69,11 @@ $hasLocation = $displayLocation !== '';
 
 $profilePayload = [
     'fullName' => $displayName,
+    'firstName' => $firstName,
+    'lastName' => $lastName,
     'email' => $displayEmail,
+    'address' => $rawAddress,
+    'district' => $rawDistrict,
     'location' => $displayLocation,
     'avatar' => $profilePicture,
     'jobStats' => [
@@ -348,8 +354,15 @@ $profilePayload = [
                 <form id="editProfileForm">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="editFullName">Full Name <span class="required">*</span></label>
-                            <input type="text" id="editFullName" class="form-input" value="<?php echo htmlspecialchars($displayName ?: ''); ?>" required>
+                            <label for="editFirstName">First Name <span class="required">*</span></label>
+                            <input type="text" id="editFirstName" class="form-input" value="<?php echo htmlspecialchars($firstName ?: ''); ?>" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editLastName">Last Name <span class="required">*</span></label>
+                            <input type="text" id="editLastName" class="form-input" value="<?php echo htmlspecialchars($lastName ?: ''); ?>" required>
                         </div>
                     </div>
                     
@@ -361,8 +374,40 @@ $profilePayload = [
                     </div>
                     
                     <div class="form-group">
-                        <label for="editLocation">Location <span class="required">*</span></label>
-                        <input type="text" id="editLocation" class="form-input" value="<?php echo htmlspecialchars($displayLocation ?: ''); ?>" required>
+                        <label for="editAddress">Address <span class="required">*</span></label>
+                        <input type="text" id="editAddress" class="form-input" value="<?php echo htmlspecialchars($rawAddress ?: ''); ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editDistrict">District</label>
+                        <select id="editDistrict" class="form-input">
+                            <option value="" <?php echo $rawDistrict === '' ? 'selected' : ''; ?>>Not selected</option>
+                            <option value="Colombo" <?php echo $rawDistrict === 'Colombo' ? 'selected' : ''; ?>>Colombo</option>
+                            <option value="Gampaha" <?php echo $rawDistrict === 'Gampaha' ? 'selected' : ''; ?>>Gampaha</option>
+                            <option value="Kalutara" <?php echo $rawDistrict === 'Kalutara' ? 'selected' : ''; ?>>Kalutara</option>
+                            <option value="Kandy" <?php echo $rawDistrict === 'Kandy' ? 'selected' : ''; ?>>Kandy</option>
+                            <option value="Matale" <?php echo $rawDistrict === 'Matale' ? 'selected' : ''; ?>>Matale</option>
+                            <option value="Nuwara Eliya" <?php echo $rawDistrict === 'Nuwara Eliya' ? 'selected' : ''; ?>>Nuwara Eliya</option>
+                            <option value="Galle" <?php echo $rawDistrict === 'Galle' ? 'selected' : ''; ?>>Galle</option>
+                            <option value="Matara" <?php echo $rawDistrict === 'Matara' ? 'selected' : ''; ?>>Matara</option>
+                            <option value="Hambantota" <?php echo $rawDistrict === 'Hambantota' ? 'selected' : ''; ?>>Hambantota</option>
+                            <option value="Jaffna" <?php echo $rawDistrict === 'Jaffna' ? 'selected' : ''; ?>>Jaffna</option>
+                            <option value="Kilinochchi" <?php echo $rawDistrict === 'Kilinochchi' ? 'selected' : ''; ?>>Kilinochchi</option>
+                            <option value="Mannar" <?php echo $rawDistrict === 'Mannar' ? 'selected' : ''; ?>>Mannar</option>
+                            <option value="Vavuniya" <?php echo $rawDistrict === 'Vavuniya' ? 'selected' : ''; ?>>Vavuniya</option>
+                            <option value="Mullaitivu" <?php echo $rawDistrict === 'Mullaitivu' ? 'selected' : ''; ?>>Mullaitivu</option>
+                            <option value="Batticaloa" <?php echo $rawDistrict === 'Batticaloa' ? 'selected' : ''; ?>>Batticaloa</option>
+                            <option value="Ampara" <?php echo $rawDistrict === 'Ampara' ? 'selected' : ''; ?>>Ampara</option>
+                            <option value="Trincomalee" <?php echo $rawDistrict === 'Trincomalee' ? 'selected' : ''; ?>>Trincomalee</option>
+                            <option value="Kurunegala" <?php echo $rawDistrict === 'Kurunegala' ? 'selected' : ''; ?>>Kurunegala</option>
+                            <option value="Puttalam" <?php echo $rawDistrict === 'Puttalam' ? 'selected' : ''; ?>>Puttalam</option>
+                            <option value="Anuradhapura" <?php echo $rawDistrict === 'Anuradhapura' ? 'selected' : ''; ?>>Anuradhapura</option>
+                            <option value="Polonnaruwa" <?php echo $rawDistrict === 'Polonnaruwa' ? 'selected' : ''; ?>>Polonnaruwa</option>
+                            <option value="Badulla" <?php echo $rawDistrict === 'Badulla' ? 'selected' : ''; ?>>Badulla</option>
+                            <option value="Monaragala" <?php echo $rawDistrict === 'Monaragala' ? 'selected' : ''; ?>>Monaragala</option>
+                            <option value="Ratnapura" <?php echo $rawDistrict === 'Ratnapura' ? 'selected' : ''; ?>>Ratnapura</option>
+                            <option value="Kegalle" <?php echo $rawDistrict === 'Kegalle' ? 'selected' : ''; ?>>Kegalle</option>
+                        </select>
                     </div>
                     
                     <div class="modal-actions">
