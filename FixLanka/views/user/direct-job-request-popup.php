@@ -27,16 +27,10 @@
 
                 <div class="direct-job-form-group">
                     <label for="directJobCategory">Category <span class="required">*</span></label>
-                    <select id="directJobCategory" name="category_id" required>
-                        <option value="">Select a category</option>
-                        <option value="1">Plumbing</option>
-                        <option value="2">Electrical</option>
-                        <option value="3">HVAC</option>
-                        <option value="4">Cleaning</option>
-                        <option value="5">Carpentry</option>
-                        <option value="6">Painting</option>
-                        <option value="7">Appliance Repair</option>
-                    </select>
+                    <input type="text" id="directJobCategoryDisplay" value="" readonly aria-readonly="true" placeholder="Provider category will be auto-selected">
+                    <input type="hidden" id="directJobCategory" name="category_id" value="" required>
+                    <div id="directJobCategoryList" class="direct-job-category-list" style="display:none;"></div>
+                    <p class="direct-job-helper">Category is restricted to the selected provider's service type.</p>
                 </div>
 
                 <div class="direct-job-form-group">
@@ -86,6 +80,10 @@
                 <div class="direct-job-form-group">
                     <label for="directJobAddress">Address <span class="required">*</span></label>
                     <input type="text" id="directJobAddress" name="address" required placeholder="Enter your full address (street, area)">
+                    <label class="address-toggle-row">
+                        <input type="checkbox" id="directJobUseHomeAddress">
+                        <span>Use home address</span>
+                    </label>
                 </div>
 
                 <div class="direct-job-form-group">
