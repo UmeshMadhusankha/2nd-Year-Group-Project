@@ -159,6 +159,7 @@ foreach ($allJobRequests as $job) {
                         $isPendingRegular = $statusValue === 'pending' && !$isDirectRequest;
                         $isPendingDirect = $statusValue === 'pending' && $isDirectRequest;
                         $showCollaborationButton = in_array($statusValue, ['in_progress', 'completed'], true);
+                        $showInProgressDetails = $statusValue === 'in_progress';
                         $statusLabel = ucfirst(str_replace('_', ' ', $statusClass));
                         $providerType = str_replace(',', ', ', (string)($job['service_provider_type'] ?? 'individual'));
                         $providerType = ucwords(str_replace('_', ' ', $providerType));
@@ -249,6 +250,14 @@ foreach ($allJobRequests as $job) {
                             </div>
 
                             <div class="job-actions">
+                                <?php if ($showInProgressDetails): ?>
+                                    <button type="button"
+                                            class="action-btn btn-view-quotes"
+                                            onclick="openInProgressJobFullDetails(<?php echo (int)$job['request_id']; ?>, '<?php echo $isDirectRequest ? 'direct' : 'regular'; ?>')">
+                                        <i class="fas fa-eye"></i> View Full Details
+                                    </button>
+                                <?php endif; ?>
+
                                 <?php if (!$showCollaborationButton): ?>
                                     <button type="button"
                                             class="action-btn btn-view-quotes"
@@ -503,6 +512,48 @@ foreach ($allJobRequests as $job) {
         </div>
     </div>
 
+    <div id="quoteNegotiationModal" class="modal-overlay">
+        <div class="modal-container quote-negotiation-modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">Price Negotiation</h2>
+                <button class="modal-close" type="button" onclick="closeQuoteNegotiationModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <div class="quote-negotiation-summary" id="quoteNegotiationSummary">
+                    <div class="quote-empty-state">Select a pending quote to negotiate.</div>
+                </div>
+
+                <form id="quoteNegotiationForm" class="quote-negotiation-form">
+                    <div class="form-group">
+                        <label for="negotiationProposedPrice">Your Negotiated Price (LKR) <span class="required">*</span></label>
+                        <input type="number" id="negotiationProposedPrice" min="1" step="0.01" required placeholder="Enter your proposed amount">
+                    </div>
+                    <div class="form-group">
+                        <label for="negotiationMessage">Message (Optional)</label>
+                        <textarea id="negotiationMessage" rows="3" placeholder="Add a short reason for your proposal"></textarea>
+                    </div>
+                    <div class="modal-actions quote-negotiation-actions">
+                        <button type="button" class="action-btn btn-secondary" onclick="closeQuoteNegotiationModal()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="action-btn btn-primary" id="negotiationSendBtn">
+                            <i class="fas fa-paper-plane"></i> Send Proposal
+                        </button>
+                    </div>
+                </form>
+
+                <section class="quote-negotiation-history-wrap">
+                    <h3>Negotiation History</h3>
+                    <div class="quote-negotiation-history" id="quoteNegotiationHistory">
+                        <div class="quote-empty-state">No negotiations yet.</div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
     <div id="jobCollaborationModal" class="modal-overlay">
         <div class="modal-container collaboration-modal-container">
             <div class="modal-header">
@@ -615,6 +666,7 @@ foreach ($allJobRequests as $job) {
     const USER_QUOTES_API = '/2nd-Year-Group-Project/FixLanka/api/user-quotes.php';
     const DIRECT_JOB_API = '/2nd-Year-Group-Project/FixLanka/api/user/direct-job-requests.php';
     const JOB_COLLAB_API = '/2nd-Year-Group-Project/FixLanka/api/job-collaboration.php';
+    const QUOTE_NEGOTIATION_API = '/2nd-Year-Group-Project/FixLanka/api/quote-negotiations.php';
 
     const jobsPostedBtn = document.getElementById('jobsPostedBtn');
     const quotesReceivedBtn = document.getElementById('quotesReceivedBtn');
@@ -632,6 +684,13 @@ foreach ($allJobRequests as $job) {
     const quoteAcceptBtn = document.getElementById('quoteAcceptBtn');
     const quoteRejectBtn = document.getElementById('quoteRejectBtn');
     const quoteNegotiateBtn = document.getElementById('quoteNegotiateBtn');
+    const quoteNegotiationModal = document.getElementById('quoteNegotiationModal');
+    const quoteNegotiationSummary = document.getElementById('quoteNegotiationSummary');
+    const quoteNegotiationHistory = document.getElementById('quoteNegotiationHistory');
+    const quoteNegotiationForm = document.getElementById('quoteNegotiationForm');
+    const negotiationProposedPrice = document.getElementById('negotiationProposedPrice');
+    const negotiationMessage = document.getElementById('negotiationMessage');
+    const negotiationSendBtn = document.getElementById('negotiationSendBtn');
     const jobCollaborationModal = document.getElementById('jobCollaborationModal');
     const collabCurrentPhase = document.getElementById('collabCurrentPhase');
     const collabAgreedPrice = document.getElementById('collabAgreedPrice');
@@ -679,6 +738,7 @@ foreach ($allJobRequests as $job) {
     let currentQuoteStatusFilter = 'pending';
     let currentRequestQuotesContext = { requestId: null, requestType: null };
     let currentlyOpenedQuote = null;
+    let currentNegotiationQuote = null;
     let currentCollaboration = null;
     let currentCollabContext = { requestId: null, requestType: null };
     let directEditRequestId = null;
@@ -858,7 +918,11 @@ foreach ($allJobRequests as $job) {
         if (normalizedStatus === 'in_progress' || normalizedStatus === 'completed') {
             const actionsContainer = card.querySelector('.job-actions');
             if (actionsContainer) {
-                const collaborationHtml = collaborationActionButtonHtml(numericRequestId, normalizedRequestType);
+                const collaborationHtml = `
+                    <button type="button" class="action-btn btn-view-quotes" onclick="openInProgressJobFullDetails(${numericRequestId}, '${normalizedRequestType}')">
+                        <i class="fas fa-eye"></i> View Full Details
+                    </button>
+                `;
                 const workflowBadgeHtml = '<span class="read-only-badge direct-read-only-badge"><i class="fas fa-route"></i> Workflow active</span>';
                 actionsContainer.innerHTML = `${collaborationHtml}${workflowBadgeHtml}`;
             }
@@ -907,7 +971,7 @@ foreach ($allJobRequests as $job) {
                 ${companyFields}
             </div>
             <p class="quote-message">${escapeHtml(quote.quote_message || quote.message || 'No additional notes.')}</p>
-        `;
+            `;
     }
 
     function renderQuoteCard(quote, variant) {
@@ -1030,16 +1094,181 @@ foreach ($allJobRequests as $job) {
         quoteAcceptBtn.disabled = !canRespond;
         quoteRejectBtn.disabled = !canRespond;
 
+        const requestStatus = String(quote.request_status || quote.job_status || '').toLowerCase();
+        const isInProgress = requestStatus === 'in_progress';
         const providerId = Number(quote.provider_id);
         const canNegotiate = Number.isFinite(providerId) && providerId > 0;
-        if (canNegotiate) {
+        if (isInProgress) {
             quoteNegotiateBtn.classList.remove('is-disabled');
-            quoteNegotiateBtn.href = `/2nd-Year-Group-Project/FixLanka/chat?source=${encodeURIComponent(quote.source)}&provider_id=${encodeURIComponent(String(providerId))}&request_id=${encodeURIComponent(String(quote.request_id))}&quote_id=${encodeURIComponent(String(quote.quote_id))}`;
-            quoteNegotiateBtn.onclick = null;
+            quoteNegotiateBtn.classList.add('btn-collaboration');
+            quoteNegotiateBtn.innerHTML = '<i class="fas fa-comments"></i> Job Collaboration';
+            quoteNegotiateBtn.href = '#';
+            quoteNegotiateBtn.onclick = function(event) {
+                event.preventDefault();
+                openJobCollaborationModal(quote.request_id, quote.request_type || 'regular');
+                return false;
+            };
+            return;
+        }
+
+        quoteNegotiateBtn.classList.remove('btn-collaboration');
+        if (canNegotiate && canRespond) {
+            quoteNegotiateBtn.classList.remove('is-disabled');
+            quoteNegotiateBtn.innerHTML = '<i class="fas fa-message"></i> Negotiate';
+            quoteNegotiateBtn.href = '#';
+            quoteNegotiateBtn.onclick = function(event) {
+                event.preventDefault();
+                openQuoteNegotiationModal(quote);
+                return false;
+            };
         } else {
             quoteNegotiateBtn.classList.add('is-disabled');
+            quoteNegotiateBtn.innerHTML = '<i class="fas fa-message"></i> Negotiate';
             quoteNegotiateBtn.href = '#';
             quoteNegotiateBtn.onclick = function() { return false; };
+        }
+    }
+
+    function renderQuoteNegotiationSummary(quote) {
+        if (!quoteNegotiationSummary) return;
+
+        quoteNegotiationSummary.innerHTML = `
+            <div class="quote-negotiation-summary-item">
+                <span class="quote-negotiation-label">Job</span>
+                <span class="quote-negotiation-value">${escapeHtml(quote.job_title || 'N/A')}</span>
+            </div>
+            <div class="quote-negotiation-summary-item">
+                <span class="quote-negotiation-label">Listed Price</span>
+                <span class="quote-negotiation-value">${escapeHtml(formatMoney(quote.amount))}</span>
+            </div>
+            <div class="quote-negotiation-summary-item quote-negotiation-summary-full">
+                <span class="quote-negotiation-label">Job Description</span>
+                <p class="quote-negotiation-description">${escapeHtml(quote.description || 'No description available.')}</p>
+            </div>
+        `;
+    }
+
+    function renderNegotiationHistory(items) {
+        if (!quoteNegotiationHistory) return;
+        if (!Array.isArray(items) || !items.length) {
+            quoteNegotiationHistory.innerHTML = '<div class="quote-empty-state">No negotiations yet.</div>';
+            return;
+        }
+
+        quoteNegotiationHistory.innerHTML = items.map((item) => {
+            const senderRole = readableStatus(item.sender_role || 'participant');
+            const receiverRole = readableStatus(item.receiver_role || 'participant');
+            const status = readableStatus(item.status || 'pending');
+            const listed = formatMoney(item.listed_price || 0);
+            const proposed = formatMoney(item.proposed_price || 0);
+
+            return `
+                <article class="quote-negotiation-item">
+                    <div class="quote-negotiation-item-head">
+                        <strong>${escapeHtml(senderRole)} to ${escapeHtml(receiverRole)}</strong>
+                        <span>${escapeHtml(formatDateTime(item.created_at))}</span>
+                    </div>
+                    <div class="quote-negotiation-item-meta">
+                        <span>Listed: ${escapeHtml(listed)}</span>
+                        <span>Proposed: ${escapeHtml(proposed)}</span>
+                        <span class="quote-status-pill quote-status-${escapeHtml(String(item.status || 'pending').toLowerCase())}">${escapeHtml(status)}</span>
+                    </div>
+                    ${item.message ? `<p class="quote-negotiation-item-message">${escapeHtml(item.message)}</p>` : ''}
+                </article>
+            `;
+        }).join('');
+    }
+
+    async function loadNegotiationHistory(quote) {
+        const url = `${QUOTE_NEGOTIATION_API}?action=list&quote_id=${encodeURIComponent(String(quote.quote_id))}&source=${encodeURIComponent(String(quote.source || ''))}&request_type=${encodeURIComponent(String(quote.request_type || 'regular'))}&limit=20`;
+        const result = await fetchJson(url);
+        renderNegotiationHistory(Array.isArray(result.items) ? result.items : []);
+    }
+
+    async function openQuoteNegotiationModal(quote) {
+        if (!quoteNegotiationModal) return;
+
+        const quoteStatus = String(quote.status || '').toLowerCase();
+        const requestStatus = String(quote.request_status || quote.job_status || '').toLowerCase();
+        if (quoteStatus !== 'pending' || requestStatus === 'in_progress') {
+            alert('Negotiation is available only for pending quotes before acceptance.');
+            return;
+        }
+
+        currentNegotiationQuote = quote;
+        renderQuoteNegotiationSummary(quote);
+        if (negotiationProposedPrice) {
+            negotiationProposedPrice.value = Number.isFinite(Number(quote.amount)) ? String(Number(quote.amount)) : '';
+        }
+        if (negotiationMessage) {
+            negotiationMessage.value = '';
+        }
+
+        if (quoteDetailsModal) {
+            quoteDetailsModal.classList.remove('show');
+        }
+
+        if (quoteNegotiationHistory) {
+            quoteNegotiationHistory.innerHTML = '<div class="quote-empty-state">Loading negotiation history...</div>';
+        }
+
+        quoteNegotiationModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        try {
+            await loadNegotiationHistory(quote);
+        } catch (error) {
+            const message = error && error.message ? error.message : 'Failed to load negotiation history.';
+            if (quoteNegotiationHistory) {
+                quoteNegotiationHistory.innerHTML = `<div class="quote-empty-state">${escapeHtml(message)}</div>`;
+            }
+        }
+    }
+
+    function closeQuoteNegotiationModal() {
+        if (!quoteNegotiationModal) return;
+        quoteNegotiationModal.classList.remove('show');
+        document.body.style.overflow = '';
+        currentNegotiationQuote = null;
+    }
+
+    async function submitQuoteNegotiation(event) {
+        event.preventDefault();
+        if (!currentNegotiationQuote) return;
+
+        const proposedPrice = Number(negotiationProposedPrice ? negotiationProposedPrice.value : 0);
+        if (!Number.isFinite(proposedPrice) || proposedPrice <= 0) {
+            alert('Please enter a valid negotiation price.');
+            return;
+        }
+
+        const message = negotiationMessage ? negotiationMessage.value.trim() : '';
+
+        if (negotiationSendBtn) {
+            negotiationSendBtn.disabled = true;
+        }
+
+        try {
+            await fetchJson(`${QUOTE_NEGOTIATION_API}?action=create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    quote_id: Number(currentNegotiationQuote.quote_id),
+                    source: String(currentNegotiationQuote.source || ''),
+                    request_type: String(currentNegotiationQuote.request_type || 'regular'),
+                    proposed_price: proposedPrice,
+                    message: message || null,
+                })
+            });
+
+            showActionToast('Negotiation proposal sent successfully.');
+            closeQuoteNegotiationModal();
+        } catch (error) {
+            alert(error && error.message ? error.message : 'Failed to send negotiation proposal.');
+        } finally {
+            if (negotiationSendBtn) {
+                negotiationSendBtn.disabled = false;
+            }
         }
     }
 
@@ -1056,6 +1285,44 @@ foreach ($allJobRequests as $job) {
 
         quoteDetailsModal.classList.add('show');
         document.body.style.overflow = 'hidden';
+    }
+
+    async function openInProgressJobFullDetails(requestId, requestType) {
+        const normalizedRequestType = String(requestType || '').toLowerCase() === 'direct' ? 'direct' : 'regular';
+        const numericRequestId = Number(requestId);
+        if (!Number.isFinite(numericRequestId) || numericRequestId <= 0) return;
+
+        try {
+            const collaborationResult = await fetchJson(`${JOB_COLLAB_API}?action=get&request_id=${encodeURIComponent(String(numericRequestId))}&request_type=${encodeURIComponent(normalizedRequestType)}`);
+            const collaboration = collaborationResult.collaboration || null;
+            if (!collaboration) {
+                throw new Error('No collaboration found for this job.');
+            }
+
+            const quoteList = await loadQuotesForRequest(numericRequestId, normalizedRequestType);
+            const matchedQuote = quoteList.find((quote) =>
+                Number(quote.quote_id) === Number(collaboration.quote_id) &&
+                String(quote.source) === String(collaboration.quote_source)
+            );
+
+            if (!matchedQuote) {
+                throw new Error('Accepted quote details could not be loaded.');
+            }
+
+            const enrichedQuote = {
+                ...matchedQuote,
+                request_status: 'in_progress',
+                job_status: 'in_progress'
+            };
+            window.__lastRequestQuotes = [enrichedQuote];
+            openQuoteDetails({
+                source: enrichedQuote.source,
+                quote_id: enrichedQuote.quote_id,
+                request_type: enrichedQuote.request_type || normalizedRequestType,
+            });
+        } catch (error) {
+            alert(error && error.message ? error.message : 'Failed to open full details.');
+        }
     }
 
     function closeQuoteDetailsModal() {
@@ -1500,6 +1767,7 @@ foreach ($allJobRequests as $job) {
     window.closeJobQuotesModal = closeJobQuotesModal;
     window.openQuoteDetails = openQuoteDetails;
     window.closeQuoteDetailsModal = closeQuoteDetailsModal;
+    window.closeQuoteNegotiationModal = closeQuoteNegotiationModal;
     window.openJobCollaborationModal = openJobCollaborationModal;
     window.closeJobCollaborationModal = closeJobCollaborationModal;
     window.openDirectEditModal = openDirectEditModal;
@@ -1573,6 +1841,14 @@ foreach ($allJobRequests as $job) {
             });
         }
 
+        if (quoteNegotiationModal) {
+            quoteNegotiationModal.addEventListener('click', function(event) {
+                if (event.target === quoteNegotiationModal) {
+                    closeQuoteNegotiationModal();
+                }
+            });
+        }
+
         if (jobCollaborationModal) {
             jobCollaborationModal.addEventListener('click', function(event) {
                 if (event.target === jobCollaborationModal) {
@@ -1623,6 +1899,9 @@ foreach ($allJobRequests as $job) {
                 if (!currentlyOpenedQuote) return;
                 handleQuoteAction('rejected', currentlyOpenedQuote.source, currentlyOpenedQuote.quote_id, currentlyOpenedQuote.request_type);
             });
+        }
+        if (quoteNegotiationForm) {
+            quoteNegotiationForm.addEventListener('submit', submitQuoteNegotiation);
         }
 
         if (collabProposePriceBtn) {

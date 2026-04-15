@@ -2136,6 +2136,108 @@ body > * {
     max-width: 860px;
 }
 
+.quote-negotiation-modal-container {
+    max-width: 860px;
+}
+
+.quote-negotiation-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.quote-negotiation-summary-item {
+    border: 1px solid rgba(10, 186, 181, 0.2);
+    border-radius: var(--border-radius);
+    background: var(--bg-card);
+    padding: var(--spacing-md);
+}
+
+.quote-negotiation-summary-full {
+    grid-column: 1 / -1;
+}
+
+.quote-negotiation-label {
+    display: block;
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.quote-negotiation-value {
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.quote-negotiation-description {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+}
+
+.quote-negotiation-form {
+    border: 1px solid rgba(10, 186, 181, 0.18);
+    border-radius: var(--border-radius-lg);
+    background: rgba(255, 255, 255, 0.75);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.quote-negotiation-actions {
+    justify-content: flex-end;
+}
+
+.quote-negotiation-history-wrap h3 {
+    margin: 0 0 var(--spacing-sm);
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+}
+
+.quote-negotiation-history {
+    display: grid;
+    gap: var(--spacing-sm);
+}
+
+.quote-negotiation-item {
+    border: 1px solid rgba(10, 186, 181, 0.15);
+    border-radius: var(--border-radius);
+    background: var(--bg-card);
+    padding: 10px;
+}
+
+.quote-negotiation-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.quote-negotiation-item-head span {
+    color: var(--text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.quote-negotiation-item-meta {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.quote-negotiation-item-message {
+    margin: 8px 0 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
 .collaboration-modal-container {
     max-width: 980px;
 }
@@ -2593,5 +2695,9 @@ body > * {
     .quote-actions {
         justify-content: flex-start;
         flex-wrap: wrap;
+    }
+
+    .quote-negotiation-summary {
+        grid-template-columns: 1fr;
     }
 }
