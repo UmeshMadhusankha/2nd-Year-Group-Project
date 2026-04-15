@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/SystemNotificationService.php';
+require_once __DIR__ . '/JobCollaborationModel.php';
 
 class UserQuotesModel {
     private PDO $pdo;
@@ -527,6 +528,16 @@ class UserQuotesModel {
                     : "UPDATE jobrequest SET status = 'in_progress' WHERE request_id = :request_id AND user_id = :user_id";
                 $stmtJob = $this->pdo->prepare($updateJobSql);
                 $stmtJob->execute([':request_id' => $requestId, ':user_id' => $userId]);
+
+                // Initialize one job-scoped collaboration thread for this accepted quote.
+                $collaborationModel = new JobCollaborationModel($this->pdo);
+                $collaborationModel->createFromAcceptedQuote(
+                    $userId,
+                    $source,
+                    $quoteId,
+                    (int)$requestId,
+                    (string)$resolvedRequestType
+                );
 
                 $this->notifyQuoteDecision($source, $quoteId, 'accepted', (int)$requestId);
             } else {
