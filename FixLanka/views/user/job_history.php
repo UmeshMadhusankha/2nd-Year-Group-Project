@@ -158,6 +158,7 @@ foreach ($allJobRequests as $job) {
                         $isDirectRequest = ($job['request_type'] ?? 'regular') === 'direct';
                         $isPendingRegular = $statusValue === 'pending' && !$isDirectRequest;
                         $isPendingDirect = $statusValue === 'pending' && $isDirectRequest;
+                        $showCollaborationButton = in_array($statusValue, ['in_progress', 'completed'], true);
                         $statusLabel = ucfirst(str_replace('_', ' ', $statusClass));
                         $providerType = str_replace(',', ', ', (string)($job['service_provider_type'] ?? 'individual'));
                         $providerType = ucwords(str_replace('_', ' ', $providerType));
@@ -248,11 +249,19 @@ foreach ($allJobRequests as $job) {
                             </div>
 
                             <div class="job-actions">
-                                <button type="button"
-                                        class="action-btn btn-view-quotes"
-                                        onclick="openJobQuotesModal(<?php echo (int)$job['request_id']; ?>, '<?php echo $isDirectRequest ? 'direct' : 'regular'; ?>')">
-                                    <i class="fas fa-file-invoice-dollar"></i> View Received Quotations
-                                </button>
+                                <?php if (!$showCollaborationButton): ?>
+                                    <button type="button"
+                                            class="action-btn btn-view-quotes"
+                                            onclick="openJobQuotesModal(<?php echo (int)$job['request_id']; ?>, '<?php echo $isDirectRequest ? 'direct' : 'regular'; ?>')">
+                                        <i class="fas fa-file-invoice-dollar"></i> View Received Quotations
+                                    </button>
+                                <?php else: ?>
+                                    <button type="button"
+                                            class="action-btn btn-collaboration"
+                                            onclick="openJobCollaborationModal(<?php echo (int)$job['request_id']; ?>, '<?php echo $isDirectRequest ? 'direct' : 'regular'; ?>')">
+                                        <i class="fas fa-comments"></i> Job Collaboration
+                                    </button>
+                                <?php endif; ?>
 
                                 <?php if ($isPendingRegular): ?>
                                     <!-- Edit and Delete buttons only for pending jobs -->
@@ -273,6 +282,10 @@ foreach ($allJobRequests as $job) {
                                     <button type="button" class="action-btn btn-delete" onclick="deleteDirectRequest(<?php echo (int)$job['request_id']; ?>)">
                                         <i class="fas fa-trash-alt"></i> Delete
                                     </button>
+                                <?php elseif ($showCollaborationButton): ?>
+                                    <span class="read-only-badge direct-read-only-badge">
+                                        <i class="fas fa-route"></i> Workflow active
+                                    </span>
                                 <?php elseif ($isDirectRequest): ?>
                                     <span class="read-only-badge direct-read-only-badge">
                                         <i class="fas fa-paper-plane"></i> Direct job request submitted
@@ -477,7 +490,7 @@ foreach ($allJobRequests as $job) {
                 <button type="button" class="action-btn btn-secondary" onclick="closeQuoteDetailsModal()">
                     <i class="fas fa-times"></i> Close
                 </button>
-                <button type="button" class="action-btn btn-outline-sm" id="quoteRejectBtn">
+                <button type="button" class="action-btn btn-reject-sm" id="quoteRejectBtn">
                     <i class="fas fa-xmark"></i> Reject
                 </button>
                 <a href="#" class="action-btn btn-negotiate-sm" id="quoteNegotiateBtn">
@@ -486,6 +499,107 @@ foreach ($allJobRequests as $job) {
                 <button type="button" class="action-btn btn-success-sm" id="quoteAcceptBtn">
                     <i class="fas fa-check"></i> Accept
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="jobCollaborationModal" class="modal-overlay">
+        <div class="modal-container collaboration-modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">Job Collaboration</h2>
+                <button class="modal-close" type="button" onclick="closeJobCollaborationModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <div class="collaboration-summary">
+                    <div class="collaboration-summary-item">
+                        <span class="collaboration-label">Phase</span>
+                        <span class="collaboration-value" id="collabCurrentPhase">-</span>
+                    </div>
+                    <div class="collaboration-summary-item">
+                        <span class="collaboration-label">Agreed Price</span>
+                        <span class="collaboration-value" id="collabAgreedPrice">-</span>
+                    </div>
+                    <div class="collaboration-summary-item">
+                        <span class="collaboration-label">Pending Proposal</span>
+                        <span class="collaboration-value" id="collabPendingPrice">None</span>
+                    </div>
+                </div>
+
+                <div class="collaboration-checks">
+                    <div class="collaboration-check-item" id="collabUserCompleted">User completion: pending</div>
+                    <div class="collaboration-check-item" id="collabProviderCompleted">Provider completion: pending</div>
+                    <div class="collaboration-check-item" id="collabUserPaid">User payment: pending</div>
+                    <div class="collaboration-check-item" id="collabProviderPaid">Provider payment: pending</div>
+                </div>
+
+                <div class="collaboration-actions-grid">
+                    <section class="collaboration-panel">
+                        <h3>Negotiate Price</h3>
+                        <input type="number" min="1" step="0.01" id="collabProposedPriceInput" placeholder="Proposed amount (LKR)">
+                        <textarea id="collabPriceNoteInput" rows="2" placeholder="Reason (optional)"></textarea>
+                        <button type="button" class="action-btn btn-collaboration" id="collabProposePriceBtn">
+                            <i class="fas fa-scale-balanced"></i> Propose Price
+                        </button>
+                    </section>
+
+                    <section class="collaboration-panel" id="collabPendingResponsePanel">
+                        <h3>Pending Proposal Response</h3>
+                        <p class="collaboration-hint" id="collabPendingProposalText">No pending proposal.</p>
+                        <div class="collaboration-inline-actions">
+                            <button type="button" class="action-btn btn-success-sm" id="collabAcceptPriceBtn">
+                                <i class="fas fa-check"></i> Accept
+                            </button>
+                            <button type="button" class="action-btn btn-reject-sm" id="collabRejectPriceBtn">
+                                <i class="fas fa-xmark"></i> Reject
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="collaboration-panel">
+                        <h3>Progress Confirmation</h3>
+                        <div class="collaboration-inline-actions">
+                            <button type="button" class="action-btn btn-primary" id="collabMarkCompletedBtn">
+                                <i class="fas fa-flag-checkered"></i> Mark Job Completed
+                            </button>
+                            <button type="button" class="action-btn btn-primary" id="collabConfirmPaymentBtn">
+                                <i class="fas fa-wallet"></i> Confirm Payment Done
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="collaboration-panel">
+                        <h3>Add Note</h3>
+                        <textarea id="collabNoteInput" rows="2" placeholder="Short update/note"></textarea>
+                        <button type="button" class="action-btn btn-secondary" id="collabSendNoteBtn">
+                            <i class="fas fa-paper-plane"></i> Send Note
+                        </button>
+                    </section>
+
+                    <section class="collaboration-panel" id="collabRatingPanel">
+                        <h3>Rate This Job</h3>
+                        <select id="collabRatingValue">
+                            <option value="">Select rating</option>
+                            <option value="5">5 - Excellent</option>
+                            <option value="4">4 - Good</option>
+                            <option value="3">3 - Average</option>
+                            <option value="2">2 - Poor</option>
+                            <option value="1">1 - Bad</option>
+                        </select>
+                        <textarea id="collabRatingComment" rows="2" placeholder="Optional review comment"></textarea>
+                        <button type="button" class="action-btn btn-success-sm" id="collabSubmitRatingBtn">
+                            <i class="fas fa-star"></i> Submit Rating
+                        </button>
+                    </section>
+                </div>
+
+                <div class="collaboration-events">
+                    <h3>Job Timeline</h3>
+                    <div class="collaboration-events-list" id="collabEventsList">
+                        <div class="quote-empty-state">Loading timeline...</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -500,6 +614,7 @@ foreach ($allJobRequests as $job) {
 
     const USER_QUOTES_API = '/2nd-Year-Group-Project/FixLanka/api/user-quotes.php';
     const DIRECT_JOB_API = '/2nd-Year-Group-Project/FixLanka/api/user/direct-job-requests.php';
+    const JOB_COLLAB_API = '/2nd-Year-Group-Project/FixLanka/api/job-collaboration.php';
 
     const jobsPostedBtn = document.getElementById('jobsPostedBtn');
     const quotesReceivedBtn = document.getElementById('quotesReceivedBtn');
@@ -517,6 +632,29 @@ foreach ($allJobRequests as $job) {
     const quoteAcceptBtn = document.getElementById('quoteAcceptBtn');
     const quoteRejectBtn = document.getElementById('quoteRejectBtn');
     const quoteNegotiateBtn = document.getElementById('quoteNegotiateBtn');
+    const jobCollaborationModal = document.getElementById('jobCollaborationModal');
+    const collabCurrentPhase = document.getElementById('collabCurrentPhase');
+    const collabAgreedPrice = document.getElementById('collabAgreedPrice');
+    const collabPendingPrice = document.getElementById('collabPendingPrice');
+    const collabUserCompleted = document.getElementById('collabUserCompleted');
+    const collabProviderCompleted = document.getElementById('collabProviderCompleted');
+    const collabUserPaid = document.getElementById('collabUserPaid');
+    const collabProviderPaid = document.getElementById('collabProviderPaid');
+    const collabEventsList = document.getElementById('collabEventsList');
+    const collabProposedPriceInput = document.getElementById('collabProposedPriceInput');
+    const collabPriceNoteInput = document.getElementById('collabPriceNoteInput');
+    const collabProposePriceBtn = document.getElementById('collabProposePriceBtn');
+    const collabPendingProposalText = document.getElementById('collabPendingProposalText');
+    const collabAcceptPriceBtn = document.getElementById('collabAcceptPriceBtn');
+    const collabRejectPriceBtn = document.getElementById('collabRejectPriceBtn');
+    const collabMarkCompletedBtn = document.getElementById('collabMarkCompletedBtn');
+    const collabConfirmPaymentBtn = document.getElementById('collabConfirmPaymentBtn');
+    const collabNoteInput = document.getElementById('collabNoteInput');
+    const collabSendNoteBtn = document.getElementById('collabSendNoteBtn');
+    const collabRatingPanel = document.getElementById('collabRatingPanel');
+    const collabRatingValue = document.getElementById('collabRatingValue');
+    const collabRatingComment = document.getElementById('collabRatingComment');
+    const collabSubmitRatingBtn = document.getElementById('collabSubmitRatingBtn');
     const JOB_HISTORY_VIEW_KEY = 'jobHistory.activeView';
 
     const directJobRequestModal = document.getElementById('directJobRequestModal');
@@ -541,6 +679,8 @@ foreach ($allJobRequests as $job) {
     let currentQuoteStatusFilter = 'pending';
     let currentRequestQuotesContext = { requestId: null, requestType: null };
     let currentlyOpenedQuote = null;
+    let currentCollaboration = null;
+    let currentCollabContext = { requestId: null, requestType: null };
     let directEditRequestId = null;
 
     function escapeHtml(value) {
@@ -626,6 +766,106 @@ foreach ($allJobRequests as $job) {
         } else {
             quotesReceivedPill.style.display = 'none';
         }
+    }
+
+    function formatStatusLabel(status) {
+        return readableStatus(status).replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function showActionToast(message) {
+        let toast = document.getElementById('jobHistoryActionToast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'jobHistoryActionToast';
+            toast.className = 'job-history-toast';
+            document.body.appendChild(toast);
+        }
+
+        toast.textContent = String(message || 'Action completed successfully.');
+        toast.classList.add('show');
+
+        window.clearTimeout(window.__jobHistoryToastTimer);
+        window.__jobHistoryToastTimer = window.setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2200);
+    }
+
+    function refreshJobTabCounts() {
+        const cards = Array.from(document.querySelectorAll('.job-card'));
+        const counts = {
+            all: cards.length,
+            pending: 0,
+            in_progress: 0,
+            completed: 0,
+            cancelled: 0,
+        };
+
+        cards.forEach((card) => {
+            const status = String(card.dataset.status || '').toLowerCase();
+            if (Object.prototype.hasOwnProperty.call(counts, status)) {
+                counts[status] += 1;
+            }
+        });
+
+        document.querySelectorAll('.filter-tab').forEach((tab) => {
+            const status = String(tab.dataset.status || 'all');
+            const countNode = tab.querySelector('.tab-count');
+            if (!countNode || !Object.prototype.hasOwnProperty.call(counts, status)) return;
+            countNode.textContent = String(counts[status]);
+        });
+    }
+
+    function applyActiveJobFilter() {
+        const activeTab = document.querySelector('.filter-tab.active');
+        const activeStatus = activeTab ? String(activeTab.dataset.status || 'all') : 'all';
+
+        document.querySelectorAll('.job-card').forEach((card) => {
+            card.style.display = activeStatus === 'all' || card.dataset.status === activeStatus ? 'block' : 'none';
+        });
+    }
+
+    function collaborationActionButtonHtml(requestId, requestType) {
+        const safeType = String(requestType || 'regular').toLowerCase() === 'direct' ? 'direct' : 'regular';
+        return `
+            <button type="button" class="action-btn btn-collaboration" onclick="openJobCollaborationModal(${Number(requestId)}, '${safeType}')">
+                <i class="fas fa-comments"></i> Job Collaboration
+            </button>
+        `;
+    }
+
+    function updateJobCardStatus(requestId, requestType, nextStatus) {
+        const numericRequestId = Number(requestId);
+        const normalizedRequestType = String(requestType || 'regular').toLowerCase() === 'direct' ? 'direct' : 'regular';
+        const normalizedStatus = String(nextStatus || '').toLowerCase().trim();
+        if (!Number.isFinite(numericRequestId) || numericRequestId <= 0 || normalizedStatus === '') return;
+
+        const card = document.querySelector(`.job-card[data-request-id="${numericRequestId}"][data-request-type="${normalizedRequestType}"]`);
+        if (!card) return;
+
+        card.dataset.status = normalizedStatus;
+
+        const statusBadge = card.querySelector('.badge-status');
+        if (statusBadge) {
+            Array.from(statusBadge.classList).forEach((className) => {
+                if (className.startsWith('status-')) {
+                    statusBadge.classList.remove(className);
+                }
+            });
+            statusBadge.classList.add(`status-${normalizedStatus}`);
+            statusBadge.textContent = formatStatusLabel(normalizedStatus);
+        }
+
+        if (normalizedStatus === 'in_progress' || normalizedStatus === 'completed') {
+            const actionsContainer = card.querySelector('.job-actions');
+            if (actionsContainer) {
+                const collaborationHtml = collaborationActionButtonHtml(numericRequestId, normalizedRequestType);
+                const workflowBadgeHtml = '<span class="read-only-badge direct-read-only-badge"><i class="fas fa-route"></i> Workflow active</span>';
+                actionsContainer.innerHTML = `${collaborationHtml}${workflowBadgeHtml}`;
+            }
+        }
+
+        refreshJobTabCounts();
+        applyActiveJobFilter();
     }
 
     function quoteDetailsHtml(quote) {
@@ -826,10 +1066,9 @@ foreach ($allJobRequests as $job) {
     }
 
     async function handleQuoteAction(decision, source, quoteId, requestType) {
-        if (decision === 'rejected') {
-            if (!confirm('Are you sure you want to reject this quote?')) {
-                return;
-            }
+        const actionLabel = decision === 'accepted' ? 'accept' : 'reject';
+        if (!confirm(`Are you sure you want to ${actionLabel} this quotation?`)) {
+            return;
         }
 
         await fetchJson(`${USER_QUOTES_API}?action=respond`, {
@@ -838,11 +1077,191 @@ foreach ($allJobRequests as $job) {
             body: JSON.stringify({ source, quote_id: Number(quoteId), decision, request_type: requestType || null })
         });
 
+        if (decision === 'accepted' && currentlyOpenedQuote) {
+            updateJobCardStatus(currentlyOpenedQuote.request_id, currentlyOpenedQuote.request_type, 'in_progress');
+        }
+
+        showActionToast(decision === 'accepted' ? 'Quotation accepted successfully.' : 'Quotation rejected successfully.');
+
         if (currentRequestQuotesContext.requestId) {
             await openJobQuotesModal(currentRequestQuotesContext.requestId, currentRequestQuotesContext.requestType);
         }
         await loadQuotesReceived();
         closeQuoteDetailsModal();
+    }
+
+    function readablePhase(phase) {
+        const normalized = String(phase || '').toLowerCase();
+        if (!normalized) return 'Unknown';
+        return normalized.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+
+    function setCollabCheckState(node, label, value) {
+        if (!node) return;
+        const done = !!value;
+        node.classList.toggle('done', done);
+        node.textContent = `${label}: ${done ? 'done' : 'pending'}`;
+    }
+
+    function eventTitle(eventType) {
+        const map = {
+            note: 'Note',
+            price_proposed: 'Price Proposed',
+            price_accepted: 'Price Accepted',
+            price_rejected: 'Price Rejected',
+            completed_marked: 'Completion Marked',
+            payment_confirmed: 'Payment Confirmed',
+            rating_submitted: 'Rating Submitted',
+            phase_changed: 'Phase Updated',
+            system: 'System',
+        };
+        return map[String(eventType || '').toLowerCase()] || readableStatus(eventType || 'event');
+    }
+
+    function renderCollaborationEvents(events) {
+        if (!collabEventsList) return;
+        if (!Array.isArray(events) || !events.length) {
+            collabEventsList.innerHTML = '<div class="quote-empty-state">No timeline entries yet.</div>';
+            return;
+        }
+
+        collabEventsList.innerHTML = events.map((event) => {
+            const amount = Number(event.amount);
+            const amountHtml = Number.isFinite(amount) && amount > 0
+                ? `<span class="collab-event-amount">${escapeHtml(formatMoney(amount))}</span>`
+                : '';
+            return `
+                <article class="collab-event-item">
+                    <div class="collab-event-head">
+                        <strong>${escapeHtml(eventTitle(event.event_type))}</strong>
+                        <span>${escapeHtml(formatDateTime(event.created_at))}</span>
+                    </div>
+                    <div class="collab-event-meta">By ${escapeHtml(readableStatus(event.actor_role || 'system'))}</div>
+                    ${event.message ? `<p class="collab-event-message">${escapeHtml(event.message)}</p>` : ''}
+                    ${amountHtml}
+                </article>
+            `;
+        }).join('');
+    }
+
+    function renderCollaboration(collaboration) {
+        currentCollaboration = collaboration || null;
+        if (!currentCollaboration) return;
+
+        if (collabCurrentPhase) {
+            collabCurrentPhase.textContent = readablePhase(currentCollaboration.current_phase);
+        }
+        if (collabAgreedPrice) {
+            collabAgreedPrice.textContent = formatMoney(currentCollaboration.agreed_price || currentCollaboration.base_price || 0);
+        }
+        if (collabPendingPrice) {
+            if (currentCollaboration.pending_price !== null && currentCollaboration.pending_price !== undefined) {
+                collabPendingPrice.textContent = formatMoney(currentCollaboration.pending_price);
+            } else {
+                collabPendingPrice.textContent = 'None';
+            }
+        }
+
+        setCollabCheckState(collabUserCompleted, 'User completion', currentCollaboration.user_completed_at);
+        setCollabCheckState(collabProviderCompleted, 'Provider completion', currentCollaboration.provider_completed_at);
+        setCollabCheckState(collabUserPaid, 'User payment', currentCollaboration.user_payment_confirmed_at);
+        setCollabCheckState(collabProviderPaid, 'Provider payment', currentCollaboration.provider_payment_confirmed_at);
+
+        if (collabPendingProposalText) {
+            if (currentCollaboration.pending_price !== null && currentCollaboration.pending_price !== undefined) {
+                const by = readableStatus(currentCollaboration.pending_price_actor_role || 'participant');
+                collabPendingProposalText.textContent = `${by} proposed ${formatMoney(currentCollaboration.pending_price)}.`;
+            } else {
+                collabPendingProposalText.textContent = 'No pending proposal.';
+            }
+        }
+
+        const pendingByCurrentUser = String(currentCollaboration.pending_price_actor_role || '').toLowerCase() === 'user';
+        const hasPendingPrice = currentCollaboration.pending_price !== null && currentCollaboration.pending_price !== undefined;
+        if (collabAcceptPriceBtn) collabAcceptPriceBtn.disabled = !hasPendingPrice || pendingByCurrentUser;
+        if (collabRejectPriceBtn) collabRejectPriceBtn.disabled = !hasPendingPrice || pendingByCurrentUser;
+
+        const userCompleted = !!currentCollaboration.user_completed_at;
+        if (collabMarkCompletedBtn) {
+            collabMarkCompletedBtn.disabled = userCompleted || String(currentCollaboration.current_phase || '').toLowerCase() === 'completed';
+        }
+
+        const userPaid = !!currentCollaboration.user_payment_confirmed_at;
+        const providerCompleted = !!currentCollaboration.provider_completed_at;
+        if (collabConfirmPaymentBtn) {
+            collabConfirmPaymentBtn.disabled = userPaid || !userCompleted || !providerCompleted;
+        }
+
+        const canRate = String(currentCollaboration.current_phase || '').toLowerCase() === 'review' && !currentCollaboration.user_rated_at;
+        if (collabRatingPanel) {
+            collabRatingPanel.style.display = canRate ? 'block' : 'none';
+        }
+
+        renderCollaborationEvents(currentCollaboration.events || []);
+    }
+
+    async function refreshCollaboration() {
+        if (!currentCollabContext.requestId) return;
+        const url = `${JOB_COLLAB_API}?action=get&request_id=${encodeURIComponent(String(currentCollabContext.requestId))}&request_type=${encodeURIComponent(String(currentCollabContext.requestType || 'regular'))}`;
+        const result = await fetchJson(url);
+        renderCollaboration(result.collaboration || null);
+    }
+
+    async function callCollaborationAction(action, payload, successMessage) {
+        if (!currentCollaboration) return;
+
+        const result = await fetchJson(`${JOB_COLLAB_API}?action=${encodeURIComponent(action)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                collaboration_id: Number(currentCollaboration.collaboration_id),
+                ...(payload || {})
+            })
+        });
+
+        renderCollaboration(result.collaboration || null);
+        showActionToast(successMessage || 'Updated successfully.');
+    }
+
+    async function safelyRunCollaborationAction(task) {
+        try {
+            await task();
+        } catch (error) {
+            alert(error && error.message ? error.message : 'Failed to process collaboration action.');
+        }
+    }
+
+    async function openJobCollaborationModal(requestId, requestType) {
+        if (!jobCollaborationModal) return;
+
+        currentCollabContext = {
+            requestId: Number(requestId),
+            requestType: String(requestType || 'regular').toLowerCase() === 'direct' ? 'direct' : 'regular'
+        };
+
+        if (collabEventsList) {
+            collabEventsList.innerHTML = '<div class="quote-empty-state">Loading timeline...</div>';
+        }
+
+        jobCollaborationModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        try {
+            await refreshCollaboration();
+        } catch (error) {
+            const message = error && error.message ? error.message : 'Failed to load collaboration';
+            if (collabEventsList) {
+                collabEventsList.innerHTML = `<div class="quote-empty-state">${escapeHtml(message)}</div>`;
+            }
+        }
+    }
+
+    function closeJobCollaborationModal() {
+        if (!jobCollaborationModal) return;
+        jobCollaborationModal.classList.remove('show');
+        document.body.style.overflow = '';
+        currentCollaboration = null;
+        currentCollabContext = { requestId: null, requestType: null };
     }
 
     function switchMainView(view) {
@@ -1081,6 +1500,8 @@ foreach ($allJobRequests as $job) {
     window.closeJobQuotesModal = closeJobQuotesModal;
     window.openQuoteDetails = openQuoteDetails;
     window.closeQuoteDetailsModal = closeQuoteDetailsModal;
+    window.openJobCollaborationModal = openJobCollaborationModal;
+    window.closeJobCollaborationModal = closeJobCollaborationModal;
     window.openDirectEditModal = openDirectEditModal;
     window.deleteDirectRequest = deleteDirectRequest;
 
@@ -1152,6 +1573,14 @@ foreach ($allJobRequests as $job) {
             });
         }
 
+        if (jobCollaborationModal) {
+            jobCollaborationModal.addEventListener('click', function(event) {
+                if (event.target === jobCollaborationModal) {
+                    closeJobCollaborationModal();
+                }
+            });
+        }
+
         document.getElementById('editModal').addEventListener('click', function(event) {
             if (event.target === this) {
                 closeEditModal();
@@ -1193,6 +1622,99 @@ foreach ($allJobRequests as $job) {
             quoteRejectBtn.addEventListener('click', function() {
                 if (!currentlyOpenedQuote) return;
                 handleQuoteAction('rejected', currentlyOpenedQuote.source, currentlyOpenedQuote.quote_id, currentlyOpenedQuote.request_type);
+            });
+        }
+
+        if (collabProposePriceBtn) {
+            collabProposePriceBtn.addEventListener('click', async function() {
+                if (!currentCollaboration) return;
+                const proposed = Number(collabProposedPriceInput ? collabProposedPriceInput.value : 0);
+                if (!Number.isFinite(proposed) || proposed <= 0) {
+                    alert('Enter a valid proposed price.');
+                    return;
+                }
+                const note = collabPriceNoteInput ? collabPriceNoteInput.value.trim() : '';
+                await safelyRunCollaborationAction(async function() {
+                    await callCollaborationAction('propose_price', {
+                        proposed_price: proposed,
+                        message: note || null,
+                    }, 'Price proposal sent.');
+                });
+            });
+        }
+
+        if (collabAcceptPriceBtn) {
+            collabAcceptPriceBtn.addEventListener('click', async function() {
+                if (!currentCollaboration) return;
+                await safelyRunCollaborationAction(async function() {
+                    await callCollaborationAction('respond_price', {
+                        decision: 'accept',
+                    }, 'Price proposal accepted.');
+                });
+            });
+        }
+
+        if (collabRejectPriceBtn) {
+            collabRejectPriceBtn.addEventListener('click', async function() {
+                if (!currentCollaboration) return;
+                await safelyRunCollaborationAction(async function() {
+                    await callCollaborationAction('respond_price', {
+                        decision: 'reject',
+                    }, 'Price proposal rejected.');
+                });
+            });
+        }
+
+        if (collabMarkCompletedBtn) {
+            collabMarkCompletedBtn.addEventListener('click', async function() {
+                if (!currentCollaboration) return;
+                await safelyRunCollaborationAction(async function() {
+                    await callCollaborationAction('mark_completed', {}, 'Marked as completed from your side.');
+                });
+            });
+        }
+
+        if (collabConfirmPaymentBtn) {
+            collabConfirmPaymentBtn.addEventListener('click', async function() {
+                if (!currentCollaboration) return;
+                await safelyRunCollaborationAction(async function() {
+                    await callCollaborationAction('confirm_payment', {}, 'Payment marked as done from your side.');
+                });
+            });
+        }
+
+        if (collabSendNoteBtn) {
+            collabSendNoteBtn.addEventListener('click', async function() {
+                if (!currentCollaboration) return;
+                const message = collabNoteInput ? collabNoteInput.value.trim() : '';
+                if (!message) {
+                    alert('Please type a note first.');
+                    return;
+                }
+                await safelyRunCollaborationAction(async function() {
+                    await callCollaborationAction('post_note', { message }, 'Note added to timeline.');
+                    if (collabNoteInput) collabNoteInput.value = '';
+                });
+            });
+        }
+
+        if (collabSubmitRatingBtn) {
+            collabSubmitRatingBtn.addEventListener('click', async function() {
+                if (!currentCollaboration) return;
+                const rating = Number(collabRatingValue ? collabRatingValue.value : 0);
+                if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+                    alert('Please select a rating between 1 and 5.');
+                    return;
+                }
+                const comment = collabRatingComment ? collabRatingComment.value.trim() : '';
+                await safelyRunCollaborationAction(async function() {
+                    await callCollaborationAction('submit_rating', {
+                        rating,
+                        comment: comment || null,
+                    }, 'Rating submitted successfully.');
+                    if (collabRatingValue) collabRatingValue.value = '';
+                    if (collabRatingComment) collabRatingComment.value = '';
+                });
             });
         }
 
