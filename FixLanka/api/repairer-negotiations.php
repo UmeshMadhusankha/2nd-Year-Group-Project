@@ -1,19 +1,22 @@
 <?php
 
-require_once __DIR__ . '/../controllers/QuoteNegotiationController.php';
+require_once __DIR__ . '/../controllers/RepairerNegotiationController.php';
 
-$controller = new QuoteNegotiationController();
+$controller = new RepairerNegotiationController();
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 switch ($action) {
-    case 'create':
-        $controller->create();
-        break;
     case 'list':
-        $controller->list();
+        $controller->listReceived();
         break;
-    case 'respond':
-        $controller->respond();
+    case 'accept':
+        $controller->accept();
+        break;
+    case 'counter':
+        $controller->counter();
+        break;
+    case 'reject':
+        $controller->reject();
         break;
     default:
         header('Content-Type: application/json');

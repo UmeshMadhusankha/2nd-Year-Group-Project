@@ -126,4 +126,50 @@ class QuoteNegotiationController
             exit;
         }
     }
+
+    public function respond(): void
+    {
+        $this->jsonHeader();
+
+        try {
+            $userId = $this->requireUser();
+            if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+                exit;
+            }
+
+            $body = $this->parseJsonBody();
+            $negotiationId = (int) ($body['negotiation_id'] ?? 0);
+            $decision = strtolower(trim((string) ($body['decision'] ?? '')));
+
+            if ($negotiationId <= 0) {
+                throw new InvalidArgumentException('Invalid negotiation id');
+            }
+            if (!in_array($decision, ['accept', 'reject'], true)) {
+                throw new InvalidArgumentException('Invalid decision');
+            }
+
+            $ok = $this->model->respondToReceivedByUser($userId, $negotiationId, $decision);
+            if (!$ok) {
+                throw new RuntimeException('Negotiation could not be updated');
+            }
+
+            echo json_encode([
+                'success' => true,
+                'message' => $decision === 'accept'
+                    ? 'Negotiation accepted successfully'
+                    : 'Negotiation rejected successfully',
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            error_log('QuoteNegotiationController::respond failed: ' . $e->getMessage());
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+            exit;
+        }
+    }
 }

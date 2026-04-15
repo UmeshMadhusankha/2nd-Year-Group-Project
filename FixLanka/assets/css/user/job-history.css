@@ -2140,6 +2140,10 @@ body > * {
     max-width: 860px;
 }
 
+.latest-quote-negotiation-modal-container {
+    max-width: 860px;
+}
+
 .quote-negotiation-summary {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2550,6 +2554,7 @@ body > * {
 
 .quote-actions-inline {
     justify-content: flex-start;
+    flex-wrap: wrap;
 }
 
 .quote-item-compact .quote-meta-grid {

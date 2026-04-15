@@ -23,6 +23,106 @@ class QuoteNegotiationModel
         return $normalized;
     }
 
+    private function resolveWorkflowActiveStatus(string $requestType): string
+    {
+        $table = $this->normalizeRequestType($requestType) === 'direct' ? 'directjobrequest' : 'jobrequest';
+        $stmt = $this->pdo->prepare(
+            "SELECT COLUMN_TYPE
+             FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = :table_name
+               AND COLUMN_NAME = 'status'
+             LIMIT 1"
+        );
+        $stmt->execute([':table_name' => $table]);
+        $columnType = strtolower((string) ($stmt->fetchColumn() ?: ''));
+
+        if ($columnType !== '' && strpos($columnType, 'active') !== false) {
+            return 'active';
+        }
+
+        return 'in_progress';
+    }
+
+    private function applyAcceptedQuoteEffects(array $row): void
+    {
+        $quoteSource = $this->normalizeSource((string) ($row['quote_source'] ?? ''));
+        $quoteId = (int) ($row['quote_id'] ?? 0);
+        $requestId = (int) ($row['request_id'] ?? 0);
+        $requestType = $this->normalizeRequestType((string) ($row['request_type'] ?? 'regular'));
+        $newPrice = (float) ($row['proposed_price'] ?? 0);
+
+        if ($quoteId <= 0 || $requestId <= 0 || $newPrice <= 0) {
+            throw new RuntimeException('Invalid negotiation data for acceptance');
+        }
+
+        if ($quoteSource === 'repairer') {
+            $quoteStmt = $this->pdo->prepare(
+                "UPDATE repairerquote
+                 SET quoteAmount = :quote_amount,
+                     status = 'accepted'
+                 WHERE quote_id = :quote_id"
+            );
+            $quoteStmt->execute([
+                ':quote_amount' => $newPrice,
+                ':quote_id' => $quoteId,
+            ]);
+        } else {
+            $quoteStmt = $this->pdo->prepare(
+                "UPDATE companyquotation
+                 SET total_amount = :total_amount,
+                     status = 'accepted'
+                 WHERE quotation_id = :quote_id"
+            );
+            $quoteStmt->execute([
+                ':total_amount' => $newPrice,
+                ':quote_id' => $quoteId,
+            ]);
+        }
+
+        $nextStatus = $this->resolveWorkflowActiveStatus($requestType);
+        if ($requestType === 'direct') {
+            $requestStmt = $this->pdo->prepare(
+                'UPDATE directjobrequest
+                 SET status = :status
+                 WHERE request_id = :request_id'
+            );
+        } else {
+            $requestStmt = $this->pdo->prepare(
+                'UPDATE jobrequest
+                 SET status = :status
+                 WHERE request_id = :request_id'
+            );
+        }
+        $requestStmt->execute([
+            ':status' => $nextStatus,
+            ':request_id' => $requestId,
+        ]);
+    }
+
+    private function hasOpenUserNegotiation(int $userId, int $quoteId, string $source, string $requestType): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT COUNT(*)
+             FROM quote_negotiation
+             WHERE quote_id = :quote_id
+               AND quote_source = :quote_source
+               AND request_type = :request_type
+               AND sender_id = :sender_id
+               AND sender_role = :sender_role
+               AND status IN (\'pending\', \'countered\')'
+        );
+        $stmt->execute([
+            ':quote_id' => $quoteId,
+            ':quote_source' => $this->normalizeSource($source),
+            ':request_type' => $this->normalizeRequestType($requestType),
+            ':sender_id' => $userId,
+            ':sender_role' => 'user',
+        ]);
+
+        return ((int) $stmt->fetchColumn()) > 0;
+    }
+
     private function quoteContextForUser(int $userId, int $quoteId, string $source, string $requestType): ?array
     {
         $normalizedSource = $this->normalizeSource($source);
@@ -101,6 +201,10 @@ class QuoteNegotiationModel
         $quoteStatus = strtolower((string) ($context['quote_status'] ?? ''));
         if ($quoteStatus !== 'pending') {
             throw new RuntimeException('Negotiation can be sent only while quote is pending');
+        }
+
+        if ($this->hasOpenUserNegotiation($userId, $quoteId, $source, $requestType)) {
+            throw new RuntimeException('You already have a pending negotiation for this quote');
         }
 
         $providerId = (int) ($context['provider_id'] ?? 0);
@@ -182,5 +286,63 @@ class QuoteNegotiationModel
         ]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public function respondToReceivedByUser(int $userId, int $negotiationId, string $decision): bool
+    {
+        $normalizedDecision = strtolower(trim($decision));
+        if (!in_array($normalizedDecision, ['accept', 'reject'], true)) {
+            throw new InvalidArgumentException('Invalid decision');
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $selectStmt = $this->pdo->prepare(
+                "SELECT *
+                 FROM quote_negotiation
+                 WHERE negotiation_id = :negotiation_id
+                   AND receiver_role = 'user'
+                   AND receiver_id = :user_id
+                   AND status IN ('pending', 'countered')
+                 LIMIT 1
+                 FOR UPDATE"
+            );
+            $selectStmt->execute([
+                ':negotiation_id' => $negotiationId,
+                ':user_id' => $userId,
+            ]);
+
+            $row = $selectStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            if (!$row) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            if ($normalizedDecision === 'accept') {
+                $this->applyAcceptedQuoteEffects($row);
+                $targetStatus = 'accepted';
+            } else {
+                $targetStatus = 'rejected';
+            }
+
+            $updateStmt = $this->pdo->prepare(
+                'UPDATE quote_negotiation
+                 SET status = :status,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE negotiation_id = :negotiation_id'
+            );
+            $updateStmt->execute([
+                ':status' => $targetStatus,
+                ':negotiation_id' => $negotiationId,
+            ]);
+
+            $this->pdo->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 }

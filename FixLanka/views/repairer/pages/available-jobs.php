@@ -220,6 +220,11 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                 My Quotations
                                 <span class="tab-badge" id="quotes-count-badge">0</span>
                             </button>
+                            <button class="tab-button" data-tab="received-negotiations">
+                                <i class="fas fa-comments-dollar"></i>
+                                Negotiations Received
+                                <span class="tab-badge" id="received-negotiations-badge">0</span>
+                            </button>
                         </div>
                     </section>
 
@@ -282,6 +287,44 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                         </section>
                     </div>
                     <!-- End Submitted Quotations Tab -->
+
+                    <!-- Tab Content: Negotiations Received -->
+                    <div class="tab-content" id="received-negotiations-tab">
+                        <section class="submitted-quotes-section">
+                            <div class="section-header">
+                                <h2 class="section-title">
+                                    <i class="fas fa-comments-dollar"></i>
+                                    Negotiations Received
+                                </h2>
+                                <span class="section-subtitle" id="received-negotiations-count">Loading...</span>
+                            </div>
+
+                            <div class="quotes-container" id="received-negotiations-container">
+                                <div class="loading-state">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <p>Loading received negotiations...</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="submitted-quotes-section received-negotiations-history-section">
+                            <div class="section-header">
+                                <h2 class="section-title">
+                                    <i class="fas fa-clock-rotate-left"></i>
+                                    Negotiation History
+                                </h2>
+                                <span class="section-subtitle" id="accepted-negotiations-count">Loading...</span>
+                            </div>
+
+                            <div class="quotes-container" id="accepted-negotiations-container">
+                                <div class="loading-state">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <p>Loading accepted negotiations...</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                    <!-- End Negotiations Received Tab -->
                 </div>
             </main>
         </div>
@@ -493,6 +536,51 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                         <button type="button" class="btn btn-secondary" onclick="closeEditQuoteModal()">Cancel</button>
                         <button type="submit" class="btn btn-primary" id="updateQuoteBtn">
                             <i class="fas fa-save"></i> Update Quote
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Counter Proposal Modal -->
+    <div class="modal-overlay" id="counterNegotiationModal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-scale-balanced"></i> Send Counter Proposal</h3>
+                <button class="modal-close" onclick="closeCounterNegotiationModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="counterNegotiationForm" onsubmit="submitCounterNegotiation(event)">
+                    <input type="hidden" id="counterNegotiationId" name="negotiation_id">
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="counterPreviousPrice"><i class="fas fa-receipt"></i> Previous Price (LKR)</label>
+                            <input type="text" id="counterPreviousPrice" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="counterProposedByUser"><i class="fas fa-user"></i> User Proposed (LKR)</label>
+                            <input type="text" id="counterProposedByUser" disabled>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="counterPriceInput"><i class="fas fa-rupee-sign"></i> Your Counter Price (LKR) *</label>
+                        <input type="number" id="counterPriceInput" min="1" step="0.01" required placeholder="Enter your counter amount">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="counterMessageInput"><i class="fas fa-comment"></i> Message (Optional)</label>
+                        <textarea id="counterMessageInput" rows="3" placeholder="Add a short note for your counter offer"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeCounterNegotiationModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="counterSubmitBtn">
+                            <i class="fas fa-paper-plane"></i> Send Counter
                         </button>
                     </div>
                 </form>
