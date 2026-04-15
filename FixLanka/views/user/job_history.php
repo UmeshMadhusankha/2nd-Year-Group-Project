@@ -477,7 +477,7 @@ foreach ($allJobRequests as $job) {
                 <button type="button" class="action-btn btn-secondary" onclick="closeQuoteDetailsModal()">
                     <i class="fas fa-times"></i> Close
                 </button>
-                <button type="button" class="action-btn btn-outline-sm" id="quoteRejectBtn">
+                <button type="button" class="action-btn btn-reject-sm" id="quoteRejectBtn">
                     <i class="fas fa-xmark"></i> Reject
                 </button>
                 <a href="#" class="action-btn btn-negotiate-sm" id="quoteNegotiateBtn">
@@ -626,6 +626,100 @@ foreach ($allJobRequests as $job) {
         } else {
             quotesReceivedPill.style.display = 'none';
         }
+    }
+
+    function formatStatusLabel(status) {
+        return readableStatus(status).replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function showActionToast(message) {
+        let toast = document.getElementById('jobHistoryActionToast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'jobHistoryActionToast';
+            toast.className = 'job-history-toast';
+            document.body.appendChild(toast);
+        }
+
+        toast.textContent = String(message || 'Action completed successfully.');
+        toast.classList.add('show');
+
+        window.clearTimeout(window.__jobHistoryToastTimer);
+        window.__jobHistoryToastTimer = window.setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2200);
+    }
+
+    function refreshJobTabCounts() {
+        const cards = Array.from(document.querySelectorAll('.job-card'));
+        const counts = {
+            all: cards.length,
+            pending: 0,
+            in_progress: 0,
+            completed: 0,
+            cancelled: 0,
+        };
+
+        cards.forEach((card) => {
+            const status = String(card.dataset.status || '').toLowerCase();
+            if (Object.prototype.hasOwnProperty.call(counts, status)) {
+                counts[status] += 1;
+            }
+        });
+
+        document.querySelectorAll('.filter-tab').forEach((tab) => {
+            const status = String(tab.dataset.status || 'all');
+            const countNode = tab.querySelector('.tab-count');
+            if (!countNode || !Object.prototype.hasOwnProperty.call(counts, status)) return;
+            countNode.textContent = String(counts[status]);
+        });
+    }
+
+    function applyActiveJobFilter() {
+        const activeTab = document.querySelector('.filter-tab.active');
+        const activeStatus = activeTab ? String(activeTab.dataset.status || 'all') : 'all';
+
+        document.querySelectorAll('.job-card').forEach((card) => {
+            card.style.display = activeStatus === 'all' || card.dataset.status === activeStatus ? 'block' : 'none';
+        });
+    }
+
+    function updateJobCardStatus(requestId, requestType, nextStatus) {
+        const numericRequestId = Number(requestId);
+        const normalizedRequestType = String(requestType || 'regular').toLowerCase() === 'direct' ? 'direct' : 'regular';
+        const normalizedStatus = String(nextStatus || '').toLowerCase().trim();
+        if (!Number.isFinite(numericRequestId) || numericRequestId <= 0 || normalizedStatus === '') return;
+
+        const card = document.querySelector(`.job-card[data-request-id="${numericRequestId}"][data-request-type="${normalizedRequestType}"]`);
+        if (!card) return;
+
+        card.dataset.status = normalizedStatus;
+
+        const statusBadge = card.querySelector('.badge-status');
+        if (statusBadge) {
+            Array.from(statusBadge.classList).forEach((className) => {
+                if (className.startsWith('status-')) {
+                    statusBadge.classList.remove(className);
+                }
+            });
+            statusBadge.classList.add(`status-${normalizedStatus}`);
+            statusBadge.textContent = formatStatusLabel(normalizedStatus);
+        }
+
+        if (normalizedStatus !== 'pending') {
+            const actionsContainer = card.querySelector('.job-actions');
+            const viewQuotesBtn = actionsContainer ? actionsContainer.querySelector('.btn-view-quotes') : null;
+            if (actionsContainer && viewQuotesBtn) {
+                const viewQuotesHtml = viewQuotesBtn.outerHTML;
+                const readOnlyHtml = normalizedRequestType === 'direct'
+                    ? '<span class="read-only-badge direct-read-only-badge"><i class="fas fa-lock"></i> In Progress</span>'
+                    : '<span class="read-only-badge"><i class="fas fa-lock"></i> Read Only</span>';
+                actionsContainer.innerHTML = `${viewQuotesHtml}${readOnlyHtml}`;
+            }
+        }
+
+        refreshJobTabCounts();
+        applyActiveJobFilter();
     }
 
     function quoteDetailsHtml(quote) {
@@ -826,10 +920,9 @@ foreach ($allJobRequests as $job) {
     }
 
     async function handleQuoteAction(decision, source, quoteId, requestType) {
-        if (decision === 'rejected') {
-            if (!confirm('Are you sure you want to reject this quote?')) {
-                return;
-            }
+        const actionLabel = decision === 'accepted' ? 'accept' : 'reject';
+        if (!confirm(`Are you sure you want to ${actionLabel} this quotation?`)) {
+            return;
         }
 
         await fetchJson(`${USER_QUOTES_API}?action=respond`, {
@@ -837,6 +930,12 @@ foreach ($allJobRequests as $job) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ source, quote_id: Number(quoteId), decision, request_type: requestType || null })
         });
+
+        if (decision === 'accepted' && currentlyOpenedQuote) {
+            updateJobCardStatus(currentlyOpenedQuote.request_id, currentlyOpenedQuote.request_type, 'in_progress');
+        }
+
+        showActionToast(decision === 'accepted' ? 'Quotation accepted successfully.' : 'Quotation rejected successfully.');
 
         if (currentRequestQuotesContext.requestId) {
             await openJobQuotesModal(currentRequestQuotesContext.requestId, currentRequestQuotesContext.requestType);

@@ -518,36 +518,17 @@ class UserQuotesModel {
                 return false; // Quote not found or not pending
             }
 
-            // If the decision is 'accepted', we need to reject competing quotes and update the job request
+            // If accepted, move the owning request to in_progress.
+            // If rejected, only update this quote and keep request status unchanged.
             if ($decision === 'accepted') {
-                // Reject other pending company quotations for this request
-                $rejectCompanySql = "UPDATE companyquotation SET status = 'rejected' WHERE request_id = :request_id AND status = 'pending' AND quotation_id != :exclude_id";
-                // Reject other pending repairer quotes for this request
-                $rejectRepairerSql = "UPDATE repairerquote SET status = 'rejected' WHERE request_id = :request_id AND status = 'pending' AND quote_id != :exclude_id_rep";
-
-                if ($source === 'company') {
-                    $stmtCompany = $this->pdo->prepare($rejectCompanySql);
-                    $stmtCompany->execute([':request_id' => $requestId, ':exclude_id' => $quoteId]);
-                    
-                    $stmtRepairer = $this->pdo->prepare("UPDATE repairerquote SET status = 'rejected' WHERE request_id = :request_id AND status = 'pending'");
-                    $stmtRepairer->execute([':request_id' => $requestId]);
-                } else {
-                    $stmtCompany = $this->pdo->prepare("UPDATE companyquotation SET status = 'rejected' WHERE request_id = :request_id AND status = 'pending'");
-                    $stmtCompany->execute([':request_id' => $requestId]);
-                    
-                    $stmtRepairer = $this->pdo->prepare($rejectRepairerSql);
-                    $stmtRepairer->execute([':request_id' => $requestId, ':exclude_id_rep' => $quoteId]);
-                }
-
-                // Update selected request status to accepted
+                // Update selected request status to in_progress
                 $updateJobSql = $resolvedRequestType === 'direct'
-                    ? "UPDATE directjobrequest SET status = 'accepted' WHERE request_id = :request_id AND user_id = :user_id"
-                    : "UPDATE jobrequest SET status = 'accepted' WHERE request_id = :request_id AND user_id = :user_id";
+                    ? "UPDATE directjobrequest SET status = 'in_progress' WHERE request_id = :request_id AND user_id = :user_id"
+                    : "UPDATE jobrequest SET status = 'in_progress' WHERE request_id = :request_id AND user_id = :user_id";
                 $stmtJob = $this->pdo->prepare($updateJobSql);
                 $stmtJob->execute([':request_id' => $requestId, ':user_id' => $userId]);
 
                 $this->notifyQuoteDecision($source, $quoteId, 'accepted', (int)$requestId);
-                $this->notifyCompetingQuotesRejected((int)$requestId, $source, $quoteId);
             } else {
                 $this->notifyQuoteDecision($source, $quoteId, 'rejected', (int)$requestId);
             }
