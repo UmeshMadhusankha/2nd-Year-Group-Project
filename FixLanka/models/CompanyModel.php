@@ -71,7 +71,7 @@ class CompanyModel {
 
         // Allowed fields to update (Company table only)
         $allowedFields = [
-            'name', 'contact_no', 'description', 
+            'name', 'business_type', 'contact_no', 'description', 
             'website', 'city', 'province', 'postal_code', 
             'facebook', 'instagram', 'linkedin', 'twitter',
             'alternate_phone', 'whatsapp',
