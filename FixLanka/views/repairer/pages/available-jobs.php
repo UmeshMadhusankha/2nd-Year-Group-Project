@@ -28,6 +28,74 @@ try {
     error_log("Error loading districts: " . $e->getMessage());
 }
 
+// Load direct job requests for this repairer
+$directJobRequests = [];
+try {
+    $directStmt = $pdo->prepare("SELECT
+            dr.request_id,
+            dr.title,
+            dr.description,
+            dr.status,
+            dr.district,
+            dr.address,
+            dr.finish_date,
+            dr.date_created,
+            dr.photos,
+            c.name AS category_name,
+            u.f_name AS customer_first_name,
+            u.l_name AS customer_last_name
+        FROM directjobrequest dr
+        LEFT JOIN category c ON c.category_id = dr.category_id
+        LEFT JOIN user u ON u.user_id = dr.user_id
+        WHERE dr.provider_type = 'individual'
+          AND dr.provider_id = ?
+          AND dr.status = 'pending'
+          AND dr.finish_date >= CURDATE()
+        ORDER BY dr.date_created DESC
+    ");
+    $directStmt->execute([$currentRepairerId]);
+    $directJobRequests = $directStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log("Error loading direct job requests: " . $e->getMessage());
+}
+
+// Load listed job requests routed to this repairer
+$listedJobRequests = [];
+try {
+    $listedStmt = $pdo->prepare("SELECT
+            drq.id AS direct_quote_id,
+            drq.request_id,
+            COALESCE(jr.title, djr.title) AS title,
+            COALESCE(jr.description, djr.description) AS description,
+            COALESCE(jr.status, djr.status) AS status,
+            COALESCE(l.district, djr.district) AS district,
+            COALESCE(l.address, djr.address) AS address,
+            COALESCE(jr.finish_date, djr.finish_date) AS finish_date,
+            COALESCE(jr.dateCreated, djr.date_created) AS date_created,
+            COALESCE(jr.photos, djr.photos) AS photos,
+            COALESCE(cj.name, cd.name) AS category_name,
+            COALESCE(uj.f_name, ud.f_name) AS customer_first_name,
+            COALESCE(uj.l_name, ud.l_name) AS customer_last_name
+        FROM directrequestquotes drq
+        LEFT JOIN jobrequest jr ON jr.request_id = drq.request_id
+        LEFT JOIN location l ON l.location_id = jr.location_id
+        LEFT JOIN category cj ON cj.category_id = jr.category_id
+        LEFT JOIN user uj ON uj.user_id = jr.user_id
+        LEFT JOIN directjobrequest djr ON djr.request_id = drq.request_id
+        LEFT JOIN category cd ON cd.category_id = djr.category_id
+        LEFT JOIN user ud ON ud.user_id = djr.user_id
+        WHERE drq.provider_type = 'individual'
+          AND drq.provider_id = ?
+          AND (jr.request_id IS NULL OR (jr.status = 'pending' AND jr.finish_date >= CURDATE()))
+          AND (djr.request_id IS NULL OR (djr.status = 'pending' AND djr.finish_date >= CURDATE()))
+        ORDER BY COALESCE(jr.dateCreated, djr.date_created) DESC
+    ");
+    $listedStmt->execute([$currentRepairerId]);
+    $listedJobRequests = $listedStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log("Error loading listed job requests: " . $e->getMessage());
+}
+
 // Page configuration
 $currentPage = 'available-jobs';
 $pageTitle = 'Available Jobs';
@@ -142,6 +210,11 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                                 Available Jobs
                                 <span class="tab-badge" id="available-jobs-badge">0</span>
                             </button>
+                            <button class="tab-button" data-tab="direct-jobs">
+                                <i class="fas fa-location-arrow"></i>
+                                Direct Jobs
+                                <span class="tab-badge" id="direct-jobs-badge">0</span>
+                            </button>
                             <button class="tab-button" data-tab="submitted-quotes">
                                 <i class="fas fa-file-invoice"></i>
                                 My Quotations
@@ -169,6 +242,24 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                         </section>
                     </div>
                     <!-- End Available Jobs Tab -->
+
+                    <!-- Tab Content: Direct Jobs -->
+                    <div class="tab-content" id="direct-jobs-tab">
+                        <section class="jobs-section">
+                            <div class="section-header">
+                                <h2 class="section-title">Direct Jobs</h2>
+                                <span class="section-subtitle" id="direct-jobs-count">Loading...</span>
+                            </div>
+
+                            <div class="jobs-grid" id="direct-jobs-grid-container">
+                                <div class="loading-state">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <p>Loading direct jobs...</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                    <!-- End Direct Jobs Tab -->
 
                     <!-- Tab Content: Submitted Quotations -->
                     <div class="tab-content" id="submitted-quotes-tab">
@@ -412,6 +503,10 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
     <!-- Inject repairer ID from PHP session into JS scope -->
     <script>
         window.CURRENT_REPAIRER_ID = <?php echo (int)$currentRepairerId; ?>;
+        window.DIRECT_JOBS = <?php echo json_encode([
+            'direct' => $directJobRequests,
+            'listed' => $listedJobRequests
+        ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/available-jobs.js"></script>
