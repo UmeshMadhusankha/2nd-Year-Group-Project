@@ -75,6 +75,9 @@ class JobCollaborationController
             if (!$collaboration && $actor['role'] === 'user') {
                 $collaboration = $this->model->bootstrapFromRequestIfMissing($actor['id'], $requestId, $requestType);
             }
+            if (!$collaboration && in_array($actor['role'], ['repairer', 'company'], true)) {
+                $collaboration = $this->model->bootstrapFromRequestIfMissingForProvider($actor['id'], $actor['role'], $requestId, $requestType);
+            }
             if (!$collaboration) {
                 http_response_code(404);
                 echo json_encode(['success' => false, 'message' => 'Collaboration not found for this job']);
@@ -231,6 +234,58 @@ class JobCollaborationController
             exit;
         } catch (Throwable $e) {
             error_log('JobCollaborationController::confirmPayment failed: ' . $e->getMessage());
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
+    }
+
+    public function resetCompleted(): void
+    {
+        $this->jsonHeader();
+
+        try {
+            $actor = $this->requireParticipant();
+            $body = $this->parseJsonBody();
+
+            $collaborationId = (int) ($body['collaboration_id'] ?? 0);
+            if ($collaborationId <= 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'collaboration_id is required']);
+                exit;
+            }
+
+            $collaboration = $this->model->resetCompleted($collaborationId, $actor['id'], $actor['role']);
+            echo json_encode(['success' => true, 'collaboration' => $collaboration]);
+            exit;
+        } catch (Throwable $e) {
+            error_log('JobCollaborationController::resetCompleted failed: ' . $e->getMessage());
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
+    }
+
+    public function resetPayment(): void
+    {
+        $this->jsonHeader();
+
+        try {
+            $actor = $this->requireParticipant();
+            $body = $this->parseJsonBody();
+
+            $collaborationId = (int) ($body['collaboration_id'] ?? 0);
+            if ($collaborationId <= 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'collaboration_id is required']);
+                exit;
+            }
+
+            $collaboration = $this->model->resetPayment($collaborationId, $actor['id'], $actor['role']);
+            echo json_encode(['success' => true, 'collaboration' => $collaboration]);
+            exit;
+        } catch (Throwable $e) {
+            error_log('JobCollaborationController::resetPayment failed: ' . $e->getMessage());
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
             exit;

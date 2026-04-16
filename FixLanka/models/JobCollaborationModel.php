@@ -3,6 +3,7 @@
 class JobCollaborationModel
 {
     private PDO $pdo;
+    private ?array $quoteStatusEnumCache = null;
 
     public function __construct(PDO $pdo)
     {
@@ -179,18 +180,93 @@ class JobCollaborationModel
             return null;
         }
 
-        $repairerStmt = $this->pdo->prepare('SELECT quote_id FROM repairerquote WHERE request_id = :request_id AND status = "accepted" ORDER BY quote_id DESC LIMIT 1');
+        $repairerStmt = $this->pdo->prepare('SELECT quote_id FROM repairerquote WHERE request_id = :request_id AND status IN ("accepted", "completed") ORDER BY quote_id DESC LIMIT 1');
         $repairerStmt->execute([':request_id' => $requestId]);
         $repairerQuoteId = (int) $repairerStmt->fetchColumn();
         if ($repairerQuoteId > 0) {
             return $this->createFromAcceptedQuote($userId, 'repairer', $repairerQuoteId, $requestId, $normalizedRequestType);
         }
 
-        $companyStmt = $this->pdo->prepare('SELECT quotation_id FROM companyquotation WHERE request_id = :request_id AND status = "accepted" ORDER BY quotation_id DESC LIMIT 1');
+        $companyStmt = $this->pdo->prepare('SELECT quotation_id FROM companyquotation WHERE request_id = :request_id AND status IN ("accepted", "successful") ORDER BY quotation_id DESC LIMIT 1');
         $companyStmt->execute([':request_id' => $requestId]);
         $companyQuoteId = (int) $companyStmt->fetchColumn();
         if ($companyQuoteId > 0) {
             return $this->createFromAcceptedQuote($userId, 'company', $companyQuoteId, $requestId, $normalizedRequestType);
+        }
+
+        return null;
+    }
+
+    public function bootstrapFromRequestIfMissingForProvider(int $providerId, string $providerRole, int $requestId, string $requestType): ?array
+    {
+        $normalizedProviderRole = $this->normalizeActorRole($providerRole);
+        if (!in_array($normalizedProviderRole, ['repairer', 'company'], true)) {
+            throw new InvalidArgumentException('Provider role must be repairer or company');
+        }
+
+        $normalizedRequestType = $this->normalizeRequestType($requestType);
+
+        $existing = $this->getByRequestForActor($requestId, $normalizedRequestType, $providerId, $normalizedProviderRole);
+        if ($existing) {
+            return $existing;
+        }
+
+        $requestTable = $normalizedRequestType === 'direct' ? 'directjobrequest' : 'jobrequest';
+        $requestStmt = $this->pdo->prepare("SELECT user_id, status FROM {$requestTable} WHERE request_id = :request_id LIMIT 1");
+        $requestStmt->execute([':request_id' => $requestId]);
+        $requestRow = $requestStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        if (!$requestRow) {
+            return null;
+        }
+
+        $status = strtolower((string) ($requestRow['status'] ?? ''));
+        if (!in_array($status, ['in_progress', 'completed'], true)) {
+            return null;
+        }
+
+        $requestOwnerId = (int) ($requestRow['user_id'] ?? 0);
+        if ($requestOwnerId <= 0) {
+            return null;
+        }
+
+        if ($normalizedProviderRole === 'repairer') {
+            $quoteStmt = $this->pdo->prepare(
+                'SELECT quote_id
+                 FROM repairerquote
+                 WHERE request_id = :request_id
+                   AND repairer_id = :provider_id
+                                     AND status IN ("accepted", "completed")
+                 ORDER BY quote_id DESC
+                 LIMIT 1'
+            );
+            $quoteStmt->execute([
+                ':request_id' => $requestId,
+                ':provider_id' => $providerId,
+            ]);
+            $quoteId = (int) $quoteStmt->fetchColumn();
+            if ($quoteId > 0) {
+                return $this->createFromAcceptedQuote($requestOwnerId, 'repairer', $quoteId, $requestId, $normalizedRequestType);
+            }
+        }
+
+        if ($normalizedProviderRole === 'company') {
+            $quoteStmt = $this->pdo->prepare(
+                'SELECT quotation_id
+                 FROM companyquotation
+                 WHERE request_id = :request_id
+                   AND company_id = :provider_id
+                                     AND status IN ("accepted", "successful")
+                 ORDER BY quotation_id DESC
+                 LIMIT 1'
+            );
+            $quoteStmt->execute([
+                ':request_id' => $requestId,
+                ':provider_id' => $providerId,
+            ]);
+            $quoteId = (int) $quoteStmt->fetchColumn();
+            if ($quoteId > 0) {
+                return $this->createFromAcceptedQuote($requestOwnerId, 'company', $quoteId, $requestId, $normalizedRequestType);
+            }
         }
 
         return null;
@@ -262,6 +338,161 @@ class JobCollaborationModel
         }
 
         return $row;
+    }
+
+    private function getQuoteStatusEnumOptions(): array
+    {
+        if ($this->quoteStatusEnumCache !== null) {
+            return $this->quoteStatusEnumCache;
+        }
+
+        $result = [
+            'repairerquote' => ['pending', 'accepted', 'completed', 'rejected', 'expired'],
+            'companyquotation' => ['pending', 'accepted', 'rejected', 'successful'],
+        ];
+
+        try {
+            $stmt = $this->pdo->query("SHOW COLUMNS FROM repairerquote LIKE 'status'");
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+            if ($row && isset($row['Type'])) {
+                preg_match_all("/'([^']+)'/", (string) $row['Type'], $matches);
+                if (!empty($matches[1])) {
+                    $result['repairerquote'] = array_values(array_unique(array_map('strtolower', $matches[1])));
+                }
+            }
+        } catch (Throwable $e) {
+            // Keep defaults if schema inspection fails.
+        }
+
+        try {
+            $stmt = $this->pdo->query("SHOW COLUMNS FROM companyquotation LIKE 'status'");
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+            if ($row && isset($row['Type'])) {
+                preg_match_all("/'([^']+)'/", (string) $row['Type'], $matches);
+                if (!empty($matches[1])) {
+                    $result['companyquotation'] = array_values(array_unique(array_map('strtolower', $matches[1])));
+                }
+            }
+        } catch (Throwable $e) {
+            // Keep defaults if schema inspection fails.
+        }
+
+        $this->quoteStatusEnumCache = $result;
+        return $this->quoteStatusEnumCache;
+    }
+
+    private function syncAcceptedQuoteStatus(array $collaborationRow, bool $isFinalized): void
+    {
+        $source = strtolower((string) ($collaborationRow['quote_source'] ?? ''));
+        $quoteId = (int) ($collaborationRow['quote_id'] ?? 0);
+        if ($quoteId <= 0 || !in_array($source, ['repairer', 'company'], true)) {
+            return;
+        }
+
+        $enumOptions = $this->getQuoteStatusEnumOptions();
+
+        if ($source === 'repairer') {
+            $allowed = $enumOptions['repairerquote'] ?? [];
+            $next = ($isFinalized && in_array('completed', $allowed, true)) ? 'completed' : 'accepted';
+
+            $stmt = $this->pdo->prepare(
+                'UPDATE repairerquote
+                 SET status = :status
+                 WHERE quote_id = :quote_id'
+            );
+            $stmt->execute([
+                ':status' => $next,
+                ':quote_id' => $quoteId,
+            ]);
+            return;
+        }
+
+        $allowed = $enumOptions['companyquotation'] ?? [];
+        $next = ($isFinalized && in_array('successful', $allowed, true)) ? 'successful' : 'accepted';
+
+        $stmt = $this->pdo->prepare(
+            'UPDATE companyquotation
+             SET status = :status
+             WHERE quotation_id = :quote_id'
+        );
+        $stmt->execute([
+            ':status' => $next,
+            ':quote_id' => $quoteId,
+        ]);
+    }
+
+    private function syncPhaseAndRequestStatus(int $collaborationId): void
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT collaboration_id, request_id, request_type, pending_price,
+                    user_completed_at, provider_completed_at,
+                    user_payment_confirmed_at, provider_payment_confirmed_at
+             FROM job_collaboration
+             WHERE collaboration_id = :collaboration_id
+             LIMIT 1'
+        );
+        $stmt->execute([':collaboration_id' => $collaborationId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        if (!$row) {
+            throw new RuntimeException('Collaboration not found while syncing state');
+        }
+
+        $hasUserCompleted = !empty($row['user_completed_at']);
+        $hasProviderCompleted = !empty($row['provider_completed_at']);
+        $hasUserPaid = !empty($row['user_payment_confirmed_at']);
+        $hasProviderPaid = !empty($row['provider_payment_confirmed_at']);
+        $hasPendingPrice = $row['pending_price'] !== null;
+        $isFinalized = $hasUserCompleted && $hasProviderCompleted && $hasUserPaid && $hasProviderPaid;
+
+        if ($hasUserPaid && $hasProviderPaid) {
+            $nextPhase = 'review';
+        } elseif ($hasUserCompleted && $hasProviderCompleted) {
+            $nextPhase = 'payment_verification';
+        } elseif ($hasUserCompleted || $hasProviderCompleted) {
+            $nextPhase = 'completion_verification';
+        } elseif ($hasPendingPrice) {
+            $nextPhase = 'negotiation';
+        } else {
+            $nextPhase = 'in_progress';
+        }
+
+        $phaseStmt = $this->pdo->prepare(
+            'UPDATE job_collaboration
+             SET current_phase = :phase,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE collaboration_id = :collaboration_id'
+        );
+        $phaseStmt->execute([
+            ':phase' => $nextPhase,
+            ':collaboration_id' => $collaborationId,
+        ]);
+
+        if (strtolower((string) ($row['request_type'] ?? 'regular')) === 'regular') {
+            $requestId = (int) ($row['request_id'] ?? 0);
+            if ($requestId > 0) {
+                if ($isFinalized) {
+                    $requestStmt = $this->pdo->prepare('UPDATE jobrequest SET status = :status WHERE request_id = :request_id');
+                    $requestStmt->execute([
+                        ':status' => 'completed',
+                        ':request_id' => $requestId,
+                    ]);
+                } else {
+                    $requestStmt = $this->pdo->prepare(
+                        "UPDATE jobrequest
+                         SET status = :status
+                         WHERE request_id = :request_id
+                           AND status <> 'cancelled'"
+                    );
+                    $requestStmt->execute([
+                        ':status' => 'in_progress',
+                        ':request_id' => $requestId,
+                    ]);
+                }
+            }
+        }
+
+        $this->syncAcceptedQuoteStatus($row, $isFinalized);
     }
 
     public function postNote(int $collaborationId, int $actorId, string $actorRole, string $message): array
@@ -400,23 +631,10 @@ class JobCollaborationModel
             $stmt->execute([':collaboration_id' => $collaborationId]);
         }
 
-        $fresh = $this->getByIdForActor($collaborationId, $actorId, $normalizedActorRole, false);
-        if (!$fresh) {
-            throw new RuntimeException('Collaboration not found after completion update');
-        }
-
-        $phase = (!empty($fresh['user_completed_at']) && !empty($fresh['provider_completed_at']))
-            ? 'payment_verification'
-            : 'completion_verification';
-
-        $phaseStmt = $this->pdo->prepare('UPDATE job_collaboration SET current_phase = :phase WHERE collaboration_id = :collaboration_id');
-        $phaseStmt->execute([
-            ':phase' => $phase,
-            ':collaboration_id' => $collaborationId,
-        ]);
+        $this->syncPhaseAndRequestStatus($collaborationId);
 
         $this->addEvent($collaborationId, $actorId, $normalizedActorRole, 'completed_marked', 'Marked job completion');
-        $this->addEvent($collaborationId, $actorId, $normalizedActorRole, 'phase_changed', 'Phase moved to ' . str_replace('_', ' ', $phase));
+        $this->addEvent($collaborationId, $actorId, $normalizedActorRole, 'phase_changed', 'Collaboration state recalculated after completion update');
 
         return $this->getByIdForActor($collaborationId, $actorId, $normalizedActorRole);
     }
@@ -445,29 +663,87 @@ class JobCollaborationModel
             $stmt = $this->pdo->prepare(
                 'UPDATE job_collaboration
                  SET provider_payment_confirmed_at = COALESCE(provider_payment_confirmed_at, NOW()),
+                     user_payment_confirmed_at = COALESCE(user_payment_confirmed_at, NOW()),
                      updated_at = CURRENT_TIMESTAMP
                  WHERE collaboration_id = :collaboration_id'
             );
             $stmt->execute([':collaboration_id' => $collaborationId]);
         }
 
-        $fresh = $this->getByIdForActor($collaborationId, $actorId, $normalizedActorRole, false);
-        if (!$fresh) {
-            throw new RuntimeException('Collaboration not found after payment update');
-        }
-
-        $phase = (!empty($fresh['user_payment_confirmed_at']) && !empty($fresh['provider_payment_confirmed_at']))
-            ? 'review'
-            : 'payment_verification';
-
-        $phaseStmt = $this->pdo->prepare('UPDATE job_collaboration SET current_phase = :phase WHERE collaboration_id = :collaboration_id');
-        $phaseStmt->execute([
-            ':phase' => $phase,
-            ':collaboration_id' => $collaborationId,
-        ]);
+        $this->syncPhaseAndRequestStatus($collaborationId);
 
         $this->addEvent($collaborationId, $actorId, $normalizedActorRole, 'payment_confirmed', 'Payment marked as completed');
-        $this->addEvent($collaborationId, $actorId, $normalizedActorRole, 'phase_changed', 'Phase moved to ' . str_replace('_', ' ', $phase));
+        $this->addEvent($collaborationId, $actorId, $normalizedActorRole, 'phase_changed', 'Collaboration state recalculated after payment update');
+
+        return $this->getByIdForActor($collaborationId, $actorId, $normalizedActorRole);
+    }
+
+    public function resetCompleted(int $collaborationId, int $actorId, string $actorRole): array
+    {
+        $normalizedActorRole = $this->normalizeActorRole($actorRole);
+        $collaboration = $this->getByIdForActor($collaborationId, $actorId, $normalizedActorRole, false);
+        if (!$collaboration) {
+            throw new RuntimeException('Collaboration not found');
+        }
+
+        if ($normalizedActorRole === 'user') {
+            $stmt = $this->pdo->prepare(
+                'UPDATE job_collaboration
+                 SET user_completed_at = NULL,
+                     user_payment_confirmed_at = NULL,
+                     provider_payment_confirmed_at = NULL,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE collaboration_id = :collaboration_id'
+            );
+            $stmt->execute([':collaboration_id' => $collaborationId]);
+        } else {
+            $stmt = $this->pdo->prepare(
+                'UPDATE job_collaboration
+                 SET provider_completed_at = NULL,
+                     user_payment_confirmed_at = NULL,
+                     provider_payment_confirmed_at = NULL,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE collaboration_id = :collaboration_id'
+            );
+            $stmt->execute([':collaboration_id' => $collaborationId]);
+        }
+
+        $this->syncPhaseAndRequestStatus($collaborationId);
+        $this->addEvent($collaborationId, $actorId, $normalizedActorRole, 'completed_reset', 'Completion mark reset');
+        $this->addEvent($collaborationId, $actorId, $normalizedActorRole, 'phase_changed', 'Collaboration state recalculated after completion reset');
+
+        return $this->getByIdForActor($collaborationId, $actorId, $normalizedActorRole);
+    }
+
+    public function resetPayment(int $collaborationId, int $actorId, string $actorRole): array
+    {
+        $normalizedActorRole = $this->normalizeActorRole($actorRole);
+        $collaboration = $this->getByIdForActor($collaborationId, $actorId, $normalizedActorRole, false);
+        if (!$collaboration) {
+            throw new RuntimeException('Collaboration not found');
+        }
+
+        if ($normalizedActorRole === 'user') {
+            $stmt = $this->pdo->prepare(
+                'UPDATE job_collaboration
+                 SET user_payment_confirmed_at = NULL,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE collaboration_id = :collaboration_id'
+            );
+            $stmt->execute([':collaboration_id' => $collaborationId]);
+        } else {
+            $stmt = $this->pdo->prepare(
+                'UPDATE job_collaboration
+                 SET provider_payment_confirmed_at = NULL,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE collaboration_id = :collaboration_id'
+            );
+            $stmt->execute([':collaboration_id' => $collaborationId]);
+        }
+
+        $this->syncPhaseAndRequestStatus($collaborationId);
+        $this->addEvent($collaborationId, $actorId, $normalizedActorRole, 'payment_reset', 'Payment confirmation reset');
+        $this->addEvent($collaborationId, $actorId, $normalizedActorRole, 'phase_changed', 'Collaboration state recalculated after payment reset');
 
         return $this->getByIdForActor($collaborationId, $actorId, $normalizedActorRole);
     }

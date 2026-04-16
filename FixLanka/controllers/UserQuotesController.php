@@ -151,4 +151,91 @@ class UserQuotesController {
             exit;
         }
     }
+
+    public function resetToPending(): void {
+        $this->jsonHeader();
+        try {
+            $user = $this->requireUser();
+
+            if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+                exit;
+            }
+
+            $input = json_decode(file_get_contents('php://input'), true);
+            $source = isset($input['source']) ? (string)$input['source'] : '';
+            $quoteId = isset($input['quote_id']) ? (int)$input['quote_id'] : 0;
+            $requestType = isset($input['request_type']) ? (string)$input['request_type'] : null;
+
+            if (!in_array($source, ['repairer', 'company'], true)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid source']);
+                exit;
+            }
+            if ($quoteId <= 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid quote_id']);
+                exit;
+            }
+
+            $ok = $this->model->resetQuoteToPending((int)$user['id'], $source, $quoteId, $requestType);
+            if (!$ok) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Could not reset quote status']);
+                exit;
+            }
+
+            echo json_encode(['success' => true]);
+            exit;
+        } catch (Throwable $e) {
+            error_log('UserQuotesController::resetToPending failed: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to reset quote: ' . $e->getMessage(),
+            ]);
+            exit;
+        }
+    }
+
+    public function completionSummary(): void {
+        $this->jsonHeader();
+        try {
+            $user = $this->requireUser();
+
+            $source = isset($_GET['source']) ? (string)$_GET['source'] : '';
+            $quoteId = isset($_GET['quote_id']) ? (int)$_GET['quote_id'] : 0;
+            $requestType = isset($_GET['request_type']) ? (string)$_GET['request_type'] : null;
+
+            if (!in_array($source, ['repairer', 'company'], true)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid source']);
+                exit;
+            }
+            if ($quoteId <= 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid quote_id']);
+                exit;
+            }
+
+            $summary = $this->model->getCompletedQuoteSummary((int)$user['id'], $source, $quoteId, $requestType);
+            if ($summary === null) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Quote summary not found']);
+                exit;
+            }
+
+            echo json_encode(['success' => true, 'summary' => $summary]);
+            exit;
+        } catch (Throwable $e) {
+            error_log('UserQuotesController::completionSummary failed: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to load completion summary: ' . $e->getMessage(),
+            ]);
+            exit;
+        }
+    }
 }

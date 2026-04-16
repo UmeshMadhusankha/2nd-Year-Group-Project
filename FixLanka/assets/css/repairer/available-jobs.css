@@ -695,6 +695,20 @@
   font-size: 0.75rem;
 }
 
+.negotiation-card {
+  border-left: 4px solid var(--info-color, #3b82f6);
+}
+
+.negotiation-card .quote-status-badge {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  color: var(--info-color, #2563eb);
+}
+
+.negotiation-job-description {
+  border-left-color: var(--info-color, #3b82f6);
+}
+
 /* ===== ERROR STATE ===== */
 .error-state {
   text-align: center;

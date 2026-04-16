@@ -8,7 +8,7 @@
  *   ?action=stats&repairer_id=X              – header-stat counts
  *
  * Actions (POST):
- *   action=update-status  body: {quote_id, status}  – update jobrequest status
+ *   action=update-status  body: {quote_id, status}  – update jobrequest status (in_progress/cancelled only)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -103,15 +103,27 @@ function getJobList($pdo) {
                 p.payment_id,
                 p.status          AS payment_status,
                 p.paymentDate,
-                p.amount          AS payment_amount
+                                p.amount          AS payment_amount,
+
+                                jc.collaboration_id,
+                                jc.current_phase,
+                                jc.user_completed_at,
+                                jc.provider_completed_at,
+                                jc.user_payment_confirmed_at,
+                                jc.provider_payment_confirmed_at
             FROM repairerquote rq
             INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
             LEFT JOIN category c    ON jr.category_id  = c.category_id
             LEFT JOIN user u        ON jr.user_id       = u.user_id
             LEFT JOIN payment p     ON p.job_request_id = jr.request_id
                                     AND p.status = 'completed'
+                        LEFT JOIN job_collaboration jc
+                                                                     ON jc.request_id = jr.request_id
+                                                                    AND jc.request_type = 'regular'
+                                                                    AND jc.provider_id = rq.repairer_id
+                                                                    AND jc.provider_role = 'repairer'
             WHERE rq.repairer_id = ?
-              AND rq.status = 'accepted'
+                            AND rq.status IN ('accepted', 'completed')
         ";
         $params = [$repairerId];
 
@@ -122,10 +134,10 @@ function getJobList($pdo) {
                     $sql .= " AND jr.status IN ('accepted','in_progress')";
                     break;
                 case 'completed':
-                    $sql .= " AND jr.status = 'completed' AND p.payment_id IS NULL";
+                    $sql .= " AND jr.status = 'completed'";
                     break;
                 case 'paid':
-                    $sql .= " AND jr.status = 'completed' AND p.payment_id IS NOT NULL";
+                    $sql .= " AND jr.status = 'completed' AND p.payment_id IS NOT NULL AND jc.collaboration_id IS NULL";
                     break;
                 case 'cancelled':
                     $sql .= " AND jr.status = 'cancelled'";
@@ -172,13 +184,22 @@ function getStats($pdo) {
         $sql = "
             SELECT
                 jr.status AS job_status,
-                p.status  AS payment_status
+                                p.status  AS payment_status,
+                                jc.user_completed_at,
+                                jc.provider_completed_at,
+                                jc.user_payment_confirmed_at,
+                                jc.provider_payment_confirmed_at
             FROM repairerquote rq
             INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
             LEFT JOIN payment p     ON p.job_request_id = jr.request_id
                                     AND p.status = 'completed'
+                        LEFT JOIN job_collaboration jc
+                                                                     ON jc.request_id = jr.request_id
+                                                                    AND jc.request_type = 'regular'
+                                                                    AND jc.provider_id = rq.repairer_id
+                                                                    AND jc.provider_role = 'repairer'
             WHERE rq.repairer_id = ?
-              AND rq.status = 'accepted'
+                            AND rq.status IN ('accepted', 'completed')
         ";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$repairerId]);
@@ -220,7 +241,7 @@ function updateJobStatus($pdo, $data) {
     $newStatus = $data['status'] ?? '';
     $repairerId = intval($data['repairer_id'] ?? 0);
 
-    $allowed = ['in_progress', 'completed', 'cancelled'];
+    $allowed = ['in_progress', 'cancelled'];
     if ($requestId <= 0 || !in_array($newStatus, $allowed)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Invalid request_id or status']);
@@ -256,8 +277,25 @@ function updateJobStatus($pdo, $data) {
 function deriveUiStatus($row) {
     $jobStatus     = $row['job_status'] ?? '';
     $paymentStatus = $row['payment_status'] ?? null;
+    $hasUserCompleted = !empty($row['user_completed_at']);
+    $hasProviderCompleted = !empty($row['provider_completed_at']);
+    $hasUserPaid = !empty($row['user_payment_confirmed_at']);
+    $hasProviderPaid = !empty($row['provider_payment_confirmed_at']);
+    $hasCollaborationContext = isset($row['collaboration_id'])
+        || isset($row['user_completed_at'])
+        || isset($row['provider_completed_at'])
+        || isset($row['user_payment_confirmed_at'])
+        || isset($row['provider_payment_confirmed_at']);
 
     if ($jobStatus === 'cancelled') return 'cancelled';
+
+    if ($hasCollaborationContext) {
+        // For collaboration workflow, keep final jobs in the Completed tab even after
+        // payment confirmations so repairers continue to see the full flow there.
+        if ($hasProviderCompleted || $jobStatus === 'completed') return 'completed';
+        return 'active';
+    }
+
     if ($jobStatus === 'completed' && $paymentStatus === 'completed') return 'paid';
     if ($jobStatus === 'completed') return 'completed';
     return 'active';

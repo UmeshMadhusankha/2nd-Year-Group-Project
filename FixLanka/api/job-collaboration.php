@@ -30,6 +30,14 @@ switch ($action) {
         $controller->confirmPayment();
         break;
 
+    case 'reset_completed':
+        $controller->resetCompleted();
+        break;
+
+    case 'reset_payment':
+        $controller->resetPayment();
+        break;
+
     case 'submit_rating':
         $controller->submitRating();
         break;
