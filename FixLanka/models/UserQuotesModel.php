@@ -591,4 +591,209 @@ class UserQuotesModel {
             return false;
         }
     }
+
+    public function resetQuoteToPending(int $userId, string $source, int $quoteId, ?string $requestType = null): bool {
+        $normalizedRequestType = $requestType !== null ? strtolower(trim($requestType)) : null;
+        $allowRegular = $normalizedRequestType === null || $normalizedRequestType === '' || $normalizedRequestType === 'regular';
+        $allowDirect = $normalizedRequestType === null || $normalizedRequestType === '' || $normalizedRequestType === 'direct';
+
+        try {
+            $this->pdo->beginTransaction();
+
+            $requestId = null;
+            $resolvedRequestType = null;
+            $currentStatus = null;
+
+            $checkCandidates = [];
+            if ($source === 'repairer') {
+                if ($allowRegular) {
+                    $checkCandidates[] = [
+                        'sql' => "SELECT rq.request_id, rq.status FROM repairerquote rq INNER JOIN jobrequest jr ON rq.request_id = jr.request_id WHERE rq.quote_id = :quote_id AND jr.user_id = :user_id LIMIT 1",
+                        'request_type' => 'regular',
+                    ];
+                }
+                if ($allowDirect) {
+                    $checkCandidates[] = [
+                        'sql' => "SELECT rq.request_id, rq.status FROM repairerquote rq INNER JOIN directjobrequest djr ON rq.request_id = djr.request_id WHERE rq.quote_id = :quote_id AND djr.user_id = :user_id LIMIT 1",
+                        'request_type' => 'direct',
+                    ];
+                }
+            } else {
+                if ($allowRegular) {
+                    $checkCandidates[] = [
+                        'sql' => "SELECT cq.request_id, cq.status FROM companyquotation cq INNER JOIN jobrequest jr ON cq.request_id = jr.request_id WHERE cq.quotation_id = :quote_id AND jr.user_id = :user_id LIMIT 1",
+                        'request_type' => 'regular',
+                    ];
+                }
+                if ($allowDirect) {
+                    $checkCandidates[] = [
+                        'sql' => "SELECT cq.request_id, cq.status FROM companyquotation cq INNER JOIN directjobrequest djr ON cq.request_id = djr.request_id WHERE cq.quotation_id = :quote_id AND djr.user_id = :user_id LIMIT 1",
+                        'request_type' => 'direct',
+                    ];
+                }
+            }
+
+            foreach ($checkCandidates as $candidate) {
+                $stmt = $this->pdo->prepare($candidate['sql']);
+                $stmt->execute([':quote_id' => $quoteId, ':user_id' => $userId]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($row) {
+                    $requestId = (int)$row['request_id'];
+                    $currentStatus = strtolower((string)($row['status'] ?? ''));
+                    $resolvedRequestType = $candidate['request_type'];
+                    break;
+                }
+            }
+
+            if (!$requestId || !$resolvedRequestType) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            if (!in_array($currentStatus, ['accepted', 'rejected', 'completed', 'successful'], true)) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            if ($source === 'repairer') {
+                $stmt = $this->pdo->prepare("UPDATE repairerquote SET status = 'pending' WHERE quote_id = :quote_id AND status IN ('accepted','rejected','completed')");
+            } else {
+                $stmt = $this->pdo->prepare("UPDATE companyquotation SET status = 'pending' WHERE quotation_id = :quote_id AND status IN ('accepted','rejected','successful')");
+            }
+            $stmt->execute([':quote_id' => $quoteId]);
+
+            if ($stmt->rowCount() === 0) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            if (in_array($currentStatus, ['accepted', 'completed', 'successful'], true)) {
+                $updateRequestSql = $resolvedRequestType === 'direct'
+                    ? "UPDATE directjobrequest SET status = 'pending' WHERE request_id = :request_id AND user_id = :user_id"
+                    : "UPDATE jobrequest SET status = 'pending' WHERE request_id = :request_id AND user_id = :user_id";
+                $stmtRequest = $this->pdo->prepare($updateRequestSql);
+                $stmtRequest->execute([':request_id' => $requestId, ':user_id' => $userId]);
+
+                $cleanup = $this->pdo->prepare(
+                    "DELETE FROM job_collaboration WHERE request_id = :request_id AND request_type = :request_type AND quote_id = :quote_id AND quote_source = :quote_source"
+                );
+                $cleanup->execute([
+                    ':request_id' => $requestId,
+                    ':request_type' => $resolvedRequestType,
+                    ':quote_id' => $quoteId,
+                    ':quote_source' => $source,
+                ]);
+            }
+
+            $this->pdo->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('Error in resetQuoteToPending: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getCompletedQuoteSummary(int $userId, string $source, int $quoteId, ?string $requestType = null): ?array {
+        $normalizedRequestType = $requestType !== null ? strtolower(trim($requestType)) : null;
+        $allowRegular = $normalizedRequestType === null || $normalizedRequestType === '' || $normalizedRequestType === 'regular';
+        $allowDirect = $normalizedRequestType === null || $normalizedRequestType === '' || $normalizedRequestType === 'direct';
+
+        $candidates = [];
+        if ($source === 'repairer') {
+            if ($allowRegular) {
+                $candidates[] = [
+                    'sql' => "SELECT rq.request_id, rq.quoteAmount AS amount, rq.repairer_id AS provider_id, CONCAT(r.f_name, ' ', r.l_name) AS provider_name, rq.status AS quote_status, jr.status AS request_status, 'regular' AS request_type FROM repairerquote rq INNER JOIN jobrequest jr ON rq.request_id = jr.request_id INNER JOIN repairer r ON rq.repairer_id = r.repairer_id WHERE rq.quote_id = :quote_id AND jr.user_id = :user_id LIMIT 1",
+                    'request_type' => 'regular',
+                ];
+            }
+            if ($allowDirect) {
+                $candidates[] = [
+                    'sql' => "SELECT rq.request_id, rq.quoteAmount AS amount, rq.repairer_id AS provider_id, CONCAT(r.f_name, ' ', r.l_name) AS provider_name, rq.status AS quote_status, djr.status AS request_status, 'direct' AS request_type FROM repairerquote rq INNER JOIN directjobrequest djr ON rq.request_id = djr.request_id INNER JOIN repairer r ON rq.repairer_id = r.repairer_id WHERE rq.quote_id = :quote_id AND djr.user_id = :user_id LIMIT 1",
+                    'request_type' => 'direct',
+                ];
+            }
+        } else {
+            $companyNameSql = $this->companyQuotationHasCompanyId()
+                ? "COALESCE(comp.name, 'Company')"
+                : "'Company'";
+            $companyJoinSql = $this->companyQuotationHasCompanyId()
+                ? "LEFT JOIN company comp ON cq.company_id = comp.company_id"
+                : "";
+            $providerIdSql = $this->companyQuotationHasCompanyId() ? "cq.company_id" : "0";
+
+            if ($allowRegular) {
+                $candidates[] = [
+                    'sql' => "SELECT cq.request_id, cq.total_amount AS amount, $providerIdSql AS provider_id, $companyNameSql AS provider_name, cq.status AS quote_status, jr.status AS request_status, 'regular' AS request_type FROM companyquotation cq INNER JOIN jobrequest jr ON cq.request_id = jr.request_id $companyJoinSql WHERE cq.quotation_id = :quote_id AND jr.user_id = :user_id LIMIT 1",
+                    'request_type' => 'regular',
+                ];
+            }
+            if ($allowDirect) {
+                $candidates[] = [
+                    'sql' => "SELECT cq.request_id, cq.total_amount AS amount, $providerIdSql AS provider_id, $companyNameSql AS provider_name, cq.status AS quote_status, djr.status AS request_status, 'direct' AS request_type FROM companyquotation cq INNER JOIN directjobrequest djr ON cq.request_id = djr.request_id $companyJoinSql WHERE cq.quotation_id = :quote_id AND djr.user_id = :user_id LIMIT 1",
+                    'request_type' => 'direct',
+                ];
+            }
+        }
+
+        $quoteRow = null;
+        foreach ($candidates as $candidate) {
+            $stmt = $this->pdo->prepare($candidate['sql']);
+            $stmt->execute([':quote_id' => $quoteId, ':user_id' => $userId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                $quoteRow = $row;
+                break;
+            }
+        }
+
+        if (!$quoteRow) {
+            return null;
+        }
+
+        $requestStatus = strtolower((string)($quoteRow['request_status'] ?? ''));
+        if ($requestStatus !== 'completed') {
+            return null;
+        }
+
+        $summary = [
+            'provider_name' => (string)($quoteRow['provider_name'] ?? 'Provider'),
+            'price' => (float)($quoteRow['amount'] ?? 0),
+            'request_id' => (int)($quoteRow['request_id'] ?? 0),
+            'request_type' => (string)($quoteRow['request_type'] ?? 'regular'),
+            'review' => null,
+        ];
+
+        if ($source === 'repairer') {
+            $providerId = (int)($quoteRow['provider_id'] ?? 0);
+            $requestId = (int)($quoteRow['request_id'] ?? 0);
+
+            $stmtReview = $this->pdo->prepare(
+                "SELECT rv.rating, rv.comments, rv.date
+                 FROM review rv
+                 INNER JOIN job j ON j.job_id = rv.job_id
+                 WHERE j.job_request_id = :request_id
+                   AND rv.service_provider_id = :provider_id
+                 ORDER BY rv.date DESC
+                 LIMIT 1"
+            );
+            $stmtReview->execute([
+                ':request_id' => $requestId,
+                ':provider_id' => $providerId,
+            ]);
+            $review = $stmtReview->fetch(PDO::FETCH_ASSOC);
+
+            if ($review) {
+                $summary['review'] = [
+                    'rating' => isset($review['rating']) ? (int)$review['rating'] : null,
+                    'comment' => (string)($review['comments'] ?? ''),
+                    'created_at' => $review['date'] ?? null,
+                ];
+            }
+        }
+
+        return $summary;
+    }
 }

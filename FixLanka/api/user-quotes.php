@@ -11,8 +11,14 @@ switch ($action) {
     case 'summary':
         $controller->summary();
         break;
+    case 'completion_summary':
+        $controller->completionSummary();
+        break;
     case 'respond':
         $controller->respond();
+        break;
+    case 'reset_to_pending':
+        $controller->resetToPending();
         break;
     default:
         header('Content-Type: application/json');

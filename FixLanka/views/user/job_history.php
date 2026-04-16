@@ -589,21 +589,6 @@ foreach ($allJobRequests as $job) {
                 </button>
             </div>
             <div class="modal-content">
-                <div class="collaboration-summary">
-                    <div class="collaboration-summary-item">
-                        <span class="collaboration-label">Phase</span>
-                        <span class="collaboration-value" id="collabCurrentPhase">-</span>
-                    </div>
-                    <div class="collaboration-summary-item">
-                        <span class="collaboration-label">Agreed Price</span>
-                        <span class="collaboration-value" id="collabAgreedPrice">-</span>
-                    </div>
-                    <div class="collaboration-summary-item">
-                        <span class="collaboration-label">Pending Proposal</span>
-                        <span class="collaboration-value" id="collabPendingPrice">None</span>
-                    </div>
-                </div>
-
                 <div class="collaboration-checks">
                     <div class="collaboration-check-item" id="collabUserCompleted">User completion: pending</div>
                     <div class="collaboration-check-item" id="collabProviderCompleted">Provider completion: pending</div>
@@ -612,28 +597,6 @@ foreach ($allJobRequests as $job) {
                 </div>
 
                 <div class="collaboration-actions-grid">
-                    <section class="collaboration-panel">
-                        <h3>Negotiate Price</h3>
-                        <input type="number" min="1" step="0.01" id="collabProposedPriceInput" placeholder="Proposed amount (LKR)">
-                        <textarea id="collabPriceNoteInput" rows="2" placeholder="Reason (optional)"></textarea>
-                        <button type="button" class="action-btn btn-collaboration" id="collabProposePriceBtn">
-                            <i class="fas fa-scale-balanced"></i> Propose Price
-                        </button>
-                    </section>
-
-                    <section class="collaboration-panel" id="collabPendingResponsePanel">
-                        <h3>Pending Proposal Response</h3>
-                        <p class="collaboration-hint" id="collabPendingProposalText">No pending proposal.</p>
-                        <div class="collaboration-inline-actions">
-                            <button type="button" class="action-btn btn-success-sm" id="collabAcceptPriceBtn">
-                                <i class="fas fa-check"></i> Accept
-                            </button>
-                            <button type="button" class="action-btn btn-reject-sm" id="collabRejectPriceBtn">
-                                <i class="fas fa-xmark"></i> Reject
-                            </button>
-                        </div>
-                    </section>
-
                     <section class="collaboration-panel">
                         <h3>Progress Confirmation</h3>
                         <div class="collaboration-inline-actions collaboration-progress-actions">
@@ -654,14 +617,6 @@ foreach ($allJobRequests as $job) {
                         </div>
                     </section>
 
-                    <section class="collaboration-panel">
-                        <h3>Add Note</h3>
-                        <textarea id="collabNoteInput" rows="2" placeholder="Short update/note"></textarea>
-                        <button type="button" class="action-btn btn-secondary" id="collabSendNoteBtn">
-                            <i class="fas fa-paper-plane"></i> Send Note
-                        </button>
-                    </section>
-
                     <section class="collaboration-panel collaboration-review-panel is-locked" id="collabRatingPanel">
                         <h3>Review</h3>
                         <p class="collaboration-hint collab-review-lock-text" id="collabReviewLockText">Job and payment must be completed.</p>
@@ -678,13 +633,6 @@ foreach ($allJobRequests as $job) {
                             <i class="fas fa-star"></i> Submit Rating
                         </button>
                     </section>
-                </div>
-
-                <div class="collaboration-events">
-                    <h3>Job Timeline</h3>
-                    <div class="collaboration-events-list" id="collabEventsList">
-                        <div class="quote-empty-state">Loading timeline...</div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -1034,16 +982,99 @@ foreach ($allJobRequests as $job) {
             `;
     }
 
+    function completedSummaryHtml(summary) {
+        const review = summary && summary.review ? summary.review : null;
+        const reviewText = review && review.comment ? review.comment : 'No written review found.';
+        const reviewRating = review && Number.isFinite(Number(review.rating)) ? `${Number(review.rating)}/5` : 'Not available';
+        const reviewDate = review && review.created_at ? formatDateTime(review.created_at) : 'N/A';
+
+        return `
+            <div class="quote-details-head">
+                <h3 class="quote-job-title">Completed Quote Summary</h3>
+                <span class="quote-status-pill quote-status-completed">completed</span>
+            </div>
+            <div class="quote-meta-grid">
+                <div class="quote-meta-item"><strong>Provider:</strong> ${escapeHtml(summary?.provider_name || 'Provider')}</div>
+                <div class="quote-meta-item"><strong>Price:</strong> ${escapeHtml(formatMoney(summary?.price || 0))}</div>
+                <div class="quote-meta-item"><strong>Your Rating:</strong> ${escapeHtml(reviewRating)}</div>
+                <div class="quote-meta-item"><strong>Reviewed At:</strong> ${escapeHtml(reviewDate)}</div>
+            </div>
+            <p class="quote-message">${escapeHtml(reviewText)}</p>
+        `;
+    }
+
+    function quoteCardActionsHtml(quote, compact, quotePayload, displayStatus) {
+        const status = String(displayStatus || 'pending').toLowerCase();
+
+        if (status === 'accepted') {
+            return `
+                <button
+                    type="button"
+                    class="action-btn btn-collaboration"
+                    id="quoteNegotiationButton"
+                    onclick='event.stopPropagation();openJobCollaborationModal(${Number(quote.request_id)}, "${escapeHtml(String(quote.request_type || 'regular').toLowerCase() === 'direct' ? 'direct' : 'regular')}")'>
+                    <i class="fas fa-comments"></i> Job Collaboration
+                </button>
+                <button
+                    type="button"
+                    class="action-btn btn-reject-sm"
+                    onclick='event.stopPropagation();resetQuoteToPending(${quotePayload}, "accepted")'>
+                    <i class="fas fa-rotate-left"></i> Cancel Acceptance
+                </button>
+            `;
+        }
+
+        if (status === 'rejected') {
+            return `
+                <button
+                    type="button"
+                    class="action-btn btn-secondary"
+                    onclick='event.stopPropagation();resetQuoteToPending(${quotePayload}, "rejected")'>
+                    <i class="fas fa-rotate-left"></i> Cancel Rejection
+                </button>
+            `;
+        }
+
+        if (status === 'completed') {
+            return `
+                <button
+                    type="button"
+                    class="action-btn btn-view-quotes"
+                    onclick='event.stopPropagation();openCompletedQuoteSummary(${quotePayload})'>
+                    <i class="fas fa-file-lines"></i> Summary
+                </button>
+            `;
+        }
+
+        return `
+            <button type="button" class="action-btn btn-view-quotes" onclick='event.stopPropagation();openQuoteDetails(${quotePayload})'>
+                <i class="fas fa-eye"></i> View Full Details
+            </button>
+            ${compact ? '' : `
+            <button type="button" class="action-btn btn-negotiate-sm" onclick='event.stopPropagation();openLatestQuoteNegotiationModal(${quotePayload})'>
+                <i class="fas fa-clock-rotate-left"></i> Latest Negotiation
+            </button>
+            `}
+        `;
+    }
+
     function renderQuoteCard(quote, variant) {
         const compact = variant === 'request';
         const displayStatus = quoteDisplayStatus(quote);
         const quotePayload = JSON.stringify({ source: quote.source, quote_id: quote.quote_id, request_type: quote.request_type });
+        const normalizedDisplayStatus = String(displayStatus || 'pending').toLowerCase();
+        const canOpenCard = normalizedDisplayStatus === 'pending';
+        const cardRole = canOpenCard ? 'button' : 'article';
+        const cardTabIndex = canOpenCard ? '0' : '-1';
+        const clickHandler = canOpenCard
+            ? ` onclick='openQuoteDetails(${quotePayload})' onkeydown='if(event.key === "Enter" || event.key === " "){event.preventDefault();openQuoteDetails(${quotePayload});}'`
+            : '';
         const extraInfo = compact
             ? `<p class="quote-job-meta">${escapeHtml(quote.provider_type || quote.source)} | ${escapeHtml(formatMoney(quote.amount))}</p>`
             : `<p class="quote-job-meta">${escapeHtml(quote.category_name || 'N/A')} | Sent ${escapeHtml(formatDateTime(quote.created_at))}</p>`;
 
         return `
-            <article class="quote-item quote-item-${compact ? 'compact' : 'full'}" role="button" tabindex="0" onclick='openQuoteDetails(${quotePayload})' onkeydown='if(event.key === "Enter" || event.key === " "){event.preventDefault();openQuoteDetails(${quotePayload});}'>
+            <article class="quote-item quote-item-${compact ? 'compact' : 'full'}" role="${cardRole}" tabindex="${cardTabIndex}"${clickHandler}>
                 <div class="quote-card-top">
                     <div>
                         <h3 class="quote-job-title">${escapeHtml(quote.provider_name || (quote.source === 'company' ? 'Company' : 'Repairer'))}</h3>
@@ -1058,17 +1089,63 @@ foreach ($allJobRequests as $job) {
                     <div class="quote-meta-item"><strong>Quote ID:</strong> #${escapeHtml(quote.quote_id)}</div>
                 </div>
                 <div class="quote-actions quote-actions-inline">
-                    <button type="button" class="action-btn btn-view-quotes" onclick='event.stopPropagation();openQuoteDetails(${quotePayload})'>
-                        <i class="fas fa-eye"></i> View Full Details
-                    </button>
-                    ${compact ? '' : `
-                    <button type="button" class="action-btn btn-negotiate-sm" onclick='event.stopPropagation();openLatestQuoteNegotiationModal(${quotePayload})'>
-                        <i class="fas fa-clock-rotate-left"></i> Latest Negotiation
-                    </button>
-                    `}
+                    ${quoteCardActionsHtml(quote, compact, quotePayload, normalizedDisplayStatus)}
                 </div>
             </article>
         `;
+    }
+
+    async function resetQuoteToPending(payload, fromStatus) {
+        const quote = findQuote(payload);
+        if (!quote) {
+            alert('Quote not found. Please refresh and try again.');
+            return;
+        }
+
+        const label = String(fromStatus || '').toLowerCase() === 'accepted' ? 'acceptance' : 'rejection';
+        if (!confirm(`Cancel this ${label} and move the quote back to pending?`)) {
+            return;
+        }
+
+        try {
+            await fetchJson(`${USER_QUOTES_API}?action=reset_to_pending`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    source: String(quote.source || ''),
+                    quote_id: Number(quote.quote_id),
+                    request_type: String(quote.request_type || 'regular')
+                })
+            });
+
+            showActionToast('Quote moved back to pending.');
+            await loadQuotesReceived();
+        } catch (error) {
+            alert(error && error.message ? error.message : 'Failed to move quote back to pending.');
+        }
+    }
+
+    async function openCompletedQuoteSummary(payload) {
+        const quote = findQuote(payload);
+        if (!quote || !quoteDetailsModal || !quoteDetailsContent) {
+            alert('Unable to open quote summary.');
+            return;
+        }
+
+        quoteDetailsContent.innerHTML = '<div class="quote-empty-state">Loading completed summary...</div>';
+        quoteDetailsModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        if (quoteAcceptBtn) quoteAcceptBtn.style.display = 'none';
+        if (quoteRejectBtn) quoteRejectBtn.style.display = 'none';
+        if (quoteNegotiateBtn) quoteNegotiateBtn.style.display = 'none';
+
+        try {
+            const result = await fetchJson(`${USER_QUOTES_API}?action=completion_summary&source=${encodeURIComponent(String(quote.source || ''))}&quote_id=${encodeURIComponent(String(quote.quote_id))}&request_type=${encodeURIComponent(String(quote.request_type || 'regular'))}`);
+            quoteDetailsContent.innerHTML = completedSummaryHtml(result.summary || null);
+        } catch (error) {
+            quoteDetailsContent.innerHTML = `<div class="quote-empty-state">${escapeHtml(error && error.message ? error.message : 'Failed to load summary.')}</div>`;
+        }
     }
 
     function resolveNegotiationParty(role, id, quote) {
@@ -1359,6 +1436,10 @@ foreach ($allJobRequests as $job) {
 
     function setQuoteActionButtons(quote) {
         if (!quoteAcceptBtn || !quoteRejectBtn || !quoteNegotiateBtn) return;
+
+        quoteAcceptBtn.style.display = '';
+        quoteRejectBtn.style.display = '';
+        quoteNegotiateBtn.style.display = '';
 
         const quoteStatus = String(quote.status || '').toLowerCase();
         const canRespond = quoteStatus === 'pending';
@@ -2126,6 +2207,8 @@ foreach ($allJobRequests as $job) {
     window.openJobQuotesModal = openJobQuotesModal;
     window.closeJobQuotesModal = closeJobQuotesModal;
     window.openQuoteDetails = openQuoteDetails;
+    window.resetQuoteToPending = resetQuoteToPending;
+    window.openCompletedQuoteSummary = openCompletedQuoteSummary;
     window.closeQuoteDetailsModal = closeQuoteDetailsModal;
     window.closeQuoteNegotiationModal = closeQuoteNegotiationModal;
     window.openLatestQuoteNegotiationModal = openLatestQuoteNegotiationModal;
