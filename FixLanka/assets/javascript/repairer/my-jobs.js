@@ -6,6 +6,7 @@
 // ===== GLOBALS =====
 const repairerId = window.CURRENT_REPAIRER_ID || 0;
 const BASE_URL   = window.BASE_URL || '/2nd-Year-Group-Project/FixLanka/';
+const JOB_COLLAB_API = `${BASE_URL}api/job-collaboration.php`;
 
 let cachedJobs    = [];   // full list from API
 let currentFilter = 'all';
@@ -123,6 +124,9 @@ function renderJobs(jobs, filter) {
 function createJobCard(job) {
     const uiStatus = job.ui_status || 'active';
     const jobStatus = job.job_status || 'accepted';
+    const userCompleted = !!job.user_completed_at;
+    const providerCompleted = !!job.provider_completed_at;
+    const providerPaid = !!job.provider_payment_confirmed_at;
     const badgeMap = {
         active:    { icon: 'play-circle',     label: 'Active' },
         completed: { icon: 'clipboard-check', label: 'Completed' },
@@ -164,7 +168,7 @@ function createJobCard(job) {
             // Work in progress — repairer can mark complete
             actionsHtml = `
                 <button class="btn btn-success" onclick="markComplete(${job.request_id})">
-                    <i class="fas fa-check"></i> Mark Complete
+                    <i class="fas fa-check"></i> Completed
                 </button>
                 <button class="btn btn-secondary" onclick="viewJobDetails(${job.quote_id})">
                     <i class="fas fa-eye"></i> View Details
@@ -174,10 +178,22 @@ function createJobCard(job) {
                 </button>`;
         }
     } else if (uiStatus === 'completed') {
+        const paymentAction = providerPaid
+            ? `<button class="btn btn-secondary btn-sm" onclick="resetPaymentReceived(${job.request_id})"><i class="fas fa-rotate-left"></i> Redo Payment</button>`
+            : `<button class="btn btn-primary" onclick="markPaymentReceived(${job.request_id})"><i class="fas fa-wallet"></i> Payment Received</button>`;
+
+        const completionHint = providerCompleted
+            ? '<span class="completed-label"><i class="fas fa-flag-checkered"></i> Marked as job completed</span>'
+            : '<span class="completed-label"><i class="fas fa-hourglass-half"></i> Awaiting Completion Mark</span>';
+
         actionsHtml = `
             <div class="completion-info">
-                <span class="completed-label"><i class="fas fa-hourglass-half"></i> Awaiting Payment</span>
+                ${completionHint}
             </div>
+            ${paymentAction}
+            <button class="btn btn-secondary btn-sm" onclick="resetCompleteMark(${job.request_id})">
+                <i class="fas fa-rotate-left"></i> Redo Complete
+            </button>
             <button class="btn btn-secondary" onclick="viewJobDetails(${job.quote_id})">
                 <i class="fas fa-eye"></i> View Details
             </button>`;
@@ -186,6 +202,9 @@ function createJobCard(job) {
             <div class="completion-info">
                 <span class="completed-label paid-label"><i class="fas fa-check-circle"></i> Completed &amp; Paid</span>
             </div>
+            <button class="btn btn-secondary btn-sm" onclick="resetPaymentReceived(${job.request_id})">
+                <i class="fas fa-rotate-left"></i> Redo Payment
+            </button>
             <button class="btn btn-secondary" onclick="viewJobDetails(${job.quote_id})">
                 <i class="fas fa-eye"></i> View Details
             </button>`;
@@ -247,8 +266,23 @@ async function startWork(requestId) {
 }
 
 async function markComplete(requestId) {
-    if (!confirm('Mark this job as complete? The customer will be notified.')) return;
-    await apiUpdateStatus(requestId, 'completed');
+    if (!confirm('Whether the job is completed or not, are you sure?')) return;
+    await callCollaborationActionForRequest(requestId, 'mark_completed', 'Job marked as completed from your side.');
+}
+
+async function resetCompleteMark(requestId) {
+    if (!confirm('Reset your completion mark?')) return;
+    await callCollaborationActionForRequest(requestId, 'reset_completed', 'Completion mark reset from your side.');
+}
+
+async function markPaymentReceived(requestId) {
+    if (!confirm('Confirm payment received. Are you sure?')) return;
+    await callCollaborationActionForRequest(requestId, 'confirm_payment', 'Payment confirmed from your side.');
+}
+
+async function resetPaymentReceived(requestId) {
+    if (!confirm('Reset your payment confirmation?')) return;
+    await callCollaborationActionForRequest(requestId, 'reset_payment', 'Payment confirmation reset from your side.');
 }
 
 async function cancelJob(requestId) {
@@ -265,6 +299,8 @@ function viewJobDetails(quoteId) {
     }
 
     const uiStatus = job.ui_status || 'active';
+    const providerCompleted = !!job.provider_completed_at;
+    const providerPaid = !!job.provider_payment_confirmed_at;
     const iconMap  = { active: 'tools', completed: 'clipboard-check', paid: 'check-circle', cancelled: 'times-circle' };
     const labelMap = { active: 'Active', completed: 'Completed', paid: 'Paid', cancelled: 'Cancelled' };
 
@@ -322,15 +358,29 @@ function viewJobDetails(quoteId) {
                 }
             };
         } else if (uiStatus === 'active') {
-            primaryBtn.innerHTML = '<i class="fas fa-check"></i> Mark as Complete';
+            primaryBtn.innerHTML = '<i class="fas fa-check"></i> Completed';
             primaryBtn.className = 'btn btn-success';
             primaryBtn.style.display = '';
             primaryBtn.onclick = async () => {
-                if (confirm('Mark this job as complete? The customer will be notified.')) {
-                    await apiUpdateStatus(job.request_id, 'completed');
+                if (confirm('Whether the job is completed or not, are you sure?')) {
+                    await callCollaborationActionForRequest(job.request_id, 'mark_completed', 'Job marked as completed from your side.');
                     closeJobDetailsModal();
                 }
             };
+        } else if (uiStatus === 'completed' || uiStatus === 'paid') {
+            if (!providerPaid) {
+                primaryBtn.innerHTML = '<i class="fas fa-wallet"></i> Payment Received';
+                primaryBtn.className = 'btn btn-primary';
+                primaryBtn.style.display = '';
+                primaryBtn.onclick = async () => {
+                    if (confirm('Confirm payment received. Are you sure?')) {
+                        await callCollaborationActionForRequest(job.request_id, 'confirm_payment', 'Payment confirmed from your side.');
+                        closeJobDetailsModal();
+                    }
+                };
+            } else {
+                primaryBtn.style.display = 'none';
+            }
         } else {
             primaryBtn.style.display = 'none';
         }
@@ -345,6 +395,10 @@ function viewJobDetails(quoteId) {
 
 function buildTimeline(job) {
     const steps = [];
+    const userCompleted = !!job.user_completed_at;
+    const providerCompleted = !!job.provider_completed_at;
+    const userPaid = !!job.user_payment_confirmed_at;
+    const providerPaid = !!job.provider_payment_confirmed_at;
     steps.push({ title: 'Quote Submitted', date: formatDate(job.dateSubmitted), status: 'completed', icon: 'check' });
     steps.push({ title: 'Quote Accepted',  date: formatDate(job.dateSubmitted), status: 'completed', icon: 'check' });
 
@@ -355,12 +409,14 @@ function buildTimeline(job) {
         steps.push({ title: 'Work Started', date: 'Pending', status: 'pending', icon: 'clock' });
     }
 
-    if (js === 'completed') {
-        steps.push({ title: 'Work Completed', date: '', status: 'completed', icon: 'clipboard-check' });
-        if (job.payment_status === 'completed') {
-            steps.push({ title: 'Payment Received', date: formatDate(job.paymentDate), status: 'completed', icon: 'credit-card' });
+    if (providerCompleted || userCompleted || js === 'completed') {
+        steps.push({ title: 'Repairer Marked Complete', date: providerCompleted ? formatDate(job.provider_completed_at) : 'Pending', status: providerCompleted ? 'completed' : 'pending', icon: 'clipboard-check' });
+        steps.push({ title: 'User Marked Complete', date: userCompleted ? formatDate(job.user_completed_at) : 'Pending', status: userCompleted ? 'completed' : 'pending', icon: 'flag-checkered' });
+        if (providerPaid || userPaid) {
+            steps.push({ title: 'Repairer Payment Confirmation', date: providerPaid ? formatDate(job.provider_payment_confirmed_at) : 'Pending', status: providerPaid ? 'completed' : 'active', icon: 'wallet' });
+            steps.push({ title: 'User Payment Confirmation', date: userPaid ? formatDate(job.user_payment_confirmed_at) : 'Pending', status: userPaid ? 'completed' : 'active', icon: 'credit-card' });
         } else {
-            steps.push({ title: 'Awaiting Payment', date: 'Pending', status: 'active', icon: 'hourglass-half' });
+            steps.push({ title: 'Payment Confirmation', date: 'Pending', status: 'active', icon: 'hourglass-half' });
         }
     } else if (js === 'cancelled') {
         steps.push({ title: 'Job Cancelled', date: '', status: 'cancelled', icon: 'times-circle' });
@@ -419,7 +475,7 @@ function updateSectionSubtitle(filter) {
     const labelMap = {
         all:       'total jobs',
         active:    'active jobs',
-        completed: 'completed jobs awaiting payment',
+        completed: 'completed jobs',
         paid:      'paid jobs',
         cancelled: 'cancelled jobs',
     };
@@ -617,4 +673,53 @@ function showNotification(message, type) {
         n.style.transform = 'translateX(100%)';
         setTimeout(() => { if (n.parentNode) n.parentNode.removeChild(n); }, 300);
     }, 3000);
+}
+
+async function callCollaborationActionForRequest(requestId, action, successMessage) {
+    const job = cachedJobs.find((item) => Number(item.request_id) === Number(requestId));
+    if (!job) {
+        showNotification('Job not found.', 'error');
+        return;
+    }
+
+    let collaborationId = Number(job.collaboration_id || 0);
+    if (!Number.isFinite(collaborationId) || collaborationId <= 0) {
+        try {
+            const resolveRes = await fetch(`${JOB_COLLAB_API}?action=get&request_id=${encodeURIComponent(String(requestId))}&request_type=regular`, {
+                credentials: 'same-origin'
+            });
+            const resolveData = await resolveRes.json();
+            if (resolveRes.ok && resolveData && resolveData.success && resolveData.collaboration) {
+                collaborationId = Number(resolveData.collaboration.collaboration_id || 0);
+                if (Number.isFinite(collaborationId) && collaborationId > 0) {
+                    job.collaboration_id = collaborationId;
+                }
+            }
+        } catch (e) {
+            // continue to guard below
+        }
+    }
+
+    if (!Number.isFinite(collaborationId) || collaborationId <= 0) {
+        showNotification('Collaboration workflow is not initialized for this job yet.', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${JOB_COLLAB_API}?action=${encodeURIComponent(action)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ collaboration_id: collaborationId })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            throw new Error(data.message || 'Failed to update collaboration');
+        }
+
+        showNotification(successMessage, 'success');
+        await loadJobs();
+    } catch (err) {
+        showNotification(err.message || 'Failed to update collaboration.', 'error');
+    }
 }

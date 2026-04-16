@@ -2328,6 +2328,27 @@ body > * {
     flex-wrap: wrap;
 }
 
+.collaboration-progress-actions .action-btn.is-confirmed {
+    background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+    color: #ffffff;
+    border-color: rgba(22, 163, 74, 0.4);
+}
+
+.collaboration-review-panel {
+    transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.collaboration-review-panel.is-locked {
+    background: rgba(148, 163, 184, 0.18);
+    border-color: rgba(100, 116, 139, 0.35);
+    opacity: 0.8;
+}
+
+.collab-review-lock-text {
+    color: #475569;
+    font-weight: 600;
+}
+
 .collaboration-hint {
     margin: 0;
     color: var(--text-muted);

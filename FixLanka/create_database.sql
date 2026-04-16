@@ -1089,7 +1089,7 @@ CREATE TABLE `repairerquote` (
   `validUntil` date NOT NULL,
   `materialsIncluded` tinyint(1) DEFAULT 1,
   `message` text DEFAULT NULL,
-  `status` enum('pending','accepted','rejected','expired') DEFAULT 'pending',
+  `status` enum('pending','accepted','completed','rejected','expired') DEFAULT 'pending',
   `dateSubmitted` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`quote_id`),
   KEY `idx_request` (`request_id`),

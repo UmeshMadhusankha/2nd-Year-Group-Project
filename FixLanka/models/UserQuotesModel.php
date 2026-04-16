@@ -116,6 +116,8 @@ class UserQuotesModel {
     public function getUserQuotes(int $userId, int $limit = 20, int $offset = 0, ?string $status = null, ?int $requestId = null, ?string $requestType = null): array {
         $limit = max(1, min(50, (int)$limit));
         $offset = max(0, (int)$offset);
+        $statusNormalized = $status !== null ? strtolower(trim($status)) : null;
+        $filterCompletedByRequestStatus = $statusNormalized === 'completed';
 
         $requestType = $requestType !== null ? strtolower(trim($requestType)) : null;
         $includeRegular = $requestType === null || $requestType === '' || $requestType === 'regular';
@@ -127,6 +129,14 @@ class UserQuotesModel {
         $statusSqlCompanyRegular = '';
         $statusSqlRepairerDirect = '';
         $statusSqlCompanyDirect = '';
+        $requestStatusSqlRepairerRegular = '';
+        $requestStatusSqlCompanyRegular = '';
+        $requestStatusSqlRepairerDirect = '';
+        $requestStatusSqlCompanyDirect = '';
+        $acceptedScopeSqlRepairerRegular = '';
+        $acceptedScopeSqlCompanyRegular = '';
+        $acceptedScopeSqlRepairerDirect = '';
+        $acceptedScopeSqlCompanyDirect = '';
 
         $requestSqlRepairerRegular = '';
         $requestSqlCompanyRegular = '';
@@ -138,10 +148,19 @@ class UserQuotesModel {
             $params[':user_id_company_regular'] = $userId;
 
             if ($status !== null) {
-                $params[':status_repairer_regular'] = $status;
-                $params[':status_company_regular'] = $status;
-                $statusSqlRepairerRegular = ' AND rq.status = :status_repairer_regular ';
-                $statusSqlCompanyRegular = ' AND cq.status = :status_company_regular ';
+                if ($filterCompletedByRequestStatus) {
+                    $requestStatusSqlRepairerRegular = " AND jr.status = 'completed' AND rq.status IN ('accepted','completed','successful') ";
+                    $requestStatusSqlCompanyRegular = " AND jr.status = 'completed' AND cq.status IN ('accepted','successful') ";
+                } else {
+                    $params[':status_repairer_regular'] = $statusNormalized;
+                    $params[':status_company_regular'] = $statusNormalized;
+                    $statusSqlRepairerRegular = ' AND rq.status = :status_repairer_regular ';
+                    $statusSqlCompanyRegular = ' AND cq.status = :status_company_regular ';
+                    if ($statusNormalized === 'accepted') {
+                        $acceptedScopeSqlRepairerRegular = " AND jr.status <> 'completed' ";
+                        $acceptedScopeSqlCompanyRegular = " AND jr.status <> 'completed' ";
+                    }
+                }
             }
 
             if ($requestId !== null) {
@@ -157,10 +176,19 @@ class UserQuotesModel {
             $params[':user_id_company_direct'] = $userId;
 
             if ($status !== null) {
-                $params[':status_repairer_direct'] = $status;
-                $params[':status_company_direct'] = $status;
-                $statusSqlRepairerDirect = ' AND rq.status = :status_repairer_direct ';
-                $statusSqlCompanyDirect = ' AND cq.status = :status_company_direct ';
+                if ($filterCompletedByRequestStatus) {
+                    $requestStatusSqlRepairerDirect = " AND djr.status = 'completed' AND rq.status IN ('accepted','completed','successful') ";
+                    $requestStatusSqlCompanyDirect = " AND djr.status = 'completed' AND cq.status IN ('accepted','successful') ";
+                } else {
+                    $params[':status_repairer_direct'] = $statusNormalized;
+                    $params[':status_company_direct'] = $statusNormalized;
+                    $statusSqlRepairerDirect = ' AND rq.status = :status_repairer_direct ';
+                    $statusSqlCompanyDirect = ' AND cq.status = :status_company_direct ';
+                    if ($statusNormalized === 'accepted') {
+                        $acceptedScopeSqlRepairerDirect = " AND djr.status <> 'completed' ";
+                        $acceptedScopeSqlCompanyDirect = " AND djr.status <> 'completed' ";
+                    }
+                }
             }
 
             if ($requestId !== null) {
@@ -228,6 +256,8 @@ class UserQuotesModel {
                 INNER JOIN repairer r ON rq.repairer_id = r.repairer_id
                 WHERE jr.user_id = :user_id_repairer_regular
                 $statusSqlRepairerRegular
+                $requestStatusSqlRepairerRegular
+                $acceptedScopeSqlRepairerRegular
                 $requestSqlRepairerRegular
             ";
 
@@ -276,6 +306,8 @@ class UserQuotesModel {
                 $companyJoinSql
                 WHERE jr.user_id = :user_id_company_regular
                 $statusSqlCompanyRegular
+                $requestStatusSqlCompanyRegular
+                $acceptedScopeSqlCompanyRegular
                 $requestSqlCompanyRegular
             ";
         }
@@ -326,6 +358,8 @@ class UserQuotesModel {
                 INNER JOIN repairer r ON rq.repairer_id = r.repairer_id
                 WHERE djr.user_id = :user_id_repairer_direct
                 $statusSqlRepairerDirect
+                $requestStatusSqlRepairerDirect
+                $acceptedScopeSqlRepairerDirect
                 $requestSqlRepairerDirect
             ";
 
@@ -374,6 +408,8 @@ class UserQuotesModel {
                 $companyJoinSql
                 WHERE djr.user_id = :user_id_company_direct
                 $statusSqlCompanyDirect
+                $requestStatusSqlCompanyDirect
+                $acceptedScopeSqlCompanyDirect
                 $requestSqlCompanyDirect
             ";
         }

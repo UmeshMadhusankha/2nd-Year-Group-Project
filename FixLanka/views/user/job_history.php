@@ -320,6 +320,7 @@ foreach ($allJobRequests as $job) {
                     <button class="quotes-filter-tab active" type="button" data-quote-status="pending">Pending</button>
                     <button class="quotes-filter-tab" type="button" data-quote-status="accepted">Accepted</button>
                     <button class="quotes-filter-tab" type="button" data-quote-status="rejected">Rejected</button>
+                    <button class="quotes-filter-tab" type="button" data-quote-status="completed">Completed</button>
                 </div>
                 <div class="quotes-received-list" id="quotesReceivedList">
                     <div class="quote-empty-state">Loading quotes...</div>
@@ -635,12 +636,20 @@ foreach ($allJobRequests as $job) {
 
                     <section class="collaboration-panel">
                         <h3>Progress Confirmation</h3>
-                        <div class="collaboration-inline-actions">
+                        <div class="collaboration-inline-actions collaboration-progress-actions">
                             <button type="button" class="action-btn btn-primary" id="collabMarkCompletedBtn">
                                 <i class="fas fa-flag-checkered"></i> Mark Job Completed
                             </button>
+                            <button type="button" class="action-btn btn-secondary" id="collabResetCompletedBtn" style="display:none;">
+                                <i class="fas fa-rotate-left"></i> Redo
+                            </button>
+                        </div>
+                        <div class="collaboration-inline-actions collaboration-progress-actions">
                             <button type="button" class="action-btn btn-primary" id="collabConfirmPaymentBtn">
                                 <i class="fas fa-wallet"></i> Confirm Payment Done
+                            </button>
+                            <button type="button" class="action-btn btn-secondary" id="collabResetPaymentBtn" style="display:none;">
+                                <i class="fas fa-rotate-left"></i> Redo
                             </button>
                         </div>
                     </section>
@@ -653,8 +662,9 @@ foreach ($allJobRequests as $job) {
                         </button>
                     </section>
 
-                    <section class="collaboration-panel" id="collabRatingPanel">
-                        <h3>Rate This Job</h3>
+                    <section class="collaboration-panel collaboration-review-panel is-locked" id="collabRatingPanel">
+                        <h3>Review</h3>
+                        <p class="collaboration-hint collab-review-lock-text" id="collabReviewLockText">Job and payment must be completed.</p>
                         <select id="collabRatingValue">
                             <option value="">Select rating</option>
                             <option value="5">5 - Excellent</option>
@@ -737,9 +747,12 @@ foreach ($allJobRequests as $job) {
     const collabRejectPriceBtn = document.getElementById('collabRejectPriceBtn');
     const collabMarkCompletedBtn = document.getElementById('collabMarkCompletedBtn');
     const collabConfirmPaymentBtn = document.getElementById('collabConfirmPaymentBtn');
+    const collabResetCompletedBtn = document.getElementById('collabResetCompletedBtn');
+    const collabResetPaymentBtn = document.getElementById('collabResetPaymentBtn');
     const collabNoteInput = document.getElementById('collabNoteInput');
     const collabSendNoteBtn = document.getElementById('collabSendNoteBtn');
     const collabRatingPanel = document.getElementById('collabRatingPanel');
+    const collabReviewLockText = document.getElementById('collabReviewLockText');
     const collabRatingValue = document.getElementById('collabRatingValue');
     const collabRatingComment = document.getElementById('collabRatingComment');
     const collabSubmitRatingBtn = document.getElementById('collabSubmitRatingBtn');
@@ -804,7 +817,11 @@ foreach ($allJobRequests as $job) {
     }
 
     function readableStatus(status) {
-        return String(status || 'pending').replaceAll('_', ' ');
+        const normalized = String(status || 'pending').toLowerCase();
+        if (normalized === 'successful') {
+            return 'completed';
+        }
+        return normalized.replaceAll('_', ' ');
     }
 
     function normalizeProviderType(providerType) {
@@ -861,6 +878,17 @@ foreach ($allJobRequests as $job) {
 
     function formatStatusLabel(status) {
         return readableStatus(status).replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function quoteDisplayStatus(quote) {
+        const rawQuoteStatus = String(quote?.status || 'pending').toLowerCase();
+        const requestStatus = String(quote?.request_status || quote?.job_status || '').toLowerCase();
+
+        if (requestStatus === 'completed' && (rawQuoteStatus === 'accepted' || rawQuoteStatus === 'successful')) {
+            return 'completed';
+        }
+
+        return rawQuoteStatus;
     }
 
     function showActionToast(message) {
@@ -964,6 +992,7 @@ foreach ($allJobRequests as $job) {
     }
 
     function quoteDetailsHtml(quote) {
+        const displayStatus = quoteDisplayStatus(quote);
         const companyFields = quote.source === 'company'
             ? `
                 <div class="quote-meta-item"><strong>Labor:</strong> ${escapeHtml(formatMoney(quote.labor_cost))}</div>
@@ -984,7 +1013,7 @@ foreach ($allJobRequests as $job) {
         return `
             <div class="quote-details-head">
                 <h3 class="quote-job-title">${escapeHtml(quote.job_title || 'Quotation')}</h3>
-                <span class="quote-status-pill quote-status-${escapeHtml(String(quote.status || 'pending').toLowerCase())}">${escapeHtml(readableStatus(quote.status))}</span>
+                <span class="quote-status-pill quote-status-${escapeHtml(displayStatus)}">${escapeHtml(readableStatus(displayStatus))}</span>
             </div>
             <div class="quote-provider">
                 <img src="${escapeHtml(quote.provider_avatar || 'https://via.placeholder.com/48')}" alt="Provider" class="provider-avatar">
@@ -1007,6 +1036,7 @@ foreach ($allJobRequests as $job) {
 
     function renderQuoteCard(quote, variant) {
         const compact = variant === 'request';
+        const displayStatus = quoteDisplayStatus(quote);
         const quotePayload = JSON.stringify({ source: quote.source, quote_id: quote.quote_id, request_type: quote.request_type });
         const extraInfo = compact
             ? `<p class="quote-job-meta">${escapeHtml(quote.provider_type || quote.source)} | ${escapeHtml(formatMoney(quote.amount))}</p>`
@@ -1019,7 +1049,7 @@ foreach ($allJobRequests as $job) {
                         <h3 class="quote-job-title">${escapeHtml(quote.provider_name || (quote.source === 'company' ? 'Company' : 'Repairer'))}</h3>
                         ${extraInfo}
                     </div>
-                    <span class="quote-status-pill quote-status-${escapeHtml(String(quote.status || 'pending').toLowerCase())}">${escapeHtml(readableStatus(quote.status))}</span>
+                    <span class="quote-status-pill quote-status-${escapeHtml(displayStatus)}">${escapeHtml(readableStatus(displayStatus))}</span>
                 </div>
                 <div class="quote-meta-grid ${compact ? 'quote-meta-grid-compact' : ''}">
                     <div class="quote-meta-item"><strong>Service Provider Type:</strong> ${escapeHtml(quote.provider_type || 'N/A')}</div>
@@ -1659,7 +1689,9 @@ foreach ($allJobRequests as $job) {
             price_accepted: 'Price Accepted',
             price_rejected: 'Price Rejected',
             completed_marked: 'Completion Marked',
+            completed_reset: 'Completion Reset',
             payment_confirmed: 'Payment Confirmed',
+            payment_reset: 'Payment Reset',
             rating_submitted: 'Rating Submitted',
             phase_changed: 'Phase Updated',
             system: 'System',
@@ -1732,18 +1764,64 @@ foreach ($allJobRequests as $job) {
 
         const userCompleted = !!currentCollaboration.user_completed_at;
         if (collabMarkCompletedBtn) {
-            collabMarkCompletedBtn.disabled = userCompleted || String(currentCollaboration.current_phase || '').toLowerCase() === 'completed';
+            collabMarkCompletedBtn.disabled = String(currentCollaboration.current_phase || '').toLowerCase() === 'completed';
+            if (userCompleted) {
+                collabMarkCompletedBtn.classList.add('is-confirmed');
+                collabMarkCompletedBtn.innerHTML = '<i class="fas fa-check-circle"></i> Marked as Job Completed';
+            } else {
+                collabMarkCompletedBtn.classList.remove('is-confirmed');
+                collabMarkCompletedBtn.innerHTML = '<i class="fas fa-flag-checkered"></i> Mark Job Completed';
+            }
+        }
+
+        if (collabResetCompletedBtn) {
+            collabResetCompletedBtn.style.display = userCompleted ? '' : 'none';
+            collabResetCompletedBtn.disabled = !userCompleted;
         }
 
         const userPaid = !!currentCollaboration.user_payment_confirmed_at;
-        const providerCompleted = !!currentCollaboration.provider_completed_at;
         if (collabConfirmPaymentBtn) {
-            collabConfirmPaymentBtn.disabled = userPaid || !userCompleted || !providerCompleted;
+            collabConfirmPaymentBtn.disabled = false;
+            if (userPaid) {
+                collabConfirmPaymentBtn.classList.add('is-confirmed');
+                collabConfirmPaymentBtn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmed Payment Done';
+            } else {
+                collabConfirmPaymentBtn.classList.remove('is-confirmed');
+                collabConfirmPaymentBtn.innerHTML = '<i class="fas fa-wallet"></i> Confirm Payment Done';
+            }
         }
 
-        const canRate = String(currentCollaboration.current_phase || '').toLowerCase() === 'review' && !currentCollaboration.user_rated_at;
+        if (collabResetPaymentBtn) {
+            collabResetPaymentBtn.style.display = userPaid ? '' : 'none';
+            collabResetPaymentBtn.disabled = !userPaid;
+        }
+
+        const canRate = !!currentCollaboration.user_payment_confirmed_at
+            && !!currentCollaboration.provider_payment_confirmed_at
+            && !currentCollaboration.user_rated_at;
         if (collabRatingPanel) {
-            collabRatingPanel.style.display = canRate ? 'block' : 'none';
+            collabRatingPanel.classList.toggle('is-locked', !canRate);
+            collabRatingPanel.style.display = 'block';
+        }
+
+        if (collabReviewLockText) {
+            if (currentCollaboration.user_rated_at) {
+                collabReviewLockText.textContent = 'Review already submitted.';
+            } else if (!canRate) {
+                collabReviewLockText.textContent = 'Job and payment must be completed.';
+            } else {
+                collabReviewLockText.textContent = 'You can now submit your review.';
+            }
+        }
+
+        if (collabRatingValue) {
+            collabRatingValue.disabled = !canRate;
+        }
+        if (collabRatingComment) {
+            collabRatingComment.disabled = !canRate;
+        }
+        if (collabSubmitRatingBtn) {
+            collabSubmitRatingBtn.disabled = !canRate;
         }
 
         renderCollaborationEvents(currentCollaboration.events || []);
@@ -2249,8 +2327,26 @@ foreach ($allJobRequests as $job) {
         if (collabMarkCompletedBtn) {
             collabMarkCompletedBtn.addEventListener('click', async function() {
                 if (!currentCollaboration) return;
+                if (currentCollaboration.user_completed_at) {
+                    return;
+                }
+                if (!confirm('Whether the job is completed or not, are you sure?')) {
+                    return;
+                }
                 await safelyRunCollaborationAction(async function() {
                     await callCollaborationAction('mark_completed', {}, 'Marked as completed from your side.');
+                });
+            });
+        }
+
+        if (collabResetCompletedBtn) {
+            collabResetCompletedBtn.addEventListener('click', async function() {
+                if (!currentCollaboration || !currentCollaboration.user_completed_at) return;
+                if (!confirm('Reset your job completion mark?')) {
+                    return;
+                }
+                await safelyRunCollaborationAction(async function() {
+                    await callCollaborationAction('reset_completed', {}, 'Completion mark reset from your side.');
                 });
             });
         }
@@ -2258,8 +2354,35 @@ foreach ($allJobRequests as $job) {
         if (collabConfirmPaymentBtn) {
             collabConfirmPaymentBtn.addEventListener('click', async function() {
                 if (!currentCollaboration) return;
+                if (currentCollaboration.user_payment_confirmed_at) {
+                    alert('Payment is already confirmed from your side. Use Redo to reset it.');
+                    return;
+                }
+                if (!currentCollaboration.user_completed_at) {
+                    alert('Please mark the job as completed from your side first.');
+                    return;
+                }
+                if (!currentCollaboration.provider_completed_at) {
+                    alert('Please wait until the repairer marks the job as completed.');
+                    return;
+                }
+                if (!confirm('Confirm that payment is done. Are you sure?')) {
+                    return;
+                }
                 await safelyRunCollaborationAction(async function() {
                     await callCollaborationAction('confirm_payment', {}, 'Payment marked as done from your side.');
+                });
+            });
+        }
+
+        if (collabResetPaymentBtn) {
+            collabResetPaymentBtn.addEventListener('click', async function() {
+                if (!currentCollaboration || !currentCollaboration.user_payment_confirmed_at) return;
+                if (!confirm('Reset your payment confirmation?')) {
+                    return;
+                }
+                await safelyRunCollaborationAction(async function() {
+                    await callCollaborationAction('reset_payment', {}, 'Payment confirmation reset from your side.');
                 });
             });
         }
