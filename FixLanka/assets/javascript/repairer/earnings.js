@@ -4,19 +4,31 @@
 
 const EARNINGS_REPAIRER_ID = window.CURRENT_REPAIRER_ID || 0;
 const EARNINGS_API = '/2nd-Year-Group-Project/FixLanka/api';
+const COMPANY_EARNINGS_API = `${EARNINGS_API}/repairer-company-earnings.php`;
 
-// Raw jobs data from API
 let allJobs = [];
 let filteredJobs = [];
+let allCompanyAssignments = [];
+let filteredCompanyAssignments = [];
+let currentSearchTerm = '';
+
+let currentCustomerSort = { sortBy: 'date', direction: 'desc' };
+let currentCompanySort = { sortBy: 'date', direction: 'desc' };
 
 document.addEventListener('DOMContentLoaded', function () {
     if (!EARNINGS_REPAIRER_ID) {
         showEarningsError('Session expired. Please log in again.');
+        showCompanyEarningsError('Session expired. Please log in again.');
         return;
     }
+
     initializeFilters();
+    initializeCompanyFilters();
     initializeTableSorting();
+    initializeSearch();
+
     loadEarningsFromAPI();
+    loadCompanyEarningsFromAPI();
 });
 
 // ===== LOAD FROM API =====
@@ -33,16 +45,35 @@ async function loadEarningsFromAPI() {
             return;
         }
 
-        // Only show completed/paid jobs in earnings view
         allJobs = (data.jobs || []).filter(j => j.ui_status === 'completed' || j.ui_status === 'paid');
-        filteredJobs = [...allJobs];
-
-        renderEarningsTable(filteredJobs);
-        updateSummaryStats(filteredJobs);
-        updateWelcomeTotalEarnings(filteredJobs);
+        applyFilters();
+        updateSummaryStats(allJobs);
+        updateWelcomeTotalEarnings(allJobs);
     } catch (err) {
         console.error('Earnings load error:', err);
         showEarningsError('Failed to connect to the server. Please try again.');
+    }
+}
+
+async function loadCompanyEarningsFromAPI() {
+    setTableLoading('companyEarningsTableBody', 8);
+    setSubtitle('companyEarningsSubtitle', 'Loading...');
+
+    try {
+        const res = await fetch(`${COMPANY_EARNINGS_API}?action=list&repairer_id=${EARNINGS_REPAIRER_ID}`);
+        const data = await res.json();
+
+        if (!data.success) {
+            showCompanyEarningsError(data.message || 'Failed to load company earnings');
+            return;
+        }
+
+        allCompanyAssignments = data.assignments || [];
+        applyCompanyFilters();
+        updateCompanySummaryStats(allCompanyAssignments);
+    } catch (err) {
+        console.error('Company earnings load error:', err);
+        showCompanyEarningsError('Failed to connect to the server. Please try again.');
     }
 }
 
@@ -64,6 +95,14 @@ function showEarningsError(message) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#ef4444"><i class="fas fa-exclamation-circle"></i> ${escapeHtmlEarnings(message)}</td></tr>`;
     }
     setSubtitle('earningsSubtitle', 'Error loading data');
+}
+
+function showCompanyEarningsError(message) {
+    const tbody = document.getElementById('companyEarningsTableBody');
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#ef4444"><i class="fas fa-exclamation-circle"></i> ${escapeHtmlEarnings(message)}</td></tr>`;
+    }
+    setSubtitle('companyEarningsSubtitle', 'Error loading data');
 }
 
 function escapeHtmlEarnings(text) {
@@ -92,17 +131,16 @@ function createEarningsRow(job) {
     const statusIcon = isPaid ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-clock"></i>';
     const statusLabel = isPaid ? 'Paid' : 'Pending';
     const amount = parseFloat(job.quoteAmount) || 0;
-    const date = job.dateSubmitted ? new Date(job.dateSubmitted).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    const rawDate = job.paymentDate || job.dateSubmitted || job.job_posted_date || '';
+    const date = rawDate ? new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
     const customerFirst = job.customer_first_name || '';
     const customerLast = job.customer_last_name || '';
     const customerName = (customerFirst + ' ' + customerLast).trim() || '—';
 
-    const actions = isPaid
-        ? `<button class="btn btn-sm btn-outline" title="View Details"><i class="fas fa-eye"></i></button>`
-        : `<button class="btn btn-sm btn-outline" title="View Details"><i class="fas fa-eye"></i></button>`;
+    const actions = `<button class="btn btn-sm btn-outline" title="View Details" onclick="viewEarningDetails(${job.quote_id})"><i class="fas fa-eye"></i></button>`;
 
     return `
-        <tr class="earnings-row" data-status="${status}" data-date="${job.dateSubmitted || ''}" data-amount="${amount}">
+        <tr class="earnings-row" data-status="${status}" data-date="${escapeHtmlEarnings(rawDate)}" data-amount="${amount}" data-quote-id="${job.quote_id}">
             <td class="date-cell">
                 <div class="date-info">
                     <span class="date-primary">${date}</span>
@@ -130,6 +168,73 @@ function createEarningsRow(job) {
         </tr>`;
 }
 
+function renderCompanyEarningsTable(assignments) {
+    const tbody = document.getElementById('companyEarningsTableBody');
+    if (!tbody) return;
+
+    if (!assignments.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary)"><i class="fas fa-inbox fa-2x"></i><p style="margin-top:12px">No company earnings found for the selected filters.</p></td></tr>`;
+        setSubtitle('companyEarningsSubtitle', '0 payments found');
+        return;
+    }
+
+    tbody.innerHTML = assignments.map(item => createCompanyEarningsRow(item)).join('');
+    setSubtitle('companyEarningsSubtitle', `${assignments.length} payment${assignments.length !== 1 ? 's' : ''} found`);
+}
+
+function createCompanyEarningsRow(assignment) {
+    const status = assignment.ui_status === 'paid' ? 'paid' : 'pending';
+    const statusIcon = status === 'paid' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-clock"></i>';
+    const statusLabel = status === 'paid' ? 'Paid' : 'Pending';
+    const amount = parseFloat(assignment.amount) || 0;
+    const rawDate = assignment.assigned_date || assignment.end_date || '';
+    const date = rawDate ? new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    const assignmentTitle = assignment.project_title || assignment.role || '—';
+    const assignmentCategory = assignment.role || 'Company Project';
+    const companyName = assignment.company_name || '—';
+    const location = assignment.project_location || '—';
+    const hoursValue = parseFloat(assignment.hours_worked);
+    const hoursWorked = Number.isFinite(hoursValue) ? hoursValue : 0;
+    const rateValue = parseFloat(assignment.hourly_rate);
+    const hourlyRate = Number.isFinite(rateValue) ? rateValue : 0;
+
+    const actions = `<button class="btn btn-sm btn-outline" title="View Details" onclick="viewCompanyEarningDetails(${assignment.assignment_id})"><i class="fas fa-eye"></i></button>`;
+
+    return `
+        <tr class="company-earnings-row" data-status="${status}" data-date="${escapeHtmlEarnings(rawDate)}" data-amount="${amount}" data-assignment-id="${assignment.assignment_id}">
+            <td class="date-cell">
+                <div class="date-info">
+                    <span class="date-primary">${date}</span>
+                </div>
+            </td>
+            <td class="job-cell">
+                <div class="job-info">
+                    <span class="job-title">${escapeHtmlEarnings(assignmentTitle)}</span>
+                    <span class="job-category">${escapeHtmlEarnings(assignmentCategory)}</span>
+                </div>
+            </td>
+            <td class="customer-cell">
+                <div class="customer-info">
+                    <span class="customer-name">${escapeHtmlEarnings(companyName)}</span>
+                    <span class="customer-location">${escapeHtmlEarnings(location)}</span>
+                </div>
+            </td>
+            <td class="hours-cell">
+                <span class="hours-worked">${formatHoursWorked(hoursWorked)}</span>
+            </td>
+            <td class="rate-cell">
+                <span class="hourly-rate">${formatHourlyRate(hourlyRate)}</span>
+            </td>
+            <td class="amount-cell">
+                <span class="amount-earned">LKR ${amount.toLocaleString()}</span>
+            </td>
+            <td class="status-cell">
+                <span class="payment-status ${status}">${statusIcon} ${statusLabel}</span>
+            </td>
+            <td class="actions-cell">${actions}</td>
+        </tr>`;
+}
+
 function updateSummaryStats(jobs) {
     const now = new Date();
     const thisMonth = now.getMonth();
@@ -140,10 +245,11 @@ function updateSummaryStats(jobs) {
     jobs.forEach(job => {
         const amount = parseFloat(job.quoteAmount) || 0;
         const isPaid = job.ui_status === 'paid' || job.payment_status === 'completed';
+        const dateValue = job.paymentDate || job.dateSubmitted || job.job_posted_date;
+        const d = dateValue ? new Date(dateValue) : null;
         if (isPaid) {
             totalEarnings += amount;
-            const d = new Date(job.dateSubmitted);
-            if (d.getMonth() === thisMonth && d.getFullYear() === thisYear) {
+            if (d && d.getMonth() === thisMonth && d.getFullYear() === thisYear) {
                 monthlyEarnings += amount;
             }
         } else {
@@ -188,65 +294,54 @@ function initializeFilters() {
     });
 
     sortFilter.addEventListener('change', function () {
-        sortEarningsTable(this.value);
+        currentCustomerSort = { sortBy: this.value, direction: 'desc' };
+        sortCustomerEarnings(currentCustomerSort.sortBy, currentCustomerSort.direction);
     });
 }
 
 function applyFilters() {
     const periodFilter = document.getElementById('period-filter').value;
     const statusFilter = document.getElementById('status-filter').value;
+    filteredJobs = allJobs.filter(job => {
+        const isPaid = job.ui_status === 'paid' || job.payment_status === 'completed';
+        if (statusFilter === 'paid' && !isPaid) return false;
+        if (statusFilter === 'pending' && isPaid) return false;
 
-    const earningsRows = document.querySelectorAll('.earnings-row');
-    let visibleCount = 0;
+        const dateValue = job.paymentDate || job.dateSubmitted || job.job_posted_date;
+        if (!isWithinPeriod(dateValue, periodFilter)) return false;
 
-    earningsRows.forEach(row => {
-        let showRow = true;
-
-        // Apply status filter
-        if (statusFilter !== 'all') {
-            const rowStatus = row.getAttribute('data-status');
-            if (rowStatus !== statusFilter) {
-                showRow = false;
-            }
+        if (currentSearchTerm) {
+            if (!matchesSearch(job, currentSearchTerm)) return false;
         }
 
-        // Apply period filter (simplified - in real app would use actual dates)
-        if (periodFilter !== 'all') {
-            // For demo purposes, we'll show/hide based on some logic
-            const dateText = row.querySelector('.date-primary').textContent;
-            if (periodFilter === 'this-month' && !dateText.includes('Sep')) {
-                showRow = false;
-            }
-        }
-
-        if (showRow) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
+        return true;
     });
 
-    // Update count
-    updateFilteredCount(visibleCount, statusFilter, periodFilter);
-
-
+    sortCustomerEarnings(currentCustomerSort.sortBy, currentCustomerSort.direction, false);
+    renderEarningsTable(filteredJobs);
+    updateFilteredCount(filteredJobs.length, statusFilter, periodFilter);
 }
 
 function updateFilteredCount(count, status, period) {
-    const sectionSubtitle = document.querySelector('.section-subtitle');
+    const sectionSubtitle = document.getElementById('earningsSubtitle');
     let label = 'payments';
 
     if (status !== 'all') {
         label = `${status} payments`;
     }
 
+    if (currentSearchTerm) {
+        sectionSubtitle.textContent = `${count} ${label} matching "${currentSearchTerm}"`;
+        return;
+    }
+
     if (period !== 'all') {
         const periodLabel = document.querySelector(`option[value="${period}"]`).textContent.toLowerCase();
         sectionSubtitle.textContent = `${count} ${label} ${periodLabel}`;
-    } else {
-        sectionSubtitle.textContent = `${count} ${label} found`;
+        return;
     }
+
+    sectionSubtitle.textContent = `${count} ${label} found`;
 }
 
 function resetFilters() {
@@ -254,117 +349,138 @@ function resetFilters() {
     document.getElementById('status-filter').value = 'all';
     document.getElementById('sort-filter').value = 'newest';
 
+    currentCustomerSort = { sortBy: 'newest', direction: 'desc' };
+    currentSearchTerm = '';
+    const searchInput = document.querySelector('.search-box input');
+    if (searchInput) searchInput.value = '';
     applyFilters();
-    sortEarningsTable('newest');
 
+    showNotification('Filters reset successfully!', 'info');
+}
+
+function initializeCompanyFilters() {
+    const periodFilter = document.getElementById('company-period-filter');
+    const statusFilter = document.getElementById('company-status-filter');
+
+    if (!periodFilter || !statusFilter) return;
+
+    periodFilter.addEventListener('change', function () {
+        applyCompanyFilters();
+    });
+
+    statusFilter.addEventListener('change', function () {
+        applyCompanyFilters();
+    });
+}
+
+function applyCompanyFilters() {
+    const periodFilter = document.getElementById('company-period-filter').value;
+    const statusFilter = document.getElementById('company-status-filter').value;
+
+    filteredCompanyAssignments = allCompanyAssignments.filter(item => {
+        const isPaid = item.ui_status === 'paid';
+        if (statusFilter === 'paid' && !isPaid) return false;
+        if (statusFilter === 'pending' && isPaid) return false;
+
+        const dateValue = item.assigned_date || item.end_date;
+        if (!isWithinPeriod(dateValue, periodFilter)) return false;
+
+        return true;
+    });
+
+    sortCompanyEarnings(currentCompanySort.sortBy, currentCompanySort.direction, false);
+    renderCompanyEarningsTable(filteredCompanyAssignments);
+}
+
+function resetCompanyFilters() {
+    document.getElementById('company-period-filter').value = 'this-month';
+    document.getElementById('company-status-filter').value = 'all';
+    currentCompanySort = { sortBy: 'date', direction: 'desc' };
+    applyCompanyFilters();
     showNotification('Filters reset successfully!', 'info');
 }
 
 // ===== TABLE SORTING FUNCTIONALITY =====
 function initializeTableSorting() {
-    const sortableHeaders = document.querySelectorAll('.sortable');
+    const customerHeaders = document.querySelectorAll('#customerEarningsTab .sortable');
+    const companyHeaders = document.querySelectorAll('#companyEarningsTab .sortable');
 
-    sortableHeaders.forEach(header => {
+    customerHeaders.forEach(header => {
         header.addEventListener('click', function () {
             const sortBy = this.getAttribute('data-sort');
-            const currentDirection = this.getAttribute('data-direction') || 'asc';
-            const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+            const newDirection = toggleSortIndicator(customerHeaders, this);
+            currentCustomerSort = { sortBy, direction: newDirection };
+            sortCustomerEarnings(sortBy, newDirection);
+        });
+    });
 
-            // Reset all other headers
-            sortableHeaders.forEach(h => {
-                h.setAttribute('data-direction', '');
-                h.querySelector('i').className = 'fas fa-sort';
-            });
-
-            // Set current header
-            this.setAttribute('data-direction', newDirection);
-            this.querySelector('i').className = newDirection === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
-
-            sortEarningsTable(sortBy, newDirection);
+    companyHeaders.forEach(header => {
+        header.addEventListener('click', function () {
+            const sortBy = this.getAttribute('data-sort');
+            const newDirection = toggleSortIndicator(companyHeaders, this);
+            currentCompanySort = { sortBy, direction: newDirection };
+            sortCompanyEarnings(sortBy, newDirection);
         });
     });
 }
 
-function sortEarningsTable(sortBy, direction = 'desc') {
-    const tbody = document.querySelector('.earnings-table tbody');
-    const rows = Array.from(tbody.querySelectorAll('.earnings-row'));
+function sortCustomerEarnings(sortBy, direction = 'desc', rerender = true) {
+    const sortKey = sortBy || 'date';
+    let resolvedDirection = direction;
 
-    rows.sort((a, b) => {
-        let aValue, bValue;
+    if (sortKey === 'newest') resolvedDirection = 'desc';
+    if (sortKey === 'oldest') resolvedDirection = 'asc';
+    if (sortKey === 'amount-high') resolvedDirection = 'desc';
+    if (sortKey === 'amount-low') resolvedDirection = 'asc';
 
-        switch (sortBy) {
-            case 'date':
-                aValue = getDateValue(a);
-                bValue = getDateValue(b);
-                break;
-            case 'job':
-                aValue = a.querySelector('.job-title').textContent.toLowerCase();
-                bValue = b.querySelector('.job-title').textContent.toLowerCase();
-                break;
-            case 'customer':
-                aValue = a.querySelector('.customer-name').textContent.toLowerCase();
-                bValue = b.querySelector('.customer-name').textContent.toLowerCase();
-                break;
-            case 'amount':
-                aValue = getAmountValue(a);
-                bValue = getAmountValue(b);
-                break;
-            case 'status':
-                aValue = a.querySelector('.payment-status').textContent.toLowerCase();
-                bValue = b.querySelector('.payment-status').textContent.toLowerCase();
-                break;
-            case 'newest':
-                aValue = getDateValue(a);
-                bValue = getDateValue(b);
-                direction = 'desc';
-                break;
-            case 'oldest':
-                aValue = getDateValue(a);
-                bValue = getDateValue(b);
-                direction = 'asc';
-                break;
-            case 'amount-high':
-                aValue = getAmountValue(a);
-                bValue = getAmountValue(b);
-                direction = 'desc';
-                break;
-            case 'amount-low':
-                aValue = getAmountValue(a);
-                bValue = getAmountValue(b);
-                direction = 'asc';
-                break;
-            default:
-                return 0;
+    filteredJobs.sort((a, b) => {
+        const aValue = getCustomerSortValue(a, sortKey);
+        const bValue = getCustomerSortValue(b, sortKey);
+
+        if (resolvedDirection === 'asc') {
+            return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
         }
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+    });
+
+    if (rerender) {
+        renderEarningsTable(filteredJobs);
+    }
+}
+
+function sortCompanyEarnings(sortBy, direction = 'desc', rerender = true) {
+    const sortKey = sortBy || 'date';
+
+    filteredCompanyAssignments.sort((a, b) => {
+        const aValue = getCompanySortValue(a, sortKey);
+        const bValue = getCompanySortValue(b, sortKey);
 
         if (direction === 'asc') {
             return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
-        } else {
-            return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
         }
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
     });
 
-    // Re-append sorted rows
-    rows.forEach(row => tbody.appendChild(row));
-
-
-    function getDateValue(row) {
-        const dateText = row.querySelector('.date-primary').textContent;
-        // Simple date parsing - in real app would use proper date parsing
-        if (dateText.includes('Sep 1')) return new Date('2025-09-01');
-        if (dateText.includes('Aug 30')) return new Date('2025-08-30');
-        if (dateText.includes('Aug 29')) return new Date('2025-08-29');
-        if (dateText.includes('Aug 28')) return new Date('2025-08-28');
-        if (dateText.includes('Aug 27')) return new Date('2025-08-27');
-        if (dateText.includes('Aug 25')) return new Date('2025-08-25');
-        return new Date();
+    if (rerender) {
+        renderCompanyEarningsTable(filteredCompanyAssignments);
     }
+}
 
-    function getAmountValue(row) {
-        const amountText = row.querySelector('.amount-earned').textContent;
-        // Extract number from "LKR 2,500" format
-        return parseInt(amountText.replace(/[^\d]/g, '')) || 0;
-    }
+function toggleSortIndicator(headers, activeHeader) {
+    const currentDirection = activeHeader.getAttribute('data-direction') || 'asc';
+    const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+
+    headers.forEach(h => {
+        h.setAttribute('data-direction', '');
+        const icon = h.querySelector('i');
+        if (icon) icon.className = 'fas fa-sort';
+    });
+
+    activeHeader.setAttribute('data-direction', newDirection);
+    const activeIcon = activeHeader.querySelector('i');
+    if (activeIcon) activeIcon.className = newDirection === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+
+    return newDirection;
 }
 
 // ===== SEARCH FUNCTIONALITY =====
@@ -373,141 +489,65 @@ function initializeSearch() {
 
     if (searchInput) {
         searchInput.addEventListener('input', function () {
-            const searchTerm = this.value.toLowerCase();
-            searchEarnings(searchTerm);
+            currentSearchTerm = this.value.toLowerCase().trim();
+            applyFilters();
         });
-    }
-}
-
-function searchEarnings(searchTerm) {
-    const earningsRows = document.querySelectorAll('.earnings-row');
-    let visibleCount = 0;
-
-    earningsRows.forEach(row => {
-        const jobTitle = row.querySelector('.job-title').textContent.toLowerCase();
-        const customerName = row.querySelector('.customer-name').textContent.toLowerCase();
-        const customerLocation = row.querySelector('.customer-location').textContent.toLowerCase();
-        const category = row.querySelector('.job-category').textContent.toLowerCase();
-
-        const matches = jobTitle.includes(searchTerm) ||
-            customerName.includes(searchTerm) ||
-            customerLocation.includes(searchTerm) ||
-            category.includes(searchTerm);
-
-        if (matches || searchTerm === '') {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
-    });
-
-    // Update count
-    const sectionSubtitle = document.querySelector('.section-subtitle');
-    if (searchTerm) {
-        sectionSubtitle.textContent = `${visibleCount} payments found for "${searchTerm}"`;
-    } else {
-        sectionSubtitle.textContent = '18 payments this month';
     }
 }
 
 // ===== EARNINGS ACTIONS =====
 function viewEarningDetails(earningId) {
-
-    // Find the earning data
-    const earning = earningsData.customer.find(e => e.id === earningId);
-    if (!earning) {
+    const job = allJobs.find(item => Number(item.quote_id) === Number(earningId));
+    if (!job) {
         showNotification('Earning details not found', 'error');
         return;
     }
 
-    // Update status banner
-    const statusBanner = document.getElementById('earningStatusBanner');
-    const statusIcon = document.getElementById('earningStatusIcon');
-    const statusTitle = document.getElementById('earningStatusTitle');
-    const statusMessage = document.getElementById('earningStatusMessage');
+    const isPaid = job.ui_status === 'paid' || job.payment_status === 'completed';
+    const paidAmount = parseFloat(job.payment_amount) || parseFloat(job.quoteAmount) || 0;
+    const platformFee = paidAmount > 0 ? Math.round(paidAmount * 0.1) : 0;
+    const totalEarned = paidAmount > 0 ? paidAmount - platformFee : 0;
 
-    statusBanner.className = 'earning-status-banner';
-    if (earning.status === 'paid') {
-        statusBanner.classList.add('paid');
-        statusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
-        statusTitle.textContent = 'Payment Received';
-        statusMessage.textContent = 'This payment has been successfully received';
-    } else {
-        statusBanner.classList.add('pending');
-        statusIcon.innerHTML = '<i class="fas fa-clock"></i>';
-        statusTitle.textContent = 'Payment Pending';
-        statusMessage.textContent = 'Awaiting payment from customer';
-    }
+    const customerName = `${job.customer_first_name || ''} ${job.customer_last_name || ''}`.trim() || '—';
+    const dateValue = job.paymentDate || job.dateSubmitted || job.job_posted_date;
 
-    // Populate job information
-    document.getElementById('earningJobTitle').textContent = earning.jobTitle;
-    document.getElementById('earningCategory').textContent = earning.category;
-    document.getElementById('earningDate').textContent = formatDateDisplay(earning.date);
-    document.getElementById('earningDuration').textContent = earning.duration;
+    setDrawerStatus(isPaid);
+    setText('earningJobTitle', job.job_title || '—');
+    setText('earningCategory', job.category_name || '—');
+    setText('earningDate', dateValue ? formatDateDisplay(dateValue) : '—');
+    setText('earningDuration', job.estimatedDays ? `${job.estimatedDays} day(s)` : '—');
 
-    // Populate customer information
-    document.getElementById('earningCustomerName').textContent = earning.customerName;
-    document.getElementById('earningLocation').textContent = earning.location;
-    document.getElementById('earningContact').textContent = earning.contact;
+    setText('earningCustomerName', customerName);
+    setText('earningLocation', job.district || '—');
+    setText('earningContact', job.customer_email || '—');
+    setText('earningRating', '—');
 
-    // Populate rating
-    const ratingEl = document.getElementById('earningRating');
-    if (earning.rating > 0) {
-        const stars = Array(5).fill(0).map((_, i) =>
-            `< i class= "fas fa-star" style = "color: ${i < earning.rating ? '#f39c12' : '#ddd'};" ></i > `
-        ).join('');
-        ratingEl.innerHTML = `${stars} <span style="margin-left: 8px;">${earning.rating.toFixed(1)}</span>`;
-    } else {
-        ratingEl.innerHTML = '<span style="color: var(--text-secondary);">No rating yet</span>';
-    }
+    setText('earningServiceFee', paidAmount ? `LKR ${paidAmount.toLocaleString()}` : '—');
+    setText('earningPlatformFee', paidAmount ? `- LKR ${platformFee.toLocaleString()}` : '—');
+    setText('earningMaterialsCost', formatMaterialsIncluded(job.materialsIncluded));
+    setText('earningTotalEarned', paidAmount ? `LKR ${totalEarned.toLocaleString()}` : '—');
 
-    // Populate payment breakdown
-    document.getElementById('earningServiceFee').textContent = `LKR ${earning.serviceFee.toLocaleString()} `;
-    document.getElementById('earningPlatformFee').textContent = `- LKR ${earning.platformFee.toLocaleString()} `;
-    document.getElementById('earningMaterialsCost').textContent = `LKR ${earning.materialsCost.toLocaleString()} `;
-    document.getElementById('earningTotalEarned').innerHTML = `< strong > LKR ${earning.totalEarned.toLocaleString()}</strong > `;
-
-    // Populate payment information
-    document.getElementById('earningPaymentMethod').textContent = earning.paymentMethod;
-    document.getElementById('earningTransactionId').textContent = earning.transactionId;
-    document.getElementById('earningPaymentDate').textContent = earning.status === 'paid'
-        ? `${formatDateDisplay(earning.date)} - ${earning.completedTime} `
-        : 'Pending';
+    setText('earningPaymentMethod', formatPaymentTypeLabel(job.paymentType));
+    setText('earningTransactionId', job.payment_id ? `PAY-${job.payment_id}` : '—');
+    setText('earningPaymentDate', isPaid && job.paymentDate ? formatDateDisplay(job.paymentDate) : 'Pending');
 
     const paymentStatusBadge = document.getElementById('earningPaymentStatus');
-    paymentStatusBadge.textContent = earning.status.charAt(0).toUpperCase() + earning.status.slice(1);
-    paymentStatusBadge.className = `status - badge ${earning.status} `;
+    paymentStatusBadge.textContent = isPaid ? 'Paid' : 'Pending';
+    paymentStatusBadge.className = `status-badge ${isPaid ? 'paid' : 'pending'}`;
 
-    // Populate description
-    document.getElementById('earningDescription').textContent = earning.description;
+    setText('earningDescription', job.job_description || '—');
+    setTimeline(buildCustomerTimeline(job));
 
-    // Populate timeline
-    const timelineEl = document.getElementById('earningTimeline');
-    timelineEl.innerHTML = '';
-    earning.timeline.forEach(item => {
-        const timelineItem = document.createElement('div');
-        timelineItem.className = 'timeline-item';
-        timelineItem.innerHTML = `
-        < div class="timeline-marker" ></div >
-            <div class="timeline-content">
-                <h5>${item.event}</h5>
-                <p>${item.date} at ${item.time}</p>
-            </div>
-    `;
-        timelineEl.appendChild(timelineItem);
-    });
-
-    // Show/hide reminder button
     const reminderBtn = document.getElementById('drawerReminderBtn');
-    reminderBtn.style.display = earning.status === 'pending' ? 'inline-flex' : 'none';
-    reminderBtn.onclick = () => sendReminder(earning.id);
+    reminderBtn.style.display = isPaid ? 'none' : 'inline-flex';
+    reminderBtn.onclick = sendReminderFromDrawer;
 
-    // Store earning ID for invoice download
-    document.getElementById('earningDetailsDrawer').dataset.earningId = earning.id;
-
-    // Open drawer
-    document.getElementById('earningDetailsDrawer').classList.add('active');
+    const drawer = document.getElementById('earningDetailsDrawer');
+    drawer.dataset.earningId = earningId;
+    drawer.dataset.earningType = 'customer';
+    drawer.dataset.requestId = job.request_id;
+    drawer.dataset.assignmentId = '';
+    drawer.classList.add('active');
 }
 
 function closeEarningDetailsDrawer() {
@@ -515,13 +555,31 @@ function closeEarningDetailsDrawer() {
 }
 
 function downloadInvoiceFromDrawer() {
-    const earningId = document.getElementById('earningDetailsDrawer').dataset.earningId;
-    downloadInvoice(parseInt(earningId));
+    const drawer = document.getElementById('earningDetailsDrawer');
+    const type = drawer.dataset.earningType;
+    const requestId = drawer.dataset.requestId;
+    const assignmentId = drawer.dataset.assignmentId;
+
+    if (type === 'company') {
+        downloadInvoice({ type: 'company', assignmentId: parseInt(assignmentId, 10) });
+        return;
+    }
+
+    downloadInvoice({ type: 'customer', requestId: parseInt(requestId, 10) });
 }
 
 function sendReminderFromDrawer() {
-    const earningId = document.getElementById('earningDetailsDrawer').dataset.earningId;
-    sendReminder(parseInt(earningId));
+    const drawer = document.getElementById('earningDetailsDrawer');
+    const type = drawer.dataset.earningType;
+    const requestId = drawer.dataset.requestId;
+    const assignmentId = drawer.dataset.assignmentId;
+
+    if (type === 'company') {
+        sendReminder({ type: 'company', assignmentId: parseInt(assignmentId, 10) });
+        return;
+    }
+
+    sendReminder({ type: 'customer', requestId: parseInt(requestId, 10) });
 }
 
 function formatDateDisplay(dateString) {
@@ -534,265 +592,274 @@ function formatDateDisplay(dateString) {
 }
 
 function downloadInvoice(earningId) {
+    if (!earningId || !earningId.type) {
+        showNotification('Invoice details missing.', 'error');
+        return;
+    }
+
+    if (earningId.type === 'customer' && !Number.isFinite(earningId.requestId)) {
+        showNotification('Invoice details missing.', 'error');
+        return;
+    }
+
+    if (earningId.type === 'company' && !Number.isFinite(earningId.assignmentId)) {
+        showNotification('Invoice details missing.', 'error');
+        return;
+    }
+
+    const endpoint = earningId.type === 'company'
+        ? `${COMPANY_EARNINGS_API}?action=invoice&assignment_id=${earningId.assignmentId}`
+        : `${EARNINGS_API}/repairer-jobs.php?action=invoice&request_id=${earningId.requestId}`;
 
     showNotification('Generating invoice...', 'info');
 
-    // Simulate invoice generation and download
-    setTimeout(() => {
-        showNotification('Invoice downloaded successfully!', 'success');
+    fetch(endpoint)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success || !data.invoice) {
+                showNotification(data.message || 'Failed to generate invoice.', 'error');
+                return;
+            }
 
-    }, 1500);
+            const html = buildInvoiceHtml(data.invoice);
+            const fileName = `${data.invoice.invoice_number || 'invoice'}.html`;
+            downloadHtmlFile(html, fileName);
+            showNotification('Invoice downloaded.', 'success');
+        })
+        .catch(() => {
+            showNotification('Failed to generate invoice.', 'error');
+        });
 }
 
 function sendReminder(earningId) {
+    if (!earningId || !earningId.type) {
+        showNotification('Reminder details missing.', 'error');
+        return;
+    }
 
-    if (confirm('Send payment reminder to customer? This will notify them about the pending payment.')) {
-        showNotification('Sending payment reminder...', 'info');
+    if (earningId.type === 'customer' && !Number.isFinite(earningId.requestId)) {
+        showNotification('Reminder details missing.', 'error');
+        return;
+    }
 
-        setTimeout(() => {
+    if (earningId.type === 'company' && !Number.isFinite(earningId.assignmentId)) {
+        showNotification('Reminder details missing.', 'error');
+        return;
+    }
+
+    const isCompany = earningId.type === 'company';
+    const endpoint = isCompany
+        ? `${COMPANY_EARNINGS_API}`
+        : `${EARNINGS_API}/repairer-jobs.php`;
+
+    const payload = isCompany
+        ? { action: 'send-reminder', assignment_id: earningId.assignmentId }
+        : { action: 'send-reminder', request_id: earningId.requestId };
+
+    const confirmMessage = isCompany
+        ? 'Send payment reminder to company?'
+        : 'Send payment reminder to customer?';
+
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+
+    showNotification('Sending payment reminder...', 'info');
+
+    fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                showNotification(data.message || 'Failed to send reminder.', 'error');
+                return;
+            }
+
             showNotification('Payment reminder sent successfully!', 'success');
+        })
+        .catch(() => {
+            showNotification('Failed to send reminder.', 'error');
+        });
+}
 
-            // Update the UI to show reminder was sent
-            const row = document.querySelector(`[onclick = "sendReminder(${earningId})"]`).closest('tr');
-            const dateSecondary = row.querySelector('.date-secondary');
-            dateSecondary.textContent = 'Reminder sent today';
-        }, 1000);
+function buildInvoiceHtml(invoice) {
+    const issuedDate = invoice.issued_date ? formatDateDisplay(invoice.issued_date) : '—';
+    const status = invoice.status === 'paid' ? 'Paid' : 'Pending';
+    const amount = typeof invoice.amount === 'number' ? invoice.amount : parseFloat(invoice.amount || 0);
+    const platformFee = typeof invoice.platform_fee === 'number'
+        ? invoice.platform_fee
+        : parseFloat(invoice.platform_fee || 0);
+    const total = typeof invoice.total === 'number' ? invoice.total : parseFloat(invoice.total || 0);
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>${escapeHtmlEarnings(invoice.invoice_number || 'Invoice')}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 32px; color: #111827; }
+        h1 { margin: 0 0 8px; font-size: 24px; }
+        .meta { margin-bottom: 24px; color: #4b5563; }
+        .section { margin-bottom: 24px; }
+        .label { font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
+        th { background: #f9fafb; }
+        .total { font-weight: 700; }
+    </style>
+</head>
+<body>
+    <h1>Invoice</h1>
+    <div class="meta">Invoice #${escapeHtmlEarnings(invoice.invoice_number || '—')} • ${issuedDate} • ${status}</div>
+
+    <div class="section">
+        <div><span class="label">Billed To:</span> ${escapeHtmlEarnings(invoice.customer_name || '—')}</div>
+        <div><span class="label">Email:</span> ${escapeHtmlEarnings(invoice.customer_email || '—')}</div>
+        <div><span class="label">Location:</span> ${escapeHtmlEarnings(invoice.address || invoice.district || '—')}</div>
+    </div>
+
+    <div class="section">
+        <div><span class="label">Job:</span> ${escapeHtmlEarnings(invoice.job_title || '—')}</div>
+        <div>${escapeHtmlEarnings(invoice.job_description || '')}</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Amount (LKR)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Service Amount</td>
+                <td>${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+            <tr>
+                <td>Platform Fee</td>
+                <td>${platformFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+            <tr class="total">
+                <td>Total Earned</td>
+                <td>${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>`;
+}
+
+function downloadHtmlFile(html, fileName) {
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+function viewCompanyEarningDetails(assignmentId) {
+    const assignment = allCompanyAssignments.find(item => Number(item.assignment_id) === Number(assignmentId));
+    if (!assignment) {
+        showNotification('Company earning details not found', 'error');
+        return;
     }
+
+    const isPaid = assignment.ui_status === 'paid';
+    const amount = parseFloat(assignment.amount) || 0;
+    const dateValue = assignment.assigned_date || assignment.end_date;
+
+    setDrawerStatus(isPaid);
+    setText('earningJobTitle', assignment.project_title || assignment.role || '—');
+    setText('earningCategory', assignment.role || 'Company Project');
+    setText('earningDate', dateValue ? formatDateDisplay(dateValue) : '—');
+    setText('earningDuration', assignment.project_status || '—');
+
+    setText('earningCustomerName', assignment.company_name || '—');
+    setText('earningLocation', assignment.project_location || '—');
+    setText('earningContact', '—');
+    setText('earningRating', '—');
+
+    setText('earningServiceFee', amount ? `LKR ${amount.toLocaleString()}` : '—');
+    setText('earningPlatformFee', '—');
+    setText('earningMaterialsCost', formatMaterialsResponsibility(assignment.materials_responsibility));
+    setText('earningTotalEarned', amount ? `LKR ${amount.toLocaleString()}` : '—');
+
+    setText('earningPaymentMethod', formatContractPaymentMethod(assignment.payment_method));
+    setText('earningTransactionId', assignment.assignment_id ? `ASSIGN-${assignment.assignment_id}` : '—');
+    setText('earningPaymentDate', isPaid ? (dateValue ? formatDateDisplay(dateValue) : '—') : 'Pending');
+
+    const paymentStatusBadge = document.getElementById('earningPaymentStatus');
+    paymentStatusBadge.textContent = isPaid ? 'Paid' : 'Pending';
+    paymentStatusBadge.className = `status-badge ${isPaid ? 'paid' : 'pending'}`;
+
+    setText('earningDescription', assignment.project_description || '—');
+    setTimeline(buildCompanyTimeline(assignment));
+
+    const reminderBtn = document.getElementById('drawerReminderBtn');
+    reminderBtn.style.display = isPaid ? 'none' : 'inline-flex';
+    reminderBtn.onclick = sendReminderFromDrawer;
+
+    const drawer = document.getElementById('earningDetailsDrawer');
+    drawer.dataset.earningId = assignmentId;
+    drawer.dataset.earningType = 'company';
+    drawer.dataset.assignmentId = assignmentId;
+    drawer.dataset.requestId = '';
+    drawer.classList.add('active');
 }
 
-function checkStatus(earningId) {
-
-    showNotification('Checking payment status...', 'info');
-
-    // Simulate status check
-    setTimeout(() => {
-        const statuses = ['processing', 'paid', 'pending'];
-        const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
-
-        if (newStatus === 'paid') {
-            // Update the row to show paid status
-            const row = document.querySelector(`[onclick = "checkStatus(${earningId})"]`).closest('tr');
-            updatePaymentStatus(row, 'paid');
-            showNotification('Payment received! Status updated to Paid.', 'success');
-        } else {
-            showNotification(`Status checked: Still ${newStatus} `, 'info');
-        }
-    }, 1500);
-}
-
-function updatePaymentStatus(row, status) {
-    const statusCell = row.querySelector('.payment-status');
-
-    statusCell.className = `payment - status ${status} `;
-
-    switch (status) {
-        case 'paid':
-            statusCell.innerHTML = '<i class="fas fa-check-circle"></i>Paid';
-            break;
-        case 'pending':
-            statusCell.innerHTML = '<i class="fas fa-clock"></i>Pending';
-            break;
-        case 'processing':
-            statusCell.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Processing';
-            break;
-    }
-
-    // Update row data attribute
-    row.setAttribute('data-status', status);
-
-    // Update summary if needed
-    updateEarningsSummary();
-}
-
-function loadMoreEarnings() {
-
-    const loadMoreBtn = document.querySelector('.load-more-btn');
-    const originalText = loadMoreBtn.innerHTML;
-
-    // Show loading state
-    loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-    loadMoreBtn.disabled = true;
-
-    // Simulate API call
-    setTimeout(() => {
-        // Reset button
-        loadMoreBtn.innerHTML = originalText;
-        loadMoreBtn.disabled = false;
-
-        // Add some demo earnings
-        addDemoEarnings();
-
-        showNotification('5 more earnings loaded!', 'success');
-    }, 2000);
-}
-
-function addDemoEarnings() {
-    const tbody = document.querySelector('.earnings-table tbody');
-
-    const demoEarnings = [
-        {
-            date: 'Aug 23, 2025',
-            relative: '9 days ago',
-            job: 'Water Heater Repair',
-            category: 'Plumbing',
-            customer: 'Ananda Wickramasinghe',
-            location: 'Kottawa',
-            amount: 'LKR 3,200',
-            status: 'paid'
-        },
-        {
-            date: 'Aug 22, 2025',
-            relative: '10 days ago',
-            job: 'Door Lock Installation',
-            category: 'General',
-            customer: 'Sunil Fernando',
-            location: 'Panadura',
-            amount: 'LKR 1,200',
-            status: 'paid'
-        },
-        {
-            date: 'Aug 20, 2025',
-            relative: '12 days ago',
-            job: 'Garden Light Setup',
-            category: 'Electrical',
-            customer: 'Mala Perera',
-            location: 'Moratuwa',
-            amount: 'LKR 2,800',
-            status: 'pending'
-        },
-        {
-            date: 'Aug 18, 2025',
-            relative: '2 weeks ago',
-            job: 'Roof Leak Fix',
-            category: 'General',
-            customer: 'Buddhika Rathnayake',
-            location: 'Gampaha',
-            amount: 'LKR 4,500',
-            status: 'paid'
-        },
-        {
-            date: 'Aug 15, 2025',
-            relative: '2 weeks ago',
-            job: 'Kitchen Cabinet Repair',
-            category: 'Carpentry',
-            customer: 'Dilani Jayasuriya',
-            location: 'Kelaniya',
-            amount: 'LKR 3,800',
-            status: 'paid'
-        }
-    ];
-
-    demoEarnings.forEach((earning, index) => {
-        const row = createEarningRow(earning, Date.now() + index);
-        tbody.appendChild(row);
-    });
-
-    // Update count
-    const visibleRows = document.querySelectorAll('.earnings-row:not([style*="none"])').length;
-    document.querySelector('.section-subtitle').textContent = `${visibleRows} payments this month`;
-}
-
-function createEarningRow(earning, earningId) {
-    const row = document.createElement('tr');
-    row.className = 'earnings-row';
-    row.setAttribute('data-status', earning.status);
-
-    const statusIcon = earning.status === 'paid'
-        ? '<i class="fas fa-check-circle"></i>'
-        : earning.status === 'pending'
-            ? '<i class="fas fa-clock"></i>'
-            : '<i class="fas fa-spinner fa-spin"></i>';
-
-    const actions = earning.status === 'paid'
-        ? `
-        < button class="btn btn-sm btn-outline" onclick = "viewEarningDetails('${earningId}')" >
-            <i class="fas fa-eye"></i>
-            </button >
-        <button class="btn btn-sm btn-outline" onclick="downloadInvoice('${earningId}')">
-            <i class="fas fa-download"></i>
-        </button>
-    `
-        : earning.status === 'pending'
-            ? `
-        < button class="btn btn-sm btn-outline" onclick = "viewEarningDetails('${earningId}')" >
-            <i class="fas fa-eye"></i>
-            </button >
-        <button class="btn btn-sm btn-primary" onclick="sendReminder('${earningId}')">
-            <i class="fas fa-bell"></i>
-        </button>
-    `
-            : `
-        < button class="btn btn-sm btn-outline" onclick = "viewEarningDetails('${earningId}')" >
-            <i class="fas fa-eye"></i>
-            </button >
-        <button class="btn btn-sm btn-secondary" onclick="checkStatus('${earningId}')">
-            <i class="fas fa-refresh"></i>
-        </button>
-    `;
-
-    row.innerHTML = `
-        < td class="date-cell" >
-            <div class="date-info">
-                <span class="date-primary">${earning.date}</span>
-                <span class="date-secondary">${earning.relative}</span>
-            </div>
-        </td >
-        <td class="job-cell">
-            <div class="job-info">
-                <span class="job-title">${earning.job}</span>
-                <span class="job-category">${earning.category}</span>
-            </div>
-        </td>
-        <td class="customer-cell">
-            <div class="customer-info">
-                <span class="customer-name">${earning.customer}</span>
-                <span class="customer-location">${earning.location}</span>
-            </div>
-        </td>
-        <td class="amount-cell">
-            <span class="amount-earned">${earning.amount}</span>
-        </td>
-        <td class="status-cell">
-            <span class="payment-status ${earning.status}">
-                ${statusIcon}
-                ${earning.status.charAt(0).toUpperCase() + earning.status.slice(1)}
-            </span>
-        </td>
-        <td class="actions-cell">
-            ${actions}
-        </td>
-    `;
-
-    return row;
-}
-
-// ===== SUMMARY UPDATES =====
-function updateEarningsSummary() {
-    const allRows = document.querySelectorAll('.earnings-row');
-    const paidRows = document.querySelectorAll('.earnings-row[data-status="paid"]');
-    const pendingRows = document.querySelectorAll('.earnings-row[data-status="pending"]');
+function updateCompanySummaryStats(assignments) {
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
 
     let totalEarnings = 0;
     let monthlyEarnings = 0;
     let pendingAmount = 0;
+    let activeContracts = 0;
 
-    allRows.forEach(row => {
-        const amount = getAmountValue(row);
-        const status = row.getAttribute('data-status');
-        const dateText = row.querySelector('.date-primary').textContent;
+    assignments.forEach(item => {
+        const amount = parseFloat(item.amount) || 0;
+        const isPaid = item.ui_status === 'paid';
+        const dateValue = item.assigned_date || item.end_date;
+        const dateObj = dateValue ? new Date(dateValue) : null;
 
-        if (status === 'paid') {
+        if (isPaid) {
             totalEarnings += amount;
-            if (dateText.includes('Sep') || dateText.includes('Aug')) {
+            if (dateObj && dateObj.getMonth() === thisMonth && dateObj.getFullYear() === thisYear) {
                 monthlyEarnings += amount;
             }
-        } else if (status === 'pending') {
+        } else {
             pendingAmount += amount;
+        }
+
+        if (item.status === 'active') {
+            activeContracts += 1;
         }
     });
 
-    // Update summary cards (simplified)
+    setText('companyTotalEarningsStat', `LKR ${totalEarnings.toLocaleString()}`);
+    setText('companyMonthEarningsStat', `LKR ${monthlyEarnings.toLocaleString()}`);
+    setText('companyPendingStat', `LKR ${pendingAmount.toLocaleString()}`);
+    setText('companyActiveContractsStat', `${activeContracts}`);
+}
 
+function switchEarningsTab(tab) {
+    document.querySelectorAll('.tabs-container .tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
+    });
+
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    const target = document.getElementById(`${tab}EarningsTab`);
+    if (target) target.classList.add('active');
 }
 
 // ===== UTILITY FUNCTIONS =====
@@ -847,4 +914,213 @@ function showNotification(message, type = 'info') {
             }
         }, 300);
     }, 3000);
+}
+
+// ===== HELPERS =====
+function formatPaymentTypeLabel(paymentType) {
+    const map = {
+        credit_card: 'Credit card',
+        debit_card: 'Debit card',
+        cash: 'Cash',
+        bank_transfer: 'Bank transfer'
+    };
+
+    if (!paymentType) return '—';
+    return map[paymentType] || paymentType.replace(/_/g, ' ');
+}
+
+function formatContractPaymentMethod(method) {
+    const map = {
+        full_upfront: 'Full upfront',
+        milestone_based: 'Milestone based',
+        '50_50': '50/50 split',
+        '30_70': '30/70 split',
+        completion: 'Completion',
+        time_and_material: 'Time and material'
+    };
+
+    if (!method) return '—';
+    return map[method] || method.replace(/_/g, ' ');
+}
+
+function formatMaterialsIncluded(value) {
+    if (value === null || value === undefined) return '—';
+    return Number(value) === 1 ? 'Included' : 'Not included';
+}
+
+function formatMaterialsResponsibility(value) {
+    const map = {
+        company: 'Company provided',
+        client: 'Client provided',
+        shared: 'Shared'
+    };
+
+    if (!value) return '—';
+    return map[value] || value;
+}
+
+function formatHoursWorked(hours) {
+    if (!hours || hours <= 0) return '—';
+    return `${hours.toFixed(2)} h`;
+}
+
+function formatHourlyRate(rate) {
+    if (!rate || rate <= 0) return '—';
+    return `LKR ${rate.toLocaleString()}`;
+}
+
+function isWithinPeriod(dateValue, period) {
+    if (!dateValue) return false;
+    if (period === 'all') return true;
+
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return false;
+
+    const now = new Date();
+    const thisYear = now.getFullYear();
+    const thisMonth = now.getMonth();
+
+    switch (period) {
+        case 'this-month':
+            return date.getFullYear() === thisYear && date.getMonth() === thisMonth;
+        case 'last-month': {
+            const lastMonth = new Date(thisYear, thisMonth - 1, 1);
+            return date.getFullYear() === lastMonth.getFullYear() && date.getMonth() === lastMonth.getMonth();
+        }
+        case 'last-3-months': {
+            const start = new Date(thisYear, thisMonth - 2, 1);
+            return date >= start && date <= now;
+        }
+        case 'this-year':
+            return date.getFullYear() === thisYear;
+        default:
+            return true;
+    }
+}
+
+function matchesSearch(job, term) {
+    const jobTitle = (job.job_title || '').toLowerCase();
+    const customerName = `${job.customer_first_name || ''} ${job.customer_last_name || ''}`.toLowerCase();
+    const location = (job.district || '').toLowerCase();
+    const category = (job.category_name || '').toLowerCase();
+
+    return jobTitle.includes(term) || customerName.includes(term) || location.includes(term) || category.includes(term);
+}
+
+function getCustomerSortValue(job, sortBy) {
+    const amount = parseFloat(job.quoteAmount) || 0;
+    const status = job.ui_status === 'paid' || job.payment_status === 'completed' ? 'paid' : 'pending';
+    const dateValue = job.paymentDate || job.dateSubmitted || job.job_posted_date || '1970-01-01';
+
+    switch (sortBy) {
+        case 'date':
+        case 'newest':
+        case 'oldest':
+            return new Date(dateValue).getTime();
+        case 'job':
+            return (job.job_title || '').toLowerCase();
+        case 'customer':
+            return (`${job.customer_first_name || ''} ${job.customer_last_name || ''}`).toLowerCase();
+        case 'amount':
+        case 'amount-high':
+        case 'amount-low':
+            return amount;
+        case 'status':
+            return status;
+        default:
+            return new Date(dateValue).getTime();
+    }
+}
+
+function getCompanySortValue(item, sortBy) {
+    const amount = parseFloat(item.amount) || 0;
+    const dateValue = item.assigned_date || item.end_date || '1970-01-01';
+    const status = item.ui_status === 'paid' ? 'paid' : 'pending';
+
+    switch (sortBy) {
+        case 'date':
+            return new Date(dateValue).getTime();
+        case 'assignment':
+            return (item.project_title || item.role || '').toLowerCase();
+        case 'company':
+            return (item.company_name || '').toLowerCase();
+        case 'hours':
+        case 'rate':
+            return 0;
+        case 'amount':
+            return amount;
+        case 'status':
+            return status;
+        default:
+            return new Date(dateValue).getTime();
+    }
+}
+
+function setDrawerStatus(isPaid) {
+    const statusBanner = document.getElementById('earningStatusBanner');
+    const statusIcon = document.getElementById('earningStatusIcon');
+    const statusTitle = document.getElementById('earningStatusTitle');
+    const statusMessage = document.getElementById('earningStatusMessage');
+
+    statusBanner.className = 'earning-status-banner';
+    if (isPaid) {
+        statusBanner.classList.add('paid');
+        statusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+        statusTitle.textContent = 'Payment Received';
+        statusMessage.textContent = 'This payment has been successfully received';
+    } else {
+        statusBanner.classList.add('pending');
+        statusIcon.innerHTML = '<i class="fas fa-clock"></i>';
+        statusTitle.textContent = 'Payment Pending';
+        statusMessage.textContent = 'Awaiting payment confirmation';
+    }
+}
+
+function setTimeline(items) {
+    const timelineEl = document.getElementById('earningTimeline');
+    if (!timelineEl) return;
+
+    timelineEl.innerHTML = '';
+    if (!items.length) {
+        timelineEl.innerHTML = '<div class="timeline-item"><div class="timeline-marker"></div><div class="timeline-content"><h5>No timeline available</h5><p>—</p></div></div>';
+        return;
+    }
+
+    items.forEach(item => {
+        const timelineItem = document.createElement('div');
+        timelineItem.className = 'timeline-item';
+        timelineItem.innerHTML = `
+            <div class="timeline-marker"></div>
+            <div class="timeline-content">
+                <h5>${escapeHtmlEarnings(item.title)}</h5>
+                <p>${escapeHtmlEarnings(item.date)}</p>
+            </div>
+        `;
+        timelineEl.appendChild(timelineItem);
+    });
+}
+
+function buildCustomerTimeline(job) {
+    const timeline = [];
+    if (job.job_posted_date) {
+        timeline.push({ title: 'Job posted', date: formatDateDisplay(job.job_posted_date) });
+    }
+    if (job.dateSubmitted) {
+        timeline.push({ title: 'Quote submitted', date: formatDateDisplay(job.dateSubmitted) });
+    }
+    if (job.paymentDate) {
+        timeline.push({ title: 'Payment completed', date: formatDateDisplay(job.paymentDate) });
+    }
+    return timeline;
+}
+
+function buildCompanyTimeline(assignment) {
+    const timeline = [];
+    if (assignment.assigned_date) {
+        timeline.push({ title: 'Assignment created', date: formatDateDisplay(assignment.assigned_date) });
+    }
+    if (assignment.end_date) {
+        timeline.push({ title: 'Project end date', date: formatDateDisplay(assignment.end_date) });
+    }
+    return timeline;
 }

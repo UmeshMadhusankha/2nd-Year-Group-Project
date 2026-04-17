@@ -99,9 +99,11 @@ function createReviewCard(review) {
     const author = review.author || 'Anonymous';
     const text = review.text || review.comments || '';
     const date = review.date ? new Date(review.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+    const isoDate = review.date ? new Date(review.date).toISOString() : '';
+    const responseStatus = review.response ? 'responded' : 'pending';
 
     return `
-        <div class="review-item" data-rating="${rating}">
+        <div class="review-item" data-rating="${rating}" data-date="${isoDate}" data-response="${responseStatus}">
             <div class="review-header">
                 <div class="reviewer-info">
                     <div class="reviewer-avatar">${escapeHtmlReviews(author.charAt(0).toUpperCase())}</div>
@@ -145,11 +147,16 @@ function setText(id, value) {
 // ===== FILTER FUNCTIONALITY =====
 function initializeFilters() {
     const ratingFilter = document.getElementById('rating-filter');
+    const responseFilter = document.getElementById('response-filter');
     const sortFilter = document.getElementById('sort-filter');
     const clearBtn = document.querySelector('.btn-outline');
 
     if (ratingFilter) {
         ratingFilter.addEventListener('change', applyFilters);
+    }
+
+    if (responseFilter) {
+        responseFilter.addEventListener('change', applyFilters);
     }
 
     if (sortFilter) {
@@ -163,16 +170,21 @@ function initializeFilters() {
 
 function applyFilters() {
     const ratingFilter = document.getElementById('rating-filter').value;
+    const responseFilter = document.getElementById('response-filter').value;
     const sortBy = document.getElementById('sort-filter').value;
     const reviewItems = document.querySelectorAll('.review-item');
 
     // Convert NodeList to Array for sorting
     const reviewsArray = Array.from(reviewItems);
 
-    // Filter by rating
+    // Filter by rating and response status
     reviewsArray.forEach(item => {
         const rating = parseInt(item.dataset.rating);
-        if (ratingFilter === 'all' || rating >= parseInt(ratingFilter)) {
+        const responseStatus = item.dataset.response || 'pending';
+        const matchesRating = ratingFilter === 'all' || rating >= parseInt(ratingFilter);
+        const matchesResponse = responseFilter === 'all' || responseStatus === responseFilter;
+
+        if (matchesRating && matchesResponse) {
             item.style.display = 'block';
         } else {
             item.style.display = 'none';
@@ -185,12 +197,12 @@ function applyFilters() {
     visibleReviews.sort((a, b) => {
         switch (sortBy) {
             case 'newest':
-                return new Date(b.dataset.date) - new Date(a.dataset.date);
+                return new Date(b.dataset.date || 0) - new Date(a.dataset.date || 0);
             case 'oldest':
-                return new Date(a.dataset.date) - new Date(b.dataset.date);
-            case 'highest':
+                return new Date(a.dataset.date || 0) - new Date(b.dataset.date || 0);
+            case 'rating-high':
                 return parseInt(b.dataset.rating) - parseInt(a.dataset.rating);
-            case 'lowest':
+            case 'rating-low':
                 return parseInt(a.dataset.rating) - parseInt(b.dataset.rating);
             default:
                 return 0;

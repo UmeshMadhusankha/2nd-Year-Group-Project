@@ -54,10 +54,10 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                     <!-- Earnings Type Tabs -->
                     <div class="tabs-container">
                         <div class="tabs">
-                            <button class="tab-btn active" onclick="switchEarningsTab('customer')">
+                            <button class="tab-btn active" data-tab="customer" onclick="switchEarningsTab('customer')">
                                 <i class="fas fa-users"></i> Customer Repairs
                             </button>
-                            <button class="tab-btn" onclick="switchEarningsTab('company')">
+                            <button class="tab-btn" data-tab="company" onclick="switchEarningsTab('company')">
                                 <i class="fas fa-building"></i> Company Jobs
                             </button>
                         </div>
@@ -326,138 +326,6 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                                 <i class="fas fa-spinner fa-spin"></i> Loading company earnings...
                                             </td>
                                         </tr>
-                                        <!-- REMOVED dummy rows: Oct 22, Oct 23, Oct 24 2025 -->
-                                        <tr style="display:none" data-status="paid">
-                                            <td class="date-cell">
-                                                <div class="date-info">
-                                                    <span class="date-primary">placeholder</span>
-                                                    <span class="date-secondary">Today</span>
-                                                </div>
-                                            </td>
-                                            <td class="job-cell">
-                                                <div class="job-info">
-                                                    <span class="job-title">HVAC System Maintenance</span>
-                                                    <span class="job-category">HVAC</span>
-                                                </div>
-                                            </td>
-                                            <td class="customer-cell">
-                                                <div class="customer-info">
-                                                    <span class="customer-name">TechCorp Solutions</span>
-                                                    <span class="customer-location">Colombo 07</span>
-                                                </div>
-                                            </td>
-                                            <td class="hours-cell">
-                                                <span class="hours-worked">7.5 hours</span>
-                                            </td>
-                                            <td class="rate-cell">
-                                                <span class="hourly-rate">LKR 2,800/hr</span>
-                                            </td>
-                                            <td class="amount-cell">
-                                                <span class="amount-earned">LKR 21,000</span>
-                                            </td>
-                                            <td class="status-cell">
-                                                <span class="payment-status paid">
-                                                    <i class="fas fa-check-circle"></i>
-                                                    Paid
-                                                </span>
-                                            </td>
-                                            <td class="actions-cell">
-                                                <button class="btn btn-sm btn-outline" onclick="viewCompanyEarningDetails(1)">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline" onclick="downloadCompanyInvoice(1)">
-                                                    <i class="fas fa-download"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-
-                                        <tr class="earnings-row" data-status="pending">
-                                            <td class="date-cell">
-                                                <div class="date-info">
-                                                    <span class="date-primary">Oct 23, 2025</span>
-                                                    <span class="date-secondary">Tomorrow</span>
-                                                </div>
-                                            </td>
-                                            <td class="job-cell">
-                                                <div class="job-info">
-                                                    <span class="job-title">Emergency AC Repair</span>
-                                                    <span class="job-category">HVAC</span>
-                                                </div>
-                                            </td>
-                                            <td class="customer-cell">
-                                                <div class="customer-info">
-                                                    <span class="customer-name">TechCorp Solutions</span>
-                                                    <span class="customer-location">Colombo 03</span>
-                                                </div>
-                                            </td>
-                                            <td class="hours-cell">
-                                                <span class="hours-worked">4.0 hours</span>
-                                            </td>
-                                            <td class="rate-cell">
-                                                <span class="hourly-rate">LKR 2,800/hr</span>
-                                            </td>
-                                            <td class="amount-cell">
-                                                <span class="amount-earned">LKR 11,200</span>
-                                            </td>
-                                            <td class="status-cell">
-                                                <span class="payment-status pending">
-                                                    <i class="fas fa-clock"></i>
-                                                    Pending
-                                                </span>
-                                            </td>
-                                            <td class="actions-cell">
-                                                <button class="btn btn-sm btn-outline" onclick="viewCompanyEarningDetails(2)">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-primary" onclick="sendCompanyReminder(2)">
-                                                    <i class="fas fa-bell"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-
-                                        <tr class="earnings-row" data-status="paid">
-                                            <td class="date-cell">
-                                                <div class="date-info">
-                                                    <span class="date-primary">Oct 24, 2025</span>
-                                                    <span class="date-secondary">In 2 days</span>
-                                                </div>
-                                            </td>
-                                            <td class="job-cell">
-                                                <div class="job-info">
-                                                    <span class="job-title">Electrical Panel Installation</span>
-                                                    <span class="job-category">Electrical</span>
-                                                </div>
-                                            </td>
-                                            <td class="customer-cell">
-                                                <div class="customer-info">
-                                                    <span class="customer-name">BuildPro Lanka</span>
-                                                    <span class="customer-location">Kandy</span>
-                                                </div>
-                                            </td>
-                                            <td class="hours-cell">
-                                                <span class="hours-worked">8.0 hours</span>
-                                            </td>
-                                            <td class="rate-cell">
-                                                <span class="hourly-rate">LKR 2,500/hr</span>
-                                            </td>
-                                            <td class="amount-cell">
-                                                <span class="amount-earned">LKR 20,000</span>
-                                            </td>
-                                            <td class="status-cell">
-                                                <span class="payment-status paid">
-                                                    <i class="fas fa-check-circle"></i>
-                                                    Paid
-                                                </span>
-                                            </td>
-                                            <td class="actions-cell">
-                                                <button class="btn btn-sm btn-outline" onclick="viewCompanyEarningDetails(3)">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline" onclick="downloadCompanyInvoice(3)">
-                                                    <i class="fas fa-download"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -617,42 +485,6 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
         window.CURRENT_REPAIRER_ID = <?php echo isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0; ?>;
     </script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/repairer/earnings.js"></script>
-    <script>
-        // Tab switching function
-        function switchEarningsTab(tab) {
-            // Update tab buttons
-            document.querySelectorAll('.tabs-container .tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            // Update tab content
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            document.getElementById(tab + 'EarningsTab').classList.add('active');
-        }
-
-        function resetCompanyFilters() {
-            document.getElementById('company-period-filter').value = 'this-month';
-            document.getElementById('company-status-filter').value = 'all';
-        }
-
-        function viewCompanyEarningDetails(id) {
-            console.log('Viewing company earning details:', id);
-            // Implementation for viewing company earning details
-        }
-
-        function downloadCompanyInvoice(id) {
-            console.log('Downloading company invoice:', id);
-            // Implementation for downloading company invoice
-        }
-
-        function sendCompanyReminder(id) {
-            console.log('Sending payment reminder to company:', id);
-            // Implementation for sending reminder
-        }
-    </script>
 </body>
 </html>
 
