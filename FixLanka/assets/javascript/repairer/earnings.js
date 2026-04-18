@@ -862,6 +862,24 @@ function switchEarningsTab(tab) {
     if (target) target.classList.add('active');
 }
 
+function exportEarningsReport() {
+    const activeTab = document.querySelector('.tabs-container .tab-btn.active');
+    const tab = activeTab ? activeTab.getAttribute('data-tab') : 'customer';
+    const isCompany = tab === 'company';
+    const items = isCompany ? filteredCompanyAssignments : filteredJobs;
+
+    if (!items || items.length === 0) {
+        showNotification('No earnings to export for the current filters.', 'warning');
+        return;
+    }
+
+    const html = isCompany
+        ? buildCompanyReportHtml(items)
+        : buildCustomerReportHtml(items);
+
+    openPrintWindow(html, isCompany ? 'Company Earnings Report' : 'Customer Earnings Report');
+}
+
 // ===== UTILITY FUNCTIONS =====
 function showNotification(message, type = 'info') {
     // Create notification element
@@ -1123,4 +1141,112 @@ function buildCompanyTimeline(assignment) {
         timeline.push({ title: 'Project end date', date: formatDateDisplay(assignment.end_date) });
     }
     return timeline;
+}
+
+function buildCustomerReportHtml(items) {
+    const rows = items.map(job => {
+        const amount = parseFloat(job.quoteAmount) || 0;
+        const rawDate = job.paymentDate || job.dateSubmitted || job.job_posted_date || '';
+        const date = rawDate ? formatDateDisplay(rawDate) : '';
+        const customerName = `${job.customer_first_name || ''} ${job.customer_last_name || ''}`.trim();
+        const status = job.ui_status === 'paid' || job.payment_status === 'completed' ? 'Paid' : 'Pending';
+
+        return `
+            <tr>
+                <td>${escapeHtmlEarnings(date)}</td>
+                <td>${escapeHtmlEarnings(job.job_title || '')}</td>
+                <td>${escapeHtmlEarnings(customerName || '')}</td>
+                <td>${escapeHtmlEarnings(job.district || '')}</td>
+                <td>LKR ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td>${escapeHtmlEarnings(status)}</td>
+            </tr>
+        `;
+    }).join('');
+
+    return buildReportHtml('Customer Earnings Report', [
+        'Date', 'Job Title', 'Customer', 'Location', 'Amount (LKR)', 'Status'
+    ], rows);
+}
+
+function buildCompanyReportHtml(items) {
+    const rows = items.map(item => {
+        const amount = parseFloat(item.amount) || 0;
+        const rawDate = item.assigned_date || item.end_date || '';
+        const date = rawDate ? formatDateDisplay(rawDate) : '';
+        const hours = Number.isFinite(parseFloat(item.hours_worked))
+            ? parseFloat(item.hours_worked).toFixed(2)
+            : '';
+        const rate = Number.isFinite(parseFloat(item.hourly_rate))
+            ? parseFloat(item.hourly_rate).toFixed(2)
+            : '';
+        const status = item.ui_status === 'paid' ? 'Paid' : 'Pending';
+
+        return `
+            <tr>
+                <td>${escapeHtmlEarnings(date)}</td>
+                <td>${escapeHtmlEarnings(item.project_title || item.role || '')}</td>
+                <td>${escapeHtmlEarnings(item.company_name || '')}</td>
+                <td>${escapeHtmlEarnings(item.project_location || '')}</td>
+                <td>${escapeHtmlEarnings(hours)}</td>
+                <td>${escapeHtmlEarnings(rate)}</td>
+                <td>LKR ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td>${escapeHtmlEarnings(status)}</td>
+            </tr>
+        `;
+    }).join('');
+
+    return buildReportHtml('Company Earnings Report', [
+        'Date', 'Assignment', 'Company', 'Location', 'Hours Worked', 'Hourly Rate (LKR)', 'Amount (LKR)', 'Status'
+    ], rows);
+}
+
+function buildReportHtml(title, headers, rowsHtml) {
+    const now = new Date().toLocaleString('en-US');
+    const headerRow = headers.map(label => `<th>${escapeHtmlEarnings(label)}</th>`).join('');
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>${escapeHtmlEarnings(title)}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 32px; color: #111827; }
+        h1 { margin-bottom: 4px; font-size: 24px; }
+        .meta { margin-bottom: 24px; color: #6b7280; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; font-size: 13px; }
+        th { background: #f9fafb; }
+    </style>
+</head>
+<body>
+    <h1>${escapeHtmlEarnings(title)}</h1>
+    <div class="meta">Generated on ${escapeHtmlEarnings(now)}</div>
+    <table>
+        <thead>
+            <tr>${headerRow}</tr>
+        </thead>
+        <tbody>
+            ${rowsHtml}
+        </tbody>
+    </table>
+</body>
+</html>`;
+}
+
+function openPrintWindow(html, title) {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        showNotification('Popup blocked. Please allow popups to export.', 'error');
+        return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.document.title = title;
+
+    printWindow.focus();
+    printWindow.onload = () => {
+        printWindow.print();
+    };
 }

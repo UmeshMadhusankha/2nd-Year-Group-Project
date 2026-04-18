@@ -43,7 +43,7 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                 <p class="page-header-subtitle">Track your income from customer repairs and company contracts</p>
                             </div>
                             <div class="page-header-actions">
-                                <button class="btn btn-primary">
+                                <button class="btn btn-primary" onclick="exportEarningsReport()">
                                     <i class="fas fa-download"></i>
                                     Export Report
                                 </button>

@@ -47,6 +47,7 @@ function renderAdminSidebar($currentPath, $basePath)
         ['title' => 'Account Moderation', 'url' => '/2nd-Year-Group-Project/FixLanka/views/admin/account-moderation.php', 'icon' => 'fa-shield'],
         ['title' => 'Send Alerts', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-alerts', 'icon' => 'fa-triangle-exclamation'],
         ['title' => 'Issues & Reports', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-issues', 'icon' => 'fa-message'],
+        ['title' => 'Support Tickets', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-support-tickets', 'icon' => 'fa-ticket'],
         ['title' => 'Analytics', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-analytics', 'icon' => 'fa-chart-bar'],
         ['title' => 'Advertisement Review', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-ads', 'icon' => 'fa-desktop'],
         ['title' => 'Financial Overview', 'url' => '/2nd-Year-Group-Project/FixLanka/admin-finance', 'icon' => 'fa-dollar-sign'],
