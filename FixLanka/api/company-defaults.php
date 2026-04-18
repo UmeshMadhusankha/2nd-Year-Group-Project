@@ -15,14 +15,21 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/session.php';
 
+// Authentication check
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'company') {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    exit;
+}
+
 header('Content-Type: application/json');
 
 try {
-    // Removed buggy $stmt = $pdo->prepare($query); since $query is not defined yet
-    // Get user_id from request
-    $userId = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
+    // Use logged-in company ID from session
+    $userId = $_SESSION['user_id'];
 
     if (!$userId) {
+        http_response_code(400);
         echo json_encode([
             'success' => false,
             'message' => 'User ID is required'
@@ -30,7 +37,7 @@ try {
         exit;
     }
 
-        // Get current company profile plus the latest quotation defaults.
+    // Get current company profile plus the latest quotation defaults.
         $profileQuery = "SELECT 
                                                 c.company_id AS user_id,
                                                 c.name AS company_name,

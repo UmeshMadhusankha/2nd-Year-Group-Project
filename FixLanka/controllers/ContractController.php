@@ -98,7 +98,8 @@ class ContractController {
                     'labor_unit_label' => $contract['labor_unit_label'] ?? null,
                     'material_unit_label' => $contract['material_unit_label'] ?? null,
                     'total_milestones' => (int)($contract['total_milestones'] ?? 0),
-                    'completed_milestones' => (int)($contract['completed_milestones'] ?? 0)
+                    'completed_milestones' => (int)($contract['completed_milestones'] ?? 0),
+                    'submitted_milestones' => (int)($contract['submitted_milestones'] ?? 0)
                 ];
             }, $contracts);
 

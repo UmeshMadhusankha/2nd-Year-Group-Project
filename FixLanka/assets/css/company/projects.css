@@ -60,10 +60,13 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  /* 🚀 full height */
-  overflow: hidden;
+  height: calc(100vh - var(--header-height));
   margin-left: var(--sidebar-width);
+  margin-top: var(--header-height);
+  padding: var(--spacing-xl);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+  overflow-y: auto;
+  scroll-behavior: smooth;
   transition: margin-left var(--transition-fast);
 }
 
@@ -82,14 +85,9 @@ body {
 }
 
 .projects-container {
-  flex: 1;
-  padding: var(--spacing-xl);
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
-  border-radius: var(--border-radius-xl) var(--border-radius-xl) 0 0;
-  height: calc(100vh - var(--header-height));
-  overflow-y: scroll;
-  box-shadow: var(--shadow-md);
-  margin-top: var(--header-height);
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 /* Page Header */
@@ -113,7 +111,7 @@ body {
 }
 
 .header-content {
-  max-width: 1500px;
+  max-width: 100%;
   margin: 0 auto;
   position: relative;
   z-index: 1;
@@ -374,7 +372,7 @@ body {
 }
 
 .nav-container {
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 0 var(--spacing-lg);
 }
@@ -444,7 +442,7 @@ body {
 }
 
 .kpi-grid {
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -828,6 +826,7 @@ body {
   border-bottom: 2px solid rgba(var(--primary-rgb), 0.15);
   white-space: nowrap;
 }
+
 /* need to add a background color for id="projects-table-body" */
 #projects-table-body {
   background: var(--bg-primary) !important;

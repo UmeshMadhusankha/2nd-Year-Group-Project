@@ -92,15 +92,33 @@ $userData = getUserData();
                                     <input type="text" id="companyName" value="" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="businessType">Business Type</label>
-                                    <select id="businessType">
-                                        <option value="repair">Repair & Maintenance</option>
-                                        <option value="construction">Construction</option>
-                                        <option value="electrical">Electrical Services</option>
-                                        <option value="plumbing">Plumbing Services</option>
-                                        <option value="general">General Contractor</option>
-                                    </select>
+                                    <label>Service Categories * (Select at least one)</label>
+                                    <div class="checkbox-group business-type-grid" id="companyBusinessTypes">
+                                        <label><input type="checkbox" class="company-business-type" value="Plumbing"> Plumbing</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Electrical"> Electrical</label>
+                                        <label><input type="checkbox" class="company-business-type" value="HVAC"> HVAC</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Cleaning"> Cleaning</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Carpentry"> Carpentry</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Painting"> Painting</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Appliance Repair"> Appliance Repair</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Roofing"> Roofing</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Landscaping"> Landscaping</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Pest Control"> Pest Control</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Home Security"> Home Security</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Interior Design"> Interior Design</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Flooring"> Flooring</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Masonry"> Masonry</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Welding"> Welding</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Construction"> Construction</label>
+                                        <label><input type="checkbox" class="company-business-type" value="Other" id="companyBusinessTypeOther"> Other</label>
+                                    </div>
+                                    <small class="form-hint">Update what services your company provides.</small>
                                 </div>
+                            </div>
+
+                            <div class="form-group" id="companyBusinessTypeOtherGroup" style="display:none;">
+                                <label for="companyBusinessTypeOtherText">Other Service Category *</label>
+                                <input type="text" id="companyBusinessTypeOtherText" placeholder="Type your service category">
                             </div>
 
                             <div class="form-row">
@@ -1362,6 +1380,20 @@ $userData = getUserData();
         document.addEventListener('DOMContentLoaded', () => {
             fetchCompanyProfile();
             fetchBankAccounts();
+
+            // Business type (service categories) - Other toggle
+            const otherCb = document.getElementById('companyBusinessTypeOther');
+            if (otherCb) {
+                otherCb.addEventListener('change', () => {
+                    const group = document.getElementById('companyBusinessTypeOtherGroup');
+                    if (!group) return;
+                    group.style.display = otherCb.checked ? 'block' : 'none';
+                    if (!otherCb.checked) {
+                        const t = document.getElementById('companyBusinessTypeOtherText');
+                        if (t) t.value = '';
+                    }
+                });
+            }
             
             // Tab switching logic
             const tabBtns = document.querySelectorAll('.tab-btn');
@@ -1410,7 +1442,7 @@ $userData = getUserData();
                 if (result.success) {
                     const data = result.data;
                     document.getElementById('companyName').value = data.name || '';
-                    document.getElementById('businessType').value = data.business_type ? data.business_type.split(',')[0] : ''; // Simple select for now
+                    setCompanyBusinessTypesFromData(data.business_type);
                     document.getElementById('registrationNumber').value = data.registration_no || '';
                     document.getElementById('taxId').value = data.tax_id || '';
                     document.getElementById('companyDescription').value = data.description || '';
@@ -1427,6 +1459,71 @@ $userData = getUserData();
             } catch (error) {
                 console.error('Error fetching profile:', error);
             }
+        }
+
+        function setCompanyBusinessTypesFromData(businessTypeValue) {
+            const raw = (businessTypeValue || '').toString();
+            const parts = raw
+                .split(',')
+                .map(s => (s || '').toString().trim())
+                .filter(Boolean);
+
+            const knownValues = new Set([
+                'Plumbing', 'Electrical', 'HVAC', 'Cleaning', 'Carpentry', 'Painting',
+                'Appliance Repair', 'Roofing', 'Landscaping', 'Pest Control', 'Home Security',
+                'Interior Design', 'Flooring', 'Masonry', 'Welding', 'Construction'
+            ]);
+
+            const checkboxes = Array.from(document.querySelectorAll('.company-business-type'));
+            checkboxes.forEach(cb => { cb.checked = false; });
+
+            const unknown = [];
+            parts.forEach(val => {
+                const match = checkboxes.find(cb => (cb.value || '') === val);
+                if (match) {
+                    match.checked = true;
+                } else if (val && !knownValues.has(val)) {
+                    unknown.push(val);
+                }
+            });
+
+            const otherCb = document.getElementById('companyBusinessTypeOther');
+            const otherGroup = document.getElementById('companyBusinessTypeOtherGroup');
+            const otherText = document.getElementById('companyBusinessTypeOtherText');
+            if (otherCb && otherGroup && otherText) {
+                if (unknown.length > 0) {
+                    otherCb.checked = true;
+                    otherGroup.style.display = 'block';
+                    otherText.value = unknown.join(', ');
+                } else {
+                    otherCb.checked = false;
+                    otherGroup.style.display = 'none';
+                    otherText.value = '';
+                }
+            }
+        }
+
+        function getCompanyBusinessTypesForSave() {
+            const selected = Array.from(document.querySelectorAll('.company-business-type:checked'))
+                .map(cb => (cb.value || '').toString().trim())
+                .filter(Boolean);
+
+            const otherIdx = selected.indexOf('Other');
+            if (otherIdx !== -1) {
+                selected.splice(otherIdx, 1);
+                const otherText = (document.getElementById('companyBusinessTypeOtherText')?.value || '').toString().trim();
+                if (!otherText) {
+                    return { ok: false, message: 'Please enter your other service category.' };
+                }
+                selected.push(otherText);
+            }
+
+            if (selected.length === 0) {
+                return { ok: false, message: 'Please select at least one service category.' };
+            }
+
+            // Store same as signup: comma-separated values (no spaces)
+            return { ok: true, value: selected.join(',') };
         }
 
         let companySkillsTags = [];
@@ -1497,10 +1594,15 @@ $userData = getUserData();
         }
 
         async function saveCompanyProfile() {
+            const businessTypes = getCompanyBusinessTypesForSave();
+            if (!businessTypes.ok) {
+                alert(businessTypes.message);
+                return;
+            }
             const data = {
                 action: 'update_profile',
                 name: document.getElementById('companyName').value,
-                business_type: document.getElementById('businessType').value,
+                business_type: businessTypes.value,
                 registration_no: document.getElementById('registrationNumber').value,
                 tax_id: document.getElementById('taxId').value,
                 description: document.getElementById('companyDescription').value,

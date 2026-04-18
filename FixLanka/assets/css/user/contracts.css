@@ -2063,6 +2063,36 @@ body.modal-open {
     border-left: none;
 }
 
+/* In list-view the card is flex-direction:row — hide the strip entirely.
+   The review indicator is embedded inside the milestones meta column instead. */
+.contracts-container.list-view .card-review-alert {
+    display: none !important;
+}
+
+/* Amber left border on list-view rows with pending reviews */
+.contracts-container.list-view .contract-card[data-has-review="1"] {
+    border-left: 4px solid #f59e0b !important;
+}
+
+/* Amber badge embedded in milestones meta column for list-view */
+.meta-review-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 6px;
+    padding: 2px 7px;
+    background: rgba(245, 158, 11, 0.18);
+    border: 1px solid rgba(245, 158, 11, 0.40);
+    border-radius: 10px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #92400e;
+    white-space: nowrap;
+    animation: review-btn-pulse 2.5s ease-in-out infinite;
+    vertical-align: middle;
+}
+
+
 .contracts-container.list-view .card-meta-item>div {
     display: flex;
     flex-direction: column;
@@ -2699,4 +2729,408 @@ body.modal-open {
 
 .ub-note strong {
     color: var(--success, #22c55e);
+}
+
+/* ================================================
+   PROOF REVIEW MODAL BODY CONTENT
+   ================================================ */
+
+.proof-submitted-at {
+    font-size: 0.8rem;
+    color: var(--text-muted, #64748b);
+    margin: 0 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.proof-submitted-at i {
+    color: var(--primary, #4f46e5);
+}
+
+/* Amount banner */
+.proof-amount-banner {
+    background: linear-gradient(135deg, rgba(var(--primary-rgb, 79 70 229), 0.08) 0%, rgba(var(--info-rgb, 6 182 212), 0.08) 100%);
+    border: 1px solid rgba(var(--primary-rgb, 79 70 229), 0.18);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+}
+
+.proof-amount-banner.proof-non-paying {
+    background: rgba(var(--text-muted-rgb, 100 116 139), 0.08);
+    border-color: var(--border-color, #e2e8f0);
+}
+
+.proof-non-paying-label {
+    font-size: 0.88rem;
+    color: var(--text-muted, #64748b);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.proof-amount-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.proof-amount-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #475569);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.proof-amount-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--primary, #4f46e5);
+    background: linear-gradient(135deg, var(--primary-color, #4f46e5) 0%, var(--cyan-color, #06b6d4) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.proof-amount-note {
+    font-size: 0.78rem;
+    color: var(--text-muted, #64748b);
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Section headings */
+.proof-section {
+    margin-bottom: 20px;
+}
+
+.proof-section-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted, #64748b);
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.proof-section-title i {
+    color: var(--primary, #4f46e5);
+}
+
+/* Company notes */
+.proof-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary, #475569);
+    line-height: 1.7;
+    background: rgba(var(--primary-rgb, 79 70 229), 0.04);
+    border-left: 3px solid var(--primary-color, #4f46e5);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+}
+
+/* Unit breakdown table */
+.proof-breakdown-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.proof-breakdown-table thead tr {
+    background: rgba(var(--primary-rgb, 79 70 229), 0.07);
+}
+
+.proof-breakdown-table th {
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted, #64748b);
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.proof-breakdown-table td {
+    padding: 9px 10px;
+    color: var(--text-secondary, #475569);
+    border-bottom: 1px solid rgba(var(--primary-rgb, 79 70 229), 0.06);
+    vertical-align: middle;
+}
+
+.proof-breakdown-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.proof-breakdown-table tbody tr:hover td {
+    background: rgba(var(--primary-rgb, 79 70 229), 0.04);
+}
+
+.proof-breakdown-table td:last-child {
+    text-align: right;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+}
+
+/* File list */
+.proof-files-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.proof-file-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.proof-file-item.proof-file-image {
+    max-width: 220px;
+}
+
+.proof-file-item small {
+    font-size: 0.75rem;
+    color: var(--text-muted, #64748b);
+    word-break: break-all;
+}
+
+.proof-file-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    background: rgba(var(--primary-rgb, 79 70 229), 0.07);
+    border: 1px solid rgba(var(--primary-rgb, 79 70 229), 0.15);
+    border-radius: 8px;
+    color: var(--primary, #4f46e5);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.proof-file-link:hover {
+    background: rgba(var(--primary-rgb, 79 70 229), 0.14);
+    border-color: var(--primary-color, #4f46e5);
+    transform: translateY(-1px);
+}
+
+/* ================================================
+   REVIEW VISIBILITY - Submitted Milestone Alerts
+   ================================================ */
+
+/* Pulsing 'Review Now' button in milestone table */
+.review-phase-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.40);
+    transition: all 0.2s;
+    animation: review-btn-pulse 2.5s ease-in-out infinite;
+}
+
+.review-phase-btn:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.55);
+    animation: none;
+}
+
+@keyframes review-btn-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.40);
+    }
+
+    50% {
+        box-shadow: 0 2px 16px rgba(245, 158, 11, 0.75);
+    }
+}
+
+/* Amber alert strip on contract card */
+.card-review-alert {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 6px 0 0;
+    padding: 6px 10px;
+    width: 100%;
+    box-sizing: border-box;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(217, 119, 6, 0.10) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 7px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #92400e;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: background 0.2s;
+    animation: review-strip-pulse 2.5s ease-in-out infinite;
+}
+
+.card-review-alert i:first-child {
+    color: #d97706;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+    animation: bell-shake 2.5s ease-in-out infinite;
+}
+
+.card-review-alert span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.card-review-alert i:last-child {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    color: #b45309;
+}
+
+@keyframes bell-shake {
+
+    0%,
+    90%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    10% {
+        transform: rotate(-12deg);
+    }
+
+    30% {
+        transform: rotate(12deg);
+    }
+
+    50% {
+        transform: rotate(-8deg);
+    }
+
+    70% {
+        transform: rotate(8deg);
+    }
+}
+
+@keyframes review-strip-pulse {
+
+    0%,
+    100% {
+        border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    50% {
+        border-color: rgba(245, 158, 11, 0.65);
+    }
+}
+
+.card-review-alert:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(217, 119, 6, 0.16) 100%);
+    animation: none;
+}
+
+/* Attention banner inside the contract detail overlay */
+.detail-review-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(217, 119, 6, 0.10) 100%);
+    border: 1.5px solid rgba(245, 158, 11, 0.45);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(245, 158, 11, 0.15);
+}
+
+.drb-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(245, 158, 11, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: #d97706;
+    flex-shrink: 0;
+    animation: bell-shake 2.5s ease-in-out infinite;
+}
+
+.drb-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.drb-text strong {
+    font-size: 0.9rem;
+    color: #78350f;
+    font-weight: 700;
+}
+
+.drb-text span {
+    font-size: 0.8rem;
+    color: #92400e;
+    line-height: 1.4;
+}
+
+.drb-text em {
+    font-style: normal;
+    font-weight: 700;
+    color: #d97706;
+}
+
+.drb-scroll-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.drb-scroll-btn:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    transform: translateY(-1px);
+}
+
+/* Highlighted row for submitted milestone */
+.ms-row-needs-review {
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, transparent 100%) !important;
+    border-left: 3px solid #f59e0b !important;
 }

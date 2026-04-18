@@ -289,7 +289,7 @@
         });
 
         return `
-        <div class="contract-card" data-id="${c.contract_id}" data-status="${mapCardStatus(c.status)}">
+        <div class="contract-card" data-id="${c.contract_id}" data-status="${mapCardStatus(c.status)}" ${parseInt(c.submitted_milestones || 0) > 0 ? 'data-has-review="1"' : ''}>
             <div class="card-top-row">
                 <div class="card-type-badge">Contract</div>
                 <div class="card-status-badge ${statusClass}">
@@ -344,12 +344,17 @@
                     <i class="fas fa-flag"></i>
                     <div>
                         <span class="meta-label">Milestones</span>
-                        <span class="meta-value">${c.total_milestones > 0 ? `${c.completed_milestones}/${c.total_milestones}` : '—'}</span>
+                        <span class="meta-value">${c.total_milestones > 0 ? `${c.completed_milestones}/${c.total_milestones}` : '—'}${parseInt(c.submitted_milestones || 0) > 0 ? `<span class="meta-review-badge"><i class="fas fa-bell"></i> Review</span>` : ''}</span>
                     </div>
                 </div>
             </div>
 
-
+            ${(parseInt(c.submitted_milestones || 0) > 0) ? `
+            <div class="card-review-alert" onclick="event.stopPropagation(); openDetail(${c.contract_id})">
+                <i class="fas fa-bell"></i>
+                <span>${parseInt(c.submitted_milestones)} phase${parseInt(c.submitted_milestones) > 1 ? 's' : ''} awaiting your review</span>
+                <i class="fas fa-chevron-right" style="margin-left:auto;"></i>
+            </div>` : ''}
 
             <div class="card-actions-row">
                 ${actions}
@@ -521,7 +526,12 @@
             body.innerHTML = shared.renderHTML(c, {
                 isMilestoneBased,
                 paymentLabel: formatPaymentMethod(c.payment_method),
-                // Milestone actions are intentionally NOT rendered inside the contract document.
+                renderMilestoneAction: (ms) => {
+                    if (String(ms?.status || '') === 'submitted' && ms.milestone_id) {
+                        return `<button class="review-phase-btn" onclick="event.stopPropagation(); window.openProofModal(${ms.milestone_id})" title="Review proof submitted by company"><i class="fas fa-clipboard-check"></i> Review Now</button>`;
+                    }
+                    return null;
+                }
             });
 
             // Keep functionality: allow reviewing submitted milestones by clicking the milestone row.
@@ -556,6 +566,33 @@
                 milestones,
                 isMilestoneBased
             });
+        }
+
+        // ---- Inject 'Needs Review' banner at top when submitted milestones exist ----
+        const submittedMs = (c.milestones || []).filter(m => m.status === 'submitted');
+        if (submittedMs.length > 0) {
+            const banner = document.createElement('div');
+            banner.className = 'detail-review-banner';
+            banner.innerHTML = `
+                <div class="drb-icon"><i class="fas fa-bell"></i></div>
+                <div class="drb-text">
+                    <strong>${submittedMs.length} phase${submittedMs.length > 1 ? 's' : ''} waiting for your review</strong>
+                    <span>The company has submitted work. Scroll to Milestones and click <em>Review Now</em> to approve or reject.</span>
+                </div>
+                <button class="drb-scroll-btn" onclick="document.querySelector('.review-phase-btn')?.scrollIntoView({behavior:'smooth',block:'center'})">
+                    <i class="fas fa-arrow-down"></i> Jump
+                </button>
+            `;
+            if (body) body.insertBefore(banner, body.firstChild);
+
+            // Visually highlight submitted rows in the milestone table
+            setTimeout(() => {
+                body.querySelectorAll('table tbody tr').forEach(row => {
+                    if (row.querySelector('.review-phase-btn')) {
+                        row.classList.add('ms-row-needs-review');
+                    }
+                });
+            }, 50);
         }
 
         // Footer action buttons
@@ -818,7 +855,9 @@
 
             let actionBtn = '—';
             if (msStatus === 'submitted') {
-                actionBtn = `<button class="action-btn secondary small" onclick="openProofModal(${ms.milestone_id})"><i class="fas fa-eye"></i> Review</button>`;
+                actionBtn = `<button class="review-phase-btn" onclick="openProofModal(${ms.milestone_id})" title="Review proof submitted by company">
+                    <i class="fas fa-clipboard-check"></i> Review Now
+                </button>`;
             } else if (msStatus === 'approved' || msStatus === 'paid') {
                 actionBtn = '<span class="text-success"><i class="fas fa-check"></i> Paid</span>';
             }
@@ -829,20 +868,20 @@
                     <strong>${esc(ms.title || ms.milestone_name || ('Milestone ' + (i + 1)))}</strong>
                     ${ms.description ? '<br><small style="color:var(--text-muted)">' + esc(ms.description) + '</small>' : ''}
                     ${hasUnitMilestones && (ms.unit_label || ms.unit_rate) ? (() => {
-                        const unitLabel = (ms.unit_label || '').toString().trim() || 'units';
-                        const agreedRate = parseFloat(ms.unit_rate || 0);
-                        const actualRate = parseFloat(ms.actual_unit_rate || 0);
-                        const unitRate = (actualRate > 0) ? actualRate : agreedRate;
-                        const actualQty = parseFloat(ms.actual_quantity || 0);
-                        const billed = computeBilledAmount(ms);
-                        const rateStr = (unitRate > 0) ? (formatCurrency(unitRate) + ' / ' + esc(unitLabel)) : '—';
+                    const unitLabel = (ms.unit_label || '').toString().trim() || 'units';
+                    const agreedRate = parseFloat(ms.unit_rate || 0);
+                    const actualRate = parseFloat(ms.actual_unit_rate || 0);
+                    const unitRate = (actualRate > 0) ? actualRate : agreedRate;
+                    const actualQty = parseFloat(ms.actual_quantity || 0);
+                    const billed = computeBilledAmount(ms);
+                    const rateStr = (unitRate > 0) ? (formatCurrency(unitRate) + ' / ' + esc(unitLabel)) : '—';
 
-                        const unitLine = `<br><small style="color:var(--text-muted)">Unit: ${esc(unitLabel)} • Rate: ${rateStr}</small>`;
-                        const actualLine = (actualQty > 0 && unitRate > 0)
-                            ? `<br><small style="color:var(--text-muted)">Submitted: ${actualQty} ${esc(unitLabel)} • Billed: <strong>${formatCurrency(billed)}</strong></small>`
-                            : '';
-                        return unitLine + actualLine;
-                    })() : ''}
+                    const unitLine = `<br><small style="color:var(--text-muted)">Unit: ${esc(unitLabel)} • Rate: ${rateStr}</small>`;
+                    const actualLine = (actualQty > 0 && unitRate > 0)
+                        ? `<br><small style="color:var(--text-muted)">Submitted: ${actualQty} ${esc(unitLabel)} • Billed: <strong>${formatCurrency(billed)}</strong></small>`
+                        : '';
+                    return unitLine + actualLine;
+                })() : ''}
                 </td>
                 <td>${formatDate(ms.due_date)}</td>
                 ${isMilestoneBased ? (() => {
@@ -959,6 +998,256 @@
             return;
         }
         _openAdjustModal(contract);
+    };
+
+    // ==========================================================================
+    // PHASE / MILESTONE REVIEW FUNCTIONS (called from milestone table "Review" btn)
+    // ==========================================================================
+
+    /**
+     * Open the Review Phase modal, fetch & display all company-submitted proof data.
+     * @param {number} milestoneId
+     */
+    window.openProofModal = async function (milestoneId) {
+        const overlay = document.getElementById('proofReviewOverlay');
+        const body = document.getElementById('proofReviewBody');
+        const title = document.getElementById('proofPhaseTitle');
+        if (!overlay || !body) return;
+
+        currentReviewMilestoneId = milestoneId;
+        if (title) title.textContent = '';
+        body.innerHTML = '<div class="contracts-loading"><div class="spinner"></div><p>Loading proof details...</p></div>';
+        overlay.classList.add('show');
+        updateBodyScrollLock();
+
+        try {
+            const res = await fetch(`/2nd-Year-Group-Project/FixLanka/api/milestones.php?action=get&milestone_id=${encodeURIComponent(milestoneId)}`);
+            const json = await res.json();
+
+            if (!json.success) {
+                body.innerHTML = `<p style="color:var(--danger);padding:16px;">Error: ${esc(json.message || 'Could not load milestone.')}</p>`;
+                return;
+            }
+
+            const m = json.data;
+
+            if (title) title.textContent = esc(m.title || `Phase #${m.milestone_number || milestoneId}`);
+
+            const isNonPaying = String(m.is_non_paying) === '1';
+            const laborQty = m.actual_labor_quantity != null ? parseFloat(m.actual_labor_quantity) : null;
+            const matQty = m.actual_material_quantity != null ? parseFloat(m.actual_material_quantity) : null;
+            const matRate = m.actual_material_unit_rate != null ? parseFloat(m.actual_material_unit_rate) : null;
+            const extraAmt = m.actual_extra_amount != null ? parseFloat(m.actual_extra_amount) : null;
+            const actualAmt = m.actual_amount != null ? parseFloat(m.actual_amount) : null;
+            const agreedAmt = m.amount != null ? parseFloat(m.amount) : null;
+
+            const agreedLabor = m.agreed_labor_rate != null ? parseFloat(m.agreed_labor_rate) : null;
+            const agreedMaterial = m.agreed_material_rate != null ? parseFloat(m.agreed_material_rate) : null;
+            const laborLabel = m.labor_unit_label || 'unit';
+            const matLabel = m.material_unit_label || 'unit';
+
+            const fmtCur = (v) => v != null && Number.isFinite(v) ? `LKR ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—';
+            const fmtNum = (v) => v != null && Number.isFinite(v) ? v.toString() : '—';
+
+            // ---- Build proof files HTML ----
+            let filesHtml = '';
+            const files = Array.isArray(m.proof_files_array) ? m.proof_files_array : [];
+            if (files.length > 0) {
+                filesHtml = `
+                <div class="proof-section">
+                    <h4 class="proof-section-title"><i class="fas fa-paperclip"></i> Uploaded Proof Files</h4>
+                    <div class="proof-files-list">
+                        ${files.map(f => {
+                    const url = `/2nd-Year-Group-Project/FixLanka/${f}`;
+                    const name = f.split('/').pop();
+                    const isImg = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(name);
+                    return isImg
+                        ? `<div class="proof-file-item proof-file-image">
+                                       <a href="${url}" target="_blank" title="View full image">
+                                           <img src="${url}" alt="${esc(name)}" style="max-width:100%;max-height:200px;border-radius:8px;object-fit:cover;">
+                                       </a>
+                                       <small>${esc(name)}</small>
+                                   </div>`
+                        : `<div class="proof-file-item">
+                                       <a href="${url}" target="_blank" class="proof-file-link">
+                                           <i class="fas fa-file"></i> ${esc(name)}
+                                       </a>
+                                   </div>`;
+                }).join('')}
+                    </div>
+                </div>`;
+            }
+
+            // ---- Build unit breakdown ----
+            let unitBreakdown = '';
+            if (!isNonPaying && (laborQty !== null || matQty !== null || extraAmt !== null)) {
+                const rows = [];
+                if (laborQty !== null) {
+                    const rate = agreedLabor !== null ? agreedLabor : null;
+                    const computed = (rate !== null && laborQty > 0) ? fmtCur(rate * laborQty) : '—';
+                    rows.push(`
+                        <tr>
+                            <td><i class="fas fa-hard-hat" style="color:#0d9488;margin-right:6px;"></i> Labour</td>
+                            <td>${fmtNum(laborQty)} ${esc(laborLabel)}</td>
+                            <td>${rate !== null ? fmtCur(rate) + ' / ' + esc(laborLabel) : '—'}</td>
+                            <td><strong>${computed}</strong></td>
+                        </tr>`);
+                }
+                if (matQty !== null) {
+                    const rate = matRate !== null ? matRate : (agreedMaterial !== null ? agreedMaterial : null);
+                    const computed = (rate !== null && matQty > 0) ? fmtCur(rate * matQty) : '—';
+                    rows.push(`
+                        <tr>
+                            <td><i class="fas fa-boxes" style="color:#0d9488;margin-right:6px;"></i> Materials</td>
+                            <td>${fmtNum(matQty)} ${esc(matLabel)}</td>
+                            <td>${rate !== null ? fmtCur(rate) + ' / ' + esc(matLabel) : '—'}${matRate !== null ? ' <small style="color:var(--text-muted)">(overridden)</small>' : ''}</td>
+                            <td><strong>${computed}</strong></td>
+                        </tr>`);
+                }
+                if (extraAmt !== null && extraAmt > 0) {
+                    rows.push(`
+                        <tr>
+                            <td colspan="3"><i class="fas fa-plus-circle" style="color:#0d9488;margin-right:6px;"></i> Extra Charges</td>
+                            <td><strong>${fmtCur(extraAmt)}</strong></td>
+                        </tr>`);
+                }
+                if (rows.length > 0) {
+                    unitBreakdown = `
+                    <div class="proof-section">
+                        <h4 class="proof-section-title"><i class="fas fa-calculator"></i> Unit Breakdown Submitted</h4>
+                        <table class="proof-breakdown-table">
+                            <thead>
+                                <tr><th>Type</th><th>Quantity</th><th>Rate</th><th>Amount</th></tr>
+                            </thead>
+                            <tbody>${rows.join('')}</tbody>
+                        </table>
+                    </div>`;
+                }
+            }
+
+            // ---- Build notes section ----
+            let notesHtml = '';
+            if (m.proof_of_work) {
+                notesHtml = `
+                <div class="proof-section">
+                    <h4 class="proof-section-title"><i class="fas fa-sticky-note"></i> Company Notes</h4>
+                    <p class="proof-notes-text">${esc(m.proof_of_work)}</p>
+                </div>`;
+            }
+
+            // ---- Total amount banner ----
+            const totalBanner = `
+            <div class="proof-amount-banner ${isNonPaying ? 'proof-non-paying' : ''}">
+                ${isNonPaying
+                    ? `<span class="proof-non-paying-label"><i class="fas fa-ban"></i> Non-paying milestone — requires approval only</span>`
+                    : `<div class="proof-amount-row">
+                            <span class="proof-amount-label">Billed Amount for This Phase</span>
+                            <span class="proof-amount-value">${fmtCur(actualAmt ?? agreedAmt)}</span>
+                       </div>
+                       ${agreedAmt !== null && actualAmt !== null && Math.abs(agreedAmt - actualAmt) > 0.01
+                        ? `<div class="proof-amount-note"><i class="fas fa-info-circle"></i> Agreed amount: ${fmtCur(agreedAmt)}</div>`
+                        : ''}`
+                }
+            </div>`;
+
+            // ---- Submitted at ----
+            const submittedAt = m.completed_at
+                ? `<p class="proof-submitted-at"><i class="fas fa-clock"></i> Submitted on ${new Date(m.completed_at).toLocaleString()}</p>`
+                : '';
+
+            body.innerHTML = `
+                ${submittedAt}
+                ${totalBanner}
+                ${unitBreakdown}
+                ${notesHtml}
+                ${filesHtml}
+            `;
+
+        } catch (err) {
+            console.error('[ProofModal] Failed to load milestone', err);
+            body.innerHTML = `<p style="color:var(--danger);padding:16px;">Could not load proof details. Please try again.</p>`;
+        }
+    };
+
+    /**
+     * Close the Review Phase modal.
+     */
+    window.closeProofModal = function () {
+        const overlay = document.getElementById('proofReviewOverlay');
+        if (overlay) overlay.classList.remove('show');
+        currentReviewMilestoneId = null;
+        updateBodyScrollLock();
+    };
+
+    /**
+     * Approve or Reject the currently-open milestone.
+     * @param {'approve'|'reject'} decision
+     */
+    window.verifyMilestoneCurrent = async function (decision) {
+        const milestoneId = currentReviewMilestoneId;
+        if (!milestoneId) {
+            await window.showAlert('No milestone selected.', 'warning');
+            return;
+        }
+
+        let feedback = '';
+        if (decision === 'reject') {
+            feedback = window.prompt('Please enter your reason for rejecting this phase:\n(Required — at least 10 characters)') || '';
+            feedback = feedback.trim();
+            if (!feedback || feedback.length < 10) {
+                await window.showAlert('A rejection reason of at least 10 characters is required.', 'warning');
+                return;
+            }
+        } else {
+            const ok = window.confirm('Approve this phase?\n\nBy approving you confirm the work meets expectations. Payment for this phase will be released.');
+            if (!ok) return;
+        }
+
+        // Disable footer buttons during request
+        const footerBtns = document.querySelectorAll('#proofReviewOverlay .cd-footer button');
+        footerBtns.forEach(b => { b.disabled = true; });
+
+        try {
+            const fd = new FormData();
+            fd.append('milestone_id', milestoneId);
+            fd.append('action', decision === 'approve' ? 'approve' : 'reject');
+            if (feedback) fd.append('feedback', feedback);
+
+            const res = await fetch('/2nd-Year-Group-Project/FixLanka/api/projects.php?action=verify_phase', {
+                method: 'POST',
+                body: fd
+            });
+            const json = await res.json();
+
+            if (!json.success) {
+                await window.showAlert(json.message || 'Action failed. Please try again.', 'danger', 'Error');
+                return;
+            }
+
+            window.closeProofModal();
+
+            // Show success toast if available, otherwise alert
+            if (typeof window.showAlert === 'function') {
+                const msg = decision === 'approve'
+                    ? `Phase approved! ${json.billed_amount ? 'Amount billed: LKR ' + parseFloat(json.billed_amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : ''}`
+                    : 'Phase rejected. The company will be notified to make improvements.';
+                await window.showAlert(msg, decision === 'approve' ? 'success' : 'info', decision === 'approve' ? 'Approved' : 'Rejected');
+            }
+
+            // Refresh the open contract detail if one is open
+            const overlay = document.getElementById('contractDetailOverlay');
+            if (overlay && overlay.classList.contains('show') && lastOpenedContractDetail) {
+                await openDetail(lastOpenedContractDetail.contract_id);
+            }
+            // Also refresh the contracts list to update milestone counts
+            await loadContracts();
+
+        } catch (err) {
+            console.error('[verifyMilestoneCurrent] Error', err);
+            await window.showAlert('Network error. Please try again.', 'danger', 'Error');
+        } finally {
+            footerBtns.forEach(b => { b.disabled = false; });
+        }
     };
 
     async function _getContractForAdjustment(contractId) {
@@ -1628,7 +1917,7 @@
 
             let actionBtn = '—';
             if (ms.status === 'submitted') {
-                actionBtn = `<button class="action-btn secondary small" onclick="openProofModal(${ms.milestone_id})"><i class="fas fa-eye"></i> Review</button>`;
+                actionBtn = `<button class="review-phase-btn" onclick="openProofModal(${ms.milestone_id})" title="Review proof submitted by company"><i class="fas fa-clipboard-check"></i> Review Now</button>`;
             } else if (ms.status === 'approved') {
                 actionBtn = '<span class="text-success"><i class="fas fa-check"></i> Paid</span>';
             }
@@ -2089,100 +2378,175 @@
     // =========================================
     // PROOF REVIEW
     // =========================================
-    window.openProofModal = function (milestoneId) {
-        const ms = currentContractMilestones.find(m => m.milestone_id == milestoneId);
-        if (!ms) return;
+    window.openProofModal = async function (milestoneId) {
+        const overlay = document.getElementById('proofReviewOverlay');
+        const body = document.getElementById('proofReviewBody');
+        const title = document.getElementById('proofPhaseTitle');
+        if (!overlay || !body) return;
 
         currentReviewMilestoneId = milestoneId;
-
-        const overlay = document.getElementById('proofReviewOverlay');
-        const title = document.getElementById('proofPhaseTitle');
-        const body = document.getElementById('proofReviewBody');
-
-        if (title) title.textContent = ms.title;
-
-        // Parse proof files
-        let filesHtml = '<p>No files attached.</p>';
-        try {
-            if (ms.proof_files) {
-                const files = JSON.parse(ms.proof_files);
-                if (files && files.length > 0) {
-                    filesHtml = '<ul class="proof-files-list">';
-                    files.forEach(path => {
-                        const name = path.split('/').pop();
-                        filesHtml += `<li><a href="/2nd-Year-Group-Project/FixLanka/${path}" target="_blank"><i class="fas fa-file-download"></i> ${esc(name)}</a></li>`;
-                    });
-                    filesHtml += '</ul>';
-                }
-            }
-        } catch (e) { /* no files */ }
-
-        // Unit billing summary
-        const unitLabel = ms.unit_label || 'units';
-        const agreedRate = parseFloat(ms.unit_rate || 0);
-        const actualRate = parseFloat(ms.actual_unit_rate || 0);
-        const unitRate = (actualRate > 0) ? actualRate : agreedRate;
-        const estQty = parseFloat(ms.estimated_quantity || 0);
-        const actualQty = parseFloat(ms.actual_quantity || 0);
-        const hasDynamicBill = unitRate > 0 && actualQty > 0;
-        const billedAmount = hasDynamicBill ? unitRate * actualQty : parseFloat(ms.actual_amount || ms.amount || 0);
-        const estimatedTotal = agreedRate > 0 ? agreedRate * estQty : parseFloat(ms.amount || 0);
-
-        const billingHtml = hasDynamicBill ? `
-            <div class="unit-billing-card">
-                <h4><i class="fas fa-calculator"></i> Unit Billing Verification</h4>
-                <div class="unit-billing-grid">
-                    <div class="ub-row">
-                        <span class="ub-label">Agreed Rate</span>
-                        <span class="ub-value">${formatCurrency(agreedRate)} / ${esc(unitLabel)}</span>
-                    </div>
-                    ${actualRate > 0 && Math.abs(actualRate - agreedRate) > 0.009 ? `
-                    <div class="ub-row">
-                        <span class="ub-label">Actual Rate <span class="ub-sub">(material variation)</span></span>
-                        <span class="ub-value ub-actual">${formatCurrency(actualRate)} / ${esc(unitLabel)}</span>
-                    </div>` : ''}
-                    <div class="ub-row">
-                        <span class="ub-label">Estimated <span class="ub-sub">(from quotation)</span></span>
-                        <span class="ub-value ub-estimate">${estQty > 0 ? estQty + ' ' + esc(unitLabel) : '—'}
-                            ${estQty > 0 ? '<span class="ub-sub">≈ ' + formatCurrency(estimatedTotal) + '</span>' : ''}
-                        </span>
-                    </div>
-                    <div class="ub-row">
-                        <span class="ub-label">Actual Submitted <span class="ub-sub">(by company)</span></span>
-                        <span class="ub-value ub-actual">${actualQty} ${esc(unitLabel)}</span>
-                    </div>
-                    <div class="ub-divider"></div>
-                    <div class="ub-row ub-total">
-                        <span class="ub-label"><strong>Amount to Pay</strong></span>
-                        <span class="ub-value ub-pay-amount">${formatCurrency(billedAmount)}</span>
-                    </div>
-                </div>
-                <p class="ub-note"><i class="fas fa-info-circle"></i> By approving, you confirm ${actualQty} ${esc(unitLabel)} of work was completed and agree to pay <strong>${formatCurrency(billedAmount)}</strong>.</p>
-            </div>` : `
-            <div class="unit-billing-card">
-                <h4><i class="fas fa-receipt"></i> Payment Summary</h4>
-                <div class="unit-billing-grid">
-                    <div class="ub-row ub-total">
-                        <span class="ub-label"><strong>Amount on Approval</strong></span>
-                        <span class="ub-value ub-pay-amount">${formatCurrency(billedAmount)}</span>
-                    </div>
-                </div>
-                <p class="ub-note"><i class="fas fa-info-circle"></i> By approving, you confirm this stage is complete and agree to pay <strong>${formatCurrency(billedAmount)}</strong>.</p>
-            </div>`;
-
-        body.innerHTML = `
-        <div class="proof-section">
-            <h4><i class="fas fa-align-left"></i> Company Notes</h4>
-            <div class="proof-desc">${esc(ms.comments || ms.proof_of_work || 'No description provided.')}</div>
-        </div>
-        ${billingHtml}
-        <div class="proof-section">
-            <h4><i class="fas fa-paperclip"></i> Attached Files</h4>
-            ${filesHtml}
-        </div>`;
-
+        if (title) title.textContent = '';
+        body.innerHTML = '<div class="contracts-loading"><div class="spinner"></div><p>Loading proof details...</p></div>';
         overlay.classList.add('show');
         updateBodyScrollLock();
+
+        try {
+            const res = await fetch(`/2nd-Year-Group-Project/FixLanka/api/milestones.php?action=get&milestone_id=${encodeURIComponent(milestoneId)}`);
+            const json = await res.json();
+
+            if (!json.success) {
+                body.innerHTML = `<p style="color:var(--danger);padding:16px;">Error: ${esc(json.message || 'Could not load milestone.')}</p>`;
+                return;
+            }
+
+            const m = json.data;
+            if (title) title.textContent = m.title || `Phase #${m.milestone_number || milestoneId}`;
+
+            const isNonPaying = String(m.is_non_paying) === '1';
+            const laborQty = m.actual_labor_quantity != null ? parseFloat(m.actual_labor_quantity) : null;
+            const matQty = m.actual_material_quantity != null ? parseFloat(m.actual_material_quantity) : null;
+            const matRate = m.actual_material_unit_rate != null ? parseFloat(m.actual_material_unit_rate) : null;
+            const extraAmt = m.actual_extra_amount != null ? parseFloat(m.actual_extra_amount) : null;
+            const actualAmt = m.actual_amount != null ? parseFloat(m.actual_amount) : null;
+            const agreedAmt = m.amount != null ? parseFloat(m.amount) : null;
+            const agreedLabor = m.agreed_labor_rate != null ? parseFloat(m.agreed_labor_rate) : null;
+            const agreedMaterial = m.agreed_material_rate != null ? parseFloat(m.agreed_material_rate) : null;
+            const laborLabel = m.labor_unit_label || 'unit';
+            const matLabel = m.material_unit_label || 'unit';
+
+            const fmtCur = (v) => v != null && Number.isFinite(v) ? `LKR ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—';
+            const fmtNum = (v) => v != null && Number.isFinite(v) ? v.toString() : '—';
+
+            // ---- Proof files ----
+            let filesHtml = '';
+            const files = Array.isArray(m.proof_files_array) ? m.proof_files_array : [];
+            if (files.length > 0) {
+                filesHtml = `
+                <div class="proof-section">
+                    <h4 class="proof-section-title"><i class="fas fa-paperclip"></i> Uploaded Proof Files</h4>
+                    <div class="proof-files-list">
+                        ${files.map(f => {
+                    const url = `/2nd-Year-Group-Project/FixLanka/${f}`;
+                    const name = f.split('/').pop();
+                    const isImg = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(name);
+                    return isImg
+                        ? `<div class="proof-file-item proof-file-image">
+                                       <a href="${url}" target="_blank" title="View full size">
+                                           <img src="${url}" alt="${esc(name)}" style="max-width:100%;max-height:220px;border-radius:8px;object-fit:cover;">
+                                       </a>
+                                       <small>${esc(name)}</small>
+                                   </div>`
+                        : `<div class="proof-file-item">
+                                       <a href="${url}" target="_blank" class="proof-file-link">
+                                           <i class="fas fa-file"></i> ${esc(name)}
+                                       </a>
+                                   </div>`;
+                }).join('')}
+                    </div>
+                </div>`;
+            } else {
+                filesHtml = `<div class="proof-section"><h4 class="proof-section-title"><i class="fas fa-paperclip"></i> Attached Files</h4><p class="proof-desc">No files attached.</p></div>`;
+            }
+
+            // ---- Unit breakdown (split-unit mode) ----
+            let unitBreakdown = '';
+            if (!isNonPaying && (laborQty !== null || matQty !== null || extraAmt !== null)) {
+                const rows = [];
+                if (laborQty !== null) {
+                    const rate = agreedLabor !== null ? agreedLabor : null;
+                    const computed = (rate !== null && laborQty > 0) ? fmtCur(rate * laborQty) : '—';
+                    rows.push(`<tr>
+                        <td><i class="fas fa-hard-hat" style="color:#0d9488;margin-right:6px;"></i> Labour</td>
+                        <td>${fmtNum(laborQty)} ${esc(laborLabel)}</td>
+                        <td>${rate !== null ? fmtCur(rate) + ' / ' + esc(laborLabel) : '—'}</td>
+                        <td><strong>${computed}</strong></td>
+                    </tr>`);
+                }
+                if (matQty !== null) {
+                    const rate = matRate !== null ? matRate : (agreedMaterial !== null ? agreedMaterial : null);
+                    const computed = (rate !== null && matQty > 0) ? fmtCur(rate * matQty) : '—';
+                    rows.push(`<tr>
+                        <td><i class="fas fa-boxes" style="color:#0d9488;margin-right:6px;"></i> Materials</td>
+                        <td>${fmtNum(matQty)} ${esc(matLabel)}</td>
+                        <td>${rate !== null ? fmtCur(rate) + ' / ' + esc(matLabel) : '—'}${matRate !== null ? ' <small style="color:var(--text-muted)">(overridden)</small>' : ''}</td>
+                        <td><strong>${computed}</strong></td>
+                    </tr>`);
+                }
+                if (extraAmt !== null && extraAmt > 0) {
+                    rows.push(`<tr>
+                        <td colspan="3"><i class="fas fa-plus-circle" style="color:#0d9488;margin-right:6px;"></i> Extra Charges</td>
+                        <td><strong>${fmtCur(extraAmt)}</strong></td>
+                    </tr>`);
+                }
+                if (rows.length > 0) {
+                    unitBreakdown = `
+                    <div class="proof-section">
+                        <h4 class="proof-section-title"><i class="fas fa-calculator"></i> Unit Breakdown Submitted</h4>
+                        <table class="proof-breakdown-table">
+                            <thead><tr><th>Type</th><th>Quantity</th><th>Rate</th><th>Amount</th></tr></thead>
+                            <tbody>${rows.join('')}</tbody>
+                        </table>
+                    </div>`;
+                }
+            } else if (!isNonPaying) {
+                // Fallback: legacy single-unit billing from cache
+                const cached = currentContractMilestones?.find(ms => ms.milestone_id == milestoneId);
+                if (cached) {
+                    const unitLabel = cached.unit_label || 'units';
+                    const agreedRate = parseFloat(cached.unit_rate || 0);
+                    const actualRate = parseFloat(cached.actual_unit_rate || 0);
+                    const unitRate = actualRate > 0 ? actualRate : agreedRate;
+                    const estQty = parseFloat(cached.estimated_quantity || 0);
+                    const actualQty = parseFloat(cached.actual_quantity || 0);
+                    const billed = unitRate > 0 && actualQty > 0 ? unitRate * actualQty : parseFloat(cached.actual_amount || cached.amount || 0);
+                    if (unitRate > 0 && actualQty > 0) {
+                        unitBreakdown = `
+                        <div class="proof-section">
+                            <h4 class="proof-section-title"><i class="fas fa-calculator"></i> Unit Billing Verification</h4>
+                            <div class="unit-billing-card">
+                                <div class="unit-billing-grid">
+                                    <div class="ub-row"><span class="ub-label">Agreed Rate</span><span class="ub-value">${formatCurrency(agreedRate)} / ${esc(unitLabel)}</span></div>
+                                    ${actualRate > 0 && Math.abs(actualRate - agreedRate) > 0.009 ? `<div class="ub-row"><span class="ub-label">Actual Rate <span class="ub-sub">(variation)</span></span><span class="ub-value ub-actual">${formatCurrency(actualRate)} / ${esc(unitLabel)}</span></div>` : ''}
+                                    <div class="ub-row"><span class="ub-label">Estimated <span class="ub-sub">(from quotation)</span></span><span class="ub-value ub-estimate">${estQty > 0 ? estQty + ' ' + esc(unitLabel) : '—'}</span></div>
+                                    <div class="ub-row"><span class="ub-label">Actual Submitted <span class="ub-sub">(by company)</span></span><span class="ub-value ub-actual">${actualQty} ${esc(unitLabel)}</span></div>
+                                    <div class="ub-divider"></div>
+                                    <div class="ub-row ub-total"><span class="ub-label"><strong>Amount to Pay</strong></span><span class="ub-value ub-pay-amount">${formatCurrency(billed)}</span></div>
+                                </div>
+                                <p class="ub-note"><i class="fas fa-info-circle"></i> By approving, you confirm ${actualQty} ${esc(unitLabel)} of work was completed and agree to pay <strong>${formatCurrency(billed)}</strong>.</p>
+                            </div>
+                        </div>`;
+                    }
+                }
+            }
+
+            // ---- Company notes ----
+            const notesHtml = m.proof_of_work
+                ? `<div class="proof-section"><h4 class="proof-section-title"><i class="fas fa-align-left"></i> Company Notes</h4><div class="proof-desc">${esc(m.proof_of_work)}</div></div>`
+                : `<div class="proof-section"><h4 class="proof-section-title"><i class="fas fa-align-left"></i> Company Notes</h4><p class="proof-desc">No description provided.</p></div>`;
+
+            // ---- Amount banner ----
+            const billedAmt = actualAmt ?? agreedAmt ?? 0;
+            const totalBanner = isNonPaying
+                ? `<div class="proof-amount-banner proof-non-paying"><span class="proof-non-paying-label"><i class="fas fa-ban"></i> Non-paying milestone — requires approval only</span></div>`
+                : `<div class="proof-amount-banner">
+                       <div class="proof-amount-row">
+                           <span class="proof-amount-label">Billed Amount for This Phase</span>
+                           <span class="proof-amount-value">${fmtCur(billedAmt)}</span>
+                       </div>
+                       ${agreedAmt !== null && actualAmt !== null && Math.abs(agreedAmt - actualAmt) > 0.01
+                    ? `<div class="proof-amount-note"><i class="fas fa-info-circle"></i> Agreed amount: ${fmtCur(agreedAmt)}</div>` : ''}
+                   </div>`;
+
+            const submittedAt = m.completed_at
+                ? `<p class="proof-submitted-at"><i class="fas fa-clock"></i> Submitted on ${new Date(m.completed_at).toLocaleString()}</p>`
+                : '';
+
+            body.innerHTML = `${submittedAt}${totalBanner}${unitBreakdown}${notesHtml}${filesHtml}`;
+
+        } catch (err) {
+            console.error('[ProofModal] Failed to load milestone', err);
+            body.innerHTML = `<p style="color:var(--danger);padding:16px;">Could not load proof details. Please try again.</p>`;
+        }
     };
 
     window.closeProofModal = function () {
@@ -2195,59 +2559,65 @@
     window.verifyMilestoneCurrent = async function (action) {
         if (!currentReviewMilestoneId) return;
 
-        const ms = currentContractMilestones.find(m => m.milestone_id == currentReviewMilestoneId);
-        const agreedRate = parseFloat(ms?.unit_rate || 0);
-        const actualRate = parseFloat(ms?.actual_unit_rate || 0);
-        const unitRate = (actualRate > 0) ? actualRate : agreedRate;
-        const actualQty = parseFloat(ms?.actual_quantity || 0);
-        const billedAmt = (unitRate > 0 && actualQty > 0) ? unitRate * actualQty : parseFloat(ms?.actual_amount || ms?.amount || 0);
-        const unitLabel = ms?.unit_label || 'units';
-
         if (action === 'approve') {
-            const payStr = billedAmt > 0 ? `\n\nThis will record a payment of ${formatCurrency(billedAmt)}.` : '';
-            const confirmed = await window.showConfirm(`Confirm Approval\n\nYou are confirming that ${actualQty > 0 ? actualQty + ' ' + unitLabel + ' of work' : 'this stage'} was completed.${payStr}\n\nThis action cannot be undone.`, { title: 'Confirm Milestone', confirmText: 'Approve & Pay' });
+            const confirmed = await window.showConfirm(
+                `Confirm Approval\n\nBy approving you confirm the work meets expectations. Payment for this phase will be released.\n\nThis action cannot be undone.`,
+                { title: 'Approve Phase', confirmText: 'Approve & Pay' }
+            );
             if (!confirmed) return;
         } else {
-            const feedback = await window.showPrompt('Please provide a reason for rejection (required):', '', { title: 'Reject Milestone', placeholder: 'Explain what was missing or incorrect...', confirmText: 'Submit Rejection' });
-            if (!feedback || !feedback.trim()) {
-                await window.showAlert('Rejection reason is required.', 'warning');
+            const feedback = await window.showPrompt(
+                'Please provide a reason for rejection (required — at least 10 characters):',
+                '',
+                { title: 'Reject Phase', placeholder: 'Explain what was missing or incorrect...', confirmText: 'Submit Rejection' }
+            );
+            if (!feedback || !feedback.trim() || feedback.trim().length < 10) {
+                await window.showAlert('A rejection reason of at least 10 characters is required.', 'warning');
                 return;
             }
-            // Store for fetch below
             window._rejectFeedback = feedback.trim();
         }
 
         const body = document.getElementById('proofReviewBody');
-        body.innerHTML = '<div class="contracts-loading"><div class="spinner"></div><p>Processing...</p></div>';
+        if (body) body.innerHTML = '<div class="contracts-loading"><div class="spinner"></div><p>Processing...</p></div>';
+
+        // Disable footer buttons
+        document.querySelectorAll('#proofReviewOverlay .cd-footer button').forEach(b => { b.disabled = true; });
 
         try {
-            const apiAction = action === 'approve' ? 'approve_milestone' : 'reject_milestone';
-            const payload = { milestone_id: currentReviewMilestoneId };
-            if (action === 'reject') payload.reason = window._rejectFeedback;
+            const fd = new FormData();
+            fd.append('milestone_id', currentReviewMilestoneId);
+            fd.append('action', action === 'approve' ? 'approve' : 'reject');
+            if (action === 'reject') fd.append('feedback', window._rejectFeedback || '');
 
-            const res = await fetch(API, {
+            const res = await fetch('/2nd-Year-Group-Project/FixLanka/api/projects.php?action=verify_phase', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: apiAction, ...payload })
+                body: fd
             });
             const json = await res.json();
 
             if (json.success) {
-                let msg = `Stage ${action === 'approve' ? 'approved' : 'rejected'} successfully.`;
-                if (json.billed_amount > 0) {
-                    msg += `\n\n${formatCurrency(json.billed_amount)} has been recorded as paid.`;
+                const msg = action === 'approve'
+                    ? `Phase approved!${json.billed_amount > 0 ? ' Amount billed: ' + formatCurrency(json.billed_amount) : ''}`
+                    : 'Phase rejected. The company will be notified to make improvements.';
+                window.closeProofModal();
+                await window.showAlert(msg, action === 'approve' ? 'success' : 'info', action === 'approve' ? 'Approved' : 'Rejected');
+                // Refresh contract detail if open
+                const detailOverlay = document.getElementById('contractDetailOverlay');
+                if (detailOverlay && detailOverlay.classList.contains('show') && lastOpenedContractDetail) {
+                    await openDetail(lastOpenedContractDetail.contract_id);
                 }
-                await window.showAlert(msg, 'success', 'Success');
-                closeProofModal();
-                loadContracts();
+                await loadContracts();
             } else {
                 await window.showAlert('Error: ' + (json.message || 'Unknown error'), 'danger', 'Error');
-                closeProofModal();
+                window.closeProofModal();
             }
         } catch (err) {
-            console.error(err);
+            console.error('[verifyMilestoneCurrent]', err);
             await window.showAlert('Network error. Please try again.', 'danger', 'Error');
-            closeProofModal();
+            window.closeProofModal();
+        } finally {
+            document.querySelectorAll('#proofReviewOverlay .cd-footer button').forEach(b => { b.disabled = false; });
         }
     };
 
@@ -2262,3 +2632,4 @@
         return d.innerHTML;
     }
 })();
+

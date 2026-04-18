@@ -100,10 +100,6 @@ if (!$userId) {
                                 <span class="stat-value" id="statCompleted">0</span>
                                 <span class="stat-label">Completed</span>
                             </div>
-                            <div class="stat-item">
-                                <span class="stat-value" id="statTotal">LKR 0</span>
-                                <span class="stat-label">Total Value</span>
-                            </div>
                         </div>
                     </div>
                 </header>

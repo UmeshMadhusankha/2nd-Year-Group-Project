@@ -350,6 +350,9 @@ async function loadProjectFinancials(projectId) {
             const paid = data.total_paid || 0;
             const progressPct = budget > 0 ? (paid / budget) * 100 : 0;
 
+            // Detect unit-priced contracts — total budget is unknowable upfront
+            const isUnitBased = !!(data.labor_unit_label || data.material_unit_label);
+
             let html = `
                 <div class="project-details-container" style="padding: 20px;">
                     
@@ -364,7 +367,20 @@ async function loadProjectFinancials(projectId) {
                                     <h4 style="margin: 0; color: #64748b; font-size: 13px; text-transform: uppercase;">Total Budget</h4>
                                 </div>
                             </div>
-                            <div style="font-size: 24px; font-weight: 700; color: #0f172a;">${formatCurrency(budget)}</div>
+                            ${isUnitBased
+                    ? (() => {
+                        const labCost = parseFloat(data.labor_cost || 0);
+                        const matCost = parseFloat(data.material_cost || 0);
+                        const labLabel = data.labor_unit_label || 'unit';
+                        const matLabel = data.material_unit_label || 'unit';
+                        let lines = '<div style="font-size: 14px; font-weight: 700; color: #0284c7; margin-bottom: 4px;">Unit-Priced</div>';
+                        if (labCost > 0) lines += `<div style="font-size: 12px; color: #475569; margin-top: 2px;"><i class="fas fa-hard-hat" style="width:14px;color:#0284c7;"></i> Labour: <strong>${formatCurrency(labCost)}</strong> / ${labLabel}</div>`;
+                        if (matCost > 0) lines += `<div style="font-size: 12px; color: #475569; margin-top: 2px;"><i class="fas fa-boxes" style="width:14px;color:#0284c7;"></i> Material: <strong>${formatCurrency(matCost)}</strong> / ${matLabel}</div>`;
+                        lines += '<div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">Total calculated per approved phase</div>';
+                        return lines;
+                    })()
+                    : `<div style="font-size: 24px; font-weight: 700; color: #0f172a;">${formatCurrency(budget)}</div>`
+                }
                         </div>
 
                         <!-- Amount Paid Card -->
@@ -394,16 +410,18 @@ async function loadProjectFinancials(projectId) {
                         </div>
                     </div>
 
-                    <!-- Progress Bar -->
+                    <!-- Progress Bar: only shown for fixed-price contracts (unit-based total is unknown upfront) -->
+                    ${!isUnitBased ? `
                     <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <span style="font-size: 13px; font-weight: 600; color: #475569;">Payment Progress</span>
                             <span style="font-size: 14px; font-weight: 600; color: var(--primary-color);">${progressPct.toFixed(1)}%</span>
                         </div>
                         <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden;">
-                            <div style="height: 100%; width: ${progressPct}%; background: var(--primary-color); border-radius: 5px; transition: width 0.5s ease;"></div>
+                            <div style="height: 100%; width: ${Math.min(progressPct, 100)}%; background: var(--primary-color); border-radius: 5px; transition: width 0.5s ease;"></div>
                         </div>
-                    </div>
+                    </div>` : ''}
+
             `;
 
             // Payment History Table

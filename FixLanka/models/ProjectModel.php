@@ -1561,6 +1561,20 @@ class Project
                              amount_pending = GREATEST(0, COALESCE(amount_pending, 0) - :billed2)
                          WHERE contract_id  = :cid"
                     )->execute([':billed' => $billedAmount, ':billed2' => $billedAmount, ':cid' => $milestone['contract_id']]);
+
+                    // Record the payment transaction in milestonepayment
+                    $payStmt = $this->pdo->prepare(
+                        "INSERT INTO milestonepayment
+                            (contract_id, milestone_id, amount, payment_type, description, status, paid_at, created_at)
+                         VALUES
+                            (:contract_id, :milestone_id, :amount, 'milestone', :description, 'completed', NOW(), NOW())"
+                    );
+                    $payStmt->execute([
+                        ':contract_id'  => $milestone['contract_id'],
+                        ':milestone_id' => $milestoneId,
+                        ':amount'       => $billedAmount,
+                        ':description'  => 'Phase approved: ' . ($milestone['title'] ?? 'Milestone'),
+                    ]);
                 }
 
                 $message = 'Phase approved';
@@ -1624,8 +1638,27 @@ class Project
 
             $totalBudget = floatval($project['budget'] ?? 0);
 
-            // 2. Get Contract
-            $stmtContract = $this->pdo->prepare("SELECT contract_id FROM Contract WHERE project_id = :project_id ORDER BY contract_id DESC LIMIT 1");
+            // 2. Get Contract (join quotation to get unit pricing labels)
+            $stmtContract = $this->pdo->prepare("
+                SELECT c.contract_id,
+                       COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) AS labor_unit_label,
+                       COALESCE(cq.material_unit_label, cq_req.material_unit_label) AS material_unit_label,
+                       COALESCE(cq.labor_cost, cq_req.labor_cost) AS labor_cost,
+                       COALESCE(cq.material_cost, cq_req.material_cost) AS material_cost
+                FROM Contract c
+                LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
+                LEFT JOIN companyquotation cq_req ON cq_req.quotation_id = (
+                    SELECT q2.quotation_id
+                    FROM companyquotation q2
+                    WHERE q2.request_id = c.job_request_id
+                      AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
+                      AND q2.status IN ('accepted', 'successful')
+                    ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC
+                    LIMIT 1
+                )
+                WHERE c.project_id = :project_id
+                ORDER BY c.contract_id DESC LIMIT 1
+            ");
             $stmtContract->execute([':project_id' => $projectId]);
             $contract = $stmtContract->fetch(PDO::FETCH_ASSOC);
 
@@ -1674,14 +1707,30 @@ class Project
                 $totalPending = floatval($legacyTotals['total_pending'] ?? 0);
             }
 
+            // 4. Fetch payment history from milestonepayment
+            $stmtPay = $this->pdo->prepare(
+                "SELECT mp.*, cm.title as milestone_title
+                 FROM milestonepayment mp
+                 LEFT JOIN contract_milestone cm ON cm.milestone_id = mp.milestone_id
+                 WHERE mp.contract_id = :cid
+                 ORDER BY mp.created_at DESC"
+            );
+            $stmtPay->execute([':cid' => $contractId]);
+            $payments = $stmtPay->fetchAll(PDO::FETCH_ASSOC);
+
             return [
                 'success' => true,
                 'data' => [
-                    'total_budget' => $totalBudget,
-                    'total_paid' => $totalPaid,
-                    'total_pending' => $totalPending,
-                    'has_contract' => true,
-                    'contract_id' => $contractId
+                    'total_budget'        => $totalBudget,
+                    'total_paid'          => $totalPaid,
+                    'total_pending'       => $totalPending,
+                    'has_contract'        => true,
+                    'contract_id'         => $contractId,
+                    'labor_unit_label'    => $contract['labor_unit_label'] ?? null,
+                    'material_unit_label' => $contract['material_unit_label'] ?? null,
+                    'labor_cost'          => $contract['labor_cost'] ?? null,
+                    'material_cost'       => $contract['material_cost'] ?? null,
+                    'payments'            => $payments
                 ]
             ];
 

@@ -1124,17 +1124,14 @@ async function updateContractStats() {
             const active = contractsData.filter(c => c.status === 'active').length;
             const draft = contractsData.filter(c => ['draft', 'sent'].includes(c.status)).length;
             const completed = contractsData.filter(c => c.status === 'completed').length;
-            const totalValue = contractsData.reduce((sum, c) => sum + (parseFloat(c.value) || 0), 0);
 
             const elActive = document.getElementById('statActive');
             const elDraft = document.getElementById('statDraft');
             const elCompleted = document.getElementById('statCompleted');
-            const elTotal = document.getElementById('statTotal');
 
             if (elActive) elActive.textContent = active;
             if (elDraft) elDraft.textContent = draft;
             if (elCompleted) elCompleted.textContent = completed;
-            if (elTotal) elTotal.textContent = formatCurrency(totalValue);
             return;
         }
 
@@ -1147,12 +1144,10 @@ async function updateContractStats() {
             const elActive = document.getElementById('statActive');
             const elDraft = document.getElementById('statDraft');
             const elCompleted = document.getElementById('statCompleted');
-            const elTotal = document.getElementById('statTotal');
 
             if (elActive) elActive.textContent = stats.active || 0;
-            if (elDraft) elDraft.textContent = (stats.draft || 0) + (stats.pending || 0);
+            if (elDraft) elDraft.textContent = (stats.draft || 0) + (stats.sent || 0);
             if (elCompleted) elCompleted.textContent = stats.completed || 0;
-            if (elTotal) elTotal.textContent = formatCurrency(stats.total_value || 0);
         }
     } catch (error) {
         console.error('Error updating stats:', error);
