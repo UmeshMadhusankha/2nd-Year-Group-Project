@@ -130,7 +130,7 @@ if (!function_exists('renderSharedTopbar')) {
                         </div>
                         <ul class="profile-dropdown-menu">
                             <?php foreach ($profileLinks as $link): ?>
-                                <li class="dropdown-item profile-dropdown-item">
+                                <li class="profile-dropdown-item">
                                     <a href="<?php echo htmlspecialchars((string)($link['href'] ?? '#')); ?>" class="dropdown-item profile-dropdown-link">
                                         <i class="<?php echo htmlspecialchars((string)($link['icon'] ?? 'fas fa-circle')); ?>"></i>
                                         <span><?php echo htmlspecialchars((string)($link['label'] ?? 'Link')); ?></span>
@@ -138,7 +138,7 @@ if (!function_exists('renderSharedTopbar')) {
                                 </li>
                             <?php endforeach; ?>
                             <li class="dropdown-divider profile-dropdown-divider"></li>
-                            <li class="dropdown-item profile-dropdown-item">
+                            <li class="profile-dropdown-item">
                                 <a href="/2nd-Year-Group-Project/FixLanka/logout" class="dropdown-item profile-dropdown-link logout" onclick="return confirm('Are you sure you want to logout?');">
                                     <i class="fas fa-sign-out-alt"></i>
                                     <span>Logout</span>
