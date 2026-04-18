@@ -277,6 +277,16 @@ function renderFreelancersList(freelancers) {
         `;
         container.appendChild(card);
     });
+}
+
+window.viewFreelancerProfile = async function (freelancerId) {
+    const freelancer = freelancersList.find(f => f.repairer_id == freelancerId);
+    if (!freelancer) {
+        showToast('Freelancer not found', 'error');
+        return;
+    }
+    showToast(`Profile: ${freelancer.first_name} ${freelancer.last_name}`, 'info');
+}
 
     // Re-apply the selected tab filter after re-render.
     const state = window.__freelancerFilterState || { key: 'status', value: 'all' };

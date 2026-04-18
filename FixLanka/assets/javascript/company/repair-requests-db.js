@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Company Repair Requests Page JavaScript
  * 
  * Handles all functionality for the company repair requests page including:
@@ -1594,16 +1594,84 @@ async function viewRequestDetails(requestId, type = 'job') {
     }
 
     const detailsContainer = document.getElementById('request-details-content');
+
+    // Preparation for Premium "Service Ticket" view
+    const requestIdFormatted = `#REQ-${new Date(request.created_at || Date.now()).getFullYear()}-${String(requestId).padStart(4, '0')}`;
+    const initials = (typeof getInitialsFromFullName === 'function')
+        ? getInitialsFromFullName(request.customer_name || 'UC')
+        : (request.customer_name || 'U').charAt(0).toUpperCase();
+
+    const photos = request.photos || [];
+    const photoHtml = photos.length > 0 ? `
+        <div class="details-section">
+            <h5 class="section-label-premium"><i class="fas fa-camera"></i> VISUAL ATTACHMENTS</h5>
+            <div class="premium-gallery">
+                ${photos.map(p => `
+                    <div class="premium-photo-card" onclick="window.open('${escapeHtml(p)}', '_blank')">
+                        <img src="${escapeHtml(p)}" alt="Repair Evidence">
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    ` : '';
+
+    const urgencyClass = (request.urgency || '').toLowerCase();
+
     detailsContainer.innerHTML = `
-        <div style="padding: var(--spacing-md);">
-            <h3>${escapeHtml(request.title)}</h3>
-            <p><strong>Category:</strong> ${escapeHtml(request.category_name || 'General')}</p>
-            <p><strong>District:</strong> ${escapeHtml(request.district || '-')}</p>
-            <p><strong>Address:</strong> ${escapeHtml(request.address || '-')}</p>
-            <p><strong>Deadline:</strong> ${formatDate(request.finish_date)}</p>
-            <p><strong>Urgency:</strong> ${escapeHtml(request.urgency || '-')}</p>
-            <p><strong>Description:</strong></p>
-            <p>${escapeHtml(request.description)}</p>
+        <div class="request-details-container">
+            <div class="ticket-header">
+                <div class="details-title-wrapper">
+                    <span class="ticket-id-badge">${requestIdFormatted}</span>
+                    <h3 class="details-title">${escapeHtml(request.title)}</h3>
+                    <div class="details-meta-pills">
+                        <span class="meta-pill"><i class="fas fa-tag"></i> ${escapeHtml(request.category_name || 'General Service')}</span>
+                        <span class="meta-pill priority-pill ${urgencyClass}"><i class="fas fa-bolt"></i> ${escapeHtml(request.urgency || 'Normal')} Priority</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="details-section-glass">
+                <div class="details-grid-premium">
+                    <div class="premium-info-card">
+                        <span class="premium-label"><i class="fas fa-map-marked-alt"></i> SERVICE LOCATION</span>
+                        <span class="premium-value">${escapeHtml(request.district || 'Not specified')}</span>
+                    </div>
+                    <div class="premium-info-card">
+                        <span class="premium-label"><i class="fas fa-hourglass-end"></i> SERVICE DEADLINE</span>
+                        <span class="premium-value">${formatDate(request.finish_date)}</span>
+                    </div>
+                    <div class="premium-info-card">
+                        <span class="premium-label"><i class="fas fa-location-arrow"></i> SITE ADDRESS</span>
+                        <span class="premium-value">${escapeHtml(request.address || 'Address on file')}</span>
+                    </div>
+                    <div class="premium-info-card">
+                        <span class="premium-label"><i class="fas fa-history"></i> POSTED ON</span>
+                        <span class="premium-value">${formatTimeAgo(request.created_at)}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="details-section">
+                <h5 class="section-label-premium"><i class="fas fa-file-alt"></i> JOB SPECIFICATIONS</h5>
+                <div class="job-description-wrapper">
+                    <i class="fas fa-quote-right quote-icon"></i>
+                    <div class="description-text">${escapeHtml(request.description)}</div>
+                </div>
+            </div>
+
+            ${photoHtml}
+
+            <div class="details-section">
+                <h5 class="section-label-premium"><i class="fas fa-user-tie"></i> CUSTOMER RECORD</h5>
+                <div class="customer-premium-card">
+                    <div class="customer-premium-avatar">${initials}</div>
+                    <div class="customer-premium-info">
+                        <h4>${escapeHtml(request.customer_name || 'Verified Customer')}</h4>
+                        <p><i class="fas fa-shield-check"></i> FixLanka Verified Account</p>
+                        <p><i class="fas fa-map-pin"></i> Base Location: ${escapeHtml(request.district || 'Lanka')}</p>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
 
@@ -2182,34 +2250,34 @@ function createDirectRequestRow(request) {
             <td>
                 <div class="table-actions">
                     ${rawStatus === 'pending' && !isExpired ? `
-                        <button class="table-action-btn view" onclick="viewDirectRequestDetails(${request.request_id})">
+                        <button class="action-btn small secondary" onclick="viewDirectRequestDetails(${request.request_id})">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
                         </button>
-                        <button class="table-action-btn accept" onclick="acceptDirectRequest(${request.request_id})">
+                        <button class="action-btn small success" onclick="acceptDirectRequest(${request.request_id})">
                             <i class="fas fa-check"></i>
                             <span>Accept</span>
                         </button>
-                        <button class="table-action-btn reject" onclick="rejectDirectRequest(${request.request_id})">
+                        <button class="action-btn small danger" onclick="rejectDirectRequest(${request.request_id})">
                             <i class="fas fa-times"></i>
                             <span>Decline</span>
                         </button>
                     ` : rawStatus === 'accepted' ? `
-                        <button class="table-action-btn view" onclick="viewDirectRequestDetails(${request.request_id})">
+                        <button class="action-btn small primary" onclick="viewDirectRequestDetails(${request.request_id})">
                             <i class="fas fa-file-contract"></i>
                             <span>View Contract</span>
                         </button>
                     ` : isExpired ? `
-                        <button class="table-action-btn view" onclick="viewDirectRequestDetails(${request.request_id})">
+                        <button class="action-btn small secondary" onclick="viewDirectRequestDetails(${request.request_id})">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
                         </button>
-                        <button class="table-action-btn view" onclick="contactCustomer(${request.user_id})">
+                        <button class="action-btn small secondary" onclick="contactCustomer(${request.user_id})">
                             <i class="fas fa-phone"></i>
                             <span>Contact</span>
                         </button>
                     ` : `
-                        <button class="table-action-btn view" onclick="viewDirectRequestDetails(${request.request_id})">
+                        <button class="action-btn small secondary" onclick="viewDirectRequestDetails(${request.request_id})">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
                         </button>
@@ -2275,7 +2343,10 @@ async function viewDirectRequestDetails(requestId) {
     document.body.style.overflow = 'hidden';
 }
 
-// Make direct request functions globally accessible
+function contactCustomer(userId) {
+    showToast('Messaging feature coming soon!', 'info');
+}
+
 window.acceptDirectRequest = acceptDirectRequest;
 window.rejectDirectRequest = rejectDirectRequest;
 window.contactCustomer = contactCustomer;
