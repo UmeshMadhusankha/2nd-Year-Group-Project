@@ -9,9 +9,6 @@ $request = strtok($request, '?'); // Remove query string
 switch ($request) {
     case '/':
     case '/home':
-        if (isLoggedIn() && !hasRole('user')) {
-            redirectToRoleHome();
-        }
         require_once __DIR__ . '/views/user/landing.php';
         break;
     
@@ -52,60 +49,50 @@ switch ($request) {
         break;
     
     case '/post-job':
-        requireRole('user');
         require_once __DIR__ . '/views/user/post_job.php';
         break;
     
     case '/create-job':
-        requireRole('user');
         require_once __DIR__ . '/controllers/JobRequestController.php';
         $controller = new JobRequestController();
         $controller->create();
         break;
     
     case '/job-history':
-        requireRole('user');
         require_once __DIR__ . '/controllers/JobRequestController.php';
         $controller = new JobRequestController();
         $controller->index();
         break;
     
     case '/update-job':
-        requireRole('user');
         require_once __DIR__ . '/controllers/JobRequestController.php';
         $controller = new JobRequestController();
         $controller->update();
         break;
     
     case '/delete-job':
-        requireRole('user');
         require_once __DIR__ . '/controllers/JobRequestController.php';
         $controller = new JobRequestController();
         $controller->delete();
         break;
     
     case '/payment':
-        requireRole('user');
         require_once __DIR__ . '/views/user/payment.php';
         break;
 
     case '/my-contracts':
-        requireRole('user');
         require_once __DIR__ . '/views/user/contracts.php';
         break;
     
     case '/provider':
-        requireRole('user');
         require_once __DIR__ . '/views/user/provider.php';
         break;
     
     case '/profile':
-        requireRole('user');
         require_once __DIR__ . '/views/user/profile.php';
         break;
     
     case '/chat':
-        requireRole('user');
         require_once __DIR__ . '/views/user/chat.php';
         break;
 
@@ -189,14 +176,10 @@ switch ($request) {
         break;
     
     case '/settings':
-        requireRole('user');
         require_once __DIR__ . '/views/user/settings.php';
         break;
     
     case '/help-center':
-        if (isLoggedIn() && !hasRole('user')) {
-            redirectToRoleHome();
-        }
         require_once __DIR__ . '/views/user/help-center.php';
         break;
     

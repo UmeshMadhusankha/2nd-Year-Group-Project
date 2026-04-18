@@ -98,13 +98,13 @@
 
                 <!-- Action Buttons -->
                 <div class="profile-actions">
-                    <button class="btn-primary" onclick="requestRepairerNewJobRequest()">
-                        <i class="fas fa-file-invoice"></i>
-                        Request for a New Job
-                    </button>
-                    <button class="btn-outline" onclick="sendRepairerListedJobRequest()">
+                    <button class="btn-primary" onclick="sendRepairRequest('repairer')">
                         <i class="fas fa-tools"></i>
-                        Request for a Listed Job
+                        Send Repair Request
+                    </button>
+                    <button class="btn-outline" onclick="requestQuote()">
+                        <i class="fas fa-file-invoice"></i>
+                        Request Quote
                     </button>
                     <button class="btn-outline" onclick="closeRepairerProfile()">
                         <i class="fas fa-times"></i>

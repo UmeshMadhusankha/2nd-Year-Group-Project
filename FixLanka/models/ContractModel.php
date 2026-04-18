@@ -15,7 +15,6 @@ class ContractModel {
                     c.contract_id,
                     c.project_id,
                     c.contract_number,
-                    c.quotation_id,
                     c.total_budget,
                     c.start_date,
                     c.end_date,
@@ -36,14 +35,6 @@ class ContractModel {
                     c.company_id,
                     c.chat_active,
                     comp.name as company_name,
-                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
-                    COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
-                    COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
-                    (SELECT COUNT(*) FROM contract_chats cc
-                     WHERE cc.contract_id = c.contract_id
-                       AND cc.sender_type = 'company'
-                       AND cc.is_read = 0) as unread_messages,
                     (
                         SELECT COUNT(*) 
                         FROM contract_milestone cm 
@@ -53,24 +44,9 @@ class ContractModel {
                         SELECT COUNT(*) 
                         FROM contract_milestone cm 
                         WHERE cm.contract_id = c.contract_id AND cm.status = 'approved'
-                    ) as completed_milestones,
-                    (
-                        SELECT COUNT(*) 
-                        FROM contract_milestone cm 
-                        WHERE cm.contract_id = c.contract_id AND cm.status = 'submitted'
-                    ) as submitted_milestones
+                    ) as completed_milestones
                 FROM contract c
                 LEFT JOIN company comp ON c.company_id = comp.company_id
-                LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
-                LEFT JOIN companyquotation cq_req ON cq_req.quotation_id = (
-                        SELECT q2.quotation_id
-                        FROM companyquotation q2
-                        WHERE q2.request_id = c.job_request_id
-                            AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
-                            AND q2.status IN ('accepted', 'successful')
-                        ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
-                        LIMIT 1
-                )
                 WHERE c.customer_id = :customer_id
                 ORDER BY c.contract_date DESC";
 
@@ -85,7 +61,6 @@ class ContractModel {
                     c.contract_id,
                     c.project_id,
                     c.contract_number,
-                    c.quotation_id,
                     c.total_budget,
                     c.start_date,
                     c.end_date,
@@ -106,29 +81,10 @@ class ContractModel {
                     c.company_id,
                     c.chat_active,
                     comp.name as company_name,
-                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
-                    COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
-                    COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
-                    (SELECT COUNT(*) FROM contract_chats cc
-                     WHERE cc.contract_id = c.contract_id
-                       AND cc.sender_type = 'company'
-                       AND cc.is_read = 0) as unread_messages,
                     0 as total_milestones,
-                    0 as completed_milestones,
-                    0 as submitted_milestones
+                    0 as completed_milestones
                 FROM contract c
                 LEFT JOIN company comp ON c.company_id = comp.company_id
-                LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
-                LEFT JOIN companyquotation cq_req ON cq_req.quotation_id = (
-                        SELECT q2.quotation_id
-                        FROM companyquotation q2
-                        WHERE q2.request_id = c.job_request_id
-                            AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
-                            AND q2.status IN ('accepted', 'successful')
-                        ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
-                        LIMIT 1
-                )
                 WHERE c.customer_id = :customer_id
                 ORDER BY c.contract_date DESC";
 
@@ -156,26 +112,10 @@ class ContractModel {
                     comp.registration_no as company_registration_no,
                     c_loc.address as company_address,
                     comp.contact_no as company_contact,
-                    comp.email as company_email,
-                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
-                    COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
-                    COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
-                    COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
-                    COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label
+                    comp.email as company_email
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id
-                LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
-                LEFT JOIN companyquotation cq_req ON cq_req.quotation_id = (
-                        SELECT q2.quotation_id
-                        FROM companyquotation q2
-                        WHERE q2.request_id = c.job_request_id
-                            AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
-                            AND q2.status IN ('accepted', 'successful')
-                        ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
-                        LIMIT 1
-                )
                 LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
                 WHERE c.contract_id = :contract_id AND c.customer_id = :customer_id";
 
@@ -194,7 +134,6 @@ class ContractModel {
                     c.contract_id,
                     c.project_id,
                     c.contract_number,
-                    c.quotation_id,
                     c.total_budget,
                     c.start_date,
                     c.end_date,
@@ -212,38 +151,19 @@ class ContractModel {
                     c.project_description,
                     c.project_location as location,
                     c.progress_percentage as progress,
-                    p.status as project_status,
-                    p.start_date as project_start_date,
                     u.f_name as customer_fname,
                     u.l_name as customer_lname,
                     u.email as customer_email,
                     c.company_id,
                     c.chat_active,
                     comp.name as company_name,
-                                        COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                                        COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
-                                        COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
-                                        COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
-                                        COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
-                                        COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc 
                      WHERE cc.contract_id = c.contract_id 
                        AND cc.sender_type = 'customer' 
                        AND cc.is_read = 0) as unread_messages
                 FROM contract c
-                LEFT JOIN project p ON c.project_id = p.project_id
                 LEFT JOIN user u ON c.customer_id = u.user_id
-                                LEFT JOIN company comp ON c.company_id = comp.company_id
-                                LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
-                                LEFT JOIN companyquotation cq_req ON cq_req.quotation_id = (
-                                        SELECT q2.quotation_id
-                                        FROM companyquotation q2
-                                        WHERE q2.request_id = c.job_request_id
-                                            AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
-                                            AND q2.status IN ('accepted', 'successful')
-                                        ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
-                                        LIMIT 1
-                                )";
+                LEFT JOIN company comp ON c.company_id = comp.company_id";
         
         if ($companyId !== null) {
             $query .= " WHERE c.company_id = :company_id";
@@ -279,12 +199,6 @@ class ContractModel {
                     c_loc.address as company_address,
                     comp.contact_no as company_contact,
                     comp.email as company_email,
-                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
-                    COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
-                    COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
-                    COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
-                    COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc 
                      WHERE cc.contract_id = c.contract_id 
                        AND cc.sender_type = 'customer' 
@@ -292,16 +206,6 @@ class ContractModel {
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id
-                LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
-                LEFT JOIN companyquotation cq_req ON cq_req.quotation_id = (
-                        SELECT q2.quotation_id
-                        FROM companyquotation q2
-                        WHERE q2.request_id = c.job_request_id
-                            AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
-                            AND q2.status IN ('accepted', 'successful')
-                        ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
-                        LIMIT 1
-                )
                 LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
                 WHERE c.contract_id = :contract_id";
         
@@ -325,16 +229,12 @@ class ContractModel {
      */
     public function getMilestones($contractId) {
         // Try contract_milestone first (new table)
-         $query = "SELECT milestone_id, contract_id, milestone_number, title, 
-                    description, due_date, amount as payment_amount, 
-                    percentage as payment_percentage, status,
-                    unit_label, unit_rate, actual_unit_rate,
-                    estimated_quantity, actual_quantity, actual_amount,
-                    proof_of_work, proof_files, comments,
-                    submitted_at, completed_at, approved_at
-                FROM contract_milestone 
-                WHERE contract_id = :contract_id 
-                ORDER BY milestone_number ASC, due_date ASC";
+        $query = "SELECT milestone_id, contract_id, milestone_number, title, 
+                         description, due_date, amount as payment_amount, 
+                         percentage as payment_percentage, status
+                  FROM contract_milestone 
+                  WHERE contract_id = :contract_id 
+                  ORDER BY milestone_number ASC, due_date ASC";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':contract_id', $contractId, PDO::PARAM_INT);
@@ -382,11 +282,6 @@ class ContractModel {
      * Create a new contract
      */
     public function create($data) {
-        // Enforce platform chat only (no email communication)
-        if (is_array($data)) {
-            $data['communication_channel'] = 'system';
-        }
-
         $allowedFields = [
             'project_id', 'quotation_id', 'customer_id', 'company_id', 'job_request_id',
             'project_title', 'project_reference', 'project_location', 'project_description',
@@ -461,11 +356,6 @@ class ContractModel {
             if (!$contract) {
                 return false;
             }
-        }
-
-        // Enforce platform chat only (no email communication)
-        if (is_array($data)) {
-            $data['communication_channel'] = 'system';
         }
         
         $query = "UPDATE Contract SET ";
@@ -569,35 +459,6 @@ class ContractModel {
         $stmt->bindParam(':contract_id', $contractId, PDO::PARAM_INT);
         
         return $stmt->execute();
-    }
-
-    /**
-     * Delete contract and its milestones (used for cancellation)
-     */
-    public function deleteWithMilestones($contractId, $companyId = null) {
-        if ($companyId !== null) {
-            $contract = $this->getById($contractId, $companyId);
-            if (!$contract) {
-                return false;
-            }
-        }
-
-        try {
-            $this->conn->beginTransaction();
-
-            $delMilestones = $this->conn->prepare("DELETE FROM contract_milestone WHERE contract_id = :cid");
-            $delMilestones->execute([':cid' => $contractId]);
-
-            $delContract = $this->conn->prepare("DELETE FROM Contract WHERE contract_id = :contract_id");
-            $delContract->execute([':contract_id' => $contractId]);
-
-            $this->conn->commit();
-            return true;
-        } catch (PDOException $e) {
-            $this->conn->rollBack();
-            error_log("Error deleting contract with milestones: " . $e->getMessage());
-            return false;
-        }
     }
 
     /**
@@ -938,7 +799,7 @@ class ContractModel {
      * Mark milestone as submitted by company (waiting for customer verification).
      * Accepts the actual units consumed so the billing amount can be pre-computed.
      */
-    public function markMilestoneCompleted($milestoneId, $proofFiles = null, $comments = null, $actualQuantity = null, $actualUnitRate = null) {
+    public function markMilestoneCompleted($milestoneId, $proofFiles = null, $comments = null, $actualQuantity = null) {
         // Fetch unit_rate so we can calculate actual_amount
         $fetchStmt = $this->conn->prepare(
             "SELECT unit_rate, estimated_quantity FROM contract_milestone WHERE milestone_id = ?"
@@ -948,15 +809,10 @@ class ContractModel {
 
         $actualAmount = null;
         if ($row && $actualQuantity !== null && $actualQuantity !== '') {
-            $agreedRate = (float)($row['unit_rate'] ?? 0);
-            $effectiveRate = $agreedRate;
-            if ($actualUnitRate !== null && $actualUnitRate !== '' && (float)$actualUnitRate > 0) {
-                $effectiveRate = (float)$actualUnitRate;
-            }
-
+            $rate = (float)($row['unit_rate'] ?? 0);
             $qty  = (float)$actualQuantity;
-            if ($effectiveRate > 0) {
-                $actualAmount = $effectiveRate * $qty;
+            if ($rate > 0) {
+                $actualAmount = $rate * $qty;
             }
         }
 
@@ -966,7 +822,6 @@ class ContractModel {
                       proof_files = :proof, 
                       comments = :comments,
                       actual_quantity = :actual_qty,
-                      actual_unit_rate = :actual_unit_rate,
                       actual_amount   = :actual_amt
                   WHERE milestone_id = :id AND status IN ('pending', 'rejected', 'in_progress')";
         
@@ -974,7 +829,6 @@ class ContractModel {
         $stmt->bindValue(':proof',      $proofFiles);
         $stmt->bindValue(':comments',   $comments);
         $stmt->bindValue(':actual_qty', ($actualQuantity !== null && $actualQuantity !== '') ? (float)$actualQuantity : null);
-        $stmt->bindValue(':actual_unit_rate', ($actualUnitRate !== null && $actualUnitRate !== '') ? (float)$actualUnitRate : null);
         $stmt->bindValue(':actual_amt', $actualAmount);
         $stmt->bindValue(':id',         $milestoneId);
         

@@ -14,11 +14,12 @@ class Feedback {
     }
 
     /**
-     * Get all reviews for a specific company with optional filters
+     * Get all reviews for a specific company
+     * Join Feedback -> Project -> Company
      */
-    public function getCompanyReviews($companyId, $filters = []) {
+    public function getCompanyReviews($companyId) {
         try {
-            $query = "
+            $stmt = $this->pdo->prepare("
                 SELECT 
                     f.feedback_id,
                     f.rating,
@@ -29,37 +30,14 @@ class Feedback {
                     u.user_id,
                     u.f_name,
                     u.l_name,
-                    u.profile_picture,
-                    'project' as category -- Default category in this context
+                    u.profile_picture
                 FROM Feedback f
                 JOIN Project p ON f.project_id = p.project_id
                 JOIN User u ON f.given_by = u.user_id
-                WHERE p.company_id = :company_id
-            ";
-            
-            $params = [':company_id' => $companyId];
-
-            // Filter by rating
-            if (!empty($filters['rating']) && $filters['rating'] !== 'all') {
-                $query .= " AND f.rating = :rating";
-                $params[':rating'] = (int)$filters['rating'];
-            }
-
-            // Filter by date range (period)
-            if (!empty($filters['period'])) {
-                if ($filters['period'] === 'month') {
-                    $query .= " AND f.date >= DATE_SUB(NOW(), INTERVAL 1 MONTH)";
-                } elseif ($filters['period'] === 'quarter') {
-                    $query .= " AND f.date >= DATE_SUB(NOW(), INTERVAL 3 MONTH)";
-                } elseif ($filters['period'] === 'year') {
-                    $query .= " AND f.date >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
-                }
-            }
-
-            $query .= " ORDER BY f.date DESC";
-
-            $stmt = $this->pdo->prepare($query);
-            $stmt->execute($params);
+                WHERE p.company_id = ?
+                ORDER BY f.date DESC
+            ");
+            $stmt->execute([$companyId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("Error fetching company reviews: " . $e->getMessage());

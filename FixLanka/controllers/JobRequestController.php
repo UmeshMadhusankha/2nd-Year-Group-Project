@@ -2,7 +2,6 @@
 require_once __DIR__ . '/../config/databse.php';
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../models/JobRequestModel.php';
-require_once __DIR__ . '/../models/user/directJobRequestModel.php';
 
 class JobRequestController {
     private $jobRequestModel;
@@ -113,8 +112,6 @@ class JobRequestController {
         
         $userId = $_SESSION['user_id'];
         $jobRequests = $this->jobRequestModel->getAllByUser($userId);
-        $directJobRequestModel = new DirectJobRequestModel();
-        $directJobRequests = $directJobRequestModel->getAllByUser((int)$userId);
         
         require_once __DIR__ . '/../views/user/job_history.php';
     }

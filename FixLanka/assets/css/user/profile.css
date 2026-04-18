@@ -778,7 +778,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 20000;
+    z-index: var(--z-modal);
     opacity: 0;
     visibility: hidden;
     transition: all var(--transition-fast);
@@ -799,8 +799,6 @@ body {
     box-shadow: var(--shadow-xl);
     transform: scale(0.9);
     transition: transform var(--transition-fast);
-    position: relative;
-    z-index: 20001;
 }
 
 .modal-overlay.show .modal-container {

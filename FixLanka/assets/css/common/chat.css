@@ -24,31 +24,6 @@
     pointer-events: auto;
 }
 
-/* ── Inline/Embedded mode (e.g., Projects drawer Chat tab) ── */
-.chat-modal-overlay.inline {
-    position: absolute;
-    inset: 0;
-    background: transparent;
-    backdrop-filter: none;
-    z-index: auto !important;
-    opacity: 1;
-    pointer-events: auto;
-    transition: none;
-}
-
-.chat-modal-overlay.inline .chat-container {
-    width: 100%;
-    max-width: none;
-    height: 100%;
-    max-height: none;
-    border-radius: var(--border-radius-md, 12px);
-    transform: none;
-}
-
-.chat-modal-overlay.inline .chat-close-btn {
-    display: none;
-}
-
 /* ── Chat Container ── */
 .chat-container {
     width: 440px;

@@ -41,6 +41,8 @@ let currentSort = { field: 'date', direction: 'desc' };
 let currentFilters = {
     status: 'all',
     method: 'all',
+    project: 'all',
+    milestone: 'all',
     amount: 'all',
     search: ''
 };
@@ -961,7 +963,31 @@ function setTableView(view) {
     table.className = `payments-table ${view}-view`;
 }
 
+// Export functions
+function exportReport() {
+    showNotification('Exporting full payment report...', 'info');
+    // Implementation for full report export
+    setTimeout(() => {
+        showNotification('Payment report exported successfully!', 'success');
+    }, 2000);
+}
 
+function toggleExportMenu() {
+    const dropdown = document.getElementById('export-dropdown');
+    dropdown.classList.toggle('show');
+}
+
+function exportAs(format) {
+    const dropdown = document.getElementById('export-dropdown');
+    dropdown.classList.remove('show');
+
+    showNotification(`Exporting as ${format.toUpperCase()}...`, 'info');
+
+    // Implementation for different export formats
+    setTimeout(() => {
+        showNotification(`Export completed! Downloaded as ${format.toUpperCase()}`, 'success');
+    }, 2000);
+}
 
 // Modal functions
 function showDateRangeModal() {
@@ -1297,6 +1323,7 @@ let currentExpensePage = 1;
 let expensePageSize = 10;
 let currentExpenseSort = { field: 'date', direction: 'desc' };
 let currentExpenseFilters = {
+    project: 'all',
     category: 'all',
     date: 'all',
     search: ''
@@ -1431,6 +1458,7 @@ function loadExpenseData() {
 
     updateExpenseSummaryStats();
     applyExpenseFilters();
+    populateExpenseProjectFilters();
 }
 
 // Setup expense event listeners
@@ -1464,12 +1492,32 @@ function updateExpenseSummaryStats() {
     document.getElementById('avg-expense').textContent = `LKR ${avgExpense.toLocaleString()}`;
 }
 
+// Populate project filter dropdown
+function populateExpenseProjectFilters() {
+    const projectFilter = document.getElementById('expense-project-filter');
+    const projects = [...new Set(allExpenses.map(expense => ({
+        id: expense.projectId,
+        name: expense.projectName
+    })))];
 
+    // Clear existing options except "All Projects"
+    projectFilter.innerHTML = '<option value="all">All Projects</option>';
+
+    projects.forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = project.name;
+        projectFilter.appendChild(option);
+    });
+}
 
 // Apply expense filters
 function applyExpenseFilters() {
     filteredExpenses = allExpenses.filter(expense => {
-
+        // Project filter
+        if (currentExpenseFilters.project !== 'all' && expense.projectId !== currentExpenseFilters.project) {
+            return false;
+        }
 
         // Category filter
         if (currentExpenseFilters.category !== 'all' && expense.category !== currentExpenseFilters.category) {
@@ -1523,7 +1571,10 @@ function applyExpenseFilters() {
 }
 
 // Update filter handlers
-
+document.getElementById('expense-project-filter').addEventListener('change', function () {
+    currentExpenseFilters.project = this.value;
+    applyExpenseFilters();
+});
 
 document.getElementById('expense-category-filter').addEventListener('change', function () {
     currentExpenseFilters.category = this.value;
@@ -1716,6 +1767,7 @@ function saveExpense() {
     allExpenses.unshift(newExpense);
     updateExpenseSummaryStats();
     applyExpenseFilters();
+    populateExpenseProjectFilters();
     closeExpenseModal();
 
     // Show success message
@@ -1776,6 +1828,7 @@ function updateExpense() {
 
         updateExpenseSummaryStats();
         applyExpenseFilters();
+        populateExpenseProjectFilters();
         closeEditExpenseModal();
 
         alert('Expense updated successfully!');
@@ -1789,6 +1842,7 @@ function deleteExpense(expenseId) {
             allExpenses.splice(expenseIndex, 1);
             updateExpenseSummaryStats();
             applyExpenseFilters();
+            populateExpenseProjectFilters();
             alert('Expense deleted successfully!');
         }
     }

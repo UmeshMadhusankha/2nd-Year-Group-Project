@@ -21,18 +21,7 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
 require_once '../config/database.php';
-require_once '../config/session.php';
 require_once '../models/CompanyEmployeeModel.php';
-
-// Authentication check
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'company') {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-    exit;
-}
-
-// Get logged-in company ID
-$companyId = $_SESSION['user_id'];
 
 // Initialize model with database connection
 $employeeModel = new CompanyEmployeeModel($pdo);
@@ -75,19 +64,6 @@ switch ($method) {
  * Handle GET requests
  */
 function handleGet($model) {
-    // Get staff availability (staffsummary minus allocations to active projects)
-    if (isset($_GET['action']) && $_GET['action'] === 'availability') {
-        if (!isset($_GET['company_id'])) {
-            respondJson(['error' => 'Company ID is required'], 400);
-            return;
-        }
-
-        $companyId = (int)$_GET['company_id'];
-        $availability = $model->getStaffAvailability($companyId);
-        respondJson(['success' => true, 'data' => $availability]);
-        return;
-    }
-
     // Get statistics
     if (isset($_GET['action']) && $_GET['action'] === 'stats') {
         if (!isset($_GET['company_id'])) {

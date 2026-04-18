@@ -45,7 +45,14 @@ unset($_SESSION['error'], $_SESSION['success']);
                     <div class="form-group">
                         <label for="category_id">Category <span class="required">*</span></label>
                         <select id="category_id" name="category_id" required>
-                            <option value="">Loading categories...</option>
+                            <option value="">Select a category</option>
+                            <option value="1">Plumbing</option>
+                            <option value="2">Electrical</option>
+                            <option value="3">HVAC</option>
+                            <option value="4">Cleaning</option>
+                            <option value="5">Carpentry</option>
+                            <option value="6">Painting</option>
+                            <option value="7">Appliance Repair</option>
                         </select>
                     </div>
 
@@ -89,10 +96,6 @@ unset($_SESSION['error'], $_SESSION['success']);
                     <div class="form-group">
                         <label for="address">Address <span class="required">*</span></label>
                         <input type="text" id="address" name="address" required placeholder="Enter your full address (street, area)">
-                        <label class="address-toggle-row">
-                            <input type="checkbox" id="useHomeAddress">
-                            <span>Use home address</span>
-                        </label>
                     </div>
 
                     <div class="form-group">
@@ -167,124 +170,9 @@ unset($_SESSION['error'], $_SESSION['success']);
 
     // Set minimum date to today
     document.addEventListener('DOMContentLoaded', function() {
-        const categorySelect = document.getElementById('category_id');
-        const addressInput = document.getElementById('address');
-        const districtSelect = document.getElementById('district');
-        const useHomeAddress = document.getElementById('useHomeAddress');
         const finishDateInput = document.getElementById('finish_date');
         const today = new Date().toISOString().split('T')[0];
         finishDateInput.setAttribute('min', today);
-        let homeAddressValue = '';
-        let homeDistrictValue = '';
-        let manualAddressValue = '';
-        let manualDistrictValue = '';
-
-        async function loadHomeAddress() {
-            if (!addressInput) return;
-
-            try {
-                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/user/loadCurrentUserAddress.php', {
-                    headers: { 'Accept': 'application/json' }
-                });
-
-                const result = await response.json();
-                if (!response.ok || !result || !result.success) {
-                    throw new Error(result?.message || 'Failed to load address');
-                }
-
-                homeAddressValue = String(result.data?.address || '').trim();
-                homeDistrictValue = String(result.data?.district || '').trim();
-                if (useHomeAddress && useHomeAddress.checked) {
-                    if (homeAddressValue) {
-                        addressInput.value = homeAddressValue;
-                    }
-                    if (districtSelect && homeDistrictValue) {
-                        districtSelect.value = homeDistrictValue;
-                    }
-                }
-            } catch (error) {
-                homeAddressValue = '';
-                homeDistrictValue = '';
-            }
-        }
-
-        if (addressInput && useHomeAddress) {
-            addressInput.addEventListener('input', function() {
-                if (!useHomeAddress.checked) {
-                    manualAddressValue = addressInput.value;
-                }
-            });
-
-            if (districtSelect) {
-                districtSelect.addEventListener('change', function() {
-                    if (!useHomeAddress.checked) {
-                        manualDistrictValue = districtSelect.value;
-                    }
-                });
-            }
-
-            useHomeAddress.addEventListener('change', function() {
-                if (this.checked) {
-                    manualAddressValue = addressInput.value;
-                    if (districtSelect) {
-                        manualDistrictValue = districtSelect.value;
-                    }
-                    addressInput.value = homeAddressValue || addressInput.value;
-                    if (districtSelect && homeDistrictValue) {
-                        districtSelect.value = homeDistrictValue;
-                    }
-                    addressInput.readOnly = true;
-                    addressInput.classList.add('is-readonly');
-                } else {
-                    addressInput.readOnly = false;
-                    addressInput.classList.remove('is-readonly');
-                    addressInput.value = manualAddressValue;
-                    if (districtSelect) {
-                        districtSelect.value = manualDistrictValue;
-                    }
-                }
-            });
-        }
-
-        async function loadCategories() {
-            if (!categorySelect) return;
-
-            categorySelect.innerHTML = '<option value="">Loading categories...</option>';
-
-            try {
-                const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/user/loadCategories.php', {
-                    headers: { 'Accept': 'application/json' }
-                });
-
-                const result = await response.json();
-                if (!response.ok || !result || !result.success || !Array.isArray(result.data)) {
-                    throw new Error('Failed to load categories');
-                }
-
-                const options = ['<option value="">Select a category</option>'];
-                result.data.forEach((category) => {
-                    const id = Number(category.category_id || 0);
-                    const name = String(category.name || '').trim();
-                    if (!Number.isFinite(id) || id <= 0 || !name) return;
-
-                    const escapedName = name
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;')
-                        .replace(/"/g, '&quot;')
-                        .replace(/'/g, '&#39;');
-
-                    options.push(`<option value="${id}">${escapedName}</option>`);
-                });
-
-                categorySelect.innerHTML = options.join('');
-            } catch (error) {
-                categorySelect.innerHTML = '<option value="" disabled>Categories unavailable</option>';
-            }
-        }
-
-        loadCategories();
-        loadHomeAddress();
 
         // Validate provider type checkboxes
         const form = document.getElementById('jobPostForm');

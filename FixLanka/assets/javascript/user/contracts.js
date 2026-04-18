@@ -257,21 +257,7 @@
         const companyName = c.company_name || '—';
         const initials = getInitials(companyName);
 
-        const formattedValue = formatCurrency((c.value !== undefined && c.value !== null && c.value !== '') ? c.value : c.total_budget);
-        const laborPerLabel = resolveQuotationPerLabel(c.labor_unit_label, 'labor');
-        const materialPerLabel = resolveQuotationPerLabel(c.material_unit_label, 'material');
-        const laborPriceText = formatUnitPrice(c.labor_cost);
-        const materialPriceText = formatUnitPrice(c.material_cost);
-
-        const hasLaborOrMaterialPrice = laborPriceText !== null || materialPriceText !== null;
-        const valueBlock = hasLaborOrMaterialPrice
-            ? `
-                <div class="card-unit-price-block" aria-label="Unit price breakdown">
-                    ${laborPriceText ? `<div class="card-unit-price-item"><span class="card-unit-price-label">${esc(formatCostLabel('Labor', laborPerLabel))}</span><span class="card-unit-price-value">${laborPriceText}</span></div>` : ''}
-                    ${materialPriceText ? `<div class="card-unit-price-item"><span class="card-unit-price-label">${esc(formatCostLabel('Material', materialPerLabel))}</span><span class="card-unit-price-value">${materialPriceText}</span></div>` : ''}
-                </div>
-            `
-            : `<div class="card-value-badge">${formattedValue}</div>`;
+        const value = formatCurrency(c.total_budget);
         const startDate = c.start_date ? formatDate(c.start_date) : '—';
         const endDate = c.end_date ? formatDate(c.end_date) : '—';
         const paymentLabel = formatPaymentMethod(c.payment_method);
@@ -289,7 +275,7 @@
         });
 
         return `
-        <div class="contract-card" data-id="${c.contract_id}" data-status="${mapCardStatus(c.status)}" ${parseInt(c.submitted_milestones || 0) > 0 ? 'data-has-review="1"' : ''}>
+        <div class="contract-card" data-id="${c.contract_id}" data-status="${mapCardStatus(c.status)}">
             <div class="card-top-row">
                 <div class="card-type-badge">Contract</div>
                 <div class="card-status-badge ${statusClass}">
@@ -315,7 +301,7 @@
                     <span class="card-client-name">${esc(companyName)}</span>
                     <span class="card-client-email">${esc(c.project_location || '')}</span>
                 </div>
-                ${valueBlock}
+                <div class="card-value-badge">${value}</div>
             </div>
 
             <div class="card-meta-grid">
@@ -344,17 +330,12 @@
                     <i class="fas fa-flag"></i>
                     <div>
                         <span class="meta-label">Milestones</span>
-                        <span class="meta-value">${c.total_milestones > 0 ? `${c.completed_milestones}/${c.total_milestones}` : '—'}${parseInt(c.submitted_milestones || 0) > 0 ? `<span class="meta-review-badge"><i class="fas fa-bell"></i> Review</span>` : ''}</span>
+                        <span class="meta-value">${c.total_milestones > 0 ? `${c.completed_milestones}/${c.total_milestones}` : '—'}</span>
                     </div>
                 </div>
             </div>
 
-            ${(parseInt(c.submitted_milestones || 0) > 0) ? `
-            <div class="card-review-alert" onclick="event.stopPropagation(); openDetail(${c.contract_id})">
-                <i class="fas fa-bell"></i>
-                <span>${parseInt(c.submitted_milestones)} phase${parseInt(c.submitted_milestones) > 1 ? 's' : ''} awaiting your review</span>
-                <i class="fas fa-chevron-right" style="margin-left:auto;"></i>
-            </div>` : ''}
+
 
             <div class="card-actions-row">
                 ${actions}
@@ -504,12 +485,8 @@
         const headerSub = document.getElementById('cdHeaderSub');
         const footer = document.getElementById('cdFooter');
 
-        if (headerText) headerText.textContent = 'Contract Details';
-        if (headerSub) {
-            const ref = c.contract_number || (c.contract_id ? ('Contract #' + c.contract_id) : '') || '';
-            const company = c.company_name || '';
-            headerSub.textContent = [ref, company].filter(Boolean).join(' • ');
-        }
+        if (headerText) headerText.textContent = c.project_title || 'Contract Details';
+        if (headerSub) headerSub.textContent = c.contract_number || '';
 
         // Parse terms
         let terms = {};
@@ -518,82 +495,18 @@
             try { terms = JSON.parse(c.terms_conditions); } catch (e) { }
         }
 
+        const progress = parseInt(c.progress_percentage) || 0;
+        const paymentLabel = formatPaymentMethod(c.payment_method);
         const milestones = c.milestones || [];
         const isMilestoneBased = c.payment_method === 'milestone_based';
 
-        const shared = window.ContractPreview;
-        if (shared && typeof shared.renderHTML === 'function') {
-            body.innerHTML = shared.renderHTML(c, {
-                isMilestoneBased,
-                paymentLabel: formatPaymentMethod(c.payment_method),
-                renderMilestoneAction: (ms) => {
-                    if (String(ms?.status || '') === 'submitted' && ms.milestone_id) {
-                        return `<button class="review-phase-btn" onclick="event.stopPropagation(); window.openProofModal(${ms.milestone_id})" title="Review proof submitted by company"><i class="fas fa-clipboard-check"></i> Review Now</button>`;
-                    }
-                    return null;
-                }
-            });
-
-            // Keep functionality: allow reviewing submitted milestones by clicking the milestone row.
-            // (Replaces the old "Action" column.)
-            try {
-                const submitted = (c.milestones || []).filter(m => String(m?.status || '') === 'submitted' && m.milestone_id);
-                if (submitted.length > 0) {
-                    const rows = body.querySelectorAll('table.preview-milestones-table tbody tr');
-                    rows.forEach((row, idx) => {
-                        const ms = (c.milestones || [])[idx];
-                        if (!ms || String(ms.status || '') !== 'submitted' || !ms.milestone_id) return;
-                        row.style.cursor = 'pointer';
-                        row.title = 'Click to review submitted proof';
-                        row.addEventListener('click', () => {
-                            if (typeof window.openProofModal === 'function') {
-                                window.openProofModal(ms.milestone_id);
-                            }
-                        });
-                    });
-                }
-            } catch (e) {
-                // no-op
-            }
-        } else {
-            // Fallback to legacy renderer
-            const progress = parseInt(c.progress_percentage) || 0;
-            const paymentLabel = formatPaymentMethod(c.payment_method);
-            body.innerHTML = renderLegalContractPreview(c, {
-                terms,
-                progress,
-                paymentLabel,
-                milestones,
-                isMilestoneBased
-            });
-        }
-
-        // ---- Inject 'Needs Review' banner at top when submitted milestones exist ----
-        const submittedMs = (c.milestones || []).filter(m => m.status === 'submitted');
-        if (submittedMs.length > 0) {
-            const banner = document.createElement('div');
-            banner.className = 'detail-review-banner';
-            banner.innerHTML = `
-                <div class="drb-icon"><i class="fas fa-bell"></i></div>
-                <div class="drb-text">
-                    <strong>${submittedMs.length} phase${submittedMs.length > 1 ? 's' : ''} waiting for your review</strong>
-                    <span>The company has submitted work. Scroll to Milestones and click <em>Review Now</em> to approve or reject.</span>
-                </div>
-                <button class="drb-scroll-btn" onclick="document.querySelector('.review-phase-btn')?.scrollIntoView({behavior:'smooth',block:'center'})">
-                    <i class="fas fa-arrow-down"></i> Jump
-                </button>
-            `;
-            if (body) body.insertBefore(banner, body.firstChild);
-
-            // Visually highlight submitted rows in the milestone table
-            setTimeout(() => {
-                body.querySelectorAll('table tbody tr').forEach(row => {
-                    if (row.querySelector('.review-phase-btn')) {
-                        row.classList.add('ms-row-needs-review');
-                    }
-                });
-            }, 50);
-        }
+        body.innerHTML = renderLegalContractPreview(c, {
+            terms,
+            progress,
+            paymentLabel,
+            milestones,
+            isMilestoneBased
+        });
 
         // Footer action buttons
         if (footer) {
@@ -683,20 +596,11 @@
 
         const budgetTypes = {
             fixed: 'Fixed Price',
+            time_based: 'Time-Based',
             flexible: 'Flexible (±10%)'
         };
 
         const hasScope = Boolean(c.scope_description || c.scope_inclusions || c.scope_exclusions || c.materials_responsibility);
-
-        const hasUnitMilestones = Array.isArray(milestones) && milestones.some(ms => {
-            const ul = (ms && ms.unit_label != null) ? String(ms.unit_label).trim() : '';
-            const ur = (ms && ms.unit_rate != null && ms.unit_rate !== '') ? parseFloat(ms.unit_rate) : 0;
-            return ul !== '' || (ur > 0);
-        });
-        const isFlexibleBudget = String(c.budget_type || '') === 'flexible';
-        const budgetMin = (c.budget_min != null && c.budget_min !== '') ? parseFloat(c.budget_min) : null;
-        const budgetMax = (c.budget_max != null && c.budget_max !== '') ? parseFloat(c.budget_max) : null;
-        const showBudgetFlex = isFlexibleBudget && (budgetMin != null || budgetMax != null);
 
         return `
             <div class="contract-preview">
@@ -778,23 +682,7 @@
                         ${renderPaymentSchedulePreview(c, milestones)}
                     </div>
 
-                    ${hasUnitMilestones ? `
-                        <p class="preview-paragraph" style="margin-top:10px;">
-                            <strong>Unit-priced settlement:</strong> final billed amounts are calculated from submitted actual units and (if applicable) actual unit rates, then verified by you before payment.
-                        </p>` : ''}
-
                     <p style="margin-top:10px;"><strong>Late Payment:</strong> <span>${esc(c.late_payment_penalty || (terms.delays && terms.delays.late_payment_penalty) || 'As per standard terms')}</span></p>
-                </div>
-
-                <div class="preview-section" style="${showBudgetFlex ? '' : 'display:none;'}">
-                    <h4>5.1 BUDGET FLEXIBILITY</h4>
-                    <div class="preview-grid" style="margin-top:10px;">
-                        <div><strong>Minimum:</strong> <span class="preview-value">${budgetMin != null ? formatCurrency(budgetMin) : '—'}</span></div>
-                        <div><strong>Maximum:</strong> <span class="preview-value">${budgetMax != null ? formatCurrency(budgetMax) : '—'}</span></div>
-                    </div>
-                    <p class="preview-paragraph" style="margin-top:10px;">
-                        Final cost may vary within the allowed range to accommodate material price changes or necessary adjustments. All changes require your approval.
-                    </p>
                 </div>
 
                 <div class="preview-section">
@@ -822,22 +710,6 @@
     function renderPreviewMilestonesTable(milestones, isMilestoneBased) {
         currentContractMilestones = milestones || [];
 
-        const hasUnitMilestones = Array.isArray(milestones) && milestones.some(ms => {
-            const ul = (ms && ms.unit_label != null) ? String(ms.unit_label).trim() : '';
-            const ur = (ms && ms.unit_rate != null && ms.unit_rate !== '') ? parseFloat(ms.unit_rate) : 0;
-            return ul !== '' || (ur > 0);
-        });
-
-        const computeBilledAmount = (ms) => {
-            const agreedRate = parseFloat(ms?.unit_rate || 0);
-            const actualRate = parseFloat(ms?.actual_unit_rate || 0);
-            const unitRate = (actualRate > 0) ? actualRate : agreedRate;
-            const actualQty = parseFloat(ms?.actual_quantity || 0);
-            if (unitRate > 0 && actualQty > 0) return unitRate * actualQty;
-            const stored = parseFloat(ms?.actual_amount ?? ms?.amount ?? ms?.payment_amount ?? 0);
-            return Number.isFinite(stored) ? stored : 0;
-        };
-
         let html = `<table class="preview-milestones-table">
             <thead><tr>
                 <th>#</th>
@@ -855,42 +727,16 @@
 
             let actionBtn = '—';
             if (msStatus === 'submitted') {
-                actionBtn = `<button class="review-phase-btn" onclick="openProofModal(${ms.milestone_id})" title="Review proof submitted by company">
-                    <i class="fas fa-clipboard-check"></i> Review Now
-                </button>`;
+                actionBtn = `<button class="action-btn secondary small" onclick="openProofModal(${ms.milestone_id})"><i class="fas fa-eye"></i> Review</button>`;
             } else if (msStatus === 'approved' || msStatus === 'paid') {
                 actionBtn = '<span class="text-success"><i class="fas fa-check"></i> Paid</span>';
             }
 
             html += `<tr>
                 <td>${i + 1}</td>
-                <td>
-                    <strong>${esc(ms.title || ms.milestone_name || ('Milestone ' + (i + 1)))}</strong>
-                    ${ms.description ? '<br><small style="color:var(--text-muted)">' + esc(ms.description) + '</small>' : ''}
-                    ${hasUnitMilestones && (ms.unit_label || ms.unit_rate) ? (() => {
-                    const unitLabel = (ms.unit_label || '').toString().trim() || 'units';
-                    const agreedRate = parseFloat(ms.unit_rate || 0);
-                    const actualRate = parseFloat(ms.actual_unit_rate || 0);
-                    const unitRate = (actualRate > 0) ? actualRate : agreedRate;
-                    const actualQty = parseFloat(ms.actual_quantity || 0);
-                    const billed = computeBilledAmount(ms);
-                    const rateStr = (unitRate > 0) ? (formatCurrency(unitRate) + ' / ' + esc(unitLabel)) : '—';
-
-                    const unitLine = `<br><small style="color:var(--text-muted)">Unit: ${esc(unitLabel)} • Rate: ${rateStr}</small>`;
-                    const actualLine = (actualQty > 0 && unitRate > 0)
-                        ? `<br><small style="color:var(--text-muted)">Submitted: ${actualQty} ${esc(unitLabel)} • Billed: <strong>${formatCurrency(billed)}</strong></small>`
-                        : '';
-                    return unitLine + actualLine;
-                })() : ''}
-                </td>
+                <td><strong>${esc(ms.title || ms.milestone_name || ('Milestone ' + (i + 1)))}</strong>${ms.description ? '<br><small style="color:var(--text-muted)">' + esc(ms.description) + '</small>' : ''}</td>
                 <td>${formatDate(ms.due_date)}</td>
-                ${isMilestoneBased ? (() => {
-                    if (hasUnitMilestones && (ms.unit_label || ms.unit_rate)) {
-                        const actualQty = parseFloat(ms?.actual_quantity || 0);
-                        return `<td>${actualQty > 0 ? formatCurrency(computeBilledAmount(ms)) : '—'}</td>`;
-                    }
-                    return `<td>${formatCurrency(ms.amount || ms.payment_amount)}</td>`;
-                })() : ''}
+                ${isMilestoneBased ? `<td>${formatCurrency(ms.amount || ms.payment_amount)}</td>` : ''}
                 <td><span class="ms-status-badge ${statusClass}">${esc(statusText)}</span></td>
                 <td>${actionBtn}</td>
             </tr>`;
@@ -904,30 +750,9 @@
         const totalVal = parseFloat(c.total_budget || 0) || 0;
         const method = c.payment_method || 'full_upfront';
 
-        const hasUnitMilestones = Array.isArray(milestones) && milestones.some(ms => {
-            const ul = (ms && ms.unit_label != null) ? String(ms.unit_label).trim() : '';
-            const ur = (ms && ms.unit_rate != null && ms.unit_rate !== '') ? parseFloat(ms.unit_rate) : 0;
-            return ul !== '' || (ur > 0);
-        });
-
         let scheduleHTML = '<h5 class="preview-schedule-title"><i class="fas fa-receipt"></i> Payment Schedule</h5>';
 
         if (method === 'milestone_based' && milestones && milestones.length > 0) {
-            if (hasUnitMilestones) {
-                scheduleHTML += '<p class="preview-muted" style="margin-bottom:10px;">Unit-priced milestones are billed from verified actual units (and actual unit rates if provided).</p>';
-                scheduleHTML += '<table class="preview-milestones-table"><thead><tr><th>#</th><th>Milestone</th><th>Rate (per unit)</th></tr></thead><tbody>';
-                milestones.forEach((ms, i) => {
-                    const unitLabel = (ms.unit_label || '').toString().trim() || 'units';
-                    const agreedRate = parseFloat(ms.unit_rate || 0);
-                    const actualRate = parseFloat(ms.actual_unit_rate || 0);
-                    const unitRate = (actualRate > 0) ? actualRate : agreedRate;
-                    const rateStr = (unitRate > 0) ? (formatCurrency(unitRate) + ' / ' + esc(unitLabel)) : '—';
-                    scheduleHTML += `<tr><td>${i + 1}</td><td>${esc(ms.title || ms.milestone_name || ('Milestone ' + (i + 1)))}</td><td>${rateStr}</td></tr>`;
-                });
-                scheduleHTML += '</tbody></table>';
-                return scheduleHTML;
-            }
-
             scheduleHTML += '<table class="preview-milestones-table"><thead><tr><th>#</th><th>Milestone</th><th>%</th><th>Amount</th></tr></thead><tbody>';
             milestones.forEach((ms, i) => {
                 const pct = parseFloat(ms.payment_percentage || ms.percentage || 0) || 0;
@@ -956,7 +781,8 @@
     }
 
     function formatCommunicationChannel(channel) {
-        return 'FixLanka Platform';
+        const channels = { system: 'FixLanka Platform', email: 'Email', both: 'Platform + Email' };
+        return channels[channel] || 'FixLanka Platform';
     }
 
     function formatCustomerResponse(resp) {
@@ -1000,256 +826,6 @@
         _openAdjustModal(contract);
     };
 
-    // ==========================================================================
-    // PHASE / MILESTONE REVIEW FUNCTIONS (called from milestone table "Review" btn)
-    // ==========================================================================
-
-    /**
-     * Open the Review Phase modal, fetch & display all company-submitted proof data.
-     * @param {number} milestoneId
-     */
-    window.openProofModal = async function (milestoneId) {
-        const overlay = document.getElementById('proofReviewOverlay');
-        const body = document.getElementById('proofReviewBody');
-        const title = document.getElementById('proofPhaseTitle');
-        if (!overlay || !body) return;
-
-        currentReviewMilestoneId = milestoneId;
-        if (title) title.textContent = '';
-        body.innerHTML = '<div class="contracts-loading"><div class="spinner"></div><p>Loading proof details...</p></div>';
-        overlay.classList.add('show');
-        updateBodyScrollLock();
-
-        try {
-            const res = await fetch(`/2nd-Year-Group-Project/FixLanka/api/milestones.php?action=get&milestone_id=${encodeURIComponent(milestoneId)}`);
-            const json = await res.json();
-
-            if (!json.success) {
-                body.innerHTML = `<p style="color:var(--danger);padding:16px;">Error: ${esc(json.message || 'Could not load milestone.')}</p>`;
-                return;
-            }
-
-            const m = json.data;
-
-            if (title) title.textContent = esc(m.title || `Phase #${m.milestone_number || milestoneId}`);
-
-            const isNonPaying = String(m.is_non_paying) === '1';
-            const laborQty = m.actual_labor_quantity != null ? parseFloat(m.actual_labor_quantity) : null;
-            const matQty = m.actual_material_quantity != null ? parseFloat(m.actual_material_quantity) : null;
-            const matRate = m.actual_material_unit_rate != null ? parseFloat(m.actual_material_unit_rate) : null;
-            const extraAmt = m.actual_extra_amount != null ? parseFloat(m.actual_extra_amount) : null;
-            const actualAmt = m.actual_amount != null ? parseFloat(m.actual_amount) : null;
-            const agreedAmt = m.amount != null ? parseFloat(m.amount) : null;
-
-            const agreedLabor = m.agreed_labor_rate != null ? parseFloat(m.agreed_labor_rate) : null;
-            const agreedMaterial = m.agreed_material_rate != null ? parseFloat(m.agreed_material_rate) : null;
-            const laborLabel = m.labor_unit_label || 'unit';
-            const matLabel = m.material_unit_label || 'unit';
-
-            const fmtCur = (v) => v != null && Number.isFinite(v) ? `LKR ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—';
-            const fmtNum = (v) => v != null && Number.isFinite(v) ? v.toString() : '—';
-
-            // ---- Build proof files HTML ----
-            let filesHtml = '';
-            const files = Array.isArray(m.proof_files_array) ? m.proof_files_array : [];
-            if (files.length > 0) {
-                filesHtml = `
-                <div class="proof-section">
-                    <h4 class="proof-section-title"><i class="fas fa-paperclip"></i> Uploaded Proof Files</h4>
-                    <div class="proof-files-list">
-                        ${files.map(f => {
-                    const url = `/2nd-Year-Group-Project/FixLanka/${f}`;
-                    const name = f.split('/').pop();
-                    const isImg = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(name);
-                    return isImg
-                        ? `<div class="proof-file-item proof-file-image">
-                                       <a href="${url}" target="_blank" title="View full image">
-                                           <img src="${url}" alt="${esc(name)}" style="max-width:100%;max-height:200px;border-radius:8px;object-fit:cover;">
-                                       </a>
-                                       <small>${esc(name)}</small>
-                                   </div>`
-                        : `<div class="proof-file-item">
-                                       <a href="${url}" target="_blank" class="proof-file-link">
-                                           <i class="fas fa-file"></i> ${esc(name)}
-                                       </a>
-                                   </div>`;
-                }).join('')}
-                    </div>
-                </div>`;
-            }
-
-            // ---- Build unit breakdown ----
-            let unitBreakdown = '';
-            if (!isNonPaying && (laborQty !== null || matQty !== null || extraAmt !== null)) {
-                const rows = [];
-                if (laborQty !== null) {
-                    const rate = agreedLabor !== null ? agreedLabor : null;
-                    const computed = (rate !== null && laborQty > 0) ? fmtCur(rate * laborQty) : '—';
-                    rows.push(`
-                        <tr>
-                            <td><i class="fas fa-hard-hat" style="color:#0d9488;margin-right:6px;"></i> Labour</td>
-                            <td>${fmtNum(laborQty)} ${esc(laborLabel)}</td>
-                            <td>${rate !== null ? fmtCur(rate) + ' / ' + esc(laborLabel) : '—'}</td>
-                            <td><strong>${computed}</strong></td>
-                        </tr>`);
-                }
-                if (matQty !== null) {
-                    const rate = matRate !== null ? matRate : (agreedMaterial !== null ? agreedMaterial : null);
-                    const computed = (rate !== null && matQty > 0) ? fmtCur(rate * matQty) : '—';
-                    rows.push(`
-                        <tr>
-                            <td><i class="fas fa-boxes" style="color:#0d9488;margin-right:6px;"></i> Materials</td>
-                            <td>${fmtNum(matQty)} ${esc(matLabel)}</td>
-                            <td>${rate !== null ? fmtCur(rate) + ' / ' + esc(matLabel) : '—'}${matRate !== null ? ' <small style="color:var(--text-muted)">(overridden)</small>' : ''}</td>
-                            <td><strong>${computed}</strong></td>
-                        </tr>`);
-                }
-                if (extraAmt !== null && extraAmt > 0) {
-                    rows.push(`
-                        <tr>
-                            <td colspan="3"><i class="fas fa-plus-circle" style="color:#0d9488;margin-right:6px;"></i> Extra Charges</td>
-                            <td><strong>${fmtCur(extraAmt)}</strong></td>
-                        </tr>`);
-                }
-                if (rows.length > 0) {
-                    unitBreakdown = `
-                    <div class="proof-section">
-                        <h4 class="proof-section-title"><i class="fas fa-calculator"></i> Unit Breakdown Submitted</h4>
-                        <table class="proof-breakdown-table">
-                            <thead>
-                                <tr><th>Type</th><th>Quantity</th><th>Rate</th><th>Amount</th></tr>
-                            </thead>
-                            <tbody>${rows.join('')}</tbody>
-                        </table>
-                    </div>`;
-                }
-            }
-
-            // ---- Build notes section ----
-            let notesHtml = '';
-            if (m.proof_of_work) {
-                notesHtml = `
-                <div class="proof-section">
-                    <h4 class="proof-section-title"><i class="fas fa-sticky-note"></i> Company Notes</h4>
-                    <p class="proof-notes-text">${esc(m.proof_of_work)}</p>
-                </div>`;
-            }
-
-            // ---- Total amount banner ----
-            const totalBanner = `
-            <div class="proof-amount-banner ${isNonPaying ? 'proof-non-paying' : ''}">
-                ${isNonPaying
-                    ? `<span class="proof-non-paying-label"><i class="fas fa-ban"></i> Non-paying milestone — requires approval only</span>`
-                    : `<div class="proof-amount-row">
-                            <span class="proof-amount-label">Billed Amount for This Phase</span>
-                            <span class="proof-amount-value">${fmtCur(actualAmt ?? agreedAmt)}</span>
-                       </div>
-                       ${agreedAmt !== null && actualAmt !== null && Math.abs(agreedAmt - actualAmt) > 0.01
-                        ? `<div class="proof-amount-note"><i class="fas fa-info-circle"></i> Agreed amount: ${fmtCur(agreedAmt)}</div>`
-                        : ''}`
-                }
-            </div>`;
-
-            // ---- Submitted at ----
-            const submittedAt = m.completed_at
-                ? `<p class="proof-submitted-at"><i class="fas fa-clock"></i> Submitted on ${new Date(m.completed_at).toLocaleString()}</p>`
-                : '';
-
-            body.innerHTML = `
-                ${submittedAt}
-                ${totalBanner}
-                ${unitBreakdown}
-                ${notesHtml}
-                ${filesHtml}
-            `;
-
-        } catch (err) {
-            console.error('[ProofModal] Failed to load milestone', err);
-            body.innerHTML = `<p style="color:var(--danger);padding:16px;">Could not load proof details. Please try again.</p>`;
-        }
-    };
-
-    /**
-     * Close the Review Phase modal.
-     */
-    window.closeProofModal = function () {
-        const overlay = document.getElementById('proofReviewOverlay');
-        if (overlay) overlay.classList.remove('show');
-        currentReviewMilestoneId = null;
-        updateBodyScrollLock();
-    };
-
-    /**
-     * Approve or Reject the currently-open milestone.
-     * @param {'approve'|'reject'} decision
-     */
-    window.verifyMilestoneCurrent = async function (decision) {
-        const milestoneId = currentReviewMilestoneId;
-        if (!milestoneId) {
-            await window.showAlert('No milestone selected.', 'warning');
-            return;
-        }
-
-        let feedback = '';
-        if (decision === 'reject') {
-            feedback = window.prompt('Please enter your reason for rejecting this phase:\n(Required — at least 10 characters)') || '';
-            feedback = feedback.trim();
-            if (!feedback || feedback.length < 10) {
-                await window.showAlert('A rejection reason of at least 10 characters is required.', 'warning');
-                return;
-            }
-        } else {
-            const ok = window.confirm('Approve this phase?\n\nBy approving you confirm the work meets expectations. Payment for this phase will be released.');
-            if (!ok) return;
-        }
-
-        // Disable footer buttons during request
-        const footerBtns = document.querySelectorAll('#proofReviewOverlay .cd-footer button');
-        footerBtns.forEach(b => { b.disabled = true; });
-
-        try {
-            const fd = new FormData();
-            fd.append('milestone_id', milestoneId);
-            fd.append('action', decision === 'approve' ? 'approve' : 'reject');
-            if (feedback) fd.append('feedback', feedback);
-
-            const res = await fetch('/2nd-Year-Group-Project/FixLanka/api/projects.php?action=verify_phase', {
-                method: 'POST',
-                body: fd
-            });
-            const json = await res.json();
-
-            if (!json.success) {
-                await window.showAlert(json.message || 'Action failed. Please try again.', 'danger', 'Error');
-                return;
-            }
-
-            window.closeProofModal();
-
-            // Show success toast if available, otherwise alert
-            if (typeof window.showAlert === 'function') {
-                const msg = decision === 'approve'
-                    ? `Phase approved! ${json.billed_amount ? 'Amount billed: LKR ' + parseFloat(json.billed_amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : ''}`
-                    : 'Phase rejected. The company will be notified to make improvements.';
-                await window.showAlert(msg, decision === 'approve' ? 'success' : 'info', decision === 'approve' ? 'Approved' : 'Rejected');
-            }
-
-            // Refresh the open contract detail if one is open
-            const overlay = document.getElementById('contractDetailOverlay');
-            if (overlay && overlay.classList.contains('show') && lastOpenedContractDetail) {
-                await openDetail(lastOpenedContractDetail.contract_id);
-            }
-            // Also refresh the contracts list to update milestone counts
-            await loadContracts();
-
-        } catch (err) {
-            console.error('[verifyMilestoneCurrent] Error', err);
-            await window.showAlert('Network error. Please try again.', 'danger', 'Error');
-        } finally {
-            footerBtns.forEach(b => { b.disabled = false; });
-        }
-    };
-
     async function _getContractForAdjustment(contractId) {
         if (lastOpenedContractDetail && String(lastOpenedContractDetail.contract_id) === String(contractId)) {
             return lastOpenedContractDetail;
@@ -1263,21 +839,6 @@
             // ignore
         }
         return null;
-    }
-
-    function _isUnitPricedContract(contract) {
-        if (!contract || contract.payment_method !== 'milestone_based') return false;
-        const milestones = Array.isArray(contract.milestones) ? contract.milestones : [];
-        return milestones.some(m => {
-            const unitLabel = m?.unit_label ?? m?.unitLabel ?? null;
-            const unitRate = m?.unit_rate ?? m?.unitRate ?? null;
-            return (unitLabel != null && String(unitLabel).trim() !== '') || (unitRate != null && unitRate !== '');
-        });
-    }
-
-    function _getAdjustMode() {
-        const overlay = document.getElementById('contractAdjustOverlay');
-        return overlay?.dataset?.adjustMode || 'milestone';
     }
 
     function _ensureAdjustModalDOM() {
@@ -1305,14 +866,18 @@
                             <span>End date</span>
                             <input type="date" id="caEndDate" />
                         </label>
+                        <label class="ca-field">
+                            <span>Total budget</span>
+                            <input type="number" id="caBudget" min="0" step="0.01" />
+                        </label>
                     </div>
 
                     <div class="ca-section" id="caMilestonesSection" style="display:none">
                         <div class="ca-section-head">
-                            <h4 id="caMilestonesTitle">Milestones</h4>
+                            <h4>Milestones</h4>
                             <button type="button" class="btn-secondary" id="caAddMilestoneBtn"><i class="fas fa-plus"></i> Add</button>
                         </div>
-                        <div class="ca-muted" id="caMilestonesHint">Edit only what you need.</div>
+                        <div class="ca-muted">Edit only what you need. Amount totals should match the budget.</div>
                         <div class="ca-ms-wrap" id="caMilestonesWrap"></div>
                     </div>
 
@@ -1337,6 +902,13 @@
 
         document.getElementById('caCloseBtn').addEventListener('click', _closeAdjustModal);
         document.getElementById('caCancelBtn').addEventListener('click', _closeAdjustModal);
+        const budgetEl = document.getElementById('caBudget');
+        if (budgetEl) {
+            budgetEl.addEventListener('input', () => {
+                _recalcMilestoneAmounts();
+                _updateMilestoneTotalsHint();
+            });
+        }
     }
 
     function _openAdjustModal(contract) {
@@ -1350,39 +922,25 @@
 
         const startEl = document.getElementById('caStartDate');
         const endEl = document.getElementById('caEndDate');
+        const budgetEl = document.getElementById('caBudget');
         const noteEl = document.getElementById('caNote');
 
         if (startEl) startEl.value = (contract.start_date || '').slice(0, 10);
         if (endEl) endEl.value = (contract.end_date || '').slice(0, 10);
+        if (budgetEl) budgetEl.value = contract.total_budget != null ? String(contract.total_budget) : '';
         if (noteEl) noteEl.value = '';
 
         const isMilestoneBased = contract.payment_method === 'milestone_based';
-        const isUnitPriced = isMilestoneBased && _isUnitPricedContract(contract);
-        overlay.dataset.adjustMode = isUnitPriced ? 'unit' : 'milestone';
-
         const msSection = document.getElementById('caMilestonesSection');
         if (msSection) msSection.style.display = isMilestoneBased ? 'block' : 'none';
 
         if (isMilestoneBased) {
+            _renderMilestoneEditor(contract.milestones || []);
             const addBtn = document.getElementById('caAddMilestoneBtn');
-            const titleEl = document.getElementById('caMilestonesTitle');
-            const hintEl = document.getElementById('caMilestonesHint');
-
-            if (isUnitPriced) {
-                if (titleEl) titleEl.textContent = 'Unit rates';
-                if (hintEl) hintEl.textContent = 'Unit-priced contract: you can propose new unit rates here. Milestone %/amount adjustments are not used for unit-priced billing.';
-                if (addBtn) addBtn.style.display = 'none';
-                _renderUnitRateEditor(contract.milestones || []);
-            } else {
-                if (titleEl) titleEl.textContent = 'Milestones';
-                if (hintEl) hintEl.textContent = 'Edit only what you need.';
-                if (addBtn) {
-                    addBtn.style.display = '';
-                    addBtn.onclick = () => {
-                        _appendMilestoneRow({ title: '', due_date: '', amount: '', description: '' });
-                    };
-                }
-                _renderMilestoneEditor(contract.milestones || []);
+            if (addBtn) {
+                addBtn.onclick = () => {
+                    _appendMilestoneRow({ title: '', due_date: '', amount: '', description: '' });
+                };
             }
         }
 
@@ -1405,8 +963,6 @@
     function _renderMilestoneEditor(milestones) {
         const wrap = document.getElementById('caMilestonesWrap');
         if (!wrap) return;
-
-        wrap.dataset.mode = 'milestone';
 
         const budgetRaw = document.getElementById('caBudget')?.value;
         const budget = budgetRaw !== '' && budgetRaw != null ? Number(budgetRaw) : null;
@@ -1463,77 +1019,6 @@
         _updateMilestoneTotalsHint();
     }
 
-    function _renderUnitRateEditor(milestones) {
-        const wrap = document.getElementById('caMilestonesWrap');
-        if (!wrap) return;
-
-        wrap.dataset.mode = 'unit';
-        const unitRows = Array.isArray(milestones) ? milestones.filter(m => {
-            const unitLabel = m?.unit_label ?? m?.unitLabel ?? null;
-            const unitRate = m?.unit_rate ?? m?.unitRate ?? null;
-            return (unitLabel != null && String(unitLabel).trim() !== '') || (unitRate != null && unitRate !== '');
-        }) : [];
-
-        const rows = unitRows.map(m => ({
-            milestone_id: m.milestone_id ?? null,
-            milestone_number: m.milestone_number ?? null,
-            title: m.title || m.milestone_name || '',
-            unit_label: (m.unit_label ?? m.unitLabel ?? '').toString(),
-            unit_rate: (m.unit_rate ?? m.unitRate ?? ''),
-            proposed_unit_rate: ''
-        }));
-
-        wrap.innerHTML = `
-            <table class="ca-ms-table">
-                <thead>
-                    <tr>
-                        <th style="width:28px">#</th>
-                        <th>Item</th>
-                        <th style="width:180px">Unit</th>
-                        <th style="width:160px">Current rate</th>
-                        <th style="width:180px">Proposed rate</th>
-                    </tr>
-                </thead>
-                <tbody id="caUnitTbody"></tbody>
-            </table>
-            <div class="ca-ms-help">Enter proposed unit rates if you want to renegotiate pricing. Explain any changes in the note.</div>
-            <div class="ca-ms-totals" id="caMsTotals"></div>
-        `;
-
-        const tbody = document.getElementById('caUnitTbody');
-        if (!tbody) return;
-
-        rows.forEach((r, idx) => {
-            const tr = document.createElement('tr');
-            tr.className = 'ca-unit-row';
-            tr.dataset.milestoneId = r.milestone_id != null ? String(r.milestone_id) : '';
-            tr.dataset.milestoneNumber = r.milestone_number != null ? String(r.milestone_number) : '';
-            tr.dataset.title = (r.title || '').trim();
-            tr.dataset.unitLabel = (r.unit_label || '').trim();
-            tr.dataset.currentUnitRate = (r.unit_rate != null ? String(r.unit_rate) : '');
-            tr.innerHTML = `
-                <td class="ca-ms-idx">${idx + 1}</td>
-                <td>${escAttr(r.title)}</td>
-                <td>${escAttr((r.unit_label || '').trim() || '—')}</td>
-                <td>Rs. ${escAttr((r.unit_rate != null && r.unit_rate !== '') ? String(r.unit_rate) : '—')}</td>
-                <td>
-                    <input type="number" min="0" step="0.01" class="ca-unit-proposed-rate" value="" placeholder="Leave blank to keep" />
-                </td>
-            `;
-            tbody.appendChild(tr);
-
-            const proposedEl = tr.querySelector('.ca-unit-proposed-rate');
-            if (proposedEl) {
-                proposedEl.addEventListener('input', () => {
-                    _setInputError(proposedEl, false);
-                    _updateMilestoneTotalsHint();
-                });
-            }
-        });
-
-        _updateMilestoneTotalsHint();
-    }
-
     function _appendMilestoneRow(row, tbodyOverride) {
         const tbody = tbodyOverride || document.getElementById('caMsTbody');
         if (!tbody) return;
@@ -1577,7 +1062,6 @@
     }
 
     function _recalcMilestoneAmounts() {
-        if (document.getElementById('caMilestonesWrap')?.dataset?.mode === 'unit') return;
         const budgetRaw = document.getElementById('caBudget')?.value;
         const budget = budgetRaw !== '' && budgetRaw != null ? Number(budgetRaw) : null;
         if (!budget || !Number.isFinite(budget) || budget <= 0) return;
@@ -1598,20 +1082,6 @@
     function _updateMilestoneTotalsHint() {
         const el = document.getElementById('caMsTotals');
         if (!el) return;
-
-        const mode = document.getElementById('caMilestonesWrap')?.dataset?.mode;
-        if (mode === 'unit') {
-            const rows = Array.from(document.querySelectorAll('#caUnitTbody .ca-unit-row'));
-            const withProposed = rows.filter(r => {
-                const v = r.querySelector('.ca-unit-proposed-rate')?.value;
-                return v !== '' && v != null;
-            }).length;
-            el.innerHTML = `
-                <span class="ca-ms-total ok">Unit-priced milestones: ${rows.length} item(s)</span>
-                <span class="ca-ms-total ${withProposed > 0 ? 'ok' : ''}">${withProposed} proposed rate change(s)</span>
-            `;
-            return;
-        }
 
         const rows = Array.from(document.querySelectorAll('#caMsTbody .ca-ms-row'));
         const sumPct = rows.reduce((acc, r) => acc + (Number(r.querySelector('.ca-ms-pct')?.value) || 0), 0);
@@ -1693,25 +1163,6 @@
         }).filter(m => m.title);
     }
 
-    function _collectUnitRateProposalsFromEditor() {
-        const rows = Array.from(document.querySelectorAll('#caUnitTbody .ca-unit-row'));
-        return rows.map(r => {
-            const proposedRaw = r.querySelector('.ca-unit-proposed-rate')?.value;
-            const proposed = proposedRaw !== '' && proposedRaw != null ? Number(proposedRaw) : null;
-            const currentRaw = r.dataset.currentUnitRate;
-            const current = currentRaw !== '' && currentRaw != null ? Number(currentRaw) : null;
-
-            return {
-                milestone_id: r.dataset.milestoneId ? Number(r.dataset.milestoneId) : null,
-                milestone_number: r.dataset.milestoneNumber ? Number(r.dataset.milestoneNumber) : null,
-                title: (r.dataset.title || '').trim() || null,
-                unit_label: (r.dataset.unitLabel || '').trim() || null,
-                current_unit_rate: Number.isFinite(current) ? current : null,
-                proposed_unit_rate: Number.isFinite(proposed) ? proposed : null
-            };
-        }).filter(x => x.proposed_unit_rate != null);
-    }
-
     function _setInputError(el, isError) {
         if (!el) return;
         el.classList.toggle('ca-error', !!isError);
@@ -1724,10 +1175,13 @@
         try {
             const startDate = document.getElementById('caStartDate')?.value || null;
             const endDate = document.getElementById('caEndDate')?.value || null;
-            let note = (document.getElementById('caNote')?.value || '').trim();
+            const budgetRaw = document.getElementById('caBudget')?.value;
+            const budget = budgetRaw !== '' && budgetRaw != null ? Number(budgetRaw) : null;
+            const note = (document.getElementById('caNote')?.value || '').trim();
 
             _setInputError(document.getElementById('caStartDate'), false);
             _setInputError(document.getElementById('caEndDate'), false);
+            _setInputError(document.getElementById('caBudget'), false);
 
             if (!startDate || !endDate) {
                 _setInputError(document.getElementById('caStartDate'), !startDate);
@@ -1742,123 +1196,94 @@
                 await window.showAlert('End date must be after start date.', 'warning');
                 return;
             }
+            if (budget != null && (!Number.isFinite(budget) || budget < 0)) {
+                _setInputError(document.getElementById('caBudget'), true);
+                await window.showAlert('Please enter a valid budget.', 'warning');
+                return;
+            }
 
             const proposed = {
                 start_date: startDate,
-                end_date: endDate
+                end_date: endDate,
+                total_budget: budget
             };
 
             if (contract.payment_method === 'milestone_based') {
-                const isUnitPriced = _isUnitPricedContract(contract);
+                const milestones = _collectMilestonesFromEditor();
+                proposed.milestones = milestones;
 
-                if (isUnitPriced) {
-                    // Unit-priced contracts cannot submit milestone % changes (backend requires % totals).
-                    // Instead, allow proposing unit rate changes as a separate payload.
-                    const unitRows = Array.from(document.querySelectorAll('#caUnitTbody .ca-unit-row'));
-                    let badRate = false;
-                    unitRows.forEach(r => {
-                        const el = r.querySelector('.ca-unit-proposed-rate');
-                        if (!el) return;
-                        _setInputError(el, false);
-                        const raw = el.value;
-                        if (raw === '' || raw == null) return;
-                        const n = Number(raw);
-                        if (!Number.isFinite(n) || n < 0) {
-                            _setInputError(el, true);
-                            badRate = true;
-                        }
-                    });
-                    if (badRate) {
-                        await window.showAlert('Please enter valid proposed unit rates (0 or higher), or leave them blank.', 'warning');
-                        _updateMilestoneTotalsHint();
-                        return;
+                // Company-side style validations
+                if (milestones.length < 2) {
+                    await window.showAlert('Minimum 2 milestones required.', 'warning');
+                    return;
+                }
+                if (milestones.length > 10) {
+                    await window.showAlert('Maximum 10 milestones allowed.', 'warning');
+                    return;
+                }
+
+                // Field validations per milestone
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                let sumPct = 0;
+                let hasBad = false;
+
+                const rows = Array.from(document.querySelectorAll('#caMsTbody .ca-ms-row'));
+                rows.forEach((r) => {
+                    _setInputError(r.querySelector('.ca-ms-title'), false);
+                    _setInputError(r.querySelector('.ca-ms-date'), false);
+                    _setInputError(r.querySelector('.ca-ms-pct'), false);
+                });
+
+                milestones.forEach((m, idx) => {
+                    const rowEl = rows[idx];
+                    if (!m.title) {
+                        _setInputError(rowEl?.querySelector('.ca-ms-title'), true);
+                        hasBad = true;
                     }
-
-                    const proposals = _collectUnitRateProposalsFromEditor();
-                    if (proposals.length) proposed.unit_rate_proposals = proposals;
-
-                    if (proposals.length) {
-                        const lines = proposals.map(p => {
-                            const name = p.title || 'Unit item';
-                            const unit = p.unit_label ? ` per ${p.unit_label}` : '';
-                            const cur = (p.current_unit_rate != null) ? ` (current: Rs. ${Number(p.current_unit_rate).toFixed(2)})` : '';
-                            return `- ${name}: Rs. ${Number(p.proposed_unit_rate).toFixed(2)}${unit}${cur}`;
-                        });
-                        const summary = `Proposed unit rates:\n${lines.join('\n')}`;
-                        note = note ? `${note}\n\n${summary}` : summary;
-                    }
-
-                    _updateMilestoneTotalsHint();
-                } else {
-                    const milestones = _collectMilestonesFromEditor();
-                    proposed.milestones = milestones;
-
-                    // Company-side style validations
-                    if (milestones.length < 2) {
-                        await window.showAlert('Minimum 2 milestones required.', 'warning');
-                        return;
-                    }
-                    if (milestones.length > 10) {
-                        await window.showAlert('Maximum 10 milestones allowed.', 'warning');
-                        return;
-                    }
-
-                    // Field validations per milestone
-                    const start = new Date(startDate);
-                    const end = new Date(endDate);
-                    let sumPct = 0;
-                    let hasBad = false;
-
-                    const rows = Array.from(document.querySelectorAll('#caMsTbody .ca-ms-row'));
-                    rows.forEach((r) => {
-                        _setInputError(r.querySelector('.ca-ms-title'), false);
-                        _setInputError(r.querySelector('.ca-ms-date'), false);
-                        _setInputError(r.querySelector('.ca-ms-pct'), false);
-                    });
-
-                    milestones.forEach((m, idx) => {
-                        const rowEl = rows[idx];
-                        if (!m.title) {
-                            _setInputError(rowEl?.querySelector('.ca-ms-title'), true);
-                            hasBad = true;
-                        }
-                        if (!m.due_date) {
+                    if (!m.due_date) {
+                        _setInputError(rowEl?.querySelector('.ca-ms-date'), true);
+                        hasBad = true;
+                    } else {
+                        const d = new Date(m.due_date);
+                        if (d < start || d > end) {
                             _setInputError(rowEl?.querySelector('.ca-ms-date'), true);
                             hasBad = true;
-                        } else {
-                            const d = new Date(m.due_date);
-                            if (d < start || d > end) {
-                                _setInputError(rowEl?.querySelector('.ca-ms-date'), true);
-                                hasBad = true;
-                            }
                         }
-                        const pct = Number(m.percentage);
-                        if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
-                            _setInputError(rowEl?.querySelector('.ca-ms-pct'), true);
-                            hasBad = true;
-                        } else {
-                            sumPct += pct;
-                        }
-                    });
-
-                    if (hasBad) {
-                        await window.showAlert('Please fix milestone fields (title, due date within range, and valid percentage).', 'warning');
-                        _updateMilestoneTotalsHint();
-                        return;
                     }
-
-                    if (Math.abs(sumPct - 100) > 0.01) {
-                        await window.showAlert(`Milestone percentages must total 100% (currently: ${sumPct.toFixed(2)}%).`, 'warning');
-                        _updateMilestoneTotalsHint();
-                        return;
+                    const pct = Number(m.percentage);
+                    if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
+                        _setInputError(rowEl?.querySelector('.ca-ms-pct'), true);
+                        hasBad = true;
+                    } else {
+                        sumPct += pct;
                     }
+                });
 
-                    // Ensure amounts are synced from percentages + budget
-                    _recalcMilestoneAmounts();
-                    const sumAmt = milestones.reduce((acc, mm) => acc + (Number(mm.amount) || 0), 0);
-
+                if (hasBad) {
+                    await window.showAlert('Please fix milestone fields (title, due date within range, and valid percentage).', 'warning');
                     _updateMilestoneTotalsHint();
+                    return;
                 }
+
+                if (Math.abs(sumPct - 100) > 0.01) {
+                    await window.showAlert(`Milestone percentages must total 100% (currently: ${sumPct.toFixed(2)}%).`, 'warning');
+                    _updateMilestoneTotalsHint();
+                    return;
+                }
+
+                // Ensure amounts are synced from percentages + budget
+                _recalcMilestoneAmounts();
+                const sumAmt = milestones.reduce((acc, mm) => acc + (Number(mm.amount) || 0), 0);
+                if (budget != null && Number.isFinite(budget) && Math.abs(sumAmt - budget) > 0.05) {
+                    const ok = await window.showConfirm(
+                        `Milestone amounts (Rs. ${sumAmt.toFixed(2)}) do not match the total budget (Rs. ${budget.toFixed(2)}). Send anyway?`,
+                        { title: 'Amount Check', type: 'warning' }
+                    );
+                    if (!ok) return;
+                }
+
+                _updateMilestoneTotalsHint();
             }
 
             const res = await fetch(API, {
@@ -1917,7 +1342,7 @@
 
             let actionBtn = '—';
             if (ms.status === 'submitted') {
-                actionBtn = `<button class="review-phase-btn" onclick="openProofModal(${ms.milestone_id})" title="Review proof submitted by company"><i class="fas fa-clipboard-check"></i> Review Now</button>`;
+                actionBtn = `<button class="action-btn secondary small" onclick="openProofModal(${ms.milestone_id})"><i class="fas fa-eye"></i> Review</button>`;
             } else if (ms.status === 'approved') {
                 actionBtn = '<span class="text-success"><i class="fas fa-check"></i> Paid</span>';
             }
@@ -2037,124 +1462,124 @@
     window.respondContract = async function (contractId, response) {
         if (response !== 'accepted') {
             const label = 'decline';
-            const confirmed = await window.showConfirm(
-                `Are you sure you want to ${label} this contract?`,
-                { title: 'Decline Contract', type: 'danger', confirmText: 'Yes, Decline' }
-            );
-            if (!confirmed) return;
-
-            try {
-                const res = await fetch(API, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'respond',
-                        contract_id: contractId,
-                        response: response
-                    })
-                });
-                const json = await res.json();
-                if (json.success) {
-                    showToast(`Contract ${label}ed successfully!`);
-
-                    const seconds = (json.undo && json.undo.undo_seconds) ? Number(json.undo.undo_seconds) : 30;
-                    if (typeof window.showUndoToast === 'function') {
-                        window.showUndoToast('Contract response saved. Undo available', async () => {
-                            const undoRes = await fetch(API, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ action: 'undo_customer_response', contract_id: contractId })
-                            });
-                            const undoJson = await undoRes.json();
-                            if (undoJson.success) {
-                                showToast('Undo successful', 'info');
-                                loadContracts();
-                            } else {
-                                await window.showAlert(undoJson.message || 'Undo failed', 'danger', 'Undo');
-                            }
-                        }, seconds);
+            showCustomConfirm({
+                title: 'Decline Contract',
+                message: `Are you sure you want to ${label} this contract?`,
+                icon: 'fas fa-times-circle',
+                confirmText: 'Yes, Decline',
+                confirmClass: 'btn-danger',
+                onConfirm: async () => {
+                    try {
+                        const res = await fetch(API, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                action: 'respond',
+                                contract_id: contractId,
+                                response: response
+                            })
+                        });
+                        const json = await res.json();
+                        if (json.success) {
+                            showToast(`Contract ${label}ed successfully!`);
+                            closeDetail();
+                            loadContracts();
+                        } else {
+                            showToast('Error: ' + json.message, 'error');
+                        }
+                    } catch (err) {
+                        console.error('Respond error:', err);
+                        showToast('Could not process your response.', 'error');
                     }
-
-                    closeDetail();
-                    loadContracts();
-                } else {
-                    await window.showAlert('Error: ' + (json.message || 'Unknown error'), 'danger', 'Error');
                 }
-            } catch (err) {
-                console.error('Respond error:', err);
-                await window.showAlert('Could not process your response.', 'danger', 'Error');
-            }
+            });
             return;
         }
 
-        // Acceptance flow (NO initial deposit step): go straight to e-sign confirmation.
-        triggerSignatureConfirmation(contractId);
+        // Handle Acceptance with Upfront Check
+        try {
+            // Fetch latest contract details to check milestones
+            const res = await fetch(`${API}?action=get&id=${contractId}`);
+            const json = await res.json();
+            if (!json.success) throw new Error(json.message);
+
+            const contract = json.data;
+            const milestones = contract.milestones || [];
+
+            const contractStartDate = contract.start_date ? contract.start_date.substring(0, 10) : '';
+            const upfrontMilestones = milestones.filter(m => {
+                const milestoneDueDate = m.due_date ? m.due_date.substring(0, 10) : '';
+                return milestoneDueDate <= contractStartDate;
+            });
+            const upfrontAmount = upfrontMilestones.reduce((sum, m) => {
+                const amt = m.payment_amount || m.amount || 0;
+                return sum + Number(amt);
+            }, 0);
+
+            // Robust check: either we have a calculated amount, or the plan itself is explicitly upfront
+            const isUpfrontPlan = ['full_upfront', '30_70', '50_50', 'milestone_based'].includes(contract.payment_method);
+            const needsUpfront = upfrontAmount > 0 || (isUpfrontPlan && contract.payment_method !== 'completion');
+
+            if (needsUpfront) {
+                // Show Payment Modal BEFORE signature confirmation
+                showEscrowPaymentModal(contract, upfrontAmount);
+            } else {
+                // No upfront needed, show signature confirmation directly
+                triggerSignatureConfirmation(contractId, false);
+            }
+        } catch (err) {
+            console.error('Accept error:', err);
+            showToast('Error processing acceptance: ' + err.message, 'error');
+        }
     };
 
     /**
      * Final E-Sign Confirmation Modal
      */
-    async function triggerSignatureConfirmation(contractId) {
-        const confirmed = await window.showConfirm(
-            'By clicking Confirm, you confirm you have read and agree to the contract terms, and you electronically sign this contract in FixLanka.',
-            { title: 'Electronic Signature Confirmation', confirmText: 'Confirm & Sign' }
-        );
-        if (!confirmed) return;
+    function triggerSignatureConfirmation(contractId, isPayAndAccept = false) {
+        showCustomConfirm({
+            title: 'Electronic Signature Confirmation',
+            message: 'By clicking Confirm, you confirm you have read and agree to the contract terms, and you electronically sign this contract in FixLanka.',
+            icon: 'fas fa-pen-nib',
+            iconClass: 'primary',
+            confirmText: 'Confirm & Sign',
+            onConfirm: async () => {
+                try {
+                    const action = isPayAndAccept ? 'pay_and_accept' : 'respond';
+                    const payload = isPayAndAccept ? { contract_id: contractId } : {
+                        action: 'respond',
+                        contract_id: contractId,
+                        response: 'accepted',
+                        esign_consent: true
+                    };
 
-        try {
-            const acceptRes = await fetch(API, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'respond',
-                    contract_id: contractId,
-                    response: 'accepted',
-                    esign_consent: true
-                })
-            });
-            const acceptJson = await acceptRes.json();
-            if (acceptJson.success) {
-                showToast('Contract accepted successfully!');
+                    const endpoint = isPayAndAccept ? `${API}?action=pay_and_accept` : API;
 
-                const seconds = (acceptJson.undo && acceptJson.undo.undo_seconds) ? Number(acceptJson.undo.undo_seconds) : 30;
-                if (typeof window.showUndoToast === 'function') {
-                    window.showUndoToast('Contract signed. Undo available', async () => {
-                        const undoRes = await fetch(API, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ action: 'undo_customer_response', contract_id: contractId })
-                        });
-                        const undoJson = await undoRes.json();
-                        if (undoJson.success) {
-                            showToast('Undo successful', 'info');
-                            loadContracts();
-                        } else {
-                            await window.showAlert(undoJson.message || 'Undo failed', 'danger', 'Undo');
-                        }
-                    }, seconds);
+                    const acceptRes = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const acceptJson = await acceptRes.json();
+                    if (acceptJson.success) {
+                        showToast(isPayAndAccept ? 'Payment successful and contract signed!' : 'Contract accepted successfully!');
+                        closeDetail();
+                        loadContracts();
+                    } else {
+                        showToast('Error: ' + acceptJson.message, 'error');
+                    }
+                } catch (err) {
+                    console.error('Accept error:', err);
+                    showToast('Could not sign contract.', 'error');
                 }
-
-                closeDetail();
-                loadContracts();
-            } else {
-                await window.showAlert('Error: ' + (acceptJson.message || 'Unknown error'), 'danger', 'Error');
             }
-        } catch (err) {
-            console.error('Accept error:', err);
-            await window.showAlert('Could not sign contract. Please try again.', 'danger', 'Error');
-        }
+        });
     }
 
     /**
      * Shows a simulated payment modal for the upfront escrow deposit
      */
     function showEscrowPaymentModal(contract, amount) {
-        if (typeof window.showAlert === 'function') {
-            window.showAlert('Initial deposit is not required. Please continue with signing.', 'info', 'Notice');
-        }
-        triggerSignatureConfirmation(contract.contract_id);
-        return;
-
         let overlay = document.getElementById('escrowPaymentOverlay');
         if (!overlay) {
             overlay = document.createElement('div');
@@ -2183,7 +1608,7 @@
 
                 <div class="payment-amount-box">
                     <div class="payment-label">Required Initial Deposit</div>
-                    <div class="payment-value">LKR ${numericAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div class="payment-value">LKR ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
 
                 <div class="payment-info">
@@ -2229,15 +1654,11 @@
     // UNDO CONTRACT
     // =========================================
     window.undoContract = async function (contractId) {
-        const reason = await window.showPrompt(
-            'Please provide a reason for cancelling this contract (required):',
-            '',
-            { title: 'Cancel Contract', placeholder: 'Reason...', confirmText: 'Continue' }
-        );
-        if (reason === null) return;
+        const reason = prompt("Please provide a reason for cancelling this contract:");
+        if (reason === null) return; // User cancelled prompt
 
-        if (!String(reason).trim()) {
-            await window.showAlert('Please provide a reason.', 'warning');
+        if (reason.trim() === "") {
+            await window.showAlert("Please provide a reason.", "warning");
             return;
         }
 
@@ -2255,7 +1676,7 @@
             const res = await fetch('/2nd-Year-Group-Project/FixLanka/api/contracts/undo', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contract_id: contractId, reason: String(reason).trim() })
+                body: JSON.stringify({ contract_id: contractId, reason: reason })
             });
             const json = await res.json();
 
@@ -2290,54 +1711,6 @@
     function formatCurrency(val) {
         const num = parseFloat(val) || 0;
         return 'LKR ' + num.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    function formatUnitPrice(value) {
-        if (value === null || value === undefined || value === '') {
-            return null;
-        }
-
-        const numericValue = Number(value);
-        if (!Number.isFinite(numericValue)) {
-            return null;
-        }
-
-        return formatCurrency(numericValue);
-    }
-
-    function resolveQuotationPerLabel(rawUnitLabel, type) {
-        if (!rawUnitLabel || typeof rawUnitLabel !== 'string') {
-            return '';
-        }
-
-        const normalized = rawUnitLabel.trim().toLowerCase();
-        if (!normalized) {
-            return '';
-        }
-
-        if (normalized.includes('hour')) {
-            return type === 'material' ? '' : 'per hour';
-        }
-
-        if (
-            normalized.includes('m²') ||
-            normalized.includes('m2') ||
-            normalized.includes('sqm') ||
-            normalized.includes('sqft') ||
-            normalized.includes('area')
-        ) {
-            return 'per area';
-        }
-
-        if (normalized.includes('unit')) {
-            return 'per no. of units';
-        }
-
-        return '';
-    }
-
-    function formatCostLabel(baseLabel, perLabel) {
-        return perLabel ? `${baseLabel} (${perLabel})` : baseLabel;
     }
 
     function formatDate(d) {
@@ -2378,175 +1751,93 @@
     // =========================================
     // PROOF REVIEW
     // =========================================
-    window.openProofModal = async function (milestoneId) {
-        const overlay = document.getElementById('proofReviewOverlay');
-        const body = document.getElementById('proofReviewBody');
-        const title = document.getElementById('proofPhaseTitle');
-        if (!overlay || !body) return;
+    window.openProofModal = function (milestoneId) {
+        const ms = currentContractMilestones.find(m => m.milestone_id == milestoneId);
+        if (!ms) return;
 
         currentReviewMilestoneId = milestoneId;
-        if (title) title.textContent = '';
-        body.innerHTML = '<div class="contracts-loading"><div class="spinner"></div><p>Loading proof details...</p></div>';
+
+        const overlay = document.getElementById('proofReviewOverlay');
+        const title = document.getElementById('proofPhaseTitle');
+        const body = document.getElementById('proofReviewBody');
+
+        if (title) title.textContent = ms.title;
+
+        // Parse proof files
+        let filesHtml = '<p>No files attached.</p>';
+        try {
+            if (ms.proof_files) {
+                const files = JSON.parse(ms.proof_files);
+                if (files && files.length > 0) {
+                    filesHtml = '<ul class="proof-files-list">';
+                    files.forEach(path => {
+                        const name = path.split('/').pop();
+                        filesHtml += `<li><a href="/2nd-Year-Group-Project/FixLanka/${path}" target="_blank"><i class="fas fa-file-download"></i> ${esc(name)}</a></li>`;
+                    });
+                    filesHtml += '</ul>';
+                }
+            }
+        } catch (e) { /* no files */ }
+
+        // Unit billing summary
+        const unitLabel = ms.unit_label || 'units';
+        const unitRate = parseFloat(ms.unit_rate || 0);
+        const estQty = parseFloat(ms.estimated_quantity || 0);
+        const actualQty = parseFloat(ms.actual_quantity || 0);
+        const hasDynamicBill = unitRate > 0 && actualQty > 0;
+        const billedAmount = hasDynamicBill ? unitRate * actualQty : parseFloat(ms.actual_amount || ms.amount || 0);
+        const estimatedTotal = unitRate > 0 ? unitRate * estQty : parseFloat(ms.amount || 0);
+
+        const billingHtml = hasDynamicBill ? `
+            <div class="unit-billing-card">
+                <h4><i class="fas fa-calculator"></i> Unit Billing Verification</h4>
+                <div class="unit-billing-grid">
+                    <div class="ub-row">
+                        <span class="ub-label">Agreed Rate</span>
+                        <span class="ub-value">${formatCurrency(unitRate)} / ${esc(unitLabel)}</span>
+                    </div>
+                    <div class="ub-row">
+                        <span class="ub-label">Estimated <span class="ub-sub">(from quotation)</span></span>
+                        <span class="ub-value ub-estimate">${estQty > 0 ? estQty + ' ' + esc(unitLabel) : '—'}
+                            ${estQty > 0 ? '<span class="ub-sub">≈ ' + formatCurrency(estimatedTotal) + '</span>' : ''}
+                        </span>
+                    </div>
+                    <div class="ub-row">
+                        <span class="ub-label">Actual Submitted <span class="ub-sub">(by company)</span></span>
+                        <span class="ub-value ub-actual">${actualQty} ${esc(unitLabel)}</span>
+                    </div>
+                    <div class="ub-divider"></div>
+                    <div class="ub-row ub-total">
+                        <span class="ub-label"><strong>Amount to Pay</strong></span>
+                        <span class="ub-value ub-pay-amount">${formatCurrency(billedAmount)}</span>
+                    </div>
+                </div>
+                <p class="ub-note"><i class="fas fa-info-circle"></i> By approving, you confirm ${actualQty} ${esc(unitLabel)} of work was completed and agree to pay <strong>${formatCurrency(billedAmount)}</strong>.</p>
+            </div>` : `
+            <div class="unit-billing-card">
+                <h4><i class="fas fa-receipt"></i> Payment Summary</h4>
+                <div class="unit-billing-grid">
+                    <div class="ub-row ub-total">
+                        <span class="ub-label"><strong>Amount on Approval</strong></span>
+                        <span class="ub-value ub-pay-amount">${formatCurrency(billedAmount)}</span>
+                    </div>
+                </div>
+                <p class="ub-note"><i class="fas fa-info-circle"></i> By approving, you confirm this stage is complete and agree to pay <strong>${formatCurrency(billedAmount)}</strong>.</p>
+            </div>`;
+
+        body.innerHTML = `
+        <div class="proof-section">
+            <h4><i class="fas fa-align-left"></i> Company Notes</h4>
+            <div class="proof-desc">${esc(ms.comments || ms.proof_of_work || 'No description provided.')}</div>
+        </div>
+        ${billingHtml}
+        <div class="proof-section">
+            <h4><i class="fas fa-paperclip"></i> Attached Files</h4>
+            ${filesHtml}
+        </div>`;
+
         overlay.classList.add('show');
         updateBodyScrollLock();
-
-        try {
-            const res = await fetch(`/2nd-Year-Group-Project/FixLanka/api/milestones.php?action=get&milestone_id=${encodeURIComponent(milestoneId)}`);
-            const json = await res.json();
-
-            if (!json.success) {
-                body.innerHTML = `<p style="color:var(--danger);padding:16px;">Error: ${esc(json.message || 'Could not load milestone.')}</p>`;
-                return;
-            }
-
-            const m = json.data;
-            if (title) title.textContent = m.title || `Phase #${m.milestone_number || milestoneId}`;
-
-            const isNonPaying = String(m.is_non_paying) === '1';
-            const laborQty = m.actual_labor_quantity != null ? parseFloat(m.actual_labor_quantity) : null;
-            const matQty = m.actual_material_quantity != null ? parseFloat(m.actual_material_quantity) : null;
-            const matRate = m.actual_material_unit_rate != null ? parseFloat(m.actual_material_unit_rate) : null;
-            const extraAmt = m.actual_extra_amount != null ? parseFloat(m.actual_extra_amount) : null;
-            const actualAmt = m.actual_amount != null ? parseFloat(m.actual_amount) : null;
-            const agreedAmt = m.amount != null ? parseFloat(m.amount) : null;
-            const agreedLabor = m.agreed_labor_rate != null ? parseFloat(m.agreed_labor_rate) : null;
-            const agreedMaterial = m.agreed_material_rate != null ? parseFloat(m.agreed_material_rate) : null;
-            const laborLabel = m.labor_unit_label || 'unit';
-            const matLabel = m.material_unit_label || 'unit';
-
-            const fmtCur = (v) => v != null && Number.isFinite(v) ? `LKR ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—';
-            const fmtNum = (v) => v != null && Number.isFinite(v) ? v.toString() : '—';
-
-            // ---- Proof files ----
-            let filesHtml = '';
-            const files = Array.isArray(m.proof_files_array) ? m.proof_files_array : [];
-            if (files.length > 0) {
-                filesHtml = `
-                <div class="proof-section">
-                    <h4 class="proof-section-title"><i class="fas fa-paperclip"></i> Uploaded Proof Files</h4>
-                    <div class="proof-files-list">
-                        ${files.map(f => {
-                    const url = `/2nd-Year-Group-Project/FixLanka/${f}`;
-                    const name = f.split('/').pop();
-                    const isImg = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(name);
-                    return isImg
-                        ? `<div class="proof-file-item proof-file-image">
-                                       <a href="${url}" target="_blank" title="View full size">
-                                           <img src="${url}" alt="${esc(name)}" style="max-width:100%;max-height:220px;border-radius:8px;object-fit:cover;">
-                                       </a>
-                                       <small>${esc(name)}</small>
-                                   </div>`
-                        : `<div class="proof-file-item">
-                                       <a href="${url}" target="_blank" class="proof-file-link">
-                                           <i class="fas fa-file"></i> ${esc(name)}
-                                       </a>
-                                   </div>`;
-                }).join('')}
-                    </div>
-                </div>`;
-            } else {
-                filesHtml = `<div class="proof-section"><h4 class="proof-section-title"><i class="fas fa-paperclip"></i> Attached Files</h4><p class="proof-desc">No files attached.</p></div>`;
-            }
-
-            // ---- Unit breakdown (split-unit mode) ----
-            let unitBreakdown = '';
-            if (!isNonPaying && (laborQty !== null || matQty !== null || extraAmt !== null)) {
-                const rows = [];
-                if (laborQty !== null) {
-                    const rate = agreedLabor !== null ? agreedLabor : null;
-                    const computed = (rate !== null && laborQty > 0) ? fmtCur(rate * laborQty) : '—';
-                    rows.push(`<tr>
-                        <td><i class="fas fa-hard-hat" style="color:#0d9488;margin-right:6px;"></i> Labour</td>
-                        <td>${fmtNum(laborQty)} ${esc(laborLabel)}</td>
-                        <td>${rate !== null ? fmtCur(rate) + ' / ' + esc(laborLabel) : '—'}</td>
-                        <td><strong>${computed}</strong></td>
-                    </tr>`);
-                }
-                if (matQty !== null) {
-                    const rate = matRate !== null ? matRate : (agreedMaterial !== null ? agreedMaterial : null);
-                    const computed = (rate !== null && matQty > 0) ? fmtCur(rate * matQty) : '—';
-                    rows.push(`<tr>
-                        <td><i class="fas fa-boxes" style="color:#0d9488;margin-right:6px;"></i> Materials</td>
-                        <td>${fmtNum(matQty)} ${esc(matLabel)}</td>
-                        <td>${rate !== null ? fmtCur(rate) + ' / ' + esc(matLabel) : '—'}${matRate !== null ? ' <small style="color:var(--text-muted)">(overridden)</small>' : ''}</td>
-                        <td><strong>${computed}</strong></td>
-                    </tr>`);
-                }
-                if (extraAmt !== null && extraAmt > 0) {
-                    rows.push(`<tr>
-                        <td colspan="3"><i class="fas fa-plus-circle" style="color:#0d9488;margin-right:6px;"></i> Extra Charges</td>
-                        <td><strong>${fmtCur(extraAmt)}</strong></td>
-                    </tr>`);
-                }
-                if (rows.length > 0) {
-                    unitBreakdown = `
-                    <div class="proof-section">
-                        <h4 class="proof-section-title"><i class="fas fa-calculator"></i> Unit Breakdown Submitted</h4>
-                        <table class="proof-breakdown-table">
-                            <thead><tr><th>Type</th><th>Quantity</th><th>Rate</th><th>Amount</th></tr></thead>
-                            <tbody>${rows.join('')}</tbody>
-                        </table>
-                    </div>`;
-                }
-            } else if (!isNonPaying) {
-                // Fallback: legacy single-unit billing from cache
-                const cached = currentContractMilestones?.find(ms => ms.milestone_id == milestoneId);
-                if (cached) {
-                    const unitLabel = cached.unit_label || 'units';
-                    const agreedRate = parseFloat(cached.unit_rate || 0);
-                    const actualRate = parseFloat(cached.actual_unit_rate || 0);
-                    const unitRate = actualRate > 0 ? actualRate : agreedRate;
-                    const estQty = parseFloat(cached.estimated_quantity || 0);
-                    const actualQty = parseFloat(cached.actual_quantity || 0);
-                    const billed = unitRate > 0 && actualQty > 0 ? unitRate * actualQty : parseFloat(cached.actual_amount || cached.amount || 0);
-                    if (unitRate > 0 && actualQty > 0) {
-                        unitBreakdown = `
-                        <div class="proof-section">
-                            <h4 class="proof-section-title"><i class="fas fa-calculator"></i> Unit Billing Verification</h4>
-                            <div class="unit-billing-card">
-                                <div class="unit-billing-grid">
-                                    <div class="ub-row"><span class="ub-label">Agreed Rate</span><span class="ub-value">${formatCurrency(agreedRate)} / ${esc(unitLabel)}</span></div>
-                                    ${actualRate > 0 && Math.abs(actualRate - agreedRate) > 0.009 ? `<div class="ub-row"><span class="ub-label">Actual Rate <span class="ub-sub">(variation)</span></span><span class="ub-value ub-actual">${formatCurrency(actualRate)} / ${esc(unitLabel)}</span></div>` : ''}
-                                    <div class="ub-row"><span class="ub-label">Estimated <span class="ub-sub">(from quotation)</span></span><span class="ub-value ub-estimate">${estQty > 0 ? estQty + ' ' + esc(unitLabel) : '—'}</span></div>
-                                    <div class="ub-row"><span class="ub-label">Actual Submitted <span class="ub-sub">(by company)</span></span><span class="ub-value ub-actual">${actualQty} ${esc(unitLabel)}</span></div>
-                                    <div class="ub-divider"></div>
-                                    <div class="ub-row ub-total"><span class="ub-label"><strong>Amount to Pay</strong></span><span class="ub-value ub-pay-amount">${formatCurrency(billed)}</span></div>
-                                </div>
-                                <p class="ub-note"><i class="fas fa-info-circle"></i> By approving, you confirm ${actualQty} ${esc(unitLabel)} of work was completed and agree to pay <strong>${formatCurrency(billed)}</strong>.</p>
-                            </div>
-                        </div>`;
-                    }
-                }
-            }
-
-            // ---- Company notes ----
-            const notesHtml = m.proof_of_work
-                ? `<div class="proof-section"><h4 class="proof-section-title"><i class="fas fa-align-left"></i> Company Notes</h4><div class="proof-desc">${esc(m.proof_of_work)}</div></div>`
-                : `<div class="proof-section"><h4 class="proof-section-title"><i class="fas fa-align-left"></i> Company Notes</h4><p class="proof-desc">No description provided.</p></div>`;
-
-            // ---- Amount banner ----
-            const billedAmt = actualAmt ?? agreedAmt ?? 0;
-            const totalBanner = isNonPaying
-                ? `<div class="proof-amount-banner proof-non-paying"><span class="proof-non-paying-label"><i class="fas fa-ban"></i> Non-paying milestone — requires approval only</span></div>`
-                : `<div class="proof-amount-banner">
-                       <div class="proof-amount-row">
-                           <span class="proof-amount-label">Billed Amount for This Phase</span>
-                           <span class="proof-amount-value">${fmtCur(billedAmt)}</span>
-                       </div>
-                       ${agreedAmt !== null && actualAmt !== null && Math.abs(agreedAmt - actualAmt) > 0.01
-                    ? `<div class="proof-amount-note"><i class="fas fa-info-circle"></i> Agreed amount: ${fmtCur(agreedAmt)}</div>` : ''}
-                   </div>`;
-
-            const submittedAt = m.completed_at
-                ? `<p class="proof-submitted-at"><i class="fas fa-clock"></i> Submitted on ${new Date(m.completed_at).toLocaleString()}</p>`
-                : '';
-
-            body.innerHTML = `${submittedAt}${totalBanner}${unitBreakdown}${notesHtml}${filesHtml}`;
-
-        } catch (err) {
-            console.error('[ProofModal] Failed to load milestone', err);
-            body.innerHTML = `<p style="color:var(--danger);padding:16px;">Could not load proof details. Please try again.</p>`;
-        }
     };
 
     window.closeProofModal = function () {
@@ -2559,65 +1850,57 @@
     window.verifyMilestoneCurrent = async function (action) {
         if (!currentReviewMilestoneId) return;
 
+        const ms = currentContractMilestones.find(m => m.milestone_id == currentReviewMilestoneId);
+        const unitRate = parseFloat(ms?.unit_rate || 0);
+        const actualQty = parseFloat(ms?.actual_quantity || 0);
+        const billedAmt = (unitRate > 0 && actualQty > 0) ? unitRate * actualQty : parseFloat(ms?.actual_amount || ms?.amount || 0);
+        const unitLabel = ms?.unit_label || 'units';
+
         if (action === 'approve') {
-            const confirmed = await window.showConfirm(
-                `Confirm Approval\n\nBy approving you confirm the work meets expectations. Payment for this phase will be released.\n\nThis action cannot be undone.`,
-                { title: 'Approve Phase', confirmText: 'Approve & Pay' }
-            );
+            const payStr = billedAmt > 0 ? `\n\nThis will record a payment of ${formatCurrency(billedAmt)}.` : '';
+            const confirmed = await window.showConfirm(`Confirm Approval\n\nYou are confirming that ${actualQty > 0 ? actualQty + ' ' + unitLabel + ' of work' : 'this stage'} was completed.${payStr}\n\nThis action cannot be undone.`, { title: 'Confirm Milestone', confirmText: 'Approve & Pay' });
             if (!confirmed) return;
         } else {
-            const feedback = await window.showPrompt(
-                'Please provide a reason for rejection (required — at least 10 characters):',
-                '',
-                { title: 'Reject Phase', placeholder: 'Explain what was missing or incorrect...', confirmText: 'Submit Rejection' }
-            );
-            if (!feedback || !feedback.trim() || feedback.trim().length < 10) {
-                await window.showAlert('A rejection reason of at least 10 characters is required.', 'warning');
+            const feedback = await window.showPrompt('Please provide a reason for rejection (required):', '', { title: 'Reject Milestone', placeholder: 'Explain what was missing or incorrect...', confirmText: 'Submit Rejection' });
+            if (!feedback || !feedback.trim()) {
+                await window.showAlert('Rejection reason is required.', 'warning');
                 return;
             }
+            // Store for fetch below
             window._rejectFeedback = feedback.trim();
         }
 
         const body = document.getElementById('proofReviewBody');
-        if (body) body.innerHTML = '<div class="contracts-loading"><div class="spinner"></div><p>Processing...</p></div>';
-
-        // Disable footer buttons
-        document.querySelectorAll('#proofReviewOverlay .cd-footer button').forEach(b => { b.disabled = true; });
+        body.innerHTML = '<div class="contracts-loading"><div class="spinner"></div><p>Processing...</p></div>';
 
         try {
-            const fd = new FormData();
-            fd.append('milestone_id', currentReviewMilestoneId);
-            fd.append('action', action === 'approve' ? 'approve' : 'reject');
-            if (action === 'reject') fd.append('feedback', window._rejectFeedback || '');
+            const apiAction = action === 'approve' ? 'approve_milestone' : 'reject_milestone';
+            const payload = { milestone_id: currentReviewMilestoneId };
+            if (action === 'reject') payload.reason = window._rejectFeedback;
 
-            const res = await fetch('/2nd-Year-Group-Project/FixLanka/api/projects.php?action=verify_phase', {
+            const res = await fetch(API, {
                 method: 'POST',
-                body: fd
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: apiAction, ...payload })
             });
             const json = await res.json();
 
             if (json.success) {
-                const msg = action === 'approve'
-                    ? `Phase approved!${json.billed_amount > 0 ? ' Amount billed: ' + formatCurrency(json.billed_amount) : ''}`
-                    : 'Phase rejected. The company will be notified to make improvements.';
-                window.closeProofModal();
-                await window.showAlert(msg, action === 'approve' ? 'success' : 'info', action === 'approve' ? 'Approved' : 'Rejected');
-                // Refresh contract detail if open
-                const detailOverlay = document.getElementById('contractDetailOverlay');
-                if (detailOverlay && detailOverlay.classList.contains('show') && lastOpenedContractDetail) {
-                    await openDetail(lastOpenedContractDetail.contract_id);
+                let msg = `Stage ${action === 'approve' ? 'approved' : 'rejected'} successfully.`;
+                if (json.billed_amount > 0) {
+                    msg += `\n\n${formatCurrency(json.billed_amount)} has been recorded as paid.`;
                 }
-                await loadContracts();
+                await window.showAlert(msg, 'success', 'Success');
+                closeProofModal();
+                loadContracts();
             } else {
                 await window.showAlert('Error: ' + (json.message || 'Unknown error'), 'danger', 'Error');
-                window.closeProofModal();
+                closeProofModal();
             }
         } catch (err) {
-            console.error('[verifyMilestoneCurrent]', err);
+            console.error(err);
             await window.showAlert('Network error. Please try again.', 'danger', 'Error');
-            window.closeProofModal();
-        } finally {
-            document.querySelectorAll('#proofReviewOverlay .cd-footer button').forEach(b => { b.disabled = false; });
+            closeProofModal();
         }
     };
 
@@ -2632,4 +1915,3 @@
         return d.innerHTML;
     }
 })();
-

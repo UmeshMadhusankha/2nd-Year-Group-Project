@@ -10,40 +10,6 @@ class AuthController {
         $this->pdo = $pdo;
     }
 
-    private function establishAuthenticatedSession($id, $name, $email, $role) {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        session_regenerate_id(true);
-
-        unset(
-            $_SESSION['user_id'],
-            $_SESSION['user_name'],
-            $_SESSION['user_email'],
-            $_SESSION['user_role'],
-            $_SESSION['company_id'],
-            $_SESSION['repairer_id'],
-            $_SESSION['admin_id'],
-            $_SESSION['moderator_id']
-        );
-
-        $_SESSION['user_id'] = $id;
-        $_SESSION['user_name'] = $name;
-        $_SESSION['user_email'] = $email;
-        $_SESSION['user_role'] = $role;
-
-        if ($role === 'company') {
-            $_SESSION['company_id'] = (int)$id;
-        } elseif ($role === 'repairer') {
-            $_SESSION['repairer_id'] = (int)$id;
-        } elseif ($role === 'admin') {
-            $_SESSION['admin_id'] = $id;
-        } elseif ($role === 'moderator') {
-            $_SESSION['moderator_id'] = (int)$id;
-        }
-    }
-
     private function columnExists($table, $column) {
         try {
             $stmt = $this->pdo->prepare(
@@ -201,12 +167,10 @@ class AuthController {
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($user && password_verify($password, $user['password'])) {
-                $this->establishAuthenticatedSession(
-                    (int)$user['user_id'],
-                    $user['f_name'] . ' ' . $user['l_name'],
-                    (string)$user['email'],
-                    'user'
-                );
+                $_SESSION['user_id'] = $user['user_id'];
+                $_SESSION['user_name'] = $user['f_name'] . ' ' . $user['l_name'];
+                $_SESSION['user_email'] = $user['email'];
+                $_SESSION['user_role'] = 'user';
 
                 if (class_exists('AuditLogger')) {
                     AuditLogger::log(
@@ -231,12 +195,10 @@ class AuthController {
             $admin = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($admin && password_verify($password, $admin['password'])) {
-                $this->establishAuthenticatedSession(
-                    (string)$admin['username'],
-                    (string)$admin['username'],
-                    (string)$admin['email'],
-                    'admin'
-                );
+                $_SESSION['user_id'] = $admin['username']; // Using username as ID for admin
+                $_SESSION['user_name'] = $admin['username'];
+                $_SESSION['user_email'] = $admin['email'];
+                $_SESSION['user_role'] = 'admin';
 
                 if (class_exists('AuditLogger')) {
                     AuditLogger::log(
@@ -261,12 +223,10 @@ class AuthController {
             $moderator = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($moderator && password_verify($password, $moderator['password'])) {
-                $this->establishAuthenticatedSession(
-                    (int)$moderator['moderator_id'],
-                    (string)$moderator['username'],
-                    (string)$moderator['email'],
-                    'moderator'
-                );
+                $_SESSION['user_id'] = $moderator['moderator_id'];
+                $_SESSION['user_name'] = $moderator['username'];
+                $_SESSION['user_email'] = $moderator['email'];
+                $_SESSION['user_role'] = 'moderator';
 
                 if (class_exists('AuditLogger')) {
                     AuditLogger::log(
@@ -291,12 +251,10 @@ class AuthController {
             $company = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($company && password_verify($password, $company['password'])) {
-                $this->establishAuthenticatedSession(
-                    (int)$company['company_id'],
-                    (string)$company['name'],
-                    (string)$company['email'],
-                    'company'
-                );
+                $_SESSION['user_id'] = $company['company_id'];
+                $_SESSION['user_name'] = $company['name'];
+                $_SESSION['user_email'] = $company['email'];
+                $_SESSION['user_role'] = 'company';
 
                 if (class_exists('AuditLogger')) {
                     AuditLogger::log(
@@ -321,12 +279,10 @@ class AuthController {
             $repairer = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($repairer && password_verify($password, $repairer['password'])) {
-                $this->establishAuthenticatedSession(
-                    (int)$repairer['repairer_id'],
-                    $repairer['f_name'] . ' ' . $repairer['l_name'],
-                    (string)$repairer['email'],
-                    'repairer'
-                );
+                $_SESSION['user_id'] = $repairer['repairer_id'];
+                $_SESSION['user_name'] = $repairer['f_name'] . ' ' . $repairer['l_name'];
+                $_SESSION['user_email'] = $repairer['email'];
+                $_SESSION['user_role'] = 'repairer';
 
                 if (class_exists('AuditLogger')) {
                     AuditLogger::log(
@@ -455,12 +411,10 @@ class AuthController {
             $stmt->execute([$f_name, $l_name, $email, $hashedPassword, $address]);
             
             $userId = $this->pdo->lastInsertId();
-            $this->establishAuthenticatedSession(
-                (int)$userId,
-                $f_name . ' ' . $l_name,
-                (string)$email,
-                'user'
-            );
+            $_SESSION['user_id'] = $userId;
+            $_SESSION['user_name'] = $f_name . ' ' . $l_name;
+            $_SESSION['user_email'] = $email;
+            $_SESSION['user_role'] = 'user';
             $_SESSION['success'] = 'Account created successfully!';
 
             if (class_exists('AuditLogger')) {
@@ -622,12 +576,10 @@ class AuthController {
             
             $repairerId = $this->pdo->lastInsertId();
 
-            $this->establishAuthenticatedSession(
-                (int)$repairerId,
-                $f_name . ' ' . $l_name,
-                (string)$email,
-                'repairer'
-            );
+            $_SESSION['user_id'] = $repairerId;
+            $_SESSION['user_name'] = $f_name . ' ' . $l_name;
+            $_SESSION['user_email'] = $email;
+            $_SESSION['user_role'] = 'repairer';
             $_SESSION['success'] = 'Repairer account created successfully!';
             
             header('Location: /2nd-Year-Group-Project/FixLanka/repairer-welcome');
@@ -754,12 +706,10 @@ class AuthController {
                     $areaStmt->execute([$companyId, $district]);
                 }
             }
-            $this->establishAuthenticatedSession(
-                (int)$companyId,
-                (string)$name,
-                (string)$email,
-                'company'
-            );
+            $_SESSION['user_id'] = $companyId;
+            $_SESSION['user_name'] = $name;
+            $_SESSION['user_email'] = $email;
+            $_SESSION['user_role'] = 'company';
             $_SESSION['success'] = 'Company account created successfully!';
             
             header('Location: /2nd-Year-Group-Project/FixLanka/company-dashboard');

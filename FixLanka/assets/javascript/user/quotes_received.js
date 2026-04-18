@@ -64,23 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const providerName = q.provider_name || (q.source === 'company' ? 'Company' : 'Repairer');
         const providerTypeLabel = q.source === 'company' ? 'Company' : 'Individual';
         const jobTitle = q.job_title || 'Job';
-        
-        // Build cost breakdown
-        let costBreakdown = '';
-        if (q.labor_cost) {
-            const laborLabel = q.labor_unit_label ? ` (per ${q.labor_unit_label})` : '';
-            costBreakdown += `<div style="margin-bottom: 4px;"><strong>Labor${laborLabel}:</strong> ${formatMoney(q.labor_cost)}</div>`;
-        }
-        if (q.material_cost) {
-            const materialLabel = q.material_unit_label ? ` (per ${q.material_unit_label})` : '';
-            costBreakdown += `<div style="margin-bottom: 4px;"><strong>Material${materialLabel}:</strong> ${formatMoney(q.material_cost)}</div>`;
-        }
-        if (q.transport_cost && parseFloat(q.transport_cost) > 0) {
-            costBreakdown += `<div style="margin-bottom: 4px;"><strong>Transport:</strong> ${formatMoney(q.transport_cost)}</div>`;
-        }
-        if (q.other_charges && parseFloat(q.other_charges) > 0) {
-            costBreakdown += `<div style="margin-bottom: 4px;"><strong>Other Charges:</strong> ${formatMoney(q.other_charges)}</div>`;
-        }
+        const amount = formatMoney(q.amount);
 
         const canRespond = q.status === 'pending';
         const acceptDisabled = canRespond ? '' : 'disabled';
@@ -96,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="quote-details">
-                    <div class="quote-amount" style="font-size: 0.9em; line-height: 1.4;">${costBreakdown}</div>
+                    <span class="quote-amount">${escapeHtml(amount)}</span>
                     <span class="quote-job">${escapeHtml(jobTitle)}</span>
                 </div>
                 <div class="quote-actions">

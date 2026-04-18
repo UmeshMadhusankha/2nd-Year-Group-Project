@@ -59,7 +59,7 @@ try {
     try {
                 // IMPORTANT: Don't count 'planned' projects unless the customer has accepted/signed the contract.
                 // This avoids showing projects as active when the contract is only sent but not accepted.
-                $stmt = $pdo->prepare("
+                $stmt = $pdo->prepare("\
                         SELECT COUNT(DISTINCT p.project_id) AS cnt
                         FROM project p
                         WHERE p.company_id = ?
@@ -121,53 +121,130 @@ try {
     }
 
     $directRequests = [];
-    // Direct requests (truly direct to this company)
+    // Direct requests (requests where this company has a quotation)
     try {
+        // Preferred schema: jobrequest.dateCreated
         $stmt = $pdo->prepare("
-            SELECT
-                djr.request_id,
-                djr.title,
-                djr.description,
-                djr.status,
-                djr.date_created AS created_at,
-                djr.finish_date,
-                c.name AS category,
-                u.f_name,
-                u.l_name,
-                u.profile_picture
-            FROM directjobrequest djr
-            INNER JOIN category c ON c.category_id = djr.category_id
-            INNER JOIN user u ON u.user_id = djr.user_id
-            WHERE djr.provider_type = 'company'
-              AND djr.provider_id = ?
-              AND djr.finish_date >= CURDATE()
-            ORDER BY djr.date_created DESC
-            LIMIT 5
+        SELECT
+            jr.request_id,
+            jr.title,
+            jr.description,
+            jr.dateCreated AS created_at,
+            jr.finish_date,
+            c.name AS category,
+            u.f_name,
+            u.l_name,
+            u.profile_picture,
+            cq.status AS quote_status,
+            cq.total_amount
+        FROM (
+            SELECT cq1.*
+            FROM companyquotation cq1
+            INNER JOIN (
+                SELECT request_id, MAX(updated_at) AS max_updated
+                FROM companyquotation
+                WHERE company_id = ?
+                GROUP BY request_id
+            ) latest
+            ON latest.request_id = cq1.request_id AND latest.max_updated = cq1.updated_at
+            WHERE cq1.company_id = ?
+        ) cq
+        INNER JOIN jobrequest jr ON jr.request_id = cq.request_id
+        INNER JOIN category c ON c.category_id = jr.category_id
+        INNER JOIN user u ON u.user_id = jr.user_id
+        WHERE jr.finish_date >= CURDATE()
+        ORDER BY jr.dateCreated DESC
+        LIMIT 5
         ");
-        $stmt->execute([$companyId]);
+        $stmt->execute([$companyId, $companyId]);
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $status = strtolower((string)($row['status'] ?? 'pending'));
-            if (!in_array($status, ['pending', 'accepted', 'completed', 'rejected'], true)) {
-                $status = 'pending';
-            }
-
-            $directRequests[] = [
-                'request_id' => (int)$row['request_id'],
-                'customer' => trim(($row['f_name'] ?? '') . ' ' . ($row['l_name'] ?? '')),
-                'avatar' => $row['profile_picture'] ?: null,
-                'category' => $row['category'] ?? 'General',
-                'title' => $row['title'] ?? '',
-                'description' => $row['description'] ?? '',
-                'date' => formatDateLabel($row['created_at'] ?? ''),
-                'deadline' => $row['finish_date'] ? formatDateLabel($row['finish_date']) : null,
-                'status' => $status,
-                'type' => 'direct',
-                'budget' => null
-            ];
+        $status = $row['quote_status'] ?? 'pending';
+        if ($status === 'successful') {
+            $status = 'completed';
         }
+        if (!in_array($status, ['pending', 'accepted', 'completed'], true)) {
+            $status = 'pending';
+        }
+
+        $directRequests[] = [
+            'request_id' => (int)$row['request_id'],
+            'customer' => trim(($row['f_name'] ?? '') . ' ' . ($row['l_name'] ?? '')),
+            'avatar' => $row['profile_picture'] ?: null,
+            'category' => $row['category'] ?? 'General',
+            'title' => $row['title'] ?? '',
+            'description' => $row['description'] ?? '',
+            'date' => formatDateLabel($row['created_at'] ?? ''),
+            'deadline' => $row['finish_date'] ? formatDateLabel($row['finish_date']) : null,
+            'status' => $status,
+            'type' => 'direct',
+            'budget' => $row['total_amount'] !== null ? (float)$row['total_amount'] : null
+        ];
+    }
     } catch (PDOException $e) {
+        // Fallback schema: jobrequest.created_at
         logDashboardSectionError('requests_direct', $e);
-        $directRequests = [];
+        try {
+            $stmt = $pdo->prepare("
+                SELECT
+                    jr.request_id,
+                    jr.title,
+                    jr.description,
+                    jr.created_at,
+                    jr.finish_date,
+                    c.name AS category,
+                    u.f_name,
+                    u.l_name,
+                    u.profile_picture,
+                    cq.status AS quote_status,
+                    cq.total_amount
+                FROM (
+                    SELECT cq1.*
+                    FROM companyquotation cq1
+                    INNER JOIN (
+                        SELECT request_id, MAX(updated_at) AS max_updated
+                        FROM companyquotation
+                        WHERE company_id = ?
+                        GROUP BY request_id
+                    ) latest
+                    ON latest.request_id = cq1.request_id AND latest.max_updated = cq1.updated_at
+                    WHERE cq1.company_id = ?
+                ) cq
+                INNER JOIN jobrequest jr ON jr.request_id = cq.request_id
+                INNER JOIN category c ON c.category_id = jr.category_id
+                INNER JOIN user u ON u.user_id = jr.user_id
+                WHERE jr.finish_date >= CURDATE()
+                ORDER BY jr.created_at DESC
+                LIMIT 5
+            ");
+            $stmt->execute([$companyId, $companyId]);
+            $directRequests = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $status = $row['quote_status'] ?? 'pending';
+                if ($status === 'successful') {
+                    $status = 'completed';
+                }
+                if (!in_array($status, ['pending', 'accepted', 'completed'], true)) {
+                    $status = 'pending';
+                }
+
+                $directRequests[] = [
+                    'request_id' => (int)$row['request_id'],
+                    'customer' => trim(($row['f_name'] ?? '') . ' ' . ($row['l_name'] ?? '')),
+                    'avatar' => $row['profile_picture'] ?: null,
+                    'category' => $row['category'] ?? 'General',
+                    'title' => $row['title'] ?? '',
+                    'description' => $row['description'] ?? '',
+                    'date' => formatDateLabel($row['created_at'] ?? ''),
+                    'deadline' => $row['finish_date'] ? formatDateLabel($row['finish_date']) : null,
+                    'status' => $status,
+                    'type' => 'direct',
+                    'budget' => $row['total_amount'] !== null ? (float)$row['total_amount'] : null
+                ];
+            }
+        } catch (PDOException $e2) {
+            logDashboardSectionError('requests_direct_fallback', $e2);
+            $directRequests = [];
+        }
     }
 
     $publicRequests = [];
@@ -318,7 +395,7 @@ try {
     $calendarSystemEvents = [];
     try {
         // Project start/end dates (keep it bounded to avoid heavy payloads)
-        $stmt = $pdo->prepare("
+        $stmt = $pdo->prepare("\
             SELECT project_id, title, start_date, end_date
             FROM project
             WHERE company_id = ?
@@ -366,7 +443,7 @@ try {
 
     try {
         // Milestone due dates (new table)
-        $stmt = $pdo->prepare("
+        $stmt = $pdo->prepare("\
             SELECT
                 p.project_id,
                 p.title AS project_title,

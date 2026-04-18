@@ -344,27 +344,13 @@ function handleProfileMenuAction(action) {
  * Handle logout functionality
  */
 function handleLogout() {
-    const doLogout = () => {
+    if (confirm('Are you sure you want to logout?')) {
+        // Clear any stored user data
         localStorage.removeItem('user_session');
         sessionStorage.clear();
+
+        // Redirect to login page
         window.location.href = '../login.php';
-    };
-
-    if (window.showConfirm) {
-        window.showConfirm('Are you sure you want to logout?', {
-            title: 'Logout',
-            confirmText: 'Logout',
-            cancelText: 'Cancel',
-            type: 'warning',
-            icon: 'fas fa-sign-out-alt'
-        }).then((confirmed) => {
-            if (confirmed) doLogout();
-        });
-        return;
-    }
-
-    if (confirm('Are you sure you want to logout?')) {
-        doLogout();
     }
 }
 
@@ -415,96 +401,6 @@ function showToast(message, type = 'success') {
             }
         }, 300);
     }, 3000);
-}
-
-/**
- * Toast with an Undo action and countdown.
- * Keeps the toast visible for `seconds` (defaults to 30).
- */
-function showUndoToast(message, onUndo, seconds = 30) {
-    const toast = document.createElement('div');
-    const safeSeconds = Math.max(1, parseInt(seconds, 10) || 30);
-    let remaining = safeSeconds;
-
-    toast.style.cssText = `
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        background: var(--info-color);
-        color: var(--text-white);
-        padding: 12px 14px;
-        border-radius: 10px;
-        box-shadow: var(--shadow-lg);
-        z-index: 9999;
-        font-weight: 600;
-        font-size: 14px;
-        transition: all 0.25s ease;
-        transform: translateX(100%);
-        max-width: 360px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    `;
-
-    const text = document.createElement('div');
-    text.style.cssText = 'flex: 1; line-height: 1.25; font-weight: 600;';
-    const countdown = document.createElement('span');
-    countdown.style.cssText = 'opacity: 0.9; font-weight: 700; margin-left: 6px;';
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = 'Undo';
-    btn.style.cssText = `
-        background: rgba(255,255,255,0.16);
-        color: var(--text-white);
-        border: 1px solid rgba(255,255,255,0.28);
-        padding: 8px 12px;
-        border-radius: 999px;
-        cursor: pointer;
-        font-weight: 800;
-    `;
-
-    const updateText = () => {
-        countdown.textContent = `(${remaining}s)`;
-        text.textContent = message;
-        text.appendChild(countdown);
-    };
-
-    updateText();
-    toast.appendChild(text);
-    toast.appendChild(btn);
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.transform = 'translateX(0)';
-    }, 50);
-
-    const interval = setInterval(() => {
-        remaining -= 1;
-        if (remaining <= 0) {
-            clearInterval(interval);
-            btn.disabled = true;
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(100%)';
-            setTimeout(() => toast.remove(), 250);
-            return;
-        }
-        updateText();
-    }, 1000);
-
-    btn.addEventListener('click', async () => {
-        btn.disabled = true;
-        try {
-            if (typeof onUndo === 'function') {
-                await onUndo();
-            }
-        } finally {
-            clearInterval(interval);
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(100%)';
-            setTimeout(() => toast.remove(), 250);
-        }
-    });
 }
 
 /**
@@ -679,16 +575,6 @@ window.showConfirm = function (message, options = {}) {
     });
 };
 
-// Promise-based confirm helper for app code.
-// Use this instead of confirm() to avoid browser popups.
-window.systemConfirm = function (message, options = {}) {
-    const text = message === undefined || message === null ? '' : String(message);
-    if (window.showConfirm) {
-        return window.showConfirm(text, options);
-    }
-    return Promise.resolve(confirm(text));
-};
-
 window.showPrompt = function (message, defaultValue = '', options = {}) {
     const {
         title = 'Input Required',
@@ -744,29 +630,6 @@ window.showPrompt = function (message, defaultValue = '', options = {}) {
         overlay.querySelector('#globalPromptCancelBtn').onclick = () => close(null);
         overlay.querySelector('#globalPromptSubmitBtn').onclick = () => close(input.value);
     });
-};
-
-// ----------------------------------------------------------------
-// System alert shim
-// ----------------------------------------------------------------
-// Convert native alert() calls into the app's system alert UI.
-// This keeps existing code working while avoiding browser popups.
-window.__nativeAlert = window.__nativeAlert || window.alert.bind(window);
-window.alert = function (message) {
-    const text = message === undefined || message === null ? '' : String(message);
-
-    if (window.showAlert) {
-        window.showAlert(text, 'info', 'Fix Lanka');
-        return;
-    }
-
-    if (typeof showToast === 'function') {
-        showToast(text, 'info');
-        return;
-    }
-
-    // Last resort
-    window.__nativeAlert(text);
 };
 
 

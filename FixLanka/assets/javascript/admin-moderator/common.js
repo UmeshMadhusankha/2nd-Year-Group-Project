@@ -716,4 +716,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-console.log('Ad Scheduling functions loaded');
+console.log('âœ… Ad Scheduling functions loaded');

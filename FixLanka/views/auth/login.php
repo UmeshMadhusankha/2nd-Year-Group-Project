@@ -3,7 +3,8 @@ require_once __DIR__ . '/../../config/session.php';
 
 // Redirect if already logged in
 if (isLoggedIn()) {
-    redirectToRoleHome();
+    header('Location: /2nd-Year-Group-Project/FixLanka/dashboard');
+    exit;
 }
 
 // Get error message if exists

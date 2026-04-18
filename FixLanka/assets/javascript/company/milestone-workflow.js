@@ -253,7 +253,7 @@ async function confirmMilestoneRejection(milestoneId) {
             body: JSON.stringify({
                 action: 'reject_milestone',
                 milestone_id: milestoneId,
-                reason: reason
+                rejection_reason: reason
             })
         });
         

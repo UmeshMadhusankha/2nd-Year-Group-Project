@@ -653,7 +653,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <!-- Milestone Status Updates with Verification -->
                         <div class="form-divider">
                             <h4><i class="fas fa-tasks"></i> Milestone & Payment Tracking</h4>
-                            <p class="helper-text">Customer must verify completion before payment release</p>
+                            <p class="helper-text">âš ï¸ Customer must verify completion before payment release</p>
                         </div>
 
                         ${projectData.milestones.map((milestone, index) => `
@@ -673,10 +673,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                     </div>
                                     <div class="form-group milestone-status-select">
                                         <select name="milestone_${index}_status" onchange="handleMilestoneStatusChange(${index}, this.value)">
-                                            <option value="pending">Not Started</option>
-                                            <option value="active">In Progress</option>
-                                            <option value="review">Pending Customer Review</option>
-                                            <option value="completed" disabled>Verified & Complete</option>
+                                            <option value="pending">â³ Not Started</option>
+                                            <option value="active">ðŸ”„ In Progress</option>
+                                            <option value="review">ðŸ“‹ Pending Customer Review</option>
+                                            <option value="completed" disabled>âœ… Verified & Complete</option>
                                         </select>
                                     </div>
                                 </div>
@@ -976,17 +976,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
         // Show what will happen
-        let notificationMessage = `Project status updated successfully!\n\n`;
-        notificationMessage += `Progress: ${calculatedProgress}%\n`;
-        notificationMessage += `Status: ${projectData.status}\n\n`;
+        let notificationMessage = `âœ… Project status updated successfully!\n\n`;
+        notificationMessage += `ðŸ“Š Progress: ${calculatedProgress}%\n`;
+        notificationMessage += `ðŸ“‹ Status: ${projectData.status}\n\n`;
 
         if (projectData.customerNotifications.length > 0) {
-            notificationMessage += `Customer Notifications:\n`;
+            notificationMessage += `ðŸ”” Customer Notifications:\n`;
             projectData.customerNotifications.forEach(notif => {
                 notificationMessage += `  &bull; ${notif.milestoneTitle} - Pending customer approval\n`;
             });
-            notificationMessage += `\nCustomer will be notified via Email & SMS\n`;
-            notificationMessage += `Payment will auto-release upon approval\n`;
+            notificationMessage += `\nðŸ“§ Customer will be notified via Email & SMS\n`;
+            notificationMessage += `ðŸ’° Payment will auto-release upon approval\n`;
         }
 
         // TODO: Send to backend API
@@ -1410,7 +1410,7 @@ document.addEventListener('DOMContentLoaded', function () {
             </head>
             <body>
                 <div class="header">
-                    <h1>FixLanka Projects Report</h1>
+                    <h1>ðŸ”§ FixLanka Projects Report</h1>
                     <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
                     <p>Total Projects: ${projectData.length}</p>
                 </div>
@@ -1467,7 +1467,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 </table>
                 
                 <div class="footer">
-                    <p>(c) ${new Date().getFullYear()} FixLanka - Project Management System</p>
+                    <p>Â© ${new Date().getFullYear()} FixLanka - Project Management System</p>
                     <p>This is an automated report. For queries, contact your administrator.</p>
                 </div>
                 

@@ -4,14 +4,14 @@ require_once '../config/session.php';
 require_once '../models/Feedback.php';
 
 // Verify authentication
-if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? null) !== 'company') {
+if (!isset($_SESSION['user_id']) || (isset($_SESSION['user_role']) && $_SESSION['user_role'] !== 'company')) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
     exit();
 }
 
-$userId = $_SESSION['user_id'] ?? null;
-$companyId = $userId;
+$user = getUserData();
+$companyId = $user['id']; // Assumes id in session maps to company_id or related
 
 if (!$companyId) {
     http_response_code(400);

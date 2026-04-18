@@ -223,26 +223,6 @@ select {
     color: var(--text-muted);
 }
 
-.address-toggle-row {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    font-size: 13px;
-    color: #51606a;
-    user-select: none;
-}
-
-.address-toggle-row input {
-    margin: 0;
-}
-
-input.is-readonly {
-    background: #eef3f6;
-    color: #294452;
-    cursor: not-allowed;
-}
-
 /* ================================================
    CHECKBOX & RADIO GROUPS
    ================================================ */

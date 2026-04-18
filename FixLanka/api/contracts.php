@@ -95,15 +95,6 @@ switch ($action) {
         }
         $controller->deleteContract();
         break;
-
-    case 'cancel_contract':
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
-            exit;
-        }
-        $controller->cancelContract();
-        break;
     
     case 'filterByStatus':
         $controller->filterByStatus();
@@ -148,15 +139,6 @@ switch ($action) {
         }
         $controller->sendToCustomer();
         break;
-
-    case 'undo_send_to_customer':
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
-            exit;
-        }
-        $controller->undoSendToCustomer();
-        break;
     
     case 'downloadPDF':
         $controller->downloadContractPDF();
@@ -169,15 +151,6 @@ switch ($action) {
             exit;
         }
         $controller->respondToContract();
-        break;
-
-    case 'undo_customer_response':
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
-            exit;
-        }
-        $controller->undoCustomerResponse();
         break;
 
     case 'pay_and_accept':

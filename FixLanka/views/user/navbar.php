@@ -5,7 +5,6 @@ if (!function_exists('isLoggedIn')) {
 }
 $isLoggedIn = isLoggedIn();
 $userData = getUserData();
-$isUserSession = $isLoggedIn && hasRole('user');
 ?>
 
 <nav class="navbar">
@@ -33,7 +32,7 @@ $isUserSession = $isLoggedIn && hasRole('user');
         </div>
         
         <div class="navbar-right">
-            <?php if ($isUserSession): ?>
+            <?php if ($isLoggedIn): ?>
                 <!-- Logged In User Section -->
                 <div class="notification-bell">
                     <i class="fas fa-bell"></i>
@@ -120,7 +119,7 @@ $isUserSession = $isLoggedIn && hasRole('user');
             <li><a href="/2nd-Year-Group-Project/FixLanka/views/user/how-it-works.php" class="mobile-nav-link">How it works</a></li>
             <li><a href="/2nd-Year-Group-Project/FixLanka/views/user/support.php" class="mobile-nav-link">Support</a></li>
             
-            <?php if ($isUserSession): ?>
+            <?php if ($isLoggedIn): ?>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/profile" class="mobile-nav-link">My Profile</a></li>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/job-history" class="mobile-nav-link">My Jobs</a></li>
                 <li><a href="/2nd-Year-Group-Project/FixLanka/my-contracts" class="mobile-nav-link">My Contracts</a></li>

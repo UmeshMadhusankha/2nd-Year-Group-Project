@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             updatePriceSummary();
-            showPromoMessage(`${promo.description} applied!`, 'success');
+            showPromoMessage(`âœ“ ${promo.description} applied!`, 'success');
 
             applyPromoBtn.disabled = true;
             applyPromoBtn.textContent = 'Applied';

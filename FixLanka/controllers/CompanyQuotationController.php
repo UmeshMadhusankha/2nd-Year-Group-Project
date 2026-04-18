@@ -34,11 +34,12 @@ class CompanyQuotationController {
         try {
             // Map input to model expected structure
             $data = [
-                'company_id' => $userId,
-                'request_id' => $input['request_id'] ?? null,
-                'quotation_text' => $input['description'] ?? '',
-                'estimated_cost' => $input['total_price'] ?? 0,
-                'estimated_duration' => ($input['estimated_duration'] ?? 0) . ' days',
+                'company_id' => $userId, // Assuming company user ID is company ID, or retrieve company ID from user
+                'request_id' => $input['request_id'],
+                'quotation_text' => $input['description'], // Mapping 'description' to 'quotation_text'
+                // 'quotation_amount' => $input['total_price'], // Model expects 'amount' or 'total_price'? let's check model
+                'estimated_cost' => $input['total_price'], 
+                'estimated_duration' => $input['estimated_duration'] . ' days', // Model stores string?
                 
                 // Enhanced fields
                 'work_schedule_type' => $input['work_schedule_type'] ?? 'weekdays_only',

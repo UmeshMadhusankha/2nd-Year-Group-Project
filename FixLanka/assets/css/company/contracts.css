@@ -5748,38 +5748,6 @@ input[type="checkbox"]:checked+.checkbox-custom::after {
     flex-shrink: 0;
 }
 
-.card-unit-price-block {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px 12px;
-    border-radius: 10px;
-    background: rgba(26, 123, 136, 0.08);
-    border: 1px solid rgba(26, 123, 136, 0.2);
-    min-width: 178px;
-    flex-shrink: 0;
-}
-
-.card-unit-price-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-}
-
-.card-unit-price-label {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #475569;
-}
-
-.card-unit-price-value {
-    font-size: 0.78rem;
-    font-weight: 800;
-    color: #0f172a;
-    white-space: nowrap;
-}
-
 /* === Meta Grid === */
 .card-meta-grid {
     display: grid;
@@ -6256,10 +6224,6 @@ input[type="checkbox"]:checked+.checkbox-custom::after {
     flex-shrink: 0;
 }
 
-.contracts-container.list-view .card-unit-price-block {
-    margin-left: 12px;
-}
-
 .contracts-container.list-view .card-meta-grid {
     display: flex;
     border-top: none;
@@ -6443,11 +6407,6 @@ input[type="checkbox"]:checked+.checkbox-custom::after {
 
     .card-value-badge {
         margin-left: auto;
-    }
-
-    .card-unit-price-block {
-        margin-left: auto;
-        min-width: 165px;
     }
 
     .card-action-btn.view-contract-btn::after {

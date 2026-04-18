@@ -14,15 +14,16 @@ class UpdateUserModel {
             return false;
         }
 
-        $firstName = trim((string)($data['first_name'] ?? ''));
-        $lastName = trim((string)($data['last_name'] ?? ''));
+        $fullName = trim((string)($data['full_name'] ?? ''));
         $email = trim((string)($data['email'] ?? ''));
-        $address = trim((string)($data['address'] ?? ''));
-        $district = trim((string)($data['district'] ?? ''));
+        $location = trim((string)($data['location'] ?? ''));
 
-        if ($firstName === '' || $lastName === '' || $email === '' || $address === '') {
+        if ($fullName === '' || $email === '' || $location === '') {
             return false;
         }
+
+        [$firstName, $lastName] = $this->splitName($fullName);
+        [$address, $district] = $this->splitLocation($location);
 
         $stmt = $this->pdo->prepare('
             UPDATE User
@@ -56,4 +57,43 @@ class UpdateUserModel {
         return $row ?: null;
     }
 
+    private function splitName(string $fullName): array {
+        $parts = preg_split('/\s+/', trim($fullName));
+        $parts = array_values(array_filter($parts, static fn($part) => $part !== ''));
+
+        if (count($parts) === 0) {
+            return ['User', '-'];
+        }
+
+        if (count($parts) === 1) {
+            return [$parts[0], '-'];
+        }
+
+        $firstName = array_shift($parts);
+        $lastName = implode(' ', $parts);
+
+        return [$firstName, $lastName !== '' ? $lastName : '-'];
+    }
+
+    private function splitLocation(string $location): array {
+        $segments = array_map('trim', explode(',', $location));
+        $segments = array_values(array_filter($segments, static fn($segment) => $segment !== ''));
+
+        if (count($segments) === 0) {
+            return ['', ''];
+        }
+
+        if (count($segments) === 1) {
+            return [$segments[0], $segments[0]];
+        }
+
+        $district = array_pop($segments);
+        $address = implode(', ', $segments);
+
+        if ($address === '') {
+            $address = $district;
+        }
+
+        return [$address, $district];
+    }
 }

@@ -39,7 +39,6 @@ if (!$companyId) {
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/reviews.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../assets/css/company/reviews.css')); ?>">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/payments-export-modal.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Pass company ID to JavaScript -->
@@ -157,121 +156,8 @@ if (!$companyId) {
     </div>
 
     <!-- Scripts -->
-    <!-- Export Modal -->
-    <div class="export-modal-overlay" id="reviewsExportModal">
-        <div class="export-modal-container">
-            <div class="export-modal-header">
-                <h2><i class="fas fa-file-export"></i> Export Review Report</h2>
-                <button class="export-modal-close" onclick="closeReviewsExportModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="export-modal-body">
-                <div class="export-options-container">
-                    <!-- Rating Filter -->
-                    <div class="export-option-group">
-                        <h4><i class="fas fa-star"></i> Minimum Rating</h4>
-                        <div class="export-radio-group">
-                            <label class="export-radio-option">
-                                <input type="radio" name="exportReviewRating" value="all" checked>
-                                <span class="radio-indicator"></span>
-                                All Ratings
-                            </label>
-                            <label class="export-radio-option">
-                                <input type="radio" name="exportReviewRating" value="5">
-                                <span class="radio-indicator"></span>
-                                5 Stars
-                            </label>
-                            <label class="export-radio-option">
-                                <input type="radio" name="exportReviewRating" value="4">
-                                <span class="radio-indicator"></span>
-                                4+ Stars
-                            </label>
-                            <label class="export-radio-option">
-                                <input type="radio" name="exportReviewRating" value="3">
-                                <span class="radio-indicator"></span>
-                                3+ Stars
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Period Filter -->
-                    <div class="export-option-group">
-                        <h4><i class="fas fa-calendar-alt"></i> Time Period</h4>
-                        <div class="export-radio-group">
-                            <label class="export-radio-option">
-                                <input type="radio" name="exportReviewPeriod" value="all" checked>
-                                <span class="radio-indicator"></span>
-                                All Time
-                            </label>
-                            <label class="export-radio-option">
-                                <input type="radio" name="exportReviewPeriod" value="month">
-                                <span class="radio-indicator"></span>
-                                Last 30 Days
-                            </label>
-                            <label class="export-radio-option">
-                                <input type="radio" name="exportReviewPeriod" value="quarter">
-                                <span class="radio-indicator"></span>
-                                Last 3 Months
-                            </label>
-                            <label class="export-radio-option">
-                                <input type="radio" name="exportReviewPeriod" value="year">
-                                <span class="radio-indicator"></span>
-                                Last Year
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Export Format -->
-                    <div class="export-option-group">
-                        <h4><i class="fas fa-file-alt"></i> Export Format</h4>
-                        <div class="export-format-group">
-                            <label class="export-format-option">
-                                <input type="radio" name="exportReviewFormat" value="csv" checked>
-                                <div class="export-format-icon csv">
-                                    <i class="fas fa-file-csv"></i>
-                                </div>
-                                <span class="export-format-name">CSV</span>
-                                <span class="export-format-desc">Best for Excel</span>
-                            </label>
-                            <label class="export-format-option">
-                                <input type="radio" name="exportReviewFormat" value="pdf">
-                                <div class="export-format-icon pdf">
-                                    <i class="fas fa-file-pdf"></i>
-                                </div>
-                                <span class="export-format-name">PDF</span>
-                                <span class="export-format-desc">Print ready</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Export Summary -->
-                    <div class="export-summary-box" id="reviewsExportSummaryBox">
-                        <h4><i class="fas fa-info-circle"></i> Export Summary</h4>
-                        <div class="export-summary-stats">
-                            <div class="export-summary-stat">
-                                <span class="stat-value" id="reviewsExportTotalRecords">--</span>
-                                <span class="stat-label">Reviews</span>
-                            </div>
-                            <div class="export-summary-stat">
-                                <span class="stat-value" id="reviewsExportAvgRating">--</span>
-                                <span class="stat-label">Avg Rating</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="export-modal-footer">
-                <button class="export-btn export-btn-cancel" onclick="closeReviewsExportModal()">Cancel</button>
-                <button class="export-btn export-btn-download" onclick="downloadReviewsExport()">
-                    <i class="fas fa-download"></i> Export Now
-                </button>
-            </div>
-        </div>
-    </div>
-
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/sidebar.js"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/reviews-export.js"></script>
+
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/reviews.js"></script>
 </body>
 </html>

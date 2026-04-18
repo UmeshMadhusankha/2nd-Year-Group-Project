@@ -10,12 +10,13 @@ let filteredIncomePayments = [];
 let filteredExpenses = [];
 let currentIncomeFilters = {
     status: 'all',
+    project: 'all',
     amount: 'all'
 };
 let currentExpenseFilters = {
+    project: 'all',
     category: 'all',
-    date: 'all',
-    amount: 'all'
+    date: 'all'
 };
 let editingExpenseId = null;
 
@@ -167,6 +168,10 @@ function applyIncomeFilters() {
         if (currentIncomeFilters.status !== 'all' && payment.status !== currentIncomeFilters.status) {
             return false;
         }
+        // Project filter
+        if (currentIncomeFilters.project !== 'all' && payment.project_id != currentIncomeFilters.project) {
+            return false;
+        }
         // Amount filter
         if (currentIncomeFilters.amount !== 'all') {
             const amount = payment.amount;
@@ -213,6 +218,10 @@ function displayIncomePayments() {
 // Expense filter functions
 function applyExpenseFilters() {
     filteredExpenses = allExpenses.filter(expense => {
+        // Project filter
+        if (currentExpenseFilters.project !== 'all' && expense.project_id != currentExpenseFilters.project) {
+            return false;
+        }
         // Category filter
         if (currentExpenseFilters.category !== 'all' && expense.category !== currentExpenseFilters.category) {
             return false;
@@ -281,14 +290,20 @@ document.getElementById('income-status-filter')?.addEventListener('change', func
     applyIncomeFilters();
 });
 
-// Removed income-project-filter listener
+document.getElementById('income-project-filter')?.addEventListener('change', function () {
+    currentIncomeFilters.project = this.value;
+    applyIncomeFilters();
+});
 
 document.getElementById('income-amount-filter')?.addEventListener('change', function () {
     currentIncomeFilters.amount = this.value;
     applyIncomeFilters();
 });
 
-// Removed expense-project-filter listener
+document.getElementById('expense-project-filter')?.addEventListener('change', function () {
+    currentExpenseFilters.project = this.value;
+    applyExpenseFilters();
+});
 
 document.getElementById('expense-category-filter')?.addEventListener('change', function () {
     currentExpenseFilters.category = this.value;
@@ -302,17 +317,18 @@ document.getElementById('expense-date-filter')?.addEventListener('change', funct
 
 // Reset filters
 function resetIncomeFilters() {
-    currentIncomeFilters = { status: 'all', amount: 'all' };
+    currentIncomeFilters = { status: 'all', project: 'all', amount: 'all' };
     document.getElementById('income-status-filter').value = 'all';
+    document.getElementById('income-project-filter').value = 'all';
     document.getElementById('income-amount-filter').value = 'all';
     applyIncomeFilters();
 }
 
 function resetExpenseFilters() {
-    currentExpenseFilters = { category: 'all', date: 'all', amount: 'all' };
+    currentExpenseFilters = { project: 'all', category: 'all', date: 'all' };
+    document.getElementById('expense-project-filter').value = 'all';
     document.getElementById('expense-category-filter').value = 'all';
     document.getElementById('expense-date-filter').value = 'all';
-    document.getElementById('expense-amount-filter').value = 'all';
     applyExpenseFilters();
 }
 

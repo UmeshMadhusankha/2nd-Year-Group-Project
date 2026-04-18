@@ -735,17 +735,9 @@ class AdvertisementFilters {
     }
 
     async pauseAdvertisement(adId) {
-        const confirmed = window.systemConfirm
-            ? await window.systemConfirm('Are you sure you want to pause this advertisement?', {
-                title: 'Pause Advertisement',
-                confirmText: 'Pause',
-                cancelText: 'Cancel',
-                type: 'warning',
-                icon: 'fas fa-pause'
-            })
-            : confirm('Are you sure you want to pause this advertisement?');
-
-        if (!confirmed) return;
+        if (!confirm('Are you sure you want to pause this advertisement?')) {
+            return;
+        }
 
         try {
             const response = await fetch('../../api/advertisements.php', {
@@ -772,17 +764,9 @@ class AdvertisementFilters {
     }
 
     async resumeAdvertisement(adId) {
-        const confirmed = window.systemConfirm
-            ? await window.systemConfirm('Resume this advertisement?', {
-                title: 'Resume Advertisement',
-                confirmText: 'Resume',
-                cancelText: 'Cancel',
-                type: 'question',
-                icon: 'fas fa-play'
-            })
-            : confirm('Resume this advertisement?');
-
-        if (!confirmed) return;
+        if (!confirm('Resume this advertisement?')) {
+            return;
+        }
 
         try {
             const response = await fetch('../../api/advertisements.php', {
@@ -809,17 +793,9 @@ class AdvertisementFilters {
     }
 
     async startAdvertisement(adId) {
-        const confirmed = window.systemConfirm
-            ? await window.systemConfirm('Start this advertisement immediately?', {
-                title: 'Start Advertisement',
-                confirmText: 'Start',
-                cancelText: 'Cancel',
-                type: 'question',
-                icon: 'fas fa-bolt'
-            })
-            : confirm('Start this advertisement immediately?');
-
-        if (!confirmed) return;
+        if (!confirm('Start this advertisement immediately?')) {
+            return;
+        }
 
         try {
             const response = await fetch('../../api/advertisements.php', {
@@ -846,17 +822,9 @@ class AdvertisementFilters {
     }
 
     async cancelAdvertisement(adId) {
-        const confirmed = window.systemConfirm
-            ? await window.systemConfirm('Are you sure you want to cancel this advertisement?', {
-                title: 'Cancel Advertisement',
-                confirmText: 'Cancel Ad',
-                cancelText: 'Keep',
-                type: 'warning',
-                icon: 'fas fa-ban'
-            })
-            : confirm('Are you sure you want to cancel this advertisement?');
-
-        if (!confirmed) return;
+        if (!confirm('Are you sure you want to cancel this advertisement?')) {
+            return;
+        }
 
         try {
             const response = await fetch('../../api/advertisements.php', {
@@ -883,17 +851,9 @@ class AdvertisementFilters {
     }
 
     async deleteAdvertisement(adId) {
-        const confirmed = window.systemConfirm
-            ? await window.systemConfirm('Are you sure you want to delete this advertisement? This action cannot be undone.', {
-                title: 'Delete Advertisement',
-                confirmText: 'Delete',
-                cancelText: 'Cancel',
-                type: 'danger',
-                icon: 'fas fa-trash'
-            })
-            : confirm('Are you sure you want to delete this advertisement? This action cannot be undone.');
-
-        if (!confirmed) return;
+        if (!confirm('Are you sure you want to delete this advertisement? This action cannot be undone.')) {
+            return;
+        }
 
         try {
             const response = await fetch('../../api/advertisements.php', {
@@ -992,17 +952,9 @@ class AdvertisementFilters {
             return;
         }
 
-        const confirmedRenew = window.systemConfirm
-            ? await window.systemConfirm(`Renew advertisement "${ad.title}"?\n\nThis will create a new campaign with the same details.`, {
-                title: 'Renew Advertisement',
-                confirmText: 'Renew',
-                cancelText: 'Cancel',
-                type: 'question',
-                icon: 'fas fa-sync'
-            })
-            : confirm(`Renew advertisement "${ad.title}"?\n\nThis will create a new campaign with the same details.`);
-
-        if (!confirmedRenew) return;
+        if (!confirm(`Renew advertisement "${ad.title}"?\n\nThis will create a new campaign with the same details.`)) {
+            return;
+        }
 
         try {
             const response = await fetch('../../api/advertisements.php', {
@@ -1035,17 +987,9 @@ class AdvertisementFilters {
             return;
         }
 
-        const confirmedDup = window.systemConfirm
-            ? await window.systemConfirm(`Create a copy of "${ad.title}"?`, {
-                title: 'Duplicate Advertisement',
-                confirmText: 'Duplicate',
-                cancelText: 'Cancel',
-                type: 'question',
-                icon: 'fas fa-copy'
-            })
-            : confirm(`Create a copy of "${ad.title}"?`);
-
-        if (!confirmedDup) return;
+        if (!confirm(`Create a copy of "${ad.title}"?`)) {
+            return;
+        }
 
         try {
             const response = await fetch('../../api/advertisements.php', {
@@ -1072,17 +1016,9 @@ class AdvertisementFilters {
     }
 
     async archiveAdvertisement(adId) {
-        const confirmed = window.systemConfirm
-            ? await window.systemConfirm('Archive this advertisement? It will be moved to archived items.', {
-                title: 'Archive Advertisement',
-                confirmText: 'Archive',
-                cancelText: 'Cancel',
-                type: 'warning',
-                icon: 'fas fa-archive'
-            })
-            : confirm('Archive this advertisement? It will be moved to archived items.');
-
-        if (!confirmed) return;
+        if (!confirm('Archive this advertisement? It will be moved to archived items.')) {
+            return;
+        }
 
         try {
             const response = await fetch('../../api/advertisements.php', {
@@ -1127,41 +1063,17 @@ function editAdvertisement(adId) {
 }
 
 function pauseAdvertisement(adId) {
-    const run = async () => {
-        const confirmed = window.systemConfirm
-            ? await window.systemConfirm('Are you sure you want to pause this advertisement?', {
-                title: 'Pause Advertisement',
-                confirmText: 'Pause',
-                cancelText: 'Cancel',
-                type: 'warning',
-                icon: 'fas fa-pause'
-            })
-            : confirm('Are you sure you want to pause this advertisement?');
-
-        if (!confirmed) return;
+    if (confirm('Are you sure you want to pause this advertisement?')) {
 
         // TODO: Implement pause functionality via API
-    };
-    run();
+    }
 }
 
 function deleteAdvertisement(adId) {
-    const run = async () => {
-        const confirmed = window.systemConfirm
-            ? await window.systemConfirm('Are you sure you want to delete this advertisement? This action cannot be undone.', {
-                title: 'Delete Advertisement',
-                confirmText: 'Delete',
-                cancelText: 'Cancel',
-                type: 'danger',
-                icon: 'fas fa-trash'
-            })
-            : confirm('Are you sure you want to delete this advertisement? This action cannot be undone.');
-
-        if (!confirmed) return;
+    if (confirm('Are you sure you want to delete this advertisement? This action cannot be undone.')) {
 
         // TODO: Implement delete functionality via API
-    };
-    run();
+    }
 }
 
 

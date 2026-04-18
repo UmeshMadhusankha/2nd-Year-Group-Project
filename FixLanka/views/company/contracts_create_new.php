@@ -98,42 +98,8 @@ try {
 } catch (PDOException $e) {
     $clients = [];
 }
-
-// Support direct requests as clients in the dropdown
-$request_id = isset($_GET['request_id']) ? intval($_GET['request_id']) : null;
-if ($request_id) {
-    try {
-        $stmt = $pdo->prepare("
-            SELECT 
-                djr.*,
-                u.f_name, u.l_name, u.email, u.contact_no, u.user_id
-            FROM directjobrequest djr
-            INNER JOIN User u ON djr.user_id = u.user_id
-            WHERE djr.request_id = ? AND djr.provider_id = ? AND djr.provider_type = 'company' AND djr.status = 'accepted'
-        ");
-        $stmt->execute([$request_id, $company_id]);
-        $req_data = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($req_data) {
-            $clients[] = [
-                'client_id' => $req_data['user_id'], // passing user_id as client_id for backend handling
-                'client_name' => $req_data['f_name'] . ' ' . $req_data['l_name'] . ' (Direct Request)',
-                'client_address' => $req_data['address'] ?? '',
-                'client_contact' => $req_data['contact_no'],
-                'client_email' => $req_data['email'],
-                'client_representative' => $req_data['f_name'] . ' ' . $req_data['l_name']
-            ];
-            
-            // Set quotation_data structure to pre-fill the project fields
-            $quotation_data = [
-                'project_name' => $req_data['title'],
-                'project_description' => $req_data['description'],
-                'site_address' => $req_data['address'] . (isset($req_data['district']) ? ', ' . $req_data['district'] : ''),
-                'client_id' => $req_data['user_id']
-            ];
-        }
-    } catch (PDOException $e) {}
-}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -891,21 +857,21 @@ if ($request_id) {
                                 <div>
                                     <div class="form-group">
                                         <label class="form-label">Client Name</label>
-                                        <input type="text" id="clientName" class="form-control">
+                                        <input type="text" id="clientName" class="form-control" readonly>
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Contact Number</label>
-                                        <input type="text" id="clientContact" class="form-control">
+                                        <input type="text" id="clientContact" class="form-control" readonly>
                                     </div>
                                 </div>
                                 <div>
                                     <div class="form-group">
                                         <label class="form-label">Address</label>
-                                        <textarea id="clientAddress" class="form-control" style="min-height: 80px;"></textarea>
+                                        <textarea id="clientAddress" class="form-control" readonly style="min-height: 80px;"></textarea>
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Email</label>
-                                        <input type="email" id="clientEmail" class="form-control">
+                                        <input type="email" id="clientEmail" class="form-control" readonly>
                                     </div>
                                 </div>
                             </div>
