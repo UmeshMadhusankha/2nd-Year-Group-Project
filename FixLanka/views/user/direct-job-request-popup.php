@@ -1,0 +1,123 @@
+<!-- Direct New Job Request Modal -->
+<div class="direct-job-modal-overlay" id="directJobRequestModal" aria-hidden="true">
+    <div class="direct-job-modal-container" role="dialog" aria-modal="true" aria-labelledby="directJobRequestTitle">
+        <div class="direct-job-modal-header">
+            <h3 id="directJobRequestTitle">Request for a New Job</h3>
+            <p class="direct-job-modal-subtitle">
+                You are creating a direct request for
+                <strong id="directJobRequestProviderLabel">this provider</strong>.
+            </p>
+            <button type="button" class="direct-job-close" id="directJobRequestCloseBtn" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="direct-job-modal-body">
+            <div class="direct-job-error" id="directJobRequestError" style="display:none;"></div>
+            <div class="direct-job-success" id="directJobRequestSuccess" style="display:none;"></div>
+
+            <form id="directJobRequestForm" enctype="multipart/form-data">
+                <input type="hidden" id="directJobProviderId" name="provider_id" value="">
+                <input type="hidden" id="directJobProviderType" name="provider_type" value="">
+
+                <div class="direct-job-form-group">
+                    <label for="directJobTitle">Job Title <span class="required">*</span></label>
+                    <input type="text" id="directJobTitle" name="title" required placeholder="e.g., Kitchen Sink Repair, AC Installation">
+                </div>
+
+                <div class="direct-job-form-group">
+                    <label for="directJobCategory">Category <span class="required">*</span></label>
+                    <input type="text" id="directJobCategoryDisplay" value="" readonly aria-readonly="true" placeholder="Provider category will be auto-selected">
+                    <input type="hidden" id="directJobCategory" name="category_id" value="" required>
+                    <div id="directJobCategoryList" class="direct-job-category-list" style="display:none;"></div>
+                    <p class="direct-job-helper">Category is restricted to the selected provider's service type.</p>
+                </div>
+
+                <div class="direct-job-form-group">
+                    <label for="directJobDescription">Description <span class="required">*</span></label>
+                    <textarea id="directJobDescription" name="description" rows="5" required placeholder="Describe your job in detail..."></textarea>
+                </div>
+
+                <div class="direct-job-two-col">
+                    <div class="direct-job-form-group">
+                        <label for="directJobDistrict">District <span class="required">*</span></label>
+                        <select id="directJobDistrict" name="district" required>
+                            <option value="">Select your district</option>
+                            <option value="Colombo">Colombo</option>
+                            <option value="Gampaha">Gampaha</option>
+                            <option value="Kalutara">Kalutara</option>
+                            <option value="Kandy">Kandy</option>
+                            <option value="Matale">Matale</option>
+                            <option value="Nuwara Eliya">Nuwara Eliya</option>
+                            <option value="Galle">Galle</option>
+                            <option value="Matara">Matara</option>
+                            <option value="Hambantota">Hambantota</option>
+                            <option value="Jaffna">Jaffna</option>
+                            <option value="Kilinochchi">Kilinochchi</option>
+                            <option value="Mannar">Mannar</option>
+                            <option value="Vavuniya">Vavuniya</option>
+                            <option value="Mullaitivu">Mullaitivu</option>
+                            <option value="Batticaloa">Batticaloa</option>
+                            <option value="Ampara">Ampara</option>
+                            <option value="Trincomalee">Trincomalee</option>
+                            <option value="Kurunegala">Kurunegala</option>
+                            <option value="Puttalam">Puttalam</option>
+                            <option value="Anuradhapura">Anuradhapura</option>
+                            <option value="Polonnaruwa">Polonnaruwa</option>
+                            <option value="Badulla">Badulla</option>
+                            <option value="Monaragala">Monaragala</option>
+                            <option value="Ratnapura">Ratnapura</option>
+                            <option value="Kegalle">Kegalle</option>
+                        </select>
+                    </div>
+
+                    <div class="direct-job-form-group">
+                        <label for="directJobFinishDate">Expected Finish Date <span class="required">*</span></label>
+                        <input type="date" id="directJobFinishDate" name="finish_date" required>
+                    </div>
+                </div>
+
+                <div class="direct-job-form-group">
+                    <label for="directJobAddress">Address <span class="required">*</span></label>
+                    <input type="text" id="directJobAddress" name="address" required placeholder="Enter your full address (street, area)">
+                    <label class="address-toggle-row">
+                        <input type="checkbox" id="directJobUseHomeAddress">
+                        <span>Use home address</span>
+                    </label>
+                </div>
+
+                <div class="direct-job-form-group">
+                    <label for="directJobPhotos">Photos (Optional)</label>
+                    <input type="file" id="directJobPhotos" name="photos" accept="image/*">
+                    <div id="directJobPhotoPreview" class="direct-job-photo-preview"></div>
+                </div>
+            </form>
+        </div>
+
+        <div class="direct-job-modal-actions">
+            <button type="button" class="btn-outline" id="directJobRequestCancelBtn">Cancel</button>
+            <button type="submit" form="directJobRequestForm" class="btn-primary" id="directJobRequestSubmitBtn">Request</button>
+        </div>
+        
+    </div>
+</div>
+
+<!-- Direct Job Request Success Modal -->
+<div class="direct-job-success-overlay" id="directJobSuccessModal" aria-hidden="true">
+    <div class="direct-job-success-container" role="dialog" aria-modal="true" aria-labelledby="directJobSuccessTitle">
+        <button type="button" class="direct-job-success-close" id="directJobSuccessCloseBtn" aria-label="Close">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <div class="direct-job-success-icon" aria-hidden="true">
+            <i class="fas fa-check"></i>
+        </div>
+
+        <h3 id="directJobSuccessTitle">Request Submitted</h3>
+        <p id="directJobSuccessMessage">Job request sent successfully.</p>
+
+        <div class="direct-job-success-actions">
+            <button type="button" class="btn-primary" id="directJobSuccessOkBtn">OK</button>
+        </div>
+    </div>
+</div>

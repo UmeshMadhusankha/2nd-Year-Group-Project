@@ -27,7 +27,10 @@ $userData = getUserData();
 </head>
 
 <body>
-    <div class="app-container">
+    <!-- Hidden checkbox for CSS sidebar toggle integration -->
+    <input type="checkbox" id="sidebar-toggle">
+
+    <div class="dashboard-container">
         <!-- Include Sidebar -->
         <!-- Include Sidebar -->
         <?php include 'sidebar.php'; ?>
@@ -64,7 +67,7 @@ $userData = getUserData();
                             <div class="header-actions">
                                 <div class="action-buttons">
                                     <button class="action-btn secondary" onclick="exportReport()">
-                                        <i class="fas fa-download"></i>
+                                        <i class="fas fa-download icon-left"></i>
                                         Export Report
                                     </button>
                                 </div>
@@ -93,16 +96,9 @@ $userData = getUserData();
                                     </span>
                                     Total Income
                                 </div>
-                                <div class="summary-card-trend trend-up">
-                                    <i class="fas fa-arrow-up"></i>
-                                    12.5%
-                                </div>
                             </div>
                             <div class="summary-card-value" id="total-income-display">LKR 0</div>
                             <p class="summary-card-subtitle">Total payments received this period</p>
-                            <div class="summary-progress">
-                                <div class="summary-progress-bar" style="width: 85%"></div>
-                            </div>
                         </div>
 
                         <!-- Total Expenses Card -->
@@ -114,16 +110,9 @@ $userData = getUserData();
                                     </span>
                                     Total Expenses
                                 </div>
-                                <div class="summary-card-trend trend-down">
-                                    <i class="fas fa-arrow-down"></i>
-                                    3.2%
-                                </div>
                             </div>
                             <div class="summary-card-value" id="total-expenses-display">LKR 0</div>
                             <p class="summary-card-subtitle">Total expenses for this period</p>
-                            <div class="summary-progress">
-                                <div class="summary-progress-bar" style="width: 65%"></div>
-                            </div>
                         </div>
 
                         <!-- Net Profit Card -->
@@ -135,16 +124,9 @@ $userData = getUserData();
                                     </span>
                                     Net Profit
                                 </div>
-                                <div class="summary-card-trend trend-up">
-                                    <i class="fas fa-arrow-up"></i>
-                                    18.7%
-                                </div>
                             </div>
                             <div class="summary-card-value" id="net-profit-display">LKR 0</div>
                             <p class="summary-card-subtitle">Income minus expenses</p>
-                            <div class="summary-progress">
-                                <div class="summary-progress-bar" style="width: 92%"></div>
-                            </div>
                         </div>
 
                         <!-- Pending Payments Card -->
@@ -156,38 +138,13 @@ $userData = getUserData();
                                     </span>
                                     Pending Payments
                                 </div>
-                                <div class="summary-card-trend">
-                                    <i class="fas fa-minus"></i>
-                                    2 items
-                                </div>
                             </div>
                             <div class="summary-card-value" id="pending-payments-display">LKR 0</div>
                             <p class="summary-card-subtitle">Awaiting payment confirmation</p>
-                            <div class="summary-progress">
-                                <div class="summary-progress-bar" style="width: 35%"></div>
-                            </div>
                         </div>
                     </div>
 
-                    <!-- Additional Details -->
-                    <div class="summary-details">
-                        <div class="summary-detail-item">
-                            <div class="summary-detail-value" id="total-transactions-display">0</div>
-                            <div class="summary-detail-label">Total Transactions</div>
-                        </div>
-                        <div class="summary-detail-item">
-                            <div class="summary-detail-value" id="avg-payment-display">LKR 0</div>
-                            <div class="summary-detail-label">Avg Payment</div>
-                        </div>
-                        <div class="summary-detail-item">
-                            <div class="summary-detail-value" id="profit-margin-display">0%</div>
-                            <div class="summary-detail-label">Profit Margin</div>
-                        </div>
-                        <div class="summary-detail-item">
-                            <div class="summary-detail-value" id="expense-ratio-display">0%</div>
-                            <div class="summary-detail-label">Expense Ratio</div>
-                        </div>
-                    </div>
+
                 </section>
 
                 <!-- Main Layout Grid -->
@@ -201,31 +158,19 @@ $userData = getUserData();
                         <div class="section-content">
                             <!-- Income Filters -->
                             <div class="filter-section">
-                                <h4>
-                                    <i class="fas fa-filter"></i>
-                                    Income Filters
-                                </h4>
-                                <div class="filter-row">
-                                    <div class="filter-group">
-                                        <label for="income-status-filter">Status</label>
-                                        <select id="income-status-filter" onchange="applyIncomeFilters()">
+                                <div class="filters-group">
+                                    <div class="filter-item">
+                                        <label class="filter-label" for="income-status-filter">Status</label>
+                                        <select class="filter-select" id="income-status-filter" onchange="applyIncomeFilters()">
                                             <option value="all">All Statuses</option>
                                             <option value="completed">Completed</option>
                                             <option value="pending">Pending</option>
                                             <option value="failed">Failed</option>
                                         </select>
                                     </div>
-                                    <div class="filter-group">
-                                        <label for="income-project-filter">Project</label>
-                                        <select id="income-project-filter" onchange="applyIncomeFilters()">
-                                            <option value="all">All Projects</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="filter-row">
-                                    <div class="filter-group">
-                                        <label for="income-amount-filter">Amount Range</label>
-                                        <select id="income-amount-filter" onchange="applyIncomeFilters()">
+                                    <div class="filter-item">
+                                        <label class="filter-label" for="income-amount-filter">Amount Range</label>
+                                        <select class="filter-select" id="income-amount-filter" onchange="applyIncomeFilters()">
                                             <option value="all">All Amounts</option>
                                             <option value="0-5000">LKR 0 - 5,000</option>
                                             <option value="5000-15000">LKR 5,000 - 15,000</option>
@@ -233,9 +178,9 @@ $userData = getUserData();
                                             <option value="30000+">LKR 30,000+</option>
                                         </select>
                                     </div>
-                                    <div class="filter-group">
-                                        <label for="period-select">Time period</label>
-                                        <select id="period-select" onchange="updatePeriod()">
+                                    <div class="filter-item">
+                                        <label class="filter-label" for="period-select">Time period</label>
+                                        <select class="filter-select" id="period-select" onchange="updatePeriod()">
                                             <option value="today">Today</option>
                                             <option value="week">This Week</option>
                                             <option value="month" selected>This Month</option>
@@ -246,7 +191,10 @@ $userData = getUserData();
                                     </div>
                                 </div>
                                 <div class="filter-actions">
-                                    <button class="btn-reset" onclick="resetIncomeFilters()">Reset Filters</button>
+                                    <button class="action-btn outline small" onclick="resetIncomeFilters()">
+                                        <i class="fas fa-undo icon-left"></i>
+                                        Reset Filters
+                                    </button>
                                 </div>
                             </div>
 
@@ -279,20 +227,10 @@ $userData = getUserData();
                         <div class="section-content">
                             <!-- Expense Filters -->
                             <div class="filter-section">
-                                <h4>
-                                    <i class="fas fa-filter"></i>
-                                    Expense Filters
-                                </h4>
-                                <div class="filter-row">
-                                    <div class="filter-group">
-                                        <label for="expense-project-filter">Project</label>
-                                        <select id="expense-project-filter" onchange="applyExpenseFilters()">
-                                            <option value="all">All Projects</option>
-                                        </select>
-                                    </div>
-                                    <div class="filter-group">
-                                        <label for="expense-category-filter">Category</label>
-                                        <select id="expense-category-filter" onchange="applyExpenseFilters()">
+                                <div class="filters-group">
+                                    <div class="filter-item">
+                                        <label class="filter-label" for="expense-category-filter">Category</label>
+                                        <select class="filter-select" id="expense-category-filter" onchange="applyExpenseFilters()">
                                             <option value="all">All Categories</option>
                                             <option value="materials">Materials</option>
                                             <option value="labor">Labor</option>
@@ -301,20 +239,18 @@ $userData = getUserData();
                                             <option value="permits">Permits</option>
                                         </select>
                                     </div>
-                                </div>
-                                <div class="filter-row">
-                                    <div class="filter-group">
-                                        <label for="expense-date-filter">Date Range</label>
-                                        <select id="expense-date-filter" onchange="applyExpenseFilters()">
+                                    <div class="filter-item">
+                                        <label class="filter-label" for="expense-date-filter">Date Range</label>
+                                        <select class="filter-select" id="expense-date-filter" onchange="applyExpenseFilters()">
                                             <option value="all">All Time</option>
                                             <option value="today">Today</option>
                                             <option value="week">This Week</option>
                                             <option value="month">This Month</option>
                                         </select>
                                     </div>
-                                    <div class="filter-group">
-                                        <label for="expense-amount-filter">Amount Range</label>
-                                        <select id="expense-amount-filter" onchange="applyExpenseFilters()">
+                                    <div class="filter-item">
+                                        <label class="filter-label" for="expense-amount-filter">Amount Range</label>
+                                        <select class="filter-select" id="expense-amount-filter" onchange="applyExpenseFilters()">
                                             <option value="all">All Amounts</option>
                                             <option value="0-5000">LKR 0 - 5,000</option>
                                             <option value="5000-15000">LKR 5,000 - 15,000</option>
@@ -324,11 +260,14 @@ $userData = getUserData();
                                     </div>
                                 </div>
                                 <div class="filter-actions">
-                                    <button class="btn-add" onclick="openExpenseModal()">
-                                        <i class="fas fa-plus"></i>
+                                    <button class="action-btn success small" onclick="openExpenseModal()">
+                                        <i class="fas fa-plus icon-left"></i>
                                         Add Expense
                                     </button>
-                                    <button class="btn-reset" onclick="resetExpenseFilters()">Reset Filters</button>
+                                    <button class="action-btn outline small" onclick="resetExpenseFilters()">
+                                        <i class="fas fa-undo icon-left"></i>
+                                        Reset Filters
+                                    </button>
                                 </div>
                             </div>
 
@@ -672,18 +611,24 @@ $userData = getUserData();
         fetch('/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php')
             .then(response => response.text())
             .then(data => {
-                document.getElementById('sidebar-container').innerHTML = data;
-                // Add active class
-                setTimeout(() => {
-                    const paymentsLink = document.querySelector('#sidebar-container a[href*="payments"]');
-                    if(paymentsLink) paymentsLink.parentElement.classList.add('active');
-                }, 100);
+                const sidebarContainer = document.getElementById('sidebar-container');
+                if (sidebarContainer) {
+                    sidebarContainer.innerHTML = data;
+                    // Add active class
+                    setTimeout(() => {
+                        const paymentsLink = document.querySelector('#sidebar-container a[href*="payments"]');
+                        if (paymentsLink) paymentsLink.parentElement.classList.add('active');
+                    }, 100);
+                }
             });
 
         fetch('/2nd-Year-Group-Project/FixLanka/views/company/topbar.php?page=payments')
             .then(response => response.text())
             .then(data => {
-                document.getElementById('topbar-container').innerHTML = data;
+                const topbarContainer = document.getElementById('topbar-container');
+                if (topbarContainer) {
+                    topbarContainer.innerHTML = data;
+                }
             });
 
         // Main Payment Logic
@@ -723,10 +668,7 @@ $userData = getUserData();
             document.getElementById('net-profit-display').textContent = formatCurrency(summary.net_profit);
             document.getElementById('pending-payments-display').textContent = formatCurrency(summary.pending_payments || 0);
             
-            document.getElementById('total-transactions-display').textContent = summary.total_transactions;
-            document.getElementById('avg-payment-display').textContent = formatCurrency(summary.avg_payment);
-            document.getElementById('profit-margin-display').textContent = summary.profit_margin + '%';
-            document.getElementById('expense-ratio-display').textContent = summary.expense_ratio + '%';
+
         }
 
         function populateIncomeTable(income) {
@@ -866,15 +808,10 @@ $userData = getUserData();
         
         // --- Filter Logic (Client-side for now as API handles basic filters) ---
         function applyIncomeFilters() {
-             // Basic implementation: Refetch or client-filter.
-             // Given the list size, client-side filter on 'currentData.income' is fast
              const status = document.getElementById('income-status-filter').value;
-             const project = document.getElementById('income-project-filter').value;
-             // ... amount filter logic ...
              
              let filtered = currentData.income.filter(item => {
                  if (status !== 'all' && item.status !== status) return false;
-                 if (project !== 'all' && item.project_id != project) return false; // Note: project_id might be int/string
                  return true;
              });
              
@@ -883,17 +820,151 @@ $userData = getUserData();
         
          function applyExpenseFilters() {
              const category = document.getElementById('expense-category-filter').value;
-             const project = document.getElementById('expense-project-filter').value;
              
              let filtered = currentData.expenses.filter(item => {
                  if (category !== 'all' && item.category !== category) return false;
-                 if (project !== 'all' && item.project_id != project) return false;
                  return true;
              });
              
              populateExpenseTable(filtered);
         }
     </script>
+    <!-- Export Modal -->
+    <div class="export-modal-overlay" id="exportModal">
+        <div class="export-modal-container">
+            <div class="export-modal-header">
+                <h2><i class="fas fa-file-export"></i> Export Payment Report</h2>
+                <button class="export-modal-close" onclick="closeExportModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="export-modal-body">
+                <div class="export-options-container">
+                    <!-- Export Type -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-filter"></i> Export Type</h4>
+                        <div class="export-radio-group">
+                            <label class="export-radio-option">
+                                <input type="radio" name="paymentType" value="all" checked>
+                                <span class="radio-indicator"></span>
+                                All Transactions
+                            </label>
+                            <label class="export-radio-option">
+                                <input type="radio" name="paymentType" value="income">
+                                <span class="radio-indicator"></span>
+                                Income Only
+                            </label>
+                            <label class="export-radio-option">
+                                <input type="radio" name="paymentType" value="expense">
+                                <span class="radio-indicator"></span>
+                                Expenses Only
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Status Filters -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-check-circle"></i> Status Filters</h4>
+                        <div class="export-checkbox-group">
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportCompleted" checked>
+                                <span class="checkbox-indicator"><i class="fas fa-check"></i></span>
+                                Completed <span class="export-status-badge completed">OK</span>
+                            </label>
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportPending" checked>
+                                <span class="checkbox-indicator"><i class="fas fa-check"></i></span>
+                                Pending <span class="export-status-badge pending">Wait</span>
+                            </label>
+                            <label class="export-checkbox-option">
+                                <input type="checkbox" id="exportFailed">
+                                <span class="checkbox-indicator"><i class="fas fa-check"></i></span>
+                                Failed <span class="export-status-badge failed">Err</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-calendar-alt"></i> Date Range</h4>
+                        <div class="export-date-range">
+                            <div class="export-date-presets">
+                                <button type="button" class="export-date-preset-btn" onclick="setDatePreset(7)">Last 7 Days</button>
+                                <button type="button" class="export-date-preset-btn active" onclick="setDatePreset(30)">Last 30 Days</button>
+                                <button type="button" class="export-date-preset-btn" onclick="setDatePreset(90)">Last 90 Days</button>
+                            </div>
+                            <div class="export-date-inputs">
+                                <div class="export-date-field">
+                                    <label>Start Date</label>
+                                    <input type="date" id="exportStartDate">
+                                </div>
+                                <div class="export-date-field">
+                                    <label>End Date</label>
+                                    <input type="date" id="exportEndDate">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Format -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-file-alt"></i> Export Format</h4>
+                        <div class="export-format-group">
+                            <label class="export-format-option">
+                                <input type="radio" name="exportFormat" value="csv" checked>
+                                <div class="export-format-icon csv">
+                                    <i class="fas fa-file-csv"></i>
+                                </div>
+                                <span class="export-format-name">CSV</span>
+                                <span class="export-format-desc">Best for Excel/Data processing</span>
+                            </label>
+                            <label class="export-format-option">
+                                <input type="radio" name="exportFormat" value="pdf">
+                                <div class="export-format-icon pdf">
+                                    <i class="fas fa-file-pdf"></i>
+                                </div>
+                                <span class="export-format-name">PDF</span>
+                                <span class="export-format-desc">Best for printing/Sharing</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Export Summary -->
+                    <div class="export-summary-box" id="exportSummaryBox">
+                        <h4><i class="fas fa-info-circle"></i> Export Summary</h4>
+                        <div class="export-summary-stats">
+                            <div class="export-summary-stat">
+                                <span class="stat-value" id="exportTotalRecords">--</span>
+                                <span class="stat-label">Records</span>
+                            </div>
+                            <div class="export-summary-stat">
+                                <span class="stat-value" id="exportTotalAmount">--</span>
+                                <span class="stat-label">Total Amount</span>
+                            </div>
+                            <div class="export-summary-stat">
+                                <span class="stat-value" id="exportDateRange">--</span>
+                                <span class="stat-label">Days</span>
+                            </div>
+                        </div>
+                        <div class="export-summary-loading">
+                            <i class="fas fa-spinner fa-spin"></i> Calculating...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="export-modal-footer">
+                <button class="export-btn export-btn-cancel" onclick="closeExportModal()">Cancel</button>
+                <button class="export-btn export-btn-preview" onclick="previewPaymentsExport()">
+                    <i class="fas fa-eye"></i> Preview
+                </button>
+                <button class="export-btn export-btn-download" onclick="downloadPaymentsExport()">
+                    <i class="fas fa-download"></i> Export Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/payments-export.js"></script>
 </body>
 
 </html>

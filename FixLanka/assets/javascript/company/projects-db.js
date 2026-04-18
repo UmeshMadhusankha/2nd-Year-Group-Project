@@ -171,8 +171,21 @@ async function loadProjectTimeline(projectId) {
         const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/projects.php?action=phases&project_id=${projectId}`);
         const result = await response.json();
 
-        if (result.success && result.data && result.data.length > 0) {
+        if (!result || result.success === false) {
+            const msg = (result && result.message) ? String(result.message) : 'Failed to load contract phases';
+            timelineContainer.innerHTML = `
+                <div class="error-state" style="padding: 30px; text-align: center; color: #ef4444;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 32px; margin-bottom: 12px;"></i>
+                    <p style="margin: 0 0 10px 0;">${escapeHtml(msg)}</p>
+                    <button onclick="loadProjectTimeline(${projectId})" class="btn-secondary-small" style="margin-top: 6px;">Try Again</button>
+                </div>
+            `;
+            return;
+        }
+
+        if (Array.isArray(result.data) && result.data.length > 0) {
             const phases = result.data;
+            window.currentContractPhases = phases;
             let html = `
                 <div class="table-container" style="padding: 20px;">
                     <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
@@ -212,23 +225,17 @@ async function loadProjectTimeline(projectId) {
             };
 
             const getStatusBadge = (status) => {
-                const colors = {
-                    'pending': '#f1f5f9', 'text': '#475569',
-                    'in_progress': '#dbeafe', 'text_color': '#1e40af',
-                    'submitted': '#fef3c7', 'text_color': '#92400e',
-                    'approved': '#d1fae5', 'text_color': '#065f46',
-                    'rejected': '#fee2e2', 'text_color': '#b91c1c'
-                };
-
-                let bg = colors[status] || '#f1f5f9';
-                let col = colors['text_color'] || (colors[status] ? colors['text_' + status] : '#475569');
-                // Fix map logic slightly for simplicity
+                let bg = '#f1f5f9';
+                let col = '#475569';
                 if (status === 'in_progress') { bg = '#dbeafe'; col = '#1e40af'; }
-                if (status === 'submitted') { bg = '#fef3c7'; col = '#92400e'; }
-                if (status === 'approved' || status === 'completed') { bg = '#d1fae5'; col = '#065f46'; }
+                if (status === 'submitted' || status === 'under_review') { bg = '#fef3c7'; col = '#92400e'; }
+                if (status === 'approved' || status === 'completed' || status === 'paid') { bg = '#d1fae5'; col = '#065f46'; }
                 if (status === 'rejected') { bg = '#fee2e2'; col = '#b91c1c'; }
 
-                const label = status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1);
+                const label = (status === 'submitted' || status === 'under_review')
+                    ? 'In Review'
+                    : status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1);
+
                 return `<span style="background-color: ${bg}; color: ${col}; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap;">${label}</span>`;
             };
 
@@ -236,20 +243,23 @@ async function loadProjectTimeline(projectId) {
             let totalAmount = 0;
 
             phases.forEach((item, index) => {
-                const amount = parseFloat(item.amount_lkr || 0);
+                const plannedAmount = parseFloat(item.amount_lkr || 0);
+                const actualAmountRaw = item.actual_amount;
+                const actualAmount = actualAmountRaw === null || actualAmountRaw === undefined || actualAmountRaw === '' ? null : parseFloat(actualAmountRaw);
+                const hasUnitPricing = (String(item.is_unit_priced || '') === '1' || item.is_unit_priced === 1 || item.is_unit_priced === true)
+                    || ((item.unit_label !== null && item.unit_label !== undefined && String(item.unit_label).trim() !== '') && (item.unit_rate !== null && item.unit_rate !== undefined && item.unit_rate !== ''));
                 const pct = parseFloat(item.pct_of_total || 0);
                 const milestoneId = item.id || item.milestone_id; // Handle both legacy and new ID names if needed
-                // Note: SQL query selects 'milestone_number' as 'sort_order'. We should ensure we have the ID.
-                // The query in ProjectModel.php does NOT currently select the ID! 
-                // We need to update ProjectModel.php to select 'milestone_id'. 
-                // Assuming it's selected as we'll fix it, or let's use a workaround for now but really we need the ID.
-                // Actually the query is: SELECT milestone_number as sort_order, ... 
-                // It misses milestone_id! I need to fix the backend query first.
-                // Waait, I can't restart backend task easily.
-                // Let's assume I will fix the backend query right after this.
+                const amountForTotals = (actualAmount !== null && Number.isFinite(actualAmount))
+                    ? actualAmount
+                    : (!hasUnitPricing ? (Number.isFinite(plannedAmount) ? plannedAmount : 0) : 0);
 
-                totalAmount += amount;
+                totalAmount += amountForTotals;
                 totalPercent += pct;
+
+                const amountCell = (actualAmount !== null && Number.isFinite(actualAmount))
+                    ? formatCurrency(actualAmount)
+                    : (hasUnitPricing ? '-' : formatCurrency(Number.isFinite(plannedAmount) ? plannedAmount : 0));
 
                 let actionBtn = '';
                 // Logic based on status
@@ -257,7 +267,7 @@ async function loadProjectTimeline(projectId) {
                     actionBtn = `<button onclick="startPhase(${item.milestone_id || item.id})" class="btn-primary-small" style="padding: 4px 8px; font-size: 11px;"><i class="fas fa-play"></i> Start</button>`;
                 } else if (item.status === 'in_progress') {
                     actionBtn = `<button onclick="openProofModal(${item.milestone_id || item.id})" class="btn-success-small" style="padding: 4px 8px; font-size: 11px; background-color: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;"><i class="fas fa-check"></i> Complete</button>`;
-                } else if (item.status === 'submitted') {
+                } else if (item.status === 'submitted' || item.status === 'under_review') {
                     actionBtn = `<span style="font-size: 11px; color: #d97706;"><i class="fas fa-clock"></i> In Review</span>`;
                 } else {
                     actionBtn = `<span style="font-size: 11px; color: #059669;"><i class="fas fa-check-double"></i> Done</span>`;
@@ -269,7 +279,7 @@ async function loadProjectTimeline(projectId) {
                         <td style="padding: 12px; font-weight: 500; color: #334155;">${item.phase_name}</td>
                         <td style="padding: 12px; color: #64748b; font-size: 13px;">${item.description || '-'}</td>
                         <td style="padding: 12px; color: #64748b;">${formatDate(item.target_date)}</td>
-                        <td style="padding: 12px; text-align: right; font-family: monospace; color: #334155;">${formatCurrency(amount)}</td>
+                        <td style="padding: 12px; text-align: right; font-family: monospace; color: #334155;">${amountCell}</td>
                         <td style="padding: 12px; text-align: center;">${getStatusBadge(item.status || 'pending')}</td>
                         <td style="padding: 12px; text-align: right;">${actionBtn}</td>
                     </tr>
@@ -290,6 +300,7 @@ async function loadProjectTimeline(projectId) {
             `;
             timelineContainer.innerHTML = html;
         } else {
+            window.currentContractPhases = [];
             timelineContainer.innerHTML = `
                 <div class="no-data-card" style="padding: 40px; text-align: center;">
                     <i class="fas fa-file-contract" style="font-size: 48px; color: #cbd5e1; margin-bottom: 16px;"></i>
@@ -339,6 +350,9 @@ async function loadProjectFinancials(projectId) {
             const paid = data.total_paid || 0;
             const progressPct = budget > 0 ? (paid / budget) * 100 : 0;
 
+            // Detect unit-priced contracts — total budget is unknowable upfront
+            const isUnitBased = !!(data.labor_unit_label || data.material_unit_label);
+
             let html = `
                 <div class="project-details-container" style="padding: 20px;">
                     
@@ -353,7 +367,20 @@ async function loadProjectFinancials(projectId) {
                                     <h4 style="margin: 0; color: #64748b; font-size: 13px; text-transform: uppercase;">Total Budget</h4>
                                 </div>
                             </div>
-                            <div style="font-size: 24px; font-weight: 700; color: #0f172a;">${formatCurrency(budget)}</div>
+                            ${isUnitBased
+                    ? (() => {
+                        const labCost = parseFloat(data.labor_cost || 0);
+                        const matCost = parseFloat(data.material_cost || 0);
+                        const labLabel = data.labor_unit_label || 'unit';
+                        const matLabel = data.material_unit_label || 'unit';
+                        let lines = '<div style="font-size: 14px; font-weight: 700; color: #0284c7; margin-bottom: 4px;">Unit-Priced</div>';
+                        if (labCost > 0) lines += `<div style="font-size: 12px; color: #475569; margin-top: 2px;"><i class="fas fa-hard-hat" style="width:14px;color:#0284c7;"></i> Labour: <strong>${formatCurrency(labCost)}</strong> / ${labLabel}</div>`;
+                        if (matCost > 0) lines += `<div style="font-size: 12px; color: #475569; margin-top: 2px;"><i class="fas fa-boxes" style="width:14px;color:#0284c7;"></i> Material: <strong>${formatCurrency(matCost)}</strong> / ${matLabel}</div>`;
+                        lines += '<div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">Total calculated per approved phase</div>';
+                        return lines;
+                    })()
+                    : `<div style="font-size: 24px; font-weight: 700; color: #0f172a;">${formatCurrency(budget)}</div>`
+                }
                         </div>
 
                         <!-- Amount Paid Card -->
@@ -381,40 +408,20 @@ async function loadProjectFinancials(projectId) {
                             </div>
                             <div style="font-size: 24px; font-weight: 700; color: #ca8a04;">${formatCurrency(data.total_pending || 0)}</div>
                         </div>
-
-                        <!-- Escrow Balance Card -->
-                        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                                <div style="width: 40px; height: 40px; border-radius: 8px; background: #f3e8ff; color: #9333ea; display: flex; align-items: center; justify-content: center; font-size: 18px;">
-                                    <i class="fas fa-lock"></i>
-                                </div>
-                                <div>
-                                    <h4 style="margin: 0; color: #64748b; font-size: 13px; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
-                                        Escrow Balance
-                                        <div class="tooltip-container" style="position: relative; display: inline-block;">
-                                            <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 14px; cursor: help;"></i>
-                                            <div class="custom-tooltip" style="visibility: hidden; width: 250px; background-color: #1e293b; color: #f8fafc; text-align: center; border-radius: 8px; padding: 12px; position: absolute; z-index: 100; bottom: 150%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s, visibility 0.2s; font-size: 12px; font-weight: normal; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); line-height: 1.5; text-transform: none;">
-                                                Funds securely held by the platform. These will be released to you automatically as the customer approves your milestones.
-                                                <div style="position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #1e293b transparent transparent transparent;"></div>
-                                            </div>
-                                        </div>
-                                    </h4>
-                                </div>
-                            </div>
-                            <div style="font-size: 24px; font-weight: 700; color: #9333ea;">${formatCurrency(data.escrow_balance || 0)}</div>
-                        </div>
                     </div>
 
-                    <!-- Progress Bar -->
+                    <!-- Progress Bar: only shown for fixed-price contracts (unit-based total is unknown upfront) -->
+                    ${!isUnitBased ? `
                     <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <span style="font-size: 13px; font-weight: 600; color: #475569;">Payment Progress</span>
                             <span style="font-size: 14px; font-weight: 600; color: var(--primary-color);">${progressPct.toFixed(1)}%</span>
                         </div>
                         <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden;">
-                            <div style="height: 100%; width: ${progressPct}%; background: var(--primary-color); border-radius: 5px; transition: width 0.5s ease;"></div>
+                            <div style="height: 100%; width: ${Math.min(progressPct, 100)}%; background: var(--primary-color); border-radius: 5px; transition: width 0.5s ease;"></div>
                         </div>
-                    </div>
+                    </div>` : ''}
+
             `;
 
             // Payment History Table
@@ -439,15 +446,20 @@ async function loadProjectFinancials(projectId) {
                 `;
 
                 data.payments.forEach(payment => {
+                    const normalizePaymentStatus = (s) => {
+                        const st = (s || 'pending').toString().toLowerCase();
+                        if (st === 'released') return 'completed';
+                        if (st === 'held_escrow') return 'pending';
+                        return st;
+                    };
+
                     const statusColors = {
                         'pending': { bg: '#f1f5f9', text: '#475569' },
                         'completed': { bg: '#dcfce7', text: '#16a34a' },
-                        'held_escrow': { bg: '#f3e8ff', text: '#9333ea' },
-                        'released': { bg: '#d1fae5', text: '#059669' },
                         'refunded': { bg: '#fee2e2', text: '#b91c1c' }
                     };
 
-                    const paymentStatus = payment.status || 'pending';
+                    const paymentStatus = normalizePaymentStatus(payment.status);
                     const colors = statusColors[paymentStatus] || statusColors['pending'];
                     const statusLabel = paymentStatus.replace('_', ' ').charAt(0).toUpperCase() + paymentStatus.replace('_', ' ').slice(1);
                     const badgeHtml = `<span style="background-color: ${colors.bg}; color: ${colors.text}; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block; white-space: nowrap;">${statusLabel}</span>`;
@@ -511,7 +523,17 @@ async function loadProjectFinancials(projectId) {
 
 // Start Phase
 async function startPhase(milestoneId) {
-    if (!confirm('Are you sure you want to start this phase?')) return;
+    const confirmed = await (window.showConfirm
+        ? window.showConfirm('Are you sure you want to start this phase?', {
+            title: 'Start Phase',
+            confirmText: 'Start',
+            cancelText: 'Cancel',
+            type: 'question',
+            icon: 'fas fa-play'
+        })
+        : Promise.resolve(confirm('Are you sure you want to start this phase?')));
+
+    if (!confirmed) return;
 
     try {
         const formData = new FormData();
@@ -533,7 +555,10 @@ async function startPhase(milestoneId) {
             // Helper: Find the project ID from the DOM or variable.
             // Assumption: we won't fix the reload perfectly right now, let user refresh.
             // Better: store currentProjectId when opening drawer.
-            if (window.currentOpenProjectId) loadProjectTimeline(window.currentOpenProjectId);
+            if (window.currentOpenProjectId) {
+                loadProjectTimeline(window.currentOpenProjectId);
+                loadProjectFinancials(window.currentOpenProjectId);
+            }
         } else {
             showToast(result.message || 'Failed to start phase', 'error');
         }
@@ -545,7 +570,172 @@ async function startPhase(milestoneId) {
 
 // Proof Modal Logic
 function openProofModal(milestoneId) {
+    const proofForm = document.getElementById('proof-form');
+    if (proofForm) {
+        proofForm.reset();
+    }
+
+    const fileList = document.getElementById('file-list');
+    if (fileList) {
+        fileList.innerHTML = '';
+    }
+
     document.getElementById('proof-milestone-id').value = milestoneId;
+
+    const unitInfo = document.getElementById('proof-unit-info');
+    const nonPayingRow = document.getElementById('proof-nonpaying-row');
+    const nonPayingCheckbox = document.getElementById('proof-nonpaying');
+    const nonPayingHelp = document.getElementById('proof-nonpaying-help');
+    const paymentHelp = document.getElementById('proof-payment-help');
+
+    const laborAgreedRateEl = document.getElementById('proof-labor-agreed-rate');
+    const laborUnitLabelEl = document.getElementById('proof-labor-unit-label');
+    const materialAgreedRateEl = document.getElementById('proof-material-agreed-rate');
+    const materialUnitLabelEl = document.getElementById('proof-material-unit-label');
+
+    const laborQtyRow = document.getElementById('proof-labor-qty-row');
+    const laborQtyInput = document.getElementById('proof-labor-qty');
+    const laborQtyHelp = document.getElementById('proof-labor-qty-help');
+
+    const materialQtyRow = document.getElementById('proof-material-qty-row');
+    const materialQtyInput = document.getElementById('proof-material-qty');
+    const materialQtyHelp = document.getElementById('proof-material-qty-help');
+
+    const materialRateRow = document.getElementById('proof-material-rate-row');
+    const materialRateInput = document.getElementById('proof-material-rate');
+    const materialRateHelp = document.getElementById('proof-material-rate-help');
+
+    const extraAmountRow = document.getElementById('proof-extra-amount-row');
+    const extraAmountInput = document.getElementById('proof-extra-amount');
+    const extraAmountHelp = document.getElementById('proof-extra-amount-help');
+
+    const hideEl = (el) => {
+        if (el) el.style.display = 'none';
+    };
+
+    hideEl(unitInfo);
+    if (nonPayingRow) nonPayingRow.style.display = '';
+    hideEl(laborQtyRow);
+    hideEl(materialQtyRow);
+    hideEl(materialRateRow);
+    hideEl(extraAmountRow);
+
+    if (nonPayingCheckbox) {
+        nonPayingCheckbox.checked = false;
+    }
+
+    if (nonPayingHelp) {
+        nonPayingHelp.textContent = 'No payment for this milestone. Still requires customer approval.';
+    }
+
+    if (paymentHelp) {
+        paymentHelp.textContent = 'Fill only what applies for this milestone.';
+    }
+
+    const resetNumberInput = (inputEl, placeholder) => {
+        if (!inputEl) return;
+        inputEl.value = '';
+        if (placeholder !== undefined) inputEl.placeholder = placeholder;
+        inputEl.disabled = false;
+    };
+
+    resetNumberInput(laborQtyInput, 'e.g., 12.5');
+    resetNumberInput(materialQtyInput, 'e.g., 3');
+    resetNumberInput(materialRateInput, 'Leave blank if unchanged');
+    resetNumberInput(extraAmountInput, 'e.g., 1500.00');
+
+    const phases = window.currentContractPhases || [];
+    const phase = phases.find(p => String(p.milestone_id || p.id) === String(milestoneId));
+
+    const toNumber = (v) => {
+        if (v === null || v === undefined || v === '') return null;
+        const n = parseFloat(v);
+        return Number.isFinite(n) ? n : null;
+    };
+
+    const formatLkr = (amount) => {
+        const n = toNumber(amount);
+        if (n === null) return '-';
+        return new Intl.NumberFormat('en-LK', {
+            style: 'decimal',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(n);
+    };
+
+    if (phase) {
+        const isUnitPriced = String(phase.is_unit_priced || '') === '1' || phase.is_unit_priced === 1 || phase.is_unit_priced === true;
+        const isNonPayingPersisted = String(phase.is_non_paying || '') === '1' || phase.is_non_paying === 1 || phase.is_non_paying === true;
+
+        const laborUnitLabel = (phase.labor_unit_label || '').toString().trim();
+        const materialUnitLabel = (phase.material_unit_label || '').toString().trim();
+        const laborRate = toNumber(phase.labor_unit_rate);
+        const materialRate = toNumber(phase.material_unit_rate);
+
+        if (isUnitPriced) {
+            if (unitInfo) unitInfo.style.display = '';
+
+            if (laborAgreedRateEl) {
+                laborAgreedRateEl.textContent = (laborRate !== null) ? `LKR ${formatLkr(laborRate)} per ${laborUnitLabel || 'unit'}` : '-';
+            }
+            if (laborUnitLabelEl) {
+                laborUnitLabelEl.textContent = laborUnitLabel || '-';
+            }
+            if (materialAgreedRateEl) {
+                materialAgreedRateEl.textContent = (materialRate !== null) ? `LKR ${formatLkr(materialRate)} per ${materialUnitLabel || 'unit'}` : '-';
+            }
+            if (materialUnitLabelEl) {
+                materialUnitLabelEl.textContent = materialUnitLabel || '-';
+            }
+
+            if (laborQtyRow) laborQtyRow.style.display = '';
+            if (materialQtyRow) materialQtyRow.style.display = '';
+            if (materialRateRow) materialRateRow.style.display = '';
+            if (extraAmountRow) extraAmountRow.style.display = '';
+
+            if (laborQtyInput) laborQtyInput.placeholder = laborUnitLabel ? `e.g., 12.5 (${laborUnitLabel})` : 'e.g., 12.5';
+            if (materialQtyInput) materialQtyInput.placeholder = materialUnitLabel ? `e.g., 3 (${materialUnitLabel})` : 'e.g., 3';
+
+            if (laborQtyHelp) laborQtyHelp.textContent = laborUnitLabel ? `Enter how many ${laborUnitLabel} of labour you completed for this milestone.` : 'Enter the labour units completed for this milestone.';
+            if (materialQtyHelp) materialQtyHelp.textContent = materialUnitLabel ? `Material used in ${materialUnitLabel}.` : 'Material used (units).';
+            if (materialRateHelp) materialRateHelp.textContent = materialUnitLabel ? `Override LKR per ${materialUnitLabel} (optional).` : 'Override rate (optional).';
+            if (extraAmountHelp) extraAmountHelp.textContent = 'Extra cost for this milestone (optional).';
+
+            const existingLaborQty = toNumber(phase.actual_labor_quantity);
+            const existingMaterialQty = toNumber(phase.actual_material_quantity);
+            const existingExtra = toNumber(phase.actual_extra_amount);
+            const existingMatRate = toNumber(phase.actual_material_unit_rate ?? phase.actual_unit_rate);
+
+            if (laborQtyInput && existingLaborQty !== null) laborQtyInput.value = String(existingLaborQty);
+            if (materialQtyInput && existingMaterialQty !== null) materialQtyInput.value = String(existingMaterialQty);
+            if (extraAmountInput && existingExtra !== null) extraAmountInput.value = String(existingExtra);
+            if (materialRateInput && existingMatRate !== null) materialRateInput.value = String(existingMatRate);
+
+            if (nonPayingCheckbox) {
+                nonPayingCheckbox.checked = !!isNonPayingPersisted;
+            }
+
+            const applyNonPayingState = () => {
+                const isNonPaying = !!nonPayingCheckbox?.checked;
+                const inputs = [laborQtyInput, materialQtyInput, materialRateInput, extraAmountInput];
+                inputs.forEach((inp) => {
+                    if (!inp) return;
+                    inp.disabled = isNonPaying;
+                    if (isNonPaying) inp.value = '';
+                });
+            };
+
+            if (nonPayingCheckbox) {
+                nonPayingCheckbox.onchange = applyNonPayingState;
+                applyNonPayingState();
+            }
+        } else {
+            // If not unit priced, default to non-paying to avoid confusing payment inputs.
+            if (nonPayingCheckbox) nonPayingCheckbox.checked = true;
+            if (nonPayingHelp) nonPayingHelp.textContent = 'This milestone has no unit-based payment configured. Submit as non-paying; customer approval is still required.';
+        }
+    }
+
     document.getElementById('proof-modal').classList.add('active');
 }
 
@@ -553,6 +743,31 @@ function closeProofModal() {
     document.getElementById('proof-modal').classList.remove('active');
     document.getElementById('proof-form').reset();
     document.getElementById('file-list').innerHTML = '';
+
+    const unitInfo = document.getElementById('proof-unit-info');
+    const nonPayingRow = document.getElementById('proof-nonpaying-row');
+    const nonPayingCheckbox = document.getElementById('proof-nonpaying');
+    const laborQtyRow = document.getElementById('proof-labor-qty-row');
+    const materialQtyRow = document.getElementById('proof-material-qty-row');
+    const materialRateRow = document.getElementById('proof-material-rate-row');
+    const extraAmountRow = document.getElementById('proof-extra-amount-row');
+    if (unitInfo) unitInfo.style.display = 'none';
+    if (nonPayingRow) nonPayingRow.style.display = 'none';
+    if (nonPayingCheckbox) nonPayingCheckbox.checked = false;
+    if (laborQtyRow) laborQtyRow.style.display = 'none';
+    if (materialQtyRow) materialQtyRow.style.display = 'none';
+    if (materialRateRow) materialRateRow.style.display = 'none';
+    if (extraAmountRow) extraAmountRow.style.display = 'none';
+
+    const resetInput = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = false;
+    };
+    resetInput('proof-labor-qty');
+    resetInput('proof-material-qty');
+    resetInput('proof-material-rate');
+    resetInput('proof-extra-amount');
 }
 
 // File input change handler for preview
@@ -574,6 +789,43 @@ document.addEventListener('DOMContentLoaded', function () {
         proofForm.addEventListener('submit', async function (e) {
             e.preventDefault();
 
+            const laborQtyInput = document.getElementById('proof-labor-qty');
+            const materialQtyInput = document.getElementById('proof-material-qty');
+            const materialRateInput = document.getElementById('proof-material-rate');
+            const extraAmountInput = document.getElementById('proof-extra-amount');
+            const nonPayingCheckbox = document.getElementById('proof-nonpaying');
+            const isNonPaying = !!nonPayingCheckbox?.checked;
+
+            const toFloatOrNull = (v) => {
+                if (v === '' || v === null || v === undefined) return null;
+                const n = parseFloat(v);
+                return Number.isFinite(n) ? n : NaN;
+            };
+
+            if (!isNonPaying) {
+                const laborQty = toFloatOrNull(laborQtyInput?.value);
+                const materialQty = toFloatOrNull(materialQtyInput?.value);
+                const extraAmt = toFloatOrNull(extraAmountInput?.value);
+
+                const invalid = (n) => n !== null && (!Number.isFinite(n) || n < 0);
+                if (invalid(laborQty) || invalid(materialQty) || invalid(extraAmt)) {
+                    showToast('Please enter valid non-negative numbers for labour/material/extra amount', 'error');
+                    return;
+                }
+
+                const hasAnyPayable = ((laborQty || 0) > 0) || ((materialQty || 0) > 0) || ((extraAmt || 0) > 0);
+                if (!hasAnyPayable) {
+                    showToast('Enter labour units, material units, or extra amount (or select Non-paying)', 'error');
+                    return;
+                }
+
+                const matRate = toFloatOrNull(materialRateInput?.value);
+                if (matRate !== null && (!Number.isFinite(matRate) || matRate < 0)) {
+                    showToast('Please enter a valid material unit rate (or leave it blank)', 'error');
+                    return;
+                }
+            }
+
             const formData = new FormData(this);
             const submitBtn = this.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
@@ -591,7 +843,35 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (result.success) {
                     showToast('Proof submitted successfully!', 'success');
                     closeProofModal();
-                    if (window.currentOpenProjectId) loadProjectTimeline(window.currentOpenProjectId);
+                    if (window.currentOpenProjectId) {
+                        loadProjectTimeline(window.currentOpenProjectId);
+                        loadProjectFinancials(window.currentOpenProjectId);
+                    }
+
+                    const milestoneId = formData.get('milestone_id');
+                    const undo = result.undo || null;
+                    const seconds = (undo && undo.undo_seconds) ? Number(undo.undo_seconds) : 30;
+                    if (milestoneId && typeof window.showUndoToast === 'function') {
+                        window.showUndoToast('Milestone submitted. Undo available', async () => {
+                            const fd = new FormData();
+                            fd.append('milestone_id', milestoneId);
+
+                            const undoRes = await fetch('/2nd-Year-Group-Project/FixLanka/api/projects.php?action=undo_complete_phase', {
+                                method: 'POST',
+                                body: fd
+                            });
+                            const undoJson = await undoRes.json();
+                            if (undoJson.success) {
+                                showToast('Submission undone', 'info');
+                                if (window.currentOpenProjectId) {
+                                    loadProjectTimeline(window.currentOpenProjectId);
+                                    loadProjectFinancials(window.currentOpenProjectId);
+                                }
+                            } else {
+                                showToast(undoJson.message || 'Undo failed', 'error');
+                            }
+                        }, seconds);
+                    }
                 } else {
                     showToast(result.message || 'Upload failed', 'error');
                 }
@@ -697,9 +977,6 @@ function renderTableView() {
                     <button class="action-icon-btn" onclick="viewProjectDetails(${project.project_id})" title="View Details">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="action-icon-btn" onclick="editProject(${project.project_id})" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
                     <button class="action-icon-btn delete" onclick="deleteProject(${project.project_id})" title="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -772,9 +1049,6 @@ function renderCardView() {
             <div class="card-actions">
                 <button class="btn-secondary-small" onclick="viewProjectDetails(${project.project_id})">
                     <i class="fas fa-eye"></i> View
-                </button>
-                <button class="btn-primary-small" onclick="editProject(${project.project_id})">
-                    <i class="fas fa-edit"></i> Edit
                 </button>
                 <button class="btn-danger-small" onclick="deleteProject(${project.project_id})">
                     <i class="fas fa-trash"></i> Delete
@@ -985,6 +1259,9 @@ async function openStartProjectModal() {
     if (projectModal && projectForm) {
         projectForm.reset();
 
+        // Map selected contract -> existing project (when already started)
+        window._startProjectExistingProjectByContractId = {};
+
         // Fetch eligible contracts
         const selector = document.getElementById('contract-selector');
         selector.innerHTML = '<option value="">Loading available contracts...</option>';
@@ -1001,11 +1278,39 @@ async function openStartProjectModal() {
             const result = await response.json();
 
             if (result.success && result.data) {
-                // Filter for accepted and no project_id
-                const eligibleContracts = result.data.filter(c => c.status === 'accepted' && !c.project_id);
+                const isAcceptedByCustomer = (c) => (
+                    c?.terms_accepted === true ||
+                    c?.terms_accepted === 1 ||
+                    String(c?.customer_response || '') === 'accepted' ||
+                    String(c?.status || '') === 'accepted'
+                );
+
+                const acceptedContracts = result.data.filter(isAcceptedByCustomer);
+                const eligibleContracts = acceptedContracts.filter(c => !c.project_id);
+                const alreadyStartedContracts = acceptedContracts.filter(c => !!c.project_id);
 
                 if (eligibleContracts.length === 0) {
-                    selector.innerHTML = '<option value="">No accepted contracts available to start.</option>';
+                    if (alreadyStartedContracts.length === 0) {
+                        selector.innerHTML = '<option value="">No accepted contracts available to start.</option>';
+                    } else {
+                        selector.innerHTML = '<option value="">-- Select an Accepted Contract --</option>';
+                        alreadyStartedContracts.forEach(c => {
+                            const option = document.createElement('option');
+                            option.value = c.contract_id;
+
+                            const clientName = c.client_name || 'Client';
+                            const total = c.value ? ` (LKR ${formatNumber(c.value)})` : '';
+                            const projectId = c.project_id;
+                            option.textContent = `Contract #${c.contract_id} - ${clientName}${total} (Project #${projectId} already started)`;
+                            option.dataset.projectId = String(projectId);
+                            selector.appendChild(option);
+
+                            window._startProjectExistingProjectByContractId[String(c.contract_id)] = String(projectId);
+                        });
+
+                        selector.disabled = false;
+                        setStartProjectFreelancersLoading(false, 'Project already started for this contract. Manage assignments in Projects.');
+                    }
                 } else {
                     selector.innerHTML = '<option value="">-- Select an Accepted Contract --</option>';
                     eligibleContracts.forEach(c => {
@@ -1120,14 +1425,289 @@ function renderStartProjectCheckboxList(containerId, items, options) {
     container.appendChild(wrapper);
 }
 
+function renderStartProjectInfoList(containerId, items, options) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!items || items.length === 0) {
+        container.innerHTML = `<div style="color: var(--text-secondary); font-size: 0.9rem;">${options?.emptyText || 'No items found.'}</div>`;
+        return;
+    }
+
+    const frag = document.createDocumentFragment();
+
+    if (options?.introText) {
+        const intro = document.createElement('div');
+        intro.style.fontSize = '0.85rem';
+        intro.style.color = 'var(--text-secondary)';
+        intro.style.padding = '6px 6px 10px 6px';
+        intro.textContent = options.introText;
+        frag.appendChild(intro);
+    }
+
+    items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'start-project-info-row';
+        row.style.display = 'flex';
+        row.style.flexDirection = 'column';
+        row.style.padding = '8px 6px';
+        row.style.borderBottom = '1px solid var(--border-color)';
+
+        const primary = document.createElement('div');
+        primary.style.fontWeight = '600';
+        primary.style.color = 'var(--text-primary)';
+        primary.textContent = item.primaryText;
+
+        const secondary = document.createElement('div');
+        secondary.style.fontSize = '0.85rem';
+        secondary.style.color = 'var(--text-secondary)';
+        secondary.textContent = item.secondaryText || '';
+
+        row.appendChild(primary);
+        if (item.secondaryText) row.appendChild(secondary);
+        frag.appendChild(row);
+    });
+
+    // Remove last border
+    const wrapper = document.createElement('div');
+    wrapper.appendChild(frag);
+    const rows = wrapper.querySelectorAll('.start-project-info-row');
+    if (rows.length > 0) {
+        rows[rows.length - 1].style.borderBottom = 'none';
+    }
+
+    container.innerHTML = '';
+    container.appendChild(wrapper);
+}
+
+function renderStartProjectStaffRequirements(containerId, specialties) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    window._startProjectStaffSummaryMode = true;
+
+    // Normalize categories and keep an availability map
+    const categories = (specialties || [])
+        .map(s => {
+            const specialty = String(s.specialty || '').trim();
+            if (!specialty) return null;
+            const available = Math.max(0, Number(s.available_count ?? s.active_count ?? s.total_count ?? 0) || 0);
+            return { specialty, available };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.specialty.localeCompare(b.specialty));
+
+    if (!categories || categories.length === 0) {
+        container.innerHTML = `<div style="color: var(--text-secondary); font-size: 0.9rem;">No categories found.</div>`;
+        return;
+    }
+
+    const wrapper = document.createElement('div');
+
+    const intro = document.createElement('div');
+    intro.style.fontSize = '0.85rem';
+    intro.style.color = 'var(--text-secondary)';
+    intro.style.padding = '6px 6px 10px 6px';
+    intro.textContent = 'Select a category and set the required count (limited to availability).';
+    wrapper.appendChild(intro);
+
+    const rowsContainer = document.createElement('div');
+    rowsContainer.id = 'start-project-staff-rows';
+    wrapper.appendChild(rowsContainer);
+
+    const actions = document.createElement('div');
+    actions.style.display = 'flex';
+    actions.style.justifyContent = 'flex-start';
+    actions.style.padding = '10px 6px 0 6px';
+
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'btn-secondary';
+    addBtn.style.padding = '8px 12px';
+    addBtn.innerHTML = '<i class="fas fa-plus"></i> Add Category';
+    actions.appendChild(addBtn);
+    wrapper.appendChild(actions);
+
+    const getSelectedTotals = () => {
+        const map = {};
+        const inputs = rowsContainer.querySelectorAll('input.start-project-required-count');
+        inputs.forEach(input => {
+            const spec = String(input.getAttribute('data-specialty') || '').trim();
+            const req = Number(input.value || 0);
+            if (!spec || !Number.isFinite(req) || req <= 0) return;
+            map[spec] = (map[spec] || 0) + Math.floor(req);
+        });
+        return map;
+    };
+
+    const clamp = (value, min, max) => {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return min;
+        return Math.max(min, Math.min(max, n));
+    };
+
+    const getAvailableFor = (specialty, excludeRowEl) => {
+        const base = categories.find(c => c.specialty === specialty)?.available ?? 0;
+        // remaining = base - (sum of requirements for same specialty in other rows)
+        let used = 0;
+        const inputs = rowsContainer.querySelectorAll('input.start-project-required-count');
+        inputs.forEach(input => {
+            if (excludeRowEl && excludeRowEl.contains(input)) return;
+            const spec = String(input.getAttribute('data-specialty') || '').trim();
+            if (spec !== specialty) return;
+            const req = Number(input.value || 0);
+            if (!Number.isFinite(req) || req <= 0) return;
+            used += Math.floor(req);
+        });
+        const remaining = base - used;
+        return remaining > 0 ? remaining : 0;
+    };
+
+    const updateRowLimits = () => {
+        const rowEls = rowsContainer.querySelectorAll('.start-project-staff-row');
+        rowEls.forEach(rowEl => {
+            const select = rowEl.querySelector('select.start-project-category-select');
+            const input = rowEl.querySelector('input.start-project-required-count');
+            const hint = rowEl.querySelector('.start-project-available-hint');
+            if (!select || !input) return;
+
+            const spec = String(select.value || '').trim();
+            if (!spec) {
+                input.disabled = true;
+                input.value = '0';
+                input.max = '0';
+                if (hint) hint.textContent = 'Available: —';
+                input.setAttribute('data-specialty', '');
+                input.setAttribute('data-available', '0');
+                return;
+            }
+
+            const remaining = getAvailableFor(spec, rowEl);
+            input.disabled = false;
+            input.setAttribute('data-specialty', spec);
+            input.setAttribute('data-available', String(remaining));
+            input.max = String(remaining);
+            const current = clamp(input.value, 0, remaining);
+            input.value = String(current);
+            if (hint) hint.textContent = `Available: ${remaining.toLocaleString()}`;
+        });
+    };
+
+    const createRow = () => {
+        const row = document.createElement('div');
+        row.className = 'start-project-staff-row';
+        row.style.display = 'grid';
+        row.style.gridTemplateColumns = '1fr 110px 40px';
+        row.style.gridTemplateRows = 'auto auto';
+        row.style.gridTemplateAreas = '"select input remove" "hint hint hint"';
+        row.style.alignItems = 'center';
+        row.style.gap = '10px';
+        row.style.padding = '8px 6px';
+        row.style.borderBottom = '1px solid var(--border-color)';
+
+        const select = document.createElement('select');
+        select.className = 'start-project-category-select';
+        select.style.gridArea = 'select';
+        select.style.width = '100%';
+        select.style.padding = '8px 10px';
+        select.style.borderRadius = '8px';
+        select.style.border = '1px solid var(--border-color)';
+        select.style.height = '40px';
+
+        const opt0 = document.createElement('option');
+        opt0.value = '';
+        opt0.textContent = '-- Select Category --';
+        select.appendChild(opt0);
+        categories.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.specialty;
+            opt.textContent = c.specialty;
+            select.appendChild(opt);
+        });
+
+        const hint = document.createElement('div');
+        hint.className = 'start-project-available-hint';
+        hint.style.gridArea = 'hint';
+        hint.style.fontSize = '0.85rem';
+        hint.style.color = 'var(--text-secondary)';
+        hint.style.paddingTop = '2px';
+        hint.textContent = 'Available: —';
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'start-project-required-count';
+        input.style.gridArea = 'input';
+        input.min = '0';
+        input.max = '0';
+        input.step = '1';
+        input.value = '0';
+        input.disabled = true;
+        input.setAttribute('data-specialty', '');
+        input.setAttribute('data-available', '0');
+        input.setAttribute('aria-label', 'Required count');
+        input.style.width = '110px';
+        input.style.padding = '8px 10px';
+        input.style.borderRadius = '8px';
+        input.style.border = '1px solid var(--border-color)';
+        input.style.height = '40px';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn-secondary';
+        removeBtn.style.gridArea = 'remove';
+        removeBtn.style.padding = '8px 10px';
+        removeBtn.style.height = '40px';
+        removeBtn.style.display = 'flex';
+        removeBtn.style.alignItems = 'center';
+        removeBtn.style.justifyContent = 'center';
+        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+
+        select.addEventListener('change', () => {
+            updateRowLimits();
+        });
+
+        input.addEventListener('input', () => {
+            const max = Number(input.getAttribute('data-available') || input.max || 0);
+            const raw = Number(input.value || 0);
+            if (Number.isFinite(raw) && Number.isFinite(max) && raw > max) {
+                showToast(`Only ${max} available for this category. Add more from the Workforce page.`, 'error');
+            }
+            input.value = String(clamp(input.value, 0, max));
+            updateRowLimits();
+        });
+
+        removeBtn.addEventListener('click', () => {
+            row.remove();
+            updateRowLimits();
+        });
+
+        row.appendChild(select);
+        row.appendChild(input);
+        row.appendChild(removeBtn);
+        row.appendChild(hint);
+        rowsContainer.appendChild(row);
+
+        updateRowLimits();
+    };
+
+    addBtn.addEventListener('click', () => createRow());
+
+    // Start with one empty row
+    createRow();
+
+    container.innerHTML = '';
+    container.appendChild(wrapper);
+}
+
 async function loadStartProjectEmployees() {
-    const companyId = window.CURRENT_COMPANY_ID;
+    const companyId = currentCompanyId;
     if (!companyId) {
         setStartProjectEmployeesLoading(false, 'Company not found in session.');
         return;
     }
 
     setStartProjectEmployeesLoading(true, 'Loading employees...');
+    window._startProjectStaffSummaryMode = false;
 
     try {
         const url = `/2nd-Year-Group-Project/FixLanka/api/company-employees.php?company_id=${encodeURIComponent(companyId)}&employment_type=full_time,part_time&status=active&order_by=created_at&order_dir=DESC`;
@@ -1136,6 +1716,31 @@ async function loadStartProjectEmployees() {
 
         // API returns an array (not wrapped)
         const employees = Array.isArray(result) ? result : [];
+
+        // If the company uses staffsummary counts (not individual employee roster), show those counts
+        // so the modal doesn't incorrectly imply there are no employees.
+        if (employees.length === 0) {
+            try {
+                // Use availability endpoint so the UI is capped by remaining capacity (after other project allocations)
+                const availUrl = `/2nd-Year-Group-Project/FixLanka/api/company-employees.php?action=availability&company_id=${encodeURIComponent(companyId)}`;
+                const availRes = await fetch(availUrl);
+                const availJson = await availRes.json();
+                const data = Array.isArray(availJson?.data) ? availJson.data : [];
+                const usable = data.filter(s => (s?.specialty || '').trim() !== '');
+                if (usable.length > 0) {
+                    renderStartProjectStaffRequirements('start-project-employees', usable);
+                    return;
+                }
+            } catch (err) {
+                console.warn('Failed to load staff availability for start-project employees:', err);
+            }
+
+            renderStartProjectCheckboxList('start-project-employees', [], {
+                checkboxName: 'start_project_employee_ids[]',
+                emptyText: 'No active employee profiles found. Add employees (individual profiles) to assign them to a project.'
+            });
+            return;
+        }
 
         const items = employees.map(emp => {
             const name = `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || `Employee #${emp.employee_id}`;
@@ -1226,9 +1831,52 @@ async function saveProject(e) {
             return;
         }
 
+        // If the selected contract already has a project, just go to Projects.
+        const selectedOption = contractSelect?.selectedOptions?.[0];
+        const existingProjectId = selectedOption?.dataset?.projectId || window._startProjectExistingProjectByContractId?.[String(contractId)];
+        if (existingProjectId) {
+            showToast(`Project already started for this contract (Project #${existingProjectId}). Redirecting...`, 'info');
+            closeProjectModal();
+            setTimeout(() => {
+                window.location.href = 'projects.php';
+            }, 400);
+            return;
+        }
+
         const selectedEmployeeIds = Array.from(document.querySelectorAll('input[name="start_project_employee_ids[]"]:checked'))
             .map(el => parseInt(el.value, 10))
             .filter(n => Number.isFinite(n) && n > 0);
+
+        // Staff summary mode: collect per-category required counts (limited to availability in UI and re-validated server-side)
+        const staffRequirements = Array.from(document.querySelectorAll('input.start-project-required-count'))
+            .map(input => {
+                const specialty = String(input.getAttribute('data-specialty') || '').trim();
+                const available = Number(input.getAttribute('data-available') || input.max || 0);
+                const required = Number(input.value || 0);
+                if (!specialty) return null;
+                if (!Number.isFinite(required) || required <= 0) return null;
+                if (!Number.isFinite(available) || available < 0) return null;
+                if (required > available) {
+                    // UI should prevent this, but keep safe
+                    return { specialty, required_count: Math.floor(available) };
+                }
+                return { specialty, required_count: Math.floor(required) };
+            })
+            .filter(Boolean);
+
+        // If user attempted to exceed availability, show an alert
+        const bad = Array.from(document.querySelectorAll('input.start-project-required-count'))
+            .some(input => {
+                const spec = String(input.getAttribute('data-specialty') || '').trim();
+                if (!spec) return false;
+                const max = Number(input.getAttribute('data-available') || input.max || 0);
+                const val = Number(input.value || 0);
+                return Number.isFinite(val) && Number.isFinite(max) && val > max;
+            });
+        if (bad) {
+            showToast('Required count exceeds availability. Add more staff from the Workforce page.', 'error');
+            return;
+        }
 
         const selectedFreelancerAssignmentIds = Array.from(document.querySelectorAll('input[name="start_project_freelancer_assignment_ids[]"]:checked'))
             .map(el => parseInt(el.value, 10))
@@ -1248,7 +1896,8 @@ async function saveProject(e) {
             body: JSON.stringify({
                 contract_id: contractId,
                 employee_ids: selectedEmployeeIds,
-                freelancer_assignment_ids: selectedFreelancerAssignmentIds
+                freelancer_assignment_ids: selectedFreelancerAssignmentIds,
+                staff_requirements: staffRequirements
             })
         });
 
@@ -1262,7 +1911,25 @@ async function saveProject(e) {
             await loadProjects();
             await loadStatistics();
         } else {
-            showToast(result.message || 'Failed to start project', 'error');
+            const code = String(result.code || '');
+            const existingProjectId = result.project_id || result.projectId;
+            const msg = String(result.message || '');
+
+            if (code === 'already_started' || /already\s+been\s+started/i.test(msg)) {
+                showToast(
+                    existingProjectId
+                        ? `Project already started for this contract (Project #${existingProjectId}). Redirecting...`
+                        : 'Project already started for this contract. Redirecting...',
+                    'info'
+                );
+                closeProjectModal();
+                setTimeout(() => {
+                    window.location.href = 'projects.php';
+                }, 400);
+                return;
+            }
+
+            showToast(msg || 'Failed to start project', 'error');
         }
     } catch (error) {
         console.error('Error starting project:', error);
@@ -1274,15 +1941,6 @@ async function saveProject(e) {
             submitBtn.disabled = false;
         }
     }
-}
-
-/**
- * Edit project
- */
-function editProject(projectId) {
-    // The current modal is for starting projects from contracts.
-    // Editing individual project fields is not yet implemented in this UI.
-    showToast('Edit functionality coming soon. Use the project details drawer to view info.', 'info');
 }
 
 /**
@@ -1422,25 +2080,10 @@ function viewProjectDetails(projectId) {
         </div>
     `;
 
-    // Populate Chat Tab
+    // Populate Chat Tab (embed the same Contract chat widget UI here)
     const chatContent = `
-        <div class="project-details-container" style="height: 100%; display: flex; flex-direction: column; padding: 0;">
-            <div class="chat-wrapper" style="flex: 1; display: flex; flex-direction: column; height: 500px;">
-                <div class="chat-header" style="padding: 15px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
-                    <div class="chat-title" style="font-weight: 600; color: #1e293b;">
-                        <i class="fas fa-comments"></i> Chat with ${escapeHtml(project.customer_name || 'Customer')}
-                    </div>
-                </div>
-                <div class="chat-messages" id="chat-messages" style="flex: 1; overflow-y: auto; padding: 20px; background: #f1f5f9; display: flex; flex-direction: column; gap: 15px;">
-                    <!-- Messages will be loaded here -->
-                </div>
-                <div class="chat-input-area" style="padding: 15px; border-top: 1px solid #e2e8f0; background: white; display: flex; gap: 10px;">
-                    <input type="text" id="chat-message-input" placeholder="Type your message..." style="flex: 1; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 20px; outline: none; transition: border-color 0.2s;">
-                        <button id="send-chat-btn" onclick="sendMessage(${project.contract_id})" style="background: var(--primary-color); color: white; border: none; border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                </div>
-            </div>
+        <div class="project-details-container" style="height: 100%; padding: 16px;">
+            <div id="project-chat-mount" style="position: relative; width: 100%; height: 520px;"></div>
         </div>
     `;
 
@@ -1452,10 +2095,29 @@ function viewProjectDetails(projectId) {
         if (typeof loadProjectFinancials === 'function') {
             loadProjectFinancials(project.project_id);
         }
-        if (typeof loadProjectChat === 'function') {
-            loadProjectChat(project.contract_id);
-        }
     }, 100);
+
+    // Mount contract chat widget inline in the chat tab
+    setTimeout(() => {
+        const mountEl = document.getElementById('project-chat-mount');
+        if (!mountEl) return;
+
+        const contractId = project.contract_id;
+        if (!contractId) {
+            mountEl.innerHTML = '<div style="padding:16px; color:#64748b; text-align:center;">No contract linked to this project.</div>';
+            return;
+        }
+
+        if (typeof ChatWidget !== 'undefined' && ChatWidget && typeof ChatWidget.mountInline === 'function') {
+            ChatWidget.mountInline(contractId, mountEl, {
+                name: project.customer_name || 'Customer',
+                contractNumber: project.contract_number || `Contract #${contractId}`
+            });
+            return;
+        }
+
+        mountEl.innerHTML = '<div style="padding:16px; color:#ef4444; text-align:center;">Chat widget is not available on this page.</div>';
+    }, 0);
 
     // Update drawer content
     document.getElementById('tab-overview').innerHTML = overviewContent;
@@ -1486,6 +2148,11 @@ function closeProjectDrawer() {
     if (drawer) {
         drawer.classList.remove('active');
         document.body.style.overflow = '';
+    }
+
+    // Stop contract chat polling if mounted inline
+    if (typeof ChatWidget !== 'undefined' && ChatWidget && typeof ChatWidget.close === 'function') {
+        ChatWidget.close();
     }
 }
 
@@ -1576,7 +2243,7 @@ function initializeModal() {
             // Add active class to clicked tab and corresponding content
             tab.classList.add('active');
             const tabName = tab.getAttribute('data-tab');
-            const content = document.getElementById(`tab - ${tabName} `);
+            const content = document.getElementById(`tab-${tabName}`);
             if (content) {
                 content.classList.add('active');
             }
@@ -1725,7 +2392,6 @@ function hideLoader() {
 window.openProjectModal = openStartProjectModal;
 window.openStartProjectModal = openStartProjectModal;
 window.closeProjectModal = closeProjectModal;
-window.editProject = editProject;
 window.viewProjectDetails = viewProjectDetails;
 window.closeProjectDrawer = closeProjectDrawer;
 window.deleteProject = deleteProject;
@@ -1739,11 +2405,11 @@ function renderProjectChatMessages(messages, userRole) {
 
     if (!messages || messages.length === 0) {
         messagesContainer.innerHTML = `
-                            < div style = "flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; height: 100%;" >
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; height: 100%;">
                 <i class="fas fa-comments" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
                 <p>No messages yet. Start the conversation!</p>
-            </div >
-                            `;
+            </div>
+        `;
         return;
     }
 
@@ -1766,22 +2432,22 @@ function renderProjectChatMessages(messages, userRole) {
             else displayDate = msgDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
             html += `
-                            < div style = "text-align: center; margin: 15px 0;" >
+                <div style="text-align: center; margin: 15px 0;">
                                 <span style="background: #e2e8f0; color: #64748b; font-size: 11px; padding: 4px 10px; border-radius: 12px; font-weight: 500;">
                                     ${displayDate}
                                 </span>
-                </div >
-                            `;
+                </div>
+            `;
         }
 
         if (msg.message_type === 'system') {
             html += `
-                            < div style = "text-align: center; margin: 10px 0;" >
+                <div style="text-align: center; margin: 10px 0;">
                                 <span style="background: #f1f5f9; color: #64748b; font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
                                     <i class="fas fa-info-circle"></i> ${escapeHtml(msg.message)}
                                 </span>
-                </div >
-                            `;
+                </div>
+            `;
             return;
         }
 
@@ -1790,26 +2456,26 @@ function renderProjectChatMessages(messages, userRole) {
 
         if (isMine) {
             html += `
-                            < div style = "display: flex; justify-content: flex-end; margin-bottom: 10px;" >
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-end;">
                                     <div style="background: var(--primary-color, #0abab5); color: white; padding: 10px 15px; border-radius: 15px 15px 0 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-wrap: break-word;">
                                         ${escapeHtml(msg.message)}
                                     </div>
                                     <span style="font-size: 10px; color: #94a3b8; margin-top: 4px;">${timeStr}</span>
                                 </div>
-                </div >
-                            `;
+                </div>
+            `;
         } else {
             html += `
-                            < div style = "display: flex; justify-content: flex-start; margin-bottom: 10px;" >
+                <div style="display: flex; justify-content: flex-start; margin-bottom: 10px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-start;">
                                     <div style="background: white; color: #1e293b; padding: 10px 15px; border-radius: 15px 15px 15px 0; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); word-wrap: break-word;">
                                         ${escapeHtml(msg.message)}
                                     </div>
                                     <span style="font-size: 10px; color: #94a3b8; margin-top: 4px;">${timeStr}</span>
                                 </div>
-                </div >
-                            `;
+                </div>
+            `;
         }
     });
 
@@ -1903,10 +2569,18 @@ async function sendMessage(contractId) {
             // Refresh instantly inline
             loadProjectChat(contractId);
         } else {
-            alert('Failed to send message: ' + (data.message || 'Unknown error'));
+            if (typeof showToast === 'function') {
+                showToast(data.message ? `Failed to send message: ${data.message}` : 'Failed to send message', 'error');
+            } else if (window.showAlert) {
+                window.showAlert(data.message ? `Failed to send message: ${data.message}` : 'Failed to send message', 'danger', 'Chat');
+            }
         }
     } catch (e) {
-        alert('Error sending message');
+        if (typeof showToast === 'function') {
+            showToast('Error sending message', 'error');
+        } else if (window.showAlert) {
+            window.showAlert('Error sending message', 'danger', 'Chat');
+        }
     } finally {
         sendBtn.disabled = false;
         inputField.disabled = false;

@@ -149,14 +149,9 @@ function updateCategoryCards(specialties) {
     specialties.forEach(spec => {
         const icon = iconMap[spec.specialty] || 'fa-tools';
         const colorClass = colorMap[spec.specialty] || 'general';
-        
-        const minRate = parseFloat(spec.min_hourly_rate || 0);
-        const maxRate = parseFloat(spec.max_hourly_rate || 0);
-        const rateRange = minRate > 0 && maxRate > 0 
-            ? (minRate === maxRate
-                ? `LKR ${minRate.toLocaleString()}/hr`
-                : `LKR ${minRate.toLocaleString()}-${maxRate.toLocaleString()}/hr`)
-            : 'Rate not set';
+
+        const totalCount = Number(spec.total_count || 0);
+        const countText = `${totalCount.toLocaleString()} Repairer${totalCount === 1 ? '' : 's'}`;
         
         const card = document.createElement('div');
         card.className = 'category-card category-card--summary';
@@ -166,15 +161,8 @@ function updateCategoryCards(specialties) {
             </div>
             <div class="category-info">
                 <h3>${spec.specialty}</h3>
-                <div class="category-stats">
-                    <span class="total-count">${spec.total_count || 0} Total</span>
-                    <span class="active-count">${spec.active_count || 0} Active</span>
-                </div>
                 <div class="category-meta">
-                    <span class="avg-rating">
-                        <i class="fas fa-star"></i> ${parseFloat(spec.avg_rating || 0).toFixed(1)}
-                    </span>
-                    <span class="hourly-range">${rateRange}</span>
+                    <span class="repairer-count">${countText}</span>
                 </div>
             </div>
         `;

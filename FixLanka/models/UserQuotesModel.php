@@ -112,46 +112,90 @@ class UserQuotesModel {
         return $this->companyQuotationHasCompanyId;
     }
 
-    public function getUserQuotes(int $userId, int $limit = 20, int $offset = 0, ?string $status = null, ?int $requestId = null): array {
+    public function getUserQuotes(int $userId, int $limit = 20, int $offset = 0, ?string $status = null, ?int $requestId = null, ?string $requestType = null): array {
         $limit = max(1, min(50, (int)$limit));
         $offset = max(0, (int)$offset);
 
-        $params = [
-            ':user_id_repairer' => $userId,
-            ':user_id_company'  => $userId,
-        ];
-        $statusSqlRepairer = '';
-        $statusSqlCompany  = '';
-        if ($status !== null) {
-            $params[':status_repairer'] = $status;
-            $params[':status_company']  = $status;
-            $statusSqlRepairer = ' AND rq.status = :status_repairer ';
-            $statusSqlCompany  = ' AND cq.status = :status_company ';
+        $requestType = $requestType !== null ? strtolower(trim($requestType)) : null;
+        $includeRegular = $requestType === null || $requestType === '' || $requestType === 'regular';
+        $includeDirect = $requestType === null || $requestType === '' || $requestType === 'direct';
+
+        $params = [];
+
+        $statusSqlRepairerRegular = '';
+        $statusSqlCompanyRegular = '';
+        $statusSqlRepairerDirect = '';
+        $statusSqlCompanyDirect = '';
+
+        $requestSqlRepairerRegular = '';
+        $requestSqlCompanyRegular = '';
+        $requestSqlRepairerDirect = '';
+        $requestSqlCompanyDirect = '';
+
+        if ($includeRegular) {
+            $params[':user_id_repairer_regular'] = $userId;
+            $params[':user_id_company_regular'] = $userId;
+
+            if ($status !== null) {
+                $params[':status_repairer_regular'] = $status;
+                $params[':status_company_regular'] = $status;
+                $statusSqlRepairerRegular = ' AND rq.status = :status_repairer_regular ';
+                $statusSqlCompanyRegular = ' AND cq.status = :status_company_regular ';
+            }
+
+            if ($requestId !== null) {
+                $params[':request_id_repairer_regular'] = $requestId;
+                $params[':request_id_company_regular'] = $requestId;
+                $requestSqlRepairerRegular = ' AND rq.request_id = :request_id_repairer_regular ';
+                $requestSqlCompanyRegular = ' AND cq.request_id = :request_id_company_regular ';
+            }
         }
 
-        $requestSqlRepairer = '';
-        $requestSqlCompany  = '';
-        if ($requestId !== null) {
-            $params[':request_id_repairer'] = $requestId;
-            $params[':request_id_company']  = $requestId;
-            $requestSqlRepairer = ' AND rq.request_id = :request_id_repairer ';
-            $requestSqlCompany  = ' AND cq.request_id = :request_id_company ';
+        if ($includeDirect) {
+            $params[':user_id_repairer_direct'] = $userId;
+            $params[':user_id_company_direct'] = $userId;
+
+            if ($status !== null) {
+                $params[':status_repairer_direct'] = $status;
+                $params[':status_company_direct'] = $status;
+                $statusSqlRepairerDirect = ' AND rq.status = :status_repairer_direct ';
+                $statusSqlCompanyDirect = ' AND cq.status = :status_company_direct ';
+            }
+
+            if ($requestId !== null) {
+                $params[':request_id_repairer_direct'] = $requestId;
+                $params[':request_id_company_direct'] = $requestId;
+                $requestSqlRepairerDirect = ' AND rq.request_id = :request_id_repairer_direct ';
+                $requestSqlCompanyDirect = ' AND cq.request_id = :request_id_company_direct ';
+            }
+        }
+
+        if (!$includeRegular && !$includeDirect) {
+            return [];
         }
 
         $hasCompanyId          = $this->companyQuotationHasCompanyId();
-        $companyJoinSql        = $hasCompanyId ? "LEFT JOIN company c ON cq.company_id = c.company_id" : "";
-        $companyProviderNameSql = $hasCompanyId ? "COALESCE(c.name, 'Company')" : "'Company'";
+        $companyJoinSql        = $hasCompanyId ? "LEFT JOIN company comp ON cq.company_id = comp.company_id" : "";
+        $companyProviderNameSql = $hasCompanyId ? "COALESCE(comp.name, 'Company')" : "'Company'";
+        $companyProviderIdSql   = $hasCompanyId ? "cq.company_id" : "0";
 
-        $sql = "
-            SELECT * FROM (
+        $parts = [];
+
+        if ($includeRegular) {
+            $parts[] = "
                 SELECT
                     'repairer' AS source,
+                    'regular' AS request_type,
                     rq.quote_id AS quote_id,
                     rq.request_id AS request_id,
                     jr.title AS job_title,
                     rq.quoteAmount AS amount,
                     rq.status AS status,
                     rq.dateSubmitted AS created_at,
+                    jr.dateCreated AS job_posted_at,
+                    jr.status AS job_status,
+                    jr.service_provider_type AS job_provider_preference,
+                    c.name AS category_name,
                     rq.repairer_id AS provider_id,
                     CONCAT(r.f_name, ' ', r.l_name) AS provider_name,
                     'Individual' AS provider_type,
@@ -161,8 +205,10 @@ class UserQuotesModel {
                     rq.warrantyPeriod AS warranty_period,
                     rq.materialsIncluded AS materials_included,
                     rq.message AS message,
+                    rq.message AS quote_message,
                     rq.validUntil AS valid_until,
-                    -- Company specific fields padded with NULL
+                    NULL AS company_start_date,
+                    NULL AS company_completion_date,
                     NULL AS labor_cost,
                     NULL AS material_cost,
                     NULL AS transport_cost,
@@ -177,32 +223,40 @@ class UserQuotesModel {
                     NULL AS material_unit_label
                 FROM repairerquote rq
                 INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
+                LEFT JOIN category c ON c.category_id = jr.category_id
                 INNER JOIN repairer r ON rq.repairer_id = r.repairer_id
-                WHERE jr.user_id = :user_id_repairer
-                $statusSqlRepairer
-                $requestSqlRepairer
+                WHERE jr.user_id = :user_id_repairer_regular
+                $statusSqlRepairerRegular
+                $requestSqlRepairerRegular
+            ";
 
-                UNION ALL
-
+            $parts[] = "
                 SELECT
                     'company' AS source,
+                    'regular' AS request_type,
                     cq.quotation_id AS quote_id,
                     cq.request_id AS request_id,
                     jr.title AS job_title,
                     cq.total_amount AS amount,
                     cq.status AS status,
                     cq.created_at AS created_at,
-                    NULL AS provider_id,
+                    jr.dateCreated AS job_posted_at,
+                    jr.status AS job_status,
+                    jr.service_provider_type AS job_provider_preference,
+                    c.name AS category_name,
+                    $companyProviderIdSql AS provider_id,
                     $companyProviderNameSql AS provider_name,
                     'Company' AS provider_type,
                     NULL AS provider_avatar,
                     NULL AS provider_rating,
                     cq.estimated_duration AS estimated_days,
                     cq.warranty_period AS warranty_period,
-                    1 AS materials_included, -- Companies are expected to list material cost, assumed included if quote provided
+                    1 AS materials_included,
                     cq.description AS message,
-                    NULL AS valid_until, -- companyquotation doesn't have an expiration date yet
-                    -- Company specific fields
+                    cq.description AS quote_message,
+                    NULL AS valid_until,
+                    cq.start_date AS company_start_date,
+                    cq.completion_date AS company_completion_date,
                     cq.labor_cost AS labor_cost,
                     cq.material_cost AS material_cost,
                     cq.transport_cost AS transport_cost,
@@ -217,10 +271,115 @@ class UserQuotesModel {
                     cq.material_unit_label AS material_unit_label
                 FROM companyquotation cq
                 INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
+                LEFT JOIN category c ON c.category_id = jr.category_id
                 $companyJoinSql
-                WHERE cq.user_id = :user_id_company
-                $statusSqlCompany
-                $requestSqlCompany
+                WHERE jr.user_id = :user_id_company_regular
+                $statusSqlCompanyRegular
+                $requestSqlCompanyRegular
+            ";
+        }
+
+        if ($includeDirect) {
+            $parts[] = "
+                SELECT
+                    'repairer' AS source,
+                    'direct' AS request_type,
+                    rq.quote_id AS quote_id,
+                    rq.request_id AS request_id,
+                    djr.title AS job_title,
+                    rq.quoteAmount AS amount,
+                    rq.status AS status,
+                    rq.dateSubmitted AS created_at,
+                    djr.date_created AS job_posted_at,
+                    djr.status AS job_status,
+                    djr.provider_type AS job_provider_preference,
+                    c.name AS category_name,
+                    rq.repairer_id AS provider_id,
+                    CONCAT(r.f_name, ' ', r.l_name) AS provider_name,
+                    'Individual' AS provider_type,
+                    r.profilePicture AS provider_avatar,
+                    r.ratings AS provider_rating,
+                    rq.estimatedDays AS estimated_days,
+                    rq.warrantyPeriod AS warranty_period,
+                    rq.materialsIncluded AS materials_included,
+                    rq.message AS message,
+                    rq.message AS quote_message,
+                    rq.validUntil AS valid_until,
+                    NULL AS company_start_date,
+                    NULL AS company_completion_date,
+                    NULL AS labor_cost,
+                    NULL AS material_cost,
+                    NULL AS transport_cost,
+                    NULL AS other_charges,
+                    NULL AS budget_type,
+                    NULL AS payment_terms,
+                    NULL AS payment_method,
+                    NULL AS pricing_type,
+                    NULL AS hourly_rate,
+                    NULL AS work_schedule_type,
+                    NULL AS labor_unit_label,
+                    NULL AS material_unit_label
+                FROM repairerquote rq
+                INNER JOIN directjobrequest djr ON rq.request_id = djr.request_id
+                LEFT JOIN category c ON c.category_id = djr.category_id
+                INNER JOIN repairer r ON rq.repairer_id = r.repairer_id
+                WHERE djr.user_id = :user_id_repairer_direct
+                $statusSqlRepairerDirect
+                $requestSqlRepairerDirect
+            ";
+
+            $parts[] = "
+                SELECT
+                    'company' AS source,
+                    'direct' AS request_type,
+                    cq.quotation_id AS quote_id,
+                    cq.request_id AS request_id,
+                    djr.title AS job_title,
+                    cq.total_amount AS amount,
+                    cq.status AS status,
+                    cq.created_at AS created_at,
+                    djr.date_created AS job_posted_at,
+                    djr.status AS job_status,
+                    djr.provider_type AS job_provider_preference,
+                    c.name AS category_name,
+                    $companyProviderIdSql AS provider_id,
+                    $companyProviderNameSql AS provider_name,
+                    'Company' AS provider_type,
+                    NULL AS provider_avatar,
+                    NULL AS provider_rating,
+                    cq.estimated_duration AS estimated_days,
+                    cq.warranty_period AS warranty_period,
+                    1 AS materials_included,
+                    cq.description AS message,
+                    cq.description AS quote_message,
+                    NULL AS valid_until,
+                    cq.start_date AS company_start_date,
+                    cq.completion_date AS company_completion_date,
+                    cq.labor_cost AS labor_cost,
+                    cq.material_cost AS material_cost,
+                    cq.transport_cost AS transport_cost,
+                    cq.other_charges AS other_charges,
+                    cq.budget_type AS budget_type,
+                    cq.payment_terms AS payment_terms,
+                    cq.payment_method AS payment_method,
+                    cq.pricing_type AS pricing_type,
+                    cq.hourly_rate AS hourly_rate,
+                    cq.work_schedule_type AS work_schedule_type,
+                    cq.labor_unit_label AS labor_unit_label,
+                    cq.material_unit_label AS material_unit_label
+                FROM companyquotation cq
+                INNER JOIN directjobrequest djr ON cq.request_id = djr.request_id
+                LEFT JOIN category c ON c.category_id = djr.category_id
+                $companyJoinSql
+                WHERE djr.user_id = :user_id_company_direct
+                $statusSqlCompanyDirect
+                $requestSqlCompanyDirect
+            ";
+        }
+
+        $sql = "
+            SELECT * FROM (
+                " . implode("\nUNION ALL\n", $parts) . "
             ) q
             ORDER BY q.created_at DESC
             LIMIT :limit OFFSET :offset
@@ -255,36 +414,89 @@ class UserQuotesModel {
                 (
                     SELECT COUNT(*)
                     FROM companyquotation cq
-                    WHERE cq.user_id = :user_id_company AND cq.status = 'pending'
+                    INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
+                    WHERE jr.user_id = :user_id_company AND cq.status = 'pending'
+                )
+                +
+                (
+                    SELECT COUNT(*)
+                    FROM repairerquote rq
+                    INNER JOIN directjobrequest djr ON rq.request_id = djr.request_id
+                    WHERE djr.user_id = :user_id_repairer_direct AND rq.status = 'pending'
+                )
+                +
+                (
+                    SELECT COUNT(*)
+                    FROM companyquotation cq
+                    INNER JOIN directjobrequest djr ON cq.request_id = djr.request_id
+                    WHERE djr.user_id = :user_id_company_direct AND cq.status = 'pending'
                 ) AS pending_count
         ";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(':user_id_repairer', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':user_id_company', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':user_id_repairer_direct', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':user_id_company_direct', $userId, PDO::PARAM_INT);
         $stmt->execute();
         return (int)$stmt->fetchColumn();
     }
 
-    public function respondToQuote(int $userId, string $source, int $quoteId, string $decision): bool {
+    public function respondToQuote(int $userId, string $source, int $quoteId, string $decision, ?string $requestType = null): bool {
         if (!in_array($decision, ['accepted', 'rejected'], true)) {
             return false;
         }
+
+        $normalizedRequestType = $requestType !== null ? strtolower(trim($requestType)) : null;
+        $allowRegular = $normalizedRequestType === null || $normalizedRequestType === '' || $normalizedRequestType === 'regular';
+        $allowDirect = $normalizedRequestType === null || $normalizedRequestType === '' || $normalizedRequestType === 'direct';
 
         try {
             $this->pdo->beginTransaction();
 
             // First, find the request_id to ensure ownership and for subsequent updates
             $requestId = null;
+            $resolvedRequestType = null;
+
+            $checkCandidates = [];
             if ($source === 'repairer') {
-                $checkSql = "SELECT rq.request_id FROM repairerquote rq INNER JOIN jobrequest jr ON rq.request_id = jr.request_id WHERE rq.quote_id = :quote_id AND jr.user_id = :user_id";
+                if ($allowRegular) {
+                    $checkCandidates[] = [
+                        'sql' => "SELECT rq.request_id FROM repairerquote rq INNER JOIN jobrequest jr ON rq.request_id = jr.request_id WHERE rq.quote_id = :quote_id AND jr.user_id = :user_id",
+                        'request_type' => 'regular',
+                    ];
+                }
+                if ($allowDirect) {
+                    $checkCandidates[] = [
+                        'sql' => "SELECT rq.request_id FROM repairerquote rq INNER JOIN directjobrequest djr ON rq.request_id = djr.request_id WHERE rq.quote_id = :quote_id AND djr.user_id = :user_id",
+                        'request_type' => 'direct',
+                    ];
+                }
             } else {
-                $checkSql = "SELECT cq.request_id FROM companyquotation cq INNER JOIN jobrequest jr ON cq.request_id = jr.request_id WHERE cq.quotation_id = :quote_id AND cq.user_id = :user_id";
+                if ($allowRegular) {
+                    $checkCandidates[] = [
+                        'sql' => "SELECT cq.request_id FROM companyquotation cq INNER JOIN jobrequest jr ON cq.request_id = jr.request_id WHERE cq.quotation_id = :quote_id AND jr.user_id = :user_id",
+                        'request_type' => 'regular',
+                    ];
+                }
+                if ($allowDirect) {
+                    $checkCandidates[] = [
+                        'sql' => "SELECT cq.request_id FROM companyquotation cq INNER JOIN directjobrequest djr ON cq.request_id = djr.request_id WHERE cq.quotation_id = :quote_id AND djr.user_id = :user_id",
+                        'request_type' => 'direct',
+                    ];
+                }
             }
-            
-            $stmt = $this->pdo->prepare($checkSql);
-            $stmt->execute([':quote_id' => $quoteId, ':user_id' => $userId]);
-            $requestId = $stmt->fetchColumn();
+
+            foreach ($checkCandidates as $candidate) {
+                $stmt = $this->pdo->prepare($candidate['sql']);
+                $stmt->execute([':quote_id' => $quoteId, ':user_id' => $userId]);
+                $candidateRequestId = $stmt->fetchColumn();
+                if ($candidateRequestId) {
+                    $requestId = (int)$candidateRequestId;
+                    $resolvedRequestType = $candidate['request_type'];
+                    break;
+                }
+            }
 
             if (!$requestId) {
                 $this->pdo->rollBack();
@@ -327,10 +539,12 @@ class UserQuotesModel {
                     $stmtRepairer->execute([':request_id' => $requestId, ':exclude_id_rep' => $quoteId]);
                 }
 
-                // Update job request status to accepted
-                $updateJobSql = "UPDATE jobrequest SET status = 'accepted' WHERE request_id = :request_id";
+                // Update selected request status to accepted
+                $updateJobSql = $resolvedRequestType === 'direct'
+                    ? "UPDATE directjobrequest SET status = 'accepted' WHERE request_id = :request_id AND user_id = :user_id"
+                    : "UPDATE jobrequest SET status = 'accepted' WHERE request_id = :request_id AND user_id = :user_id";
                 $stmtJob = $this->pdo->prepare($updateJobSql);
-                $stmtJob->execute([':request_id' => $requestId]);
+                $stmtJob->execute([':request_id' => $requestId, ':user_id' => $userId]);
 
                 $this->notifyQuoteDecision($source, $quoteId, 'accepted', (int)$requestId);
                 $this->notifyCompetingQuotesRejected((int)$requestId, $source, $quoteId);

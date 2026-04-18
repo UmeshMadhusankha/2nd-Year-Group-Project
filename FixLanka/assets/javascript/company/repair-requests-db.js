@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Company Repair Requests Page JavaScript
  * 
  * Handles all functionality for the company repair requests page including:
@@ -72,6 +72,9 @@ let quotationModal;
 let quotationForm;
 let requestDetailsModal;
 
+// Cache for direct job requests (directjobrequest table)
+let directRequestsCache = [];
+
 /**
  * Pending action requested via URL params (repair-requests.php?request_id=...&action=quote|details)
  * @type {{requestId:number, action:'quote'|'details'|null}|null}
@@ -140,6 +143,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (shouldLoadQuotations) {
         loadSubmittedQuotations();
     }
+
+    // Load direct requests
+    loadDirectRequests();
 });
 
 // ================================================================
@@ -202,6 +208,35 @@ async function loadAvailableRequests() {
     } catch (error) {
         console.error('Error loading job requests:', error);
         showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Load direct job requests mapped to this company
+ */
+async function loadDirectRequests() {
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-direct-requests.php');
+        if (!response.ok) {
+            console.warn('Could not load direct requests');
+            return;
+        }
+
+        const result = await response.json();
+        if (result.success) {
+            directRequestsCache = result.data || [];
+
+            // update tab count
+            const directRequestsTabCount = document.getElementById('direct-requests-tab-count');
+            if (directRequestsTabCount) {
+                const pendingDirect = directRequestsCache.filter(r => r.status === 'pending');
+                directRequestsTabCount.textContent = pendingDirect.length;
+            }
+
+            renderDirectRequests();
+        }
+    } catch (error) {
+        console.error('Error loading direct requests:', error);
     }
 }
 
@@ -419,6 +454,140 @@ function createRequestCard(request) {
             </div>
         </article>
     `;
+}
+
+/**
+ * Render direct requests table UI
+ */
+function renderDirectRequests() {
+    const table = document.getElementById('direct-requests-table');
+    const tbody = document.getElementById('direct-requests-tbody');
+    const emptyState = document.getElementById('direct-requests-empty');
+
+    if (!table || !tbody || !emptyState) return;
+
+    if (directRequestsCache.length === 0) {
+        table.style.display = 'none';
+        emptyState.style.display = 'flex';
+        return;
+    }
+
+    table.style.display = 'table';
+    emptyState.style.display = 'none';
+
+    tbody.innerHTML = directRequestsCache.map(req => createDirectRequestRow(req)).join('');
+}
+
+function createDirectRequestRow(request) {
+    const customerName = escapeHtml((request.customer_fname || '') + ' ' + (request.customer_lname || '')).trim() || 'Unknown';
+    const dateReceived = new Date(request.created_at || new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const deadline = new Date(request.finish_date || new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    let statusClass = request.status === 'accepted' ? 'success' : (request.status === 'rejected' ? 'danger' : 'warning');
+    let statusLabel = request.status.charAt(0).toUpperCase() + request.status.slice(1);
+
+    let actionButtons = '';
+
+    if (request.status === 'pending') {
+        actionButtons = `
+            <button class="action-btn success small" onclick="acceptDirectRequest(${request.request_id})">
+                <i class="fas fa-check"></i> Accept
+            </button>
+            <button class="action-btn danger small" onclick="rejectDirectRequest(${request.request_id})">
+                <i class="fas fa-times"></i> Reject
+            </button>
+        `;
+    } else if (request.status === 'accepted') {
+        actionButtons = `
+            <a href="/2nd-Year-Group-Project/FixLanka/views/company/contracts.php" class="action-btn primary small">
+                <i class="fas fa-file-contract"></i> Create Contract
+            </a>
+        `;
+    }
+
+    return `
+        <tr>
+            <td>
+                <strong>${escapeHtml(request.title)}</strong><br>
+                <small class="text-secondary">${escapeHtml(request.category_name || 'General')} &bull; ${escapeHtml(request.district)}</small>
+            </td>
+            <td>
+                <div class="customer-info-inline">
+                    <span>${customerName}</span>
+                </div>
+            </td>
+            <td>${dateReceived}</td>
+            <td>${deadline}</td>
+            <td>
+                <span class="status-badge ${statusClass}">${statusLabel}</span>
+            </td>
+            <td>
+                <div class="action-buttons-inline">
+                    ${actionButtons}
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+async function acceptDirectRequest(requestId) {
+    const confirmed = await window.showConfirm('Are you sure you want to accept this direct request? You can proceed to create a contract afterwards.', {
+        title: 'Accept Request',
+        confirmText: 'Accept'
+    });
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-direct-requests-action.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request_id: requestId, action: 'accept' })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Direct request accepted successfully', 'success');
+            loadDirectRequests();
+        } else {
+            showToast(result.message || 'Failed to accept request', 'error');
+        }
+    } catch (error) {
+        console.error('Error accepting direct request:', error);
+        showToast('System error occurred', 'error');
+    }
+}
+
+async function rejectDirectRequest(requestId) {
+    const reason = await window.showPrompt('Please provide a reason for declining this request:', {
+        title: 'Decline Request',
+        confirmText: 'Decline',
+        placeholder: 'Reason for declining...'
+    });
+
+    if (!reason || reason.trim() === '') {
+        showToast('Decline cancelled - reason is required', 'info');
+        return;
+    }
+
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-direct-requests-action.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request_id: requestId, action: 'reject' })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Direct request rejected successfully', 'success');
+            loadDirectRequests();
+        } else {
+            showToast(result.message || 'Failed to reject request', 'error');
+        }
+    } catch (error) {
+        console.error('Error rejecting direct request:', error);
+        showToast('System error occurred', 'error');
+    }
 }
 
 /**
@@ -672,10 +841,26 @@ function createCompletedProjectLogItem(project) {
                                 ${formattedDate}
                             </span>
                         </div>
-                        ${amount !== null ? `
-                        <div class="quotation-amount-inline">
-                            <span class="amount-label">Total Amount${project.labor_unit_label || project.material_unit_label ? ' (per unit)' : ''}:</span>
-                            <span class="amount-value">LKR ${formatNumber(amount)}</span>
+                        ${project.labor_cost || project.material_cost || project.transport_cost ? `
+                        <div class="quotation-cost-breakdown">
+                            ${project.labor_cost ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Labor${formatUnitSuffix(project.labor_unit_label)}:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(project.labor_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${project.material_cost ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Material${formatUnitSuffix(project.material_unit_label)}:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(project.material_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${project.transport_cost && parseFloat(project.transport_cost) > 0 ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Transport:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(project.transport_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
                         </div>
                         ` : ''}
                     </div>
@@ -759,9 +944,31 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
                                 ${formattedDate}
                             </span>
                         </div>
-                        <div class="quotation-amount-inline">
-                            <span class="amount-label">Total Amount${quotation.labor_unit_label || quotation.material_unit_label ? ' (per unit)' : ''}:</span>
-                            <span class="amount-value">LKR ${formatNumber(amount)}</span>
+                        <div class="quotation-cost-breakdown">
+                            ${quotation.labor_cost ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Labor${formatUnitSuffix(quotation.labor_unit_label)}:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(quotation.labor_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${quotation.material_cost ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Material${formatUnitSuffix(quotation.material_unit_label)}:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(quotation.material_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${quotation.transport_cost && parseFloat(quotation.transport_cost) > 0 ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Transport:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(quotation.transport_cost).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
+                            ${quotation.other_charges && parseFloat(quotation.other_charges) > 0 ? `
+                            <div class="cost-line">
+                                <span class="cost-label">Other Charges:</span>
+                                <span class="cost-value">LKR ${formatNumber(parseFloat(quotation.other_charges).toFixed(2))}</span>
+                            </div>
+                            ` : ''}
                         </div>
                         ${isRejected && quotation.rejection_reason ? `
                         <div class="quotation-rejection-reason-inline">
@@ -841,7 +1048,7 @@ async function openQuotationModal(requestId) {
         // Show detailed error modal
         const daysExpired = Math.ceil((currentDate - requestDeadline) / (1000 * 60 * 60 * 24));
         await window.showAlert(
-            `âŒ Request Expired\n\n` +
+            `Request Expired\n\n` +
             `This service request expired ${daysExpired} day(s) ago.\n` +
             `Deadline was: ${formatDate(request.finish_date)}\n\n` +
             `You cannot submit quotations for expired requests.`
@@ -1140,6 +1347,16 @@ async function submitQuotation() {
         }
     }
 
+    if (!labor_unit_label) {
+        const laborLabelText = document.getElementById('labor-unit-label')?.textContent?.trim() || '';
+        labor_unit_label = laborLabelText.replace(/[()]/g, '').trim() || null;
+    }
+
+    if (!material_unit_label) {
+        const materialLabelText = document.getElementById('material-unit-label')?.textContent?.trim() || '';
+        material_unit_label = materialLabelText.replace(/[()]/g, '').trim() || null;
+    }
+
     // Override if payment method is time_material
     if (payment_method === 'time_material') {
         pricing_type = 'time_based';
@@ -1249,6 +1466,29 @@ async function submitQuotation() {
 
         if (result.success) {
             showToast(editingQuotationId ? 'Quotation updated successfully!' : 'Quotation submitted successfully!', 'success');
+
+            // Short undo window for newly submitted quotation
+            if (!editingQuotationId && typeof window.showUndoToast === 'function') {
+                const quotationId = result.data?.quotation_id || result.data?.id;
+                const seconds = (result.undo && result.undo.undo_seconds) ? Number(result.undo.undo_seconds) : 30;
+                if (quotationId) {
+                    window.showUndoToast('Quotation submitted. Undo available', async () => {
+                        const undoRes = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-quotes.php?action=undo_submit', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ quotation_id: quotationId })
+                        });
+                        const undoJson = await undoRes.json();
+                        if (undoJson.success) {
+                            showToast('Quotation undone', 'info');
+                            await loadSubmittedQuotations();
+                            await loadAvailableRequests();
+                        } else {
+                            showToast(undoJson.error || undoJson.message || 'Undo failed', 'error');
+                        }
+                    }, seconds);
+                }
+            }
             closeQuotationModal();
 
 
@@ -1344,8 +1584,8 @@ function closeQuotationModal() {
 /**
  * View request details
  */
-async function viewRequestDetails(requestId) {
-    await ensureRequestLoaded(requestId);
+async function viewRequestDetails(requestId, type = 'job') {
+    await ensureRequestLoaded(requestId, type);
 
     const request = availableRequests.find(r => Number(r.request_id) === Number(requestId));
     if (!request) {
@@ -1354,20 +1594,89 @@ async function viewRequestDetails(requestId) {
     }
 
     const detailsContainer = document.getElementById('request-details-content');
+
+    // Preparation for Premium "Service Ticket" view
+    const requestIdFormatted = `#REQ-${new Date(request.created_at || Date.now()).getFullYear()}-${String(requestId).padStart(4, '0')}`;
+    const initials = (typeof getInitialsFromFullName === 'function')
+        ? getInitialsFromFullName(request.customer_name || 'UC')
+        : (request.customer_name || 'U').charAt(0).toUpperCase();
+
+    const photos = request.photos || [];
+    const photoHtml = photos.length > 0 ? `
+        <div class="details-section">
+            <h5 class="section-label-premium"><i class="fas fa-camera"></i> VISUAL ATTACHMENTS</h5>
+            <div class="premium-gallery">
+                ${photos.map(p => `
+                    <div class="premium-photo-card" onclick="window.open('${escapeHtml(p)}', '_blank')">
+                        <img src="${escapeHtml(p)}" alt="Repair Evidence">
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    ` : '';
+
+    const urgencyClass = (request.urgency || '').toLowerCase();
+
     detailsContainer.innerHTML = `
-        <div style="padding: var(--spacing-md);">
-            <h3>${escapeHtml(request.title)}</h3>
-            <p><strong>Category:</strong> ${escapeHtml(request.category_name || 'General')}</p>
-            <p><strong>District:</strong> ${escapeHtml(request.district)}</p>
-            <p><strong>Address:</strong> ${escapeHtml(request.address)}</p>
-            <p><strong>Deadline:</strong> ${formatDate(request.finish_date)}</p>
-            <p><strong>Urgency:</strong> ${request.urgency}</p>
-            <p><strong>Description:</strong></p>
-            <p>${escapeHtml(request.description)}</p>
+        <div class="request-details-container">
+            <div class="ticket-header">
+                <div class="details-title-wrapper">
+                    <span class="ticket-id-badge">${requestIdFormatted}</span>
+                    <h3 class="details-title">${escapeHtml(request.title)}</h3>
+                    <div class="details-meta-pills">
+                        <span class="meta-pill"><i class="fas fa-tag"></i> ${escapeHtml(request.category_name || 'General Service')}</span>
+                        <span class="meta-pill priority-pill ${urgencyClass}"><i class="fas fa-bolt"></i> ${escapeHtml(request.urgency || 'Normal')} Priority</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="details-section-glass">
+                <div class="details-grid-premium">
+                    <div class="premium-info-card">
+                        <span class="premium-label"><i class="fas fa-map-marked-alt"></i> SERVICE LOCATION</span>
+                        <span class="premium-value">${escapeHtml(request.district || 'Not specified')}</span>
+                    </div>
+                    <div class="premium-info-card">
+                        <span class="premium-label"><i class="fas fa-hourglass-end"></i> SERVICE DEADLINE</span>
+                        <span class="premium-value">${formatDate(request.finish_date)}</span>
+                    </div>
+                    <div class="premium-info-card">
+                        <span class="premium-label"><i class="fas fa-location-arrow"></i> SITE ADDRESS</span>
+                        <span class="premium-value">${escapeHtml(request.address || 'Address on file')}</span>
+                    </div>
+                    <div class="premium-info-card">
+                        <span class="premium-label"><i class="fas fa-history"></i> POSTED ON</span>
+                        <span class="premium-value">${formatTimeAgo(request.created_at)}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="details-section">
+                <h5 class="section-label-premium"><i class="fas fa-file-alt"></i> JOB SPECIFICATIONS</h5>
+                <div class="job-description-wrapper">
+                    <i class="fas fa-quote-right quote-icon"></i>
+                    <div class="description-text">${escapeHtml(request.description)}</div>
+                </div>
+            </div>
+
+            ${photoHtml}
+
+            <div class="details-section">
+                <h5 class="section-label-premium"><i class="fas fa-user-tie"></i> CUSTOMER RECORD</h5>
+                <div class="customer-premium-card">
+                    <div class="customer-premium-avatar">${initials}</div>
+                    <div class="customer-premium-info">
+                        <h4>${escapeHtml(request.customer_name || 'Verified Customer')}</h4>
+                        <p><i class="fas fa-shield-check"></i> FixLanka Verified Account</p>
+                        <p><i class="fas fa-map-pin"></i> Base Location: ${escapeHtml(request.district || 'Lanka')}</p>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
 
     // Set button action
+    setRequestDetailsQuoteButtonVisible(true);
     document.getElementById('submit-quote-from-details').onclick = () => {
         closeRequestDetailsModal();
         openQuotationModal(requestId);
@@ -1392,14 +1701,23 @@ function closeRequestDetailsModal() {
  * @param {number} requestId
  * @returns {void|Promise<void>}
  */
-async function ensureRequestLoaded(requestId) {
+async function ensureRequestLoaded(requestId, type = 'job') {
     const id = Number(requestId);
     if (!id) return false;
     if (availableRequests.some(r => Number(r.request_id) === id)) return true;
 
+    const normalizedType = String(type || 'job').toLowerCase();
+
     // Fetch by id from API and cache it
     try {
-        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-requests.php?request_id=${encodeURIComponent(id)}`);
+        let response;
+
+        if (normalizedType === 'direct') {
+            response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/company-direct-requests.php?request_id=${encodeURIComponent(id)}&limit=1`);
+        } else {
+            response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-requests.php?request_id=${encodeURIComponent(id)}`);
+        }
+
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`Server Error (${response.status}): ${errorText.substring(0, 200)}`);
@@ -1561,9 +1879,14 @@ function calculateTotal() {
     const subtotal = labor + material + transport + other;
     const total = subtotal;
 
-    document.getElementById('subtotal-amount').textContent = `LKR ${formatNumber(subtotal.toFixed(2))}`;
-    document.getElementById('total-amount').textContent = `LKR ${formatNumber(total.toFixed(2))}`;
-    document.getElementById('total-price').value = total.toFixed(2);
+    const subtotalEl = document.getElementById('subtotal-amount');
+    if (subtotalEl) subtotalEl.textContent = `LKR ${formatNumber(subtotal.toFixed(2))}`;
+
+    const totalEl = document.getElementById('total-amount');
+    if (totalEl) totalEl.textContent = `LKR ${formatNumber(total.toFixed(2))}`;
+
+    const totalPriceInput = document.getElementById('total-price');
+    if (totalPriceInput) totalPriceInput.value = total.toFixed(2);
 }
 
 /**
@@ -1692,6 +2015,23 @@ function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+function formatUnitSuffix(unitLabel) {
+    const raw = String(unitLabel || '').trim();
+    if (!raw) return '';
+
+    // Strip outer parentheses if present.
+    let normalized = raw.replace(/^\((.*)\)$/, '$1').trim();
+
+    // Guard against accidental double-prefix like "per per hour".
+    normalized = normalized.replace(/^per\s+per\s+/i, 'per ');
+
+    if (/^per\s+/i.test(normalized)) {
+        normalized = normalized.replace(/^per\s+/i, 'per ').trim();
+        return ` (${normalized})`;
+    }
+    return ` (per ${normalized})`;
+}
+
 /**
  * Escape HTML to prevent XSS
  */
@@ -1743,6 +2083,7 @@ window.submitQuotation = submitQuotation;
 window.editQuotation = editQuotation;
 window.deleteQuotation = deleteQuotation;
 window.viewRequestDetails = viewRequestDetails;
+window.viewDirectRequestDetails = viewDirectRequestDetails;
 window.closeRequestDetailsModal = closeRequestDetailsModal;
 
 // ================================================================
@@ -1780,18 +2121,10 @@ async function loadDirectRequests() {
 
         const rows = Array.isArray(result.data) ? result.data : [];
 
-        const normalizeStatus = (quoteStatus) => {
-            const s = String(quoteStatus || 'pending').toLowerCase();
-            if (s === 'successful') return 'completed';
-            if (s === 'accepted') return 'accepted';
-            if (s === 'rejected') return 'rejected';
-            return 'pending';
-        };
-
         const directRequests = rows.map(r => ({
             ...r,
             created_at: r.created_at || r.dateCreated || null,
-            status: r.status || normalizeStatus(r.quote_status),
+            status: r.status || 'pending',
             customer_name: r.customer_name || `${r.customer_fname || ''} ${r.customer_lname || ''}`.trim()
         }));
 
@@ -1845,6 +2178,9 @@ function renderDirectRequests(requests) {
 
     // Update counts
     updateDirectRequestsCount(requests.length);
+
+    // Cache for modal rendering
+    directRequestsCache = Array.isArray(requests) ? requests : [];
 
     // Render rows
     tbody.innerHTML = requests.map(request => createDirectRequestRow(request)).join('');
@@ -1914,34 +2250,34 @@ function createDirectRequestRow(request) {
             <td>
                 <div class="table-actions">
                     ${rawStatus === 'pending' && !isExpired ? `
-                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                        <button class="action-btn small secondary" onclick="viewDirectRequestDetails(${request.request_id})">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
                         </button>
-                        <button class="table-action-btn accept" onclick="acceptDirectRequest(${request.request_id})">
+                        <button class="action-btn small success" onclick="acceptDirectRequest(${request.request_id})">
                             <i class="fas fa-check"></i>
                             <span>Accept</span>
                         </button>
-                        <button class="table-action-btn reject" onclick="rejectDirectRequest(${request.request_id})">
+                        <button class="action-btn small danger" onclick="rejectDirectRequest(${request.request_id})">
                             <i class="fas fa-times"></i>
                             <span>Decline</span>
                         </button>
                     ` : rawStatus === 'accepted' ? `
-                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                        <button class="action-btn small primary" onclick="viewDirectRequestDetails(${request.request_id})">
                             <i class="fas fa-file-contract"></i>
                             <span>View Contract</span>
                         </button>
                     ` : isExpired ? `
-                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                        <button class="action-btn small secondary" onclick="viewDirectRequestDetails(${request.request_id})">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
                         </button>
-                        <button class="table-action-btn view" onclick="contactCustomer(${request.user_id})">
+                        <button class="action-btn small secondary" onclick="contactCustomer(${request.user_id})">
                             <i class="fas fa-phone"></i>
                             <span>Contact</span>
                         </button>
                     ` : `
-                        <button class="table-action-btn view" onclick="viewRequestDetails(${request.request_id})">
+                        <button class="action-btn small secondary" onclick="viewDirectRequestDetails(${request.request_id})">
                             <i class="fas fa-eye"></i>
                             <span>View</span>
                         </button>
@@ -1952,91 +2288,65 @@ function createDirectRequestRow(request) {
     `;
 }
 
-/**
- * Accept a direct request
- * @param {number} requestId - ID of the request to accept
- */
-async function acceptDirectRequest(requestId) {
-    const confirmed = await window.showConfirm('Accept this direct request? This will create a contract with the customer.', {
-        title: 'Accept Request',
-        confirmText: 'Accept'
-    });
+function setRequestDetailsQuoteButtonVisible(isVisible) {
+    const btn = document.getElementById('submit-quote-from-details');
+    if (!btn) return;
+    btn.style.display = isVisible ? '' : 'none';
+    if (!isVisible) {
+        btn.onclick = null;
+    }
+}
 
-    if (!confirmed) {
+/**
+ * View direct-request details (directjobrequest)
+ */
+async function viewDirectRequestDetails(requestId) {
+    const id = Number(requestId);
+    if (!id) {
+        showToast('Request not found', 'error');
         return;
     }
 
-    try {
-        // Future: API call to accept direct request
-        // For now, show placeholder message
-        showToast('Direct requests feature coming soon! This will create a contract.', 'info', 5000);
-
-        // Future implementation:
-        // const response = await fetch('/api/direct-requests.php', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify({ action: 'accept', request_id: requestId })
-        // });
-        // if (response.ok) {
-        //     showToast('Request accepted successfully!', 'success');
-        //     loadDirectRequests(); // Reload
-        // }
-    } catch (error) {
-        console.error('Error accepting request:', error);
-        showToast('Error accepting request: ' + error.message, 'error');
-    }
-}
-
-/**
- * Reject a direct request
- * @param {number} requestId - ID of the request to reject
- */
-async function rejectDirectRequest(requestId) {
-    const reason = await window.showPrompt('Please provide a reason for declining this request:', {
-        title: 'Decline Request',
-        confirmText: 'Decline',
-        placeholder: 'Reason for declining...'
-    });
-
-    if (!reason || reason.trim() === '') {
-        showToast('Decline cancelled - reason is required', 'info');
+    const request = (Array.isArray(directRequestsCache) ? directRequestsCache : []).find(r => Number(r.request_id) === id);
+    if (!request) {
+        showToast('Request not found', 'error');
         return;
     }
 
-    try {
-        // Future: API call to reject direct request
-        showToast('Direct requests feature coming soon! Reason: ' + reason, 'info', 5000);
-
-        // Future implementation:
-        // const response = await fetch('/api/direct-requests.php', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify({ 
-        //         action: 'reject', 
-        //         request_id: requestId,
-        //         reason: reason 
-        //     })
-        // });
-        // if (response.ok) {
-        //     showToast('Request declined', 'success');
-        //     loadDirectRequests(); // Reload
-        // }
-    } catch (error) {
-        console.error('Error rejecting request:', error);
-        showToast('Error declining request: ' + error.message, 'error');
+    const detailsContainer = document.getElementById('request-details-content');
+    if (!detailsContainer) {
+        showToast('Request details popup unavailable', 'error');
+        return;
     }
+
+    const customerName = request.customer_name
+        || `${request.customer_fname || ''} ${request.customer_lname || ''}`.trim()
+        || 'Customer';
+
+    detailsContainer.innerHTML = `
+        <div style="padding: var(--spacing-md);">
+            <h3>${escapeHtml(request.title)}</h3>
+            <p><strong>Customer:</strong> ${escapeHtml(customerName)}</p>
+            <p><strong>Category:</strong> ${escapeHtml(request.category_name || request.category || 'General')}</p>
+            <p><strong>District:</strong> ${escapeHtml(request.district || '')}</p>
+            <p><strong>Address:</strong> ${escapeHtml(request.address || '')}</p>
+            <p><strong>Deadline:</strong> ${request.finish_date ? formatDate(request.finish_date) : '-'}</p>
+            <p><strong>Description:</strong></p>
+            <p>${escapeHtml(request.description || '')}</p>
+        </div>
+    `;
+
+    // Direct requests should not show the "Submit Quote" CTA
+    setRequestDetailsQuoteButtonVisible(false);
+
+    requestDetailsModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
 
-/**
- * Contact customer about expired direct request
- * @param {number} customerId - ID of the customer to contact
- */
-function contactCustomer(customerId) {
-    // Future: Open messaging system or show customer contact details
-    showToast('Customer contact feature coming soon!', 'info', 3000);
+function contactCustomer(userId) {
+    showToast('Messaging feature coming soon!', 'info');
 }
 
-// Make direct request functions globally accessible
 window.acceptDirectRequest = acceptDirectRequest;
 window.rejectDirectRequest = rejectDirectRequest;
 window.contactCustomer = contactCustomer;

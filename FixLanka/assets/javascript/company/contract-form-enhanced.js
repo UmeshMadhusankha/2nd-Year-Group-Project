@@ -14,8 +14,19 @@
     let currentStep = 1;
     let selectedQuotation = null;
     let quotationFullData = null; // Full data from enhanced API
+    let unitPricingMode = { active: false, laborUnitLabel: '', materialUnitLabel: '' };
     let autoSaveTimer = null;
     let formDirty = false;
+
+    async function readJsonOrNull(resp) {
+        const text = await resp.text();
+        if (!text) return null;
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            return null;
+        }
+    }
 
     // ===================================
     // INITIALIZATION
@@ -70,6 +81,12 @@
         // Budget type change
         const budgetType = document.getElementById('budgetType');
         if (budgetType) budgetType.addEventListener('change', onBudgetTypeChange);
+        // Flexible percent change (materials-based)
+        const budgetFlexPercent = document.getElementById('budgetFlexPercent');
+        if (budgetFlexPercent) {
+            budgetFlexPercent.addEventListener('input', onBudgetTypeChange);
+            budgetFlexPercent.addEventListener('change', onBudgetTypeChange);
+        }
 
         // Pricing type change
         const pricingType = document.getElementById('pricingType');
@@ -89,6 +106,9 @@
         if (startDate) startDate.addEventListener('change', onDateChange);
         if (endDate) endDate.addEventListener('change', onDateChange);
 
+        // Apply bounds immediately for any prefilled values
+        onDateChange();
+
         // Milestone buttons
         const addMsBtn = document.getElementById('addMilestoneBtn');
         if (addMsBtn) addMsBtn.addEventListener('click', addMilestoneRow);
@@ -96,10 +116,22 @@
         // Sidebar "Edit milestones" link in Payment step
 
 
-        // Delegation for remove milestone buttons AND percentage input changes (Document level for robustness)
-        document.addEventListener('click', function (e) {
+        // Delegation for remove milestone buttons and milestone field changes
+        document.addEventListener('click', async function (e) {
             const btn = e.target.closest('.btn-remove-ms');
             if (btn && document.getElementById('milestonesBody')?.contains(btn)) {
+                // In unit-priced mode: protect the required unit-billing rows (Labour/Materials)
+                if (unitPricingMode.active) {
+                    const reqCount = ((unitPricingMode.laborUnitLabel || '').trim() ? 1 : 0) + ((unitPricingMode.materialUnitLabel || '').trim() ? 1 : 0);
+                    const row = btn.closest('tr');
+                    const rowsArr = Array.from(document.querySelectorAll('#milestonesBody .milestone-row'));
+                    const idx = rowsArr.indexOf(row);
+                    if (reqCount > 0 && idx > -1 && idx < reqCount) {
+                        showNotification('error', 'Action Denied', 'The Labour/Materials unit-billing phases cannot be removed in unit-priced mode.');
+                        return;
+                    }
+                }
+
                 // Feature: Prevent deletion of last remaining phase
                 const rows = document.querySelectorAll('#milestonesBody .milestone-row');
                 if (rows.length <= 1) {
@@ -108,10 +140,19 @@
                 }
 
                 // Feature: Two-step confirmation
-                if (confirm('Are you sure you want to delete this phase? This action cannot be undone.')) {
+                const confirmed = window.systemConfirm
+                    ? await window.systemConfirm('Are you sure you want to delete this phase? This action cannot be undone.', {
+                        title: 'Delete Phase',
+                        confirmText: 'Delete',
+                        cancelText: 'Cancel',
+                        type: 'danger',
+                        icon: 'fas fa-trash'
+                    })
+                    : confirm('Are you sure you want to delete this phase? This action cannot be undone.');
+
+                if (confirmed) {
                     btn.closest('tr').remove();
                     if (typeof renumberMilestones === 'function') renumberMilestones();
-                    if (typeof recalcMilestoneTotals === 'function') recalcMilestoneTotals();
                     if (typeof generatePaymentPreview === 'function') generatePaymentPreview();
                 }
             }
@@ -121,14 +162,7 @@
             const msBody = document.getElementById('milestonesBody');
             if (!msBody || !msBody.contains(e.target)) return;
 
-            // If percentage changed
-            if (e.target.classList.contains('ms-pct-input')) {
-                if (typeof recalcMilestoneAmountFromPct === 'function') recalcMilestoneAmountFromPct(e.target);
-                if (typeof recalcMilestoneTotals === 'function') recalcMilestoneTotals();
-                if (typeof generatePaymentPreview === 'function') generatePaymentPreview();
-            }
-            // If any other input changed (name, date, amount directly)
-            else if (e.target.tagName === 'INPUT') {
+            if (e.target.tagName === 'INPUT') {
                 if (typeof generatePaymentPreview === 'function') generatePaymentPreview();
             }
         });
@@ -188,9 +222,19 @@
         }
     }
 
-    function closeModal() {
+    async function closeModal() {
         if (formDirty) {
-            if (!confirm('You have unsaved changes. Are you sure you want to close?')) return;
+            const confirmed = window.systemConfirm
+                ? await window.systemConfirm('You have unsaved changes. Are you sure you want to close?', {
+                    title: 'Discard Changes?',
+                    confirmText: 'Close',
+                    cancelText: 'Keep Editing',
+                    type: 'warning',
+                    icon: 'fas fa-exclamation-triangle'
+                })
+                : confirm('You have unsaved changes. Are you sure you want to close?');
+
+            if (!confirmed) return;
         }
         const modal = document.getElementById('newContractModal');
         if (modal) {
@@ -205,6 +249,7 @@
         currentStep = 1;
         selectedQuotation = null;
         quotationFullData = null;
+        unitPricingMode = { active: false, laborUnitLabel: '', materialUnitLabel: '' };
         formDirty = false;
 
         const form = document.getElementById('contractForm');
@@ -223,6 +268,9 @@
 
         // Reset default milestone rows
         resetMilestones();
+
+        // Unlock any unit-pricing restrictions
+        applyUnitPricingLocks();
     }
 
     // ===================================
@@ -310,7 +358,7 @@
                 const editContractId = document.getElementById('editContractId')?.value;
                 if (editContractId) {
                     // EDIT MODE: Validate contract ID is present (quotation already linked)
-                    // No further Step 1 validation needed — contract is identified by ID
+                    // No further Step 1 validation needed - contract is identified by ID
                 } else {
                     // NEW CONTRACT MODE: Must select a quotation
                     const qSel = document.getElementById('quotationSelector');
@@ -330,14 +378,9 @@
                 break;
 
             case 5: // Payments (Swapped from 6)
-                valid = validateRequired(step, ['contractValue']);
-                if (valid) {
-                    const val = parseFloat(document.getElementById('contractValue').value);
-                    if (val <= 0) {
-                        showFieldError(document.getElementById('contractValue'), 'Contract value must be greater than zero');
-                        valid = false;
-                    }
-                }
+                // Total budget is pulled from the quotation and stored in a hidden field.
+                // Validate only the user-selected payment configuration.
+                valid = validateRequired(step, ['budgetType', 'paymentMethod']);
                 break;
 
             case 6: // Timeline & Milestones (Swapped from 5)
@@ -350,17 +393,26 @@
                         valid = false;
                     }
 
-                    // Validate milestone totals for ALL methods (since columns are always visible)
                     if (valid) {
-                        let totalPct = 0;
-                        document.querySelectorAll('#milestonesBody .milestone-row .ms-pct-input').forEach(input => {
-                            totalPct += parseFloat(input.value || 0);
+                        const rows = document.querySelectorAll('#milestonesBody .milestone-row');
+                        rows.forEach((row, index) => {
+                            const name = row.querySelector('input[name="ms_name[]"]');
+                            const desc = row.querySelector('input[name="ms_desc[]"]');
+                            const date = row.querySelector('input[name="ms_date[]"]');
+
+                            if (!name?.value?.trim()) {
+                                showFieldError(name, `Phase ${index + 1}: name is required`);
+                                valid = false;
+                            }
+                            if (!desc?.value?.trim()) {
+                                showFieldError(desc, `Phase ${index + 1}: description is required`);
+                                valid = false;
+                            }
+                            if (!date?.value) {
+                                showFieldError(date, `Phase ${index + 1}: target date is required`);
+                                valid = false;
+                            }
                         });
-                        if (Math.abs(totalPct - 100) > 0.5) {
-                            const addBtn = document.getElementById('addMilestoneBtn');
-                            showFieldError(addBtn, `Phase percentages total ${totalPct.toFixed(0)}% — they must equal 100%. Adjust phase percentages below.`);
-                            valid = false;
-                        }
                     }
                 }
                 break;
@@ -412,7 +464,7 @@
                 result.data.forEach(q => {
                     const opt = document.createElement('option');
                     opt.value = q.quotation_id;
-                    opt.textContent = `${q.title} — LKR ${parseFloat(q.total_amount).toLocaleString()} (${q.customer_fname} ${q.customer_lname})`;
+                    opt.textContent = `${q.title} (${q.customer_fname} ${q.customer_lname})`;
                     opt.dataset.quotation = JSON.stringify(q);
                     selector.appendChild(opt);
                 });
@@ -445,6 +497,14 @@
         if (!selected.value) {
             selectedQuotation = null;
             if (preview) preview.style.display = 'none';
+
+            const bd = document.getElementById('costBreakdown');
+            if (bd) bd.style.display = 'none';
+            const unitInfo = document.getElementById('unitMeasurementInfo');
+            if (unitInfo) unitInfo.style.display = 'none';
+
+            unitPricingMode = { active: false, laborUnitLabel: '', materialUnitLabel: '' };
+            applyUnitPricingLocks();
             return;
         }
 
@@ -463,7 +523,6 @@
                 </div>
                 <div class="qs-preview-grid">
                     <div><span>Customer</span><strong>${esc(selectedQuotation.customer_fname)} ${esc(selectedQuotation.customer_lname)}</strong></div>
-                    <div><span>Amount</span><strong>LKR ${parseFloat(selectedQuotation.total_amount).toLocaleString()} ${selectedQuotation.labor_unit_label || selectedQuotation.material_unit_label ? ' (per unit)' : ''}</strong></div>
                     <div><span>Duration</span><strong>${selectedQuotation.estimated_duration || 'TBD'} days</strong></div>
                     <div><span>Payment</span><strong>${formatPaymentMethodLabel(selectedQuotation.payment_method)}</strong></div>
                 </div>
@@ -476,10 +535,14 @@
 
         // Load full data from enhanced API for complete auto-fill
         try {
-            const resp = await fetch(`${ENHANCED_API}?action=getQuotationData&quotation_id=${selectedQuotation.quotation_id}`);
+            const qs = new URLSearchParams({
+                action: 'getQuotationData',
+                quotation_id: String(selectedQuotation.quotation_id)
+            });
+            const resp = await fetch(`${ENHANCED_API}?${qs.toString()}`);
             if (resp.ok) {
-                const result = await resp.json();
-                if (result.success) {
+                const result = await readJsonOrNull(resp);
+                if (result && result.success) {
                     quotationFullData = result.data;
                     updateUnitBasedLabels(result.data);
                     autoFillAllSections(result.data);
@@ -505,22 +568,23 @@
 
         // Step 2: Parties (read-only display)
         setText('partyClientName', `${d.customer_fname} ${d.customer_lname}`);
-        setText('partyClientAddress', d.customer_address || '—');
-        setText('partyClientEmail', d.customer_email || '—');
-        setText('partyClientDistrict', d.customer_district || '—');
+        setText('partyClientAddress', d.customer_address || '-');
+        setText('partyClientEmail', d.customer_email || '-');
+        setText('partyClientDistrict', d.customer_district || '-');
         setVal('clientName', `${d.customer_fname} ${d.customer_lname}`);
         setVal('clientEmail', d.customer_email || '');
 
-        setText('partyCompanyName', d.company_name || '—');
-        setText('partyCompanyReg', d.company_registration || '—');
-        setText('partyCompanyAddress', d.company_address || '—');
+        setText('partyCompanyName', d.company_name || '-');
+        setText('partyCompanyReg', d.company_registration || '-');
+        setText('partyCompanyAddress', d.company_address || '-');
         setText('partyCompanyContact', `${d.company_phone || ''} / ${d.company_email || ''}`);
 
         // Step 3: Project Overview
         setVal('projectTitle', d.title || d.request_title || '');
         setVal('projectReference', d.project_reference || '');
-        setVal('projectLocation', `${d.request_address || ''}, ${d.request_district || ''}`);
-        setVal('projectType', d.company_type || 'Construction');
+        const locParts = [d.request_address, d.request_district].filter(Boolean);
+        setVal('projectLocation', locParts.join(', '));
+        setVal('projectType', d.request_category_name || d.project_type || '');
         setVal('projectDescription', d.description || d.request_description || '');
 
         // Step 4: Scope
@@ -537,6 +601,7 @@
         // Step 5: Financial (Payments)
         setVal('contractValue', d.total_amount || '');
         setVal('budgetType', d.budget_type || 'fixed');
+        setVal('budgetFlexPercent', (d.budget_type === 'flexible') ? '10' : '');
         onBudgetTypeChange();
 
         // Payment method: quotation table has this column but it's NEVER populated
@@ -583,24 +648,29 @@
         setVal('selectedRequestId', q.request_id);
         setVal('customerId', q.customer_id);
 
+        // If unit labels are included in the basic payload, reflect them.
+        updateUnitBasedLabels(q);
+
         // Parties (basic)
         setText('partyClientName', `${q.customer_fname} ${q.customer_lname}`);
-        setText('partyClientAddress', q.customer_address || '—');
-        setText('partyClientEmail', q.customer_email || '—');
-        setText('partyClientDistrict', q.customer_district || '—');
+        setText('partyClientAddress', q.customer_address || '-');
+        setText('partyClientEmail', q.customer_email || '-');
+        setText('partyClientDistrict', q.customer_district || '-');
         setVal('clientName', `${q.customer_fname} ${q.customer_lname}`);
         setVal('clientEmail', q.customer_email || '');
 
         // Company Details
-        setText('partyCompanyName', q.company_name || '—');
-        setText('partyCompanyReg', q.company_registration || '—');
-        setText('partyCompanyAddress', q.company_address || '—');
+        setText('partyCompanyName', q.company_name || '-');
+        setText('partyCompanyReg', q.company_registration || '-');
+        setText('partyCompanyAddress', q.company_address || '-');
         setText('partyCompanyContact', `${q.company_contact || ''} / ${q.company_email || ''}`);
 
 
         // Project
         setVal('projectTitle', q.title || '');
-        setVal('projectLocation', `${q.location || ''}, ${q.district || ''}`);
+        const basicLocParts = [q.request_address || q.location, q.request_district || q.district].filter(Boolean);
+        setVal('projectLocation', basicLocParts.join(', '));
+        setVal('projectType', q.request_category_name || q.project_type || q.category_name || '');
         setVal('projectDescription', q.description || '');
         setVal('scopeDescription', q.description || '');
 
@@ -613,6 +683,7 @@
         // Financial
         setVal('contractValue', q.total_amount || '');
         setVal('budgetType', q.budget_type || 'fixed');
+        setVal('budgetFlexPercent', (q.budget_type === 'flexible') ? '10' : '');
         onBudgetTypeChange();
 
         // Payment method: NOT stored in quotation (always NULL)
@@ -645,14 +716,35 @@
     function onBudgetTypeChange() {
         const type = document.getElementById('budgetType')?.value;
         const row = document.getElementById('budgetRangeRow');
+        const flexRow = document.getElementById('budgetFlexRow');
         const val = parseFloat(document.getElementById('contractValue')?.value || 0);
 
+        const pctEl = document.getElementById('budgetFlexPercent');
+        let flexPct = parseFloat(pctEl?.value || '');
+        if (!isFinite(flexPct) || flexPct < 0) flexPct = 10;
+        if (pctEl && (pctEl.value === '' || !isFinite(parseFloat(pctEl.value)))) {
+            pctEl.value = String(flexPct);
+        }
+
+        const materialCost = parseFloat(
+            (quotationFullData && quotationFullData.material_cost) ??
+            (selectedQuotation && selectedQuotation.material_cost) ??
+            0
+        );
+        const baseForFlex = materialCost > 0 ? materialCost : val;
+
         if (type === 'flexible' && val > 0) {
-            setVal('budgetMin', (val * 0.9).toFixed(0));
-            setVal('budgetMax', (val * 1.1).toFixed(0));
+            const delta = baseForFlex * (flexPct / 100);
+            const minV = Math.max(0, val - delta);
+            const maxV = val + delta;
+
+            setVal('budgetMin', minV.toFixed(0));
+            setVal('budgetMax', maxV.toFixed(0));
             if (row) row.style.display = 'grid';
+            if (flexRow) flexRow.style.display = 'grid';
         } else {
             if (row) row.style.display = 'none';
+            if (flexRow) flexRow.style.display = 'none';
         }
     }
 
@@ -672,14 +764,23 @@
     function onContractValueChange() {
         onBudgetTypeChange();
         onPricingTypeChange();
-        recalcMilestoneAmountsAll();
-        recalcMilestoneTotals();
         generatePaymentPreview();
     }
 
     function showCostBreakdown(d) {
         const bd = document.getElementById('costBreakdown');
         if (!bd) return;
+
+        const unitSuffix = (unitLabel) => {
+            const v = String(unitLabel || '').trim();
+            return v ? ` (${v})` : '';
+        };
+
+        // Always show units next to the corresponding cost line labels (if stored in quotation)
+        const labourLabelEl = document.getElementById('bdLabourLabel');
+        if (labourLabelEl) labourLabelEl.textContent = `Labour${unitSuffix(d.labor_unit_label)}`;
+        const materialLabelEl = document.getElementById('bdMaterialsLabel');
+        if (materialLabelEl) materialLabelEl.textContent = `Materials${unitSuffix(d.material_unit_label)}`;
 
         if (d.labor_cost || d.material_cost) {
             bd.style.display = 'block';
@@ -697,11 +798,14 @@
     // PAYMENT METHOD CHANGE HANDLER
     // ===================================
     function onPaymentMethodChange() {
+        if (unitPricingMode.active) {
+            setVal('paymentMethod', 'milestone_based');
+            const paymentMethodEl = document.getElementById('paymentMethod');
+            if (paymentMethodEl) paymentMethodEl.value = 'milestone_based';
+        }
+
         const method = document.getElementById('paymentMethod')?.value;
         const isMilestone = method === 'milestone_based';
-
-        // ALWAYS show payment columns in timeline (Step 6) as requested
-        toggleMilestonePaymentColumns(true);
 
         // Toggle info banners (keep these specific to method for clarity)
         const trackingInfo = document.getElementById('mpliTracking');
@@ -716,8 +820,7 @@
         // Rebuild phase rows to match the selected payment method
         resetMilestones();
 
-        // Sync amounts and generate preview (resetMilestones already calls recalc, but
-        // regenerate the payment preview which reads the updated rows)
+        // Regenerate preview after milestone template reset
         generatePaymentPreview();
     }
 
@@ -733,6 +836,7 @@
             'full_upfront': [100],
             'completion': [100],
             '50_50': [50, 50],
+            budget_flexibility_percentage: getVal('budgetFlexPercent'),
             '30_70': [30, 70]
         };
 
@@ -746,25 +850,11 @@
     }
 
     function toggleMilestonePaymentColumns(show) {
-        // Toggle header + body + footer columns
-        document.querySelectorAll('#milestonesTable .ms-payment-col').forEach(el => {
-            el.style.display = show ? '' : 'none';
-        });
-        // Toggle the totals footer
-        const footer = document.getElementById('milestonesTotalRow');
-        if (footer) footer.style.display = show ? '' : 'none';
+        // Payment columns were removed from this milestone table.
     }
 
     function applyUnitBasedMilestoneMode() {
-        const isUnitBased = quotationFullData?.labor_unit_label || quotationFullData?.material_unit_label;
-        // Hide payment columns entirely for unit-based; always show for fixed-price
-        document.querySelectorAll('#milestonesTable .ms-payment-col').forEach(el => {
-            el.style.display = isUnitBased ? 'none' : '';
-        });
-        const footer = document.getElementById('milestonesTotalRow');
-        if (footer) footer.style.display = isUnitBased ? 'none' : '';
-        const warning = document.getElementById('msTotalWarning');
-        if (warning && isUnitBased) warning.style.display = 'none';
+        // Payment columns were removed from this milestone table.
     }
 
     function recalcMilestoneAmountFromPct(pctInput) {
@@ -804,7 +894,7 @@
         const isUnitBased = quotationFullData?.labor_unit_label || quotationFullData?.material_unit_label;
         const warning = document.getElementById('msTotalWarning');
 
-        // For unit-based, no financial validation — hide warning, skip everything
+        // For unit-based, no financial validation - hide warning, skip everything
         if (isUnitBased) {
             if (warning) warning.style.display = 'none';
             return;
@@ -828,7 +918,7 @@
         if (warning && warningText) {
             if (Math.abs(totalPct - 100) > 0.5) {
                 warning.style.display = 'flex';
-                warningText.textContent = `Phase percentages total ${totalPct.toFixed(0)}% — they must equal 100%.`;
+                warningText.textContent = `Phase percentages total ${totalPct.toFixed(0)}% - they must equal 100%.`;
                 warning.className = 'milestone-total-warning error';
             } else if (contractValue > 0 && Math.abs(totalAmount - contractValue) > 1) {
                 warning.style.display = 'flex';
@@ -836,7 +926,7 @@
                 warning.className = 'milestone-total-warning error';
             } else if (totalPct > 0) {
                 warning.style.display = 'flex';
-                warningText.textContent = `✓ Phases total 100% — LKR ${totalAmount.toLocaleString()}`;
+                warningText.textContent = `Phases total 100% - LKR ${totalAmount.toLocaleString()}`;
                 warning.className = 'milestone-total-warning success';
             } else {
                 warning.style.display = 'none';
@@ -855,35 +945,23 @@
         if (method === 'milestone_based') {
             const rows = document.querySelectorAll('#milestonesBody .milestone-row');
             let html = '<div class="payment-schedule-items">';
-            let runningTotal = 0;
 
             rows.forEach((row, i) => {
                 const name = row.querySelector('input[name="ms_name[]"]')?.value || `Milestone ${i + 1}`;
-                const pct = parseFloat(row.querySelector('.ms-pct-input')?.value || 0);
-                const amount = parseFloat(row.querySelector('.ms-amount-input')?.value || 0);
                 const date = row.querySelector('input[name="ms_date[]"]')?.value || '';
-                runningTotal += amount;
 
-                const dateStr = date ? ` — ${formatDateDisplay(date)}` : '';
+                const dateStr = date ? ` - ${formatDateDisplay(date)}` : '';
                 html += `
                     <div class="ps-item">
-                        <div class="ps-bar" style="width: ${pct}%"></div>
                         <div class="ps-info">
-                            <span class="ps-label"><i class="fas fa-flag"></i> ${esc(name)} (${pct}%)${dateStr}</span>
-                            <span class="ps-amount">LKR ${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            <span class="ps-label"><i class="fas fa-flag"></i> ${esc(name)}${dateStr}</span>
+                            <span class="ps-amount">Amount will be set later</span>
                         </div>
                     </div>
                 `;
             });
 
             html += '</div>';
-
-            // Total bar
-            const allGood = Math.abs(runningTotal - total) < 1;
-            html += `<div class="ps-total ${allGood ? 'valid' : 'invalid'}">
-                <span>Total: LKR ${runningTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                ${allGood ? '<i class="fas fa-check-circle"></i>' : `<span class="ps-mismatch">Contract value: LKR ${total.toLocaleString()}</span>`}
-            </div>`;
 
             container.innerHTML = html;
             return;
@@ -926,9 +1004,40 @@
     // ===================================
     // TIMELINE & MILESTONES
     // ===================================
+    function enforceDateBounds() {
+        const startEl = document.getElementById('startDate');
+        const endEl = document.getElementById('endDate');
+        if (!startEl || !endEl) return;
+
+        const start = startEl.value;
+        const end = endEl.value;
+
+        if (start) {
+            endEl.min = start;
+        } else {
+            endEl.removeAttribute('min');
+        }
+
+        if (end) {
+            startEl.max = end;
+        } else {
+            startEl.removeAttribute('max');
+        }
+
+        if (start && end) {
+            const s = new Date(start);
+            const e = new Date(end);
+            if (e < s) {
+                endEl.value = start;
+            }
+        }
+    }
+
     function onDateChange() {
         const start = document.getElementById('startDate')?.value;
         const end = document.getElementById('endDate')?.value;
+
+        enforceDateBounds();
 
         if (start && end) {
             const s = new Date(start);
@@ -962,9 +1071,6 @@
         const tbody = document.getElementById('milestonesBody');
         if (!tbody) return;
 
-        const isMilestone = document.getElementById('paymentMethod')?.value === 'milestone_based';
-        const display = isMilestone ? '' : 'none';
-
         const rowCount = tbody.querySelectorAll('.milestone-row').length + 1;
         const tr = document.createElement('tr');
         tr.className = 'milestone-row';
@@ -973,13 +1079,9 @@
             <td><input type="text" name="ms_name[]" placeholder="Phase name"></td>
             <td><input type="text" name="ms_desc[]" placeholder="Description"></td>
             <td><input type="date" name="ms_date[]"></td>
-            <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1"></td>
-            <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
             <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
         `;
         tbody.appendChild(tr);
-        // Ensure new row's payment columns follow current mode
-        applyUnitBasedMilestoneMode();
     }
 
     function renumberMilestones() {
@@ -995,28 +1097,94 @@
 
         const method = document.getElementById('paymentMethod')?.value || 'milestone_based';
 
+        if (unitPricingMode.active) {
+            const laborUnitLabel = (unitPricingMode.laborUnitLabel || '').trim();
+            const materialUnitLabel = (unitPricingMode.materialUnitLabel || '').trim();
+
+            const unitRows = [];
+            if (laborUnitLabel) {
+                unitRows.push({
+                    name: `Labour (${laborUnitLabel})`,
+                    desc: 'Submit actual labour units after completion for customer verification.'
+                });
+            }
+            if (materialUnitLabel) {
+                unitRows.push({
+                    name: `Materials (${materialUnitLabel})`,
+                    desc: 'Submit actual material units (and actual rate if changed) for customer verification.'
+                });
+            }
+
+            if (unitRows.length > 0) {
+                const end = document.getElementById('endDate')?.value || '';
+                const existing = Array.from(tbody.querySelectorAll('.milestone-row'));
+
+                // If the table is empty, seed it with required unit rows
+                if (existing.length === 0) {
+                    tbody.innerHTML = unitRows.map((r, i) => `
+                        <tr class="milestone-row">
+                            <td>${i + 1}</td>
+                            <td><input type="text" name="ms_name[]" value="${esc(r.name)}"></td>
+                            <td><input type="text" name="ms_desc[]" value="${esc(r.desc)}"></td>
+                            <td><input type="date" name="ms_date[]" value="${end}"></td>
+                            <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
+                        </tr>
+                    `).join('');
+                } else {
+                    // Ensure required rows exist at the top, but do not overwrite user edits.
+                    for (let i = 0; i < unitRows.length; i++) {
+                        let row = tbody.querySelectorAll('.milestone-row')[i];
+                        if (!row) {
+                            const tr = document.createElement('tr');
+                            tr.className = 'milestone-row';
+                            tr.innerHTML = `
+                                <td>${i + 1}</td>
+                                <td><input type="text" name="ms_name[]" value="${esc(unitRows[i].name)}"></td>
+                                <td><input type="text" name="ms_desc[]" value="${esc(unitRows[i].desc)}"></td>
+                                <td><input type="date" name="ms_date[]" value="${end}"></td>
+                                <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
+                            `;
+                            tbody.appendChild(tr);
+                            row = tr;
+                        }
+
+                        const nameInput = row.querySelector('input[name="ms_name[]"]');
+                        const descInput = row.querySelector('input[name="ms_desc[]"]');
+                        const dateInput = row.querySelector('input[name="ms_date[]"]');
+                        if (nameInput && !nameInput.value.trim()) nameInput.value = unitRows[i].name;
+                        if (descInput && !descInput.value.trim()) descInput.value = unitRows[i].desc;
+                        if (dateInput && !dateInput.value) dateInput.value = end;
+                    }
+                }
+
+                // Renumber after any adjustments
+                if (typeof renumberMilestones === 'function') renumberMilestones();
+                return;
+            }
+        }
+
         // Define templates keyed by payment method
-        // Each entry: array of { name, desc, pct }
+        // Each entry: array of { name, desc }
         const templates = {
             'full_upfront': [
-                { name: 'Full Upfront Payment', desc: 'Full project payment collected before work begins', pct: 100 }
+                { name: 'Full Upfront Payment', desc: 'Full project payment collected before work begins' }
             ],
             'completion': [
-                { name: 'Payment on Completion', desc: 'Full payment collected after all work is completed and accepted', pct: 100 }
+                { name: 'Payment on Completion', desc: 'Full payment collected after all work is completed and accepted' }
             ],
             '50_50': [
-                { name: 'Advance Payment (50%)', desc: 'First instalment paid at project commencement', pct: 50 },
-                { name: 'Final Payment (50%)', desc: 'Second instalment paid upon project completion', pct: 50 }
+                { name: 'Advance Payment (50%)', desc: 'First instalment paid at project commencement' },
+                { name: 'Final Payment (50%)', desc: 'Second instalment paid upon project completion' }
             ],
             '30_70': [
-                { name: 'Advance Payment (30%)', desc: 'Initial payment collected at project start', pct: 30 },
-                { name: 'Final Payment (70%)', desc: 'Remaining balance collected on project completion', pct: 70 }
+                { name: 'Advance Payment (30%)', desc: 'Initial payment collected at project start' },
+                { name: 'Final Payment (70%)', desc: 'Remaining balance collected on project completion' }
             ],
             // milestone_based: 3-row editable template
             'milestone_based': [
-                { name: 'Project Commencement', desc: 'Site preparation and initial setup', pct: 30 },
-                { name: 'Mid-Project Review', desc: 'Progress inspection and quality check', pct: 40 },
-                { name: 'Project Handover', desc: 'Final inspection, cleanup, and handover', pct: 30 }
+                { name: 'Project Commencement', desc: 'Site preparation and initial setup' },
+                { name: 'Mid-Project Review', desc: 'Progress inspection and quality check' },
+                { name: 'Project Handover', desc: 'Final inspection, cleanup, and handover' }
             ]
         };
 
@@ -1028,14 +1196,9 @@
                 <td><input type="text" name="ms_name[]" placeholder="Phase name" value="${r.name}"></td>
                 <td><input type="text" name="ms_desc[]" placeholder="Description" value="${r.desc}"></td>
                 <td><input type="date" name="ms_date[]"></td>
-                <td class="ms-payment-col"><input type="number" name="ms_pct[]" class="ms-pct-input" placeholder="%" min="0" max="100" step="1" value="${r.pct}"></td>
-                <td class="ms-payment-col"><input type="number" name="ms_amount[]" class="ms-amount-input" placeholder="Amount" readonly></td>
                 <td><button type="button" class="btn-icon btn-remove-ms" title="Remove"><i class="fas fa-trash-alt"></i></button></td>
             </tr>
         `).join('');
-
-        recalcMilestoneAmountsAll();
-        recalcMilestoneTotals();
 
         // Pre-fill dates using the project's start and end dates
         const start = document.getElementById('startDate')?.value;
@@ -1048,7 +1211,140 @@
     // ===================================
     // REVIEW / PREVIEW
     // ===================================
+    function buildSharedPreviewContractObject() {
+        const today = new Date();
+        const ref = getVal('projectReference') || `CTR-${today.getFullYear()}-XXXX`;
+
+        const paymentMethod = getVal('paymentMethod');
+        const totalVal = parseFloat(getVal('contractValue') || 0);
+
+        const q = quotationFullData || selectedQuotation || {};
+        // NOTE: unitPricingMode labels can be empty-string while async quotation load is in-flight.
+        // Use the first non-empty label so preview matches post-create rendering.
+        const laborUnitLabel = String(unitPricingMode?.laborUnitLabel || q?.labor_unit_label || q?.labour_unit_label || '').trim();
+        const materialUnitLabel = String(unitPricingMode?.materialUnitLabel || q?.material_unit_label || q?.material_unit || '').trim();
+        const laborCost = q?.labor_cost ?? q?.labour_cost ?? null;
+        const materialCost = q?.material_cost ?? null;
+        const transportCost = q?.transport_cost ?? null;
+        const otherCharges = q?.other_charges ?? null;
+
+        const budgetTypeKey = getVal('budgetType') || 'fixed';
+        const flexPct = parseFloat(getVal('budgetFlexPercent') || 10);
+        const isFlexible = budgetTypeKey === 'flexible' && isFinite(flexPct) && flexPct > 0;
+
+        const matVal = document.querySelector('input[name="materials_responsibility"]:checked')?.value || 'company';
+
+        const milestones = [];
+        document.querySelectorAll('#milestonesBody .milestone-row').forEach((row, i) => {
+            const title = row.querySelector('input[name="ms_name[]"]')?.value || `Milestone ${i + 1}`;
+            const description = row.querySelector('input[name="ms_desc[]"]')?.value || '';
+            const due_date = row.querySelector('input[name="ms_date[]"]')?.value || '';
+
+            const ms = {
+                title,
+                description,
+                due_date,
+                status: 'pending'
+            };
+
+            milestones.push(ms);
+        });
+
+        const contractObj = {
+            status: 'draft',
+            contract_number: ref,
+            contract_date: today.toISOString().slice(0, 10),
+
+            // Parties
+            client: {
+                name: getVal('clientName') || getText('partyClientName') || '—',
+                email: getText('partyClientEmail') || '',
+                address: getText('partyClientAddress') || '',
+                district: ''
+            },
+            company: {
+                name: getText('partyCompanyName') || '—',
+                registration_no: getText('partyCompanyReg') || '',
+                address: getText('partyCompanyAddress') || '',
+                contact: getText('partyCompanyPhone') || ''
+            },
+
+            // Project
+            project_title: getVal('projectTitle') || '',
+            project_reference: getVal('projectReference') || '',
+            project_location: getVal('projectLocation') || '',
+            project_type: getVal('projectType') || '',
+            project_description: getVal('projectDescription') || '',
+
+            // Scope
+            scope_description: getVal('scopeDescription') || '',
+            scope_inclusions: getVal('scopeInclusions') || 'As per quotation',
+            scope_exclusions: getVal('scopeExclusions') || 'None specified',
+            materials_responsibility: matVal,
+
+            // Duration
+            start_date: getVal('startDate') || '',
+            end_date: getVal('endDate') || '',
+            progress_percentage: 0,
+
+            // Financial
+            total_budget: isFinite(totalVal) ? totalVal : 0,
+            value: isFinite(totalVal) ? totalVal : 0,
+            budget_type: budgetTypeKey,
+            budget_min: isFlexible ? (totalVal * (1 - flexPct / 100)) : null,
+            budget_max: isFlexible ? (totalVal * (1 + flexPct / 100)) : null,
+            payment_method: paymentMethod,
+            amount_paid: 0,
+            amount_pending: isFinite(totalVal) ? totalVal : 0,
+            labor_unit_label: laborUnitLabel || null,
+            material_unit_label: materialUnitLabel || null,
+            labor_cost: laborCost,
+            material_cost: materialCost,
+            transport_cost: transportCost,
+            other_charges: otherCharges,
+            late_payment_penalty: getVal('latePaymentPenalty') || 'As per standard terms',
+
+            // Clauses
+            variation_clause: !!document.getElementById('variationClause')?.checked,
+            dispute_resolution: getVal('disputeResolution') || 'Disputes shall be resolved through mediation via the FixLanka platform.',
+
+            // Misc
+            sent_to_customer: false,
+            milestones
+        };
+
+        // Keep legacy top-level fields too (shared renderer supports both)
+        contractObj.company_name = contractObj.company.name;
+        contractObj.company_registration = contractObj.company.registration_no;
+        contractObj.company_phone = contractObj.company.contact;
+        contractObj.customer_email = contractObj.client.email;
+
+        return contractObj;
+    }
+
+    function renderReviewViaSharedRenderer() {
+        if (!window.ContractPreview || typeof window.ContractPreview.renderHTML !== 'function') return false;
+
+        const host = document.getElementById('contractPreview');
+        if (!host) return false;
+
+        // Avoid nested .contract-preview wrappers
+        host.classList.remove('contract-preview');
+
+        const c = buildSharedPreviewContractObject();
+        const method = c.payment_method;
+        host.innerHTML = window.ContractPreview.renderHTML(c, {
+            isMilestoneBased: method === 'milestone_based',
+            paymentLabel: formatPaymentMethodLabel(method),
+            renderMilestoneAction: () => '—'
+        });
+        return true;
+    }
+
     function populateReview() {
+        // Prefer shared renderer so “preview before create” === “preview after create”
+        if (renderReviewViaSharedRenderer()) return;
+
         const today = new Date();
         setText('previewDate', today.toLocaleDateString('en-LK', { year: 'numeric', month: 'long', day: 'numeric' }));
 
@@ -1091,19 +1387,11 @@
         const msBody = document.getElementById('previewMilestonesBody');
         if (msBody) {
             msBody.innerHTML = '';
-            const isUnitBased = quotationFullData?.labor_unit_label || quotationFullData?.material_unit_label;
-            const isMilestonePayment = !isUnitBased && getVal('paymentMethod') === 'milestone_based';
             document.querySelectorAll('#milestonesBody .milestone-row').forEach((row, i) => {
                 const name = row.querySelector('input[name="ms_name[]"]')?.value || '';
                 const date = row.querySelector('input[name="ms_date[]"]')?.value || '';
                 if (name) {
-                    let extraCols = '';
-                    if (isMilestonePayment) {
-                        const pct = row.querySelector('.ms-pct-input')?.value || '0';
-                        const amt = parseFloat(row.querySelector('.ms-amount-input')?.value || 0);
-                        extraCols = `<td>${pct}%</td><td>LKR ${amt.toLocaleString()}</td>`;
-                    }
-                    msBody.innerHTML += `<tr><td>${i + 1}</td><td>${esc(name)}</td><td>${formatDateDisplay(date)}</td>${extraCols}</tr>`;
+                    msBody.innerHTML += `<tr><td>${i + 1}</td><td>${esc(name)}</td><td>${formatDateDisplay(date)}</td></tr>`;
                 }
             });
         }
@@ -1113,8 +1401,12 @@
         const isUnitBased = quotationFullData?.labor_unit_label || quotationFullData?.material_unit_label;
         const totalSuffix = isUnitBased ? ' (per unit)' : '';
         setText('previewValue', `LKR ${totalVal.toLocaleString()}${totalSuffix}`);
-        const budgetTypes = { 'fixed': 'Fixed Price', 'time_based': 'Time-Based', 'flexible': 'Flexible (±10%)' };
-        setText('previewBudgetType', budgetTypes[getVal('budgetType')] || 'Fixed');
+        const budgetTypeKey = getVal('budgetType') || 'fixed';
+        const pct = parseFloat(getVal('budgetFlexPercent') || 10);
+        const budgetLabel = budgetTypeKey === 'flexible'
+            ? `Flexible (Materials ±${isFinite(pct) ? pct : 10}%)`
+            : 'Fixed Price';
+        setText('previewBudgetType', budgetLabel);
         setText('previewPaymentMethod', formatPaymentMethodLabel(getVal('paymentMethod')));
 
         // Payment schedule in preview
@@ -1130,8 +1422,7 @@
         );
 
         // Communication
-        const channels = { 'system': 'FixLanka Platform', 'email': 'Email', 'both': 'Platform + Email' };
-        setText('previewCommChannel', channels[getVal('communicationChannel')] || 'FixLanka Platform');
+        setText('previewCommChannel', 'FixLanka Platform');
         setText('previewDisputeRes', getVal('disputeResolution') || 'As per standard terms');
 
         // Additional
@@ -1334,7 +1625,7 @@
 
             // Clauses
             variation_clause: document.getElementById('variationClause')?.checked ? 1 : 0,
-            communication_channel: getVal('communicationChannel'),
+            communication_channel: 'system',
             dispute_resolution: getVal('disputeResolution'),
 
             // Additional
@@ -1351,43 +1642,21 @@
 
     function collectMilestones() {
         const milestones = [];
-        const total = parseFloat(getVal('contractValue') || 0);
         const method = getVal('paymentMethod');
         const rows = document.querySelectorAll('#milestonesBody .milestone-row');
-        const isMilestone = method === 'milestone_based';
-
-        // For non-milestone methods, milestones are tracking-only (no payment amounts)
-        const fixedPctMap = {
-            'full_upfront': [100],
-            '50_50': [50, 50],
-            '30_70': [30, 70],
-            'completion': [100]
-        };
 
         rows.forEach((row, i) => {
             const name = row.querySelector('input[name="ms_name[]"]')?.value;
             const desc = row.querySelector('input[name="ms_desc[]"]')?.value;
             const date = row.querySelector('input[name="ms_date[]"]')?.value;
 
-            if (name && date) {
-                let pct, amount;
-
-                if (isMilestone) {
-                    // Read from user-entered values in payment columns
-                    pct = parseFloat(row.querySelector('.ms-pct-input')?.value || 0);
-                    amount = parseFloat(row.querySelector('.ms-amount-input')?.value || 0);
-                } else {
-                    // Tracking-only: no payment amounts linked
-                    pct = 0;
-                    amount = 0;
-                }
-
+            if (name && desc && date) {
                 milestones.push({
                     title: name,
-                    description: desc || '',
+                    description: desc,
                     due_date: date,
-                    amount: amount.toFixed(2),
-                    percentage: pct
+                    amount: '0.00',
+                    percentage: 0
                 });
             }
         });
@@ -1399,7 +1668,7 @@
         const origStep = currentStep;
         let allValid = true;
 
-        // In edit mode, skip Step 1 (quotation selection) — quotation is already assigned
+        // In edit mode, skip Step 1 (quotation selection) - quotation is already assigned
         const isEditMode = !!document.getElementById('editContractId')?.value;
         const startStep = isEditMode ? 2 : 1;
 
@@ -1452,15 +1721,22 @@
                 body: JSON.stringify(payload)
             });
 
-            const result = await resp.json();
+            const result = await readJsonOrNull(resp);
+            if (!resp.ok || !result) {
+                throw new Error(`Draft save failed (${resp.status})`);
+            }
+
             if (result.success) {
                 if (statusText) statusText.textContent = 'Draft saved';
                 if (!silent) showNotification('success', 'Draft Saved', 'Your progress has been saved.');
+            } else {
+                throw new Error(result.message || 'Draft save failed');
             }
 
         } catch (e) {
             if (statusText) statusText.textContent = 'Save failed';
             console.error('Draft save error:', e);
+            if (!silent) showNotification('error', 'Save Failed', 'Could not save draft. Please try again.');
         }
 
         // Hide status after 3s
@@ -1485,7 +1761,7 @@
 
     function setText(id, text) {
         const el = document.getElementById(id);
-        if (el) el.textContent = text || '—';
+        if (el) el.textContent = text || '-';
     }
 
     function getText(id) {
@@ -1506,11 +1782,11 @@
             '30_70': '30/70 Split',
             'completion': '100% After Completion'
         };
-        return labels[method] || method || '—';
+        return labels[method] || method || '-';
     }
 
     function formatDateDisplay(dateStr) {
-        if (!dateStr) return '—';
+        if (!dateStr) return '-';
         try {
             return new Date(dateStr).toLocaleDateString('en-LK', { year: 'numeric', month: 'short', day: 'numeric' });
         } catch {
@@ -1554,6 +1830,9 @@
         const form = document.getElementById('contractForm');
         if (form) form.reset();
 
+        const unitInfo = document.getElementById('unitMeasurementInfo');
+        if (unitInfo) unitInfo.style.display = 'none';
+
         // Set edit contract ID after reset
         const editField = document.getElementById('editContractId');
         if (editField) editField.value = contractData.contract_id;
@@ -1569,7 +1848,7 @@
         const submitBtn = document.getElementById('formSubmitBtn');
         if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
 
-        // Skip to step 2 (project details) — Step 1 is quotation selection, not editable
+        // Skip to step 2 (project details) - Step 1 is quotation selection, not editable
         currentStep = 2;
         showStep(2);
         updateStepIndicators();
@@ -1589,37 +1868,36 @@
     };
 
     function updateUnitBasedLabels(d) {
-        const isUnitBased = d.labor_unit_label || d.material_unit_label;
-        const suffix = isUnitBased ? ' (per unit)' : '';
+        const laborUnitLabel = (d.labor_unit_label || '').trim();
+        const materialUnitLabel = (d.material_unit_label || '').trim();
+        const isUnitBased = Boolean(laborUnitLabel || materialUnitLabel);
 
-        // Update labels in Step 5 & 6
-        const contractValueLabel = document.querySelector('label[for="contractValue"]');
-        if (contractValueLabel) {
-            contractValueLabel.innerHTML = `Total Contract Value (LKR)${suffix} <span class="required">*</span>`;
+        unitPricingMode = {
+            active: isUnitBased,
+            laborUnitLabel,
+            materialUnitLabel
+        };
+
+        // Build a human-readable unit measurement summary.
+        let measurementText = 'Lump sum (per job)';
+        if (isUnitBased) {
+            const parts = [];
+            if (laborUnitLabel) parts.push(`Labor: ${laborUnitLabel}`);
+            if (materialUnitLabel) parts.push(`Materials: ${materialUnitLabel}`);
+            measurementText = parts.join(' / ') || 'Per unit';
+        }
+
+        // Show unit measurement info (from quotation)
+        const info = document.getElementById('unitMeasurementInfo');
+        const infoText = document.getElementById('unitMeasurementText');
+        if (info && infoText) {
+            infoText.textContent = `Unit measurement: ${measurementText}`;
+            info.style.display = 'flex';
         }
 
         const bdTotalLabel = document.querySelector('.breakdown-item.total span:first-child');
         if (bdTotalLabel) {
-            bdTotalLabel.textContent = `Total${suffix}`;
-        }
-
-        // Milestone Table headers
-        const msAmountHeader = document.querySelector('#milestonesTable th:nth-child(6)');
-        if (msAmountHeader) {
-            msAmountHeader.textContent = `Amount (LKR)${suffix}`;
-        }
-
-        // Milestone Total label
-        const msTotalAmountCell = document.querySelector('#msTotalAmount')?.parentElement;
-        if (msTotalAmountCell) {
-            const unitSpanId = 'msTotalUnitSuffix';
-            let unitSpan = document.getElementById(unitSpanId);
-            if (!unitSpan) {
-                unitSpan = document.createElement('span');
-                unitSpan.id = unitSpanId;
-                msTotalAmountCell.appendChild(unitSpan);
-            }
-            unitSpan.textContent = suffix;
+            bdTotalLabel.textContent = 'Total';
         }
 
         // Preview in Step 8
@@ -1632,8 +1910,78 @@
                 unitSpan.id = unitSpanId;
                 previewValueCell.appendChild(unitSpan);
             }
-            unitSpan.textContent = suffix;
+            unitSpan.textContent = isUnitBased ? ` (${measurementText})` : ' (per job)';
         }
+
+        applyUnitPricingLocks();
+    }
+
+    function applyUnitPricingLocks() {
+        const paymentMethodEl = document.getElementById('paymentMethod');
+        const pricingTypeEl = document.getElementById('pricingType');
+        const hourlyRow = document.getElementById('hourlyRateRow');
+        const addMsBtn = document.getElementById('addMilestoneBtn');
+
+        if (!unitPricingMode.active) {
+            if (paymentMethodEl) {
+                paymentMethodEl.disabled = false;
+                Array.from(paymentMethodEl.options || []).forEach(opt => {
+                    opt.disabled = false;
+                    opt.hidden = false;
+                });
+            }
+            if (pricingTypeEl) {
+                pricingTypeEl.disabled = false;
+            }
+            if (hourlyRow) {
+                hourlyRow.style.display = 'none';
+            }
+            if (addMsBtn) {
+                addMsBtn.disabled = false;
+            }
+
+            document.querySelectorAll('#milestonesBody .btn-remove-ms').forEach(btn => {
+                btn.style.display = '';
+            });
+            return;
+        }
+
+        // Unit-priced mode: milestone-based only.
+        if (paymentMethodEl) {
+            paymentMethodEl.value = 'milestone_based';
+            Array.from(paymentMethodEl.options || []).forEach(opt => {
+                const keep = opt.value === 'milestone_based';
+                opt.disabled = !keep;
+                opt.hidden = !keep;
+            });
+            paymentMethodEl.disabled = true;
+        }
+        setVal('paymentMethod', 'milestone_based');
+
+        // Unit-priced mode: fixed pricing type (no hourly/time-based pricing).
+        if (pricingTypeEl) {
+            pricingTypeEl.value = 'fixed_price';
+            pricingTypeEl.disabled = true;
+        }
+        setVal('pricingType', 'fixed_price');
+        setVal('hourlyRate', '');
+        setVal('spendingCap', '');
+        if (hourlyRow) hourlyRow.style.display = 'none';
+
+        // Lock milestones to unit billing phases
+        if (addMsBtn) addMsBtn.disabled = false;
+        resetMilestones();
+
+        // Hide remove button only for the required unit-billing rows
+        const reqCount = ((unitPricingMode.laborUnitLabel || '').trim() ? 1 : 0) + ((unitPricingMode.materialUnitLabel || '').trim() ? 1 : 0);
+        const rows = Array.from(document.querySelectorAll('#milestonesBody .milestone-row'));
+        rows.forEach((row, idx) => {
+            const rm = row.querySelector('.btn-remove-ms');
+            if (!rm) return;
+            rm.style.display = (idx < reqCount) ? 'none' : '';
+        });
+
+        generatePaymentPreview();
     }
 
     function esc(str) {

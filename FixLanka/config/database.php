@@ -52,4 +52,14 @@ try {
     // Otherwise die with error message
     die("Database connection failed: " . $e->getMessage());
 }
+
+if (!function_exists('getDatabaseConnection')) {
+    function getDatabaseConnection(): PDO {
+        global $pdo;
+        if (!($pdo instanceof PDO)) {
+            throw new RuntimeException('Database connection is not initialized.');
+        }
+        return $pdo;
+    }
+}
 ?>

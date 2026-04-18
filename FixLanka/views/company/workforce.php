@@ -34,6 +34,7 @@ if (!$companyId) {
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/workforce.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/payments-export-modal.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Pass company ID to JavaScript -->
@@ -74,7 +75,7 @@ if (!$companyId) {
                             </div>
                             <div class="header-actions">
                                 <div class="action-buttons">
-                                    <button class="action-btn secondary">
+                                    <button class="action-btn secondary" id="exportWorkforceBtn">
                                         <i class="fas fa-file-export"></i> Export
                                     </button>
                                     <button class="action-btn primary" onclick="openJobPostingModal()">
@@ -6406,10 +6407,118 @@ if (!$companyId) {
     </div>
 
     <!-- Load Company Employees Database Integration -->
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/company-employees-db.js"></script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/company-employees-db.js?v=2026-04-13-2"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/freelancers-db.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/applications-db.js"></script>
 
+    <!-- Export Modal -->
+    <div class="export-modal-overlay" id="workforceExportModal">
+        <div class="export-modal-container">
+            <div class="export-modal-header">
+                <h2><i class="fas fa-file-export"></i> Export Workforce Report</h2>
+                <button class="export-modal-close" onclick="closeWorkforceExportModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="export-modal-body">
+                <div class="export-options-container">
+                    <!-- Export Type -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-filter"></i> Workforce Category</h4>
+                        <div class="export-radio-group">
+                            <label class="export-radio-option">
+                                <input type="radio" name="workforceType" value="all" checked>
+                                <span class="radio-indicator"></span>
+                                All Workforce
+                            </label>
+                            <label class="export-radio-option">
+                                <input type="radio" name="workforceType" value="staff">
+                                <span class="radio-indicator"></span>
+                                Permanent Staff
+                            </label>
+                            <label class="export-radio-option">
+                                <input type="radio" name="workforceType" value="freelance">
+                                <span class="radio-indicator"></span>
+                                Freelance Contractors
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-check-circle"></i> Status Filter</h4>
+                        <div class="export-radio-group">
+                            <label class="export-radio-option">
+                                <input type="radio" name="workforceStatus" value="all">
+                                <span class="radio-indicator"></span>
+                                All Records
+                            </label>
+                            <label class="export-radio-option">
+                                <input type="radio" name="workforceStatus" value="active" checked>
+                                <span class="radio-indicator"></span>
+                                Active Only
+                            </label>
+                            <label class="export-radio-option">
+                                <input type="radio" name="workforceStatus" value="inactive">
+                                <span class="radio-indicator"></span>
+                                Inactive Only
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Export Format -->
+                    <div class="export-option-group">
+                        <h4><i class="fas fa-file-alt"></i> Export Format</h4>
+                        <div class="export-format-group">
+                            <label class="export-format-option">
+                                <input type="radio" name="workforceFormat" value="csv" checked>
+                                <div class="export-format-icon csv">
+                                    <i class="fas fa-file-csv"></i>
+                                </div>
+                                <span class="export-format-name">CSV</span>
+                                <span class="export-format-desc">Data processing</span>
+                            </label>
+                            <label class="export-format-option">
+                                <input type="radio" name="workforceFormat" value="pdf">
+                                <div class="export-format-icon pdf">
+                                    <i class="fas fa-file-pdf"></i>
+                                </div>
+                                <span class="export-format-name">PDF</span>
+                                <span class="export-format-desc">Print ready</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Export Summary -->
+                    <div class="export-summary-box" id="workforceExportSummaryBox">
+                        <h4><i class="fas fa-info-circle"></i> Export Summary</h4>
+                        <div class="export-summary-stats">
+                            <div class="export-summary-stat">
+                                <span class="stat-value" id="workforceExportTotalRecords">--</span>
+                                <span class="stat-label">Members</span>
+                            </div>
+                            <div class="export-summary-stat">
+                                <span class="stat-value" id="workforceExportAvgRating">--</span>
+                                <span class="stat-label">Avg Rating</span>
+                            </div>
+                            <div class="export-summary-stat">
+                                <span class="stat-value" id="workforceExportSpecialties">--</span>
+                                <span class="stat-label">Specialties</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="export-modal-footer">
+                <button class="export-btn export-btn-cancel" onclick="closeWorkforceExportModal()">Cancel</button>
+                <button class="export-btn export-btn-download" onclick="downloadWorkforceExport()">
+                    <i class="fas fa-download"></i> Export Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/workforce-export.js"></script>
 </body>
 
 </html>

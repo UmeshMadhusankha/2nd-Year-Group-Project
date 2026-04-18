@@ -491,9 +491,9 @@ function generateStars(rating) {
     const hasHalfStar = rating % 1 >= 0.5;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
-    return 'â˜…'.repeat(fullStars) +
-        (hasHalfStar ? 'â˜†' : '') +
-        'â˜†'.repeat(emptyStars);
+    return '*'.repeat(fullStars) +
+        (hasHalfStar ? '*' : '') +
+        '-'.repeat(emptyStars);
 }
 
 // Add required styles
@@ -1546,14 +1546,24 @@ function editEvent(eventId) {
     }
 }
 
-function deleteEvent(eventId) {
+async function deleteEvent(eventId) {
     const systemEvent = calendarState.systemEvents.find(e => e.id === eventId);
     if (systemEvent) {
         showNotification('System events cannot be deleted', 'info');
         return;
     }
 
-    if (confirm('Are you sure you want to delete this event?')) {
+    const confirmed = window.systemConfirm
+        ? await window.systemConfirm('Are you sure you want to delete this event?', {
+            title: 'Delete Event',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            type: 'danger',
+            icon: 'fas fa-trash'
+        })
+        : confirm('Are you sure you want to delete this event?');
+
+    if (confirmed) {
         calendarState.events = calendarState.events.filter(e => e.id !== eventId);
         saveCalendarEvents();
         updateCalendarDisplay();
@@ -1705,7 +1715,7 @@ function formatDateString(date) {
     return `${year}-${month}-${day}`;
 }
 
-// âœ… FIX: Same local-safe version for input fields
+// FIX: Same local-safe version for input fields
 function formatDateForInput(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');

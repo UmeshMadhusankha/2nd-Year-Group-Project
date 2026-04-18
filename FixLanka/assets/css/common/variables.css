@@ -33,12 +33,11 @@
   --warning-dark: #d97706;
   --warning-light: #fbbf24;
   --danger-color: #d32626;
-  --info-color: #3b82f6;
-  --error-color: #dc2626;
-  --danger-dark: #dc2626;
   --info-color: #1285c7;
   --info-dark: #1e40af;
   --info-darker: #1e3a8a;
+  --error-color: #dc2626;
+  --danger-dark: #dc2626;
 
    /* RGB helpers (for rgba() usage) */
    --success-rgb: 16, 185, 129;
@@ -82,10 +81,13 @@
   --bg-overlay: #0a2e331a;
   --bg-hover: #e0f7f6;
   
-  /* ===============================================
-     BORDERS & RADIUS
-     =============================================== */
+/* ===============================================
+      BORDERS & RADIUS
+      =============================================== */
   --border-color: #c5d4d3;
+  --rgba-white-10: rgba(255, 255, 255, 0.1);
+  --rgba-white-20: rgba(255, 255, 255, 0.2);
+  --rgba-black-50: rgba(0, 0, 0, 0.5);
   --border-radius: 12px;
   --border-radius-sm: 8px;
   --border-radius-lg: 16px;

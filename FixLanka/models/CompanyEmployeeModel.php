@@ -364,6 +364,87 @@ class CompanyEmployeeModel {
     }
 
     /**
+     * Get staff availability by specialty.
+     * Uses staffsummary as the source of capacity and subtracts any allocated requirements
+     * from project_staff_requirements for open projects.
+     *
+     * @return array[] rows: specialty, total_count, active_count, allocated_count, available_count
+     */
+    public function getStaffAvailability(int $companyId): array
+    {
+        try {
+            // Base capacity (staffsummary)
+            $stmt = $this->db->prepare('SELECT specialty, total_count, active_count FROM staffsummary WHERE company_id = :company_id ORDER BY specialty');
+            $stmt->execute(['company_id' => $companyId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if (!$rows) {
+                return [];
+            }
+
+            // Allocations from open projects
+            // Note: project_staff_requirements table is created lazily when first used.
+            $this->db->exec("CREATE TABLE IF NOT EXISTS project_staff_requirements (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                project_id INT(11) NOT NULL,
+                company_id INT(11) NOT NULL,
+                specialty VARCHAR(100) NOT NULL,
+                required_count INT(11) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY unique_project_specialty (project_id, specialty),
+                KEY idx_company_specialty (company_id, specialty),
+                CONSTRAINT fk_psr_project FOREIGN KEY (project_id) REFERENCES project(project_id) ON DELETE CASCADE,
+                CONSTRAINT fk_psr_company FOREIGN KEY (company_id) REFERENCES company(company_id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            $stmtAlloc = $this->db->prepare(
+                "SELECT psr.specialty, SUM(psr.required_count) AS allocated
+                 FROM project_staff_requirements psr
+                 INNER JOIN project p ON p.project_id = psr.project_id
+                 WHERE psr.company_id = :company_id
+                   AND p.status IN ('planned','in_progress','on_hold')
+                 GROUP BY psr.specialty"
+            );
+            $stmtAlloc->execute(['company_id' => $companyId]);
+            $allocRows = $stmtAlloc->fetchAll(PDO::FETCH_ASSOC);
+            $allocMap = [];
+            foreach ($allocRows as $a) {
+                $spec = (string)($a['specialty'] ?? '');
+                $allocMap[$spec] = (int)($a['allocated'] ?? 0);
+            }
+
+            $out = [];
+            foreach ($rows as $r) {
+                $specialty = (string)($r['specialty'] ?? '');
+                if (trim($specialty) === '') {
+                    continue;
+                }
+                $total = (int)($r['total_count'] ?? 0);
+                $active = (int)($r['active_count'] ?? 0);
+                $allocated = (int)($allocMap[$specialty] ?? 0);
+                $capacity = $active > 0 ? $active : $total;
+                $available = $capacity - $allocated;
+                if ($available < 0) {
+                    $available = 0;
+                }
+
+                $out[] = [
+                    'specialty' => $specialty,
+                    'total_count' => $total,
+                    'active_count' => $active,
+                    'allocated_count' => $allocated,
+                    'available_count' => $available
+                ];
+            }
+
+            return $out;
+        } catch (Throwable $e) {
+            error_log('Error fetching staff availability: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Get staff statistics from staffsummary table if available.
      * Returns null when no summary rows exist for the company.
      */

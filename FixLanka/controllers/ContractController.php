@@ -79,6 +79,7 @@ class ContractController {
                     'start_date' => $contract['start_date'] ?? null,
                     'end_date' => $contract['end_date'] ?? null,
                     'total_budget' => $contract['total_budget'] ?? 0,
+                    'value' => $contract['total_budget'] ?? 0,
                     'payment_method' => $contract['payment_method'] ?? null,
                     'budget_type' => $contract['budget_type'] ?? null,
                     'progress_percentage' => (int)($contract['progress_percentage'] ?? 0),
@@ -89,10 +90,16 @@ class ContractController {
                     'customer_response_at' => $contract['customer_response_at'] ?? null,
                     'terms_accepted' => (bool)($contract['terms_accepted'] ?? 0),
                     'chat_active' => (int)($contract['chat_active'] ?? 0),
+                    'unread_messages' => (int)($contract['unread_messages'] ?? 0),
                     'company_id' => $contract['company_id'] ?? null,
                     'company_name' => $contract['company_name'] ?? '—',
+                    'labor_cost' => isset($contract['labor_cost']) ? (float)$contract['labor_cost'] : null,
+                    'material_cost' => isset($contract['material_cost']) ? (float)$contract['material_cost'] : null,
+                    'labor_unit_label' => $contract['labor_unit_label'] ?? null,
+                    'material_unit_label' => $contract['material_unit_label'] ?? null,
                     'total_milestones' => (int)($contract['total_milestones'] ?? 0),
-                    'completed_milestones' => (int)($contract['completed_milestones'] ?? 0)
+                    'completed_milestones' => (int)($contract['completed_milestones'] ?? 0),
+                    'submitted_milestones' => (int)($contract['submitted_milestones'] ?? 0)
                 ];
             }, $contracts);
 
@@ -180,6 +187,12 @@ class ContractController {
                 'payment_method' => $contract['payment_method'] ?? null,
                 'amount_paid' => $contract['amount_paid'] ?? 0,
                 'amount_pending' => $contract['amount_pending'] ?? 0,
+                'labor_cost' => isset($contract['labor_cost']) ? (float)$contract['labor_cost'] : null,
+                'material_cost' => isset($contract['material_cost']) ? (float)$contract['material_cost'] : null,
+                'transport_cost' => isset($contract['transport_cost']) ? (float)$contract['transport_cost'] : null,
+                'other_charges' => isset($contract['other_charges']) ? (float)$contract['other_charges'] : null,
+                'labor_unit_label' => $contract['labor_unit_label'] ?? null,
+                'material_unit_label' => $contract['material_unit_label'] ?? null,
                 'start_date' => $contract['start_date'] ?? null,
                 'end_date' => $contract['end_date'] ?? null,
                 'contract_date' => $contract['contract_date'] ?? null,
@@ -242,6 +255,9 @@ class ContractController {
                 return [
                     'contract_id' => $contract['contract_id'],
                     'project_id' => $contract['project_id'],
+                    'quotation_id' => $contract['quotation_id'] ?? null,
+                    'project_status' => $contract['project_status'] ?? null,
+                    'project_start_date' => $contract['project_start_date'] ?? null,
                     'contract_number' => $contract['contract_number'] ?? ('CNT-' . date('Y', strtotime($contract['contract_date'])) . '-' . str_pad($contract['contract_id'], 3, '0', STR_PAD_LEFT)),
                     'title' => $contract['project_title'] ?? 'Untitled Contract',
                     'description' => $contract['project_description'] ?? '',
@@ -264,7 +280,13 @@ class ContractController {
                     'customer_response_at' => $contract['customer_response_at'] ?? null,
                     'terms_accepted' => (bool)($contract['terms_accepted'] ?? 0),
                     'chat_active' => (int)($contract['chat_active'] ?? 0),
-                    'unread_messages' => (int)($contract['unread_messages'] ?? 0)
+                    'unread_messages' => (int)($contract['unread_messages'] ?? 0),
+                    'labor_cost' => isset($contract['labor_cost']) ? (float)$contract['labor_cost'] : null,
+                    'material_cost' => isset($contract['material_cost']) ? (float)$contract['material_cost'] : null,
+                    'transport_cost' => isset($contract['transport_cost']) ? (float)$contract['transport_cost'] : null,
+                    'other_charges' => isset($contract['other_charges']) ? (float)$contract['other_charges'] : null,
+                    'labor_unit_label' => $contract['labor_unit_label'] ?? null,
+                    'material_unit_label' => $contract['material_unit_label'] ?? null
                 ];
             }, $contracts);
 
@@ -365,6 +387,12 @@ class ContractController {
                 'payment_method' => $contract['payment_method'],
                 'amount_paid' => $contract['amount_paid'],
                 'amount_pending' => $contract['amount_pending'],
+                'labor_cost' => isset($contract['labor_cost']) ? (float)$contract['labor_cost'] : null,
+                'material_cost' => isset($contract['material_cost']) ? (float)$contract['material_cost'] : null,
+                'transport_cost' => isset($contract['transport_cost']) ? (float)$contract['transport_cost'] : null,
+                'other_charges' => isset($contract['other_charges']) ? (float)$contract['other_charges'] : null,
+                'labor_unit_label' => $contract['labor_unit_label'] ?? null,
+                'material_unit_label' => $contract['material_unit_label'] ?? null,
                 'late_payment_penalty' => $contract['late_payment_penalty'],
                 'start_date' => $contract['start_date'],
                 'end_date' => $contract['end_date'],
@@ -458,10 +486,15 @@ class ContractController {
                 return;
             }
 
+            // Enforce platform chat only (no email communication)
+            $data['communication_channel'] = 'system';
+
             // Start transaction so project+contract are consistent
             $this->pdo->beginTransaction();
 
             try {
+                $quotationForUnitPricing = null;
+
                 // If project_id is missing or not a valid project for this company, create a project from the accepted quotation
                 $projectId = $data['project_id'] ?? null;
                 $projectIdValid = false;
@@ -473,20 +506,70 @@ class ContractController {
 
                 if (!$projectIdValid) {
                     $quotationId = $data['quotation_id'] ?? null;
-                    if (empty($quotationId) || !is_numeric($quotationId)) {
+                    $isDirectRequest = is_string($quotationId) && strpos($quotationId, 'dr_') === 0;
+
+                    if (empty($quotationId)) {
                         throw new Exception("project_id is invalid; quotation_id is required to create a project");
                     }
 
-                    $qStmt = $this->pdo->prepare("
+                    $quotation = null;
+
+                    if ($isDirectRequest) {
+                        $actualReqId = (int)substr($quotationId, 3);
+                        $qStmt = $this->pdo->prepare("
+                            SELECT djr.*, 
+                                   djr.user_id AS customer_id,
+                                   djr.title AS request_title,
+                                   djr.description AS request_description,
+                                   djr.address,
+                                   djr.district,
+                                   cat.name AS request_category_name
+                            FROM directjobrequest djr
+                            LEFT JOIN category cat ON djr.category_id = cat.category_id
+                            WHERE djr.request_id = ?
+                              AND djr.status = 'accepted'
+                              AND djr.provider_id = ?
+                              AND djr.provider_type = 'company'
+                            LIMIT 1
+                        ");
+                        $qStmt->execute([$actualReqId, $companyId]);
+                        $quotation = $qStmt->fetch(PDO::FETCH_ASSOC);
+
+                        if (!$quotation) {
+                            throw new Exception('Direct request not found, not accepted, or not authorized');
+                        }
+
+                        // update direct job request status so it doesn't appear in 'Available Quotations' dropdown again
+                        $updateStmt = $this->pdo->prepare("UPDATE directjobrequest SET status = 'in_progress' WHERE request_id = ?");
+                        $updateStmt->execute([$actualReqId]);
+
+                        $quotation['request_id'] = $actualReqId;
+                        $quotation['total_amount'] = 0;
+                        $quotation['start_date'] = null;
+                        $quotation['completion_date'] = $quotation['finish_date'] ?? null;
+                        
+                        $quotationForUnitPricing = null;
+                        // For the contract model creation down the line, we don't have a true quotation_id
+                        $data['quotation_id'] = null;
+                        $data['job_request_id'] = $actualReqId;
+
+                    } else {
+                        if (!is_numeric($quotationId)) {
+                            throw new Exception("project_id is invalid; quotation_id is invalid");
+                        }
+
+                        $qStmt = $this->pdo->prepare("
                         SELECT q.*, 
                                jr.user_id AS customer_id,
                                jr.request_id,
                                jr.title AS request_title,
                                jr.description AS request_description,
                                jr.address,
-                               jr.district
+                                                             jr.district,
+                                                             cat.name AS request_category_name
                         FROM companyquotation q
                         INNER JOIN jobrequest jr ON q.request_id = jr.request_id
+                                                LEFT JOIN category cat ON jr.category_id = cat.category_id
                         WHERE q.quotation_id = ?
                           AND q.status = 'accepted'
                           AND q.company_id = ?
@@ -499,6 +582,9 @@ class ContractController {
                         throw new Exception('Quotation not found, not accepted, or not authorized');
                     }
 
+                    $quotationForUnitPricing = $quotation;
+                }
+
                     $resolvedProjectTitle = trim($data['project_title'] ?? '') !== '' ? trim($data['project_title']) : ($quotation['title'] ?? $quotation['request_title'] ?? 'Project');
                     $resolvedProjectDescription = trim($data['project_description'] ?? '') !== '' ? trim($data['project_description']) : ($quotation['description'] ?? $quotation['request_description'] ?? null);
                     $resolvedProjectLocation = trim($data['project_location'] ?? '') !== ''
@@ -507,6 +593,9 @@ class ContractController {
                     if ($resolvedProjectLocation === '') {
                         $resolvedProjectLocation = $quotation['district'] ?? 'N/A';
                     }
+                    $resolvedProjectType = (isset($data['project_type']) && trim($data['project_type']) !== '')
+                        ? trim($data['project_type'])
+                        : ($quotation['request_category_name'] ?? null);
 
                     $resolvedTotalBudget = isset($data['total_budget']) && $data['total_budget'] !== '' ? (float)$data['total_budget'] : (float)$quotation['total_amount'];
                     $resolvedStartDate = !empty($data['start_date']) ? $data['start_date'] : ($quotation['start_date'] ?? null);
@@ -518,7 +607,7 @@ class ContractController {
                             budget, start_date, end_date, status, progress
                         ) VALUES (
                             ?, ?, ?, ?, ?, ?,
-                            ?, ?, ?, 'planned', 0
+                            ?, NULL, ?, 'planned', 0
                         )
                     ");
                     $projStmt->execute([
@@ -526,10 +615,9 @@ class ContractController {
                         $quotation['customer_id'],
                         $resolvedProjectTitle,
                         $resolvedProjectDescription,
-                        (isset($data['project_type']) && trim($data['project_type']) !== '' ? trim($data['project_type']) : null),
+                        $resolvedProjectType,
                         $resolvedProjectLocation,
                         $resolvedTotalBudget,
-                        $resolvedStartDate,
                         $resolvedEndDate
                     ]);
 
@@ -542,8 +630,42 @@ class ContractController {
                     $data['quotation_id'] = $data['quotation_id'] ?? (int)$quotationId;
                     $data['project_title'] = $data['project_title'] ?? $resolvedProjectTitle;
                     $data['project_location'] = $data['project_location'] ?? $resolvedProjectLocation;
+                    $data['project_type'] = $data['project_type'] ?? $resolvedProjectType;
                     $data['project_description'] = $data['project_description'] ?? $resolvedProjectDescription;
                     $data['end_date'] = $data['end_date'] ?? $resolvedEndDate;
+                }
+
+                // If we didn't load the quotation above (project already existed), load it for unit-pricing rules.
+                if ($quotationForUnitPricing === null) {
+                    $quotationId = $data['quotation_id'] ?? null;
+                    $isDirectReqMode = is_string($quotationId) && strpos($quotationId, 'dr_') === 0;
+
+                    if (!empty($quotationId) && is_numeric($quotationId) && !$isDirectReqMode) {
+                        $qUnitStmt = $this->pdo->prepare("
+                            SELECT *
+                            FROM companyquotation
+                            WHERE quotation_id = ?
+                              AND status IN ('accepted','successful')
+                              AND company_id = ?
+                            LIMIT 1
+                        ");
+                        $qUnitStmt->execute([(int)$quotationId, $companyId]);
+                        $quotationForUnitPricing = $qUnitStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+                    }
+                }
+
+                $isUnitBased = false;
+                if ($quotationForUnitPricing) {
+                    $labUnit = trim((string)($quotationForUnitPricing['labor_unit_label'] ?? ''));
+                    $matUnit = trim((string)($quotationForUnitPricing['material_unit_label'] ?? ''));
+                    $isUnitBased = ($labUnit !== '' || $matUnit !== '');
+                }
+
+                // Unit-priced contracts must be milestone-based with fixed pricing type.
+                if ($isUnitBased) {
+                    $data['payment_method'] = 'milestone_based';
+                    $data['milestone_plan'] = 1;
+                    $data['pricing_type'] = 'fixed_price';
                 }
             
                 // Validate required fields (project_id will exist after the quotation fallback above)
@@ -563,15 +685,33 @@ class ContractController {
                 $data['amount_pending'] = (isset($data['amount_pending']) && $data['amount_pending'] !== '') ? (float)$data['amount_pending'] : (float)$data['total_budget'];
                 $data['payment_status'] = $data['payment_status'] ?? 'pending';
 
+                // Enforce again after any hydration/defaulting
+                $data['communication_channel'] = 'system';
+
                 $contractId = $this->model->create($data);
 
                 if (!$contractId) {
                     throw new Exception('Failed to create contract');
                 }
 
-                // Save milestones if provided
-                if (isset($data['milestones']) && is_array($data['milestones'])) {
-                    $this->model->updateMilestones($contractId, $data['milestones']);
+                // Save milestones
+                // Prefer milestones provided by the contract creation form.
+                // If none were submitted, fall back to standard generated milestones.
+                $milestonesToSave = null;
+
+                if (isset($data['milestones']) && is_array($data['milestones']) && count($data['milestones']) > 0) {
+                    $milestonesToSave = $data['milestones'];
+                } else {
+                    // No milestones submitted; generate standard milestones.
+                    $total = isset($data['total_budget']) && is_numeric($data['total_budget']) ? (float)$data['total_budget'] : 0.0;
+                    $pm = $data['payment_method'] ?? 'milestone_based';
+                    $sd = $data['start_date'] ?? date('Y-m-d');
+                    $ed = $data['end_date'] ?? date('Y-m-d');
+                    $milestonesToSave = $this->generateMilestones($total, $pm, $sd, $ed);
+                }
+
+                if ($milestonesToSave !== null) {
+                    $this->model->updateMilestones($contractId, $milestonesToSave);
                 }
 
                 // If asked to send to customer immediately
@@ -631,6 +771,11 @@ class ContractController {
                 http_response_code(400);
                 echo json_encode(['success' => false, 'message' => 'Contract ID required']);
                 return;
+            }
+
+            // Enforce platform chat only (no email communication)
+            if (is_array($data)) {
+                $data['communication_channel'] = 'system';
             }
 
             $result = $this->model->update($contractId, $data, $companyId);
@@ -698,6 +843,59 @@ class ContractController {
     }
 
     /**
+     * Cancel contract (delete and re-enable quotation for new contract)
+     */
+    public function cancelContract() {
+        try {
+            $companyId = $this->getCompanyId();
+
+            if ($companyId === null) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            $contractId = $_POST['contract_id'] ?? $data['contract_id'] ?? null;
+
+            if (!$contractId) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Contract ID required']);
+                return;
+            }
+
+            $contract = $this->model->getById($contractId, $companyId);
+            if (!$contract) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Contract not found or unauthorized']);
+                return;
+            }
+
+            $result = $this->model->deleteWithMilestones($contractId, $companyId);
+
+            if ($result) {
+                if (!empty($contract['quotation_id'])) {
+                    $stmt = $this->pdo->prepare("UPDATE companyquotation SET status = 'accepted' WHERE quotation_id = ? AND status IN ('accepted', 'successful')");
+                    $stmt->execute([(int)$contract['quotation_id']]);
+                }
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Contract cancelled successfully'
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Failed to cancel contract']);
+            }
+
+        } catch (Exception $e) {
+            error_log("[ContractController] Error in cancelContract: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * Send contract to customer (mark as sent within the platform)
      */
     public function sendToCustomer() {
@@ -737,6 +935,32 @@ class ContractController {
             $result = $this->model->markAsSent($contractId, $companyId);
 
             if ($result) {
+                require_once __DIR__ . '/../includes/undo.php';
+
+                // Short undo window: revert "sent" quickly if needed
+                $undo = undo_create(
+                    $this->pdo,
+                    'contract',
+                    (int)$contractId,
+                    'send_to_customer',
+                    [
+                        'prev' => [
+                            'sent_to_customer' => 0,
+                            'sent_at' => null,
+                            'status' => $contract['status'] ?? 'draft',
+                            'chat_active' => (int)($contract['chat_active'] ?? 0)
+                        ],
+                        'next' => [
+                            'sent_to_customer' => 1,
+                            'status' => 'sent',
+                            'chat_active' => 1
+                        ]
+                    ],
+                    (int)($_SESSION['user_id'] ?? 0) ?: null,
+                    'company',
+                    null
+                );
+
                 $customerId = (int)($contract['customer_id'] ?? 0);
                 $companyId = (int)($contract['company_id'] ?? $companyId);
                 $projectTitle = (string)($contract['project_title'] ?? ('Contract #' . $contractId));
@@ -752,7 +976,8 @@ class ContractController {
 
                 echo json_encode([
                     'success' => true,
-                    'message' => 'Contract sent to customer successfully'
+                    'message' => 'Contract sent to customer successfully',
+                    'undo' => $undo
                 ]);
             } else {
                 http_response_code(500);
@@ -761,6 +986,205 @@ class ContractController {
 
         } catch (Exception $e) {
             error_log("[ContractController] Error in sendToCustomer: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Undo sending a contract to customer (short grace period).
+     */
+    public function undoSendToCustomer() {
+        try {
+            $companyId = $this->getCompanyId();
+            if ($companyId === null) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!$data) $data = $_POST;
+            $contractId = (int)($data['contract_id'] ?? 0);
+            if ($contractId <= 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Contract ID required']);
+                return;
+            }
+
+            // Verify contract belongs to this company
+            $contract = $this->model->getById($contractId, $companyId);
+            if (!$contract) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Contract not found or unauthorized']);
+                return;
+            }
+
+            // Block if customer has responded
+            if (!empty($contract['customer_response']) || !empty($contract['terms_accepted'])) {
+                echo json_encode(['success' => false, 'message' => 'Undo not available: customer has already responded']);
+                return;
+            }
+
+            // Block if customer has sent any chat message
+            $chatStmt = $this->pdo->prepare("SELECT 1 FROM contract_chats WHERE contract_id = ? AND sender_type = 'customer' LIMIT 1");
+            $chatStmt->execute([$contractId]);
+            if ($chatStmt->fetchColumn()) {
+                echo json_encode(['success' => false, 'message' => 'Undo not available: customer already interacted']);
+                return;
+            }
+
+            require_once __DIR__ . '/../includes/undo.php';
+            $active = undo_get_active($this->pdo, 'contract', (int)$contractId, 'send_to_customer');
+            if (!$active) {
+                echo json_encode(['success' => false, 'message' => 'Undo window has expired']);
+                return;
+            }
+
+            // Only allow while still sent
+            if (($contract['status'] ?? '') !== 'sent' || (int)($contract['sent_to_customer'] ?? 0) !== 1) {
+                echo json_encode(['success' => false, 'message' => 'Undo not available for current contract state']);
+                return;
+            }
+
+            $this->pdo->beginTransaction();
+
+            $prev = $active['meta']['prev'] ?? [];
+            $prevStatus = $prev['status'] ?? 'draft';
+            $prevChat = (int)($prev['chat_active'] ?? 0);
+
+            $stmt = $this->pdo->prepare(
+                "UPDATE contract
+                 SET sent_to_customer = 0,
+                     sent_at = NULL,
+                     status = :st,
+                     chat_active = :chat
+                 WHERE contract_id = :id AND company_id = :cid AND status = 'sent'"
+            );
+            $stmt->execute([
+                ':st' => $prevStatus,
+                ':chat' => $prevChat,
+                ':id' => $contractId,
+                ':cid' => $companyId
+            ]);
+
+            if ($stmt->rowCount() === 0) {
+                $this->pdo->rollBack();
+                echo json_encode(['success' => false, 'message' => 'Nothing to undo']);
+                return;
+            }
+
+            undo_mark_used($this->pdo, (int)$active['undo_id'], (int)($_SESSION['user_id'] ?? 0) ?: null, 'company');
+            $this->pdo->commit();
+
+            echo json_encode(['success' => true, 'message' => 'Contract send undone']);
+
+        } catch (Exception $e) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            error_log('[ContractController] undoSendToCustomer error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Undo customer's accept/reject response (short grace period).
+     */
+    public function undoCustomerResponse() {
+        try {
+            if (!isset($_SESSION['user_id']) || !in_array(($_SESSION['user_role'] ?? ''), ['customer', 'user'], true)) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!$data) $data = $_POST;
+            $contractId = (int)($data['contract_id'] ?? 0);
+            if ($contractId <= 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Contract ID required']);
+                return;
+            }
+
+            // Contract must belong to this customer
+            $stmt = $this->pdo->prepare("SELECT contract_id, status, customer_response, locked, project_id FROM contract WHERE contract_id = ? AND customer_id = ? LIMIT 1");
+            $stmt->execute([$contractId, (int)$_SESSION['user_id']]);
+            $contract = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$contract) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Contract not found or unauthorized']);
+                return;
+            }
+
+            // Block if payment started
+            $payStmt = $this->pdo->prepare("SELECT 1 FROM contract_payment_history WHERE contract_id = ? LIMIT 1");
+            $payStmt->execute([$contractId]);
+            if ($payStmt->fetchColumn()) {
+                echo json_encode(['success' => false, 'message' => 'Undo not available: payment has started']);
+                return;
+            }
+
+            // Block if company already acted (chat message from company after response)
+            $chatStmt = $this->pdo->prepare("SELECT 1 FROM contract_chats WHERE contract_id = ? AND sender_type = 'company' AND created_at >= DATE_SUB(NOW(), INTERVAL 2 MINUTE) LIMIT 1");
+            $chatStmt->execute([$contractId]);
+            if ($chatStmt->fetchColumn()) {
+                echo json_encode(['success' => false, 'message' => 'Undo not available: company already interacted']);
+                return;
+            }
+
+            require_once __DIR__ . '/../includes/undo.php';
+            $active = undo_get_active($this->pdo, 'contract', (int)$contractId, 'customer_response');
+            if (!$active) {
+                echo json_encode(['success' => false, 'message' => 'Undo window has expired']);
+                return;
+            }
+
+            // Only allow undo for accepted/rejected states we set
+            $currentResp = (string)($contract['customer_response'] ?? '');
+            if (!in_array($currentResp, ['accepted', 'rejected'], true)) {
+                echo json_encode(['success' => false, 'message' => 'Nothing to undo']);
+                return;
+            }
+
+            // Block if project already started
+            $projectId = (int)($contract['project_id'] ?? 0);
+            if ($projectId > 0) {
+                $pStmt = $this->pdo->prepare("SELECT status FROM project WHERE project_id = ? LIMIT 1");
+                $pStmt->execute([$projectId]);
+                $p = $pStmt->fetch(PDO::FETCH_ASSOC);
+                if ($p && ($p['status'] ?? '') !== 'planned') {
+                    echo json_encode(['success' => false, 'message' => 'Undo not available: project already started']);
+                    return;
+                }
+            }
+
+            $this->pdo->beginTransaction();
+
+            // Revert to sent/pending state
+            $upd = $this->pdo->prepare(
+                "UPDATE contract
+                 SET status = 'sent',
+                     terms_accepted = 0,
+                     terms_accepted_at = NULL,
+                     customer_response = NULL,
+                     customer_response_at = NULL,
+                     user_signature = NULL,
+                     customer_signature = NULL,
+                     signed_at = NULL,
+                     locked = 0
+                 WHERE contract_id = :id AND customer_id = :uid"
+            );
+            $upd->execute([':id' => $contractId, ':uid' => (int)$_SESSION['user_id']]);
+
+            undo_mark_used($this->pdo, (int)$active['undo_id'], (int)($_SESSION['user_id'] ?? 0) ?: null, (string)($_SESSION['user_role'] ?? 'customer'));
+
+            $this->pdo->commit();
+            echo json_encode(['success' => true, 'message' => 'Response undone']);
+
+        } catch (Exception $e) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            error_log('[ContractController] undoCustomerResponse error: ' . $e->getMessage());
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
         }
@@ -851,7 +1275,7 @@ class ContractController {
                     p.title as project_title,
                     p.description as project_description,
                     p.project_type,
-                    p.location,
+                        ?, NULL, ?, 'planned', 0
                     p.budget as quoted_price,
                     p.start_date as proposed_start_date,
                     p.end_date as proposed_end_date,
@@ -862,7 +1286,6 @@ class ContractController {
                 FROM Project p
                 INNER JOIN User u ON p.customer_id = u.user_id
                 WHERE p.company_id = ?
-                AND p.status IN ('planned', 'active')
                 AND NOT EXISTS (
                     SELECT 1 FROM Contract c
                     WHERE c.project_id = p.project_id
@@ -1071,10 +1494,10 @@ class ContractController {
             error_log("[ContractController] PDO connection OK");
             
             // Get all accepted quotations without contracts
-            // Include full details for auto-fill
+            // And also all accepted direct job requests
             $stmt = $pdo->prepare("
                 SELECT 
-                    q.quotation_id,
+                    CAST(q.quotation_id AS CHAR) as quotation_id,
                     q.request_id,
                     q.title,
                     q.description,
@@ -1093,12 +1516,76 @@ class ContractController {
                     q.material_cost,
                     q.transport_cost,
                     q.other_charges,
+                    q.labor_unit_label,
+                    q.material_unit_label,
                     q.warranty_period,
                     q.payment_terms,
                     q.additional_terms,
+                    r.address as request_address,
+                    r.district as request_district,
                     r.address as location,
                     r.district,
                     r.title as request_title,
+                    cat.name as category_name,
+                    cat.name as request_category_name,
+                    u.user_id as customer_id,
+                    u.f_name as customer_fname,
+                    u.l_name as customer_lname,
+                    u.email as customer_email,
+                    u.address as customer_address,
+                    u.district as customer_district,
+                    COALESCE(comp.name, CONCAT(u.f_name, ' ', u.l_name)) as company_name,
+                    comp.registration_no as company_registration,
+                    COALESCE(c_loc.address, comp.address, uc.address) as company_address,
+                    comp.contact_no as company_contact,
+                    COALESCE(comp.email, uc.email) as company_email,
+                    q.updated_at
+                FROM companyquotation q
+                INNER JOIN jobrequest r ON q.request_id = r.request_id
+                LEFT JOIN category cat ON r.category_id = cat.category_id
+                INNER JOIN user u ON r.user_id = u.user_id
+                LEFT JOIN user uc ON uc.user_id = COALESCE(q.company_id, q.user_id)
+                LEFT JOIN company comp ON comp.company_id = COALESCE(q.company_id, q.user_id)
+                LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
+                LEFT JOIN contract c ON c.quotation_id = q.quotation_id
+                WHERE q.status = 'accepted'
+                AND (q.company_id = :comp_id OR (q.company_id IS NULL AND q.user_id = :comp_id2))
+                AND c.contract_id IS NULL
+
+                UNION ALL
+
+                SELECT 
+                    CONCAT('dr_', djr.request_id) as quotation_id,
+                    djr.request_id,
+                    djr.title,
+                    djr.description,
+                    0 as total_amount,
+                    'fixed' as budget_type,
+                    NULL as budget_min,
+                    NULL as budget_max,
+                    'milestone_based' as payment_method,
+                    'fixed_price' as pricing_type,
+                    0 as hourly_rate,
+                    1.10 as spending_cap_multiplier,
+                    NULL as start_date,
+                    djr.finish_date as completion_date,
+                    0 as estimated_duration,
+                    0 as labor_cost,
+                    0 as material_cost,
+                    0 as transport_cost,
+                    0 as other_charges,
+                    NULL as labor_unit_label,
+                    NULL as material_unit_label,
+                    NULL as warranty_period,
+                    NULL as payment_terms,
+                    NULL as additional_terms,
+                    djr.address as request_address,
+                    djr.district as request_district,
+                    djr.address as location,
+                    djr.district,
+                    djr.title as request_title,
+                    cat.name as category_name,
+                    cat.name as request_category_name,
                     u.user_id as customer_id,
                     u.f_name as customer_fname,
                     u.l_name as customer_lname,
@@ -1107,22 +1594,27 @@ class ContractController {
                     u.district as customer_district,
                     comp.name as company_name,
                     comp.registration_no as company_registration,
-                    comp.address as company_address,
+                    COALESCE(c_loc.address, comp.address) as company_address,
                     comp.contact_no as company_contact,
-                    comp.email as company_email
-                FROM companyquotation q
-                INNER JOIN jobrequest r ON q.request_id = r.request_id
-                INNER JOIN user u ON r.user_id = u.user_id
-                LEFT JOIN company comp ON q.company_id = comp.company_id
-                LEFT JOIN contract c ON c.quotation_id = q.quotation_id
-                WHERE q.status = 'accepted'
-                AND (q.company_id = ? OR (q.company_id IS NULL AND q.user_id = ?))
-                AND c.contract_id IS NULL
-                ORDER BY q.updated_at DESC
+                    comp.email as company_email,
+                    djr.date_created as updated_at
+                FROM directjobrequest djr
+                LEFT JOIN category cat ON djr.category_id = cat.category_id
+                INNER JOIN user u ON djr.user_id = u.user_id
+                INNER JOIN company comp ON comp.company_id = djr.provider_id AND djr.provider_type = 'company'
+                LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
+                WHERE djr.status = 'accepted'
+                AND djr.provider_id = :comp_id3
+                
+                ORDER BY updated_at DESC
             ");
             
             error_log("[ContractController] Executing query with company_id: " . $companyId);
-            $stmt->execute([$companyId, $companyId]);
+            $stmt->execute([
+                ':comp_id' => $companyId,
+                ':comp_id2' => $companyId,
+                ':comp_id3' => $companyId
+            ]);
             error_log("[ContractController] Query executed successfully");
             
             $quotations = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1458,7 +1950,12 @@ class ContractController {
                 }
 
                 // Get job request details for defaults (title/location/description)
-                $reqStmt = $pdo->prepare("SELECT title, description, address, district FROM jobrequest WHERE request_id = ?");
+                $reqStmt = $pdo->prepare(" 
+                    SELECT jr.title, jr.description, jr.address, jr.district, c.name AS category_name
+                    FROM jobrequest jr
+                    LEFT JOIN category c ON jr.category_id = c.category_id
+                    WHERE jr.request_id = ?
+                ");
                 $reqStmt->execute([$quotation['request_id']]);
                 $request = $reqStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
@@ -1473,6 +1970,7 @@ class ContractController {
                 if ($resolvedProjectLocation === '') {
                     $resolvedProjectLocation = $request['district'] ?? 'N/A';
                 }
+                $resolvedProjectType = $projectType !== '' ? $projectType : ($request['category_name'] ?? null);
 
                 $resolvedTotalBudget = $totalBudget !== null && $totalBudget !== '' ? (float)$totalBudget : (float)$quotation['total_amount'];
                 $resolvedBudgetType = $budgetType ?: ($quotation['budget_type'] ?? 'fixed');
@@ -1514,7 +2012,7 @@ class ContractController {
                     $quotation['customer_id'],
                     $resolvedProjectTitle,
                     $resolvedProjectDescription,
-                    ($projectType !== '' ? $projectType : null),
+                    $resolvedProjectType,
                     $resolvedProjectLocation,
                     $resolvedTotalBudget,
                     $startDate,
@@ -1842,6 +2340,13 @@ class ContractController {
             }
         }
         
+        // Feed a single shared renderer on the frontend so the printable view
+        // stays identical to the in-app previews.
+        $contractForPreview = $contract;
+        $contractForPreview['contract_number'] = $contractNumber;
+        $contractForPreview['status'] = $contract['contract_status'] ?? ($contract['status'] ?? 'draft');
+        $contractForPreview['milestones'] = $milestones;
+
         ob_start();
         ?>
 <!DOCTYPE html>
@@ -2076,248 +2581,36 @@ class ContractController {
         .btn-close:hover {
             background: #475569;
         }
+
+        /* Minimal helpers used by shared renderer */
+        .preview-muted { color: #64748b; font-style: italic; }
+        .preview-paragraph { margin-top: 12px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569; }
+        .preview-schedule-title { margin-top: 0; margin-bottom: 10px; color: #0f766e; font-weight: 700; }
     </style>
 </head>
 <body>
-    <div class="contract-preview">
-        <!-- Legal Document Header -->
-        <div class="preview-header">
-            <h2>CONSTRUCTION SERVICE AGREEMENT</h2>
-            <p class="preview-ref">Contract Reference: <?php echo htmlspecialchars($contractNumber); ?></p>
-            <p class="preview-date">Date: <?php echo $formatDate($contract['contract_date']); ?></p>
-            <div class="contract-status-badge <?php echo htmlspecialchars($contract['contract_status']); ?>">
-                <?php echo strtoupper(str_replace('_', ' ', $contract['contract_status'])); ?>
-            </div>
-        </div>
+    <div id="contractPreviewHost"></div>
 
-        <!-- Section 1: Parties -->
-        <div class="preview-section">
-            <h4>1. PARTIES TO THE CONTRACT</h4>
-            <div class="preview-parties">
-                <div>
-                    <strong>First Party (Client):</strong>
-                    <span><?php echo htmlspecialchars($clientName); ?></span><br>
-                    <small><?php echo htmlspecialchars($contract['customer_email']); ?></small>
-                </div>
-                <div>
-                    <strong>Second Party (Contractor):</strong>
-                    <span><?php echo htmlspecialchars($contract['company_name'] ?? 'Clip Craft'); ?></span><br>
-                    <small><?php echo htmlspecialchars($contract['company_registration'] ?? '123456'); ?> | <?php echo htmlspecialchars($contract['company_address'] ?? 'NO:115, Kumbukanda, Mahailuppallama'); ?> | <?php echo htmlspecialchars($contract['company_phone'] ?? '0789245696'); ?></small>
-                </div>
-            </div>
-        </div>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/shared/contract-preview.js?v=1.1"></script>
+    <script>
+        (function () {
+            const data = <?php echo json_encode($contractForPreview, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+            const host = document.getElementById('contractPreviewHost');
+            if (!host || !window.ContractPreview || typeof window.ContractPreview.renderHTML !== 'function') {
+                if (host) host.textContent = 'Preview unavailable';
+                return;
+            }
 
-        <!-- Section 2: Project -->
-        <div class="preview-section">
-            <h4>2. PROJECT OVERVIEW</h4>
-            <div class="preview-grid">
-                <div><strong>Title:</strong> <span><?php echo htmlspecialchars($contract['project_title']); ?></span></div>
-                <div><strong>Reference:</strong> <span><?php echo htmlspecialchars($contract['project_reference'] ?? 'PRJ-' . date('Y', strtotime($contract['contract_date'])) . '-' . str_pad($contract['project_id'], 4, '0', STR_PAD_LEFT)); ?></span></div>
-                <div><strong>Location:</strong> <span><?php echo htmlspecialchars($contract['location'] ?? 'Address, Colombo'); ?></span></div>
-                <div><strong>Type:</strong> <span><?php echo htmlspecialchars(ucfirst($contract['project_type'])); ?></span></div>
-            </div>
-            <p style="margin-top: 12px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569;">
-                <strong style="display: block; color: #0f766e; margin-bottom: 6px;">Based on your request: </strong>
-                <?php echo nl2br(htmlspecialchars($contract['project_description'] ?? 'Description here We will provide the following services:')); ?>
-            </p>
-        </div>
+            const map = { full_upfront: 'Full Upfront', milestone_based: 'Milestone-Based', '50_50': '50/50 Split', '30_70': '30/70 Split', completion: 'On Completion' };
+            const method = data && data.payment_method;
 
-        <!-- Section 3: Scope -->
-        <div class="preview-section">
-            <h4>3. SCOPE OF WORK</h4>
-            <p style="margin-bottom: 12px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569;">
-                <strong style="display: block; color: #0f766e; margin-bottom: 6px;">Based on your request: </strong>
-                <?php echo htmlspecialchars($contract['scope_description'] ?? 'Description here We will provide the following services:'); ?>
-            </p>
-            <div class="preview-grid" style="margin-top: 12px;">
-                <div>
-                    <strong>Inclusions:</strong>
-                    <pre class="preview-pre"><?php echo htmlspecialchars($contract['scope_inclusions'] ?? 'As per quotation'); ?></pre>
-                </div>
-                <div>
-                    <strong>Exclusions:</strong>
-                    <pre class="preview-pre"><?php echo htmlspecialchars($contract['scope_exclusions'] ?? 'None specified'); ?></pre>
-                </div>
-            </div>
-            <p style="margin-top: 12px; padding: 10px 12px; background: white; border-radius: 6px; border: 1px solid #e2e8f0;">
-                <strong style="color: #475569; font-size: 12px; text-transform: uppercase;">Materials:</strong> 
-                <span style="color: #1e293b; font-size: 14px;">
-                <?php 
-                    $matLabels = [
-                        'company' => 'All materials supplied by the Contractor',
-                        'client' => 'All materials supplied by the Client',
-                        'shared' => 'Shared responsibility'
-                    ];
-                    echo htmlspecialchars($matLabels[$contract['materials_responsibility'] ?? ''] ?? 'As per agreement');
-                ?>
-                </span>
-            </p>
-        </div>
-
-        <!-- Section 4: Timeline & Milestones -->
-        <div class="preview-section">
-            <h4>4. PROJECT DURATION & MILESTONES</h4>
-            <div class="preview-grid cols-3">
-                <div><strong>Start:</strong> <span><?php echo $formatDate($contract['start_date']); ?></span></div>
-                <div><strong>Completion:</strong> <span><?php echo $formatDate($contract['end_date']); ?></span></div>
-                <div><strong>Progress:</strong> <span><?php echo htmlspecialchars($contract['progress'] ?? 0); ?>%</span></div>
-            </div>
-            <?php if (!empty($milestones)): ?>
-            <table class="preview-milestones-table" style="margin-top: 12px;">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Milestone</th>
-                        <th>Due Date</th>
-                        <th>Status</th>
-                        <?php if ($contract['payment_method'] === 'milestone_based'): ?>
-                        <th>Amount</th>
-                        <?php endif; ?>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($milestones as $i => $ms): 
-                        $msStatus = $ms['status'] ?? 'pending';
-                        $statusIcon = $msStatus === 'completed' ? '✅' : ($msStatus === 'in_progress' ? '🔄' : '⏳');
-                    ?>
-                    <tr>
-                        <td><?php echo $i + 1; ?></td>
-                        <td><?php echo htmlspecialchars($ms['title'] ?? $ms['milestone_name'] ?? 'Milestone ' . ($i + 1)); ?></td>
-                        <td><?php echo $formatDate($ms['due_date']); ?></td>
-                        <td><?php echo $statusIcon . ' ' . str_replace('_', ' ', $msStatus); ?></td>
-                        <?php if ($contract['payment_method'] === 'milestone_based'): ?>
-                        <td>LKR <?php echo number_format($ms['payment_amount'] ?? 0, 2); ?></td>
-                        <?php endif; ?>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            <?php else: ?>
-            <p style="margin-top: 12px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e2e8f0; color: #94a3b8; font-style: italic; text-align: center;">
-                No milestones defined
-            </p>
-            <?php endif; ?>
-        </div>
-
-        <!-- Section 5: Financial -->
-        <div class="preview-section">
-            <h4>5. PRICING, PAYMENTS & DELAYS</h4>
-            <div class="preview-grid cols-3">
-                <div><strong>Contract Value:</strong> <span class="preview-value">LKR <?php echo number_format($contract['total_budget'], 2); ?></span></div>
-                <div><strong>Budget Type:</strong> <span>
-                    <?php 
-                        $budgetTypes = ['fixed' => 'Fixed Price', 'time_based' => 'Time-Based', 'flexible' => 'Flexible (±10%)'];
-                        echo htmlspecialchars($budgetTypes[$contract['budget_type'] ?? 'fixed'] ?? 'Fixed Price');
-                    ?>
-                </span></div>
-                <div><strong>Payment Method:</strong> <span>
-                    <?php 
-                        $payMethods = [
-                            'full_upfront' => 'Full Upfront',
-                            'milestone_based' => 'Milestone-Based',
-                            '50_50' => '50/50 Split',
-                            '30_70' => '30/70 Split',
-                            'completion' => 'On Completion'
-                        ];
-                        echo htmlspecialchars($payMethods[$contract['payment_method']] ?? 'Standard');
-                    ?>
-                </span></div>
-            </div>
-            <div class="preview-grid" style="margin-top: 12px;">
-                <div><strong>Amount Paid:</strong> <span>LKR <?php echo number_format($contract['amount_paid'] ?? 0, 2); ?></span></div>
-                <div><strong>Remaining:</strong> <span>LKR <?php echo number_format($contract['amount_pending'] ?? $contract['total_budget'], 2); ?></span></div>
-            </div>
-            <p style="margin-top: 12px; padding: 10px 12px; background: white; border-radius: 6px; border: 1px solid #e2e8f0;">
-                <strong style="color: #475569; font-size: 12px; text-transform: uppercase;">Late Payment:</strong> 
-                <span style="color: #1e293b; font-size: 14px;"><?php echo htmlspecialchars($contract['late_payment_penalty'] ?? 'As per standard terms'); ?></span>
-            </p>
-        </div>
-
-        <!-- Section 6: Variations -->
-        <div class="preview-section">
-            <h4>6. VARIATIONS & CHANGES</h4>
-            <p style="padding: 12px; background: white; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569;">
-                <?php echo htmlspecialchars($contract['variation_clause'] ?? 'Any change to scope, pricing, materials, or timeline must be approved in writing by both parties before execution.'); ?>
-            </p>
-        </div>
-
-        <!-- Section 7: Communication & Disputes -->
-        <div class="preview-section">
-            <h4>7. COMMUNICATION & DISPUTE RESOLUTION</h4>
-            <p style="padding: 10px 12px; background: white; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-                <strong style="color: #475569; font-size: 12px; text-transform: uppercase;">Channel:</strong> 
-                <span style="color: #1e293b; font-size: 14px;">
-                    <?php 
-                        $channels = ['system' => 'FixLanka Platform', 'email' => 'Email', 'both' => 'Platform + Email'];
-                        echo htmlspecialchars($channels[$contract['communication_channel'] ?? 'system'] ?? 'FixLanka Platform');
-                    ?>
-                </span>
-            </p>
-            <p style="padding: 12px; background: white; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569;">
-                <?php echo htmlspecialchars($contract['dispute_resolution'] ?? 'Disputes shall be resolved through mediation via the FixLanka platform.'); ?>
-            </p>
-        </div>
-
-        <!-- Customer Response Status -->
-        <?php if ($contract['sent_to_customer']): ?>
-        <div class="preview-section">
-            <h4>8. CUSTOMER RESPONSE</h4>
-            <div class="preview-grid">
-                <div><strong>Sent to Customer:</strong> <span>Yes — sent on <?php echo $formatDate($contract['sent_at']); ?></span></div>
-                <div><strong>Response:</strong> <span>
-                    <?php 
-                        $responseLabels = [
-                            'pending' => '⏳ Pending',
-                            'accepted' => '✅ Accepted',
-                            'rejected' => '❌ Rejected',
-                            'negotiating' => '💬 Negotiating'
-                        ];
-                        echo $responseLabels[$contract['customer_response'] ?? 'pending'] ?? '⏳ Pending';
-                    ?>
-                </span></div>
-            </div>
-        </div>
-        <?php endif; ?>
-        <div class="preview-section">
-            <h4>9. ELECTRONIC SIGNATURES</h4>
-            <div class="preview-grid">
-                <div>
-                    <strong>Client (Customer)</strong>
-                    <span><?php echo htmlspecialchars($clientName); ?></span>
-                    <small><?php echo htmlspecialchars($contract['customer_email'] ?? ''); ?></small>
-                </div>
-                <div>
-                    <strong>Contractor (Company)</strong>
-                    <span><?php echo htmlspecialchars($contract['company_name'] ?? ''); ?></span>
-                    <small><?php echo htmlspecialchars($contract['company_email'] ?? ''); ?></small>
-                </div>
-            </div>
-
-            <div class="preview-grid" style="margin-top: 12px;">
-                <div>
-                    <strong>Customer Signature</strong>
-                    <span><?php echo htmlspecialchars($contract['user_signature'] ?? 'PENDING'); ?></span>
-                    <small>Signed at: <?php echo $formatDateTime($contract['signed_at'] ?? null); ?></small>
-                </div>
-                <div>
-                    <strong>Company Signature</strong>
-                    <span><?php echo htmlspecialchars($contract['company_signature'] ?? 'AUTO_GENERATED'); ?></span>
-                    <small>Created at: <?php echo $formatDateTime($contract['created_at'] ?? null); ?></small>
-                </div>
-            </div>
-
-            <?php if (is_array($customerSignatureMeta) && !empty($customerSignatureMeta['contract_hash'])): ?>
-                <p style="margin-top: 12px; padding: 10px 12px; background: white; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px;">
-                    <strong style="display:block; color:#0f766e; margin-bottom:6px;">Document Hash (SHA-256)</strong>
-                    <?php echo htmlspecialchars($customerSignatureMeta['contract_hash']); ?>
-                </p>
-            <?php endif; ?>
-
-            <p style="margin-top: 12px; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569; font-size: 13px;">
-                By accepting this contract in the FixLanka system, the customer provides an electronic signature indicating agreement to the contract terms.
-            </p>
-        </div>
-    </div>
+            host.innerHTML = window.ContractPreview.renderHTML(data, {
+                isMilestoneBased: method === 'milestone_based',
+                paymentLabel: map[method] || 'Standard',
+                renderMilestoneAction: function () { return '—'; }
+            });
+        })();
+    </script>
 
     <div class="no-print">
         <button class="action-btn btn-print" onclick="window.print()">
@@ -2380,6 +2673,9 @@ class ContractController {
             }
 
             $this->pdo->beginTransaction();
+
+            require_once __DIR__ . '/../includes/undo.php';
+            $undo = null;
 
             if ($response === 'accepted') {
                 // Build e-sign metadata (acceptance confirmation acts as signature)
@@ -2447,6 +2743,31 @@ class ContractController {
                     throw new Exception("Contract not found or not authorized to accept.");
                 }
 
+                $undo = undo_create(
+                    $this->pdo,
+                    'contract',
+                    (int)$contractId,
+                    'customer_response',
+                    ['response' => 'accepted'],
+                    (int)$_SESSION['user_id'],
+                    'customer',
+                    null
+                );
+
+                // Auto-start: if the contract start date is already due, mark the linked project as in-progress.
+                // Note: Project row may exist as a placeholder (required by contract.project_id FK).
+                $autoStartStmt = $this->pdo->prepare("
+                    UPDATE project p
+                    INNER JOIN contract c ON c.project_id = p.project_id
+                    SET p.status = 'in_progress',
+                        p.start_date = CURDATE()
+                    WHERE c.contract_id = ?
+                      AND p.status = 'planned'
+                      AND c.start_date IS NOT NULL
+                      AND c.start_date <= CURDATE()
+                ");
+                $autoStartStmt->execute([$contractId]);
+
 
 
                 $this->addTimelineEvent($contractId, 'contract_accepted', 'Contract accepted by customer');
@@ -2505,6 +2826,17 @@ class ContractController {
                     throw new Exception("Contract not found or not authorized to reject.");
                 }
 
+                $undo = undo_create(
+                    $this->pdo,
+                    'contract',
+                    (int)$contractId,
+                    'customer_response',
+                    ['response' => 'rejected'],
+                    (int)$_SESSION['user_id'],
+                    'customer',
+                    null
+                );
+
                 $this->addTimelineEvent($contractId, 'contract_rejected', 'Contract rejected by customer');
 
                 $metaStmt = $this->pdo->prepare("SELECT company_id, customer_id, project_title FROM contract WHERE contract_id = ? LIMIT 1");
@@ -2540,7 +2872,8 @@ class ContractController {
             
             echo json_encode([
                 'success' => true,
-                'message' => 'Contract ' . $response . ' successfully.'
+                'message' => 'Contract ' . $response . ' successfully.',
+                'undo' => $undo
             ]);
 
         } catch (Exception $e) {
@@ -2564,8 +2897,14 @@ class ContractController {
                 return;
             }
 
-            $data = json_decode(file_get_contents('php://input'), true);
-            $contractId = $data['contract_id'] ?? null;
+            // Note: api/contracts.php may have already consumed php://input and merged JSON into $_POST.
+            // Fall back to $_POST to avoid missing contract_id.
+            $rawBody = file_get_contents('php://input');
+            $data = $rawBody ? json_decode($rawBody, true) : null;
+            if (!is_array($data)) {
+                $data = [];
+            }
+            $contractId = $data['contract_id'] ?? ($_POST['contract_id'] ?? null);
 
             if (!$contractId) {
                 http_response_code(400);
@@ -2661,6 +3000,19 @@ class ContractController {
             $contractId,
             $_SESSION['user_id']
         ]);
+
+        // Auto-start: if the contract start date is already due, mark the linked project as in-progress.
+        $autoStartStmt = $this->pdo->prepare("
+            UPDATE project p
+            INNER JOIN contract c ON c.project_id = p.project_id
+            SET p.status = 'in_progress',
+                p.start_date = CURDATE()
+            WHERE c.contract_id = ?
+              AND p.status = 'planned'
+              AND c.start_date IS NOT NULL
+              AND c.start_date <= CURDATE()
+        ");
+        $autoStartStmt->execute([(int)$contractId]);
 
         $this->addTimelineEvent($contractId, 'contract_accepted_paid', 'Contract accepted with initial payment received into Escrow');
         
@@ -2874,6 +3226,7 @@ class ContractController {
         $milestoneId     = $_POST['milestone_id']          ?? null;
         $comments        = $_POST['completion_description'] ?? '';
         $actualQuantity  = $_POST['actual_quantity']        ?? null;
+        $actualUnitRate  = $_POST['actual_unit_rate']       ?? null;
         $proofFiles      = null; // future: handle file uploads as JSON
 
         if (!$milestoneId) {
@@ -2907,7 +3260,8 @@ class ContractController {
                 $milestoneId,
                 $proofFiles,
                 $comments,
-                ($actualQuantity !== null && $actualQuantity !== '') ? (float)$actualQuantity : null
+                ($actualQuantity !== null && $actualQuantity !== '') ? (float)$actualQuantity : null,
+                ($actualUnitRate !== null && $actualUnitRate !== '') ? (float)$actualUnitRate : null
             );
 
             if (!$result) {
@@ -2917,8 +3271,12 @@ class ContractController {
 
             // Compute billing preview for response
             $billingPreview = null;
-            if ($actualQuantity !== null && (float)($m['unit_rate'] ?? 0) > 0) {
-                $billingPreview = (float)$m['unit_rate'] * (float)$actualQuantity;
+            $effectiveRate = (float)($m['unit_rate'] ?? 0);
+            if ($actualUnitRate !== null && $actualUnitRate !== '' && (float)$actualUnitRate > 0) {
+                $effectiveRate = (float)$actualUnitRate;
+            }
+            if ($actualQuantity !== null && $effectiveRate > 0) {
+                $billingPreview = $effectiveRate * (float)$actualQuantity;
             }
 
             $this->addTimelineEvent(
@@ -2939,6 +3297,7 @@ class ContractController {
                 'billing_preview'  => $billingPreview,
                 'actual_quantity'  => $actualQuantity !== null ? (float)$actualQuantity : null,
                 'unit_rate'        => $m['unit_rate'] !== null ? (float)$m['unit_rate'] : null,
+                'actual_unit_rate' => $actualUnitRate !== null && $actualUnitRate !== '' ? (float)$actualUnitRate : null,
             ]);
         } catch (Exception $e) {
             error_log("Submit milestone error: " . $e->getMessage());
@@ -3035,23 +3394,70 @@ class ContractController {
             return;
         }
         
+        // Verify customer owns this contract
+        $customerId = $this->getCustomerId();
+        if (!$customerId) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
         try {
+            // Check if this is a contract_milestone (new) or legacy milestone
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM contract_milestone WHERE milestone_id = ?");
+            $stmt->execute([$milestoneId]);
+            $isNewMilestone = $stmt->fetchColumn() > 0;
+
+            if ($isNewMilestone) {
+                // Verify ownership (customer)
+                $ownStmt = $this->pdo->prepare("
+                    SELECT cm.contract_id, cm.title as milestone_name, c.company_id
+                    FROM contract_milestone cm
+                    JOIN contract c ON cm.contract_id = c.contract_id
+                    WHERE cm.milestone_id = ? AND c.customer_id = ?
+                ");
+                $ownStmt->execute([$milestoneId, $customerId]);
+                $m = $ownStmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$m) {
+                    echo json_encode(['success' => false, 'message' => 'Milestone not found or unauthorized']);
+                    return;
+                }
+
+                $result = $this->model->rejectMilestone($milestoneId, $reason);
+                if (!$result) {
+                    echo json_encode(['success' => false, 'message' => 'Failed to reject milestone']);
+                    return;
+                }
+
+                $this->addTimelineEvent($m['contract_id'], 'milestone_rejected', "Milestone '{$m['milestone_name']}' rejected: {$reason}");
+                $this->createNotification($m['contract_id'], 'milestone_rejected', "Milestone '{$m['milestone_name']}' was rejected", 'company');
+
+                echo json_encode(['success' => true, 'message' => 'Milestone rejected']);
+                return;
+            }
+
+            // Legacy milestone path (older tables)
             $this->pdo->beginTransaction();
-            
+
             $stmt = $this->pdo->prepare("UPDATE milestone SET customer_approved = 0, rejection_reason = ?, rejected_at = NOW(), submitted_for_approval = 0 WHERE milestone_id = ?");
             $stmt->execute([$reason, $milestoneId]);
-            
+
             $stmt = $this->pdo->prepare("SELECT contract_id, milestone_name FROM milestone WHERE milestone_id = ?");
             $stmt->execute([$milestoneId]);
             $milestone = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            $this->addTimelineEvent($milestone['contract_id'], 'milestone_rejected', "Milestone '{$milestone['milestone_name']}' rejected: {$reason}");
-            $this->createNotification($milestone['contract_id'], 'milestone_rejected', "Milestone '{$milestone['milestone_name']}' was rejected", 'company');
-            
+
+            if ($milestone) {
+                $this->addTimelineEvent($milestone['contract_id'], 'milestone_rejected', "Milestone '{$milestone['milestone_name']}' rejected: {$reason}");
+                $this->createNotification($milestone['contract_id'], 'milestone_rejected', "Milestone '{$milestone['milestone_name']}' was rejected", 'company');
+            }
+
             $this->pdo->commit();
             echo json_encode(['success' => true, 'message' => 'Milestone rejected']);
         } catch (Exception $e) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             error_log("Reject milestone error: " . $e->getMessage());
             echo json_encode(['success' => false, 'message' => 'Database error']);
         }
@@ -5669,6 +6075,41 @@ class ContractController {
                     $ins->execute([$contractId, $i, $title, $desc, $due, $amt]);
                 }
                 $i++;
+            }
+        }
+
+        // Update unit rates (only if provided)
+        if (isset($proposed['unit_rate_proposals']) && is_array($proposed['unit_rate_proposals'])) {
+            // Safety: do not update unit rates if any milestone is already progressed
+            $stmt = $this->pdo->prepare("SELECT milestone_id, status FROM contract_milestone WHERE contract_id = ?");
+            $stmt->execute([$contractId]);
+            $existingRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($existingRows as $r) {
+                $st = $r['status'] ?? null;
+                if ($st && $st !== 'pending') {
+                    throw new Exception('Cannot apply unit rate changes once work has started.');
+                }
+            }
+
+            $updateById = $this->pdo->prepare("UPDATE contract_milestone SET unit_rate = ? WHERE contract_id = ? AND milestone_id = ?");
+            $updateByNumber = $this->pdo->prepare("UPDATE contract_milestone SET unit_rate = ? WHERE contract_id = ? AND milestone_number = ?");
+
+            foreach ($proposed['unit_rate_proposals'] as $p) {
+                if (!is_array($p)) continue;
+                $rate = $p['proposed_unit_rate'] ?? null;
+                if ($rate === null || $rate === '') continue;
+                if (!is_numeric($rate) || (float)$rate < 0) {
+                    throw new Exception('Invalid proposed unit rate');
+                }
+
+                $milestoneId = isset($p['milestone_id']) && $p['milestone_id'] !== '' ? (int)$p['milestone_id'] : 0;
+                $milestoneNumber = isset($p['milestone_number']) && $p['milestone_number'] !== '' ? (int)$p['milestone_number'] : 0;
+
+                if ($milestoneId > 0) {
+                    $updateById->execute([(float)$rate, $contractId, $milestoneId]);
+                } elseif ($milestoneNumber > 0) {
+                    $updateByNumber->execute([(float)$rate, $contractId, $milestoneNumber]);
+                }
             }
         }
 
