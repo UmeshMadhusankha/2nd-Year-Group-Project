@@ -130,11 +130,17 @@
             const status = String(ms?.status || 'pending');
             const statusText = status.replace(/_/g, ' ');
 
+            let actionHtml = esc(statusText);
+            if (options && typeof options.renderMilestoneAction === 'function') {
+                const customHtml = options.renderMilestoneAction(ms);
+                if (customHtml) actionHtml = customHtml;
+            }
+
             html += '<tr>';
             html += `<td>${i + 1}</td>`;
             html += `<td><strong>${esc(title)}</strong>${desc}</td>`;
             html += `<td>${due}</td>`;
-            html += `<td>${esc(statusText)}</td>`;
+            html += `<td>${actionHtml}</td>`;
             html += '</tr>';
         });
 
@@ -323,20 +329,20 @@
                     </div>
                     <div style="margin-top:10px;">
                         ${milestones.length > 0
-                            ? renderMilestonesTable(milestones, { isMilestoneBased, renderMilestoneAction: opts.renderMilestoneAction })
-                            : '<p class="preview-muted">No milestones defined.</p>'}
+                ? renderMilestonesTable(milestones, { isMilestoneBased, renderMilestoneAction: opts.renderMilestoneAction })
+                : '<p class="preview-muted">No milestones defined.</p>'}
                     </div>
                 </div>
 
                 <div class="preview-section">
                     <h4>5. PRICING, PAYMENTS & DELAYS</h4>
                     ${showUnitPricingOnly
-                        ? `
+                ? `
                             <div class="preview-schedule" style="margin-top:12px;">
                                 ${renderUnitPricingTable(unitPricing)}
                             </div>
                         `
-                        : `
+                : `
                             <div class="preview-grid cols-3">
                                 <div><strong>Contract Value:</strong> <span class="preview-value">${formatCurrency(c.total_budget ?? c.value ?? 0)}</span></div>
                                 <div><strong>Budget Type:</strong> <span>${esc(budgetTypes[c.budget_type] || 'Fixed Price')}</span></div>
@@ -351,7 +357,7 @@
                                 ${renderPaymentSchedule(c, milestones)}
                             </div>
                         `
-                    }
+            }
 
                     <p style="margin-top:10px;"><strong>Late Payment:</strong> <span>${esc(c.late_payment_penalty || 'As per standard terms')}</span></p>
                 </div>
@@ -370,8 +376,8 @@
                 <div class="preview-section">
                     <h4>6. VARIATIONS & CHANGES</h4>
                     <p class="preview-paragraph">${esc(c.variation_clause
-                        ? 'Any change to scope, pricing, materials, or timeline must be approved in writing by both parties before execution.'
-                        : 'Variation control is not enabled for this contract.')}</p>
+                ? 'Any change to scope, pricing, materials, or timeline must be approved in writing by both parties before execution.'
+                : 'Variation control is not enabled for this contract.')}</p>
                 </div>
 
                 <div class="preview-section">
@@ -417,9 +423,9 @@
                     </div>
 
                     ${signatureMeta && signatureMeta.contract_hash
-                        ? `<p style="margin-top:10px;"><strong>Document Hash (SHA-256):</strong> <span>${esc(signatureMeta.contract_hash)}</span></p>`
-                        : ''
-                    }
+                ? `<p style="margin-top:10px;"><strong>Document Hash (SHA-256):</strong> <span>${esc(signatureMeta.contract_hash)}</span></p>`
+                : ''
+            }
 
                     <p class="preview-paragraph" style="margin-top:10px;">By accepting this contract in the FixLanka system, the customer provides an electronic signature indicating agreement to the contract terms.</p>
                 </div>

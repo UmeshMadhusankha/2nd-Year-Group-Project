@@ -53,7 +53,12 @@ class ContractModel {
                         SELECT COUNT(*) 
                         FROM contract_milestone cm 
                         WHERE cm.contract_id = c.contract_id AND cm.status = 'approved'
-                    ) as completed_milestones
+                    ) as completed_milestones,
+                    (
+                        SELECT COUNT(*) 
+                        FROM contract_milestone cm 
+                        WHERE cm.contract_id = c.contract_id AND cm.status = 'submitted'
+                    ) as submitted_milestones
                 FROM contract c
                 LEFT JOIN company comp ON c.company_id = comp.company_id
                 LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
@@ -110,7 +115,8 @@ class ContractModel {
                        AND cc.sender_type = 'company'
                        AND cc.is_read = 0) as unread_messages,
                     0 as total_milestones,
-                    0 as completed_milestones
+                    0 as completed_milestones,
+                    0 as submitted_milestones
                 FROM contract c
                 LEFT JOIN company comp ON c.company_id = comp.company_id
                 LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
