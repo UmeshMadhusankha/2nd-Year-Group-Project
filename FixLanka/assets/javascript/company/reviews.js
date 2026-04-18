@@ -1,13 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
     fetchReviews();
-
-    // Export button handler
-    const exportBtn = document.getElementById('exportReviewsBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', function () {
-            alert('Export functionality coming soon!');
-        });
-    }
 });
 
 async function fetchReviews() {
