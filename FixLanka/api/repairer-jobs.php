@@ -6,12 +6,15 @@
  * Actions (GET):
  *   ?action=list&repairer_id=X               – all jobs for this repairer
  *   ?action=stats&repairer_id=X              – header-stat counts
+ *   ?action=invoice&request_id=X             – invoice data for a job
  *
  * Actions (POST):
  *   action=update-status  body: {quote_id, status}  – update jobrequest status
+ *   action=send-reminder  body: {request_id}        – notify customer
  */
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/session.php';
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -40,6 +43,10 @@ if ($method === 'GET') {
         case 'stats':
             getStats($pdo);
             break;
+        case 'invoice':
+            requireRole('repairer');
+            getInvoice($pdo);
+            break;
         default:
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Invalid action']);
@@ -52,6 +59,10 @@ if ($method === 'GET') {
         case 'update-status':
             updateJobStatus($pdo, $data);
             break;
+        case 'send-reminder':
+            requireRole('repairer');
+            sendReminder($pdo, $data);
+            break;
         default:
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Invalid action']);
@@ -63,7 +74,8 @@ if ($method === 'GET') {
 
 /* ─── GET: list ─────────────────────────────────────────────────────────── */
 function getJobList($pdo) {
-    $repairerId = intval($_GET['repairer_id'] ?? 0);
+    requireRole('repairer');
+    $repairerId = resolveRepairerId();
     if ($repairerId <= 0) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'repairer_id required']);
@@ -80,6 +92,7 @@ function getJobList($pdo) {
                 rq.request_id,
                 rq.quoteAmount,
                 rq.estimatedDays,
+                rq.materialsIncluded,
                 rq.dateSubmitted,
                 rq.status         AS quote_status,
 
@@ -101,17 +114,30 @@ function getJobList($pdo) {
                 u.email           AS customer_email,
 
                 p.payment_id,
+                p.paymentType,
                 p.status          AS payment_status,
                 p.paymentDate,
-                p.amount          AS payment_amount
+                                p.amount          AS payment_amount,
+
+                                jc.collaboration_id,
+                                jc.current_phase,
+                                jc.user_completed_at,
+                                jc.provider_completed_at,
+                                jc.user_payment_confirmed_at,
+                                jc.provider_payment_confirmed_at
             FROM repairerquote rq
             INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
             LEFT JOIN category c    ON jr.category_id  = c.category_id
             LEFT JOIN user u        ON jr.user_id       = u.user_id
             LEFT JOIN payment p     ON p.job_request_id = jr.request_id
                                     AND p.status = 'completed'
+                        LEFT JOIN job_collaboration jc
+                                                                     ON jc.request_id = jr.request_id
+                                                                    AND jc.request_type = 'regular'
+                                                                    AND jc.provider_id = rq.repairer_id
+                                                                    AND jc.provider_role = 'repairer'
             WHERE rq.repairer_id = ?
-              AND rq.status = 'accepted'
+                            AND rq.status IN ('accepted', 'completed')
         ";
         $params = [$repairerId];
 
@@ -122,10 +148,10 @@ function getJobList($pdo) {
                     $sql .= " AND jr.status IN ('accepted','in_progress')";
                     break;
                 case 'completed':
-                    $sql .= " AND jr.status = 'completed' AND p.payment_id IS NULL";
+                    $sql .= " AND jr.status = 'completed'";
                     break;
                 case 'paid':
-                    $sql .= " AND jr.status = 'completed' AND p.payment_id IS NOT NULL";
+                    $sql .= " AND jr.status = 'completed' AND p.payment_id IS NOT NULL AND jc.collaboration_id IS NULL";
                     break;
                 case 'cancelled':
                     $sql .= " AND jr.status = 'cancelled'";
@@ -161,7 +187,8 @@ function getJobList($pdo) {
 
 /* ─── GET: stats ────────────────────────────────────────────────────────── */
 function getStats($pdo) {
-    $repairerId = intval($_GET['repairer_id'] ?? 0);
+    requireRole('repairer');
+    $repairerId = resolveRepairerId();
     if ($repairerId <= 0) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'repairer_id required']);
@@ -172,13 +199,22 @@ function getStats($pdo) {
         $sql = "
             SELECT
                 jr.status AS job_status,
-                p.status  AS payment_status
+                                p.status  AS payment_status,
+                                jc.user_completed_at,
+                                jc.provider_completed_at,
+                                jc.user_payment_confirmed_at,
+                                jc.provider_payment_confirmed_at
             FROM repairerquote rq
             INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
             LEFT JOIN payment p     ON p.job_request_id = jr.request_id
                                     AND p.status = 'completed'
+                        LEFT JOIN job_collaboration jc
+                                                                     ON jc.request_id = jr.request_id
+                                                                    AND jc.request_type = 'regular'
+                                                                    AND jc.provider_id = rq.repairer_id
+                                                                    AND jc.provider_role = 'repairer'
             WHERE rq.repairer_id = ?
-              AND rq.status = 'accepted'
+                            AND rq.status IN ('accepted', 'completed')
         ";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$repairerId]);
@@ -220,7 +256,7 @@ function updateJobStatus($pdo, $data) {
     $newStatus = $data['status'] ?? '';
     $repairerId = intval($data['repairer_id'] ?? 0);
 
-    $allowed = ['in_progress', 'completed', 'cancelled'];
+    $allowed = ['in_progress', 'cancelled'];
     if ($requestId <= 0 || !in_array($newStatus, $allowed)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Invalid request_id or status']);
@@ -252,12 +288,179 @@ function updateJobStatus($pdo, $data) {
     }
 }
 
+/* ─── GET: invoice ─────────────────────────────────────────────────────── */
+function getInvoice($pdo) {
+    $requestId = intval($_GET['request_id'] ?? 0);
+    $repairerId = resolveRepairerId();
+
+    if ($requestId <= 0 || $repairerId <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'request_id required']);
+        return;
+    }
+
+    try {
+        $stmt = $pdo->prepare("
+            SELECT
+                rq.quote_id,
+                rq.quoteAmount,
+                rq.dateSubmitted,
+                rq.estimatedDays,
+                jr.request_id,
+                jr.title AS job_title,
+                jr.description AS job_description,
+                jr.district,
+                jr.address,
+                u.user_id,
+                u.f_name AS customer_first_name,
+                u.l_name AS customer_last_name,
+                u.email AS customer_email,
+                p.payment_id,
+                p.paymentDate,
+                p.paymentType,
+                p.status AS payment_status,
+                p.amount AS payment_amount
+            FROM repairerquote rq
+            INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
+            INNER JOIN user u ON jr.user_id = u.user_id
+            LEFT JOIN payment p ON p.job_request_id = jr.request_id
+            WHERE rq.repairer_id = ?
+              AND rq.status = 'accepted'
+              AND jr.request_id = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$repairerId, $requestId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Invoice not found']);
+            return;
+        }
+
+        $amount = (float) ($row['payment_amount'] ?? $row['quoteAmount'] ?? 0);
+        $invoiceNumber = 'INV-JR-' . $row['request_id'] . '-' . ($row['payment_id'] ?? $row['quote_id']);
+
+        echo json_encode([
+            'success' => true,
+            'invoice' => [
+                'invoice_number' => $invoiceNumber,
+                'issued_date' => $row['paymentDate'] ?: $row['dateSubmitted'],
+                'status' => $row['payment_status'] === 'completed' ? 'paid' : 'pending',
+                'job_title' => $row['job_title'],
+                'job_description' => $row['job_description'],
+                'district' => $row['district'],
+                'address' => $row['address'],
+                'customer_name' => trim(($row['customer_first_name'] ?? '') . ' ' . ($row['customer_last_name'] ?? '')),
+                'customer_email' => $row['customer_email'],
+                'amount' => $amount,
+                'platform_fee' => round($amount * 0.1, 2),
+                'total' => round($amount - ($amount * 0.1), 2)
+            ]
+        ]);
+    } catch (PDOException $e) {
+        error_log('repairer-jobs invoice error: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Failed to fetch invoice']);
+    }
+}
+
+/* ─── POST: send-reminder ─────────────────────────────────────────────── */
+function sendReminder($pdo, $data) {
+    $requestId = intval($data['request_id'] ?? 0);
+    $repairerId = resolveRepairerId();
+
+    if ($requestId <= 0 || $repairerId <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'request_id required']);
+        return;
+    }
+
+    try {
+        $stmt = $pdo->prepare("
+            SELECT
+                jr.title AS job_title,
+                jr.user_id,
+                u.f_name AS customer_first_name,
+                u.l_name AS customer_last_name,
+                p.status AS payment_status,
+                rq.quoteAmount
+            FROM repairerquote rq
+            INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
+            INNER JOIN user u ON jr.user_id = u.user_id
+            LEFT JOIN payment p ON p.job_request_id = jr.request_id
+            WHERE rq.repairer_id = ?
+              AND rq.status = 'accepted'
+              AND jr.request_id = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$repairerId, $requestId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Job not found']);
+            return;
+        }
+
+        if ($row['payment_status'] === 'completed') {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Payment already completed']);
+            return;
+        }
+
+        $customerName = trim(($row['customer_first_name'] ?? '') . ' ' . ($row['customer_last_name'] ?? ''));
+        $amount = number_format((float) ($row['quoteAmount'] ?? 0), 2);
+        $title = 'Payment reminder for ' . ($row['job_title'] ?? 'job');
+        $message = 'Hi ' . ($customerName ?: 'Customer') . ', your payment of LKR ' . $amount . ' is pending for "' . ($row['job_title'] ?? 'your job') . '".';
+
+        $userData = getUserData();
+        $senderName = $userData['name'] ?? 'Repairer';
+
+        $insert = $pdo->prepare("
+            INSERT INTO notification
+                (title, message, recipient_type, status, created_by_id, created_by_role, created_by_name, recipient_id)
+            VALUES
+                (?, ?, 'user', 'sent', ?, 'repairer', ?, ?)
+        ");
+        $insert->execute([$title, $message, $repairerId, $senderName, $row['user_id']]);
+
+        echo json_encode(['success' => true, 'message' => 'Reminder sent']);
+    } catch (PDOException $e) {
+        error_log('repairer-jobs reminder error: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Failed to send reminder']);
+    }
+}
+
+function resolveRepairerId(): int {
+    $userData = getUserData();
+    return intval($userData['id'] ?? 0);
+}
+
 /* ─── Helper ─────────────────────────────────────────────────────────────── */
 function deriveUiStatus($row) {
     $jobStatus     = $row['job_status'] ?? '';
     $paymentStatus = $row['payment_status'] ?? null;
+    $hasUserCompleted = !empty($row['user_completed_at']);
+    $hasProviderCompleted = !empty($row['provider_completed_at']);
+    $hasUserPaid = !empty($row['user_payment_confirmed_at']);
+    $hasProviderPaid = !empty($row['provider_payment_confirmed_at']);
+    $hasCollaborationContext = isset($row['collaboration_id'])
+        || isset($row['user_completed_at'])
+        || isset($row['provider_completed_at'])
+        || isset($row['user_payment_confirmed_at'])
+        || isset($row['provider_payment_confirmed_at']);
 
     if ($jobStatus === 'cancelled') return 'cancelled';
+
+    if ($hasCollaborationContext) {
+        // For collaboration workflow, keep final jobs in the Completed tab even after
+        // payment confirmations so repairers continue to see the full flow there.
+        if ($hasProviderCompleted || $jobStatus === 'completed') return 'completed';
+        return 'active';
+    }
+
     if ($jobStatus === 'completed' && $paymentStatus === 'completed') return 'paid';
     if ($jobStatus === 'completed') return 'completed';
     return 'active';

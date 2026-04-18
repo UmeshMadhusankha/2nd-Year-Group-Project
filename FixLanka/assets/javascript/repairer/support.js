@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeFileUpload();
     prefillSupportFromNotificationQuery();
     window.supportTickets = [];
+    window.activeSupportTicketId = null;
     loadTicketsFromBackend();
 });
 
@@ -67,6 +68,18 @@ function mapIssueToTicket(issue) {
     };
 }
 
+function mapSupportTicketToRow(ticket) {
+    const ticketId = Number(ticket.ticket_id || 0);
+    return {
+        id: ticketId,
+        number: ticket.ticket_number || `#${ticketId}`,
+        subject: ticket.title || 'Support Ticket',
+        status: String(ticket.status || 'open').toLowerCase(),
+        created: formatDateTime(ticket.created_at),
+        updated: formatDateTime(ticket.updated_at || ticket.created_at)
+    };
+}
+
 async function loadTicketsFromBackend(showFailureToast = false) {
     const tbody = document.getElementById('tickets-tbody');
     const emptyState = document.getElementById('tickets-empty-state');
@@ -85,7 +98,7 @@ async function loadTicketsFromBackend(showFailureToast = false) {
     }
 
     try {
-        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/issue-reports.php', {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/repairer-support.php', {
             method: 'GET',
             headers: {
                 'Accept': 'application/json'
@@ -97,8 +110,8 @@ async function loadTicketsFromBackend(showFailureToast = false) {
             throw new Error(result.message || 'Failed to load support tickets');
         }
 
-        const issues = Array.isArray(result.issues) ? result.issues : [];
-        window.supportTickets = issues.map(mapIssueToTicket);
+        const tickets = Array.isArray(result.tickets) ? result.tickets : [];
+        window.supportTickets = tickets.map(mapSupportTicketToRow);
         updateTicketsTable();
     } catch (error) {
         console.error('Failed to load support tickets:', error);
@@ -189,9 +202,13 @@ async function handleFormSubmission() {
     const submitBtn = document.getElementById('submit-btn');
     const subject = document.getElementById('issue-subject').value;
     const message = document.getElementById('issue-message').value;
+    const category = document.getElementById('issue-category')?.value || '';
+    const priority = document.getElementById('issue-priority')?.value || 'medium';
+    const urgency = document.getElementById('issue-urgency')?.value || 'soon';
+    const attachment = document.getElementById('issue-file')?.files?.[0];
 
     // Validate form
-    if (!subject.trim() || !message.trim()) {
+    if (!subject.trim() || !message.trim() || !category) {
         showNotification('Please fill in all required fields.', 'error');
         return;
     }
@@ -201,15 +218,19 @@ async function handleFormSubmission() {
     submitBtn.disabled = true;
 
     try {
-        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/issue-reports.php', {
+        const formData = new FormData();
+        formData.append('title', subject.trim());
+        formData.append('description', message.trim());
+        formData.append('category', category);
+        formData.append('priority', priority);
+        formData.append('urgency', urgency);
+        if (attachment) {
+            formData.append('attachment', attachment);
+        }
+
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/repairer-support.php', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                subject: subject.trim(),
-                message: message.trim()
-            })
+            body: formData
         });
 
         const result = await response.json();
@@ -217,15 +238,15 @@ async function handleFormSubmission() {
             throw new Error(result.message || 'Failed to submit issue report');
         }
 
-        const issueId = Number(result.issue_id || 0);
-        const ticketId = issueId > 0 ? `ISSUE-${issueId}` : `ISSUE-${String(Date.now()).slice(-6)}`;
+        const ticketId = Number(result.ticket_id || 0);
+        const ticketLabel = ticketId > 0 ? `#${ticketId}` : '#—';
 
         form.reset();
         clearFileUpload();
 
         await loadTicketsFromBackend(false);
 
-        showNotification(`Issue report ${ticketId} submitted successfully!`, 'success');
+        showNotification(`Support ticket ${ticketLabel} submitted successfully!`, 'success');
 
         setTimeout(() => {
             document.getElementById('support-tickets-section').scrollIntoView({
@@ -234,7 +255,7 @@ async function handleFormSubmission() {
         }, 600);
     } catch (error) {
         console.error('Issue report submission failed:', error);
-        showNotification(error.message || 'Failed to submit issue report.', 'error');
+        showNotification(error.message || 'Failed to submit support ticket.', 'error');
     } finally {
         submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit';
         submitBtn.disabled = false;
@@ -339,8 +360,10 @@ function initializeTicketModal() {
 }
 
 function openTicketModal(ticketId) {
-    const ticket = window.supportTickets?.find(t => t.id === ticketId);
+    const ticket = window.supportTickets?.find(t => String(t.id) === String(ticketId));
     if (!ticket) return;
+
+    window.activeSupportTicketId = ticket.id;
 
     const modal = document.getElementById('ticket-modal-overlay');
     const modalTitle = document.getElementById('modal-ticket-title');
@@ -352,7 +375,7 @@ function openTicketModal(ticketId) {
 
     // Update modal content
     if (modalTitle) modalTitle.textContent = ticket.subject;
-    if (modalTicketId) modalTicketId.textContent = `#${ticket.id}`;
+    if (modalTicketId) modalTicketId.textContent = ticket.number ? `#${ticket.number}` : `#${ticket.id}`;
     if (modalStatus) {
         modalStatus.textContent = ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1).replace('-', ' ');
         modalStatus.className = `status-badge status-${ticket.status}`;
@@ -363,16 +386,67 @@ function openTicketModal(ticketId) {
     // Update chat messages
     if (chatContainer) {
         chatContainer.innerHTML = '';
-        ticket.messages.forEach(message => {
-            const messageElement = createMessageElement(message);
-            chatContainer.appendChild(messageElement);
-        });
     }
+
+    loadTicketConversation(ticket.id);
 
     // Show modal
     if (modal) {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
+    }
+}
+
+async function loadTicketConversation(ticketId) {
+    const chatContainer = document.getElementById('chat-container');
+    if (!chatContainer) return;
+
+    chatContainer.innerHTML = '<p style="color:var(--text-secondary)">Loading conversation...</p>';
+
+    try {
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/repairer-support.php?ticket_id=${ticketId}`);
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Failed to load conversation');
+        }
+
+        const ticket = result.ticket || {};
+        const responses = Array.isArray(result.responses) ? result.responses : [];
+        const messages = [];
+
+        if (ticket.description) {
+            messages.push({
+                author: 'You',
+                time: formatDateTime(ticket.created_at),
+                text: ticket.description,
+                isSupport: false
+            });
+        }
+
+        responses.forEach(item => {
+            const isSupport = ['admin', 'moderator', 'system'].includes(String(item.responder_type || 'user'));
+            messages.push({
+                author: isSupport ? 'Support' : 'You',
+                time: formatDateTime(item.created_at),
+                text: item.message || '',
+                isSupport: isSupport
+            });
+        });
+
+        chatContainer.innerHTML = '';
+        if (messages.length === 0) {
+            chatContainer.innerHTML = '<p style="color:var(--text-secondary)">No replies yet. Send a message to start the conversation.</p>';
+            return;
+        }
+
+        messages.forEach(message => {
+            const messageElement = createMessageElement(message);
+            chatContainer.appendChild(messageElement);
+        });
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    } catch (error) {
+        console.error('Failed to load conversation:', error);
+        chatContainer.innerHTML = '<p style="color:var(--text-secondary)">Unable to load conversation.</p>';
     }
 }
 
@@ -382,6 +456,7 @@ function closeTicketModal() {
         modal.classList.remove('active');
         document.body.style.overflow = '';
     }
+    window.activeSupportTicketId = null;
 }
 
 function createMessageElement(message) {
@@ -436,17 +511,7 @@ function initializeReplyForm() {
 
     if (attachFileBtn) {
         attachFileBtn.addEventListener('click', function () {
-            // Create and trigger file input
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = '.jpg,.jpeg,.png,.gif,.pdf,.doc,.docx';
-            fileInput.onchange = function (e) {
-                const file = e.target.files[0];
-                if (file) {
-                    showNotification(`File "${file.name}" attached`, 'success');
-                }
-            };
-            fileInput.click();
+            showNotification('Reply attachments are not available yet. Please attach files when creating the ticket.', 'info');
         });
     }
 
@@ -463,9 +528,15 @@ function sendReply() {
     const replyInput = document.getElementById('reply-message');
     const sendBtn = document.getElementById('send-reply-btn');
     const chatContainer = document.getElementById('chat-container');
+    const activeTicketId = window.activeSupportTicketId;
 
     if (!replyInput || !replyInput.value.trim()) {
         showNotification('Please enter a message', 'error');
+        return;
+    }
+
+    if (!activeTicketId) {
+        showNotification('Please select a ticket to reply to.', 'error');
         return;
     }
 
@@ -475,30 +546,34 @@ function sendReply() {
     sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
     sendBtn.disabled = true;
 
-    // Create new message
-    const newMessage = {
-        author: 'You',
-        time: new Date().toLocaleString(),
-        text: message,
-        isSupport: false
-    };
+    fetch('/2nd-Year-Group-Project/FixLanka/api/repairer-support.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            ticket_id: activeTicketId,
+            message: message
+        })
+    })
+        .then(response => response.json().then(result => ({ response, result })))
+        .then(({ response, result }) => {
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Failed to send reply');
+            }
 
-    // Add message to chat
-    const messageElement = createMessageElement(newMessage);
-    chatContainer.appendChild(messageElement);
-
-    // Clear input
-    replyInput.value = '';
-
-    // Scroll to bottom
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-
-    // Reset button after delay
-    setTimeout(() => {
-        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
-        sendBtn.disabled = false;
-        showNotification('Reply sent successfully!', 'success');
-    }, 1000);
+            replyInput.value = '';
+            loadTicketConversation(activeTicketId);
+            showNotification('Reply sent successfully!', 'success');
+        })
+        .catch(error => {
+            console.error('Reply failed:', error);
+            showNotification(error.message || 'Failed to send reply.', 'error');
+        })
+        .finally(() => {
+            sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+            sendBtn.disabled = false;
+        });
 }
 
 // ===== UTILITY FUNCTIONS =====
@@ -527,7 +602,7 @@ function updateTicketsTable() {
         const statusText = ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1).replace('-', ' ');
 
         row.innerHTML = `
-            <td class="ticket-id">#${ticket.id}</td>
+            <td class="ticket-id">${ticket.number ? `#${ticket.number}` : `#${ticket.id}`}</td>
             <td class="ticket-subject">${ticket.subject}</td>
             <td class="ticket-status">
                 <span class="status-badge status-${statusClass}">${statusText}</span>

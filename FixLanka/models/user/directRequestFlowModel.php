@@ -34,7 +34,7 @@ class DirectRequestFlowModel {
             LEFT JOIN category c ON c.category_id = jr.category_id
             LEFT JOIN location l ON l.location_id = jr.location_id
             WHERE jr.user_id = :user_id
-              AND LOWER(jr.status) IN ('pending', 'open')
+                            AND LOWER(jr.status) = 'pending'
               AND jr.finish_date >= CURDATE()
         ";
 

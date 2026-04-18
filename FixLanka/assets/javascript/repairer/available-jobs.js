@@ -9,6 +9,9 @@ const currentRepairerId = window.CURRENT_REPAIRER_ID || 0;
 const API_BASE = '/2nd-Year-Group-Project/FixLanka/api';
 let availableJobs = [];
 let submittedQuotes = [];
+let directJobs = [];
+let receivedNegotiations = [];
+let acceptedNegotiations = [];
 
 // ===== Initialization =====
 document.addEventListener('DOMContentLoaded', function () {
@@ -23,7 +26,10 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeTabs();
     initializeFilters();
     loadAvailableJobs();
+    loadDirectJobs();
     loadSubmittedQuotations();
+    loadReceivedNegotiations();
+    loadAcceptedNegotiations();
 });
 
 // =========================================================================
@@ -48,6 +54,358 @@ function switchTab(tabName) {
 
     if (tabName === 'submitted-quotes') {
         loadSubmittedQuotations();
+    }
+    if (tabName === 'direct-jobs') {
+        loadDirectJobs();
+    }
+    if (tabName === 'received-negotiations') {
+        loadReceivedNegotiations();
+        loadAcceptedNegotiations();
+    }
+}
+
+// =========================================================================
+//  RECEIVED NEGOTIATIONS (READ/UPDATE)
+// =========================================================================
+async function loadReceivedNegotiations() {
+    const container = document.getElementById('received-negotiations-container');
+    const countBadge = document.getElementById('received-negotiations-badge');
+    const countText = document.getElementById('received-negotiations-count');
+
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading received negotiations...</p>
+        </div>`;
+
+    try {
+        const response = await fetch(`${API_BASE}/repairer-negotiations.php?action=list&limit=100`, {
+            credentials: 'same-origin'
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to load negotiations');
+        }
+
+        receivedNegotiations = Array.isArray(result.items) ? result.items : [];
+        renderReceivedNegotiations(receivedNegotiations);
+
+        const count = receivedNegotiations.length;
+        if (countBadge) countBadge.textContent = count;
+        if (countText) countText.textContent = `${count} negotiation${count !== 1 ? 's' : ''} waiting`;
+    } catch (err) {
+        console.error('Error loading received negotiations:', err);
+        showContainerError('received-negotiations-container', `Failed to load negotiations. ${err.message || ''}`.trim());
+        if (countBadge) countBadge.textContent = '!';
+        if (countText) countText.textContent = 'Error loading negotiations';
+    }
+}
+
+async function loadAcceptedNegotiations() {
+    const container = document.getElementById('accepted-negotiations-container');
+    const countText = document.getElementById('accepted-negotiations-count');
+
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading accepted negotiations...</p>
+        </div>`;
+
+    try {
+        const response = await fetch(`${API_BASE}/repairer-negotiations.php?action=list&limit=100&status=accepted`, {
+            credentials: 'same-origin'
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to load history');
+        }
+
+        acceptedNegotiations = Array.isArray(result.items) ? result.items : [];
+        renderAcceptedNegotiations(acceptedNegotiations);
+
+        if (countText) {
+            const count = acceptedNegotiations.length;
+            countText.textContent = `${count} negotiation${count !== 1 ? 's' : ''} in history`;
+        }
+    } catch (err) {
+        console.error('Error loading accepted negotiations:', err);
+        showContainerError('accepted-negotiations-container', `Failed to load accepted negotiations. ${err.message || ''}`.trim());
+        if (countText) countText.textContent = 'Error loading history';
+    }
+}
+
+function renderAcceptedNegotiations(items) {
+    const container = document.getElementById('accepted-negotiations-container');
+    if (!container) return;
+
+    if (!Array.isArray(items) || !items.length) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-clock-rotate-left"></i>
+                <h3>No accepted negotiations yet</h3>
+                <p>Accepted negotiations will show here as a read-only history.</p>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = items.map((item) => createNegotiationCard({
+        ...item,
+        status: 'accepted'
+    })).join('');
+}
+
+function renderReceivedNegotiations(items) {
+    const container = document.getElementById('received-negotiations-container');
+    if (!container) return;
+
+    if (!Array.isArray(items) || !items.length) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-comments-dollar"></i>
+                <h3>No pending negotiations</h3>
+                <p>User price negotiations sent to you will appear here.</p>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = items.map(createNegotiationCard).join('');
+}
+
+function createNegotiationCard(item) {
+    const senderName = item.sender_name || 'User';
+    const jobTitle = item.effective_job_title || item.job_title || `Request #${item.request_id}`;
+    const jobDescription = item.effective_job_description || item.job_description || '';
+    const previousPrice = Number(item.listed_price || 0);
+    const proposedPrice = Number(item.proposed_price || 0);
+    const counterPrice = Number(item.latest_counter_price || 0);
+    const currentQuoteAmount = Number(item.current_quote_amount || 0);
+    const canAct = String(item.status || '').toLowerCase() === 'pending' || String(item.status || '').toLowerCase() === 'countered';
+
+    return `
+        <div class="quote-card status-pending negotiation-card" data-negotiation-id="${Number(item.negotiation_id)}">
+            <div class="quote-header">
+                <div class="quote-job-info">
+                    <h4 class="quote-job-title">${escapeHtml(jobTitle)}</h4>
+                    <p class="quote-job-meta">
+                        <i class="fas fa-user"></i> From ${escapeHtml(senderName)}
+                        <span class="separator">&bull;</span>
+                        <i class="fas fa-hashtag"></i> Negotiation #${Number(item.negotiation_id)}
+                        <span class="separator">&bull;</span>
+                        <i class="fas fa-file-invoice"></i> Quote #${Number(item.quote_id)}
+                    </p>
+                </div>
+                <div class="quote-status-badge status-pending">
+                    <i class="fas fa-comments-dollar"></i>
+                    ${escapeHtml(String(item.status || 'pending').toUpperCase())}
+                </div>
+            </div>
+
+            <div class="quote-body">
+                <div class="quote-details-grid">
+                    <div class="quote-detail-item">
+                        <label>Previous Price</label>
+                        <span>LKR ${previousPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div class="quote-detail-item">
+                        <label>User Proposed</label>
+                        <span class="quote-amount">LKR ${proposedPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div class="quote-detail-item">
+                        <label>Current Quote Amount</label>
+                        <span>LKR ${currentQuoteAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div class="quote-detail-item">
+                        <label>Our Counter</label>
+                        <span>${counterPrice > 0 ? `LKR ${counterPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : escapeHtml(String(item.request_type || 'regular'))}</span>
+                    </div>
+                </div>
+
+                ${item.message ? `
+                <div class="quote-message">
+                    <label><i class="fas fa-comment"></i> User Message</label>
+                    <p>${escapeHtml(item.message)}</p>
+                </div>` : ''}
+
+                ${jobDescription ? `
+                <div class="quote-message negotiation-job-description">
+                    <label><i class="fas fa-file-lines"></i> Job Description</label>
+                    <p>${escapeHtml(jobDescription)}</p>
+                </div>` : ''}
+
+                <div class="quote-meta">
+                    <span><i class="fas fa-clock"></i> Sent ${formatDate(item.created_at)}</span>
+                </div>
+            </div>
+
+            <div class="quote-actions">
+                ${canAct ? `
+                    <button class="btn btn-primary btn-sm" onclick="acceptNegotiation(${Number(item.negotiation_id)})">
+                        <i class="fas fa-check"></i> Accept
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="openCounterNegotiationModal(${Number(item.negotiation_id)})">
+                        <i class="fas fa-scale-balanced"></i> Counter
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="rejectNegotiation(${Number(item.negotiation_id)})">
+                        <i class="fas fa-xmark"></i> Reject
+                    </button>
+                ` : `
+                    <span class="quote-readonly-label"><i class="fas fa-lock"></i> Already processed</span>
+                `}
+            </div>
+        </div>`;
+}
+
+async function acceptNegotiation(negotiationId) {
+    if (!Number.isFinite(Number(negotiationId)) || Number(negotiationId) <= 0) {
+        showToast('Invalid negotiation selected.', 'error');
+        return;
+    }
+
+    if (!confirm('Accept this user negotiation proposal?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/repairer-negotiations.php?action=accept`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ negotiation_id: Number(negotiationId) })
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Failed to accept negotiation');
+        }
+
+        showToast('Negotiation accepted successfully.', 'success');
+        await loadReceivedNegotiations();
+    } catch (err) {
+        console.error('Error accepting negotiation:', err);
+        showToast(err.message || 'Failed to accept negotiation.', 'error');
+    }
+}
+
+async function rejectNegotiation(negotiationId) {
+    if (!Number.isFinite(Number(negotiationId)) || Number(negotiationId) <= 0) {
+        showToast('Invalid negotiation selected.', 'error');
+        return;
+    }
+
+    if (!confirm('This negotiation will be deleted. Continue?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/repairer-negotiations.php?action=reject`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ negotiation_id: Number(negotiationId) })
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Failed to reject negotiation');
+        }
+
+        showToast('Negotiation rejected successfully.', 'success');
+        await loadReceivedNegotiations();
+    } catch (err) {
+        console.error('Error rejecting negotiation:', err);
+        showToast(err.message || 'Failed to reject negotiation.', 'error');
+    }
+}
+
+function openCounterNegotiationModal(negotiationId) {
+    const modal = document.getElementById('counterNegotiationModal');
+    const item = receivedNegotiations.find((entry) => Number(entry.negotiation_id) === Number(negotiationId));
+    if (!modal || !item) {
+        showToast('Negotiation not found.', 'error');
+        return;
+    }
+
+    const previousPriceInput = document.getElementById('counterPreviousPrice');
+    const proposedByUserInput = document.getElementById('counterProposedByUser');
+    const negotiationIdInput = document.getElementById('counterNegotiationId');
+    const counterPriceInput = document.getElementById('counterPriceInput');
+    const counterMessageInput = document.getElementById('counterMessageInput');
+
+    if (previousPriceInput) previousPriceInput.value = `LKR ${Number(item.listed_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    if (proposedByUserInput) proposedByUserInput.value = `LKR ${Number(item.proposed_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    if (negotiationIdInput) negotiationIdInput.value = String(negotiationId);
+    if (counterPriceInput) counterPriceInput.value = Number(item.proposed_price || 0) > 0 ? String(Number(item.proposed_price)) : '';
+    if (counterMessageInput) counterMessageInput.value = '';
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCounterNegotiationModal() {
+    const modal = document.getElementById('counterNegotiationModal');
+    if (!modal) return;
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+async function submitCounterNegotiation(event) {
+    event.preventDefault();
+
+    const negotiationId = Number(document.getElementById('counterNegotiationId')?.value || 0);
+    const counterPrice = Number(document.getElementById('counterPriceInput')?.value || 0);
+    const message = document.getElementById('counterMessageInput')?.value?.trim() || '';
+    const submitBtn = document.getElementById('counterSubmitBtn');
+
+    if (!Number.isFinite(negotiationId) || negotiationId <= 0) {
+        showToast('Invalid negotiation selected.', 'error');
+        return;
+    }
+    if (!Number.isFinite(counterPrice) || counterPrice <= 0) {
+        showToast('Enter a valid counter amount.', 'warning');
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/repairer-negotiations.php?action=counter`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                negotiation_id: negotiationId,
+                counter_price: counterPrice,
+                message: message || null,
+            })
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Failed to send counter proposal');
+        }
+
+        showToast('Counter proposal sent successfully.', 'success');
+        closeCounterNegotiationModal();
+        await loadReceivedNegotiations();
+    } catch (err) {
+        console.error('Error sending counter proposal:', err);
+        showToast(err.message || 'Failed to send counter proposal.', 'error');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Counter';
+        }
     }
 }
 
@@ -117,6 +475,47 @@ async function loadAvailableJobs(filters = {}) {
     }
 }
 
+// =========================================================================
+//  LOAD DIRECT JOBS (READ)
+// =========================================================================
+function loadDirectJobs() {
+    const container = document.getElementById('direct-jobs-grid-container');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading direct jobs...</p>
+        </div>`;
+
+    const payload = window.DIRECT_JOBS || {};
+    const directSource = Array.isArray(payload.direct) ? payload.direct : [];
+    const listedSource = Array.isArray(payload.listed) ? payload.listed : [];
+
+    const normalized = [];
+    directSource.forEach(job => normalized.push(normalizeDirectJob(job, 'direct')));
+    listedSource.forEach(job => normalized.push(normalizeDirectJob(job, 'listed')));
+
+    const deduped = new Map();
+    normalized.forEach(job => {
+        if (!job || !job.request_id) return;
+        const key = String(job.request_id);
+        const existing = deduped.get(key);
+        if (!existing || existing.source !== 'direct') {
+            deduped.set(key, job);
+        }
+    });
+
+    directJobs = Array.from(deduped.values()).sort((a, b) => {
+        const aTime = new Date(a.dateCreated || a.date_created || 0).getTime();
+        const bTime = new Date(b.dateCreated || b.date_created || 0).getTime();
+        return bTime - aTime;
+    });
+
+    renderDirectJobs(directJobs);
+    updateDirectJobCounts(directJobs.length);
+}
+
 function renderJobs(jobs) {
     const container = document.getElementById('jobs-grid-container');
     if (!jobs.length) {
@@ -171,14 +570,84 @@ function createJobCard(job) {
                 </div>
             </div>
             <div class="job-actions">
-                <button class="btn btn-secondary job-btn" onclick="viewJobDetails(${job.request_id})">
+                <button class="btn btn-secondary job-btn" onclick="viewJobDetails(${job.request_id}, 'available')">
                     <i class="fas fa-eye"></i> View Details
                 </button>
                 ${alreadyQuoted ? `
                 <button class="btn btn-disabled job-btn" disabled>
                     <i class="fas fa-check"></i> Already Quoted
                 </button>` : `
-                <button class="btn btn-primary job-btn" onclick="openQuoteModal(${job.request_id})">
+                <button class="btn btn-primary job-btn" onclick="openQuoteModal(${job.request_id}, 'available')">
+                    <i class="fas fa-file-invoice-dollar"></i> Submit Quote
+                </button>`}
+            </div>
+        </div>`;
+}
+
+function renderDirectJobs(jobs) {
+    const container = document.getElementById('direct-jobs-grid-container');
+    if (!container) return;
+
+    if (!jobs.length) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-location-arrow"></i>
+                <h3>No direct jobs yet</h3>
+                <p>Direct requests sent specifically to you will appear here.</p>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = jobs.map(createDirectJobCard).join('');
+}
+
+function createDirectJobCard(job) {
+    const catClass = getCategoryClass(job.category_name);
+    const alreadyQuoted = submittedQuotes.some(q => q.request_id == job.request_id);
+    const requestLabel = job.source === 'direct' ? 'Direct Request' : 'Listed Job Request';
+    const requestIcon = job.source === 'direct' ? 'fa-location-arrow' : 'fa-share-square';
+
+    return `
+        <div class="job-card${alreadyQuoted ? ' already-quoted' : ''}" data-job-id="${job.request_id}">
+            ${alreadyQuoted ? `<div class="quoted-ribbon"><i class="fas fa-check-circle"></i> Quote Submitted</div>` : ''}
+            <div class="job-header">
+                <div class="job-category-badge ${catClass}">
+                    <i class="${getCategoryIcon(job.category_name)}"></i>
+                    ${escapeHtml(job.category_name || 'General')}
+                </div>
+                <div class="job-posted">
+                    <i class="fas fa-clock"></i>
+                    ${escapeHtml(job.posted_ago || 'Recently')}
+                </div>
+            </div>
+            <div class="job-content">
+                <h3 class="job-title">${escapeHtml(job.title)}</h3>
+                <div class="job-customer">
+                    <i class="fas fa-user"></i>
+                    <span>${escapeHtml(job.customer_name || 'Customer')}</span>
+                </div>
+                <div class="job-address">
+                    <i class="fas fa-location-dot"></i>
+                    <span>${escapeHtml(job.address || job.district || 'N/A')}</span>
+                </div>
+                <div class="job-type">
+                    <i class="fas ${requestIcon}"></i>
+                    <span>${requestLabel}</span>
+                </div>
+                <div class="job-date">
+                    <i class="fas fa-calendar"></i>
+                    <span>Finish by: ${formatDate(job.finish_date)}</span>
+                </div>
+            </div>
+            <div class="job-actions">
+                <button class="btn btn-secondary job-btn" onclick="viewJobDetails(${job.request_id}, 'direct')">
+                    <i class="fas fa-eye"></i> View Details
+                </button>
+                ${alreadyQuoted ? `
+                <button class="btn btn-disabled job-btn" disabled>
+                    <i class="fas fa-check"></i> Already Quoted
+                </button>` : `
+                <button class="btn btn-primary job-btn" onclick="openQuoteModal(${job.request_id}, 'direct')">
                     <i class="fas fa-file-invoice-dollar"></i> Submit Quote
                 </button>`}
             </div>
@@ -200,12 +669,13 @@ function updateJobCounts(total) {
 // =========================================================================
 //  VIEW JOB DETAILS (DRAWER)
 // =========================================================================
-function viewJobDetails(jobId) {
-    openJobDetailsDrawer(jobId);
+function viewJobDetails(jobId, source = 'available') {
+    openJobDetailsDrawer(jobId, source);
 }
 
-function openJobDetailsDrawer(jobId) {
-    const job = availableJobs.find(j => j.request_id == jobId);
+function openJobDetailsDrawer(jobId, source = 'available') {
+    const jobList = source === 'direct' ? directJobs : availableJobs;
+    const job = jobList.find(j => j.request_id == jobId);
     if (!job) {
         showToast('Job not found', 'error');
         return;
@@ -222,8 +692,15 @@ function openJobDetailsDrawer(jobId) {
     // Urgency badge
     const urgEl = document.getElementById('detailUrgency');
     const isUrgent = job.urgency === 'urgent';
-    urgEl.innerHTML = `<i class="fas ${isUrgent ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i><span>${isUrgent ? 'High Priority' : 'Normal Priority'}</span>`;
-    urgEl.className = `job-detail-urgency ${isUrgent ? 'high' : 'low'}`;
+    const urgencyLabel = source === 'direct'
+        ? (job.source === 'direct' ? 'Direct Request' : 'Listed Request')
+        : (isUrgent ? 'High Priority' : 'Normal Priority');
+    const urgencyIcon = source === 'direct'
+        ? (job.source === 'direct' ? 'fa-location-arrow' : 'fa-share-square')
+        : (isUrgent ? 'fa-exclamation-circle' : 'fa-info-circle');
+    const urgencyClass = source === 'direct' ? 'normal' : (isUrgent ? 'high' : 'low');
+    urgEl.innerHTML = `<i class="fas ${urgencyIcon}"></i><span>${urgencyLabel}</span>`;
+    urgEl.className = `job-detail-urgency ${urgencyClass}`;
 
     // Text fields
     setText('detailTitle', job.title);
@@ -241,8 +718,13 @@ function openJobDetailsDrawer(jobId) {
 
     // Attachments
     const attachContainer = document.getElementById('detailAttachments');
-    if (job.photos && job.photos.length > 0 && job.photos[0] !== '') {
-        attachContainer.innerHTML = job.photos.map(photo => `
+    const photos = Array.isArray(job.photos)
+        ? job.photos
+        : typeof job.photos === 'string' && job.photos !== ''
+            ? job.photos.split(',')
+            : [];
+    if (photos.length > 0 && photos[0] !== '') {
+        attachContainer.innerHTML = photos.map(photo => `
             <div class="attachment-item">
                 <i class="fas fa-image"></i>
                 <span>${escapeHtml(photo.trim())}</span>
@@ -253,6 +735,7 @@ function openJobDetailsDrawer(jobId) {
 
     // Store job ID for submit button
     drawer.dataset.currentJobId = jobId;
+    drawer.dataset.currentJobSource = source;
 
     // Update submit button: check if already quoted
     const submitBtn = document.getElementById('drawerSubmitQuoteBtn');
@@ -281,17 +764,19 @@ function closeJobDetails() {
 function submitQuoteFromDetails() {
     const drawer = document.getElementById('jobDetailsDrawer');
     const jobId = drawer.dataset.currentJobId;
+    const source = drawer.dataset.currentJobSource || 'available';
     if (jobId) {
         closeJobDetails();
-        openQuoteModal(parseInt(jobId));
+        openQuoteModal(parseInt(jobId), source);
     }
 }
 
 // =========================================================================
 //  SUBMIT QUOTE (CREATE)
 // =========================================================================
-function openQuoteModal(jobId) {
-    const job = availableJobs.find(j => j.request_id == jobId);
+function openQuoteModal(jobId, source = 'available') {
+    const jobList = source === 'direct' ? directJobs : availableJobs;
+    const job = jobList.find(j => j.request_id == jobId);
     if (!job) {
         showToast('Job not found', 'error');
         return;
@@ -398,6 +883,7 @@ async function loadSubmittedQuotations() {
         if (result.success) {
             submittedQuotes = result.data || [];
             renderQuotations(submittedQuotes);
+            renderDirectJobs(directJobs);
             const count = submittedQuotes.length;
             if (countBadge) countBadge.textContent = count;
             if (countText) countText.textContent = `${count} quotation${count !== 1 ? 's' : ''} submitted`;
@@ -724,6 +1210,17 @@ function formatDate(dateStr) {
     return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function getPostedAgo(dateStr) {
+    if (!dateStr) return 'Recently';
+    const time = new Date(dateStr).getTime();
+    if (isNaN(time)) return 'Recently';
+    const diffHours = (Date.now() - time) / 3600000;
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${Math.floor(diffHours)} hour${Math.floor(diffHours) !== 1 ? 's' : ''} ago`;
+    const days = Math.floor(diffHours / 24);
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+}
+
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -749,6 +1246,34 @@ function showContainerError(containerId, message) {
                 </button>
             </div>`;
     }
+}
+
+function normalizeDirectJob(job, source) {
+    if (!job) return null;
+    const dateCreated = job.dateCreated || job.date_created || null;
+    const photosRaw = job.photos || '';
+    return {
+        request_id: job.request_id,
+        title: job.title || 'Job Request',
+        description: job.description || '',
+        status: job.status || 'pending',
+        district: job.district || '',
+        address: job.address || '',
+        finish_date: job.finish_date || null,
+        dateCreated: dateCreated,
+        photos: Array.isArray(photosRaw) ? photosRaw : typeof photosRaw === 'string' && photosRaw !== '' ? photosRaw.split(',') : [],
+        category_name: job.category_name || 'General',
+        customer_name: `${job.customer_first_name || ''} ${job.customer_last_name || ''}`.trim(),
+        service_provider_type: 'individual',
+        urgency: 'normal',
+        posted_ago: getPostedAgo(dateCreated),
+        source: source
+    };
+}
+
+function updateDirectJobCounts(total) {
+    setText('direct-jobs-badge', total);
+    setText('direct-jobs-count', `${total} job${total !== 1 ? 's' : ''} available`);
 }
 
 function showToast(message, type = 'info') {
@@ -805,3 +1330,8 @@ window.closeEditQuoteModal = closeEditQuoteModal;
 window.handleQuoteUpdate = handleQuoteUpdate;
 window.deleteQuote = deleteQuote;
 window.loadSubmittedQuotations = loadSubmittedQuotations;
+window.acceptNegotiation = acceptNegotiation;
+window.rejectNegotiation = rejectNegotiation;
+window.openCounterNegotiationModal = openCounterNegotiationModal;
+window.closeCounterNegotiationModal = closeCounterNegotiationModal;
+window.submitCounterNegotiation = submitCounterNegotiation;

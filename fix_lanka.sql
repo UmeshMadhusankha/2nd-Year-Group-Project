@@ -1924,7 +1924,7 @@ CREATE TABLE `repairerquote` (
   `validUntil` date DEFAULT NULL,
   `materialsIncluded` tinyint(1) DEFAULT 1,
   `message` text DEFAULT NULL,
-  `status` enum('pending','accepted','rejected','expired') DEFAULT 'pending',
+  `status` enum('pending','accepted','completed','rejected','expired') DEFAULT 'pending',
   `dateSubmitted` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
