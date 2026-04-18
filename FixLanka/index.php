@@ -139,6 +139,10 @@ switch ($request) {
     case '/admin-issues':
         require_once __DIR__ . '/views/admin/issues.php';
         break;
+
+    case '/admin-support-tickets':
+        require_once __DIR__ . '/views/admin/support-tickets.php';
+        break;
     
     case '/admin-users':
         require_once __DIR__ . '/views/admin/users.php';
@@ -178,6 +182,10 @@ switch ($request) {
     
     case '/moderator-notifications':
         require_once __DIR__ . '/views/moderator/notifications.php';
+        break;
+
+    case '/moderator-support-tickets':
+        require_once __DIR__ . '/views/moderator/support-tickets.php';
         break;
     
     case '/moderator-notifications-all':

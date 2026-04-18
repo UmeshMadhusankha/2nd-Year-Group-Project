@@ -11,7 +11,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Support - FixLanka</title>
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/common.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/global.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
@@ -70,6 +70,38 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                             <label for="issue-subject" class="form-label">Subject *</label>
                                             <input type="text" id="issue-subject" name="subject" class="form-input" 
                                                    placeholder="Brief description of your issue" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="issue-category" class="form-label">Category *</label>
+                                            <select id="issue-category" name="category" class="form-input" required>
+                                                <option value="" selected disabled>Select a category</option>
+                                                <option value="technical">Technical</option>
+                                                <option value="account">Account</option>
+                                                <option value="payment">Payment</option>
+                                                <option value="billing">Billing</option>
+                                                <option value="feature">Feature Request</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="issue-priority" class="form-label">Priority</label>
+                                            <select id="issue-priority" name="priority" class="form-input">
+                                                <option value="low">Low</option>
+                                                <option value="medium" selected>Medium</option>
+                                                <option value="high">High</option>
+                                                <option value="urgent">Urgent</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="issue-urgency" class="form-label">Urgency</label>
+                                            <select id="issue-urgency" name="urgency" class="form-input">
+                                                <option value="can-wait">Can Wait</option>
+                                                <option value="soon" selected>Soon</option>
+                                                <option value="asap">ASAP</option>
+                                            </select>
                                         </div>
                                     </div>
                                     
