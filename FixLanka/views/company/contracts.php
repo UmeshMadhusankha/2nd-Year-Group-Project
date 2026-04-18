@@ -35,6 +35,7 @@ if (!$userId) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FixLanka - Contracts Management</title>
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/progress-bars.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
@@ -854,8 +855,14 @@ if (!$userId) {
                             <!-- Pricing -->
                             <div class="subsection">
                                 <h4 class="subsection-title"><i class="fas fa-tags"></i> Contract Pricing</h4>
-                                <!-- Total budget is pulled from the selected quotation and submitted as a hidden value -->
-                                <input type="hidden" id="contractValue" name="total_budget">
+                                
+                                <div class="form-grid">
+                                    <div class="form-group full-width">
+                                        <label for="contractValue">Total Budget (LKR) <span class="required">*</span></label>
+                                        <input type="number" id="contractValue" name="total_budget" min="0" step="0.01" required>
+                                        <small>Enter the total cost. Auto-filled if generating from quotation.</small>
+                                    </div>
+                                </div>
 
                                 <div class="form-grid">
                                     <div class="form-group">

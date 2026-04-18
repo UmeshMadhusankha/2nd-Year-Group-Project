@@ -62,7 +62,6 @@ function renderModeratorSidebar($currentPath, $basePath)
         ['title' => 'Ad Scheduling', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-ad-schedule', 'icon' => 'calendar'],
         ['title' => 'Ad Reports', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-ad-reports', 'icon' => 'flag'],
         ['title' => 'Notifications', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-notifications', 'icon' => 'bell'],
-        ['title' => 'Support Tickets', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-support-tickets', 'icon' => 'file-text'],
       //  ['title' => 'User Management', 'url' => '/2nd-Year-Group-Project/FixLanka/moderator-account-moderation', 'icon' => 'users']
     ];
 
