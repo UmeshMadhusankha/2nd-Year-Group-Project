@@ -174,21 +174,23 @@ function showQuotationPreview(q) {
     const preview = document.getElementById('quotationPreviewCard');
     if (!preview) return;
 
+    const isDirectRequest = String(q.quotation_id).startsWith('dr_');
+
     preview.innerHTML = `
         <h4 style="margin: 0 0 15px 0; color: #2e7d32; display: flex; align-items: center; gap: 8px;">
-            <i class="fas fa-check-circle"></i> 
-            <span>Selected: ${escapeHtml(q.title)}</span>
+            <i class="fas ${isDirectRequest ? 'fa-bolt' : 'fa-check-circle'}"></i> 
+            <span>${isDirectRequest ? 'Direct Request' : 'Quotation'}: ${escapeHtml(q.title)}</span>
         </h4>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; font-size: 13px; margin-bottom: 15px;">
             <div><strong>Customer:</strong> ${escapeHtml(q.customer_fname)} ${escapeHtml(q.customer_lname)}</div>
             <div><strong>Budget Type:</strong> ${q.budget_type ? q.budget_type.toUpperCase() : 'Fixed'}</div>
             <div><strong>Payment:</strong> ${formatPaymentMethod(q.payment_method)}</div>
             <div><strong>Pricing:</strong> ${q.pricing_type ? (q.pricing_type === 'time_and_material' ? 'Time & Material' : 'Fixed Price') : 'Fixed Price'}</div>
-            <div><strong>Duration:</strong> ${q.estimated_duration || 'TBD'} days</div>
+            <div><strong>Duration:</strong> ${q.estimated_duration ? q.estimated_duration + ' days' : 'To be determined'}</div>
         </div>
-        <div style="padding: 12px; background: #fff3cd; border-radius: 6px; font-size: 12px; color: #856404;">
+        <div style="padding: 12px; background: ${isDirectRequest ? '#e3f2fd' : '#fff3cd'}; border-radius: 6px; font-size: 12px; color: ${isDirectRequest ? '#0d47a1' : '#856404'};">
             <i class="fas fa-info-circle"></i> <strong>Form will be auto-filled.</strong> 
-            Review all fields in the next steps and modify if needed.
+            ${isDirectRequest ? 'Since this is a direct request, please <strong>manually enter the budget</strong> and other terms.' : 'Review all fields in the next steps and modify if needed.'}
         </div>
     `;
     preview.style.display = 'block';
@@ -207,17 +209,17 @@ function autoFillContractForm(q) {
 
     // Step 1: Party Information (client and company details)
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '-'; };
-    
+
     setText('partyClientName', `${q.customer_fname} ${q.customer_lname}`);
     setText('partyClientEmail', q.customer_email);
     setText('partyClientAddress', q.customer_address);
     setText('partyClientDistrict', q.customer_district);
-    
+
     setText('partyCompanyName', q.company_name);
     setText('partyCompanyReg', q.company_registration);
     setText('partyCompanyAddress', q.company_address);
     setText('partyCompanyContact', q.company_contact);
-    
+
     // Show the parties section
     const partiesSection = document.getElementById('partiesSection');
     if (partiesSection) partiesSection.style.display = 'block';
@@ -245,7 +247,13 @@ function autoFillContractForm(q) {
     setFieldValue('projectDescription', q.description || q.request_description || q.request_title || '');
 
     // Step 3: Financial Terms (Phase 1 Business Logic)
-    setFieldValue('contractValue', q.total_amount);
+    const isDirectRequest = String(q.quotation_id).startsWith('dr_');
+    if (isDirectRequest) {
+        setFieldValue('contractValue', ''); // Force manual entry for direct requests
+    } else {
+        setFieldValue('contractValue', q.total_amount);
+    }
+
     setFieldValue('budgetType', q.budget_type || 'fixed');
     setFieldValue('budgetMin', q.budget_min || '');
     setFieldValue('budgetMax', q.budget_max || '');
@@ -869,14 +877,14 @@ function buildCardActions(contract) {
 
         if (!isProjectStarted) {
             // Contract accepted, project not started (placeholder project is still planned)
-            html += `<button class="card-action-btn" onclick="handleStartProjectFromContract(${id})" style="background: var(--primary-color); border: none; color: white; width: auto; padding: 0 16px; border-radius: 6px; font-weight: 600;" title="Start Project">
+            html += `<a href="#" onclick="handleStartProjectFromContract(${id}); return false;" class="action-btn primary small">
                 <i class="fas fa-rocket"></i> Start Project
-            </button>`;
+            </a>`;
         } else {
             // Project already started
-            html += `<button class="card-action-btn" onclick="window.location.href='projects.php'" style="background: var(--success); border: none; color: white; width: auto; padding: 0 16px; border-radius: 6px; font-weight: 600;" title="View Project">
+            html += `<a href="projects.php" class="action-btn success small">
                 <i class="fas fa-eye"></i> View Project
-            </button>`;
+            </a>`;
         }
     } else if (contract.chat_active == 1) {
         // Unread indicator dot

@@ -143,6 +143,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (shouldLoadQuotations) {
         loadSubmittedQuotations();
     }
+
+    // Load direct requests
+    loadDirectRequests();
 });
 
 // ================================================================
@@ -205,6 +208,35 @@ async function loadAvailableRequests() {
     } catch (error) {
         console.error('Error loading job requests:', error);
         showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Load direct job requests mapped to this company
+ */
+async function loadDirectRequests() {
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-direct-requests.php');
+        if (!response.ok) {
+            console.warn('Could not load direct requests');
+            return;
+        }
+
+        const result = await response.json();
+        if (result.success) {
+            directRequestsCache = result.data || [];
+
+            // update tab count
+            const directRequestsTabCount = document.getElementById('direct-requests-tab-count');
+            if (directRequestsTabCount) {
+                const pendingDirect = directRequestsCache.filter(r => r.status === 'pending');
+                directRequestsTabCount.textContent = pendingDirect.length;
+            }
+
+            renderDirectRequests();
+        }
+    } catch (error) {
+        console.error('Error loading direct requests:', error);
     }
 }
 
@@ -422,6 +454,140 @@ function createRequestCard(request) {
             </div>
         </article>
     `;
+}
+
+/**
+ * Render direct requests table UI
+ */
+function renderDirectRequests() {
+    const table = document.getElementById('direct-requests-table');
+    const tbody = document.getElementById('direct-requests-tbody');
+    const emptyState = document.getElementById('direct-requests-empty');
+
+    if (!table || !tbody || !emptyState) return;
+
+    if (directRequestsCache.length === 0) {
+        table.style.display = 'none';
+        emptyState.style.display = 'flex';
+        return;
+    }
+
+    table.style.display = 'table';
+    emptyState.style.display = 'none';
+
+    tbody.innerHTML = directRequestsCache.map(req => createDirectRequestRow(req)).join('');
+}
+
+function createDirectRequestRow(request) {
+    const customerName = escapeHtml((request.customer_fname || '') + ' ' + (request.customer_lname || '')).trim() || 'Unknown';
+    const dateReceived = new Date(request.created_at || new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const deadline = new Date(request.finish_date || new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    let statusClass = request.status === 'accepted' ? 'success' : (request.status === 'rejected' ? 'danger' : 'warning');
+    let statusLabel = request.status.charAt(0).toUpperCase() + request.status.slice(1);
+
+    let actionButtons = '';
+
+    if (request.status === 'pending') {
+        actionButtons = `
+            <button class="action-btn success small" onclick="acceptDirectRequest(${request.request_id})">
+                <i class="fas fa-check"></i> Accept
+            </button>
+            <button class="action-btn danger small" onclick="rejectDirectRequest(${request.request_id})">
+                <i class="fas fa-times"></i> Reject
+            </button>
+        `;
+    } else if (request.status === 'accepted') {
+        actionButtons = `
+            <a href="/2nd-Year-Group-Project/FixLanka/views/company/contracts.php" class="action-btn primary small">
+                <i class="fas fa-file-contract"></i> Create Contract
+            </a>
+        `;
+    }
+
+    return `
+        <tr>
+            <td>
+                <strong>${escapeHtml(request.title)}</strong><br>
+                <small class="text-secondary">${escapeHtml(request.category_name || 'General')} &bull; ${escapeHtml(request.district)}</small>
+            </td>
+            <td>
+                <div class="customer-info-inline">
+                    <span>${customerName}</span>
+                </div>
+            </td>
+            <td>${dateReceived}</td>
+            <td>${deadline}</td>
+            <td>
+                <span class="status-badge ${statusClass}">${statusLabel}</span>
+            </td>
+            <td>
+                <div class="action-buttons-inline">
+                    ${actionButtons}
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+async function acceptDirectRequest(requestId) {
+    const confirmed = await window.showConfirm('Are you sure you want to accept this direct request? You can proceed to create a contract afterwards.', {
+        title: 'Accept Request',
+        confirmText: 'Accept'
+    });
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-direct-requests-action.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request_id: requestId, action: 'accept' })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Direct request accepted successfully', 'success');
+            loadDirectRequests();
+        } else {
+            showToast(result.message || 'Failed to accept request', 'error');
+        }
+    } catch (error) {
+        console.error('Error accepting direct request:', error);
+        showToast('System error occurred', 'error');
+    }
+}
+
+async function rejectDirectRequest(requestId) {
+    const reason = await window.showPrompt('Please provide a reason for declining this request:', {
+        title: 'Decline Request',
+        confirmText: 'Decline',
+        placeholder: 'Reason for declining...'
+    });
+
+    if (!reason || reason.trim() === '') {
+        showToast('Decline cancelled - reason is required', 'info');
+        return;
+    }
+
+    try {
+        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-direct-requests-action.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request_id: requestId, action: 'reject' })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Direct request rejected successfully', 'success');
+            loadDirectRequests();
+        } else {
+            showToast(result.message || 'Failed to reject request', 'error');
+        }
+    } catch (error) {
+        console.error('Error rejecting direct request:', error);
+        showToast('System error occurred', 'error');
+    }
 }
 
 /**
@@ -2107,90 +2273,6 @@ async function viewDirectRequestDetails(requestId) {
 
     requestDetailsModal.classList.add('active');
     document.body.style.overflow = 'hidden';
-}
-
-/**
- * Accept a direct request
- * @param {number} requestId - ID of the request to accept
- */
-async function acceptDirectRequest(requestId) {
-    const confirmed = await window.showConfirm('Accept this direct request? This will create a contract with the customer.', {
-        title: 'Accept Request',
-        confirmText: 'Accept'
-    });
-
-    if (!confirmed) {
-        return;
-    }
-
-    try {
-        // Future: API call to accept direct request
-        // For now, show placeholder message
-        showToast('Direct requests feature coming soon! This will create a contract.', 'info', 5000);
-
-        // Future implementation:
-        // const response = await fetch('/api/direct-requests.php', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify({ action: 'accept', request_id: requestId })
-        // });
-        // if (response.ok) {
-        //     showToast('Request accepted successfully!', 'success');
-        //     loadDirectRequests(); // Reload
-        // }
-    } catch (error) {
-        console.error('Error accepting request:', error);
-        showToast('Error accepting request: ' + error.message, 'error');
-    }
-}
-
-/**
- * Reject a direct request
- * @param {number} requestId - ID of the request to reject
- */
-async function rejectDirectRequest(requestId) {
-    const reason = await window.showPrompt('Please provide a reason for declining this request:', {
-        title: 'Decline Request',
-        confirmText: 'Decline',
-        placeholder: 'Reason for declining...'
-    });
-
-    if (!reason || reason.trim() === '') {
-        showToast('Decline cancelled - reason is required', 'info');
-        return;
-    }
-
-    try {
-        // Future: API call to reject direct request
-        showToast('Direct requests feature coming soon! Reason: ' + reason, 'info', 5000);
-
-        // Future implementation:
-        // const response = await fetch('/api/direct-requests.php', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify({ 
-        //         action: 'reject', 
-        //         request_id: requestId,
-        //         reason: reason 
-        //     })
-        // });
-        // if (response.ok) {
-        //     showToast('Request declined', 'success');
-        //     loadDirectRequests(); // Reload
-        // }
-    } catch (error) {
-        console.error('Error rejecting request:', error);
-        showToast('Error declining request: ' + error.message, 'error');
-    }
-}
-
-/**
- * Contact customer about expired direct request
- * @param {number} customerId - ID of the customer to contact
- */
-function contactCustomer(customerId) {
-    // Future: Open messaging system or show customer contact details
-    showToast('Customer contact feature coming soon!', 'info', 3000);
 }
 
 // Make direct request functions globally accessible

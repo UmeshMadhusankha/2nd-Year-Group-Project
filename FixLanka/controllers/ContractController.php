@@ -505,11 +505,59 @@ class ContractController {
 
                 if (!$projectIdValid) {
                     $quotationId = $data['quotation_id'] ?? null;
-                    if (empty($quotationId) || !is_numeric($quotationId)) {
+                    $isDirectRequest = is_string($quotationId) && strpos($quotationId, 'dr_') === 0;
+
+                    if (empty($quotationId)) {
                         throw new Exception("project_id is invalid; quotation_id is required to create a project");
                     }
 
-                    $qStmt = $this->pdo->prepare("
+                    $quotation = null;
+
+                    if ($isDirectRequest) {
+                        $actualReqId = (int)substr($quotationId, 3);
+                        $qStmt = $this->pdo->prepare("
+                            SELECT djr.*, 
+                                   djr.user_id AS customer_id,
+                                   djr.title AS request_title,
+                                   djr.description AS request_description,
+                                   djr.address,
+                                   djr.district,
+                                   cat.name AS request_category_name
+                            FROM directjobrequest djr
+                            LEFT JOIN category cat ON djr.category_id = cat.category_id
+                            WHERE djr.request_id = ?
+                              AND djr.status = 'accepted'
+                              AND djr.provider_id = ?
+                              AND djr.provider_type = 'company'
+                            LIMIT 1
+                        ");
+                        $qStmt->execute([$actualReqId, $companyId]);
+                        $quotation = $qStmt->fetch(PDO::FETCH_ASSOC);
+
+                        if (!$quotation) {
+                            throw new Exception('Direct request not found, not accepted, or not authorized');
+                        }
+
+                        // update direct job request status so it doesn't appear in 'Available Quotations' dropdown again
+                        $updateStmt = $this->pdo->prepare("UPDATE directjobrequest SET status = 'in_progress' WHERE request_id = ?");
+                        $updateStmt->execute([$actualReqId]);
+
+                        $quotation['request_id'] = $actualReqId;
+                        $quotation['total_amount'] = 0;
+                        $quotation['start_date'] = null;
+                        $quotation['completion_date'] = $quotation['finish_date'] ?? null;
+                        
+                        $quotationForUnitPricing = null;
+                        // For the contract model creation down the line, we don't have a true quotation_id
+                        $data['quotation_id'] = null;
+                        $data['job_request_id'] = $actualReqId;
+
+                    } else {
+                        if (!is_numeric($quotationId)) {
+                            throw new Exception("project_id is invalid; quotation_id is invalid");
+                        }
+
+                        $qStmt = $this->pdo->prepare("
                         SELECT q.*, 
                                jr.user_id AS customer_id,
                                jr.request_id,
@@ -534,6 +582,7 @@ class ContractController {
                     }
 
                     $quotationForUnitPricing = $quotation;
+                }
 
                     $resolvedProjectTitle = trim($data['project_title'] ?? '') !== '' ? trim($data['project_title']) : ($quotation['title'] ?? $quotation['request_title'] ?? 'Project');
                     $resolvedProjectDescription = trim($data['project_description'] ?? '') !== '' ? trim($data['project_description']) : ($quotation['description'] ?? $quotation['request_description'] ?? null);
@@ -588,8 +637,10 @@ class ContractController {
                 // If we didn't load the quotation above (project already existed), load it for unit-pricing rules.
                 if ($quotationForUnitPricing === null) {
                     $quotationId = $data['quotation_id'] ?? null;
-                    if (!empty($quotationId) && is_numeric($quotationId)) {
-                                                $qUnitStmt = $this->pdo->prepare("
+                    $isDirectReqMode = is_string($quotationId) && strpos($quotationId, 'dr_') === 0;
+
+                    if (!empty($quotationId) && is_numeric($quotationId) && !$isDirectReqMode) {
+                        $qUnitStmt = $this->pdo->prepare("
                             SELECT *
                             FROM companyquotation
                             WHERE quotation_id = ?
@@ -1442,10 +1493,10 @@ class ContractController {
             error_log("[ContractController] PDO connection OK");
             
             // Get all accepted quotations without contracts
-            // Include full details for auto-fill
+            // And also all accepted direct job requests
             $stmt = $pdo->prepare("
                 SELECT 
-                    q.quotation_id,
+                    CAST(q.quotation_id AS CHAR) as quotation_id,
                     q.request_id,
                     q.title,
                     q.description,
@@ -1486,7 +1537,8 @@ class ContractController {
                     comp.registration_no as company_registration,
                     COALESCE(c_loc.address, comp.address, uc.address) as company_address,
                     comp.contact_no as company_contact,
-                    COALESCE(comp.email, uc.email) as company_email
+                    COALESCE(comp.email, uc.email) as company_email,
+                    q.updated_at
                 FROM companyquotation q
                 INNER JOIN jobrequest r ON q.request_id = r.request_id
                 LEFT JOIN category cat ON r.category_id = cat.category_id
@@ -1496,13 +1548,72 @@ class ContractController {
                 LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
                 LEFT JOIN contract c ON c.quotation_id = q.quotation_id
                 WHERE q.status = 'accepted'
-                AND (q.company_id = ? OR (q.company_id IS NULL AND q.user_id = ?))
+                AND (q.company_id = :comp_id OR (q.company_id IS NULL AND q.user_id = :comp_id2))
                 AND c.contract_id IS NULL
-                ORDER BY q.updated_at DESC
+
+                UNION ALL
+
+                SELECT 
+                    CONCAT('dr_', djr.request_id) as quotation_id,
+                    djr.request_id,
+                    djr.title,
+                    djr.description,
+                    0 as total_amount,
+                    'fixed' as budget_type,
+                    NULL as budget_min,
+                    NULL as budget_max,
+                    'milestone_based' as payment_method,
+                    'fixed_price' as pricing_type,
+                    0 as hourly_rate,
+                    1.10 as spending_cap_multiplier,
+                    NULL as start_date,
+                    djr.finish_date as completion_date,
+                    0 as estimated_duration,
+                    0 as labor_cost,
+                    0 as material_cost,
+                    0 as transport_cost,
+                    0 as other_charges,
+                    NULL as labor_unit_label,
+                    NULL as material_unit_label,
+                    NULL as warranty_period,
+                    NULL as payment_terms,
+                    NULL as additional_terms,
+                    djr.address as request_address,
+                    djr.district as request_district,
+                    djr.address as location,
+                    djr.district,
+                    djr.title as request_title,
+                    cat.name as category_name,
+                    cat.name as request_category_name,
+                    u.user_id as customer_id,
+                    u.f_name as customer_fname,
+                    u.l_name as customer_lname,
+                    u.email as customer_email,
+                    u.address as customer_address,
+                    u.district as customer_district,
+                    comp.name as company_name,
+                    comp.registration_no as company_registration,
+                    COALESCE(c_loc.address, comp.address) as company_address,
+                    comp.contact_no as company_contact,
+                    comp.email as company_email,
+                    djr.date_created as updated_at
+                FROM directjobrequest djr
+                LEFT JOIN category cat ON djr.category_id = cat.category_id
+                INNER JOIN user u ON djr.user_id = u.user_id
+                INNER JOIN company comp ON comp.company_id = djr.provider_id AND djr.provider_type = 'company'
+                LEFT JOIN location c_loc ON comp.location_id = c_loc.location_id
+                WHERE djr.status = 'accepted'
+                AND djr.provider_id = :comp_id3
+                
+                ORDER BY updated_at DESC
             ");
             
             error_log("[ContractController] Executing query with company_id: " . $companyId);
-            $stmt->execute([$companyId, $companyId]);
+            $stmt->execute([
+                ':comp_id' => $companyId,
+                ':comp_id2' => $companyId,
+                ':comp_id3' => $companyId
+            ]);
             error_log("[ContractController] Query executed successfully");
             
             $quotations = $stmt->fetchAll(PDO::FETCH_ASSOC);
