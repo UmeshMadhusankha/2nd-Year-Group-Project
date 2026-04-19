@@ -866,10 +866,10 @@ if (!$userId) {
                                     </div>
                                     <div class="form-group">
                                         <label for="taxInclusive">Tax Inclusion</label>
-                                        <select id="taxInclusive" name="tax_inclusive">
-                                            <option value="1">All taxes included</option>
-                                            <option value="0">Taxes additional</option>
+                                        <select id="taxInclusive" name="tax_inclusive_display" disabled style="background-color: #f7fafc; cursor: not-allowed;">
+                                            <option value="1" selected>All taxes included</option>
                                         </select>
+                                        <input type="hidden" id="taxInclusive_hidden" name="tax_inclusive" value="1">
                                     </div>
                                 </div>
 

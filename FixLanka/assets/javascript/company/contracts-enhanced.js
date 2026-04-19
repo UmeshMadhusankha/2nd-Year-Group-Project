@@ -1222,6 +1222,9 @@ function applyFilters() {
 
     if (statusFilter) {
         filteredData = filteredData.filter(contract => contract.status === statusFilter);
+    } else {
+        // By default, hide terminated and cancelled contracts from the general list
+        filteredData = filteredData.filter(contract => contract.status !== 'terminated' && contract.status !== 'cancelled');
     }
 
     if (typeFilter) {
@@ -2277,7 +2280,7 @@ function populateFormWithContract(data) {
     setVal('budgetType', data.budget_type || 'fixed');
     setVal('budgetMin', data.budget_min || '');
     setVal('budgetMax', data.budget_max || '');
-    setVal('taxInclusive', data.tax_inclusive);
+    setVal('taxInclusive', 1); // Locked to 'All taxes included'
     setVal('paymentMethod', data.payment_method || 'milestone_based');
     setVal('pricingType', data.pricing_type || 'fixed_price');
     setVal('hourlyRate', data.hourly_rate || '');

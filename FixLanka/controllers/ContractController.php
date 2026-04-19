@@ -55,7 +55,9 @@ class ContractController {
                 return;
             }
 
-            $contracts = $this->model->getAllForCustomer($customerId);
+            $status = $_GET['status'] ?? null;
+            $includeTerminated = ($status === 'terminated' || $status === 'cancelled');
+            $contracts = $this->model->getAllForCustomer($customerId, $includeTerminated);
 
             $formattedContracts = array_map(function($contract) {
                 $actualStatus = $contract['contract_status'] ?? 'draft';
@@ -232,7 +234,9 @@ class ContractController {
                 return;
             }
 
-            $contracts = $this->model->getAll($companyId);
+            $status = $_GET['status'] ?? null;
+            $includeTerminated = ($status === 'terminated' || $status === 'cancelled');
+            $contracts = $this->model->getAll($companyId, $includeTerminated);
             
             // Format contracts for frontend
             $formattedContracts = array_map(function($contract) {

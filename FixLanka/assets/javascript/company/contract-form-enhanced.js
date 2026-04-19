@@ -798,9 +798,9 @@
     // PAYMENT METHOD CHANGE HANDLER
     // ===================================
     function onPaymentMethodChange() {
-        if (unitPricingMode.active) {
+        const paymentMethodEl = document.getElementById('paymentMethod');
+        if (unitPricingMode.active && (!paymentMethodEl || !paymentMethodEl.value)) {
             setVal('paymentMethod', 'milestone_based');
-            const paymentMethodEl = document.getElementById('paymentMethod');
             if (paymentMethodEl) paymentMethodEl.value = 'milestone_based';
         }
 
@@ -1946,17 +1946,15 @@
             return;
         }
 
-        // Unit-priced mode: milestone-based only.
+        // Unit-priced mode: keep payment methods flexible.
+        // We no longer force milestone-based or disable the dropdown.
         if (paymentMethodEl) {
-            paymentMethodEl.value = 'milestone_based';
             Array.from(paymentMethodEl.options || []).forEach(opt => {
-                const keep = opt.value === 'milestone_based';
-                opt.disabled = !keep;
-                opt.hidden = !keep;
+                opt.disabled = false;
+                opt.hidden = false;
             });
-            paymentMethodEl.disabled = true;
+            paymentMethodEl.disabled = false;
         }
-        setVal('paymentMethod', 'milestone_based');
 
         // Unit-priced mode: fixed pricing type (no hourly/time-based pricing).
         if (pricingTypeEl) {

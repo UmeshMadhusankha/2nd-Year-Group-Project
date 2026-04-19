@@ -10,7 +10,7 @@ class ContractModel {
     /**
      * Get all contracts for a specific customer (user) with company details.
      */
-    public function getAllForCustomer($customerId) {
+    public function getAllForCustomer($customerId, $includeTerminated = false) {
         $query = "SELECT 
                     c.contract_id,
                     c.project_id,
@@ -71,8 +71,13 @@ class ContractModel {
                         ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
                         LIMIT 1
                 )
-                WHERE c.customer_id = :customer_id
-                ORDER BY c.contract_date DESC";
+                WHERE c.customer_id = :customer_id";
+        
+        if (!$includeTerminated) {
+            $query .= " AND c.status != 'terminated' AND (c.customer_response IS NULL OR c.customer_response != 'rejected')";
+        }
+        
+        $query .= " ORDER BY c.contract_date DESC";
 
         try {
             $stmt = $this->conn->prepare($query);
@@ -189,7 +194,7 @@ class ContractModel {
     /**
      * Get all contracts with project and customer details
      */
-    public function getAll($companyId = null) {
+    public function getAll($companyId = null, $includeTerminated = false) {
         $query = "SELECT 
                     c.contract_id,
                     c.project_id,
@@ -245,8 +250,17 @@ class ContractModel {
                                         LIMIT 1
                                 )";
         
+        $where = [];
         if ($companyId !== null) {
-            $query .= " WHERE c.company_id = :company_id";
+            $where[] = "c.company_id = :company_id";
+        }
+        
+        if (!$includeTerminated) {
+            $where[] = "c.status != 'terminated' AND (c.customer_response IS NULL OR c.customer_response != 'rejected')";
+        }
+        
+        if (!empty($where)) {
+            $query .= " WHERE " . implode(' AND ', $where);
         }
         
         $query .= " ORDER BY c.contract_date DESC";
