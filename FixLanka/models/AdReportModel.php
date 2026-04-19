@@ -291,6 +291,29 @@ class AdReportModel
         ];
     }
 
+    public function submitReport(int $adId, int $reporterId, string $reporterType, string $issueType, string $description, string $priority = 'medium'): bool
+    {
+        if (!$this->tableExists('adreport')) {
+            throw new RuntimeException('adreport table not found.');
+        }
+
+        $issueType = $this->normalizeIssueType($issueType);
+
+        $sql = "
+            INSERT INTO adreport (ad_id, reporter_id, reporter_type, issue_type, description, priority, status, created_at)
+            VALUES (:ad_id, :reporter_id, :reporter_type, :issue_type, :description, :priority, 'pending', NOW())
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([
+            ':ad_id' => $adId,
+            ':reporter_id' => $reporterId,
+            ':reporter_type' => $reporterType,
+            ':issue_type' => $issueType,
+            ':description' => $description,
+            ':priority' => $priority
+        ]);
+    }
+
     private function normalizeIssueType(string $issueType): string
     {
         $t = strtolower(trim($issueType));
@@ -310,6 +333,14 @@ class AdReportModel
             'duplicate listing' => 'other',
             'expired advertisement' => 'other',
             'unverified claims' => 'other',
+            'technical_issue' => 'other',
+            'technical issue' => 'other',
+            'performance_tracking' => 'other',
+            'display_issue' => 'other',
+            'billing_payment' => 'other',
+            'scheduling_lead_time' => 'other',
+            'reach_impressions' => 'other',
+            'rejection_inquiry' => 'other',
             'other' => 'other',
         ];
 

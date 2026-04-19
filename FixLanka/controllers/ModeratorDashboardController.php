@@ -12,6 +12,13 @@ class ModeratorDashboardController
 
     public function __construct($pdo)
     {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        if (!isset($_SESSION['user_role']) || !in_array($_SESSION['user_role'], ['admin', 'moderator'])) {
+            require_once __DIR__ . '/../config/session.php';
+            requireRole(['admin', 'moderator']);
+        }
         $this->pdo = $pdo;
         $this->model = new ModeratorDashboardModel($this->pdo);
     }

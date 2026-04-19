@@ -146,17 +146,9 @@ switch ($normalizedType) {
 }
 
 try {
-    $setClauses = [];
-    $params = [':id' => $accountId];
     $moderationUntil = null;
-
-    $hasAccountStatus = columnExists($pdo, $table, 'account_status');
-    $hasReason = columnExists($pdo, $table, 'moderation_reason');
-    $hasNotes = columnExists($pdo, $table, 'moderation_notes');
-    $hasSuspendedUntil = columnExists($pdo, $table, 'suspended_until');
-    $hasBannedPermanent = columnExists($pdo, $table, 'banned_permanent');
-    $hasUpdatedAt = columnExists($pdo, $table, 'updated_at');
-    $hasIsDeleted = columnExists($pdo, $table, 'is_deleted');
+    $statusValue = 'ACTIVE';
+    $isPermanent = 0;
 
     if ($action === 'suspend') {
         $duration = trim((string)($_POST['duration'] ?? ''));
@@ -167,116 +159,78 @@ try {
             respondAndExit(false, 'Please choose a valid suspension duration.', 400);
         }
 
-        if ($hasAccountStatus) {
-            $setClauses[] = 'account_status = :account_status';
-            $params[':account_status'] = 'SUSPENDED';
-        } elseif ($hasIsDeleted) {
-            $setClauses[] = 'is_deleted = :is_deleted';
-            $params[':is_deleted'] = 1;
-        } else {
-            respondAndExit(false, 'This account table does not support suspension fields.', 400);
-        }
-
-        if ($hasSuspendedUntil) {
-            $setClauses[] = 'suspended_until = :suspended_until';
-            $moderationUntil = date('Y-m-d H:i:s', strtotime('+' . $days . ' days'));
-            $params[':suspended_until'] = $moderationUntil;
-        } else {
-            $moderationUntil = date('Y-m-d H:i:s', strtotime('+' . $days . ' days'));
-        }
-
-        if ($hasReason) {
-            $setClauses[] = 'moderation_reason = :moderation_reason';
-            $params[':moderation_reason'] = $reason;
-        }
-
-        if ($hasNotes) {
-            $setClauses[] = 'moderation_notes = :moderation_notes';
-            $params[':moderation_notes'] = $notes;
-        }
-
-        if ($hasBannedPermanent) {
-            $setClauses[] = 'banned_permanent = :banned_permanent';
-            $params[':banned_permanent'] = 0;
-        }
+        $statusValue = 'SUSPENDED';
+        $moderationUntil = date('Y-m-d H:i:s', strtotime('+' . $days . ' days'));
+        $isPermanent = 0;
     } elseif ($action === 'ban') {
-        if ($hasAccountStatus) {
-            $setClauses[] = 'account_status = :account_status';
-            $params[':account_status'] = 'BANNED';
-        } elseif ($hasIsDeleted) {
-            $setClauses[] = 'is_deleted = :is_deleted';
-            $params[':is_deleted'] = 1;
-        } else {
-            respondAndExit(false, 'This account table does not support ban fields.', 400);
-        }
-
-        if ($hasReason) {
-            $setClauses[] = 'moderation_reason = :moderation_reason';
-            $params[':moderation_reason'] = $reason;
-        }
-
-        if ($hasNotes) {
-            $setClauses[] = 'moderation_notes = :moderation_notes';
-            $params[':moderation_notes'] = $notes;
-        }
-
-        if ($hasBannedPermanent) {
-            $setClauses[] = 'banned_permanent = :banned_permanent';
-            $params[':banned_permanent'] = 1;
-        }
-
-        if ($hasSuspendedUntil) {
-            $setClauses[] = 'suspended_until = :suspended_until';
-            $params[':suspended_until'] = null;
-        }
+        $statusValue = 'BANNED';
+        $isPermanent = 1;
+        $moderationUntil = null;
     } else {
+        $statusValue = 'ACTIVE';
+        $isPermanent = 0;
+        $moderationUntil = null;
+    }
+
+    // 1. Update/Insert into Centralized Moderation Status Table
+    $stmt = $pdo->prepare(
+        "INSERT INTO account_moderation_status 
+        (account_id, account_type, account_status, banned_permanent, suspended_until, moderation_reason, updated_by)
+        VALUES (:id, :type, :status, :perm, :until, :reason, :by)
+        ON DUPLICATE KEY UPDATE 
+            account_status = VALUES(account_status),
+            banned_permanent = VALUES(banned_permanent),
+            suspended_until = VALUES(suspended_until),
+            moderation_reason = VALUES(moderation_reason),
+            updated_by = VALUES(updated_by),
+            last_updated = CURRENT_TIMESTAMP"
+    );
+
+    $stmt->execute([
+        ':id' => $accountId,
+        ':type' => ucfirst($normalizedType),
+        ':status' => $statusValue,
+        ':perm' => $isPermanent,
+        ':until' => $moderationUntil,
+        ':reason' => $action === 'restore' ? null : $reason,
+        ':by' => (string)($_SESSION['username'] ?? 'admin')
+    ]);
+
+    // 2. Legacy Support: Update individual tables IF columns exist
+    $hasAccountStatus = columnExists($pdo, $table, 'account_status');
+    $hasReason = columnExists($pdo, $table, 'moderation_reason');
+    $hasSuspendedUntil = columnExists($pdo, $table, 'suspended_until');
+    $hasBannedPermanent = columnExists($pdo, $table, 'banned_permanent');
+
+    if ($hasAccountStatus || $hasReason || $hasSuspendedUntil || $hasBannedPermanent) {
+        $legacyUpdates = [];
+        $legacyParams = [':id' => $accountId];
+
         if ($hasAccountStatus) {
-            $setClauses[] = 'account_status = :account_status';
-            $params[':account_status'] = 'ACTIVE';
+            $legacyUpdates[] = "account_status = :status";
+            $legacyParams[':status'] = $statusValue;
         }
-
-        if ($hasIsDeleted) {
-            $setClauses[] = 'is_deleted = :is_deleted';
-            $params[':is_deleted'] = 0;
-        }
-
         if ($hasReason) {
-            $setClauses[] = 'moderation_reason = :moderation_reason';
-            $params[':moderation_reason'] = null;
+            $legacyUpdates[] = "moderation_reason = :reason";
+            $legacyParams[':reason'] = ($action === 'restore' ? null : $reason);
         }
-
-        if ($hasNotes) {
-            $setClauses[] = 'moderation_notes = :moderation_notes';
-            $params[':moderation_notes'] = null;
-        }
-
         if ($hasSuspendedUntil) {
-            $setClauses[] = 'suspended_until = :suspended_until';
-            $params[':suspended_until'] = null;
+            $legacyUpdates[] = "suspended_until = :until";
+            $legacyParams[':until'] = $moderationUntil;
         }
-
         if ($hasBannedPermanent) {
-            $setClauses[] = 'banned_permanent = :banned_permanent';
-            $params[':banned_permanent'] = 0;
+            $legacyUpdates[] = "banned_permanent = :perm";
+            $legacyParams[':perm'] = $isPermanent;
         }
 
-        if (empty($setClauses)) {
-            respondAndExit(false, 'No restorable moderation fields found for this account type.', 400);
+        if (!empty($legacyUpdates)) {
+            $sql = "UPDATE `{$table}` SET " . implode(', ', $legacyUpdates) . " WHERE `{$idColumn}` = :id";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($legacyParams);
         }
     }
 
-    if ($hasUpdatedAt) {
-        $setClauses[] = 'updated_at = CURRENT_TIMESTAMP';
-    }
-
-    if (empty($setClauses)) {
-        respondAndExit(false, 'No updatable moderation fields found.', 400);
-    }
-
-    $sql = "UPDATE `{$table}` SET " . implode(', ', $setClauses) . " WHERE `{$idColumn}` = :id";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-
+    // 3. Insert into Moderation Log
     insertModerationLog(
         $pdo,
         $normalizedType,
@@ -296,5 +250,5 @@ try {
     respondAndExit(true, $message, 200);
 } catch (Throwable $e) {
     error_log('Account moderation API error: ' . $e->getMessage());
-    respondAndExit(false, 'Failed to apply moderation action.', 500);
+    respondAndExit(false, 'Failed to apply moderation action: ' . $e->getMessage(), 500);
 }

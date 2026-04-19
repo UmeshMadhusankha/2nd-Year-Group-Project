@@ -19,6 +19,7 @@ class AdvertisementFilters {
 
     init() {
         this.setupEventListeners();
+        this.setupReportModal();
         this.loadAdvertisements();
     }
 
@@ -347,6 +348,13 @@ class AdvertisementFilters {
         buttons.push(`
             <button class="action-btn-ad view" onclick="advertisementFilters.viewAdDetails(${ad.id})" title="View details">
                 <i class="fas fa-eye"></i> View
+            </button>
+        `);
+
+        // Add Report Issue button (available for all ads)
+        buttons.push(`
+            <button class="action-btn-ad warning" onclick="advertisementFilters.reportIssue(${ad.id})" title="Report issue with this ad">
+                <i class="fas fa-flag"></i> Report
             </button>
         `);
 
@@ -1107,12 +1115,100 @@ class AdvertisementFilters {
             alert('Error archiving advertisement. Please try again.');
         }
     }
+
+    // ============================================
+    // REPORTING LOGIC
+    // ============================================
+
+    setupReportModal() {
+        const modal = document.getElementById('reportAdModal');
+        const form = document.getElementById('reportAdForm');
+        const closeBtn = document.getElementById('closeReportModal');
+        const cancelBtn = document.getElementById('cancelReport');
+
+        if (!modal || !form) return;
+
+        const closeModal = () => {
+            modal.classList.remove('active');
+            form.reset();
+        };
+
+        if (closeBtn) closeBtn.onclick = closeModal;
+        if (cancelBtn) cancelBtn.onclick = closeModal;
+
+        window.onclick = (event) => {
+            if (event.target === modal) closeModal();
+        };
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            await this.submitAdReport();
+        };
+    }
+
+    reportIssue(adId) {
+        const modal = document.getElementById('reportAdModal');
+        const adIdInput = document.getElementById('reportAdId');
+
+        if (modal && adIdInput) {
+            adIdInput.value = adId;
+            modal.classList.add('active');
+        }
+    }
+
+    async submitAdReport() {
+        const form = document.getElementById('reportAdForm');
+        const btn = document.getElementById('submitReportBtn');
+        const modal = document.getElementById('reportAdModal');
+
+        if (!form || !btn) return;
+
+        const originalBtnHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+        try {
+            const formData = {
+                ad_id: form.ad_id.value,
+                issue_type: form.issue_type.value,
+                description: form.description.value
+            };
+
+            const response = await fetch('../../api/ad-report-submit.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                if (window.showAlert) {
+                    await window.showAlert(result.message || 'Report submitted successfully.', 'success', 'Report Submitted');
+                } else {
+                    alert(result.message || 'Report submitted successfully. Our moderators will review it shortly.');
+                }
+                this.closeReportModal();
+            } else {
+                throw new Error(result.error || 'Failed to submit report');
+            }
+        } catch (error) {
+            console.error('Error submitting report:', error);
+            if (window.showAlert) {
+                window.showAlert(error.message || 'An error occurred. Please try again.', 'danger', 'Submission Error');
+            } else {
+                alert(error.message || 'An error occurred. Please try again.');
+            }
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHtml;
+        }
+    }
 }
 
 // Initialize on page load
-let advertisementFilters;
+window.advertisementFilters = null;
 document.addEventListener('DOMContentLoaded', () => {
-    advertisementFilters = new AdvertisementFilters();
+    window.advertisementFilters = new AdvertisementFilters();
 });
 
 // Global functions for ad actions

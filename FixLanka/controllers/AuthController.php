@@ -201,6 +201,14 @@ class AuthController {
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($user && password_verify($password, $user['password'])) {
+                // Check moderation status
+                $blockedReason = $this->isAccountBlocked((int)$user['user_id'], 'User');
+                if ($blockedReason) {
+                    $_SESSION['error'] = 'Access Denied: ' . $blockedReason;
+                    header('Location: /2nd-Year-Group-Project/FixLanka/login');
+                    exit;
+                }
+
                 $this->establishAuthenticatedSession(
                     (int)$user['user_id'],
                     $user['f_name'] . ' ' . $user['l_name'],
@@ -256,11 +264,23 @@ class AuthController {
             }
             
             // Try to find user in Moderator table
-            $stmt = $this->pdo->prepare("SELECT moderator_id, username, email, password FROM Moderator WHERE email = ?");
+            $stmt = $this->pdo->prepare("SELECT moderator_id, username, email, password, status FROM Moderator WHERE email = ?");
             $stmt->execute([$email]);
             $moderator = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($moderator && password_verify($password, $moderator['password'])) {
+                // Check moderation status (centralized + legacy)
+                $blockedReason = $this->isAccountBlocked((int)$moderator['moderator_id'], 'Moderator');
+                if (!$blockedReason && ($moderator['status'] ?? '') === 'suspended') {
+                    $blockedReason = 'Your account has been suspended.';
+                }
+
+                if ($blockedReason) {
+                    $_SESSION['error'] = 'Access Denied: ' . $blockedReason;
+                    header('Location: /2nd-Year-Group-Project/FixLanka/login');
+                    exit;
+                }
+
                 $this->establishAuthenticatedSession(
                     (int)$moderator['moderator_id'],
                     (string)$moderator['username'],
@@ -291,6 +311,14 @@ class AuthController {
             $company = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($company && password_verify($password, $company['password'])) {
+                // Check moderation status
+                $blockedReason = $this->isAccountBlocked((int)$company['company_id'], 'Company');
+                if ($blockedReason) {
+                    $_SESSION['error'] = 'Access Denied: ' . $blockedReason;
+                    header('Location: /2nd-Year-Group-Project/FixLanka/login');
+                    exit;
+                }
+
                 $this->establishAuthenticatedSession(
                     (int)$company['company_id'],
                     (string)$company['name'],
@@ -321,6 +349,14 @@ class AuthController {
             $repairer = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($repairer && password_verify($password, $repairer['password'])) {
+                // Check moderation status
+                $blockedReason = $this->isAccountBlocked((int)$repairer['repairer_id'], 'Repairer');
+                if ($blockedReason) {
+                    $_SESSION['error'] = 'Access Denied: ' . $blockedReason;
+                    header('Location: /2nd-Year-Group-Project/FixLanka/login');
+                    exit;
+                }
+
                 $this->establishAuthenticatedSession(
                     (int)$repairer['repairer_id'],
                     $repairer['f_name'] . ' ' . $repairer['l_name'],
@@ -806,6 +842,40 @@ class AuthController {
         return false;
     }
     
+    /**
+     * Check if an account is blocked via the centralized moderation system
+     * @return string|null The reason if blocked, or null if active
+     */
+    private function isAccountBlocked(int $id, string $type): ?string {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT account_status, moderation_reason, suspended_until, banned_permanent 
+                FROM account_moderation_status 
+                WHERE account_id = ? AND account_type = ?
+            ");
+            $stmt->execute([$id, ucfirst($type)]);
+            $status = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$status) return null;
+
+            if ($status['account_status'] === 'BANNED' || ($status['banned_permanent'] ?? 0) == 1) {
+                return 'Your account has been permanently banned. Reason: ' . ($status['moderation_reason'] ?: 'Violation of terms.');
+            }
+
+            if ($status['account_status'] === 'SUSPENDED') {
+                $until = $status['suspended_until'] ? strtotime($status['suspended_until']) : 0;
+                if ($until > time()) {
+                    return 'Your account is suspended until ' . date('Y-m-d H:i', $until) . '. Reason: ' . ($status['moderation_reason'] ?: 'N/A');
+                }
+            }
+
+            return null;
+        } catch (Throwable $e) {
+            error_log("Moderation check failed: " . $e->getMessage());
+            return null;
+        }
+    }
+
     public function logout() {
         // Start session if not started
         if (session_status() === PHP_SESSION_NONE) {

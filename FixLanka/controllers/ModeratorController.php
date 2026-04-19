@@ -27,24 +27,15 @@ class ModeratorController {
             session_start();
         }
         
-        // Check if admin is logged in
-        $this->checkAuthentication();
+        // Ensure user is authenticated as admin
+        requireRole('admin');
+        
+        $this->currentAdmin = $_SESSION['user_name'] ?? $_SESSION['admin_id'] ?? 'Admin';
         
         // Initialize model
         $this->model = new ModeratorModel($pdo);
     }
     
-    /**
-     * Check if user is authenticated as admin
-     */
-    private function checkAuthentication() {
-        // TODO: Replace with your actual admin authentication check
-        if (!isset($_SESSION['admin']) || empty($_SESSION['admin'])) {
-            $_SESSION['admin'] = 'admin'; // Default for testing
-        }
-        
-        $this->currentAdmin = $_SESSION['admin'];
-    }
     
     /**
      * Main entry point - Route requests based on action
@@ -59,10 +50,7 @@ class ModeratorController {
                     $this->createModerator();
                     break;
                 
-                case 'update':
-                case 'edit':
-                    $this->updateModerator();
-                    break;
+                
                 
                 case 'reset_password':
                     $this->resetPassword();
@@ -103,7 +91,6 @@ class ModeratorController {
         $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
         $confirm_password = $_POST['confirm_password'] ?? '';
-        $assigned_section = trim($_POST['assigned_section'] ?? '');
         
         // Username validation
         if (empty($username)) {
@@ -131,13 +118,8 @@ class ModeratorController {
             $errors = array_merge($errors, $passwordErrors);
         }
         
-        // Assigned section validation
-        $validSections = ['Advertisements', 'User Reports', 'Content Moderation', 'Financial Reports', 'System Monitoring'];
-        if (empty($assigned_section)) {
-            $errors[] = "Assigned section is required";
-        } elseif (!in_array($assigned_section, $validSections)) {
-            $errors[] = "Invalid assigned section";
-        }
+        // No section validation needed
+        
         
         if (!empty($errors)) {
             $this->redirect('error', implode(', ', $errors));
@@ -157,14 +139,13 @@ class ModeratorController {
         
         // Create moderator with secure password
         $hashedPassword = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
-        $moderator_id = $this->model->createModerator($username, $email, $hashedPassword, $assigned_section);
+        $moderator_id = $this->model->createModerator($username, $email, $hashedPassword);
         
         if ($moderator_id) {
             // Log action
             $this->model->logAction($this->currentAdmin, $moderator_id, 'created', null, [
                 'username' => $username,
-                'email' => $email,
-                'section' => $assigned_section
+                'email' => $email
             ]);
             
             $this->redirect('success', "Moderator '{$username}' created successfully!");
@@ -176,77 +157,6 @@ class ModeratorController {
     /**
      * Update an existing moderator (email and section only)
      */
-    private function updateModerator() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('error', 'Invalid request method');
-            return;
-        }
-        
-        $moderator_id = (int)($_POST['moderator_id'] ?? 0);
-        
-        if ($moderator_id <= 0) {
-            $this->redirect('error', 'Invalid moderator ID');
-            return;
-        }
-        
-        // Get old data
-        $oldData = $this->model->getModeratorById($moderator_id);
-        if (!$oldData) {
-            $this->redirect('error', 'Moderator not found');
-            return;
-        }
-        
-        // Validate input
-        $errors = [];
-        $email = trim($_POST['email'] ?? '');
-        $assigned_section = trim($_POST['assigned_section'] ?? '');
-        
-        // Email validation
-        if (empty($email)) {
-            $errors[] = "Email is required";
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = "Invalid email format";
-        } elseif (strlen($email) > 100) {
-            $errors[] = "Email must not exceed 100 characters";
-        }
-        
-        // Assigned section validation
-        $validSections = ['Advertisements', 'User Reports', 'Content Moderation', 'Financial Reports', 'System Monitoring'];
-        if (empty($assigned_section)) {
-            $errors[] = "Assigned section is required";
-        } elseif (!in_array($assigned_section, $validSections)) {
-            $errors[] = "Invalid assigned section";
-        }
-        
-        if (!empty($errors)) {
-            $this->redirect('error', implode(', ', $errors));
-            return;
-        }
-        
-        // Check email duplicate
-        if ($this->model->emailExists($email, $moderator_id)) {
-            $this->redirect('error', "Email '{$email}' is already used by another moderator");
-            return;
-        }
-        
-        // Update moderator (WITHOUT password)
-        $result = $this->model->updateModerator($moderator_id, $email, $assigned_section);
-        
-        if ($result) {
-            // Log action
-            $this->model->logAction($this->currentAdmin, $moderator_id, 'updated', [
-                'email' => $oldData['email'],
-                'section' => $oldData['assigned_section']
-            ], [
-                'email' => $email,
-                'section' => $assigned_section
-            ]);
-            
-            $this->redirect('success', "Moderator '{$oldData['username']}' updated successfully!");
-        } else {
-            $this->redirect('error', 'Failed to update moderator. Please try again.');
-        }
-    }
     
     /**
      * ✅ Reset moderator password (separate secure feature)
@@ -285,8 +195,7 @@ class ModeratorController {
         $result = $this->model->updateModeratorWithPassword(
             $moderator_id, 
             $moderator['email'], 
-            $hashedPassword, 
-            $moderator['assigned_section']
+            $hashedPassword
         );
         
         if ($result) {
@@ -372,7 +281,7 @@ class ModeratorController {
         $moderator_id = (int)($_POST['moderator_id'] ?? 0);
         $new_status = trim($_POST['status'] ?? '');
         
-        if ($moderator_id <= 0 || !in_array($new_status, ['active', 'inactive'])) {
+        if ($moderator_id <= 0 || !in_array($new_status, ['active', 'suspended'])) {
             $this->redirect('error', 'Invalid request');
             return;
         }
@@ -399,7 +308,7 @@ class ModeratorController {
                 'status' => $new_status
             ]);
             
-            $action = $new_status === 'active' ? 'activated' : 'deactivated';
+            $action = $new_status === 'active' ? 'activated' : 'suspended';
             $this->redirect('success', "Moderator '{$moderator['username']}' {$action} successfully!");
         } else {
             $this->redirect('error', 'Failed to update status. Please try again.');
@@ -460,16 +369,15 @@ class ModeratorController {
      *
      * @return array Filtered and paginated moderators
      */
-    public function getModerators($search = '', $sectionFilter = '', $page = 1, $limit = 20) {
+    public function getModerators($search = '', $page = 1, $limit = 20) {
         $allModerators = $this->model->getAllModerators();
         
         // Filter moderators
-        $filteredModerators = array_filter($allModerators, function($mod) use ($search, $sectionFilter) {
+        $filteredModerators = array_filter($allModerators, function($mod) use ($search) {
             $matchesSearch = empty($search) || 
                              stripos($mod['username'], $search) !== false || 
                              stripos($mod['email'], $search) !== false;
-            $matchesSection = empty($sectionFilter) || $mod['assigned_section'] === $sectionFilter;
-            return $matchesSearch && $matchesSection;
+            return $matchesSearch;
         });
 
         // ✅ KEY FIX: Re-index array after filter so array_slice() offsets are correct.
@@ -477,19 +385,13 @@ class ModeratorController {
         // offset would skip wrong elements and page 1 could miss rows at non-zero indices.
         $filteredModerators = array_values($filteredModerators);
         
-        // Pagination
-        $totalModerators = count($filteredModerators);
-        $totalPages = max(1, ceil($totalModerators / $limit));
-        $page = max(1, min($page, $totalPages));
-        $offset = ($page - 1) * $limit;
-        $moderators = array_slice($filteredModerators, $offset, $limit);
-        
+        // No pagination - show all
         return [
-            'moderators' => $moderators,
+            'moderators' => $filteredModerators,
             'allModerators' => $allModerators,
-            'totalPages' => $totalPages,
-            'currentPage' => $page,
-            'totalModerators' => $totalModerators
+            'totalPages' => 1,
+            'currentPage' => 1,
+            'totalModerators' => count($filteredModerators)
         ];
     }
     

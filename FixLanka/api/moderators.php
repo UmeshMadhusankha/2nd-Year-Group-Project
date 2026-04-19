@@ -38,20 +38,15 @@ $page = (int)($_GET['page'] ?? 1);
 $limit = 20;
 
 // Filter moderators
-$filteredModerators = array_filter($allModerators, function($mod) use ($search, $sectionFilter) {
+$filteredModerators = array_filter($allModerators, function($mod) use ($search) {
     $matchesSearch = empty($search) || 
                      stripos($mod['username'], $search) !== false || 
                      stripos($mod['email'], $search) !== false;
-    $matchesSection = empty($sectionFilter) || $mod['assigned_section'] === $sectionFilter;
-    return $matchesSearch && $matchesSection;
+    return $matchesSearch;
 });
 
-// Pagination
-$totalModerators = count($filteredModerators);
-$totalPages = max(1, ceil($totalModerators / $limit));
-$page = max(1, min($page, $totalPages));
-$offset = ($page - 1) * $limit;
-$moderators = array_slice($filteredModerators, $offset, $limit);
+// No pagination
+$moderators = $filteredModerators;
 
 // Get flash messages
 $successMessage = $_SESSION['success_message'] ?? '';
@@ -122,14 +117,8 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                         placeholder="Search by username or email..." 
                                         value="<?php echo htmlspecialchars($search); ?>">
                                 </div>
-                                <select name="section" class="form-select" onchange="this.form.submit()">
-                                    <option value="">All Sections</option>
-                                    <option value="Advertisements" <?php echo $sectionFilter === 'Advertisements' ? 'selected' : ''; ?>>Advertisements</option>
-                                    <option value="User Reports" <?php echo $sectionFilter === 'User Reports' ? 'selected' : ''; ?>>User Reports</option>
-                                    <option value="Content Moderation" <?php echo $sectionFilter === 'Content Moderation' ? 'selected' : ''; ?>>Content Moderation</option>
-                                    <option value="Financial Reports" <?php echo $sectionFilter === 'Financial Reports' ? 'selected' : ''; ?>>Financial Reports</option>
-                                    <option value="System Monitoring" <?php echo $sectionFilter === 'System Monitoring' ? 'selected' : ''; ?>>System Monitoring</option>
-                                </select>
+                                </div>
+                            </form>
                             </form>
                         </div>
 
@@ -141,7 +130,6 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                         <th>ID</th>
                                         <th>Username</th>
                                         <th>Email</th>
-                                        <th>Assigned Section</th>
                                         <th>Status</th>
                                         <th>Last Login</th>
                                         <th>Created Date</th>
@@ -163,11 +151,6 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                 <td class="text-card-foreground font-medium"><?php echo htmlspecialchars($mod['username']); ?></td>
                                                 <td class="text-muted-foreground"><?php echo htmlspecialchars($mod['email']); ?></td>
                                                 <td>
-                                                    <span class="moderators-section-badge">
-                                                        <?php echo htmlspecialchars($mod['assigned_section']); ?>
-                                                    </span>
-                                                </td>
-                                                <td>
                                                     <?php if ($mod['status'] === 'active'): ?>
                                                         <span class="status-badge status-active">● ACTIVE</span>
                                                     <?php else: ?>
@@ -180,13 +163,6 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                 <td class="text-muted-foreground"><?php echo date('M d, Y', strtotime($mod['created_at'])); ?></td>
                                                 <td>
                                                     <div class="flex space-x-2">
-                                                        <!-- Edit Button -->
-                                                        <button 
-                                                            onclick='editModerator(<?php echo json_encode($mod); ?>)' 
-                                                            class="moderators-edit-btn"
-                                                            title="Edit moderator">
-                                                            <i class="fa-solid fa-pen-to-square w-4 h-4"></i>
-                                                        </button>
                                                         
                                                         <!-- Toggle Status Button -->
                                                         <form method="POST" action="/2nd-Year-Group-Project/FixLanka/admin-moderators-action" style="display: inline;">
@@ -220,27 +196,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                             </table>
                         </div>
 
-                        <!-- Pagination -->
-                        <?php if ($totalPages > 1): ?>
-                            <div id="paginationContainer">
-                                <div class="flex space-x-2 justify-center">
-                                    <?php if ($page > 1): ?>
-                                        <a href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&section=<?php echo urlencode($sectionFilter); ?>" class="btn btn-secondary">Previous</a>
-                                    <?php endif; ?>
-                                    
-                                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                        <a href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&section=<?php echo urlencode($sectionFilter); ?>" 
-                                           class="btn <?php echo $i === $page ? 'btn-primary' : 'btn-secondary'; ?>">
-                                            <?php echo $i; ?>
-                                        </a>
-                                    <?php endfor; ?>
-                                    
-                                    <?php if ($page < $totalPages): ?>
-                                        <a href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&section=<?php echo urlencode($sectionFilter); ?>" class="btn btn-secondary">Next</a>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
+                        <!-- Pagination removed -->
                     </div>
                 </div>
             </main>
@@ -304,19 +260,6 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                 <small id="passwordHint">Minimum 6 characters</small>
                             </div>
 
-                            <!-- Assigned Section -->
-                            <div class="moderators-form-group">
-                                <label class="moderators-form-label" for="moderatorSection">
-                                    Assigned Section <span style="color: red;">*</span>
-                                </label>
-                                <select id="moderatorSection" name="assigned_section" required>
-                                    <option value="">-- Select Section --</option>
-                                    <option value="Advertisements">Advertisements</option>
-                                    <option value="User Reports">User Reports</option>
-                                    <option value="Content Moderation">Content Moderation</option>
-                                    <option value="Financial Reports">Financial Reports</option>
-                                    <option value="System Monitoring">System Monitoring</option>
-                                </select>
                             </div>
                             
                             <!-- Modal Actions Inside Form -->
@@ -399,22 +342,6 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                     openModal('moderatorModal');
                 }
 
-                // Edit Moderator
-                function editModerator(moderator) {
-                    document.getElementById('modalTitle').textContent = 'Edit Moderator';
-                    document.getElementById('moderatorForm').reset();
-                    document.getElementById('moderatorId').value = moderator.moderator_id;
-                    document.getElementById('formAction').value = 'update';
-                    document.getElementById('moderatorEmail').value = moderator.email;
-                    document.getElementById('moderatorSection').value = moderator.assigned_section;
-                    document.getElementById('moderatorUsername').disabled = true;
-                    document.getElementById('usernameGroup').style.display = 'none';
-                    document.getElementById('passwordGroup').style.display = 'block';
-                    document.getElementById('moderatorPassword').required = false;
-                    document.getElementById('passwordHint').textContent = 'Leave blank to keep current password';
-                    document.getElementById('saveBtn').textContent = 'Update Moderator';
-                    openModal('moderatorModal');
-                }
 
                 // Delete Moderator
                 function deleteModerator(moderatorId, username) {

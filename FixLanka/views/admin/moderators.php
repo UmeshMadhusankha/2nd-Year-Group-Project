@@ -46,7 +46,7 @@ try {
     error_log("Moderator Page Error: " . $e->getMessage());
     $moderators = [];
     $allModerators = [];
-    $moderatorStats = ['total' => 0, 'active' => 0, 'inactive' => 0];
+    $moderatorStats = ['total' => 0, 'active' => 0, 'suspended' => 0];
     $totalPages = 1;
 }
 
@@ -118,14 +118,6 @@ $pageDescription = 'Manage system moderators, assign sections, and control acces
                                 <div class="moderators-search-bar">
                                     <input type="text" name="search" placeholder="Search by username or email..." 
                                            value="<?php echo htmlspecialchars($search); ?>" class="moderators-search-input">
-                                    <select name="section" class="moderators-filter-select">
-                                        <option value="">All Sections</option>
-                                        <option value="Advertisements" <?php echo $sectionFilter === 'Advertisements' ? 'selected' : ''; ?>>Advertisements</option>
-                                        <option value="User Reports" <?php echo $sectionFilter === 'User Reports' ? 'selected' : ''; ?>>User Reports</option>
-                                        <option value="Content Moderation" <?php echo $sectionFilter === 'Content Moderation' ? 'selected' : ''; ?>>Content Moderation</option>
-                                        <option value="Financial Reports" <?php echo $sectionFilter === 'Financial Reports' ? 'selected' : ''; ?>>Financial Reports</option>
-                                        <option value="System Monitoring" <?php echo $sectionFilter === 'System Monitoring' ? 'selected' : ''; ?>>System Monitoring</option>
-                                    </select>
                                     <button type="submit" class="moderators-search-btn">
                                         <i class="fa-solid fa-search"></i> Search
                                     </button>
@@ -141,7 +133,6 @@ $pageDescription = 'Manage system moderators, assign sections, and control acces
                                         <th>ID</th>
                                         <th>Username</th>
                                         <th>Email</th>
-                                        <th>Assigned Section</th>
                                         <th>Status</th>
                                         <th>Last Login</th>
                                         <th>Created</th>
@@ -163,26 +154,16 @@ $pageDescription = 'Manage system moderators, assign sections, and control acces
                                                 <td><strong><?php echo htmlspecialchars($mod['username']); ?></strong></td>
                                                 <td><?php echo htmlspecialchars($mod['email']); ?></td>
                                                 <td>
-                                                    <span class="badge badge-info">
-                                                        <?php echo htmlspecialchars($mod['assigned_section']); ?>
-                                                    </span>
-                                                </td>
-                                                <td>
                                                     <?php if ($mod['status'] === 'active'): ?>
                                                         <span class="badge badge-success">Active</span>
                                                     <?php else: ?>
-                                                        <span class="badge badge-danger">Inactive</span>
+                                                        <span class="badge badge-danger">Suspended</span>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td><?php echo $mod['last_login'] ? date('M d, Y H:i', strtotime($mod['last_login'])) : 'Never'; ?></td>
                                                 <td><?php echo date('M d, Y', strtotime($mod['created_at'])); ?></td>
                                                 <td>
                                                     <div class="action-buttons-group">
-                                                        <!-- Edit Button (Email & Section only) -->
-                                                        <button onclick='editModerator(<?php echo json_encode($mod); ?>)' 
-                                                                class="btn-action btn-edit" title="Edit Email & Section">
-                                                            <i class="fa-solid fa-edit"></i>
-                                                        </button>
                                                         
                                                         <!-- Reset Password Button -->
                                                         <button onclick='resetPassword(<?php echo json_encode($mod); ?>)' 
@@ -191,7 +172,7 @@ $pageDescription = 'Manage system moderators, assign sections, and control acces
                                                         </button>
                                                         
                                                         <!-- Toggle Status Button -->
-                                                        <button onclick="toggleStatus(<?php echo $mod['moderator_id']; ?>, '<?php echo $mod['status'] === 'active' ? 'inactive' : 'active'; ?>')" 
+                                                        <button onclick="toggleStatus(<?php echo $mod['moderator_id']; ?>, '<?php echo $mod['status'] === 'active' ? 'suspended' : 'active'; ?>')" 
                                                                 class="btn-action <?php echo $mod['status'] === 'active' ? 'btn-warning' : 'btn-success'; ?>" 
                                                                 title="<?php echo $mod['status'] === 'active' ? 'Deactivate' : 'Activate'; ?>">
                                                             <i class="fa-solid fa-<?php echo $mod['status'] === 'active' ? 'ban' : 'check'; ?>"></i>
@@ -211,19 +192,7 @@ $pageDescription = 'Manage system moderators, assign sections, and control acces
                             </table>
                         </div>
 
-                        <!-- Pagination -->
-                        <?php if ($totalPages > 1): ?>
-                            <div id="paginationContainer">
-                                <div class="moderators-pagination">
-                                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                        <a href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&section=<?php echo urlencode($sectionFilter); ?>" 
-                                           class="<?php echo $i === $page ? 'active' : ''; ?>">
-                                            <?php echo $i; ?>
-                                        </a>
-                                    <?php endfor; ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
+                        <!-- Pagination removed -->
                     </div>
                 </div>
             </main>
@@ -292,20 +261,6 @@ $pageDescription = 'Manage system moderators, assign sections, and control acces
                             <div id="addPasswordMatch" class="password-match-indicator"></div>
                         </div>
 
-                        <!-- Assigned Section -->
-                        <div class="moderators-form-group">
-                            <label for="addSection" class="moderators-form-label">
-                                Assigned Section <span class="text-red-500">*</span>
-                            </label>
-                            <select name="assigned_section" id="addSection" class="moderators-form-select" required>
-                                <option value="">Select Section</option>
-                                <option value="Advertisements">Advertisements</option>
-                                <option value="User Reports">User Reports</option>
-                                <option value="Content Moderation">Content Moderation</option>
-                                <option value="Financial Reports">Financial Reports</option>
-                                <option value="System Monitoring">System Monitoring</option>
-                            </select>
-                        </div>
                         
                         <!-- Modal Actions -->
                         <div class="moderators-form-actions">
@@ -322,65 +277,6 @@ $pageDescription = 'Manage system moderators, assign sections, and control acces
 
             <!-- ============================================ -->
             <!-- EDIT MODERATOR MODAL (Email & Section Only) -->
-            <!-- ============================================ -->
-            <div id="editModal" class="moderators-modal">
-                <div class="moderators-modal-content">
-                    <div class="moderators-modal-header">
-                        <h3>Edit Moderator</h3>
-                        <button onclick="closeModal('editModal')" class="close-btn">&times;</button>
-                    </div>
-                        
-                    <form id="editForm" method="POST" action="/2nd-Year-Group-Project/FixLanka/admin-moderators-action" class="moderators-modal-form">
-                        <input type="hidden" name="action" value="update">
-                        <input type="hidden" name="moderator_id" id="editModeratorId">
-
-                        <!-- Username (Display Only) -->
-                        <div class="moderators-form-group">
-                            <label class="moderators-form-label">Username</label>
-                            <input type="text" id="editUsername" class="moderators-form-input" disabled>
-                            <small class="text-muted-foreground">Username cannot be changed</small>
-                        </div>
-
-                        <!-- Email -->
-                        <div class="moderators-form-group">
-                            <label for="editEmail" class="moderators-form-label">
-                                Email Address <span class="text-red-500">*</span>
-                            </label>
-                            <input type="email" name="email" id="editEmail" 
-                                   class="moderators-form-input" required maxlength="100">
-                        </div>
-
-                        <!-- Assigned Section -->
-                        <div class="moderators-form-group">
-                            <label for="editSection" class="moderators-form-label">
-                                Assigned Section <span class="text-red-500">*</span>
-                            </label>
-                            <select name="assigned_section" id="editSection" class="moderators-form-select" required>
-                                <option value="">Select Section</option>
-                                <option value="Advertisements">Advertisements</option>
-                                <option value="User Reports">User Reports</option>
-                                <option value="Content Moderation">Content Moderation</option>
-                                <option value="Financial Reports">Financial Reports</option>
-                                <option value="System Monitoring">System Monitoring</option>
-                            </select>
-                        </div>
-
-                        <div class="password-requirements">
-                            <strong>ℹ️ Note:</strong> To change the password, use the "Reset Password" button instead.
-                        </div>
-                        
-                        <!-- Modal Actions -->
-                        <div class="moderators-form-actions">
-                            <button type="button" onclick="closeModal('editModal')" class="moderators-btn-secondary">
-                                <i class="fa-solid fa-times"></i> Cancel
-                            </button>
-                            <button type="submit" class="moderators-btn-primary">
-                                <i class="fa-solid fa-save"></i> Update Moderator
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
 
             <!-- ============================================ -->
             <!-- RESET PASSWORD MODAL -->
@@ -464,13 +360,12 @@ $pageDescription = 'Manage system moderators, assign sections, and control acces
                     <form method="POST" action="/2nd-Year-Group-Project/FixLanka/admin-moderators-action" class="moderators-modal-form">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="moderator_id" id="deleteModeratorId">
-                        <input type="hidden" name="delete_type" id="deleteType" value="soft">
                         
                         <p id="deleteWarningText" class="text-muted-foreground mb-4"></p>
                         
                         <div class="moderators-form-group">
                             <label class="moderators-form-label">Delete Type:</label>
-                            <select name="delete_type" class="moderators-form-select" onchange="updateDeleteWarning()">
+                            <select name="delete_type" id="deleteTypeSelect" class="moderators-form-select" onchange="updateDeleteWarning()">
                                 <option value="soft">Soft Delete (Deactivate - Recommended)</option>
                                 <option value="hard">Hard Delete (Permanent - Dangerous)</option>
                             </select>
@@ -510,15 +405,6 @@ $pageDescription = 'Manage system moderators, assign sections, and control acces
                     openModal('addModal');
                 }
 
-                // Edit Moderator (Email & Section Only)
-                function editModerator(moderator) {
-                    document.getElementById('editForm').reset();
-                    document.getElementById('editModeratorId').value = moderator.moderator_id;
-                    document.getElementById('editUsername').value = moderator.username;
-                    document.getElementById('editEmail').value = moderator.email;
-                    document.getElementById('editSection').value = moderator.assigned_section;
-                    openModal('editModal');
-                }
 
                 // Reset Password
                 function resetPassword(moderator) {
@@ -532,9 +418,24 @@ $pageDescription = 'Manage system moderators, assign sections, and control acces
                 // Delete Moderator
                 function deleteModerator(moderatorId, username) {
                     document.getElementById('deleteModeratorId').value = moderatorId;
+                    document.getElementById('deleteTypeSelect').value = 'soft';
+                    updateDeleteWarning();
                     document.getElementById('deleteWarningText').innerHTML = 
                         '⚠️ You are about to delete moderator: <strong>' + username + '</strong>. Are you sure?';
                     openModal('deleteModal');
+                }
+
+                // Update Delete Warning
+                function updateDeleteWarning() {
+                    const type = document.getElementById('deleteTypeSelect').value;
+                    const warningText = document.getElementById('deleteWarningText');
+                    if (type === 'hard') {
+                        warningText.style.color = '#dc2626';
+                        warningText.style.fontWeight = 'bold';
+                    } else {
+                        warningText.style.color = '';
+                        warningText.style.fontWeight = '';
+                    }
                 }
 
                 // Toggle Status
@@ -615,6 +516,19 @@ $pageDescription = 'Manage system moderators, assign sections, and control acces
                         closeModal('resetPasswordModal');
                         closeModal('deleteModal');
                     }
+                });
+
+                // Add loading state to all submit buttons
+                document.querySelectorAll('form').forEach(form => {
+                    form.addEventListener('submit', function() {
+                        const submitBtn = this.querySelector('button[type="submit"]');
+                        if (submitBtn) {
+                            const originalHtml = submitBtn.innerHTML;
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+                            submitBtn.classList.add('loading');
+                        }
+                    });
                 });
             </script>
         </div>

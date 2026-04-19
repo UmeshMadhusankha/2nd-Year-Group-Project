@@ -180,61 +180,31 @@ if (empty($accounts)) {
             }
         };
 
-        $fetchAccounts = static function (PDO $pdo, string $table, string $idColumn, string $nameExpr, string $emailColumn, ?string $phoneColumn, string $typeLabel) use ($tableHasColumn, $tableExists): array {
-            $statusExpr = $tableHasColumn($pdo, $table, 'account_status')
-                ? "COALESCE(account_status, 'ACTIVE')"
-                : ($tableHasColumn($pdo, $table, 'is_deleted') ? "CASE WHEN is_deleted = 1 THEN 'SUSPENDED' ELSE 'ACTIVE' END" : "'ACTIVE'");
-
-            $reasonExpr = $tableHasColumn($pdo, $table, 'moderation_reason') ? 'moderation_reason' : 'NULL';
-            $suspendedExpr = $tableHasColumn($pdo, $table, 'suspended_until') ? 'suspended_until' : 'NULL';
-            $bannedExpr = $tableHasColumn($pdo, $table, 'banned_permanent') ? 'banned_permanent' : '0';
-
-            if ($tableHasColumn($pdo, $table, 'updated_at')) {
-                $updatedExpr = 'updated_at';
-            } elseif ($tableHasColumn($pdo, $table, 'created_at')) {
-                $updatedExpr = 'created_at';
-            } elseif ($tableHasColumn($pdo, $table, 'date_of_joined')) {
-                $updatedExpr = 'date_of_joined';
-            } else {
-                $updatedExpr = 'CURRENT_TIMESTAMP';
-            }
-
-            $phoneExpr = ($phoneColumn && $tableHasColumn($pdo, $table, $phoneColumn))
-                ? $phoneColumn
-                : "''";
-
-            $hasModerationLog = $tableExists($pdo, 'account_moderation_log');
-            $logJoin = '';
-            if ($hasModerationLog) {
-                $logJoin = "LEFT JOIN (
-                        SELECT l1.account_type, l1.account_id, l1.reason, l1.suspended_until, l1.created_at
-                        FROM account_moderation_log l1
-                        INNER JOIN (
-                            SELECT account_type, account_id, MAX(log_id) AS latest_log_id
-                            FROM account_moderation_log
-                            GROUP BY account_type, account_id
-                        ) latest ON latest.latest_log_id = l1.log_id
-                    ) mlog ON mlog.account_type = " . $pdo->quote(strtolower($typeLabel)) . " AND mlog.account_id = {$idColumn}";
-            }
-
-            $reasonFallbackExpr = $hasModerationLog ? 'mlog.reason' : "''";
-            $untilFallbackExpr = $hasModerationLog ? 'mlog.suspended_until' : 'NULL';
-
-            $sql = "SELECT {$idColumn} AS account_id, TRIM({$nameExpr}) AS name, "
-                . $pdo->quote($typeLabel) . " AS account_type, "
-                . "COALESCE({$emailColumn}, '') AS email, "
-                . "COALESCE({$phoneExpr}, '') AS phone, "
-                . "{$statusExpr} AS account_status, "
-                . "COALESCE(NULLIF({$reasonExpr}, ''), {$reasonFallbackExpr}, '') AS moderation_reason, "
-                . "COALESCE({$suspendedExpr}, {$untilFallbackExpr}) AS suspended_until, "
-                . "{$bannedExpr} AS banned_permanent, "
-                . "{$updatedExpr} AS updated_at "
-                . "FROM {$table} {$logJoin}";
+        $fetchAccounts = static function (PDO $pdo, string $table, string $idColumn, string $nameExpr, string $emailColumn, ?string $phoneColumn, string $typeLabel) : array {
+            $phoneExpr = ($phoneColumn) ? $phoneColumn : "''";
+            
+            // Join with centralized status table
+            $sql = "SELECT 
+                        t.{$idColumn} AS account_id, 
+                        TRIM({$nameExpr}) AS name, 
+                        " . $pdo->quote($typeLabel) . " AS account_type, 
+                        COALESCE(t.{$emailColumn}, '') AS email, 
+                        COALESCE(t.{$phoneExpr}, '') AS phone, 
+                        COALESCE(s.account_status, 'ACTIVE') AS account_status, 
+                        COALESCE(s.moderation_reason, '') AS moderation_reason, 
+                        s.suspended_until AS suspended_until, 
+                        COALESCE(s.banned_permanent, 0) AS banned_permanent, 
+                        COALESCE(s.last_updated, CURRENT_TIMESTAMP) AS updated_at 
+                    FROM `{$table}` t
+                    LEFT JOIN account_moderation_status s 
+                        ON s.account_id = t.{$idColumn} 
+                        AND s.account_type = " . $pdo->quote($typeLabel);
 
             try {
                 $stmt = $pdo->query($sql);
                 return $stmt ? ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
             } catch (Throwable $e) {
+                error_log("Error fetching accounts for {$typeLabel}: " . $e->getMessage());
                 return [];
             }
         };
@@ -314,69 +284,7 @@ if (empty($accounts)) {
     }
 }
 
-// If accounts are already loaded (either from controller or fallback) but moderation metadata
-// is missing in base tables, enrich from the moderation log table (if available).
-if (!empty($accounts)) {
-    try {
-        require_once __DIR__ . '/../../config/database.php';
-
-        $lookupKeys = [];
-        foreach ($accounts as $acc) {
-            $accId = (int)($acc['account_id'] ?? 0);
-            $accType = strtolower(trim((string)($acc['account_type'] ?? '')));
-            if ($accId > 0 && $accType !== '') {
-                $lookupKeys[$accType . ':' . $accId] = true;
-            }
-        }
-
-        if (!empty($lookupKeys)) {
-            $keys = array_keys($lookupKeys);
-            $placeholders = implode(',', array_fill(0, count($keys), '?'));
-
-            $sql = "SELECT l1.account_type, l1.account_id, l1.reason, l1.suspended_until\n"
-                . "FROM account_moderation_log l1\n"
-                . "INNER JOIN (\n"
-                . "    SELECT account_type, account_id, MAX(log_id) AS latest_log_id\n"
-                . "    FROM account_moderation_log\n"
-                . "    GROUP BY account_type, account_id\n"
-                . ") latest ON latest.latest_log_id = l1.log_id\n"
-                . "WHERE CONCAT(l1.account_type, ':', l1.account_id) IN ({$placeholders})";
-
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($keys);
-            $logRows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-
-            $logMap = [];
-            foreach ($logRows as $row) {
-                $rowType = strtolower((string)($row['account_type'] ?? ''));
-                $rowId = (int)($row['account_id'] ?? 0);
-                if ($rowType !== '' && $rowId > 0) {
-                    $logMap[$rowType . ':' . $rowId] = $row;
-                }
-            }
-
-            foreach ($accounts as &$account) {
-                $accId = (int)($account['account_id'] ?? 0);
-                $accType = strtolower(trim((string)($account['account_type'] ?? '')));
-                $key = $accType . ':' . $accId;
-
-                if ($accId > 0 && $accType !== '' && isset($logMap[$key])) {
-                    $log = $logMap[$key];
-
-                    if (empty($account['moderation_reason']) && !empty($log['reason'])) {
-                        $account['moderation_reason'] = (string)$log['reason'];
-                    }
-
-                    if (empty($account['suspended_until']) && !empty($log['suspended_until'])) {
-                        $account['suspended_until'] = (string)$log['suspended_until'];
-                    }
-                }
-            }
-            unset($account);
-        }
-    } catch (Throwable $ignored) {
-    }
-}
+// Enrichment from log is now redundant as it's included in the primary fetchAccounts join
 
 // Flash messages
 $successMessage = $successMessage ?? (isset($_GET['success']) ? trim((string)$_GET['success']) : '');

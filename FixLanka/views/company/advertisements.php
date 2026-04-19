@@ -23,6 +23,7 @@ $userData = getUserData();
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/variables.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/progress-bars.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/buttons.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/dashboard.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/advertisements.css">
@@ -1244,6 +1245,48 @@ $userData = getUserData();
             });
         });
     </script>
+
+    <!-- Ad Report Modal -->
+    <div id="reportAdModal" class="modal-overlay">
+        <div class="modal-container" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-flag"></i> Report Advertisement Issue</h2>
+                <button type="button" class="close-modal" id="closeReportModal">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 2rem;">
+                <form id="reportAdForm">
+                    <input type="hidden" id="reportAdId" name="ad_id">
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="reportIssueType" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Issue Type</label>
+                        <select id="reportIssueType" name="issue_type" style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem; color: #1e293b; background: white; cursor: pointer;" required>
+                            <option value="">Select an ad issue</option>
+                            <option value="display_issue">Ad not displaying / Layout issue</option>
+                            <option value="performance_tracking">Clicks / Impressions not tracking</option>
+                            <option value="billing_payment">Billing or Payment issue</option>
+                            <option value="reach_impressions">Lower than expected reach</option>
+                            <option value="scheduling_lead_time">Scheduling / Lead time inquiry</option>
+                            <option value="rejection_inquiry">Ad rejection explanation request</option>
+                            <option value="technical_issue">Technical glitch or error</option>
+                            <option value="other">Other ad-related issue</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="reportDescription" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Description</label>
+                        <textarea id="reportDescription" name="description" class="filter-input" rows="4" placeholder="Please provide more details about the issue..." required style="resize: vertical;"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="padding: 1.5rem 2rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn btn-secondary" id="cancelReport">Cancel</button>
+                <button type="submit" form="reportAdForm" class="btn btn-primary" id="submitReportBtn">
+                    <i class="fas fa-paper-plane"></i> Submit Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Common Scripts -->
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
 
     <!-- Advertisement Management JavaScript -->
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/company/advertisements-filters.js"></script>

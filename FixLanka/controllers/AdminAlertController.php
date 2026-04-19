@@ -22,7 +22,10 @@ class AdminAlertController {
             session_start();
         }
         
-        // Check if admin is logged in
+        // Ensure user is authenticated as admin
+        require_once __DIR__ . '/../config/session.php';
+        requireRole('admin');
+        
         $this->checkAuthentication();
         
         // Initialize model
@@ -52,7 +55,7 @@ class AdminAlertController {
         $this->actor = [
             'id' => (int)($_SESSION['user_id'] ?? 0),
             'role' => (string)($_SESSION['user_role'] ?? 'admin'),
-            'name' => (string)($_SESSION['user_name'] ?? ($_SESSION['admin'] ?? 'Admin')),
+            'name' => (string)($_SESSION['user_name'] ?? 'Admin'),
         ];
     }
 

@@ -33,8 +33,7 @@ class ModeratorModel
                     moderator_id, 
                     username, 
                     email, 
-                    assigned_section, 
-                    COALESCE(status, 'inactive') AS status,
+                    COALESCE(status, 'suspended') AS status,
                     last_login,
                     created_at 
                 FROM moderator
@@ -65,8 +64,7 @@ class ModeratorModel
                     moderator_id, 
                     username, 
                     email, 
-                    assigned_section, 
-                    COALESCE(status, 'inactive') AS status,
+                    COALESCE(status, 'suspended') AS status,
                     last_login,
                     created_at 
                 FROM moderator 
@@ -114,49 +112,36 @@ class ModeratorModel
     /**
      * Create new moderator
      */
-    public function createModerator($username, $email, $hashedPassword, $assigned_section)
+    public function createModerator($username, $email, $hashedPassword)
     {
-        $sql = "INSERT INTO moderator (username, email, password, assigned_section, status) 
-                VALUES (?, ?, ?, ?, 'active')";
+        $sql = "INSERT INTO moderator (username, email, password, status) 
+                VALUES (?, ?, ?, 'active')";
         
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$username, $email, $hashedPassword, $assigned_section]);
+        $stmt->execute([$username, $email, $hashedPassword]);
         
         return $this->pdo->lastInsertId();
     }
-
     /**
-     * Update moderator WITHOUT password change
+     * Update moderator password
      */
-    public function updateModerator($moderator_id, $email, $assigned_section)
+    public function updateModeratorWithPassword($moderator_id, $email, $hashedPassword)
     {
         $sql = "UPDATE moderator 
-                SET email = ?, assigned_section = ? 
+                SET email = ?, password = ? 
                 WHERE moderator_id = ?";
         
         $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$email, $assigned_section, $moderator_id]);
+        return $stmt->execute([$email, $hashedPassword, $moderator_id]);
     }
 
-    /**
-     * Update moderator WITH password change
-     */
-    public function updateModeratorWithPassword($moderator_id, $email, $hashedPassword, $assigned_section)
-    {
-        $sql = "UPDATE moderator 
-                SET email = ?, password = ?, assigned_section = ? 
-                WHERE moderator_id = ?";
-        
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$email, $hashedPassword, $assigned_section, $moderator_id]);
-    }
 
     /**
      * Soft delete - Set status to inactive
      */
     public function deactivateModerator($moderator_id)
     {
-        $sql = "UPDATE moderator SET status = 'inactive' WHERE moderator_id = ?";
+        $sql = "UPDATE moderator SET status = 'suspended' WHERE moderator_id = ?";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([$moderator_id]);
     }
@@ -268,8 +253,8 @@ class ModeratorModel
     {
         $sql = "SELECT 
                     COUNT(*) as total,
-                    SUM(CASE WHEN COALESCE(status,'inactive') = 'active' THEN 1 ELSE 0 END) as active,
-                    SUM(CASE WHEN COALESCE(status,'inactive') = 'inactive' THEN 1 ELSE 0 END) as inactive
+                    SUM(CASE WHEN COALESCE(status,'suspended') = 'active' THEN 1 ELSE 0 END) as active,
+                    SUM(CASE WHEN COALESCE(status,'suspended') = 'suspended' THEN 1 ELSE 0 END) as suspended
                 FROM moderator";
         
         $stmt = $this->pdo->prepare($sql);
