@@ -882,7 +882,7 @@ function buildCardActions(contract) {
         String(contract?.customer_response || '') === 'accepted' ||
         String(status) === 'accepted';
 
-    // 1) Primary action button (Send, Chat, Start Project, or View Project)
+    // 1) Status-specific Primary action button (Send, Start Project, or View Project)
     if (!isSent) {
         html += `<button class="card-action-btn card-action-send send-contract-btn" data-contract-id="${id}" title="Send to Customer">
             <i class="fas fa-paper-plane"></i>
@@ -892,18 +892,18 @@ function buildCardActions(contract) {
         const isProjectStarted = projectStatus !== '' && projectStatus !== 'planned';
 
         if (!isProjectStarted) {
-            // Contract accepted, project not started (placeholder project is still planned)
             html += `<a href="#" onclick="handleStartProjectFromContract(${id}); return false;" class="action-btn primary small">
                 <i class="fas fa-rocket"></i> Start Project
             </a>`;
         } else {
-            // Project already started
             html += `<a href="projects.php" class="action-btn success small">
                 <i class="fas fa-eye"></i> View Project
             </a>`;
         }
-    } else if (contract.chat_active == 1) {
-        // Unread indicator dot
+    }
+
+    // 2) Chat Button - Always visible if chat is active (sent/accepted/active)
+    if (contract.chat_active == 1 || isSent) {
         const unreadCount = parseInt(contract.unread_count || contract.unread_messages || 0);
         const unreadIndicator = unreadCount > 0
             ? '<span class="chat-unread-dot" style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; background: #ef4444; border: 2px solid white; border-radius: 50%; z-index: 10;"></span>'

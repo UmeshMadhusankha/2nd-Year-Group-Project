@@ -44,7 +44,7 @@ if ($method === 'GET') {
 
     $stmt = $pdo->prepare("
         SELECT
-            m.milestone_id,
+            m.milestone_id, m.contract_id,
             m.title,
             m.description,
             m.status,
@@ -63,8 +63,23 @@ if ($method === 'GET') {
             c.customer_id,
             q.labor_unit_label,
             q.material_unit_label,
-            q.labor_cost     AS agreed_labor_rate,
-            (COALESCE(q.material_cost,0) + COALESCE(q.transport_cost,0) + COALESCE(q.other_charges,0)) AS agreed_material_rate
+            -- Prioritize adjusted rates from contract_milestone (same logic as ContractModel)
+            COALESCE(
+                (SELECT cm_lab.unit_rate FROM contract_milestone cm_lab 
+                 WHERE cm_lab.contract_id = m.contract_id 
+                   AND (cm_lab.title LIKE '%Labor%' OR cm_lab.title LIKE '%Completion%' OR cm_lab.title LIKE '%Service%') 
+                   AND cm_lab.unit_rate > 0 
+                 LIMIT 1),
+                q.labor_cost
+            ) AS agreed_labor_rate,
+            COALESCE(
+                (SELECT cm_mat.unit_rate FROM contract_milestone cm_mat 
+                 WHERE cm_mat.contract_id = m.contract_id 
+                   AND cm_mat.title LIKE '%Material%' 
+                   AND cm_mat.unit_rate > 0 
+                 LIMIT 1),
+                (COALESCE(q.material_cost,0) + COALESCE(q.transport_cost,0) + COALESCE(q.other_charges,0))
+            ) AS agreed_material_rate
         FROM contract_milestone m
         JOIN contract c ON c.contract_id = m.contract_id
         LEFT JOIN companyquotation q ON q.quotation_id = c.quotation_id

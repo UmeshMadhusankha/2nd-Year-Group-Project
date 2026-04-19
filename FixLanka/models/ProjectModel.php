@@ -105,7 +105,9 @@ class Project
                         u.address as customer_address,
                         u.district as customer_district,
                         c.name as company_name,
-                        ct.contract_id
+                        ct.contract_id,
+                        ct.customer_response as contract_customer_response,
+                        ct.status as contract_status
                     FROM Project p
                     LEFT JOIN User u ON p.customer_id = u.user_id
                     LEFT JOIN Company c ON p.company_id = c.company_id
@@ -185,7 +187,9 @@ class Project
                         c.name as company_name,
                         c.email as company_email,
                         c.contact_no as company_contact,
-                        ct.contract_id
+                        ct.contract_id,
+                        ct.customer_response as contract_customer_response,
+                        ct.status as contract_status
                     FROM Project p
                     LEFT JOIN User u ON p.customer_id = u.user_id
                     LEFT JOIN Company c ON p.company_id = c.company_id
@@ -338,6 +342,7 @@ class Project
 
             // 5. Attach accepted freelancer offers
             if (count($freelancerAssignmentIds) > 0) {
+                $this->ensureFreelancerAssignmentsColumns();
                 $this->attachFreelancerAssignmentsToProject((int)$projectId, (int)$contractId, (int)$contract['company_id'], $freelancerAssignmentIds);
             }
 
@@ -380,12 +385,35 @@ class Project
                 'staff_requirements_count' => count($staffRequirements)
             ];
 
-        } catch (Exception $e) {
-            $this->pdo->rollBack();
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('Error in ProjectModel::startFromContract: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return [
                 'success' => false,
                 'message' => $e->getMessage()
             ];
+        }
+    }
+
+    private function ensureFreelancerAssignmentsColumns(): void
+    {
+        try {
+            // Check if contract_id exists
+            $stmt = $this->pdo->prepare("
+                SELECT COUNT(*)
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'freelancer_assignments'
+                  AND COLUMN_NAME = 'contract_id'
+            ");
+            $stmt->execute();
+            if ((int)$stmt->fetchColumn() === 0) {
+                $this->pdo->exec("ALTER TABLE freelancer_assignments ADD COLUMN contract_id INT(11) DEFAULT NULL AFTER project_id");
+            }
+        } catch (Throwable $e) {
+            error_log('[ProjectModel] ensureFreelancerAssignmentsColumns failed: ' . $e->getMessage());
         }
     }
 
@@ -1035,25 +1063,41 @@ class Project
                         $unitPricing['labor_unit_label'] = $labUnit !== '' ? $labUnit : null;
                         $unitPricing['material_unit_label'] = $matUnit !== '' ? $matUnit : null;
 
-                        $laborRate = null;
-                        if (isset($q['labor_cost']) && $q['labor_cost'] !== null && $q['labor_cost'] !== '' && is_numeric($q['labor_cost'])) {
-                            $laborRate = (float)$q['labor_cost'];
-                        }
-                        $unitPricing['labor_unit_rate'] = $laborRate;
+                        // Prioritize adjusted rates from contract_milestone if they exist (same logic as ContractModel)
+                        $sqlOverrideLab = "SELECT unit_rate FROM contract_milestone WHERE contract_id = :cid AND (title LIKE '%Labor%' OR title LIKE '%Completion%' OR title LIKE '%Service%') AND unit_rate > 0 LIMIT 1";
+                        $stmtOverrideLab = $this->pdo->prepare($sqlOverrideLab);
+                        $stmtOverrideLab->execute([':cid' => $contractId]);
+                        $overrideLab = $stmtOverrideLab->fetchColumn();
 
-                        $materialRate = 0.0;
-                        foreach (['material_cost', 'transport_cost', 'other_charges'] as $k) {
-                            $v = $q[$k] ?? 0;
-                            if ($v !== null && $v !== '' && is_numeric($v)) {
-                                $materialRate += (float)$v;
+                        if ($overrideLab && is_numeric($overrideLab)) {
+                            $unitPricing['labor_unit_rate'] = (float)$overrideLab;
+                        } else {
+                            $unitPricing['labor_unit_rate'] = isset($q['labor_cost']) ? (float)$q['labor_cost'] : null;
+                        }
+
+                        $sqlOverrideMat = "SELECT unit_rate FROM contract_milestone WHERE contract_id = :cid AND (title LIKE '%Material%') AND unit_rate > 0 LIMIT 1";
+                        $stmtOverrideMat = $this->pdo->prepare($sqlOverrideMat);
+                        $stmtOverrideMat->execute([':cid' => $contractId]);
+                        $overrideMat = $stmtOverrideMat->fetchColumn();
+
+                        if ($overrideMat && is_numeric($overrideMat)) {
+                            $unitPricing['material_unit_rate'] = (float)$overrideMat;
+                        } else {
+                            $materialRate = 0.0;
+                            foreach (['material_cost', 'transport_cost', 'other_charges'] as $k) {
+                                $v = $q[$k] ?? 0;
+                                if ($v !== null && $v !== '' && is_numeric($v)) {
+                                    $materialRate += (float)$v;
+                                }
                             }
+                            if ($materialRate <= 0 && isset($q['total_amount']) && $q['total_amount'] !== null && $q['total_amount'] !== '' && is_numeric($q['total_amount'])) {
+                                $laborRate = $unitPricing['labor_unit_rate'] ?? 0;
+                                $materialRate = max(0.0, (float)$q['total_amount'] - (float)$laborRate);
+                            }
+                            $unitPricing['material_unit_rate'] = $materialRate;
                         }
-                        if ($materialRate <= 0 && isset($q['total_amount']) && $q['total_amount'] !== null && $q['total_amount'] !== '' && is_numeric($q['total_amount'])) {
-                            $materialRate = max(0.0, (float)$q['total_amount'] - (float)($laborRate ?? 0));
-                        }
-                        $unitPricing['material_unit_rate'] = $materialRate;
 
-                        $unitPricing['is_unit_priced'] = ($labUnit !== '' || $matUnit !== '') && ($laborRate !== null || $materialRate > 0);
+                        $unitPricing['is_unit_priced'] = ($labUnit !== '' || $matUnit !== '') && ($unitPricing['labor_unit_rate'] !== null || ($unitPricing['material_unit_rate'] ?? 0) > 0);
                     }
                 } catch (Exception $e) {
                     // Ignore quotation fetch errors to avoid breaking timeline.
@@ -1226,9 +1270,25 @@ class Project
             $agreedMaterialRate = 0.0;
 
             if ($splitMode) {
+                // Prioritize adjusted rates from contract_milestone (same logic as ContractModel)
                 $qStmt = $this->pdo->prepare(
-                    "SELECT c.quotation_id,
-                            q.labor_cost, q.material_cost, q.transport_cost, q.other_charges, q.total_amount
+                    "SELECT 
+                        COALESCE(
+                            (SELECT cm_lab.unit_rate FROM contract_milestone cm_lab 
+                             WHERE cm_lab.contract_id = m.contract_id 
+                               AND (cm_lab.title LIKE '%Labor%' OR cm_lab.title LIKE '%Completion%' OR cm_lab.title LIKE '%Service%') 
+                               AND cm_lab.unit_rate > 0 
+                             LIMIT 1),
+                            q.labor_cost
+                        ) AS agreed_labor_rate,
+                        COALESCE(
+                            (SELECT cm_mat.unit_rate FROM contract_milestone cm_mat 
+                             WHERE cm_mat.contract_id = m.contract_id 
+                               AND cm_mat.title LIKE '%Material%' 
+                               AND cm_mat.unit_rate > 0 
+                             LIMIT 1),
+                            (COALESCE(q.material_cost,0) + COALESCE(q.transport_cost,0) + COALESCE(q.other_charges,0))
+                        ) AS agreed_material_rate
                      FROM contract_milestone m
                      JOIN contract c ON c.contract_id = m.contract_id
                      LEFT JOIN companyquotation q ON q.quotation_id = c.quotation_id
@@ -1239,21 +1299,8 @@ class Project
                 $q = $qStmt->fetch(PDO::FETCH_ASSOC) ?: null;
 
                 if ($q) {
-                    if (isset($q['labor_cost']) && $q['labor_cost'] !== null && $q['labor_cost'] !== '' && is_numeric($q['labor_cost'])) {
-                        $agreedLaborRate = (float)$q['labor_cost'];
-                    }
-
-                    $materialRate = 0.0;
-                    foreach (['material_cost', 'transport_cost', 'other_charges'] as $k) {
-                        $v = $q[$k] ?? 0;
-                        if ($v !== null && $v !== '' && is_numeric($v)) {
-                            $materialRate += (float)$v;
-                        }
-                    }
-                    if ($materialRate <= 0 && isset($q['total_amount']) && $q['total_amount'] !== null && $q['total_amount'] !== '' && is_numeric($q['total_amount'])) {
-                        $materialRate = max(0.0, (float)$q['total_amount'] - $agreedLaborRate);
-                    }
-                    $agreedMaterialRate = $materialRate;
+                    $agreedLaborRate = (float)($q['agreed_labor_rate'] ?? 0);
+                    $agreedMaterialRate = (float)($q['agreed_material_rate'] ?? 0);
                 }
             }
 

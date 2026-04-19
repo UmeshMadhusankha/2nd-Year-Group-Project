@@ -36,14 +36,14 @@ class ContractModel {
                     c.company_id,
                     c.chat_active,
                     comp.name as company_name,
-                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND (cm.title LIKE '%Labor%' OR cm.title LIKE '%Completion%' OR cm.title LIKE '%Service%') AND cm.unit_rate > 0 LIMIT 1), cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND cm.title LIKE '%Material%' AND cm.unit_rate > 0 LIMIT 1), cq.material_cost, cq_req.material_cost) as material_cost,
                     COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
                     COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc
                      WHERE cc.contract_id = c.contract_id
                        AND cc.sender_type = 'company'
-                       AND cc.is_read = 0) as unread_messages,
+                       AND (cc.is_read IS NULL OR cc.is_read = 0)) as unread_messages,
                     (
                         SELECT COUNT(*) 
                         FROM contract_milestone cm 
@@ -111,14 +111,14 @@ class ContractModel {
                     c.company_id,
                     c.chat_active,
                     comp.name as company_name,
-                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND (cm.title LIKE '%Labor%' OR cm.title LIKE '%Completion%' OR cm.title LIKE '%Service%') AND cm.unit_rate > 0 LIMIT 1), cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND cm.title LIKE '%Material%' AND cm.unit_rate > 0 LIMIT 1), cq.material_cost, cq_req.material_cost) as material_cost,
                     COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
                     COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc
                      WHERE cc.contract_id = c.contract_id
                        AND cc.sender_type = 'company'
-                       AND cc.is_read = 0) as unread_messages,
+                       AND (cc.is_read IS NULL OR cc.is_read = 0)) as unread_messages,
                     0 as total_milestones,
                     0 as completed_milestones,
                     0 as submitted_milestones
@@ -162,8 +162,8 @@ class ContractModel {
                     c_loc.address as company_address,
                     comp.contact_no as company_contact,
                     comp.email as company_email,
-                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND (cm.title LIKE '%Labor%' OR cm.title LIKE '%Completion%' OR cm.title LIKE '%Service%') AND cm.unit_rate > 0 LIMIT 1), cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND cm.title LIKE '%Material%' AND cm.unit_rate > 0 LIMIT 1), cq.material_cost, cq_req.material_cost) as material_cost,
                     COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
                     COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
                     COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
@@ -225,8 +225,16 @@ class ContractModel {
                     c.company_id,
                     c.chat_active,
                     comp.name as company_name,
-                                        COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                                        COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
+                                        COALESCE(
+                                            (SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND (cm.title LIKE '%Labor%' OR cm.title LIKE '%Completion%' OR cm.title LIKE '%Service%') AND cm.unit_rate > 0 LIMIT 1),
+                                            cq.labor_cost, 
+                                            cq_req.labor_cost
+                                        ) as labor_cost,
+                                        COALESCE(
+                                            (SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND cm.title LIKE '%Material%' AND cm.unit_rate > 0 LIMIT 1),
+                                            cq.material_cost, 
+                                            cq_req.material_cost
+                                        ) as material_cost,
                                         COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
                                         COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
                                         COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
@@ -234,7 +242,7 @@ class ContractModel {
                     (SELECT COUNT(*) FROM contract_chats cc 
                      WHERE cc.contract_id = c.contract_id 
                        AND cc.sender_type = 'customer' 
-                       AND cc.is_read = 0) as unread_messages
+                       AND (cc.is_read IS NULL OR cc.is_read = 0)) as unread_messages
                 FROM contract c
                 LEFT JOIN project p ON c.project_id = p.project_id
                 LEFT JOIN user u ON c.customer_id = u.user_id
@@ -293,8 +301,8 @@ class ContractModel {
                     c_loc.address as company_address,
                     comp.contact_no as company_contact,
                     comp.email as company_email,
-                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND (cm.title LIKE '%Labor%' OR cm.title LIKE '%Completion%' OR cm.title LIKE '%Service%') AND cm.unit_rate > 0 LIMIT 1), cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND cm.title LIKE '%Material%' AND cm.unit_rate > 0 LIMIT 1), cq.material_cost, cq_req.material_cost) as material_cost,
                     COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
                     COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
                     COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
@@ -302,7 +310,7 @@ class ContractModel {
                     (SELECT COUNT(*) FROM contract_chats cc 
                      WHERE cc.contract_id = c.contract_id 
                        AND cc.sender_type = 'customer' 
-                       AND cc.is_read = 0) as unread_messages
+                       AND (cc.is_read IS NULL OR cc.is_read = 0)) as unread_messages
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id

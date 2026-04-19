@@ -116,7 +116,6 @@ if (!$companyId) {
                         <div class="filter-group">
                             <select class="filter-select">
                                 <option value="all">All Status</option>
-                                <option value="planned">Planned</option>
                                 <option value="in_progress">In Progress</option>
                                 <option value="completed">Completed</option>
                                 <option value="cancelled">Cancelled</option>

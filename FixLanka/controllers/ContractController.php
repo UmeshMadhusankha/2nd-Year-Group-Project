@@ -2758,19 +2758,7 @@ class ContractController {
                     null
                 );
 
-                // Auto-start: if the contract start date is already due, mark the linked project as in-progress.
-                // Note: Project row may exist as a placeholder (required by contract.project_id FK).
-                $autoStartStmt = $this->pdo->prepare("
-                    UPDATE project p
-                    INNER JOIN contract c ON c.project_id = p.project_id
-                    SET p.status = 'in_progress',
-                        p.start_date = CURDATE()
-                    WHERE c.contract_id = ?
-                      AND p.status = 'planned'
-                      AND c.start_date IS NOT NULL
-                      AND c.start_date <= CURDATE()
-                ");
-                $autoStartStmt->execute([$contractId]);
+                // Auto-start project activation removed. Projects must now be started manually by the company.
 
 
 
@@ -3005,18 +2993,7 @@ class ContractController {
             $_SESSION['user_id']
         ]);
 
-        // Auto-start: if the contract start date is already due, mark the linked project as in-progress.
-        $autoStartStmt = $this->pdo->prepare("
-            UPDATE project p
-            INNER JOIN contract c ON c.project_id = p.project_id
-            SET p.status = 'in_progress',
-                p.start_date = CURDATE()
-            WHERE c.contract_id = ?
-              AND p.status = 'planned'
-              AND c.start_date IS NOT NULL
-              AND c.start_date <= CURDATE()
-        ");
-        $autoStartStmt->execute([(int)$contractId]);
+        // Auto-start project activation removed. Projects must now be started manually by the company.
 
         $this->addTimelineEvent($contractId, 'contract_accepted_paid', 'Contract accepted with initial payment received into Escrow');
         

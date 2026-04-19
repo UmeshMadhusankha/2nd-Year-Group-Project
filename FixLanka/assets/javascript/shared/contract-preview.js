@@ -75,21 +75,39 @@
         const laborUnitLabel = String(c?.labor_unit_label ?? '').trim();
         const materialUnitLabel = String(c?.material_unit_label ?? '').trim();
 
-        const isUnitBased = Boolean(laborUnitLabel || materialUnitLabel);
+        const milestones = Array.isArray(c.milestones) ? c.milestones : [];
 
-        const laborUnitPrice = toNumber(c?.labor_cost);
-        const materialUnitPrice = toNumber(c?.material_cost);
+        // Priority: current negotiated milestone rates, fallback to contract-level costs
+        let laborUnitPrice = toNumber(c?.labor_cost);
+        let materialUnitPrice = toNumber(c?.material_cost);
+
+        // Find milestones corresponding to Labour/Materials by checking title
+        const laborMs = milestones.find(m => {
+            const t = (m.title || m.milestone_name || '').toLowerCase();
+            return t.includes('labor') || t.includes('completion') || t.includes('service');
+        });
+        const matMs = milestones.find(m => {
+            const t = (m.title || m.milestone_name || '').toLowerCase();
+            return t.includes('material');
+        });
+
+        if (laborMs && laborMs.unit_rate != null && laborMs.unit_rate !== '') {
+            laborUnitPrice = toNumber(laborMs.unit_rate);
+        }
+        if (matMs && matMs.unit_rate != null && matMs.unit_rate !== '') {
+            materialUnitPrice = toNumber(matMs.unit_rate);
+        }
 
         const items = [];
-        if (isUnitBased && (laborUnitLabel || laborUnitPrice > 0)) {
+        if (laborUnitLabel || laborUnitPrice > 0) {
             items.push({ category: 'Labour', unitLabel: laborUnitLabel || 'units', unitPrice: laborUnitPrice });
         }
-        if (isUnitBased && (materialUnitLabel || materialUnitPrice > 0)) {
+        if (materialUnitLabel || materialUnitPrice > 0) {
             items.push({ category: 'Materials', unitLabel: materialUnitLabel || 'units', unitPrice: materialUnitPrice });
         }
 
         return {
-            isUnitBased,
+            isUnitBased: Boolean(laborUnitLabel || materialUnitLabel || items.length > 0),
             items
         };
     }
@@ -155,15 +173,29 @@
 
         let scheduleHTML = '<h5 class="preview-schedule-title"><i class="fas fa-receipt"></i> Payment Schedule</h5>';
 
-        if (method === 'milestone_based' && Array.isArray(milestones) && milestones.length > 0) {
+        if ((method === 'milestone_based' || unitBased) && Array.isArray(milestones) && milestones.length > 0) {
             if (unitBased) {
                 scheduleHTML += '<p class="preview-muted" style="margin-bottom:10px;">Unit-priced milestones are billed from verified actual units (and actual unit rates if provided).</p>';
                 scheduleHTML += '<table class="preview-milestones-table"><thead><tr><th>#</th><th>Milestone</th><th>Rate (per unit)</th></tr></thead><tbody>';
                 milestones.forEach((ms, i) => {
-                    const unitLabel = String(ms?.unit_label || '').trim() || 'units';
+                    const title = (ms?.title || ms?.milestone_name || '').toLowerCase();
+                    let unitLabel = String(ms?.unit_label || '').trim();
                     const agreedRate = parseFloat(ms?.unit_rate || 0);
                     const actualRate = parseFloat(ms?.actual_unit_rate || 0);
-                    const unitRate = (actualRate > 0) ? actualRate : agreedRate;
+                    let unitRate = (actualRate > 0) ? actualRate : agreedRate;
+
+                    // Fallback comparison to contract level if milestone data is empty (consistent with summary section)
+                    if (unitLabel === '' || unitRate === 0) {
+                        if (title.includes('labor') || title.includes('completion') || title.includes('service')) {
+                            if (unitLabel === '') unitLabel = String(c?.labor_unit_label || '').trim();
+                            if (unitRate === 0) unitRate = toNumber(c?.labor_cost);
+                        } else if (title.includes('material')) {
+                            if (unitLabel === '') unitLabel = String(c?.material_unit_label || '').trim();
+                            if (unitRate === 0) unitRate = toNumber(c?.material_cost);
+                        }
+                    }
+                    if (unitLabel === '') unitLabel = 'units';
+
                     const rateStr = (unitRate > 0) ? (formatCurrency(unitRate) + ' / ' + esc(unitLabel)) : '—';
                     scheduleHTML += `<tr><td>${i + 1}</td><td>${esc(ms?.title || ms?.milestone_name || ('Milestone ' + (i + 1)))}</td><td>${rateStr}</td></tr>`;
                 });
