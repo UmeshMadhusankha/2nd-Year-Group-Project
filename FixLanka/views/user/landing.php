@@ -101,6 +101,7 @@ try {
         $heroBannerItems[] = [
             'kind' => 'ad',
             'ad_id' => (int) ($row['ad_id'] ?? 0),
+            'provider_id' => (int) ($row['provider_id'] ?? 0),
             'title' => $adTitle !== '' ? $adTitle : 'Featured Promotion',
             'subtitle' => $adDescription !== '' ? $adDescription : 'Check out this current promotion on Fix Lanka.',
             'provider_name' => $providerName,

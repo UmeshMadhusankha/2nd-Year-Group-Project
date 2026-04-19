@@ -137,6 +137,8 @@ function initializeHeroBannerRotator() {
         const subtitle = String(item?.subtitle || '');
         const providerName = String(item?.provider_name || '').trim();
         const kind = String(item?.kind || 'static').toLowerCase();
+        const providerType = String(item?.provider_type || '').toLowerCase();
+        const providerId = Number(item?.provider_id || 0);
 
         titleEl.textContent = title;
         subtitleEl.textContent = subtitle;
@@ -147,6 +149,50 @@ function initializeHeroBannerRotator() {
         } else {
             providerEl.textContent = '';
             providerEl.style.display = 'none';
+        }
+
+        // Distinguish visuals + interaction: static content is non-clickable,
+        // ad slides are clickable and open provider profile popup.
+        if (kind === 'ad' && Number.isFinite(providerId) && providerId > 0) {
+            banner.classList.add('hero-banner-ad');
+            banner.classList.remove('hero-banner-static');
+            banner.classList.add('hero-banner-clickable');
+            banner.setAttribute('role', 'button');
+            banner.setAttribute('tabindex', '0');
+            banner.setAttribute('aria-label', `Open profile for ${providerName || 'service provider'}`);
+
+            const openPopup = () => {
+                if (providerType === 'company') {
+                    if (typeof window.openCompanyProfile === 'function') {
+                        window.openCompanyProfile(providerId);
+                    } else {
+                        console.error('[LandingHeroAds] openCompanyProfile() is not available.');
+                    }
+                    return;
+                }
+
+                if (typeof window.openRepairerProfile === 'function') {
+                    window.openRepairerProfile(providerId);
+                } else {
+                    console.error('[LandingHeroAds] openRepairerProfile() is not available.');
+                }
+            };
+
+            banner.onclick = openPopup;
+            banner.onkeydown = (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openPopup();
+                }
+            };
+        } else {
+            banner.classList.remove('hero-banner-ad', 'hero-banner-clickable');
+            banner.classList.add('hero-banner-static');
+            banner.removeAttribute('role');
+            banner.removeAttribute('tabindex');
+            banner.removeAttribute('aria-label');
+            banner.onclick = null;
+            banner.onkeydown = null;
         }
 
         banner.classList.remove('hero-snap-in');
