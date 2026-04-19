@@ -1024,15 +1024,17 @@ foreach ($allJobRequests as $job) {
     function quoteCardActionsHtml(quote, compact, quotePayload, displayStatus) {
         const status = String(displayStatus || 'pending').toLowerCase();
         const source = String(quote.source || '').toLowerCase();
+        const rawQuoteStatus = String(quote.status || '').toLowerCase();
         const hasCompanyContract = Number(quote.has_contract || 0) === 1 || Number(quote.contract_id || 0) > 0;
+        const enableCompanyContractBtn = rawQuoteStatus === 'successful' || hasCompanyContract;
 
-        if (!compact && source === 'company' && status === 'accepted') {
+        if (!compact && source === 'company' && (status === 'accepted' || rawQuoteStatus === 'successful')) {
             return `
                 <button
                     type="button"
-                    class="action-btn ${hasCompanyContract ? 'btn-success-sm' : 'btn-secondary'}"
-                    ${hasCompanyContract ? '' : 'disabled'}
-                    onclick='event.stopPropagation();${hasCompanyContract ? "window.location.href=\"/2nd-Year-Group-Project/FixLanka/my-contracts\"" : "return false"}'>
+                    class="action-btn ${enableCompanyContractBtn ? 'btn-success-sm' : 'btn-secondary'}"
+                    ${enableCompanyContractBtn ? '' : 'disabled'}
+                    onclick='event.stopPropagation();${enableCompanyContractBtn ? "window.location.href=\"/2nd-Year-Group-Project/FixLanka/my-contracts\"" : "return false"}'>
                     <i class="fas fa-file-contract"></i> Company Contract
                 </button>
                 <button
@@ -1398,6 +1400,28 @@ foreach ($allJobRequests as $job) {
             const result = await fetchJson(`${USER_QUOTES_API}?action=list&limit=100&offset=0&status=${encodeURIComponent(currentQuoteStatusFilter)}`);
             const quotes = Array.isArray(result.quotes) ? result.quotes : [];
             setQuotesPill(parseInt(result.pending_count, 10) || 0);
+
+            // Optional debug helper: set localStorage key `jobHistoryQuotesDebug=1` to inspect status transitions.
+            try {
+                if (localStorage.getItem('jobHistoryQuotesDebug') === '1') {
+                    const statusRows = quotes.map((q) => ({
+                        source: String(q.source || ''),
+                        quote_id: Number(q.quote_id || 0),
+                        request_id: Number(q.request_id || 0),
+                        status: String(q.status || ''),
+                        display_status: quoteDisplayStatus(q),
+                        contract_id: Number(q.contract_id || 0),
+                        has_contract: Number(q.has_contract || 0),
+                    }));
+                    console.log('[QuotesReceived] status snapshot', {
+                        filter: currentQuoteStatusFilter,
+                        total: quotes.length,
+                        rows: statusRows,
+                    });
+                }
+            } catch (e) {
+                // Ignore localStorage access failures.
+            }
 
             if (!quotes.length) {
                 quotesReceivedList.innerHTML = '<div class="quote-empty-state">No quotes received.</div>';

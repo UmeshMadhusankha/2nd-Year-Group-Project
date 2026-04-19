@@ -157,6 +157,11 @@ class UserQuotesModel {
                     $statusSqlRepairerRegular = ' AND rq.status = :status_repairer_regular ';
                     $statusSqlCompanyRegular = ' AND cq.status = :status_company_regular ';
                     if ($statusNormalized === 'accepted') {
+                        // Company quotations move to `successful` after contract creation.
+                        // Keep them visible in Accepted tab to avoid disappearing cards.
+                        $statusSqlCompanyRegular = " AND cq.status IN ('accepted','successful') ";
+                    }
+                    if ($statusNormalized === 'accepted') {
                         $acceptedScopeSqlRepairerRegular = " AND jr.status <> 'completed' ";
                         $acceptedScopeSqlCompanyRegular = " AND jr.status <> 'completed' ";
                     }
@@ -184,6 +189,11 @@ class UserQuotesModel {
                     $params[':status_company_direct'] = $statusNormalized;
                     $statusSqlRepairerDirect = ' AND rq.status = :status_repairer_direct ';
                     $statusSqlCompanyDirect = ' AND cq.status = :status_company_direct ';
+                    if ($statusNormalized === 'accepted') {
+                        // Company quotations move to `successful` after contract creation.
+                        // Keep them visible in Accepted tab to avoid disappearing cards.
+                        $statusSqlCompanyDirect = " AND cq.status IN ('accepted','successful') ";
+                    }
                     if ($statusNormalized === 'accepted') {
                         $acceptedScopeSqlRepairerDirect = " AND djr.status <> 'completed' ";
                         $acceptedScopeSqlCompanyDirect = " AND djr.status <> 'completed' ";
