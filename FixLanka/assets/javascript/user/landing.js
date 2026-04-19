@@ -118,6 +118,105 @@ let currentUserHomeAddress = '';
 let currentUserHomeDistrict = '';
 let directJobManualAddress = '';
 let directJobManualDistrict = '';
+let heroRotationTimer = null;
+let heroRotationIndex = 0;
+
+function initializeHeroBannerRotator() {
+    const items = Array.isArray(window.LANDING_HERO_ITEMS) ? window.LANDING_HERO_ITEMS : [];
+    if (!items.length) return;
+
+    const banner = document.querySelector('.hero-banner');
+    const titleEl = document.getElementById('heroRotatingTitle');
+    const subtitleEl = document.getElementById('heroRotatingSubtitle');
+    const providerEl = document.getElementById('heroProviderLine');
+
+    if (!banner || !titleEl || !subtitleEl || !providerEl) return;
+
+    const renderItem = (item) => {
+        const title = String(item?.title || '');
+        const subtitle = String(item?.subtitle || '');
+        const providerName = String(item?.provider_name || '').trim();
+        const kind = String(item?.kind || 'static').toLowerCase();
+        const providerType = String(item?.provider_type || '').toLowerCase();
+        const providerId = Number(item?.provider_id || 0);
+
+        titleEl.textContent = title;
+        subtitleEl.textContent = subtitle;
+
+        if (kind === 'ad' && providerName !== '') {
+            providerEl.textContent = `Sponsored by ${providerName}`;
+            providerEl.style.display = 'inline-flex';
+        } else {
+            providerEl.textContent = '';
+            providerEl.style.display = 'none';
+        }
+
+        // Distinguish visuals + interaction: static content is non-clickable,
+        // ad slides are clickable and open provider profile popup.
+        if (kind === 'ad' && Number.isFinite(providerId) && providerId > 0) {
+            banner.classList.add('hero-banner-ad');
+            banner.classList.remove('hero-banner-static');
+            banner.classList.add('hero-banner-clickable');
+            banner.setAttribute('role', 'button');
+            banner.setAttribute('tabindex', '0');
+            banner.setAttribute('aria-label', `Open profile for ${providerName || 'service provider'}`);
+
+            const openPopup = () => {
+                if (providerType === 'company') {
+                    if (typeof window.openCompanyProfile === 'function') {
+                        window.openCompanyProfile(providerId);
+                    } else {
+                        console.error('[LandingHeroAds] openCompanyProfile() is not available.');
+                    }
+                    return;
+                }
+
+                if (typeof window.openRepairerProfile === 'function') {
+                    window.openRepairerProfile(providerId);
+                } else {
+                    console.error('[LandingHeroAds] openRepairerProfile() is not available.');
+                }
+            };
+
+            banner.onclick = openPopup;
+            banner.onkeydown = (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openPopup();
+                }
+            };
+        } else {
+            banner.classList.remove('hero-banner-ad', 'hero-banner-clickable');
+            banner.classList.add('hero-banner-static');
+            banner.removeAttribute('role');
+            banner.removeAttribute('tabindex');
+            banner.removeAttribute('aria-label');
+            banner.onclick = null;
+            banner.onkeydown = null;
+        }
+
+        banner.classList.remove('hero-snap-in');
+        void banner.offsetWidth;
+        banner.classList.add('hero-snap-in');
+    };
+
+    heroRotationIndex = 0;
+    renderItem(items[heroRotationIndex]);
+
+    if (heroRotationTimer) {
+        window.clearInterval(heroRotationTimer);
+    }
+
+    if (items.length <= 1) {
+        return;
+    }
+
+    // Rotate roughly every 10-15 seconds (set to 12 seconds for consistent UX).
+    heroRotationTimer = window.setInterval(() => {
+        heroRotationIndex = (heroRotationIndex + 1) % items.length;
+        renderItem(items[heroRotationIndex]);
+    }, 12000);
+}
 
 function cacheLandingRepairers(providers) {
     if (!Array.isArray(providers)) return;
@@ -316,6 +415,7 @@ window.getLandingCompanyById = getLandingCompanyById;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+    initializeHeroBannerRotator();
     initializeMobileMenu();
     initializeSearchForm();
     initializeLazyLoading();

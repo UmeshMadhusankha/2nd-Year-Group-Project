@@ -243,6 +243,19 @@
   background: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.4);
 }
+
+.job-actions .button-success-sm {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.job-actions .button-success-sm:hover {
+  background: linear-gradient(135deg, #0f9e72, #047857);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+/* ===== COMPLETION INFO ===== */
 .completion-info {
   display: flex;
   flex-direction: column;
@@ -307,6 +320,113 @@
   max-width: 100%;
   text-align: center;
 }
+
+/* ===== REVIEW MODAL ===== */
+.review-modal-container {
+  max-width: 640px;
+}
+
+.review-summary-panel,
+.review-form-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.review-summary-panel {
+  padding: 18px;
+  background: rgba(10, 186, 181, 0.05);
+  border: 1px solid rgba(10, 186, 181, 0.14);
+  border-radius: 16px;
+  margin-bottom: 18px;
+}
+
+.review-summary-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.review-summary-job {
+  margin: 0 0 4px 0;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.review-summary-customer,
+.review-summary-date,
+.review-summary-comment {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.review-summary-rating {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  font-weight: 700;
+}
+
+.review-summary-comment {
+  color: var(--text-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.review-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review-field label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.review-field select,
+.review-field textarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  color: var(--text-primary);
+  padding: 12px 14px;
+  font: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.review-field select:focus,
+.review-field textarea:focus {
+  outline: none;
+  border-color: rgba(10, 186, 181, 0.45);
+  box-shadow: 0 0 0 3px rgba(10, 186, 181, 0.12);
+}
+
+.review-field textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.review-modal-footer {
+  flex-wrap: wrap;
+}
+
+.review-modal-footer .btn-outline {
+  border: 1px solid rgba(10, 186, 181, 0.25);
+  color: #0a8f8a;
+  background: transparent;
+}
+
+.review-modal-footer .btn-outline:hover {
+  background: rgba(10, 186, 181, 0.08);
+}
+
+/* ===== FILTER STATES ===== */
 .job-item[data-status="active"] {
   display: flex;
 }

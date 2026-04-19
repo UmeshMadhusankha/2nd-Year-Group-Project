@@ -84,6 +84,18 @@ CREATE TABLE `advertisement` (
   KEY `idx_dates` (`start_date`,`end_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
+-- Optional mock data for landing hero banner rotation
+-- These rows match the current date window dynamically via CURDATE().
+-- Run this block manually if you want sample ads in the landing hero.
+-- --------------------------------------------------------
+INSERT INTO `advertisement`
+(`provider_id`, `provider_type`, `title`, `description`, `type`, `budget`, `start_date`, `end_date`, `status`)
+VALUES
+(9997, 'company', 'April Home Care Specials', 'Book trusted repairs this week and get faster response from top providers.', 'banner', 4500.00, DATE_SUB(CURDATE(), INTERVAL 1 DAY), DATE_ADD(CURDATE(), INTERVAL 10 DAY), 'approved'),
+(9997, 'company', 'Fix Lanka Quick Service Window', 'Verified company teams available for urgent jobs in your district.', 'banner', 4900.00, DATE_SUB(CURDATE(), INTERVAL 2 DAY), DATE_ADD(CURDATE(), INTERVAL 8 DAY), 'approved'),
+(8881, 'repairer', 'Certified Repairer Offer', 'Get clean workmanship and clear pricing from experienced repairers.', 'banner', 3500.00, DATE_SUB(CURDATE(), INTERVAL 1 DAY), DATE_ADD(CURDATE(), INTERVAL 6 DAY), 'approved');
+
 -- Ad Schedule
 CREATE TABLE `adschedule` (
   `schedule_id` int(11) NOT NULL AUTO_INCREMENT,

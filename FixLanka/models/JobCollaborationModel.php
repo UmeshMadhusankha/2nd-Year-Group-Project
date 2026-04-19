@@ -312,6 +312,31 @@ class JobCollaborationModel
 
     private function enrichCollaborationRow(array $row, bool $includeEvents): array
     {
+        try {
+            $ratingStmt = $this->pdo->prepare(
+                'SELECT rating, comment, created_at
+                 FROM job_collaboration_rating
+                 WHERE collaboration_id = :collaboration_id
+                   AND reviewer_id = :reviewer_id
+                   AND reviewer_role = :reviewer_role
+                 LIMIT 1'
+            );
+            $ratingStmt->execute([
+                ':collaboration_id' => (int) $row['collaboration_id'],
+                ':reviewer_id' => (int) ($row['user_id'] ?? 0),
+                ':reviewer_role' => 'user',
+            ]);
+            $ratingRow = $ratingStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+            $row['user_rating'] = $ratingRow ? (int) ($ratingRow['rating'] ?? 0) : null;
+            $row['user_rating_comment'] = $ratingRow ? ($ratingRow['comment'] ?? null) : null;
+            $row['user_rating_created_at'] = $ratingRow ? ($ratingRow['created_at'] ?? null) : null;
+        } catch (Throwable $e) {
+            $row['user_rating'] = null;
+            $row['user_rating_comment'] = null;
+            $row['user_rating_created_at'] = null;
+        }
+
         if ($includeEvents) {
             $eventsStmt = $this->pdo->prepare(
                 'SELECT event_id, actor_id, actor_role, event_type, message, amount, meta_json, created_at
@@ -768,22 +793,55 @@ class JobCollaborationModel
             throw new RuntimeException('Both payment confirmations are required before rating');
         }
 
-        $insertRatingStmt = $this->pdo->prepare(
-            'INSERT INTO job_collaboration_rating
-                (collaboration_id, reviewer_id, reviewer_role, target_id, target_role, rating, comment)
-             VALUES
-                (:collaboration_id, :reviewer_id, :reviewer_role, :target_id, :target_role, :rating, :comment)'
+        $existingRatingStmt = $this->pdo->prepare(
+            'SELECT rating_id
+             FROM job_collaboration_rating
+             WHERE collaboration_id = :collaboration_id
+               AND reviewer_id = :reviewer_id
+               AND reviewer_role = :reviewer_role
+             LIMIT 1'
         );
-
-        $insertRatingStmt->execute([
+        $existingRatingStmt->execute([
             ':collaboration_id' => $collaborationId,
             ':reviewer_id' => $actorId,
             ':reviewer_role' => 'user',
-            ':target_id' => (int) $collaboration['provider_id'],
-            ':target_role' => (string) $collaboration['provider_role'],
-            ':rating' => $rating,
-            ':comment' => $comment,
         ]);
+        $existingRatingId = (int) $existingRatingStmt->fetchColumn();
+
+        if ($existingRatingId > 0) {
+            $updateRatingStmt = $this->pdo->prepare(
+                'UPDATE job_collaboration_rating
+                 SET rating = :rating,
+                     comment = :comment,
+                     target_id = :target_id,
+                     target_role = :target_role
+                 WHERE rating_id = :rating_id'
+            );
+            $updateRatingStmt->execute([
+                ':rating' => $rating,
+                ':comment' => $comment,
+                ':target_id' => (int) $collaboration['provider_id'],
+                ':target_role' => (string) $collaboration['provider_role'],
+                ':rating_id' => $existingRatingId,
+            ]);
+        } else {
+            $insertRatingStmt = $this->pdo->prepare(
+                'INSERT INTO job_collaboration_rating
+                    (collaboration_id, reviewer_id, reviewer_role, target_id, target_role, rating, comment)
+                 VALUES
+                    (:collaboration_id, :reviewer_id, :reviewer_role, :target_id, :target_role, :rating, :comment)'
+            );
+
+            $insertRatingStmt->execute([
+                ':collaboration_id' => $collaborationId,
+                ':reviewer_id' => $actorId,
+                ':reviewer_role' => 'user',
+                ':target_id' => (int) $collaboration['provider_id'],
+                ':target_role' => (string) $collaboration['provider_role'],
+                ':rating' => $rating,
+                ':comment' => $comment,
+            ]);
+        }
 
         $updatePhaseStmt = $this->pdo->prepare(
             'UPDATE job_collaboration
@@ -813,7 +871,48 @@ class JobCollaborationModel
             $jobStmt = $this->pdo->prepare('SELECT job_id FROM job WHERE job_request_id = :request_id ORDER BY job_id DESC LIMIT 1');
             $jobStmt->execute([':request_id' => (int) $collaboration['request_id']]);
             $jobId = (int) $jobStmt->fetchColumn();
+
             if ($jobId <= 0) {
+                $createJobStmt = $this->pdo->prepare(
+                    'INSERT INTO job (job_request_id, fixer_id, status, completionDate, created_at)
+                     VALUES (:request_id, :fixer_id, :status, NOW(), NOW())'
+                );
+                $createJobStmt->execute([
+                    ':request_id' => (int) $collaboration['request_id'],
+                    ':fixer_id' => (int) $collaboration['provider_id'],
+                    ':status' => 'completed',
+                ]);
+                $jobId = (int) $this->pdo->lastInsertId();
+            }
+
+            if ($jobId <= 0) {
+                return;
+            }
+
+            $existingStmt = $this->pdo->prepare(
+                'SELECT review_id FROM review
+                 WHERE job_id = :job_id AND service_provider_id = :service_provider_id
+                 LIMIT 1'
+            );
+            $existingStmt->execute([
+                ':job_id' => $jobId,
+                ':service_provider_id' => (int) $collaboration['provider_id'],
+            ]);
+            $existingReviewId = (int) $existingStmt->fetchColumn();
+
+            if ($existingReviewId > 0) {
+                $updateStmt = $this->pdo->prepare(
+                    'UPDATE review
+                     SET rating = :rating,
+                         comments = :comments,
+                         date = NOW()
+                     WHERE review_id = :review_id'
+                );
+                $updateStmt->execute([
+                    ':rating' => $rating,
+                    ':comments' => $comment,
+                    ':review_id' => $existingReviewId,
+                ]);
                 return;
             }
 

@@ -616,24 +616,39 @@ foreach ($allJobRequests as $job) {
                             </button>
                         </div>
                     </section>
-
-                    <section class="collaboration-panel collaboration-review-panel is-locked" id="collabRatingPanel">
-                        <h3>Review</h3>
-                        <p class="collaboration-hint collab-review-lock-text" id="collabReviewLockText">Job and payment must be completed.</p>
-                        <select id="collabRatingValue">
-                            <option value="">Select rating</option>
-                            <option value="5">5 - Excellent</option>
-                            <option value="4">4 - Good</option>
-                            <option value="3">3 - Average</option>
-                            <option value="2">2 - Poor</option>
-                            <option value="1">1 - Bad</option>
-                        </select>
-                        <textarea id="collabRatingComment" rows="2" placeholder="Optional review comment"></textarea>
-                        <button type="button" class="action-btn btn-success-sm" id="collabSubmitRatingBtn">
-                            <i class="fas fa-star"></i> Submit Rating
-                        </button>
-                    </section>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="collaborationReviewModal" class="modal-overlay">
+        <div class="modal-container collaboration-modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">Give a Review</h2>
+                <button class="modal-close" type="button" onclick="closeCollaborationReviewModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <section class="collaboration-panel collaboration-review-panel is-locked" id="collabRatingPanel">
+                    <h3>Review</h3>
+                    <p class="collaboration-hint collab-review-lock-text" id="collabReviewLockText">Job and payment must be completed.</p>
+                    <select id="collabRatingValue">
+                        <option value="">Select rating</option>
+                        <option value="5">5 - Excellent</option>
+                        <option value="4">4 - Good</option>
+                        <option value="3">3 - Average</option>
+                        <option value="2">2 - Poor</option>
+                        <option value="1">1 - Bad</option>
+                    </select>
+                    <textarea id="collabRatingComment" rows="2" placeholder="Optional review comment"></textarea>
+                    <button type="button" class="action-btn btn-secondary" id="collabEditRatingBtn" style="display:none;">
+                        <i class="fas fa-pen"></i> Edit Review
+                    </button>
+                    <button type="button" class="action-btn btn-success-sm" id="collabSubmitRatingBtn">
+                        <i class="fas fa-star"></i> Submit Rating
+                    </button>
+                </section>
             </div>
         </div>
     </div>
@@ -679,6 +694,7 @@ foreach ($allJobRequests as $job) {
     const latestNegotiationAcceptBtn = document.getElementById('latestNegotiationAcceptBtn');
     const latestNegotiationRejectBtn = document.getElementById('latestNegotiationRejectBtn');
     const jobCollaborationModal = document.getElementById('jobCollaborationModal');
+    const collaborationReviewModal = document.getElementById('collaborationReviewModal');
     const collabCurrentPhase = document.getElementById('collabCurrentPhase');
     const collabAgreedPrice = document.getElementById('collabAgreedPrice');
     const collabPendingPrice = document.getElementById('collabPendingPrice');
@@ -703,6 +719,7 @@ foreach ($allJobRequests as $job) {
     const collabReviewLockText = document.getElementById('collabReviewLockText');
     const collabRatingValue = document.getElementById('collabRatingValue');
     const collabRatingComment = document.getElementById('collabRatingComment');
+    const collabEditRatingBtn = document.getElementById('collabEditRatingBtn');
     const collabSubmitRatingBtn = document.getElementById('collabSubmitRatingBtn');
     const JOB_HISTORY_VIEW_KEY = 'jobHistory.activeView';
 
@@ -733,6 +750,7 @@ foreach ($allJobRequests as $job) {
     let currentLatestNegotiationItem = null;
     let currentCollaboration = null;
     let currentCollabContext = { requestId: null, requestType: null };
+    let collabRatingEditMode = false;
     let directEditRequestId = null;
 
     function escapeHtml(value) {
@@ -1042,6 +1060,12 @@ foreach ($allJobRequests as $job) {
                     class="action-btn btn-view-quotes"
                     onclick='event.stopPropagation();openCompletedQuoteSummary(${quotePayload})'>
                     <i class="fas fa-file-lines"></i> Summary
+                </button>
+                <button
+                    type="button"
+                    class="action-btn btn-success-sm"
+                    onclick='event.stopPropagation();openCollaborationReviewModal(${Number(quote.request_id)}, "${escapeHtml(String(quote.request_type || 'regular').toLowerCase() === 'direct' ? 'direct' : 'regular')}")'>
+                    <i class="fas fa-star"></i> Give a Review
                 </button>
             `;
         }
@@ -1877,19 +1901,33 @@ foreach ($allJobRequests as $job) {
             collabResetPaymentBtn.disabled = !userPaid;
         }
 
-        const canRate = !!currentCollaboration.user_payment_confirmed_at
-            && !!currentCollaboration.provider_payment_confirmed_at
-            && !currentCollaboration.user_rated_at;
+        const canReviewPhase = !!currentCollaboration.user_payment_confirmed_at
+            && !!currentCollaboration.provider_payment_confirmed_at;
+        const alreadyRated = !!currentCollaboration.user_rated_at;
+        const canRate = canReviewPhase && (!alreadyRated || collabRatingEditMode);
+
+        if (collabRatingValue) {
+            const existingRating = Number(currentCollaboration.user_rating || 0);
+            if (existingRating >= 1 && existingRating <= 5) {
+                collabRatingValue.value = String(existingRating);
+            }
+        }
+        if (collabRatingComment) {
+            collabRatingComment.value = String(currentCollaboration.user_rating_comment || '');
+        }
+
         if (collabRatingPanel) {
             collabRatingPanel.classList.toggle('is-locked', !canRate);
             collabRatingPanel.style.display = 'block';
         }
 
         if (collabReviewLockText) {
-            if (currentCollaboration.user_rated_at) {
-                collabReviewLockText.textContent = 'Review already submitted.';
+            if (alreadyRated && !collabRatingEditMode) {
+                collabReviewLockText.textContent = 'Review already submitted. You can edit it.';
             } else if (!canRate) {
                 collabReviewLockText.textContent = 'Job and payment must be completed.';
+            } else if (alreadyRated && collabRatingEditMode) {
+                collabReviewLockText.textContent = 'Update your submitted review.';
             } else {
                 collabReviewLockText.textContent = 'You can now submit your review.';
             }
@@ -1901,8 +1939,16 @@ foreach ($allJobRequests as $job) {
         if (collabRatingComment) {
             collabRatingComment.disabled = !canRate;
         }
+        if (collabEditRatingBtn) {
+            collabEditRatingBtn.style.display = alreadyRated && canReviewPhase && !collabRatingEditMode ? '' : 'none';
+            collabEditRatingBtn.disabled = !canReviewPhase;
+        }
         if (collabSubmitRatingBtn) {
             collabSubmitRatingBtn.disabled = !canRate;
+            collabSubmitRatingBtn.style.display = canReviewPhase ? '' : 'none';
+            collabSubmitRatingBtn.innerHTML = alreadyRated
+                ? '<i class="fas fa-save"></i> Update Review'
+                : '<i class="fas fa-star"></i> Submit Rating';
         }
 
         renderCollaborationEvents(currentCollaboration.events || []);
@@ -1962,6 +2008,36 @@ foreach ($allJobRequests as $job) {
                 collabEventsList.innerHTML = `<div class="quote-empty-state">${escapeHtml(message)}</div>`;
             }
         }
+    }
+
+    async function openCollaborationReviewModal(requestId, requestType) {
+        if (!collaborationReviewModal) return;
+
+        collabRatingEditMode = false;
+
+        currentCollabContext = {
+            requestId: Number(requestId),
+            requestType: String(requestType || 'regular').toLowerCase() === 'direct' ? 'direct' : 'regular'
+        };
+
+        collaborationReviewModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        try {
+            await refreshCollaboration();
+        } catch (error) {
+            const message = error && error.message ? error.message : 'Failed to load collaboration review details.';
+            if (collabReviewLockText) {
+                collabReviewLockText.textContent = message;
+            }
+        }
+    }
+
+    function closeCollaborationReviewModal() {
+        if (!collaborationReviewModal) return;
+        collaborationReviewModal.classList.remove('show');
+        document.body.style.overflow = '';
+        collabRatingEditMode = false;
     }
 
     function closeJobCollaborationModal() {
@@ -2215,6 +2291,8 @@ foreach ($allJobRequests as $job) {
     window.closeLatestQuoteNegotiationModal = closeLatestQuoteNegotiationModal;
     window.openJobCollaborationModal = openJobCollaborationModal;
     window.closeJobCollaborationModal = closeJobCollaborationModal;
+    window.openCollaborationReviewModal = openCollaborationReviewModal;
+    window.closeCollaborationReviewModal = closeCollaborationReviewModal;
     window.openDirectEditModal = openDirectEditModal;
     window.deleteDirectRequest = deleteDirectRequest;
 
@@ -2306,6 +2384,14 @@ foreach ($allJobRequests as $job) {
             jobCollaborationModal.addEventListener('click', function(event) {
                 if (event.target === jobCollaborationModal) {
                     closeJobCollaborationModal();
+                }
+            });
+        }
+
+        if (collaborationReviewModal) {
+            collaborationReviewModal.addEventListener('click', function(event) {
+                if (event.target === collaborationReviewModal) {
+                    closeCollaborationReviewModal();
                 }
             });
         }
@@ -2498,10 +2584,17 @@ foreach ($allJobRequests as $job) {
                     await callCollaborationAction('submit_rating', {
                         rating,
                         comment: comment || null,
-                    }, 'Rating submitted successfully.');
-                    if (collabRatingValue) collabRatingValue.value = '';
-                    if (collabRatingComment) collabRatingComment.value = '';
+                    }, 'Review saved successfully.');
+                    collabRatingEditMode = false;
                 });
+            });
+        }
+
+        if (collabEditRatingBtn) {
+            collabEditRatingBtn.addEventListener('click', function() {
+                if (!currentCollaboration) return;
+                collabRatingEditMode = true;
+                renderCollaboration(currentCollaboration);
             });
         }
 
