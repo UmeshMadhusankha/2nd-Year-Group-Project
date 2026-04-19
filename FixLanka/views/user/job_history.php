@@ -1023,6 +1023,26 @@ foreach ($allJobRequests as $job) {
 
     function quoteCardActionsHtml(quote, compact, quotePayload, displayStatus) {
         const status = String(displayStatus || 'pending').toLowerCase();
+        const source = String(quote.source || '').toLowerCase();
+        const hasCompanyContract = Number(quote.has_contract || 0) === 1 || Number(quote.contract_id || 0) > 0;
+
+        if (!compact && source === 'company' && status === 'accepted') {
+            return `
+                <button
+                    type="button"
+                    class="action-btn ${hasCompanyContract ? 'btn-success-sm' : 'btn-secondary'}"
+                    ${hasCompanyContract ? '' : 'disabled'}
+                    onclick='event.stopPropagation();${hasCompanyContract ? "window.location.href=\"/2nd-Year-Group-Project/FixLanka/my-contracts\"" : "return false"}'>
+                    <i class="fas fa-file-contract"></i> Company Contract
+                </button>
+                <button
+                    type="button"
+                    class="action-btn btn-reject-sm"
+                    onclick='event.stopPropagation();resetQuoteToPending(${quotePayload}, "accepted")'>
+                    <i class="fas fa-rotate-left"></i> Cancel Acceptance
+                </button>
+            `;
+        }
 
         if (status === 'accepted') {
             return `
@@ -1466,9 +1486,15 @@ foreach ($allJobRequests as $job) {
         quoteNegotiateBtn.style.display = '';
 
         const quoteStatus = String(quote.status || '').toLowerCase();
+        const quoteSource = String(quote.source || '').toLowerCase();
         const canRespond = quoteStatus === 'pending';
         quoteAcceptBtn.disabled = !canRespond;
         quoteRejectBtn.disabled = !canRespond;
+
+        if (quoteStatus === 'pending' && quoteSource === 'company') {
+            quoteNegotiateBtn.style.display = 'none';
+            return;
+        }
 
         const requestStatus = String(quote.request_status || quote.job_status || '').toLowerCase();
         const isInProgress = requestStatus === 'in_progress';

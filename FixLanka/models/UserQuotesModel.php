@@ -207,6 +207,7 @@ class UserQuotesModel {
         $companyJoinSql        = $hasCompanyId ? "LEFT JOIN company comp ON cq.company_id = comp.company_id" : "";
         $companyProviderNameSql = $hasCompanyId ? "COALESCE(comp.name, 'Company')" : "'Company'";
         $companyProviderIdSql   = $hasCompanyId ? "cq.company_id" : "0";
+        $companyContractJoinSql = "LEFT JOIN (SELECT quotation_id, MAX(contract_id) AS contract_id FROM contract GROUP BY quotation_id) ct ON ct.quotation_id = cq.quotation_id";
 
         $parts = [];
 
@@ -249,7 +250,9 @@ class UserQuotesModel {
                     NULL AS hourly_rate,
                     NULL AS work_schedule_type,
                     NULL AS labor_unit_label,
-                    NULL AS material_unit_label
+                    NULL AS material_unit_label,
+                    NULL AS contract_id,
+                    0 AS has_contract
                 FROM repairerquote rq
                 INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
                 LEFT JOIN category c ON c.category_id = jr.category_id
@@ -299,11 +302,14 @@ class UserQuotesModel {
                     cq.hourly_rate AS hourly_rate,
                     cq.work_schedule_type AS work_schedule_type,
                     cq.labor_unit_label AS labor_unit_label,
-                    cq.material_unit_label AS material_unit_label
+                    cq.material_unit_label AS material_unit_label,
+                    ct.contract_id AS contract_id,
+                    CASE WHEN ct.contract_id IS NULL THEN 0 ELSE 1 END AS has_contract
                 FROM companyquotation cq
                 INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
                 LEFT JOIN category c ON c.category_id = jr.category_id
                 $companyJoinSql
+                $companyContractJoinSql
                 WHERE jr.user_id = :user_id_company_regular
                 $statusSqlCompanyRegular
                 $requestStatusSqlCompanyRegular
@@ -351,7 +357,9 @@ class UserQuotesModel {
                     NULL AS hourly_rate,
                     NULL AS work_schedule_type,
                     NULL AS labor_unit_label,
-                    NULL AS material_unit_label
+                    NULL AS material_unit_label,
+                    NULL AS contract_id,
+                    0 AS has_contract
                 FROM repairerquote rq
                 INNER JOIN directjobrequest djr ON rq.request_id = djr.request_id
                 LEFT JOIN category c ON c.category_id = djr.category_id
@@ -401,11 +409,14 @@ class UserQuotesModel {
                     cq.hourly_rate AS hourly_rate,
                     cq.work_schedule_type AS work_schedule_type,
                     cq.labor_unit_label AS labor_unit_label,
-                    cq.material_unit_label AS material_unit_label
+                    cq.material_unit_label AS material_unit_label,
+                    ct.contract_id AS contract_id,
+                    CASE WHEN ct.contract_id IS NULL THEN 0 ELSE 1 END AS has_contract
                 FROM companyquotation cq
                 INNER JOIN directjobrequest djr ON cq.request_id = djr.request_id
                 LEFT JOIN category c ON c.category_id = djr.category_id
                 $companyJoinSql
+                $companyContractJoinSql
                 WHERE djr.user_id = :user_id_company_direct
                 $statusSqlCompanyDirect
                 $requestStatusSqlCompanyDirect
