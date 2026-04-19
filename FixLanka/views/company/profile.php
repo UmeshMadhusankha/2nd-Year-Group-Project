@@ -1,8 +1,20 @@
 <?php
 // Start session and check authentication
 require_once __DIR__ . '/../../config/session.php';
+require_once __DIR__ . '/../../config/database.php';
 requireRole(['company']);
 $userData = getUserData();
+
+// Load service categories for company profile (checkbox list)
+$serviceCategories = [];
+try {
+    if (isset($pdo)) {
+        $stmt = $pdo->query('SELECT category_id, name FROM category ORDER BY name');
+        $serviceCategories = $stmt->fetchAll();
+    }
+} catch (Exception $e) {
+    error_log('Failed to load categories for company profile: ' . $e->getMessage());
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -94,22 +106,12 @@ $userData = getUserData();
                                 <div class="form-group">
                                     <label>Service Categories * (Select at least one)</label>
                                     <div class="checkbox-group business-type-grid" id="companyBusinessTypes">
-                                        <label><input type="checkbox" class="company-business-type" value="Plumbing"> Plumbing</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Electrical"> Electrical</label>
-                                        <label><input type="checkbox" class="company-business-type" value="HVAC"> HVAC</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Cleaning"> Cleaning</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Carpentry"> Carpentry</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Painting"> Painting</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Appliance Repair"> Appliance Repair</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Roofing"> Roofing</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Landscaping"> Landscaping</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Pest Control"> Pest Control</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Home Security"> Home Security</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Interior Design"> Interior Design</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Flooring"> Flooring</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Masonry"> Masonry</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Welding"> Welding</label>
-                                        <label><input type="checkbox" class="company-business-type" value="Construction"> Construction</label>
+                                        <?php foreach ($serviceCategories as $cat): ?>
+                                            <label>
+                                                <input type="checkbox" class="company-business-type" value="<?php echo htmlspecialchars((string)$cat['name']); ?>">
+                                                <?php echo htmlspecialchars((string)$cat['name']); ?>
+                                            </label>
+                                        <?php endforeach; ?>
                                         <label><input type="checkbox" class="company-business-type" value="Other" id="companyBusinessTypeOther"> Other</label>
                                     </div>
                                     <small class="form-hint">Update what services your company provides.</small>
@@ -1468,21 +1470,17 @@ $userData = getUserData();
                 .map(s => (s || '').toString().trim())
                 .filter(Boolean);
 
-            const knownValues = new Set([
-                'Plumbing', 'Electrical', 'HVAC', 'Cleaning', 'Carpentry', 'Painting',
-                'Appliance Repair', 'Roofing', 'Landscaping', 'Pest Control', 'Home Security',
-                'Interior Design', 'Flooring', 'Masonry', 'Welding', 'Construction'
-            ]);
-
             const checkboxes = Array.from(document.querySelectorAll('.company-business-type'));
             checkboxes.forEach(cb => { cb.checked = false; });
+
+            const availableValues = new Set(checkboxes.map(cb => (cb.value || '').toString()));
 
             const unknown = [];
             parts.forEach(val => {
                 const match = checkboxes.find(cb => (cb.value || '') === val);
                 if (match) {
                     match.checked = true;
-                } else if (val && !knownValues.has(val)) {
+                } else if (val && val !== 'Other' && !availableValues.has(val)) {
                     unknown.push(val);
                 }
             });

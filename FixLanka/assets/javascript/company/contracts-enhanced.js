@@ -237,13 +237,23 @@ function autoFillContractForm(q) {
         'Service Request';
 
     const resolvedProjectLocationParts = [
-        q.request_address || q.location,
-        q.request_district || q.district
+        q.request_address || q.location || q.customer_address,
+        q.request_district || q.district || q.customer_district
     ].filter(Boolean);
     const resolvedProjectLocation = resolvedProjectLocationParts.join(', ');
 
     setFieldValue('projectType', resolvedProjectType);
-    setFieldValue('projectLocation', resolvedProjectLocation || q.location || q.district || '');
+    setFieldValue(
+        'projectLocation',
+        resolvedProjectLocation ||
+        q.request_address ||
+        q.customer_address ||
+        q.location ||
+        q.request_district ||
+        q.customer_district ||
+        q.district ||
+        ''
+    );
     setFieldValue('projectDescription', q.description || q.request_description || q.request_title || '');
 
     // Step 3: Financial Terms (Phase 1 Business Logic)
@@ -257,7 +267,13 @@ function autoFillContractForm(q) {
     setFieldValue('budgetType', q.budget_type || 'fixed');
     setFieldValue('budgetMin', q.budget_min || '');
     setFieldValue('budgetMax', q.budget_max || '');
-    setFieldValue('paymentMethod', q.payment_method || 'full_upfront');
+    console.log('[Contract Autofill] Quotation payment_method:', q.payment_method);
+    // Map known synonyms to select values if needed
+    let paymentMethod = q.payment_method;
+    if (paymentMethod === 'after_complete' || paymentMethod === 'after_completion' || paymentMethod === '100_after_complete') {
+        paymentMethod = 'completion';
+    }
+    setFieldValue('paymentMethod', paymentMethod || 'full_upfront');
     setFieldValue('pricingType', q.pricing_type || 'fixed_price');
     setFieldValue('hourlyRate', q.hourly_rate || '');
 
@@ -2054,7 +2070,7 @@ function autoFillProjectData(project) {
     // Project Details (Step 2)
     document.getElementById('projectTitle').value = project.project_title;
     document.getElementById('projectType').value = project.project_type;
-    document.getElementById('projectLocation').value = project.location;
+    document.getElementById('projectLocation').value = project.location || project.project_location || project.address || project.district || '';
     document.getElementById('projectDescription').value = project.project_description || '';
 
     // Financial & Timeline (Step 3)
@@ -2223,7 +2239,7 @@ function populateFormWithContract(data) {
     // Step 2: Project Details
     setVal('projectTitle', data.title || data.project_title || '');
     setVal('projectReference', data.project_reference || data.contract_number || '');
-    setVal('projectLocation', data.location || data.project_location || '');
+    setVal('projectLocation', data.location || data.project_location || client.address || client.district || '');
     setVal('projectType', data.type || '');
     setVal('projectDescription', data.description || '');
 

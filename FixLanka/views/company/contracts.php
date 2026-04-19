@@ -853,11 +853,7 @@ if (!$userId) {
                                 <h4 class="subsection-title"><i class="fas fa-tags"></i> Contract Pricing</h4>
                                 
                                 <div class="form-grid">
-                                    <div class="form-group full-width">
-                                        <label for="contractValue">Total Budget (LKR) <span class="required">*</span></label>
-                                        <input type="number" id="contractValue" name="total_budget" min="0" step="0.01" required>
-                                        <small>Enter the total cost. Auto-filled if generating from quotation.</small>
-                                    </div>
+                                    <input type="hidden" id="contractValue" name="total_budget">
                                 </div>
 
                                 <div class="form-grid">
@@ -903,7 +899,7 @@ if (!$userId) {
                                         <div class="breakdown-item"><span id="bdMaterialsLabel">Materials</span><span id="bdMaterials">-</span></div>
                                         <div class="breakdown-item"><span id="bdTransportLabel">Transport</span><span id="bdTransport">-</span></div>
                                         <div class="breakdown-item"><span id="bdOtherLabel">Other</span><span id="bdOther">-</span></div>
-                                        <div class="breakdown-item total"><span>Total</span><span id="bdTotal">-</span></div>
+                                        <div class="breakdown-item total"><span>Total Per Unit</span><span id="bdTotal">-</span></div>
                                     </div>
                                 </div>
 
