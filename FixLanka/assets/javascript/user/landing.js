@@ -118,6 +118,59 @@ let currentUserHomeAddress = '';
 let currentUserHomeDistrict = '';
 let directJobManualAddress = '';
 let directJobManualDistrict = '';
+let heroRotationTimer = null;
+let heroRotationIndex = 0;
+
+function initializeHeroBannerRotator() {
+    const items = Array.isArray(window.LANDING_HERO_ITEMS) ? window.LANDING_HERO_ITEMS : [];
+    if (!items.length) return;
+
+    const banner = document.querySelector('.hero-banner');
+    const titleEl = document.getElementById('heroRotatingTitle');
+    const subtitleEl = document.getElementById('heroRotatingSubtitle');
+    const providerEl = document.getElementById('heroProviderLine');
+
+    if (!banner || !titleEl || !subtitleEl || !providerEl) return;
+
+    const renderItem = (item) => {
+        const title = String(item?.title || '');
+        const subtitle = String(item?.subtitle || '');
+        const providerName = String(item?.provider_name || '').trim();
+        const kind = String(item?.kind || 'static').toLowerCase();
+
+        titleEl.textContent = title;
+        subtitleEl.textContent = subtitle;
+
+        if (kind === 'ad' && providerName !== '') {
+            providerEl.textContent = `Sponsored by ${providerName}`;
+            providerEl.style.display = 'inline-flex';
+        } else {
+            providerEl.textContent = '';
+            providerEl.style.display = 'none';
+        }
+
+        banner.classList.remove('hero-snap-in');
+        void banner.offsetWidth;
+        banner.classList.add('hero-snap-in');
+    };
+
+    heroRotationIndex = 0;
+    renderItem(items[heroRotationIndex]);
+
+    if (heroRotationTimer) {
+        window.clearInterval(heroRotationTimer);
+    }
+
+    if (items.length <= 1) {
+        return;
+    }
+
+    // Rotate roughly every 10-15 seconds (set to 12 seconds for consistent UX).
+    heroRotationTimer = window.setInterval(() => {
+        heroRotationIndex = (heroRotationIndex + 1) % items.length;
+        renderItem(items[heroRotationIndex]);
+    }, 12000);
+}
 
 function cacheLandingRepairers(providers) {
     if (!Array.isArray(providers)) return;
@@ -316,6 +369,7 @@ window.getLandingCompanyById = getLandingCompanyById;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+    initializeHeroBannerRotator();
     initializeMobileMenu();
     initializeSearchForm();
     initializeLazyLoading();

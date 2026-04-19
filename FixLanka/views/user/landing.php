@@ -48,6 +48,70 @@ $aboutExcerpt = '';
 if (!empty($aboutContent['body'])) {
     $aboutExcerpt = fixlanka_static_content_excerpt((string) $aboutContent['body'], 220);
 }
+
+// Landing hero rotation payload:
+// 1) Always show static-content hero text first
+// 2) Then rotate currently active banner ads from advertisement table
+$heroBannerItems = [
+    [
+        'kind' => 'static',
+        'title' => $heroTitle,
+        'subtitle' => $heroSubtitle,
+        'provider_name' => '',
+    ],
+];
+
+try {
+    $bannerStmt = $pdo->prepare(
+        "SELECT
+            a.ad_id,
+            a.title,
+            a.description,
+            a.provider_type,
+            a.provider_id,
+            a.start_date,
+            a.end_date,
+            CASE
+                WHEN a.provider_type = 'company' THEN COALESCE(c.name, CONCAT('Company #', a.provider_id))
+                ELSE COALESCE(NULLIF(TRIM(CONCAT(COALESCE(r.f_name, ''), ' ', COALESCE(r.l_name, ''))), ''), CONCAT('Repairer #', a.provider_id))
+            END AS provider_name
+         FROM advertisement a
+         LEFT JOIN company c
+            ON a.provider_type = 'company' AND c.company_id = a.provider_id
+         LEFT JOIN repairer r
+            ON a.provider_type = 'repairer' AND r.repairer_id = a.provider_id
+         WHERE LOWER(a.type) = 'banner'
+           AND CURDATE() BETWEEN a.start_date AND a.end_date
+           AND LOWER(a.status) IN ('approved', 'scheduled', 'active')
+         ORDER BY a.submission_date DESC, a.ad_id DESC
+         LIMIT 20"
+    );
+    $bannerStmt->execute();
+    $rows = $bannerStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    foreach ($rows as $row) {
+        $adTitle = trim((string) ($row['title'] ?? ''));
+        $adDescription = trim((string) ($row['description'] ?? ''));
+        $providerName = trim((string) ($row['provider_name'] ?? ''));
+
+        if ($adTitle === '' && $adDescription === '') {
+            continue;
+        }
+
+        $heroBannerItems[] = [
+            'kind' => 'ad',
+            'ad_id' => (int) ($row['ad_id'] ?? 0),
+            'title' => $adTitle !== '' ? $adTitle : 'Featured Promotion',
+            'subtitle' => $adDescription !== '' ? $adDescription : 'Check out this current promotion on Fix Lanka.',
+            'provider_name' => $providerName,
+            'provider_type' => (string) ($row['provider_type'] ?? ''),
+            'start_date' => (string) ($row['start_date'] ?? ''),
+            'end_date' => (string) ($row['end_date'] ?? ''),
+        ];
+    }
+} catch (Throwable $e) {
+    error_log('Landing banner ads query failed: ' . $e->getMessage());
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -72,8 +136,9 @@ if (!empty($aboutContent['body'])) {
             <!-- Hero Banner -->
             <div class="hero-banner">
                 <div class="hero-content">
-                    <h1 class="hero-title"><?php echo htmlspecialchars($heroTitle, ENT_QUOTES, 'UTF-8'); ?></h1>
-                    <p class="hero-subtitle"><?php echo htmlspecialchars($heroSubtitle, ENT_QUOTES, 'UTF-8'); ?></p>
+                    <h1 class="hero-title" id="heroRotatingTitle"><?php echo htmlspecialchars($heroTitle, ENT_QUOTES, 'UTF-8'); ?></h1>
+                    <p class="hero-subtitle" id="heroRotatingSubtitle"><?php echo htmlspecialchars($heroSubtitle, ENT_QUOTES, 'UTF-8'); ?></p>
+                    <p class="hero-provider-line" id="heroProviderLine" style="display:none;"></p>
                 </div>
             </div>
             
@@ -276,6 +341,10 @@ if (!empty($aboutContent['body'])) {
 
     <!-- Direct New Job Request Popup -->
     <?php include 'direct-job-request-popup.php'; ?>
+
+    <script>
+    window.LANDING_HERO_ITEMS = <?php echo json_encode($heroBannerItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    </script>
 
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/landing.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/company-profile-popup.js"></script>
