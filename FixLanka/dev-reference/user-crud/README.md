@@ -46,15 +46,19 @@ DROP COLUMN priority_level;
 ### What to change in code in real modules
 
 1. View:
+
 - Add a select input name=priority_level
 
 2. JS:
+
 - Include priority_level in request payload
 
 3. Controller:
+
 - Validate allowed values low/medium/high
 
 4. Model:
+
 - Include priority_level in INSERT and UPDATE query
 
 ## Task 2 example: CRUD + business logic join
@@ -64,17 +68,18 @@ This reference CRUD uses a practice table user_practice_note.
 ### SQL for practice table
 
 CREATE TABLE IF NOT EXISTS user_practice_note (
-    note_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    title VARCHAR(120) NOT NULL,
-    body TEXT NULL,
-    priority_level ENUM('low','medium','high') NOT NULL DEFAULT 'medium',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NULL,
-    INDEX idx_user_practice_note_user (user_id)
+note_id INT AUTO_INCREMENT PRIMARY KEY,
+user_id INT NOT NULL,
+title VARCHAR(120) NOT NULL,
+body TEXT NULL,
+priority_level ENUM('low','medium','high') NOT NULL DEFAULT 'medium',
+created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+updated_at DATETIME NULL,
+INDEX idx_user_practice_note_user (user_id)
 );
 
 The model also contains a business logic method that joins:
+
 - jobrequest
 - repairerquote
 - companyquotation
