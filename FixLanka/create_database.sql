@@ -954,7 +954,7 @@ CREATE TABLE `milestonepayment` (
   KEY `idx_milestone` (`milestone_id`),
   KEY `idx_contract` (`contract_id`),
   KEY `idx_status` (`status`),
-  CONSTRAINT `milestonepayment_ibfk_1` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE SET NULL,
+  CONSTRAINT `milestonepayment_ibfk_1` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE CASCADE,
   CONSTRAINT `milestonepayment_ibfk_2` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -1455,7 +1455,7 @@ CREATE TABLE `contract_invoices` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
-    FOREIGN KEY (`milestone_id`) REFERENCES `milestone`(`milestone_id`) ON DELETE SET NULL,
+    FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone`(`milestone_id`) ON DELETE SET NULL,
     INDEX `idx_contract_status` (`contract_id`, `payment_status`),
     INDEX `idx_invoice_number` (`invoice_number`),
     INDEX `idx_due_date` (`due_date`, `payment_status`),
