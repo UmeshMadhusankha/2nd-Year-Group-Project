@@ -64,29 +64,55 @@ function handleGetPayments() {
         $endDate = $_GET['end_date'] ?? null;
         $dateFilter = getDateFilter($period, $startDate, $endDate);
         
-        // Fetch income from milestone payments
-        $incomeQuery = "SELECT 
-                            mp.payment_id as id,
-                            mp.payment_date as date,
-                            p.title as project_name,
-                            p.project_id,
-                            u.f_name as client_first_name,
-                            u.l_name as client_last_name,
-                            mp.amount,
-                            mp.status,
-                            mp.method as payment_method,
-                            m.description as milestone_description
-                        FROM MilestonePayment mp
-                        JOIN Milestone m ON mp.milestone_id = m.milestone_id
-                        JOIN Contract c ON m.contract_id = c.contract_id
-                        JOIN Project p ON c.project_id = p.project_id
-                        JOIN User u ON p.customer_id = u.user_id
-                        WHERE p.company_id = :company_id
+        // Fetch income from both direct milestone payments and released escrow/contract payments
+        $incomeQuery = "SELECT * FROM (
+                            SELECT 
+                                mp.payment_id as id,
+                                COALESCE(mp.paid_at, mp.payment_date) as date,
+                                p.title as project_name,
+                                p.project_id,
+                                u.f_name as client_first_name,
+                                u.l_name as client_last_name,
+                                mp.amount,
+                                mp.status,
+                                mp.method as payment_method,
+                                cm.title as milestone_description
+                            FROM milestonepayment mp
+                            JOIN contract_milestone cm ON mp.milestone_id = cm.milestone_id
+                            JOIN contract c ON cm.contract_id = c.contract_id
+                            JOIN project p ON c.project_id = p.project_id
+                            JOIN user u ON p.customer_id = u.user_id
+                            WHERE p.company_id = :company_id
+                            
+                            UNION ALL
+                            
+                            SELECT 
+                                cph.payment_id as id,
+                                COALESCE(cph.completed_at, cph.created_at) as date,
+                                p.title as project_name,
+                                p.project_id,
+                                u.f_name as client_first_name,
+                                u.l_name as client_last_name,
+                                cph.amount,
+                                cph.status,
+                                cph.payment_method as payment_method,
+                                CONCAT(REPLACE(cph.payment_type, '_', ' '), ': ', COALESCE(cm.title, 'General payment')) as milestone_description
+                            FROM contract_payment_history cph
+                            JOIN contract c ON cph.contract_id = c.contract_id
+                            JOIN project p ON c.project_id = p.project_id
+                            JOIN user u ON p.customer_id = u.user_id
+                            LEFT JOIN contract_milestone cm ON cph.milestone_id = cm.milestone_id
+                            WHERE p.company_id = :company_id2
+                            AND cph.status = 'completed'
+                            AND cph.payment_type IN ('milestone_release', 'upfront_payment', 'bonus')
+                        ) AS combined_income
+                        WHERE 1=1
                         {$dateFilter}
-                        ORDER BY mp.payment_date DESC";
+                        ORDER BY date DESC";
         
         $stmt = $pdo->prepare($incomeQuery);
         $stmt->bindParam(':company_id', $companyId, PDO::PARAM_INT);
+        $stmt->bindParam(':company_id2', $companyId, PDO::PARAM_INT);
         $stmt->execute();
         $incomePayments = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
@@ -105,38 +131,124 @@ function handleGetPayments() {
             ];
         }, $incomePayments);
         
-        // Fetch expenses
-        $expenseQuery = "SELECT 
-                            e.expense_id as id,
-                            e.expense_date as date,
-                            e.project_id,
-                            COALESCE(p.title, 'General Expense') as project_name,
-                            e.category,
-                            e.description,
-                            e.amount
-                        FROM CompanyExpense e
-                        LEFT JOIN Project p ON e.project_id = p.project_id
-                        WHERE e.company_id = :company_id
-                        {$dateFilter}
-                        ORDER BY e.expense_date DESC";
+        // Fetch expenses from multiple sources
+        $expenseData = [];
         
-        $stmt = $pdo->prepare($expenseQuery);
-        $stmt->bindParam(':company_id', $companyId, PDO::PARAM_INT);
-        $stmt->execute();
-        $expenseData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // 1. Manual Expenses (CompanyExpense table) - may not exist
+        try {
+            $manualExpenseQuery = "SELECT * FROM (
+                                    SELECT 
+                                        e.expense_id as id,
+                                        e.expense_date as date,
+                                        e.project_id,
+                                        COALESCE(p.title, 'General Expense') as project_name,
+                                        e.category,
+                                        e.description,
+                                        e.amount
+                                    FROM CompanyExpense e
+                                    LEFT JOIN Project p ON e.project_id = p.project_id
+                                    WHERE e.company_id = :company_id
+                                ) AS me
+                                WHERE 1=1 {$dateFilter}
+                                ORDER BY date DESC";
+            
+            $stmt = $pdo->prepare($manualExpenseQuery);
+            $stmt->bindParam(':company_id', $companyId, PDO::PARAM_INT);
+            $stmt->execute();
+            $manualExpenses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($manualExpenses as $me) {
+                $expenseData[] = [
+                    'id' => 'EXP-' . str_pad($me['id'], 6, '0', STR_PAD_LEFT),
+                    'date' => $me['date'],
+                    'project_id' => $me['project_id'],
+                    'project_name' => $me['project_name'],
+                    'category' => $me['category'],
+                    'description' => $me['description'],
+                    'amount' => floatval($me['amount'])
+                ];
+            }
+        } catch (PDOException $e) {
+            if ($e->getCode() != '42S02') {
+                error_log("Database error fetching manual expenses: " . $e->getMessage());
+            }
+        }
+
+        // 2. Advertisement Expenses (from advertisement table)
+        try {
+            // Treat advertisements with committed budget as expenses
+            $adExpenseQuery = "SELECT * FROM (
+                                    SELECT 
+                                        ad_id as id,
+                                        submission_date as date,
+                                        title as ad_title,
+                                        type as ad_type,
+                                        budget as amount,
+                                        status
+                                    FROM advertisement
+                                    WHERE provider_id = :company_id 
+                                      AND provider_type = 'company'
+                                      AND status IN ('approved', 'active', 'scheduled', 'expired', 'paused', 'suspended')
+                                ) AS ads
+                                WHERE 1=1 {$dateFilter}";
+            
+            $stmt = $pdo->prepare($adExpenseQuery);
+            $stmt->bindParam(':company_id', $companyId, PDO::PARAM_INT);
+            $stmt->execute();
+            $adExpenses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($adExpenses as $ae) {
+                $expenseData[] = [
+                    'id' => 'AD-' . str_pad($ae['id'], 6, '0', STR_PAD_LEFT),
+                    'date' => $ae['date'],
+                    'project_id' => null,
+                    'project_name' => 'Marketing',
+                    'category' => 'other',
+                    'description' => "Advertisement: " . $ae['ad_title'] . " (" . ucfirst($ae['ad_type']) . ")",
+                    'amount' => floatval($ae['amount'])
+                ];
+            }
+        } catch (PDOException $e) {
+            error_log("Database error fetching ad expenses: " . $e->getMessage());
+        }
+
+        // 3. Billing History (from billinghistory table)
+        try {
+            $billingQuery = "SELECT * FROM (
+                                SELECT 
+                                    invoice_id as id,
+                                    date,
+                                    amount,
+                                    status
+                                FROM billinghistory
+                                WHERE company_id = :company_id
+                                  AND status = 'paid'
+                            ) AS bh
+                            WHERE 1=1 {$dateFilter}";
+            
+            $stmt = $pdo->prepare($billingQuery);
+            $stmt->bindParam(':company_id', $companyId, PDO::PARAM_INT);
+            $stmt->execute();
+            $billingData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($billingData as $bd) {
+                $expenseData[] = [
+                    'id' => 'INV-' . str_pad($bd['id'], 6, '0', STR_PAD_LEFT),
+                    'date' => $bd['date'],
+                    'project_id' => null,
+                    'project_name' => 'Service Fees',
+                    'category' => 'other',
+                    'description' => "Billing Invoice #" . $bd['id'],
+                    'amount' => floatval($bd['amount'])
+                ];
+            }
+        } catch (PDOException $e) {
+            error_log("Database error fetching billing history: " . $e->getMessage());
+        }
+
+        // Sort combined expenses by date descending
+        usort($expenseData, function($a, $b) {
+            return strcmp($b['date'], $a['date']);
+        });
         
-        // Format expense data
-        $expenses = array_map(function($expense) {
-            return [
-                'id' => 'EXP-' . str_pad($expense['id'], 6, '0', STR_PAD_LEFT),
-                'date' => $expense['date'],
-                'project_id' => $expense['project_id'],
-                'project_name' => $expense['project_name'],
-                'category' => $expense['category'],
-                'description' => $expense['description'],
-                'amount' => floatval($expense['amount'])
-            ];
-        }, $expenseData);
+        $expenses = $expenseData;
         
         // Fetch company projects for dropdowns
         $projectsQuery = "SELECT project_id, title FROM Project WHERE company_id = :company_id ORDER BY title";
@@ -235,25 +347,33 @@ function handleCreateExpense() {
         }
         
         // Insert expense
-        $query = "INSERT INTO CompanyExpense (company_id, project_id, category, amount, description, expense_date)
-                  VALUES (:company_id, :project_id, :category, :amount, :description, :expense_date)";
-        
-        $stmt = $pdo->prepare($query);
-        $stmt->execute([
-            ':company_id' => $companyId,
-            ':project_id' => $projectId,
-            ':category' => $category,
-            ':amount' => $amount,
-            ':description' => $description,
-            ':expense_date' => $expenseDate
-        ]);
-        
-        $expenseId = $pdo->lastInsertId();
-        
-        sendSuccessResponse([
-            'message' => 'Expense created successfully',
-            'expense_id' => $expenseId
-        ]);
+        try {
+            $query = "INSERT INTO CompanyExpense (company_id, project_id, category, amount, description, expense_date)
+                      VALUES (:company_id, :project_id, :category, :amount, :description, :expense_date)";
+            
+            $stmt = $pdo->prepare($query);
+            $stmt->execute([
+                ':company_id' => $companyId,
+                ':project_id' => $projectId,
+                ':category' => $category,
+                ':amount' => $amount,
+                ':description' => $description,
+                ':expense_date' => $expenseDate
+            ]);
+            
+            $expenseId = $pdo->lastInsertId();
+            
+            sendSuccessResponse([
+                'message' => 'Expense created successfully',
+                'expense_id' => $expenseId
+            ]);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S02') {
+                sendErrorResponse('Expense tracking is not configured in the database (CompanyExpense table missing)', 400);
+                return;
+            }
+            throw $e;
+        }
         
     } catch (PDOException $e) {
         error_log("Database error creating expense: " . $e->getMessage());
@@ -295,22 +415,30 @@ function handleUpdateExpense() {
             return;
         }
         
-        $query = "UPDATE CompanyExpense 
-                  SET project_id = :project_id, category = :category, amount = :amount, 
-                      description = :description, expense_date = :expense_date
-                  WHERE expense_id = :expense_id";
-        
-        $stmt = $pdo->prepare($query);
-        $stmt->execute([
-            ':expense_id' => $expenseId,
-            ':project_id' => $projectId,
-            ':category' => $category,
-            ':amount' => $amount,
-            ':description' => $description,
-            ':expense_date' => $expenseDate
-        ]);
-        
-        sendSuccessResponse(['message' => 'Expense updated successfully']);
+        try {
+            $query = "UPDATE CompanyExpense 
+                      SET project_id = :project_id, category = :category, amount = :amount, 
+                          description = :description, expense_date = :expense_date
+                      WHERE expense_id = :expense_id";
+            
+            $stmt = $pdo->prepare($query);
+            $stmt->execute([
+                ':expense_id' => $expenseId,
+                ':project_id' => $projectId,
+                ':category' => $category,
+                ':amount' => $amount,
+                ':description' => $description,
+                ':expense_date' => $expenseDate
+            ]);
+            
+            sendSuccessResponse(['message' => 'Expense updated successfully']);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S02') {
+                sendErrorResponse('Expense tracking is not configured in the database', 400);
+                return;
+            }
+            throw $e;
+        }
         
     } catch (PDOException $e) {
         error_log("Database error updating expense: " . $e->getMessage());
@@ -340,11 +468,19 @@ function handleDeleteExpense() {
             $expenseId = intval(ltrim(substr($expenseId, 4), '0'));
         }
         
-        $query = "DELETE FROM CompanyExpense WHERE expense_id = :expense_id";
-        $stmt = $pdo->prepare($query);
-        $stmt->execute([':expense_id' => $expenseId]);
-        
-        sendSuccessResponse(['message' => 'Expense deleted successfully']);
+        try {
+            $query = "DELETE FROM CompanyExpense WHERE expense_id = :expense_id";
+            $stmt = $pdo->prepare($query);
+            $stmt->execute([':expense_id' => $expenseId]);
+            
+            sendSuccessResponse(['message' => 'Expense deleted successfully']);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S02') {
+                sendErrorResponse('Expense tracking is not configured in the database', 400);
+                return;
+            }
+            throw $e;
+        }
         
     } catch (PDOException $e) {
         error_log("Database error deleting expense: " . $e->getMessage());
@@ -358,18 +494,18 @@ function handleDeleteExpense() {
 function getDateFilter($period, $startDate = null, $endDate = null) {
     switch ($period) {
         case 'today':
-            return "AND DATE(mp.payment_date) = CURDATE()";
+            return "AND DATE(date) = CURDATE()";
         case 'week':
-            return "AND mp.payment_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+            return "AND date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
         case 'month':
-            return "AND MONTH(mp.payment_date) = MONTH(CURDATE()) AND YEAR(mp.payment_date) = YEAR(CURDATE())";
+            return "AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())";
         case 'quarter':
-            return "AND QUARTER(mp.payment_date) = QUARTER(CURDATE()) AND YEAR(mp.payment_date) = YEAR(CURDATE())";
+            return "AND QUARTER(date) = QUARTER(CURDATE()) AND YEAR(date) = YEAR(CURDATE())";
         case 'year':
-            return "AND YEAR(mp.payment_date) = YEAR(CURDATE())";
+            return "AND YEAR(date) = YEAR(CURDATE())";
         case 'custom':
             if ($startDate && $endDate) {
-                return "AND DATE(mp.payment_date) BETWEEN '$startDate' AND '$endDate'";
+                return "AND DATE(date) BETWEEN '$startDate' AND '$endDate'";
             }
             return "";
         default:

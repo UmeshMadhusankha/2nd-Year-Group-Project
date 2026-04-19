@@ -1602,25 +1602,34 @@ class Project
 
                 // Update contract totals (unit-based billed amount)
                 if ($billedAmount > 0) {
+                    $cId = $milestone['contract_id'];
+                    $cStmt = $this->pdo->prepare("SELECT customer_id, company_id FROM contract WHERE contract_id = ?");
+                    $cStmt->execute([$cId]);
+                    $cData = $cStmt->fetch(PDO::FETCH_ASSOC);
+                    $payerId = $cData['customer_id'] ?? null;
+                    $payeeId = $cData['company_id'] ?? null;
+
                     $this->pdo->prepare(
                         "UPDATE contract
                          SET amount_paid    = COALESCE(amount_paid, 0) + :billed,
                              amount_pending = GREATEST(0, COALESCE(amount_pending, 0) - :billed2)
                          WHERE contract_id  = :cid"
-                    )->execute([':billed' => $billedAmount, ':billed2' => $billedAmount, ':cid' => $milestone['contract_id']]);
+                    )->execute([':billed' => $billedAmount, ':billed2' => $billedAmount, ':cid' => $cId]);
 
                     // Record the payment transaction in milestonepayment
                     $payStmt = $this->pdo->prepare(
                         "INSERT INTO milestonepayment
-                            (contract_id, milestone_id, amount, payment_type, description, status, paid_at, created_at)
+                            (contract_id, milestone_id, amount, payment_type, description, status, method, paid_by, paid_to, paid_at, created_at)
                          VALUES
-                            (:contract_id, :milestone_id, :amount, 'milestone', :description, 'completed', NOW(), NOW())"
+                            (:contract_id, :milestone_id, :amount, 'milestone', :description, 'completed', 'bank_transfer', :paid_by, :paid_to, NOW(), NOW())"
                     );
                     $payStmt->execute([
-                        ':contract_id'  => $milestone['contract_id'],
+                        ':contract_id'  => $cId,
                         ':milestone_id' => $milestoneId,
                         ':amount'       => $billedAmount,
                         ':description'  => 'Phase approved: ' . ($milestone['title'] ?? 'Milestone'),
+                        ':paid_by'      => $payerId,
+                        ':paid_to'      => $payeeId
                     ]);
                 }
 

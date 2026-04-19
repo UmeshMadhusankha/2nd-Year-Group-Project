@@ -4574,6 +4574,19 @@ class ContractController {
             $stmt = $this->pdo->prepare("SELECT contract_id, amount FROM escrow_release_requests WHERE release_id = ?");
             $stmt->execute([$releaseId]);
             $release = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Record in contract_payment_history for dashboard visibility
+            $pmtStmt = $this->pdo->prepare("
+                INSERT INTO contract_payment_history (
+                    contract_id, amount, payment_type, status, 
+                    created_at, completed_at, notes
+                ) VALUES (?, ?, 'milestone_release', 'completed', NOW(), NOW(), ?)
+            ");
+            $pmtStmt->execute([
+                $release['contract_id'], 
+                $release['amount'], 
+                "Escrow Release #{$releaseId}"
+            ]);
             
             $this->addTimelineEvent($release['contract_id'], 'escrow_released', "Escrow payment of Rs. {$release['amount']} released");
             $this->createNotification($release['contract_id'], 'payment_released', "Payment of Rs. {$release['amount']} has been released", 'company');

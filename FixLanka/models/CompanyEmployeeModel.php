@@ -325,6 +325,20 @@ class CompanyEmployeeModel {
             ");
             $stmt->execute($params);
             $specialties = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Enrich individual specialties with availability data
+            $availabilityRows = $this->getStaffAvailability((int)$companyId);
+            $availabilityMap = [];
+            foreach ($availabilityRows as $ar) {
+                $availabilityMap[$ar['specialty']] = $ar;
+            }
+
+            foreach ($specialties as &$spec) {
+                $sName = $spec['specialty'];
+                $spec['allocated_count'] = (int)($availabilityMap[$sName]['allocated_count'] ?? 0);
+                $spec['available_count'] = (int)($availabilityMap[$sName]['available_count'] ?? ($spec['active_count'] ?? 0));
+            }
+            unset($spec);
             
             // Get overall totals
             $stmt = $this->db->prepare("
@@ -341,6 +355,15 @@ class CompanyEmployeeModel {
             ");
             $stmt->execute($params);
             $totals = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Add overall availability to totals
+            $allAllocated = 0;
+            foreach ($availabilityRows as $ar) {
+                $allAllocated += (int)($ar['allocated_count'] ?? 0);
+            }
+            $totals['total_active_employees'] = (int)($totals['active_employees'] ?? 0);
+            $totals['total_allocated_employees'] = $allAllocated;
+            $totals['available_employees'] = max(0, $totals['total_active_employees'] - $allAllocated);
             
             return [
                 'specialties' => $specialties,
@@ -471,6 +494,12 @@ class CompanyEmployeeModel {
             $weightedRateSum = 0.0;
             $weightTotal = 0.0;
 
+            $availabilityRows = $this->getStaffAvailability((int)$companyId);
+            $availabilityMap = [];
+            foreach ($availabilityRows as $ar) {
+                $availabilityMap[$ar['specialty']] = $ar;
+            }
+
             foreach ($rows as $r) {
                 $tc = (int)($r['total_count'] ?? 0);
                 $ac = (int)($r['active_count'] ?? 0);
@@ -494,12 +523,26 @@ class CompanyEmployeeModel {
                 $totals['avg_hourly_rate'] = $weightedRateSum / $weightTotal;
             }
 
+            // Sync overall availability
+            $allAllocated = 0;
+            foreach ($availabilityRows as $ar) {
+                $allAllocated += (int)($ar['allocated_count'] ?? 0);
+            }
+            $totals['total_allocated_employees'] = $allAllocated;
+            $totals['available_employees'] = max(0, $totals['active_employees'] - $allAllocated);
+
             // Normalize rows to match the API shape used by the frontend.
-            $specialties = array_map(function ($r) {
+            $specialties = array_map(function ($r) use ($availabilityMap) {
+                $sName = $r['specialty'] ?? '';
+                $ac = (int)($r['active_count'] ?? 0);
+                $allocated = (int)($availabilityMap[$sName]['allocated_count'] ?? 0);
+
                 return [
-                    'specialty' => $r['specialty'] ?? '',
+                    'specialty' => $sName,
                     'total_count' => (int)($r['total_count'] ?? 0),
-                    'active_count' => (int)($r['active_count'] ?? 0),
+                    'active_count' => $ac,
+                    'allocated_count' => $allocated,
+                    'available_count' => max(0, $ac - $allocated),
                     'inactive_count' => (int)($r['inactive_count'] ?? 0),
                     'avg_rating' => (float)($r['avg_rating'] ?? 0),
                     'avg_hourly_rate' => (float)($r['avg_hourly_rate'] ?? 0),

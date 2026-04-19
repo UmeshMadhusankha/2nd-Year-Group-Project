@@ -1027,9 +1027,12 @@ class ContractModel {
         try {
             $this->conn->beginTransaction();
 
-            // 1. Fetch milestone data before approve
+            // 1. Fetch milestone data before approve (including contract participants)
             $mFetch = $this->conn->prepare(
-                "SELECT contract_id, actual_amount, amount FROM contract_milestone WHERE milestone_id = ?"
+                "SELECT cm.contract_id, cm.actual_amount, cm.amount, c.company_id, c.customer_id, c.payment_method
+                 FROM contract_milestone cm
+                 JOIN contract c ON cm.contract_id = c.contract_id
+                 WHERE cm.milestone_id = ?"
             );
             $mFetch->execute([$milestoneId]);
             $mData = $mFetch->fetch(PDO::FETCH_ASSOC);
@@ -1069,6 +1072,23 @@ class ContractModel {
                          amount_pending = GREATEST(0, COALESCE(amount_pending, 0) - :billed2)
                      WHERE contract_id  = :cid"
                 )->execute([':billed' => $billedAmount, ':billed2' => $billedAmount, ':cid' => $contractId]);
+
+                // Create milestonepayment record for dashboard visibility
+                $pmt = $this->conn->prepare("
+                    INSERT INTO milestonepayment (
+                        contract_id, milestone_id, amount, status, method, 
+                        paid_by, paid_to, payment_date, paid_at, description
+                    ) VALUES (?, ?, ?, 'completed', ?, ?, ?, NOW(), NOW(), ?)
+                ");
+                $pmt->execute([
+                    $contractId,
+                    $milestoneId,
+                    $billedAmount,
+                    $mData['payment_method'] ?? 'escrow_release',
+                    $mData['customer_id'],
+                    $mData['company_id'],
+                    $mData['title'] ?? 'Milestone completion'
+                ]);
             }
 
             // 4. Recalculate progress
