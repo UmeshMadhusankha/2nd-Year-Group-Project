@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/../config/databse.php';
+require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../models/NotificationModel.php';
 require_once __DIR__ . '/../includes/admin-modarator/auth.php';
 
@@ -23,7 +24,6 @@ class AdminAlertController {
         }
         
         // Ensure user is authenticated as admin
-        require_once __DIR__ . '/../config/session.php';
         requireRole('admin');
         
         $this->checkAuthentication();
