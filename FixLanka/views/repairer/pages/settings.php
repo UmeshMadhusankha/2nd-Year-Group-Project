@@ -4,6 +4,8 @@ $currentPage = 'settings';
 $pageTitle = 'Settings';
 $pageSubtitle = 'Manage your account preferences and application settings';
 $searchPlaceholder = 'Search settings...';
+$repairerId = (int)($_SESSION['user_id'] ?? 0);
+$repairerName = (string)($_SESSION['user_name'] ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -20,6 +22,9 @@ $searchPlaceholder = 'Search settings...';
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/repairer/settings.css">
 </head>
 <body>
+    <script>
+        window.REPAIRER_ID = <?php echo $repairerId; ?>;
+    </script>
     <!-- Sidebar Toggle Checkbox -->
     <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle-input">
     
@@ -49,11 +54,7 @@ $searchPlaceholder = 'Search settings...';
                     <section class="filter-tabs-section">
                         <div class="filter-tabs-container">
                             <div class="filter-tabs settings-tabs">
-                                <button class="filter-tab settings-tab active" data-tab="account">
-                                    <i class="fas fa-user-circle"></i>
-                                    <span>Account</span>
-                                </button>
-                                <button class="filter-tab settings-tab" data-tab="notifications">
+                                <button class="filter-tab settings-tab active" data-tab="notifications">
                                     <i class="fas fa-bell"></i>
                                     <span>Notifications</span>
                                 </button>
@@ -67,73 +68,8 @@ $searchPlaceholder = 'Search settings...';
 
                     <!-- Settings Content -->
                     <div class="settings-content">
-                    <!-- Account Settings -->
-                    <div class="settings-panel active" id="account-panel">
-                        <div class="settings-header">
-                            <h2>Account Settings</h2>
-                            <p>Manage your account information and profile details</p>
-                        </div>
-
-                        <div class="settings-section">
-                            <h3>Profile Information</h3>
-                            <div class="settings-form">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="fullName">Full Name</label>
-                                        <input type="text" id="fullName" value="" class="form-input">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="username">Username</label>
-                                        <input type="text" id="username" value="" class="form-input">
-                                    </div>
-                                </div>
-                                
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="email">Email Address</label>
-                                        <input type="email" id="email" value="" class="form-input">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="phone">Phone Number</label>
-                                        <input type="tel" id="phone" value="" class="form-input">
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="bio">Bio</label>
-                                    <textarea id="bio" rows="4" class="form-input"></textarea>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="settings-section">
-                            <h3>Change Password</h3>
-                            <div class="settings-form">
-                                <div class="form-group">
-                                    <label for="currentPassword">Current Password</label>
-                                    <input type="password" id="currentPassword" class="form-input" placeholder="Enter current password">
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="newPassword">New Password</label>
-                                        <input type="password" id="newPassword" class="form-input" placeholder="Enter new password">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="confirmPassword">Confirm Password</label>
-                                        <input type="password" id="confirmPassword" class="form-input" placeholder="Confirm new password">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="settings-actions">
-                            <button class="btn btn-secondary">Cancel</button>
-                            <button class="btn btn-primary">Save Changes</button>
-                        </div>
-                    </div>
-
                     <!-- Notifications Settings -->
-                    <div class="settings-panel" id="notifications-panel">
+                    <div class="settings-panel active" id="notifications-panel">
                         <div class="settings-header">
                             <h2>Notification Preferences</h2>
                             <p>Choose what notifications you want to receive</p>
@@ -144,55 +80,55 @@ $searchPlaceholder = 'Search settings...';
                             <div class="settings-options">
                                 <div class="setting-option">
                                     <div class="option-info">
-                                        <label>New Job Requests</label>
+                                        <label for="emailJobRequests">New Job Requests</label>
                                         <p>Get notified when new job requests match your skills</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" checked>
+                                        <input type="checkbox" id="emailJobRequests" name="emailJobRequests" checked>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
 
                                 <div class="setting-option">
                                     <div class="option-info">
-                                        <label>Quote Responses</label>
+                                        <label for="emailQuoteResponses">Quote Responses</label>
                                         <p>Receive alerts when customers respond to your quotes</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" checked>
+                                        <input type="checkbox" id="emailQuoteResponses" name="emailQuoteResponses" checked>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
 
                                 <div class="setting-option">
                                     <div class="option-info">
-                                        <label>Payment Notifications</label>
+                                        <label for="emailPaymentNotifications">Payment Notifications</label>
                                         <p>Get notified about payment receipts and transactions</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" checked>
+                                        <input type="checkbox" id="emailPaymentNotifications" name="emailPaymentNotifications" checked>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
 
                                 <div class="setting-option">
                                     <div class="option-info">
-                                        <label>Reviews and Ratings</label>
+                                        <label for="emailReviewsRatings">Reviews and Ratings</label>
                                         <p>Be alerted when you receive new reviews</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" checked>
+                                        <input type="checkbox" id="emailReviewsRatings" name="emailReviewsRatings" checked>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
 
                                 <div class="setting-option">
                                     <div class="option-info">
-                                        <label>Weekly Summary</label>
+                                        <label for="emailWeeklySummary">Weekly Summary</label>
                                         <p>Receive weekly performance and earnings reports</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox">
+                                        <input type="checkbox" id="emailWeeklySummary" name="emailWeeklySummary">
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
@@ -204,22 +140,22 @@ $searchPlaceholder = 'Search settings...';
                             <div class="settings-options">
                                 <div class="setting-option">
                                     <div class="option-info">
-                                        <label>Browser Notifications</label>
+                                        <label for="pushBrowserNotifications">Browser Notifications</label>
                                         <p>Show desktop notifications for important updates</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox">
+                                        <input type="checkbox" id="pushBrowserNotifications" name="pushBrowserNotifications">
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
 
                                 <div class="setting-option">
                                     <div class="option-info">
-                                        <label>Sound Alerts</label>
+                                        <label for="pushSoundAlerts">Sound Alerts</label>
                                         <p>Play sound when receiving notifications</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" checked>
+                                        <input type="checkbox" id="pushSoundAlerts" name="pushSoundAlerts" checked>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
@@ -227,7 +163,7 @@ $searchPlaceholder = 'Search settings...';
                         </div>
 
                         <div class="settings-actions">
-                            <button class="btn btn-primary">Save Preferences</button>
+                            <button class="btn btn-primary" id="saveNotificationsBtn" data-save="notifications">Save Preferences</button>
                         </div>
                     </div>
 
@@ -243,33 +179,33 @@ $searchPlaceholder = 'Search settings...';
                             <div class="settings-options">
                                 <div class="setting-option">
                                     <div class="option-info">
-                                        <label>Profile Visibility</label>
+                                        <label for="privacyProfileVisibility">Profile Visibility</label>
                                         <p>Make your profile visible to customers</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" checked>
+                                        <input type="checkbox" id="privacyProfileVisibility" name="privacyProfileVisibility" checked>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
 
                                 <div class="setting-option">
                                     <div class="option-info">
-                                        <label>Show Contact Information</label>
+                                        <label for="privacyShowContact">Show Contact Information</label>
                                         <p>Display your phone number and email publicly</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox">
+                                        <input type="checkbox" id="privacyShowContact" name="privacyShowContact">
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
 
                                 <div class="setting-option">
                                     <div class="option-info">
-                                        <label>Location Sharing</label>
+                                        <label for="privacyLocationSharing">Location Sharing</label>
                                         <p>Share your location for nearby job matching</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" checked>
+                                        <input type="checkbox" id="privacyLocationSharing" name="privacyLocationSharing" checked>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
@@ -281,25 +217,25 @@ $searchPlaceholder = 'Search settings...';
                             <div class="settings-options">
                                 <div class="setting-option">
                                     <div class="option-info">
-                                        <label>Login Alerts</label>
+                                        <label for="securityLoginAlerts">Login Alerts</label>
                                         <p>Get notified of login attempts from new devices</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" checked>
+                                        <input type="checkbox" id="securityLoginAlerts" name="securityLoginAlerts" checked>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
 
                                 <div class="setting-option">
                                     <div class="option-info">
-                                        <label>Session Timeout</label>
+                                        <label for="securitySessionTimeout">Session Timeout</label>
                                         <p>Automatically log out after period of inactivity</p>
                                     </div>
-                                    <select class="form-select">
-                                        <option>15 minutes</option>
-                                        <option selected>30 minutes</option>
-                                        <option>1 hour</option>
-                                        <option>Never</option>
+                                    <select class="form-select" id="securitySessionTimeout" name="securitySessionTimeout">
+                                        <option value="15 minutes">15 minutes</option>
+                                        <option value="30 minutes" selected>30 minutes</option>
+                                        <option value="1 hour">1 hour</option>
+                                        <option value="Never">Never</option>
                                     </select>
                                 </div>
                             </div>
@@ -317,7 +253,7 @@ $searchPlaceholder = 'Search settings...';
                         </div>
 
                         <div class="settings-actions">
-                            <button class="btn btn-primary">Save Security Settings</button>
+                            <button class="btn btn-primary" id="savePrivacyBtn" data-save="privacy">Save Security Settings</button>
                         </div>
                     </div>
                 </div>
