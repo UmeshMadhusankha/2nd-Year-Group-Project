@@ -1626,6 +1626,58 @@ class Project
 
                 $message = 'Phase approved';
 
+                // Recalculate progress and update contract/project status if complete
+                $contractId = $milestone['contract_id'];
+                $progStmt = $this->pdo->prepare(
+                    "SELECT COUNT(*) as total,
+                            SUM(CASE WHEN status IN ('approved', 'completed', 'paid') THEN 1 ELSE 0 END) as approved
+                     FROM contract_milestone WHERE contract_id = ?"
+                );
+                $progStmt->execute([$contractId]);
+                $stats = $progStmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($stats && $stats['total'] > 0) {
+                    $newProgress = (int)round(($stats['approved'] / $stats['total']) * 100);
+                    
+                    // Update Contract Progress
+                    $this->pdo->prepare(
+                        "UPDATE Contract SET progress_percentage = ? WHERE contract_id = ?"
+                    )->execute([$newProgress, $contractId]);
+
+                    // Update Project Progress
+                    $this->pdo->prepare(
+                        "UPDATE Project p
+                         JOIN Contract c ON p.project_id = c.project_id
+                         SET p.progress = ?
+                         WHERE c.contract_id = ?"
+                    )->execute([$newProgress, $contractId]);
+
+                    if ($newProgress >= 100) {
+                        // Mark Contract as Completed
+                        $this->pdo->prepare(
+                            "UPDATE Contract SET status = 'completed' WHERE contract_id = ?"
+                        )->execute([$contractId]);
+
+                        // Mark Project as Completed
+                        $this->pdo->prepare(
+                            "UPDATE Project p
+                             JOIN Contract c ON p.project_id = c.project_id
+                             SET p.status = 'completed'
+                             WHERE c.contract_id = ?"
+                        )->execute([$contractId]);
+                        
+                        // Sync quotation status if possible
+                        try {
+                            $qIdStmt = $this->pdo->prepare("SELECT quotation_id FROM Contract WHERE contract_id = ? LIMIT 1");
+                            $qIdStmt->execute([$contractId]);
+                            $quotationId = $qIdStmt->fetchColumn();
+                            if ($quotationId) {
+                                $this->pdo->prepare("UPDATE companyquotation SET status = 'completed' WHERE quotation_id = ?")
+                                         ->execute([(int)$quotationId]);
+                            }
+                        } catch (Exception $e) { /* ignore sync errors */ }
+                    }
+                }
             } elseif ($action === 'reject') {
                 $sql = "UPDATE contract_milestone 
                         SET status = 'rejected',

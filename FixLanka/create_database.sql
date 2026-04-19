@@ -674,7 +674,7 @@ CREATE TABLE `contract_milestone` (
   `due_date` date NOT NULL,
   `amount` decimal(12,2) NOT NULL,
   `percentage` decimal(5,2) DEFAULT NULL,
-  `status` enum('pending','in_progress','submitted','under_review','approved','rejected','disputed','paid') DEFAULT 'pending',
+  `status` enum('pending','in_progress','submitted','under_review','approved','rejected','disputed','paid','completed') DEFAULT 'pending',
   `escrow_held` decimal(12,2) DEFAULT 0.00,
   `payment_released` decimal(12,2) DEFAULT 0.00,
   `payment_released_at` datetime DEFAULT NULL,

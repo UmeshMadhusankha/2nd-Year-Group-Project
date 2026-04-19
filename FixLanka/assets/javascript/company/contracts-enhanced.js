@@ -1713,7 +1713,12 @@ function populateModalContent(data) {
                     const map = { 'full_upfront': 'Full Upfront', 'milestone_based': 'Milestone-Based', '50_50': '50/50 Split', '30_70': '30/70 Split', 'completion': 'On Completion' };
                     return map[data.payment_method] || 'Standard';
                 })(),
-                renderMilestoneAction: () => '—'
+                renderMilestoneAction: (ms) => {
+                    const status = ms.status || 'pending';
+                    const label = status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                    const className = status.replace(/ /g, '_');
+                    return `<span class="ms-status-badge ${className}">${label}</span>`;
+                }
             });
         }
         return;
