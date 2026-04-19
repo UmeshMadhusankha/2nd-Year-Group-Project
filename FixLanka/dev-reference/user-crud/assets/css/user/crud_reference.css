@@ -1,0 +1,136 @@
+body {
+    margin: 0;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: #f4f8fa;
+    color: #12343b;
+}
+
+.ref-wrap {
+    max-width: 1100px;
+    margin: 24px auto;
+    padding: 0 16px 32px;
+}
+
+.ref-header {
+    margin-bottom: 16px;
+}
+
+.ref-header h1 {
+    margin: 0 0 8px;
+    font-size: 26px;
+}
+
+.ref-card {
+    background: #ffffff;
+    border: 1px solid #dce7ec;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 14px rgba(18, 52, 59, 0.08);
+}
+
+.tip-box {
+    margin-top: 8px;
+    padding: 10px;
+    background: #eef8fb;
+    border-left: 4px solid #0abab5;
+    border-radius: 8px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+}
+
+.ref-form {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.ref-form input,
+.ref-form textarea,
+.ref-form select,
+.ref-form button {
+    font: inherit;
+}
+
+.ref-form input,
+.ref-form textarea,
+.ref-form select {
+    border: 1px solid #c7d9e2;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.button-row {
+    display: flex;
+    gap: 8px;
+}
+
+button {
+    background: #0abab5;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 12px;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.92;
+}
+
+button.danger {
+    background: #d9534f;
+}
+
+.message {
+    min-height: 20px;
+    font-size: 14px;
+    margin: 6px 0 10px;
+}
+
+.message.success {
+    color: #126f5c;
+}
+
+.message.error {
+    color: #b42828;
+}
+
+.ref-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.ref-table th,
+.ref-table td {
+    border: 1px solid #d7e3e8;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.ref-table thead {
+    background: #eef6f9;
+}
+
+.pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.pill.low {
+    background: #6f8f99;
+}
+
+.pill.medium {
+    background: #e19b2b;
+}
+
+.pill.high {
+    background: #c53d3d;
+}

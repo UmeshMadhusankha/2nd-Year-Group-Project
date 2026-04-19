@@ -4,49 +4,29 @@ require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/static_content.php';
 
-if (isLoggedIn() && !hasRole('user')) {
-    redirectToRoleHome();
-}
-
 $isLoggedIn = isLoggedIn();
-
-$landingHeroContent = fixlanka_static_content_for_page($pdo, 'landing_hero');
 $aboutContent = fixlanka_static_content_for_page($pdo, 'about');
+$landingHeroContent = fixlanka_static_content_for_page($pdo, 'landing_hero');
 
 $heroTitle = 'Find Trusted Service Professionals Near You';
 $heroSubtitle = 'Connect with verified local experts for all your home and business needs';
-
 if (!empty($landingHeroContent['body'])) {
-    $decoded = json_decode((string) $landingHeroContent['body'], true);
+    $decoded = json_decode((string)$landingHeroContent['body'], true);
     if (is_array($decoded)) {
-        $bodyTitle = trim((string) ($decoded['title'] ?? ''));
-        $bodySubtitle = trim((string) ($decoded['subtitle'] ?? ''));
-        if ($bodyTitle !== '') {
-            $heroTitle = $bodyTitle;
+        $t = trim((string)($decoded['title'] ?? ''));
+        $s = trim((string)($decoded['subtitle'] ?? ''));
+        if ($t !== '') {
+            $heroTitle = $t;
         }
-        if ($bodySubtitle !== '') {
-            $heroSubtitle = $bodySubtitle;
+        if ($s !== '') {
+            $heroSubtitle = $s;
         }
-    }
-}
-
-// Optional fallback to title/description columns when body JSON is not provided.
-if (!empty($landingHeroContent) && $heroTitle === 'Find Trusted Service Professionals Near You') {
-    $rowTitle = trim((string) ($landingHeroContent['title'] ?? ''));
-    if ($rowTitle !== '') {
-        $heroTitle = $rowTitle;
-    }
-}
-if (!empty($landingHeroContent) && $heroSubtitle === 'Connect with verified local experts for all your home and business needs') {
-    $rowSubtitle = trim((string) ($landingHeroContent['description'] ?? ''));
-    if ($rowSubtitle !== '') {
-        $heroSubtitle = $rowSubtitle;
     }
 }
 
 $aboutExcerpt = '';
 if (!empty($aboutContent['body'])) {
-    $aboutExcerpt = fixlanka_static_content_excerpt((string) $aboutContent['body'], 220);
+    $aboutExcerpt = fixlanka_static_content_excerpt((string)$aboutContent['body'], 220);
 }
 ?>
 <!DOCTYPE html>
@@ -55,11 +35,11 @@ if (!empty($aboutContent['body'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fix Lanka - Your Trusted Service Professionals</title>
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/common.css">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/landing.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/navbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/repairer-profile-popup.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/listed-job-request-popup.css">
-    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/user/direct-job-request-popup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -67,7 +47,7 @@ if (!empty($aboutContent['body'])) {
     <?php include 'navbar.php'; ?>
 
     <!-- Hero Section -->
-    <section class="hero-section">
+    <section class="hero-section" id="hero">
         <div class="hero-container">
             <!-- Hero Banner -->
             <div class="hero-banner">
@@ -96,86 +76,36 @@ if (!empty($aboutContent['body'])) {
                 <form class="search-form" id="searchForm">
                     <div class="form-row">
                         <div class="form-group">
-                            <select class="form-select" id="serviceSelect" name="service">
-                                <option value="">All Services</option>
-                                <option value="1">Plumbing</option>
-                                <option value="2">Electrical</option>
-                                <option value="3">HVAC</option>
-                                <option value="4">Cleaning</option>
-                                <option value="5">Carpentry</option>
-                                <option value="6">Painting</option>
-                                <option value="7">Appliance Repair</option>
-                                <option value="8">Roofing</option>
-                                <option value="9">Landscaping</option>
-                                <option value="10">Pest Control</option>
-                                <option value="11">Home Security</option>
-                                <option value="12">Interior Design</option>
-                                <option value="13">Flooring</option>
-                                <option value="14">Masonry</option>
-                                <option value="15">Welding</option>
-                                <option value="16">Glass & Mirror</option>
-                                <option value="17">Tile Work</option>
-                                <option value="18">Drywall</option>
-                                <option value="19">Insulation</option>
-                                <option value="20">Window Installation</option>
+                            <select class="form-select" id="serviceSelect">
+                                <option value="">Select Service</option>
+                                <option value="plumbing">Plumbing</option>
+                                <option value="electrical">Electrical</option>
+                                <option value="hvac">HVAC</option>
+                                <option value="cleaning">Cleaning</option>
+                                <option value="carpentry">Carpentry</option>
+                                <option value="painting">Painting</option>
                             </select>
                         </div>
                         
                         <div class="form-group">
-                            <select class="form-select" id="districtSelect" name="district">
-                                <option value="">All Districts</option>
-                                <option value="Colombo">Colombo</option>
-                                <option value="Gampaha">Gampaha</option>
-                                <option value="Kalutara">Kalutara</option>
-                                <option value="Kandy">Kandy</option>
-                                <option value="Matale">Matale</option>
-                                <option value="Nuwara Eliya">Nuwara Eliya</option>
-                                <option value="Galle">Galle</option>
-                                <option value="Matara">Matara</option>
-                                <option value="Hambantota">Hambantota</option>
-                                <option value="Jaffna">Jaffna</option>
-                                <option value="Kilinochchi">Kilinochchi</option>
-                                <option value="Mannar">Mannar</option>
-                                <option value="Vavuniya">Vavuniya</option>
-                                <option value="Mullaitivu">Mullaitivu</option>
-                                <option value="Batticaloa">Batticaloa</option>
-                                <option value="Ampara">Ampara</option>
-                                <option value="Trincomalee">Trincomalee</option>
-                                <option value="Kurunegala">Kurunegala</option>
-                                <option value="Puttalam">Puttalam</option>
-                                <option value="Anuradhapura">Anuradhapura</option>
-                                <option value="Polonnaruwa">Polonnaruwa</option>
-                                <option value="Badulla">Badulla</option>
-                                <option value="Moneragala">Moneragala</option>
-                                <option value="Ratnapura">Ratnapura</option>
-                                <option value="Kegalle">Kegalle</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <select class="form-select" id="ratingSelect" name="rating">
+                            <select class="form-select" id="ratingSelect">
                                 <option value="">All Ratings</option>
-                                <option value="4.5">4.5+ Stars</option>
+                                <option value="5">5 Stars</option>
                                 <option value="4">4+ Stars</option>
-                                <option value="3.5">3.5+ Stars</option>
                                 <option value="3">3+ Stars</option>
                             </select>
                         </div>
                         
-                        <div class="form-group form-actions">
+                        <div class="form-group">
+                            <input type="text" class="form-input" id="locationInput" placeholder="Enter your location">
+                        </div>
+                        
+                        <div class="form-group">
                             <button type="submit" class="search-btn">
-                                <i class="fas fa-filter"></i>
-                                Apply Filters
-                            </button>
-                            <button type="button" class="clear-btn" id="clearFiltersBtn">
-                                <i class="fas fa-times"></i>
-                                Clear
+                                <i class="fas fa-search"></i>
+                                Search
                             </button>
                         </div>
-                    </div>
-                    <div class="active-filters" id="activeFilters" style="display: none;">
-                        <span class="filter-label">Active Filters:</span>
-                        <div class="filter-tags" id="filterTags"></div>
                     </div>
                 </form>
             </div>
@@ -239,8 +169,6 @@ if (!empty($aboutContent['body'])) {
                 <?php if ($aboutExcerpt !== ''): ?>
                     <p class="footer-text"><?php echo htmlspecialchars($aboutExcerpt, ENT_QUOTES, 'UTF-8'); ?></p>
                     <a class="footer-readmore" href="/2nd-Year-Group-Project/FixLanka/views/user/about-us.php">Read more</a>
-                <?php else: ?>
-                    <p class="footer-text">Fix Lanka was established to bridge the gap between customers and quality service providers in Sri Lanka. Our mission is to make finding trusted professionals simple, fast, and reliable.</p>
                 <?php endif; ?>
             </div>
             
@@ -265,20 +193,11 @@ if (!empty($aboutContent['body'])) {
         </div>
     </footer>
 
-    <!-- Company Profile Popup -->
-    <?php include 'company-profile-popup.php'; ?>
-
     <!-- Repairer Profile Popup -->
     <?php include 'repairer-profile-popup.php'; ?>
 
-    <!-- Listed Job Request Popup -->
-    <?php include 'listed-job-request-popup.php'; ?>
-
-    <!-- Direct New Job Request Popup -->
-    <?php include 'direct-job-request-popup.php'; ?>
-
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/landing.js"></script>
-    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/company-profile-popup.js"></script>
     <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/user/repairer-profile-popup.js"></script>
 </body>
 </html>
