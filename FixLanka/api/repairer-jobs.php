@@ -290,9 +290,10 @@ function deriveUiStatus($row) {
     if ($jobStatus === 'cancelled') return 'cancelled';
 
     if ($hasCollaborationContext) {
-        // For collaboration workflow, keep final jobs in the Completed tab even after
-        // payment confirmations so repairers continue to see the full flow there.
-        if ($hasProviderCompleted || $jobStatus === 'completed') return 'completed';
+        // In collaboration flow, once payment is confirmed by either side,
+        // move the job under the Paid tab.
+        if ($hasProviderPaid || $hasUserPaid) return 'paid';
+        if ($hasProviderCompleted || $hasUserCompleted || $jobStatus === 'completed') return 'completed';
         return 'active';
     }
 
