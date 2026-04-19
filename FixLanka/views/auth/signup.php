@@ -229,24 +229,15 @@ try {
                 <div class="form-group">
                     <label>Business Type * (Select at least one)</label>
                     <div class="checkbox-group">
-                        <label><input type="checkbox" name="business_type[]" value="Plumbing"> Plumbing</label>
-                        <label><input type="checkbox" name="business_type[]" value="Electrical"> Electrical</label>
-                        <label><input type="checkbox" name="business_type[]" value="HVAC"> HVAC</label>
-                        <label><input type="checkbox" name="business_type[]" value="Cleaning"> Cleaning</label>
-                        <label><input type="checkbox" name="business_type[]" value="Carpentry"> Carpentry</label>
-                        <label><input type="checkbox" name="business_type[]" value="Painting"> Painting</label>
-                        <label><input type="checkbox" name="business_type[]" value="Appliance Repair"> Appliance Repair</label>
-                        <label><input type="checkbox" name="business_type[]" value="Roofing"> Roofing</label>
-                        <label><input type="checkbox" name="business_type[]" value="Landscaping"> Landscaping</label>
-                        <label><input type="checkbox" name="business_type[]" value="Pest Control"> Pest Control</label>
-                        <label><input type="checkbox" name="business_type[]" value="Home Security"> Home Security</label>
-                        <label><input type="checkbox" name="business_type[]" value="Interior Design"> Interior Design</label>
-                        <label><input type="checkbox" name="business_type[]" value="Flooring"> Flooring</label>
-                        <label><input type="checkbox" name="business_type[]" value="Masonry"> Masonry</label>
-                        <label><input type="checkbox" name="business_type[]" value="Welding"> Welding</label>
-                        <label><input type="checkbox" name="business_type[]" value="Construction"> Construction</label>
+                        <?php foreach ($serviceCategories as $cat): ?>
+                            <label>
+                                <input type="checkbox" name="business_type[]" value="<?php echo htmlspecialchars((string)$cat['name']); ?>">
+                                <?php echo htmlspecialchars((string)$cat['name']); ?>
+                            </label>
+                        <?php endforeach; ?>
                         <label><input type="checkbox" id="company_business_type_other" name="business_type[]" value="Other"> Other</label>
                     </div>
+                    <small class="password-hint">If you don't see your category, choose Other and add it.</small>
                 </div>
 
                 <div class="form-group" id="company_business_type_other_group" style="display:none;">

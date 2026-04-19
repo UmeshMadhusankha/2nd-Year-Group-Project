@@ -736,6 +736,17 @@ class AuthController {
             }));
             $business_type[] = $business_type_other;
         }
+
+        // Ensure selected business types exist in the Category table.
+        // This keeps the company "Business Type" list driven by DB categories.
+        try {
+            foreach ($business_type as $typeName) {
+                $this->findOrCreateCategoryIdByName((string)$typeName);
+            }
+        } catch (Throwable $e) {
+            // Non-fatal for registration, but log for debugging.
+            error_log('Failed to upsert company business types into category table: ' . $e->getMessage());
+        }
         
         if (empty($districts) || !is_array($districts)) {
             $_SESSION['error'] = 'Please select at least one service district';

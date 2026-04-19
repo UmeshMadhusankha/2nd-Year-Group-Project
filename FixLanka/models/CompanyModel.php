@@ -35,6 +35,11 @@ class CompanyModel {
 
     // Update Company Profile
     public function updateProfile($companyId, $data) {
+        // If business types are updated, ensure they exist in the Category table.
+        if (isset($data['business_type'])) {
+            $this->ensureCategoriesExistFromCsv((string)$data['business_type']);
+        }
+
         // Build dynamic query based on data
         $fields = [];
         $values = [];
@@ -94,6 +99,68 @@ class CompanyModel {
 
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute($values);
+    }
+
+    private function normalizeCategoryName(string $name): string {
+        $name = trim($name);
+        $name = preg_replace('/\s+/', ' ', $name);
+        return $name ?? '';
+    }
+
+    private function ensureCategoriesExistFromCsv(string $csv): void {
+        $raw = trim($csv);
+        if ($raw === '') {
+            return;
+        }
+
+        $parts = array_map('trim', explode(',', $raw));
+        $parts = array_values(array_filter($parts, function ($v) {
+            return $v !== '' && strcasecmp($v, 'Other') !== 0;
+        }));
+
+        // Deduplicate case-insensitively
+        $seen = [];
+        $unique = [];
+        foreach ($parts as $p) {
+            $k = function_exists('mb_strtolower') ? mb_strtolower($p) : strtolower($p);
+            if (isset($seen[$k])) {
+                continue;
+            }
+            $seen[$k] = true;
+            $unique[] = $p;
+        }
+
+        foreach ($unique as $name) {
+            $this->ensureCategoryExistsByName($name);
+        }
+    }
+
+    private function ensureCategoryExistsByName(string $rawName): void {
+        $name = $this->normalizeCategoryName($rawName);
+        if ($name === '') {
+            return;
+        }
+
+        // DB column is VARCHAR(100)
+        if (function_exists('mb_strlen') && mb_strlen($name) > 100) {
+            $name = (string)mb_substr($name, 0, 100);
+        } elseif (strlen($name) > 100) {
+            $name = substr($name, 0, 100);
+        }
+
+        try {
+            $stmt = $this->pdo->prepare('SELECT category_id FROM category WHERE LOWER(name) = LOWER(?) LIMIT 1');
+            $stmt->execute([$name]);
+            if ($stmt->fetchColumn()) {
+                return;
+            }
+
+            $insert = $this->pdo->prepare('INSERT INTO category (name) VALUES (?)');
+            $insert->execute([$name]);
+        } catch (PDOException $e) {
+            // Best-effort: avoid breaking profile updates for a category insert failure.
+            error_log('Failed to ensure category exists: ' . $e->getMessage());
+        }
     }
 
     private function columnExists(string $table, string $column): bool {
