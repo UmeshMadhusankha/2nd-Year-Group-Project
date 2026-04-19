@@ -1,4 +1,3 @@
-/* User Management specific styles */
 .users-header {
   display: flex;
   align-items: center;
@@ -7,7 +6,6 @@
   flex-wrap: wrap;
   gap: 1rem;
 }
-
 .users-add-btn {
   display: inline-flex;
   align-items: center;
@@ -22,17 +20,14 @@
   transition: all 0.2s ease-in-out;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-
 .users-add-btn:hover {
   background-color: rgba(77, 230, 213, 0.9);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
-
 .users-add-btn:active {
   transform: translateY(0);
 }
-
 .users-table-container {
   background-color: var(--card);
   border-radius: 0.75rem;
@@ -40,13 +35,11 @@
   border: 1px solid var(--border);
   overflow: hidden;
 }
-
 .users-table-header {
   padding: 1.5rem;
   background: linear-gradient(135deg, var(--card) 0%, var(--muted) 100%);
   border-bottom: 1px solid var(--border);
 }
-
 .users-search-container {
   margin-top: 1rem;
   display: flex;
@@ -54,14 +47,12 @@
   gap: 0.5rem;
   flex-wrap: wrap;
 }
-
 .users-search-input {
   position: relative;
   flex: 1;
   max-width: 24rem;
   min-width: 200px;
 }
-
 .users-search-input input {
   padding: 0.75rem 0.75rem 0.75rem 2.5rem;
   width: 100%;
@@ -72,13 +63,11 @@
   font-size: 0.875rem;
   transition: all 0.2s ease-in-out;
 }
-
 .users-search-input input:focus {
   outline: none;
   border-color: var(--fixlanka-primary);
   box-shadow: 0 0 0 3px rgba(77, 230, 213, 0.1);
 }
-
 .users-search-icon {
   position: absolute;
   left: 0.75rem;
@@ -89,17 +78,14 @@
   color: var(--muted-foreground);
   pointer-events: none;
 }
-
 .users-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
 }
-
 .users-table thead {
   background: linear-gradient(135deg, var(--muted) 0%, rgba(var(--muted), 0.8) 100%);
 }
-
 .users-table th {
   padding: 1rem 1.5rem;
   text-align: left;
@@ -113,32 +99,26 @@
   top: 0;
   z-index: 10;
 }
-
 .users-table tbody {
   background-color: var(--card);
 }
-
 .users-table tbody tr {
   transition: all 0.2s ease-in-out;
   border-bottom: 1px solid var(--border);
 }
-
 .users-table tbody tr:hover {
   background-color: var(--muted);
   transform: scale(1.001);
 }
-
 .users-table tbody tr:last-child {
   border-bottom: none;
 }
-
 .users-table td {
   padding: 1rem 1.5rem;
   font-size: 0.875rem;
   vertical-align: top;
   line-height: 1.5;
 }
-
 .users-role-badge {
   display: inline-flex;
   align-items: center;
@@ -149,25 +129,21 @@
   text-transform: capitalize;
   transition: all 0.2s ease-in-out;
 }
-
 .users-role-provider {
   background: linear-gradient(135deg, rgba(77, 230, 213, 0.15) 0%, rgba(77, 230, 213, 0.05) 100%);
   color: var(--fixlanka-primary);
   border: 1px solid rgba(77, 230, 213, 0.3);
 }
-
 .users-role-company {
   background: linear-gradient(135deg, rgba(185, 244, 228, 0.25) 0%, rgba(185, 244, 228, 0.1) 100%);
   color: var(--fixlanka-primary);
   border: 1px solid rgba(185, 244, 228, 0.4);
 }
-
 .users-role-moderator {
   background: linear-gradient(135deg, rgba(228, 86, 79, 0.15) 0%, rgba(228, 86, 79, 0.05) 100%);
   color: var(--fixlanka-error);
   border: 1px solid rgba(228, 86, 79, 0.3);
 }
-
 .users-edit-btn {
   color: var(--fixlanka-primary);
   cursor: pointer;
@@ -175,14 +151,11 @@
   padding: 0.25rem;
   border-radius: 0.25rem;
 }
-
 .users-edit-btn:hover {
   color: rgba(77, 230, 213, 0.8);
   background-color: rgba(77, 230, 213, 0.1);
   transform: scale(1.1);
 }
-
-/* Enhanced modal styles with better animations and backdrop */
 .users-modal {
   position: fixed;
   top: 0;
@@ -198,12 +171,10 @@
   opacity: 0;
   transition: all 0.3s ease-in-out;
 }
-
 .users-modal.show {
   display: flex;
   opacity: 1;
 }
-
 .users-modal-content {
   background-color: var(--card);
   border-radius: 0.75rem;
@@ -217,42 +188,35 @@
   max-height: 90vh;
   overflow-y: auto;
 }
-
 .users-modal.show .users-modal-content {
   transform: scale(1);
 }
-
 .users-modal-header {
   padding: 2rem;
   border-bottom: 1px solid var(--border);
 }
-
 .users-modal-header h3 {
   margin-bottom: 1.5rem;
   color: var(--card-foreground);
   font-size: 1.25rem;
   font-weight: 600;
 }
-
 .users-modal-form {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
-
 .users-form-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
-
 .users-form-label {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--card-foreground);
 }
-
 .users-form-group input,
 .users-form-group textarea,
 .users-form-group select {
@@ -264,7 +228,6 @@
   font-size: 0.875rem;
   transition: all 0.2s ease-in-out;
 }
-
 .users-form-group input:focus,
 .users-form-group textarea:focus,
 .users-form-group select:focus {
@@ -272,12 +235,10 @@
   border-color: var(--fixlanka-primary);
   box-shadow: 0 0 0 3px rgba(77, 230, 213, 0.1);
 }
-
 .users-form-group small {
   color: var(--muted-foreground);
   font-size: 0.75rem;
 }
-
 .users-form-actions {
   display: flex;
   justify-content: flex-end;
@@ -285,7 +246,6 @@
   padding-top: 1rem;
   border-top: 1px solid var(--border);
 }
-
 .users-cancel-btn {
   padding: 0.75rem 1.5rem;
   font-size: 0.875rem;
@@ -297,12 +257,10 @@
   cursor: pointer;
   transition: all 0.2s ease-in-out;
 }
-
 .users-cancel-btn:hover {
   background-color: rgba(var(--muted), 0.8);
   transform: translateY(-1px);
 }
-
 .users-save-btn {
   padding: 0.75rem 1.5rem;
   font-size: 0.875rem;
@@ -315,21 +273,17 @@
   transition: all 0.2s ease-in-out;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-
 .users-save-btn:hover {
   background-color: rgba(77, 230, 213, 0.9);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
-
-/* Added moderation-specific styles moved from inline */
 .moderation-evidence-list {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
-
 .moderation-evidence-item {
   display: inline-flex;
   align-items: center;
@@ -341,19 +295,16 @@
   border: 1px solid var(--border);
   transition: all 0.2s ease-in-out;
 }
-
 .moderation-evidence-item:hover {
   background-color: var(--fixlanka-primary);
   color: var(--background);
   transform: translateY(-1px);
 }
-
 .moderation-actions {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
-
 .moderation-btn {
   padding: 0.5rem;
   font-size: 0.75rem;
@@ -367,40 +318,32 @@
   min-width: 2rem;
   height: 2rem;
 }
-
 .moderation-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-
 .moderation-btn-restore {
   background-color: var(--fixlanka-primary);
   color: white;
 }
-
 .moderation-btn-restore:hover {
   background-color: rgba(77, 230, 213, 0.9);
 }
-
 .moderation-btn-reject {
   background-color: var(--fixlanka-error);
   color: white;
 }
-
 .moderation-btn-reject:hover {
   background-color: rgba(228, 86, 79, 0.9);
 }
-
 .moderation-btn-view {
   background-color: var(--muted);
   color: var(--muted-foreground);
 }
-
 .moderation-btn-view:hover {
   background-color: rgba(var(--muted), 0.8);
   color: var(--foreground);
 }
-
 .moderation-appeal-message {
   max-width: 300px;
   overflow: hidden;
@@ -409,73 +352,57 @@
   padding: 0.25rem 0;
   cursor: help;
 }
-
 .moderation-appeal-message:hover {
   color: var(--fixlanka-primary);
 }
-
-/* Added responsive design improvements */
 @media (max-width: 1024px) {
-  .users-table-container {
-    overflow-x: auto;
-  }
-
-  .users-table {
-    min-width: 800px;
-  }
-
-  .users-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
-
-  .users-add-btn {
-    align-self: flex-start;
-  }
+.users-table-container {
+  overflow-x: auto;
 }
-
+.users-table {
+  min-width: 800px;
+}
+.users-header {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+}
+.users-add-btn {
+  align-self: flex-start;
+}
+}
 @media (max-width: 768px) {
-  .users-modal-content {
-    margin: 0.5rem;
-    max-width: calc(100vw - 1rem);
-  }
-
-  .users-modal-header {
-    padding: 1.5rem;
-  }
-
-  .users-form-actions {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .users-cancel-btn,
-  .users-save-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .moderation-actions {
-    justify-content: center;
-  }
-
-  .users-table th,
-  .users-table td {
-    padding: 0.75rem 1rem;
-  }
+.users-modal-content {
+  margin: 0.5rem;
+  max-width: calc(100vw - 1rem);
 }
-
-/* Added loading states and animations */
+.users-modal-header {
+  padding: 1.5rem;
+}
+.users-form-actions {
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.users-cancel-btn,
+  .users-save-btn {
+  width: 100%;
+  justify-content: center;
+}
+.moderation-actions {
+  justify-content: center;
+}
+.users-table th,
+  .users-table td {
+  padding: 0.75rem 1rem;
+}
+}
 .users-table tbody tr.loading {
   opacity: 0.6;
   pointer-events: none;
 }
-
 .users-table tbody tr.loading td {
   position: relative;
 }
-
 .users-table tbody tr.loading td::after {
   content: "";
   position: absolute;
@@ -486,17 +413,14 @@
   background: linear-gradient(90deg, transparent, rgba(var(--fixlanka-primary), 0.1), transparent);
   animation: shimmer 1.5s infinite;
 }
-
 @keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
+0% {
+  transform: translateX(-100%);
 }
-
-/* Enhanced badge styles */
+100% {
+  transform: translateX(100%);
+}
+}
 .badge {
   display: inline-flex;
   align-items: center;
@@ -507,31 +431,26 @@
   text-transform: capitalize;
   transition: all 0.2s ease-in-out;
 }
-
 .badge-default {
   background: linear-gradient(135deg, rgba(185, 244, 228, 0.25) 0%, rgba(185, 244, 228, 0.1) 100%);
   color: var(--fixlanka-highlight);
   border: 1px solid rgba(185, 244, 228, 0.4);
 }
-
 .badge-secondary {
   background: linear-gradient(135deg, var(--muted) 0%, rgba(var(--muted), 0.8) 100%);
   color: var(--muted-foreground);
   border: 1px solid var(--border);
 }
-
 .badge-destructive {
   background: linear-gradient(135deg, rgba(228, 86, 79, 0.25) 0%, rgba(228, 86, 79, 0.1) 100%);
   color: var(--fixlanka-error);
   border: 1px solid rgba(228, 86, 79, 0.4);
 }
-
 .badge-outline {
   border: 1px solid var(--border);
   color: var(--muted-foreground);
   background-color: transparent;
 }
-
 .badge:hover {
   transform: scale(1.05);
 }

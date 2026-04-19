@@ -1,20 +1,7 @@
-/* ================================================
-   EARNINGS PAGE STYLES
-   Page-specific styles only — shared layout, header,
-   tabs, filters, buttons, drawers, detail sections,
-   timeline, and responsive base are in
-   common/repairer-pages.css (loaded first).
-   ================================================ */
-
-/* Import Global Variables */
 @import "../common/variables.css";
-
-/* ===== EARNINGS SECTION ===== */
 .earnings-section {
   margin-bottom: var(--spacing-lg);
 }
-
-/* ===== EARNINGS TABLE ===== */
 .earnings-table-container {
   background: var(--bg-card);
   border-radius: 12px;
@@ -22,18 +9,15 @@
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
-
 .earnings-table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--font-size-base);
 }
-
 .earnings-table thead {
   background: var(--bg-tertiary);
   border-bottom: 2px solid var(--border-color);
 }
-
 .earnings-table th {
   text-align: left;
   padding: var(--spacing-lg);
@@ -44,78 +28,62 @@
   letter-spacing: 0.5px;
   position: relative;
 }
-
 .earnings-table th.sortable {
   cursor: pointer;
   user-select: none;
   transition: background-color var(--transition-fast);
 }
-
 .earnings-table th.sortable:hover {
   background: var(--bg-secondary);
 }
-
 .earnings-table th.sortable span {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
 }
-
 .earnings-table th.sortable i {
   opacity: 0.5;
   transition: opacity var(--transition-fast);
 }
-
 .earnings-table th.sortable:hover i {
   opacity: 1;
 }
-
 .earnings-table tbody tr {
   border-bottom: 1px solid var(--border-color);
   transition: background-color var(--transition-fast);
 }
-
 .earnings-table tbody tr:hover {
   background: var(--bg-tertiary);
 }
-
 .earnings-table tbody tr:last-child {
   border-bottom: none;
 }
-
 .earnings-table td {
   padding: var(--spacing-lg);
   vertical-align: middle;
 }
-
-/* ===== TABLE CELL STYLES ===== */
 .date-info {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
 }
-
 .date-primary {
   font-weight: 600;
   color: var(--text-primary);
 }
-
 .date-secondary {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
 }
-
 .job-info {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
 }
-
 .job-title {
   font-weight: 600;
   color: var(--text-primary);
 }
-
 .job-category {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
@@ -125,57 +93,46 @@
   display: inline-block;
   width: fit-content;
 }
-
 .customer-info {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
 }
-
 .customer-name {
   font-weight: 600;
   color: var(--text-primary);
 }
-
 .customer-location {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
 }
-
 .amount-earned {
   font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--primary-color);
 }
-
 .actions-cell {
   display: flex;
   gap: var(--spacing-sm);
 }
-
 .hours-cell {
   text-align: center;
 }
-
 .hours-worked {
   display: inline-block;
   font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--text-primary);
 }
-
 .rate-cell {
   text-align: right;
 }
-
 .hourly-rate {
   display: inline-block;
   font-size: var(--font-size-base);
   font-weight: 500;
   color: var(--text-secondary);
 }
-
-/* ===== EARNING STATUS BANNER ===== */
 .earning-status-banner {
   background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
   border-left: 4px solid #4caf50;
@@ -186,17 +143,14 @@
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-xl);
 }
-
 .earning-status-banner.paid {
   background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
   border-left-color: #4caf50;
 }
-
 .earning-status-banner.pending {
   background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
   border-left-color: #ff9800;
 }
-
 .earning-status-banner .status-icon {
   width: 48px;
   height: 48px;
@@ -207,45 +161,36 @@
   font-size: 24px;
   background: rgba(255, 255, 255, 0.8);
 }
-
 .earning-status-banner.paid .status-icon {
   color: #4caf50;
 }
-
 .earning-status-banner.pending .status-icon {
   color: #ff9800;
 }
-
 .earning-status-banner .status-content h4 {
   margin: 0 0 4px 0;
   font-size: var(--font-size-lg);
   color: var(--text-primary);
 }
-
 .earning-status-banner .status-content p {
   margin: 0;
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
 }
-
-/* ===== PAYMENT BREAKDOWN ===== */
 .payment-breakdown {
   background: var(--bg-secondary);
   border-radius: 8px;
   padding: var(--spacing-lg);
 }
-
 .breakdown-row {
   display: flex;
   justify-content: space-between;
   padding: var(--spacing-sm) 0;
   border-bottom: 1px solid var(--border-color);
 }
-
 .breakdown-row:last-child {
   border-bottom: none;
 }
-
 .breakdown-row.total {
   margin-top: var(--spacing-sm);
   padding-top: var(--spacing-md);
@@ -253,51 +198,40 @@
   font-size: var(--font-size-lg);
   color: var(--primary-color);
 }
-
 .breakdown-label {
   color: var(--text-secondary);
 }
-
 .breakdown-value {
   color: var(--text-primary);
   font-weight: 600;
 }
-
 .text-danger {
   color: #e74c3c !important;
 }
-
-/* ===== RESPONSIVE — EARNINGS-SPECIFIC ===== */
 @media (max-width: 768px) {
-  .earnings-table-container {
-    overflow-x: auto;
-  }
-
-  .earnings-table {
-    min-width: 800px;
-  }
-
-  .earnings-table th,
-  .earnings-table td {
-    padding: var(--spacing-md);
-  }
+.earnings-table-container {
+  overflow-x: auto;
 }
-
-@media (max-width: 480px) {
-  .summary-number {
-    font-size: var(--font-size-xl);
-  }
-
-  .earnings-table {
-    min-width: 600px;
-  }
-
-  .earnings-table th,
+.earnings-table {
+  min-width: 800px;
+}
+.earnings-table th,
   .earnings-table td {
-    padding: var(--spacing-sm);
-  }
-
-  .actions-cell {
-    flex-direction: column;
-  }
+  padding: var(--spacing-md);
+}
+}
+@media (max-width: 480px) {
+.summary-number {
+  font-size: var(--font-size-xl);
+}
+.earnings-table {
+  min-width: 600px;
+}
+.earnings-table th,
+  .earnings-table td {
+  padding: var(--spacing-sm);
+}
+.actions-cell {
+  flex-direction: column;
+}
 }

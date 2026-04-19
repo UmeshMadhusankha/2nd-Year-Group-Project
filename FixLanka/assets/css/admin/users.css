@@ -1,11 +1,9 @@
-/* User Management specific styles */
 .users-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.5rem;
 }
-
 .users-add-btn {
   display: inline-flex;
   align-items: center;
@@ -19,40 +17,33 @@
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .users-add-btn:hover {
   background-color: rgba(77, 230, 213, 0.9);
 }
-
 .users-table-container {
   background-color: var(--card);
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
   border: 1px solid var(--border);
 }
-
 .users-table-header {
   padding: 1.5rem;
 }
-
 .users-search-container {
   margin-top: 1rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
-
 .users-search-input {
   position: relative;
   flex: 1;
   max-width: 24rem;
 }
-
 .users-search-input input {
   padding-left: 2rem;
   width: 100%;
 }
-
 .users-search-icon {
   position: absolute;
   left: 0.5rem;
@@ -61,16 +52,13 @@
   height: 1rem;
   color: var(--muted-foreground);
 }
-
 .users-table {
   width: 100%;
   border-collapse: collapse;
 }
-
 .users-table thead {
   background-color: var(--muted);
 }
-
 .users-table th {
   padding: 0.75rem 1.5rem;
   text-align: left;
@@ -80,21 +68,17 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-
 .users-table tbody {
   background-color: var(--card);
 }
-
 .users-table tbody tr + tr {
   border-top: 1px solid var(--border);
 }
-
 .users-table td {
   padding: 1rem 1.5rem;
   white-space: nowrap;
   font-size: 0.875rem;
 }
-
 .users-role-badge {
   display: inline-flex;
   align-items: center;
@@ -103,32 +87,26 @@
   font-size: 0.75rem;
   font-weight: 500;
 }
-
 .users-role-provider {
   background-color: rgba(77, 230, 213, 0.1);
   color: var(--fixlanka-primary);
 }
-
 .users-role-company {
   background-color: rgba(185, 244, 228, 0.2);
   color: var(--fixlanka-primary);
 }
-
 .users-role-moderator {
   background-color: rgba(228, 86, 79, 0.1);
   color: var(--fixlanka-error);
 }
-
 .users-edit-btn {
   color: var(--fixlanka-primary);
   cursor: pointer;
   transition: color 0.2s;
 }
-
 .users-edit-btn:hover {
   color: rgba(77, 230, 213, 0.8);
 }
-
 .users-modal {
   position: fixed;
   top: 0;
@@ -141,11 +119,9 @@
   align-items: center;
   justify-content: center;
 }
-
 .users-modal.show {
   display: flex;
 }
-
 .users-modal-content {
   background-color: var(--card);
   border-radius: 0.5rem;
@@ -155,22 +131,18 @@
   margin: 1rem;
   border: 1px solid var(--border);
 }
-
 .users-modal-header {
   padding: 1.5rem;
 }
-
 .users-modal-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
-
 .users-form-group {
   display: flex;
   flex-direction: column;
 }
-
 .users-form-label {
   display: block;
   font-size: 0.875rem;
@@ -178,13 +150,11 @@
   color: var(--card-foreground);
   margin-bottom: 0.25rem;
 }
-
 .users-form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
 }
-
 .users-cancel-btn {
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
@@ -196,11 +166,9 @@
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .users-cancel-btn:hover {
   background-color: rgba(var(--muted), 0.8);
 }
-
 .users-delete-btn {
   display: inline-flex;
   align-items: center;
@@ -214,16 +182,13 @@
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .users-delete-btn:hover {
   background-color: #b91c1c;
 }
-
 .users-delete-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-
 .users-save-btn {
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
@@ -235,7 +200,6 @@
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .users-save-btn:hover {
   background-color: rgba(77, 230, 213, 0.9);
 }
