@@ -415,7 +415,45 @@ class UserQuotesModel {
         }
 
         $sql = "
-            SELECT * FROM (
+            SELECT DISTINCT
+                q.source,
+                q.request_type,
+                q.quote_id,
+                q.request_id,
+                q.job_title,
+                q.amount,
+                q.status,
+                q.created_at,
+                q.job_posted_at,
+                q.job_status,
+                q.job_provider_preference,
+                q.category_name,
+                q.provider_id,
+                q.provider_name,
+                q.provider_type,
+                q.provider_avatar,
+                q.provider_rating,
+                q.estimated_days,
+                q.warranty_period,
+                q.materials_included,
+                q.message,
+                q.quote_message,
+                q.valid_until,
+                q.company_start_date,
+                q.company_completion_date,
+                q.labor_cost,
+                q.material_cost,
+                q.transport_cost,
+                q.other_charges,
+                q.budget_type,
+                q.payment_terms,
+                q.payment_method,
+                q.pricing_type,
+                q.hourly_rate,
+                q.work_schedule_type,
+                q.labor_unit_label,
+                q.material_unit_label
+            FROM (
                 " . implode("\nUNION ALL\n", $parts) . "
             ) q
             ORDER BY q.created_at DESC
@@ -440,34 +478,30 @@ class UserQuotesModel {
 
     public function getUserPendingCount(int $userId): int {
         $sql = "
-            SELECT
-                (
-                    SELECT COUNT(*)
-                    FROM repairerquote rq
-                    INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
-                    WHERE jr.user_id = :user_id_repairer AND rq.status = 'pending'
-                )
-                +
-                (
-                    SELECT COUNT(*)
-                    FROM companyquotation cq
-                    INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
-                    WHERE jr.user_id = :user_id_company AND cq.status = 'pending'
-                )
-                +
-                (
-                    SELECT COUNT(*)
-                    FROM repairerquote rq
-                    INNER JOIN directjobrequest djr ON rq.request_id = djr.request_id
-                    WHERE djr.user_id = :user_id_repairer_direct AND rq.status = 'pending'
-                )
-                +
-                (
-                    SELECT COUNT(*)
-                    FROM companyquotation cq
-                    INNER JOIN directjobrequest djr ON cq.request_id = djr.request_id
-                    WHERE djr.user_id = :user_id_company_direct AND cq.status = 'pending'
-                ) AS pending_count
+            SELECT COUNT(DISTINCT CONCAT(source, '_', quote_id)) as pending_count
+            FROM (
+                SELECT 'repairer' AS source, rq.quote_id FROM repairerquote rq
+                INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
+                WHERE jr.user_id = :user_id_repairer AND rq.status = 'pending'
+                
+                UNION ALL
+                
+                SELECT 'company' AS source, cq.quotation_id AS quote_id FROM companyquotation cq
+                INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
+                WHERE jr.user_id = :user_id_company AND cq.status = 'pending'
+                
+                UNION ALL
+                
+                SELECT 'repairer' AS source, rq.quote_id FROM repairerquote rq
+                INNER JOIN directjobrequest djr ON rq.request_id = djr.request_id
+                WHERE djr.user_id = :user_id_repairer_direct AND rq.status = 'pending'
+                
+                UNION ALL
+                
+                SELECT 'company' AS source, cq.quotation_id AS quote_id FROM companyquotation cq
+                INNER JOIN directjobrequest djr ON cq.request_id = djr.request_id
+                WHERE djr.user_id = :user_id_company_direct AND cq.status = 'pending'
+            ) q
         ";
 
         $stmt = $this->pdo->prepare($sql);

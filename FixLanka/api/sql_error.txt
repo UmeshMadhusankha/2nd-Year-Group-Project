@@ -40,3 +40,9 @@
             SELECT
                 p.project_id,
                 p.title...' at line 1
+[2026-04-19 14:29:56] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-19 14:29:56] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-19 14:29:56] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
+[2026-04-19 14:32:27] company-dashboard requests_direct: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-19 14:32:27] company-dashboard requests_public: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.profile_picture' in 'field list'
+[2026-04-19 14:32:27] company-dashboard requests_public_fallback: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jr.created_at' in 'field list'
