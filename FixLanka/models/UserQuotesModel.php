@@ -153,17 +153,19 @@ class UserQuotesModel {
                     $requestStatusSqlCompanyRegular = " AND jr.status = 'completed' AND cq.status IN ('accepted','successful') ";
                 } else {
                     $params[':status_repairer_regular'] = $statusNormalized;
-                    $params[':status_company_regular'] = $statusNormalized;
                     $statusSqlRepairerRegular = ' AND rq.status = :status_repairer_regular ';
-                    $statusSqlCompanyRegular = ' AND cq.status = :status_company_regular ';
                     if ($statusNormalized === 'accepted') {
                         // Company quotations move to `successful` after contract creation.
                         // Keep them visible in Accepted tab to avoid disappearing cards.
                         $statusSqlCompanyRegular = " AND cq.status IN ('accepted','successful') ";
+                    } else {
+                        $params[':status_company_regular'] = $statusNormalized;
+                        $statusSqlCompanyRegular = ' AND cq.status = :status_company_regular ';
                     }
                     if ($statusNormalized === 'accepted') {
                         $acceptedScopeSqlRepairerRegular = " AND jr.status <> 'completed' ";
-                        $acceptedScopeSqlCompanyRegular = " AND jr.status <> 'completed' ";
+                        // Keep company accepted/successful quotes visible even after request lifecycle changes.
+                        $acceptedScopeSqlCompanyRegular = '';
                     }
                 }
             }
@@ -186,17 +188,19 @@ class UserQuotesModel {
                     $requestStatusSqlCompanyDirect = " AND djr.status = 'completed' AND cq.status IN ('accepted','successful') ";
                 } else {
                     $params[':status_repairer_direct'] = $statusNormalized;
-                    $params[':status_company_direct'] = $statusNormalized;
                     $statusSqlRepairerDirect = ' AND rq.status = :status_repairer_direct ';
-                    $statusSqlCompanyDirect = ' AND cq.status = :status_company_direct ';
                     if ($statusNormalized === 'accepted') {
                         // Company quotations move to `successful` after contract creation.
                         // Keep them visible in Accepted tab to avoid disappearing cards.
                         $statusSqlCompanyDirect = " AND cq.status IN ('accepted','successful') ";
+                    } else {
+                        $params[':status_company_direct'] = $statusNormalized;
+                        $statusSqlCompanyDirect = ' AND cq.status = :status_company_direct ';
                     }
                     if ($statusNormalized === 'accepted') {
                         $acceptedScopeSqlRepairerDirect = " AND djr.status <> 'completed' ";
-                        $acceptedScopeSqlCompanyDirect = " AND djr.status <> 'completed' ";
+                        // Keep company accepted/successful quotes visible even after request lifecycle changes.
+                        $acceptedScopeSqlCompanyDirect = '';
                     }
                 }
             }

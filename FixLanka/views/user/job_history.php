@@ -1424,6 +1424,23 @@ foreach ($allJobRequests as $job) {
             }
 
             if (!quotes.length) {
+                if (currentQuoteStatusFilter === 'pending') {
+                    try {
+                        const acceptedProbe = await fetchJson(`${USER_QUOTES_API}?action=list&limit=1&offset=0&status=accepted`);
+                        const acceptedQuotes = Array.isArray(acceptedProbe.quotes) ? acceptedProbe.quotes : [];
+                        if (acceptedQuotes.length > 0) {
+                            currentQuoteStatusFilter = 'accepted';
+                            quotesFilterTabs.forEach((item) => {
+                                item.classList.toggle('active', item.dataset.quoteStatus === 'accepted');
+                            });
+                            await loadQuotesReceived();
+                            return;
+                        }
+                    } catch (probeError) {
+                        // Ignore probe failures and keep empty state message below.
+                    }
+                }
+
                 quotesReceivedList.innerHTML = '<div class="quote-empty-state">No quotes received.</div>';
                 return;
             }
