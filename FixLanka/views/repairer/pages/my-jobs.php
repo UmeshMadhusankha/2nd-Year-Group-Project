@@ -323,6 +323,63 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
         </div>
     </div>
 
+    <!-- Review Modal -->
+    <div class="modal-overlay" id="reviewModal">
+        <div class="modal-container review-modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title" id="reviewModalTitle">Give a Review</h3>
+                <button class="modal-close" onclick="closeReviewModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="review-summary-panel" id="reviewSummaryPanel" style="display:none;">
+                    <div class="review-summary-head">
+                        <div>
+                            <h4 class="review-summary-job" id="reviewJobTitle">—</h4>
+                            <p class="review-summary-customer" id="reviewCustomerName">—</p>
+                        </div>
+                        <div class="review-summary-rating" id="reviewSummaryRating">—</div>
+                    </div>
+                    <p class="review-summary-comment" id="reviewSummaryComment">—</p>
+                    <div class="review-summary-date" id="reviewSummaryDate">—</div>
+                </div>
+
+                <div class="review-form-panel" id="reviewFormPanel">
+                    <div class="review-field">
+                        <label for="reviewRating">Rating</label>
+                        <select id="reviewRating">
+                            <option value="">Select rating</option>
+                            <option value="5">5 - Excellent</option>
+                            <option value="4">4 - Good</option>
+                            <option value="3">3 - Average</option>
+                            <option value="2">2 - Poor</option>
+                            <option value="1">1 - Bad</option>
+                        </select>
+                    </div>
+                    <div class="review-field">
+                        <label for="reviewComments">Comments</label>
+                        <textarea id="reviewComments" rows="4" placeholder="Write your review here..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer review-modal-footer">
+                <button class="btn btn-secondary" onclick="closeReviewModal()">
+                    <i class="fas fa-times"></i>
+                    Close
+                </button>
+                <button class="btn btn-outline" id="reviewEditButton" onclick="startReviewEdit()" style="display:none;">
+                    <i class="fas fa-pen"></i>
+                    Edit Review
+                </button>
+                <button class="btn btn-primary" id="reviewSubmitButton" onclick="submitReview()">
+                    <i class="fas fa-paper-plane"></i>
+                    Submit Review
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         window.CURRENT_REPAIRER_ID = <?php echo $currentRepairerId; ?>;
         window.BASE_URL = '/2nd-Year-Group-Project/FixLanka/';

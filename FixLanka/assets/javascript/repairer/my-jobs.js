@@ -7,9 +7,12 @@
 const repairerId = window.CURRENT_REPAIRER_ID || 0;
 const BASE_URL   = window.BASE_URL || '/2nd-Year-Group-Project/FixLanka/';
 const JOB_COLLAB_API = `${BASE_URL}api/job-collaboration.php`;
+const REPAIRER_JOBS_API = `${BASE_URL}api/repairer-jobs.php`;
 
 let cachedJobs    = [];   // full list from API
 let currentFilter = 'all';
+let currentReviewJob = null;
+let currentReviewMode = 'create';
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', function () {
@@ -99,6 +102,165 @@ async function loadJobs() {
     }
 }
 
+function findJobByRequestId(requestId) {
+    return cachedJobs.find(job => Number(job.request_id) === Number(requestId)) || null;
+}
+
+function formatReviewRating(rating) {
+    const numeric = Number(rating);
+    if (!Number.isFinite(numeric) || numeric <= 0) return '—';
+    return `${numeric.toFixed(1)}/5`;
+}
+
+function formatReviewDate(value) {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function openReviewModal(requestId) {
+    const job = findJobByRequestId(requestId);
+    if (!job) {
+        showNotification('Review details not found', 'error');
+        return;
+    }
+
+    currentReviewJob = job;
+    currentReviewMode = job.review_id ? 'view' : 'create';
+
+    const modal = document.getElementById('reviewModal');
+    const title = document.getElementById('reviewModalTitle');
+    const summaryPanel = document.getElementById('reviewSummaryPanel');
+    const formPanel = document.getElementById('reviewFormPanel');
+    const reviewEditButton = document.getElementById('reviewEditButton');
+    const submitButton = document.getElementById('reviewSubmitButton');
+
+    setText('reviewJobTitle', job.job_title || 'Job Review');
+    setText('reviewCustomerName', `${job.customer_first_name || ''} ${job.customer_last_name || ''}`.trim() || 'Customer');
+    setText('reviewSummaryRating', formatReviewRating(job.review_rating));
+    setText('reviewSummaryComment', job.review_comments || 'No review comment provided.');
+    setText('reviewSummaryDate', formatReviewDate(job.review_date));
+
+    const ratingField = document.getElementById('reviewRating');
+    const commentField = document.getElementById('reviewComments');
+    if (ratingField) ratingField.value = job.review_rating ? String(job.review_rating) : '';
+    if (commentField) commentField.value = job.review_comments || '';
+
+    if (job.review_id) {
+        if (title) title.textContent = 'Rated';
+        if (summaryPanel) summaryPanel.style.display = '';
+        if (formPanel) formPanel.style.display = 'none';
+        if (reviewEditButton) reviewEditButton.style.display = '';
+        if (submitButton) submitButton.style.display = 'none';
+    } else {
+        if (title) title.textContent = 'Give a Review';
+        if (summaryPanel) summaryPanel.style.display = 'none';
+        if (formPanel) formPanel.style.display = '';
+        if (reviewEditButton) reviewEditButton.style.display = 'none';
+        if (submitButton) {
+            submitButton.style.display = '';
+            submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Review';
+        }
+    }
+
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function startReviewEdit() {
+    if (!currentReviewJob) return;
+
+    currentReviewMode = 'edit';
+
+    const title = document.getElementById('reviewModalTitle');
+    const summaryPanel = document.getElementById('reviewSummaryPanel');
+    const formPanel = document.getElementById('reviewFormPanel');
+    const reviewEditButton = document.getElementById('reviewEditButton');
+    const submitButton = document.getElementById('reviewSubmitButton');
+
+    if (title) title.textContent = 'Edit Review';
+    if (summaryPanel) summaryPanel.style.display = 'none';
+    if (formPanel) formPanel.style.display = '';
+    if (reviewEditButton) reviewEditButton.style.display = 'none';
+    if (submitButton) {
+        submitButton.style.display = '';
+        submitButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+    }
+}
+
+function closeReviewModal() {
+    const modal = document.getElementById('reviewModal');
+    if (modal) modal.classList.remove('show');
+    document.body.style.overflow = '';
+    currentReviewJob = null;
+    currentReviewMode = 'create';
+}
+
+async function submitReview() {
+    if (!currentReviewJob) return;
+
+    const ratingField = document.getElementById('reviewRating');
+    const commentField = document.getElementById('reviewComments');
+    const rating = Number(ratingField ? ratingField.value : 0);
+    const comments = commentField ? commentField.value.trim() : '';
+
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+        showNotification('Please select a rating between 1 and 5.', 'error');
+        return;
+    }
+
+    const submitButton = document.getElementById('reviewSubmitButton');
+    if (submitButton) submitButton.disabled = true;
+
+    try {
+        const res = await fetch(REPAIRER_JOBS_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'save-review',
+                request_id: currentReviewJob.request_id,
+                repairer_id: repairerId,
+                rating,
+                comments
+            })
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+            showNotification(data.message || 'Failed to save review', 'error');
+            return;
+        }
+
+        const savedReview = data.review || {};
+        currentReviewJob.review_id = savedReview.review_id || currentReviewJob.review_id || 0;
+        currentReviewJob.review_rating = savedReview.rating || rating;
+        currentReviewJob.review_comments = savedReview.comments || comments;
+        currentReviewJob.review_date = savedReview.date || new Date().toISOString();
+
+        cachedJobs = cachedJobs.map(job => {
+            if (Number(job.request_id) !== Number(currentReviewJob.request_id)) return job;
+            return {
+                ...job,
+                review_id: currentReviewJob.review_id,
+                review_rating: currentReviewJob.review_rating,
+                review_comments: currentReviewJob.review_comments,
+                review_date: currentReviewJob.review_date
+            };
+        });
+
+        closeReviewModal();
+        renderJobs(cachedJobs, currentFilter);
+        showNotification(data.message || 'Review saved successfully', 'success');
+    } catch (err) {
+        showNotification('Could not save review. Please try again.', 'error');
+    } finally {
+        if (submitButton) submitButton.disabled = false;
+    }
+}
+
 // ===== RENDER JOBS =====
 function renderJobs(jobs, filter) {
     const container = document.getElementById('jobsList');
@@ -180,7 +342,9 @@ function createJobCard(job) {
     } else if (uiStatus === 'completed') {
         const paymentAction = providerPaid
             ? `<button class="btn btn-secondary btn-sm" onclick="resetPaymentReceived(${job.request_id})"><i class="fas fa-rotate-left"></i> Redo Payment</button>`
-            : `<button class="btn btn-primary" onclick="markPaymentReceived(${job.request_id})"><i class="fas fa-wallet"></i> Payment Received</button>`;
+            : (userCompleted
+                ? `<button class="btn btn-primary" onclick="markPaymentReceived(${job.request_id})"><i class="fas fa-wallet"></i> Payment Received</button>`
+                : `<button class="btn btn-secondary" disabled title="Wait until the customer also marks completion"><i class="fas fa-hourglass-half"></i> Awaiting Customer Completion</button>`);
 
         const completionHint = providerCompleted
             ? '<span class="completed-label"><i class="fas fa-flag-checkered"></i> Marked as job completed</span>'
@@ -393,6 +557,11 @@ function viewJobDetails(quoteId) {
     }
 }
 
+window.openReviewModal = openReviewModal;
+window.closeReviewModal = closeReviewModal;
+window.startReviewEdit = startReviewEdit;
+window.submitReview = submitReview;
+
 function buildTimeline(job) {
     const steps = [];
     const userCompleted = !!job.user_completed_at;
@@ -438,7 +607,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (modal) {
         modal.addEventListener('click', e => { if (e.target === modal) closeJobDetailsModal(); });
     }
+    const reviewModal = document.getElementById('reviewModal');
+    if (reviewModal) {
+        reviewModal.addEventListener('click', e => { if (e.target === reviewModal) closeReviewModal(); });
+    }
     document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeReviewModal();
         if (e.key === 'Escape') closeJobDetailsModal();
     });
 });
