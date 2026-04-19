@@ -1,130 +1,125 @@
--- Database Schema for Home Repair Service Platform
--- Matches Live Database as of 2026-01-18
-
--- IMPORTANT
--- This file DROPS and RE-CREATES the `fix_lanka` database.
--- If you only want to apply recent additions (like `system_audit_log`) to an existing DB,
--- DO NOT run the whole file. Instead, run the "MIGRATION ONLY" block at the bottom.
+-- Auto-generated schema-only union of fix_lanka.sql + fix_lanka_extra.sql
+-- Contains CREATE TABLE + ALTER TABLE (indexes/auto-increment/FKs). No INSERT data.
+-- NOTE: 1 column-definition conflicts exist across dumps; CREATE TABLE taken from fix_lanka_extra.sql where available.
 
 DROP DATABASE IF EXISTS fix_lanka;
 CREATE DATABASE fix_lanka;
 USE fix_lanka;
 
--- Location Table (NEW)
--- Centralized addresses and districts for users, companies, and job requests
-CREATE TABLE `location` (
-  `location_id` INT(11) NOT NULL AUTO_INCREMENT,
-  `address` TEXT NOT NULL,
-  `district` VARCHAR(100) NOT NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`location_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
+SET time_zone = '+00:00';
+SET FOREIGN_KEY_CHECKS=0;
 
--- User Table
-CREATE TABLE `user` (
-  `user_id` int(11) NOT NULL AUTO_INCREMENT,
-  `f_name` varchar(100) NOT NULL,
-  `l_name` varchar(100) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `profile_picture` varchar(500) DEFAULT NULL,
-  `address` text DEFAULT NULL,
-  `district` varchar(100) DEFAULT NULL,
+-- Table `account_moderation_cases`
+CREATE TABLE `account_moderation_cases` (
+  `case_id` int(11) NOT NULL,
+  `target_id` int(11) NOT NULL COMMENT 'User, Repairer, or Company ID',
+  `target_type` enum('User','Repairer','Company') NOT NULL,
+  `admin_username` varchar(100) DEFAULT NULL COMMENT 'Admin who performed action',
+  `action_type` enum('BAN','SUSPEND','RESTORE','WARNING') NOT NULL,
+  `reason` text NOT NULL,
+  `notes` text DEFAULT NULL,
+  `duration_days` int(11) DEFAULT NULL COMMENT 'NULL for permanent ban',
+  `start_date` datetime NOT NULL,
+  `end_date` datetime DEFAULT NULL COMMENT 'NULL for permanent ban',
+  `status_before` enum('ACTIVE','SUSPENDED','BANNED') NOT NULL,
+  `status_after` enum('ACTIVE','SUSPENDED','BANNED') NOT NULL,
+  `is_permanent` tinyint(1) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `is_deleted` tinyint(1) DEFAULT 0,
-  PRIMARY KEY (`user_id`),
-  UNIQUE KEY `email` (`email`)
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Activity Log
+-- Table `account_moderation_log`
+CREATE TABLE `account_moderation_log` (
+  `log_id` int(11) NOT NULL,
+  `account_type` varchar(30) NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `action_type` enum('suspend','ban','restore') NOT NULL,
+  `reason` text DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `suspended_until` datetime DEFAULT NULL,
+  `acted_by_role` varchar(30) DEFAULT NULL,
+  `acted_by_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `account_moderation_status`
+CREATE TABLE `account_moderation_status` (
+  `status_id` int(11) NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `account_type` enum('User','Repairer','Company') NOT NULL,
+  `account_status` enum('ACTIVE','SUSPENDED','BANNED') DEFAULT 'ACTIVE',
+  `banned_permanent` tinyint(1) DEFAULT 0,
+  `suspended_until` datetime DEFAULT NULL,
+  `moderation_reason` text DEFAULT NULL,
+  `last_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `updated_by` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `activitylog`
 CREATE TABLE `activitylog` (
-  `activity_id` int(11) NOT NULL AUTO_INCREMENT,
+  `activity_id` int(11) NOT NULL,
   `user_id` int(11) DEFAULT NULL,
   `action_type` varchar(100) NOT NULL,
   `description` text DEFAULT NULL,
   `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
-  `ip_address` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`activity_id`),
-  KEY `idx_user` (`user_id`),
-  KEY `idx_timestamp` (`timestamp`)
+  `ip_address` varchar(45) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Admin
+-- Table `admin`
 CREATE TABLE `admin` (
   `username` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
   `email` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`username`),
-  UNIQUE KEY `email` (`email`)
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Advertisement
-CREATE TABLE `advertisement` (
-  `ad_id` int(11) NOT NULL AUTO_INCREMENT,
-  `provider_id` int(11) NOT NULL,
-  `provider_type` enum('repairer','company') NOT NULL,
+-- Table `adminalert`
+CREATE TABLE `adminalert` (
+  `alert_id` int(11) NOT NULL,
   `title` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `category` varchar(100) DEFAULT NULL,
-  `image_url` varchar(500) DEFAULT NULL,
-  `start_date` date DEFAULT NULL,
-  `end_date` date DEFAULT NULL,
-  `view_count` int(11) DEFAULT 0,
-  `click_count` int(11) DEFAULT 0,
-  `type` enum('banner','featured','sponsored') NOT NULL,
-  `budget` decimal(10,2) NOT NULL,
-  `submission_date` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `status` enum('pending','approved','scheduled','active','paused','inactive','suspended','expired','rejected') DEFAULT 'pending',
-  PRIMARY KEY (`ad_id`),
-  KEY `idx_provider` (`provider_id`,`provider_type`),
-  KEY `idx_status` (`status`),
-  KEY `idx_dates` (`start_date`,`end_date`)
+  `message` text NOT NULL,
+  `target_role` enum('User','Repairer','Company','Moderator','All') NOT NULL DEFAULT 'All',
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `priority` enum('low','medium','high') NOT NULL DEFAULT 'medium',
+  `created_by` varchar(100) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- --------------------------------------------------------
--- Optional mock data for landing hero banner rotation
--- These rows match the current date window dynamically via CURDATE().
--- Run this block manually if you want sample ads in the landing hero.
--- --------------------------------------------------------
-INSERT INTO `advertisement`
-(`provider_id`, `provider_type`, `title`, `description`, `type`, `budget`, `start_date`, `end_date`, `status`)
-VALUES
-(9997, 'company', 'April Home Care Specials', 'Book trusted repairs this week and get faster response from top providers.', 'banner', 4500.00, DATE_SUB(CURDATE(), INTERVAL 1 DAY), DATE_ADD(CURDATE(), INTERVAL 10 DAY), 'approved'),
-(9997, 'company', 'Fix Lanka Quick Service Window', 'Verified company teams available for urgent jobs in your district.', 'banner', 4900.00, DATE_SUB(CURDATE(), INTERVAL 2 DAY), DATE_ADD(CURDATE(), INTERVAL 8 DAY), 'approved'),
-(8881, 'repairer', 'Certified Repairer Offer', 'Get clean workmanship and clear pricing from experienced repairers.', 'banner', 3500.00, DATE_SUB(CURDATE(), INTERVAL 1 DAY), DATE_ADD(CURDATE(), INTERVAL 6 DAY), 'approved');
+-- Table `admin_notifications`
+CREATE TABLE `admin_notifications` (
+  `notification_id` int(11) NOT NULL,
+  `admin_username` varchar(100) NOT NULL,
+  `notification_type` enum('ACCOUNT_BANNED','ACCOUNT_SUSPENDED','ACCOUNT_RESTORED','STATUS_CHANGED') NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `account_type` enum('User','Repairer','Company') NOT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Ad Schedule
-CREATE TABLE `adschedule` (
-  `schedule_id` int(11) NOT NULL AUTO_INCREMENT,
+-- Table `admin_override_history`
+CREATE TABLE `admin_override_history` (
+  `override_id` int(11) NOT NULL,
   `ad_id` int(11) NOT NULL,
-  `start_date` date NOT NULL,
-  `end_date` date NOT NULL,
-  `start_time` time DEFAULT NULL,
-  `end_time` time DEFAULT NULL,
-  PRIMARY KEY (`schedule_id`),
-  KEY `idx_ad` (`ad_id`),
-  KEY `idx_dates` (`start_date`,`end_date`),
-  CONSTRAINT `adschedule_ibfk_1` FOREIGN KEY (`ad_id`) REFERENCES `advertisement` (`ad_id`) ON DELETE CASCADE
+  `admin_username` varchar(100) NOT NULL,
+  `previous_status` enum('pending','approved','rejected','scheduled','active','paused','inactive','suspended') NOT NULL,
+  `new_status` enum('pending','approved','rejected','scheduled','active','paused','inactive','suspended') NOT NULL,
+  `override_reason` text NOT NULL,
+  `previous_moderator_id` int(11) DEFAULT NULL,
+  `override_timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ip_address` varchar(45) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Advertisement Reports (User/Provider reports against ads)
+-- Table `adreport`
 CREATE TABLE `adreport` (
-  `report_id` int(11) NOT NULL AUTO_INCREMENT,
+  `report_id` int(11) NOT NULL,
   `ad_id` int(11) NOT NULL,
   `reporter_type` enum('user','repairer','company') NOT NULL DEFAULT 'user',
   `reporter_id` int(11) DEFAULT NULL,
-  `issue_type` enum(
-    'inappropriate_content',
-    'misleading_information',
-    'spam',
-    'privacy_violation',
-    'copyright_infringement',
-    'fraud',
-    'other'
-  ) NOT NULL DEFAULT 'other',
+  `issue_type` enum('inappropriate_content','misleading_information','spam','privacy_violation','copyright_infringement','fraud','other') NOT NULL DEFAULT 'other',
   `description` text NOT NULL,
   `priority` enum('low','medium','high','critical') NOT NULL DEFAULT 'low',
   `status` enum('pending','investigating','resolved','dismissed','escalated') NOT NULL DEFAULT 'pending',
@@ -132,17 +127,12 @@ CREATE TABLE `adreport` (
   `evidence` varchar(500) DEFAULT NULL,
   `handled_by` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`report_id`),
-  KEY `idx_ad` (`ad_id`),
-  KEY `idx_status` (`status`),
-  KEY `idx_priority` (`priority`),
-  CONSTRAINT `adreport_ibfk_1` FOREIGN KEY (`ad_id`) REFERENCES `advertisement` (`ad_id`) ON DELETE CASCADE
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Ad Rotation Settings (Moderator controlled)
+-- Table `adrotationsettings`
 CREATE TABLE `adrotationsettings` (
-  `setting_id` int(11) NOT NULL AUTO_INCREMENT,
+  `setting_id` int(11) NOT NULL,
   `banner_seconds` int(11) NOT NULL DEFAULT 30,
   `featured_seconds` int(11) NOT NULL DEFAULT 60,
   `sponsored_seconds` int(11) NOT NULL DEFAULT 90,
@@ -150,18 +140,128 @@ CREATE TABLE `adrotationsettings` (
   `featured_capacity` int(11) NOT NULL DEFAULT 3,
   `sponsored_capacity` int(11) NOT NULL DEFAULT 8,
   `updated_by` int(11) DEFAULT NULL,
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`setting_id`)
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `adrotationsettings` (
-  banner_seconds, featured_seconds, sponsored_seconds,
-  banner_capacity, featured_capacity, sponsored_capacity
-) VALUES (30, 60, 90, 5, 3, 8);
+-- Table `adschedule`
+CREATE TABLE `adschedule` (
+  `schedule_id` int(11) NOT NULL,
+  `ad_id` int(11) NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `start_time` time DEFAULT NULL,
+  `end_time` time DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Company
+-- Table `advertisement`
+CREATE TABLE `advertisement` (
+  `ad_id` int(11) NOT NULL,
+  `provider_id` int(11) NOT NULL,
+  `provider_type` enum('company','repairer') NOT NULL,
+  `contact_email` varchar(255) DEFAULT NULL,
+  `contact_phone` varchar(20) DEFAULT NULL,
+  `title` varchar(200) NOT NULL,
+  `description` text DEFAULT NULL,
+  `category_id` int(11) DEFAULT NULL,
+  `type` enum('banner','featured','sponsored') NOT NULL DEFAULT 'banner',
+  `budget` decimal(10,2) DEFAULT 0.00,
+  `image_url` varchar(255) DEFAULT NULL,
+  `target_audience` text DEFAULT NULL,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `status` enum('pending','approved','rejected','scheduled','active','paused','inactive','suspended','expired') NOT NULL DEFAULT 'pending',
+  `submission_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `clicks` int(11) DEFAULT 0,
+  `impressions` int(11) DEFAULT 0,
+  `reviewed_by` int(11) DEFAULT NULL,
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  `moderator_notes` text DEFAULT NULL,
+  `admin_reviewed_by` varchar(50) DEFAULT NULL,
+  `admin_reviewed_at` timestamp NULL DEFAULT NULL,
+  `admin_notes` text DEFAULT NULL,
+  `override_reason` text DEFAULT NULL,
+  `is_override` tinyint(1) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `ad_reports`
+CREATE TABLE `ad_reports` (
+  `report_id` int(11) NOT NULL,
+  `ad_id` int(11) NOT NULL,
+  `reporter_id` int(11) NOT NULL,
+  `reporter_type` enum('user','repairer','company','moderator') NOT NULL DEFAULT 'user',
+  `report_category` enum('inappropriate_content','misleading_information','spam','copyright_violation','offensive_material','false_advertising','broken_link','poor_quality','other') NOT NULL,
+  `description` text NOT NULL,
+  `severity` enum('low','medium','high','critical') NOT NULL DEFAULT 'medium',
+  `status` enum('pending','investigating','resolved','dismissed','escalated') NOT NULL DEFAULT 'pending',
+  `assigned_to` int(11) DEFAULT NULL,
+  `resolution_notes` text DEFAULT NULL,
+  `resolved_at` timestamp NULL DEFAULT NULL,
+  `resolved_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `ad_schedules`
+CREATE TABLE `ad_schedules` (
+  `schedule_id` int(11) NOT NULL,
+  `ad_id` int(11) NOT NULL,
+  `placement` varchar(50) NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `start_time` time DEFAULT '00:00:00',
+  `end_time` time DEFAULT '23:59:59',
+  `priority` enum('low','medium','high') DEFAULT 'medium',
+  `status` varchar(20) DEFAULT 'active',
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `ad_status_history`
+CREATE TABLE `ad_status_history` (
+  `history_id` int(11) NOT NULL,
+  `ad_id` int(11) NOT NULL,
+  `old_status` varchar(20) DEFAULT NULL,
+  `new_status` varchar(20) NOT NULL,
+  `changed_by_role` enum('moderator','admin','system') NOT NULL,
+  `changed_by_id` varchar(50) NOT NULL,
+  `reason` text DEFAULT NULL,
+  `is_override` tinyint(1) DEFAULT 0,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `billinghistory`
+CREATE TABLE `billinghistory` (
+  `invoice_id` varchar(50) NOT NULL,
+  `company_id` int(11) NOT NULL,
+  `date` date NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `status` enum('paid','pending','failed') DEFAULT 'pending',
+  `download_url` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `category`
+CREATE TABLE `category` (
+  `category_id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `chatmessage`
+CREATE TABLE `chatmessage` (
+  `session_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `repairer_id` int(11) NOT NULL,
+  `firebase_chat_id` varchar(255) DEFAULT NULL,
+  `last_message` text DEFAULT NULL,
+  `last_message_time` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `company`
 CREATE TABLE `company` (
-  `company_id` int(11) NOT NULL AUTO_INCREMENT,
+  `company_id` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
   `business_type` varchar(255) DEFAULT NULL,
   `registration_no` varchar(100) NOT NULL,
@@ -174,33 +274,107 @@ CREATE TABLE `company` (
   `districts` text DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
-  `skills` text DEFAULT NULL,
   `rating` decimal(3,2) DEFAULT 0.00,
   `date_of_joined` timestamp NOT NULL DEFAULT current_timestamp(),
-  `is_deleted` tinyint(1) DEFAULT 0,
-  PRIMARY KEY (`company_id`),
-  UNIQUE KEY `registration_no` (`registration_no`),
-  UNIQUE KEY `email` (`email`),
-  KEY `idx_email` (`email`),
-  KEY `fk_company_location` (`location_id`),
-  CONSTRAINT `fk_company_location` FOREIGN KEY (`location_id`) REFERENCES `location` (`location_id`) ON DELETE SET NULL
+  `is_deleted` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Service Area (NEW)
--- Links companies to the districts they serve
-CREATE TABLE `service_area` (
-  `area_id` INT(11) NOT NULL AUTO_INCREMENT,
-  `owner_id` INT(11) NOT NULL,
-  `owner_type` ENUM('company', 'repairer') NOT NULL,
-  `district` VARCHAR(100) NOT NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`area_id`),
-  KEY `idx_owner` (`owner_id`, `owner_type`)
+-- Table `companyemployee`
+CREATE TABLE `companyemployee` (
+  `employee_id` int(11) NOT NULL,
+  `company_id` int(11) NOT NULL,
+  `repairer_id` int(11) DEFAULT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `specialty` varchar(100) NOT NULL,
+  `hourly_rate` decimal(10,2) DEFAULT 0.00,
+  `rating` decimal(3,2) DEFAULT 0.00,
+  `status` enum('active','inactive','on_leave') DEFAULT 'active',
+  `hire_date` date DEFAULT NULL,
+  `experience_years` int(11) DEFAULT 0,
+  `certification_details` text DEFAULT NULL,
+  `profile_photo` varchar(500) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Company Settings
+-- Table `companyjobpost`
+CREATE TABLE `companyjobpost` (
+  `posting_id` int(11) NOT NULL,
+  `company_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `category` varchar(100) NOT NULL,
+  `employment_type` enum('freelance','contract','part-time','project-based') NOT NULL,
+  `related_project_id` int(11) DEFAULT NULL,
+  `description` text NOT NULL,
+  `min_experience` enum('entry','junior','mid','senior','expert') NOT NULL,
+  `priority_level` enum('low','medium','high','urgent') DEFAULT 'medium',
+  `min_budget` decimal(10,2) NOT NULL,
+  `max_budget` decimal(10,2) NOT NULL,
+  `application_deadline` date DEFAULT NULL,
+  `required_skills` text DEFAULT NULL,
+  `location` varchar(500) NOT NULL,
+  `location_requirements` varchar(500) DEFAULT NULL,
+  `status` enum('draft','open','closed','filled') DEFAULT 'draft',
+  `notify_repairers` tinyint(1) DEFAULT 1,
+  `allow_direct_applications` tinyint(1) DEFAULT 1,
+  `created_by` int(11) DEFAULT NULL,
+  `posted_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `closed_date` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `companyquotation`
+CREATE TABLE `companyquotation` (
+  `quotation_id` int(11) NOT NULL,
+  `request_id` int(11) NOT NULL,
+  `company_id` int(11) DEFAULT NULL COMMENT 'Company providing quotation',
+  `user_id` int(11) NOT NULL,
+  `title` varchar(250) NOT NULL,
+  `description` varchar(500) DEFAULT NULL,
+  `labor_cost` decimal(10,2) NOT NULL,
+  `material_cost` decimal(10,2) NOT NULL,
+  `transport_cost` decimal(10,2) DEFAULT 0.00,
+  `other_charges` decimal(10,2) DEFAULT 0.00,
+  `total_amount` decimal(10,2) NOT NULL,
+  `start_date` date NOT NULL,
+  `completion_date` date NOT NULL,
+  `estimated_duration` int(11) NOT NULL,
+  `work_schedule_type` enum('all_days','weekdays_only','weekends_included','custom') NOT NULL DEFAULT 'weekdays_only' COMMENT 'Working days pattern: all days (7/week), weekdays only (Mon-Fri), weekends included (Mon-Sat), or custom',
+  `working_days_per_week` tinyint(1) DEFAULT NULL COMMENT 'Number of working days per week (1-7)',
+  `daily_work_hours` decimal(4,2) DEFAULT NULL COMMENT 'Working hours per day (e.g., 8.00, 6.50, 10.00)',
+  `work_start_time` time DEFAULT NULL COMMENT 'Daily work start time (e.g., 08:00:00)',
+  `work_end_time` time DEFAULT NULL COMMENT 'Daily work end time (e.g., 17:00:00)',
+  `break_duration` decimal(3,2) DEFAULT NULL COMMENT 'Break hours per day (e.g., 1.00)',
+  `custom_schedule_json` text DEFAULT NULL COMMENT 'JSON for custom day-by-day schedules',
+  `public_holidays_excluded` tinyint(1) DEFAULT 1 COMMENT 'Whether to exclude public holidays from work days',
+  `estimated_calendar_days` int(11) DEFAULT NULL COMMENT 'Total calendar days including non-working days',
+  `custom_schedule_details` text DEFAULT NULL COMMENT 'Additional schedule notes (breaks, specific days, shift information, etc.)',
+  `total_work_hours` decimal(10,2) DEFAULT NULL COMMENT 'Total estimated work hours for entire project (auto-calculated)',
+  `overtime_available` tinyint(1) DEFAULT 0 COMMENT 'Whether overtime work is possible',
+  `overtime_rate` decimal(10,2) DEFAULT NULL COMMENT 'Hourly rate for overtime work (LKR per hour)',
+  `payment_terms` varchar(100) DEFAULT NULL,
+  `warranty_period` varchar(50) DEFAULT NULL,
+  `labor_unit_label` varchar(50) DEFAULT NULL,
+  `material_unit_label` varchar(50) DEFAULT NULL,
+  `additional_terms` text DEFAULT NULL,
+  `status` enum('pending','accepted','rejected','successful') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `budget_type` enum('fixed','flexible') DEFAULT 'fixed' COMMENT 'Fixed or Flexible (±10%)',
+  `budget_min` decimal(10,2) DEFAULT NULL COMMENT 'Minimum budget for flexible pricing',
+  `budget_max` decimal(10,2) DEFAULT NULL COMMENT 'Maximum budget for flexible pricing',
+  `payment_method` enum('full_upfront','milestone_based','50_50','30_70','completion','time_and_material') DEFAULT 'full_upfront' COMMENT 'Payment method selected',
+  `pricing_type` enum('fixed_price','time_and_material') DEFAULT 'fixed_price' COMMENT 'Pricing structure type',
+  `hourly_rate` decimal(10,2) DEFAULT NULL COMMENT 'Hourly rate for Time & Material',
+  `spending_cap_multiplier` decimal(3,2) DEFAULT 1.10 COMMENT 'Spending cap multiplier for T&M (default 1.10 = 110%)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `companysettings`
 CREATE TABLE `companysettings` (
-  `setting_id` int(11) NOT NULL AUTO_INCREMENT,
+  `setting_id` int(11) NOT NULL,
   `company_id` int(11) NOT NULL,
   `email_repair_requests` tinyint(1) DEFAULT 1,
   `email_project_updates` tinyint(1) DEFAULT 1,
@@ -211,32 +385,47 @@ CREATE TABLE `companysettings` (
   `push_mobile` tinyint(1) DEFAULT 0,
   `quiet_hours_start` time DEFAULT '22:00:00',
   `quiet_hours_end` time DEFAULT '08:00:00',
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`setting_id`),
-  UNIQUE KEY `unique_company` (`company_id`),
-  CONSTRAINT `companysettings_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- User Sessions (Session Management)
-CREATE TABLE `user_sessions` (
-  `session_id` varchar(255) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `user_role` enum('user','repairer','company','admin','moderator') NOT NULL,
-  `device_type` varchar(100) DEFAULT NULL,
-  `browser` varchar(100) DEFAULT NULL,
-  `os` varchar(100) DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `last_activity` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `is_current` tinyint(1) DEFAULT 0,
-  PRIMARY KEY (`session_id`),
-  KEY `idx_user` (`user_id`,`user_role`),
-  KEY `idx_last_activity` (`last_activity`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- Table `company_employees`
+CREATE TABLE `company_employees` (
+  `employee_id` int(11) NOT NULL,
+  `company_id` int(11) NOT NULL,
+  `repairer_id` int(11) NOT NULL,
+  `job_title` varchar(255) DEFAULT NULL,
+  `employment_type` enum('full_time','part_time','freelance') NOT NULL DEFAULT 'freelance',
+  `status` enum('active','inactive','suspended') DEFAULT 'active',
+  `hired_date` date NOT NULL,
+  `hourly_rate` decimal(10,2) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Company Subscriptions
+-- Table `company_jobpost`
+CREATE TABLE `company_jobpost` (
+  `posting_id` int(11) NOT NULL,
+  `company_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `category` varchar(100) NOT NULL,
+  `category_id` int(11) DEFAULT NULL,
+  `employment_type` enum('full_time','part_time','contract','freelance') NOT NULL,
+  `description` text NOT NULL,
+  `requirements` text DEFAULT NULL,
+  `min_experience` int(11) NOT NULL DEFAULT 0,
+  `min_budget` decimal(10,2) NOT NULL,
+  `max_budget` decimal(10,2) NOT NULL,
+  `location` varchar(255) NOT NULL,
+  `location_id` int(11) DEFAULT NULL,
+  `status` enum('draft','open','closed','filled') DEFAULT 'open',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table `company_subscriptions`
 CREATE TABLE `company_subscriptions` (
-  `subscription_id` int(11) NOT NULL AUTO_INCREMENT,
+  `subscription_id` int(11) NOT NULL,
   `company_id` int(11) NOT NULL,
   `plan_name` enum('free','basic','professional','enterprise') DEFAULT 'free',
   `plan_price` decimal(10,2) NOT NULL DEFAULT 0.00,
@@ -248,105 +437,522 @@ CREATE TABLE `company_subscriptions` (
   `auto_renew` tinyint(1) DEFAULT 1,
   `trial_ends_at` date DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`subscription_id`),
-  KEY `idx_company` (`company_id`),
-  KEY `idx_status` (`status`),
-  CONSTRAINT `company_subscriptions_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Payment Methods
-CREATE TABLE `payment_methods` (
-  `payment_method_id` int(11) NOT NULL AUTO_INCREMENT,
-  `company_id` int(11) NOT NULL,
-  `card_type` enum('visa','mastercard','amex','discover') NOT NULL,
-  `last_four_digits` char(4) NOT NULL,
-  `card_holder_name` varchar(100) NOT NULL,
-  `expiry_month` char(2) NOT NULL,
-  `expiry_year` char(4) NOT NULL,
-  `billing_address` varchar(255) DEFAULT NULL,
-  `is_primary` tinyint(1) DEFAULT 0,
-  `is_active` tinyint(1) DEFAULT 1,
+-- Table `contract`
+CREATE TABLE `contract` (
+  `contract_id` int(11) NOT NULL,
+  `contract_number` varchar(50) DEFAULT NULL,
+  `quotation_id` int(11) DEFAULT NULL COMMENT 'Link to accepted quotation',
+  `company_id` int(11) NOT NULL COMMENT 'Company providing service',
+  `customer_id` int(11) NOT NULL COMMENT 'Customer receiving service',
+  `job_request_id` int(11) DEFAULT NULL COMMENT 'Original job request',
+  `project_id` int(11) NOT NULL,
+  `project_title` varchar(255) DEFAULT NULL,
+  `project_reference` varchar(100) DEFAULT NULL,
+  `project_location` text DEFAULT NULL,
+  `project_description` text DEFAULT NULL,
+  `scope_description` text DEFAULT NULL,
+  `scope_inclusions` text DEFAULT NULL,
+  `scope_exclusions` text DEFAULT NULL,
+  `scope_standards` text DEFAULT NULL,
+  `materials_responsibility` enum('company','client','shared') DEFAULT 'company',
+  `milestone_plan` tinyint(1) NOT NULL DEFAULT 1,
+  `total_milestones` int(11) DEFAULT 0 COMMENT 'Total milestone count',
+  `completed_milestones` int(11) DEFAULT 0 COMMENT 'Completed count',
+  `progress_percentage` int(11) DEFAULT 0 COMMENT 'Overall progress',
+  `auto_generated` tinyint(1) DEFAULT 1 COMMENT 'Auto-created from quotation',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`payment_method_id`),
-  KEY `idx_company` (`company_id`),
-  KEY `idx_primary` (`is_primary`),
-  KEY `idx_active` (`is_active`),
-  CONSTRAINT `payment_methods_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
+  `total_budget` decimal(12,2) NOT NULL,
+  `budget_type` enum('fixed','time_based','flexible') DEFAULT 'fixed',
+  `budget_flexibility_percentage` decimal(5,2) DEFAULT NULL COMMENT 'Flexibility percentage (e.g., 10.00 for ??10%)',
+  `budget_min` decimal(12,2) DEFAULT NULL COMMENT 'Minimum for flexible budget',
+  `budget_max` decimal(12,2) DEFAULT NULL COMMENT 'Maximum for flexible budget',
+  `tax_inclusive` tinyint(1) DEFAULT 1,
+  `payment_method` enum('full_upfront','milestone_based','50_50','30_70','completion') DEFAULT 'milestone_based' COMMENT 'Payment structure',
+  `advance_payment_pct` decimal(5,2) DEFAULT 0.00,
+  `pricing_type` enum('fixed_price','time_and_material') DEFAULT 'fixed_price' COMMENT 'Pricing model',
+  `hourly_rate` decimal(10,2) DEFAULT NULL COMMENT 'For T&M contracts',
+  `spending_cap` decimal(12,2) DEFAULT NULL COMMENT 'Maximum spending for T&M',
+  `late_payment_penalty` text DEFAULT NULL,
+  `pause_work_clause` tinyint(1) DEFAULT 1,
+  `time_extension_clause` tinyint(1) DEFAULT 1,
+  `variation_clause` tinyint(1) DEFAULT 1,
+  `communication_channel` varchar(100) DEFAULT 'system',
+  `dispute_resolution` text DEFAULT NULL,
+  `actual_hours` decimal(10,2) DEFAULT 0.00 COMMENT 'Tracked hours for T&M',
+  `actual_cost` decimal(12,2) DEFAULT 0.00 COMMENT 'Current cost for T&M',
+  `amount_paid` decimal(12,2) DEFAULT 0.00 COMMENT 'Total paid so far',
+  `amount_pending` decimal(12,2) DEFAULT 0.00 COMMENT 'Remaining payment',
+  `payment_status` enum('pending','partial','completed','overdue') DEFAULT 'pending' COMMENT 'Payment tracking',
+  `start_date` date NOT NULL,
+  `end_date` date DEFAULT NULL,
+  `terms_accepted` tinyint(1) DEFAULT 0,
+  `terms_accepted_at` datetime DEFAULT NULL,
+  `contract_date` date NOT NULL,
+  `user_signature` varchar(255) NOT NULL,
+  `company_signature` varchar(255) NOT NULL,
+  `customer_signature` text DEFAULT NULL,
+  `signed_at` datetime DEFAULT NULL,
+  `undo_deadline` datetime DEFAULT NULL COMMENT '24 hours from acceptance for undo window',
+  `undo_available` tinyint(1) DEFAULT 1 COMMENT 'Flag to indicate if undo is still possible',
+  `undo_requested` tinyint(1) DEFAULT 0 COMMENT 'Whether customer requested undo',
+  `chat_active` tinyint(1) DEFAULT 0 COMMENT 'Whether chat is active for this contract',
+  `escrow_enabled` tinyint(1) DEFAULT 1 COMMENT 'Whether escrow service is enabled',
+  `chat_activated_at` datetime DEFAULT NULL COMMENT 'When chat was activated',
+  `escrow_account_id` int(11) DEFAULT NULL COMMENT 'Foreign key to escrow_accounts table',
+  `upfront_payment_percentage` decimal(5,2) DEFAULT NULL COMMENT 'Upfront payment percentage (50.00 or 30.00)',
+  `upfront_payment_amount` decimal(10,2) DEFAULT NULL COMMENT 'Calculated upfront payment amount',
+  `upfront_payment_received` tinyint(1) DEFAULT 0 COMMENT 'Whether upfront payment has been received',
+  `work_verified_started` tinyint(1) DEFAULT 0 COMMENT 'Whether customer verified work has started',
+  `quality_guarantee_end_date` date DEFAULT NULL COMMENT '7 days after completion for quality guarantee',
+  `terms_conditions` text DEFAULT NULL,
+  `status` enum('draft','sent','active','in_progress','milestone_pending','completed','terminated','disputed') DEFAULT 'draft',
+  `sent_to_customer` tinyint(1) DEFAULT 0,
+  `sent_at` timestamp NULL DEFAULT NULL,
+  `customer_response` enum('pending','accepted','rejected','negotiating') DEFAULT 'pending',
+  `customer_response_at` timestamp NULL DEFAULT NULL,
+  `locked` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Billing History
-CREATE TABLE `billinghistory` (
-  `invoice_id` varchar(50) NOT NULL,
+-- Table `contract_audit_log`
+CREATE TABLE `contract_audit_log` (
+  `log_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `milestone_id` int(11) DEFAULT NULL,
+  `action` varchar(100) NOT NULL COMMENT 'created, signed, milestone_submitted, approved, disputed, etc.',
+  `performed_by` int(11) NOT NULL,
+  `user_role` varchar(50) DEFAULT NULL COMMENT 'company, customer, admin',
+  `details` text DEFAULT NULL COMMENT 'JSON object with additional information',
+  `old_value` text DEFAULT NULL,
+  `new_value` text DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `contract_budget_adjustments`
+CREATE TABLE `contract_budget_adjustments` (
+  `adjustment_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `requested_by` enum('company','customer') NOT NULL,
+  `requester_id` int(11) NOT NULL,
+  `requester_name` varchar(255) DEFAULT NULL,
+  `adjustment_type` enum('increase','decrease') NOT NULL,
+  `original_amount` decimal(10,2) NOT NULL,
+  `requested_amount` decimal(10,2) NOT NULL,
+  `adjustment_amount` decimal(10,2) NOT NULL COMMENT 'Difference (positive or negative)',
+  `adjustment_percentage` decimal(5,2) DEFAULT NULL COMMENT 'Percentage change',
+  `reason` text NOT NULL,
+  `justification` text NOT NULL COMMENT 'Detailed justification',
+  `supporting_documents` text DEFAULT NULL COMMENT 'JSON array of document paths',
+  `justification_documents` text DEFAULT NULL COMMENT 'JSON array of document URLs',
+  `status` enum('pending','approved','rejected','cancelled') DEFAULT 'pending',
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_by_name` varchar(255) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `rejection_reason` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `requested_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `reviewed_at` datetime DEFAULT NULL,
+  `reviewed_by` int(11) DEFAULT NULL,
+  `review_notes` text DEFAULT NULL,
+  `rejected_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores budget adjustment requests for flexible contracts';
+
+-- Table `contract_change_requests`
+CREATE TABLE `contract_change_requests` (
+  `change_request_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `requested_by_customer_id` int(11) NOT NULL,
+  `request_text` text NOT NULL,
+  `status` enum('pending','accepted','rejected') DEFAULT 'pending',
+  `responded_by_company_id` int(11) DEFAULT NULL,
+  `response_note` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `responded_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table `contract_chats`
+CREATE TABLE `contract_chats` (
+  `chat_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `sender_type` enum('company','customer') NOT NULL,
+  `message_type` enum('text','system') NOT NULL DEFAULT 'text',
+  `sender_id` int(11) NOT NULL,
+  `message` text NOT NULL,
+  `attachment_type` enum('text','image','document','pdf') DEFAULT 'text',
+  `attachment_url` varchar(500) DEFAULT NULL,
+  `attachment_filename` varchar(255) DEFAULT NULL,
+  `attachment_size` int(11) DEFAULT NULL COMMENT 'File size in bytes',
+  `is_read` tinyint(1) DEFAULT 0,
+  `read_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores chat messages between company and customer for contracts';
+
+-- Table `contract_dispute`
+CREATE TABLE `contract_dispute` (
+  `dispute_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `milestone_id` int(11) DEFAULT NULL,
+  `raised_by` int(11) NOT NULL,
+  `raised_by_role` enum('company','customer') NOT NULL,
+  `reason` text NOT NULL,
+  `evidence` text DEFAULT NULL COMMENT 'JSON array of evidence files',
+  `status` enum('open','under_review','resolved','closed') DEFAULT 'open',
+  `priority` enum('low','medium','high','critical') DEFAULT 'medium',
+  `resolution` text DEFAULT NULL,
+  `resolved_by` int(11) DEFAULT NULL COMMENT 'Admin user who resolved',
+  `resolved_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `contract_document`
+CREATE TABLE `contract_document` (
+  `document_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `milestone_id` int(11) DEFAULT NULL,
+  `document_type` enum('contract_pdf','sow','invoice','receipt','proof_of_work','other') NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_size` int(11) DEFAULT NULL COMMENT 'Size in bytes',
+  `mime_type` varchar(100) DEFAULT NULL,
+  `uploaded_by` int(11) NOT NULL,
+  `uploaded_by_role` enum('company','customer','admin') NOT NULL,
+  `created_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `contract_draft`
+CREATE TABLE `contract_draft` (
+  `draft_id` int(11) NOT NULL,
   `company_id` int(11) NOT NULL,
-  `date` date NOT NULL,
-  `amount` decimal(10,2) NOT NULL,
-  `status` enum('paid','pending','failed') DEFAULT 'pending',
-  `download_url` varchar(255) DEFAULT NULL,
+  `quotation_id` int(11) DEFAULT NULL,
+  `form_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`form_data`)),
+  `current_step` int(11) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`invoice_id`),
-  KEY `idx_company_date` (`company_id`,`date`),
-  CONSTRAINT `billinghistory_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Category
-CREATE TABLE `category` (
-  `category_id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) NOT NULL,
+-- Table `contract_invoices`
+CREATE TABLE `contract_invoices` (
+  `invoice_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `invoice_number` varchar(50) NOT NULL,
+  `invoice_type` enum('milestone','upfront','final','time_material','adjustment') NOT NULL,
+  `milestone_id` int(11) DEFAULT NULL COMMENT 'Foreign key to milestone if applicable',
+  `amount` decimal(10,2) NOT NULL COMMENT 'Base amount before tax',
+  `tax_percentage` decimal(5,2) DEFAULT 0.00 COMMENT 'Tax percentage (e.g., 18.00)',
+  `tax_amount` decimal(10,2) DEFAULT 0.00,
+  `total_amount` decimal(10,2) NOT NULL COMMENT 'amount + tax',
+  `issue_date` date NOT NULL,
+  `due_date` date NOT NULL,
+  `payment_status` enum('pending','paid','overdue','cancelled','refunded') DEFAULT 'pending',
+  `paid_date` datetime DEFAULT NULL,
+  `payment_method` varchar(50) DEFAULT NULL COMMENT 'bank_transfer, card, cash, etc.',
+  `payment_reference` varchar(100) DEFAULT NULL COMMENT 'Transaction reference number',
+  `payment_receipt_url` varchar(500) DEFAULT NULL,
+  `pdf_path` varchar(500) DEFAULT NULL COMMENT 'Path to generated invoice PDF',
+  `notes` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`category_id`),
-  UNIQUE KEY `name` (`name`)
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores invoices for contract payments';
+
+-- Table `contract_milestone`
+CREATE TABLE `contract_milestone` (
+  `milestone_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `milestone_number` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `due_date` date NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `percentage` decimal(5,2) DEFAULT NULL,
+  `status` enum('pending','in_progress','submitted','under_review','approved','rejected','disputed','paid') DEFAULT 'pending',
+  `escrow_held` decimal(12,2) DEFAULT 0.00,
+  `payment_released` decimal(12,2) DEFAULT 0.00,
+  `payment_released_at` datetime DEFAULT NULL,
+  `proof_of_work` text DEFAULT NULL COMMENT 'JSON array of uploaded files',
+  `submitted_at` datetime DEFAULT NULL,
+  `reviewed_by` int(11) DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `review_comments` text DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `completed_at` datetime DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `proof_files` text DEFAULT NULL,
+  `comments` text DEFAULT NULL,
+  `unit_label` varchar(50) DEFAULT NULL COMMENT 'e.g. hours, sqft, units',
+  `unit_rate` decimal(12,2) DEFAULT NULL COMMENT 'Price per unit',
+  `estimated_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Quantity from quotation',
+  `actual_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Actual units submitted',
+  `actual_amount` decimal(12,2) DEFAULT NULL COMMENT 'actual_quantity * unit_rate'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Repairer
-CREATE TABLE `repairer` (
-  `repairer_id` int(11) NOT NULL AUTO_INCREMENT,
-  `f_name` varchar(100) NOT NULL,
-  `l_name` varchar(100) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `phoneNumber` varchar(20) DEFAULT NULL,
-  `about` text DEFAULT NULL,
-  `profile_picture` varchar(500) DEFAULT NULL,
-  `experience_initial_years` int(11) NOT NULL DEFAULT 0,
-  `experience_years` int(11) NOT NULL DEFAULT 0,
-  `hourly_rate` decimal(10,2) NOT NULL DEFAULT 0.00,
-  `ratings` decimal(3,2) DEFAULT 0.00,
-  `completed_jobs_count` int(11) DEFAULT 0,
-  `skills` text DEFAULT NULL,
-  `districts` text DEFAULT NULL,
-  `availability` enum('available','busy','unavailable') DEFAULT 'available',
-  `joined_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `is_deleted` tinyint(1) DEFAULT 0,
-  `category_id` int(11) DEFAULT NULL,
-  PRIMARY KEY (`repairer_id`),
-  UNIQUE KEY `email` (`email`),
-  KEY `category_id` (`category_id`),
-  KEY `idx_email` (`email`),
-  KEY `idx_ratings` (`ratings`),
-  CONSTRAINT `repairer_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE SET NULL
+-- Table `contract_notifications`
+CREATE TABLE `contract_notifications` (
+  `notification_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `recipient_type` enum('company','customer') NOT NULL,
+  `recipient_id` int(11) NOT NULL,
+  `notification_type` varchar(50) NOT NULL COMMENT 'undo_reminder, milestone_approved, payment_received, chat_message, etc.',
+  `title` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `action_url` varchar(500) DEFAULT NULL COMMENT 'URL to navigate when notification clicked',
+  `priority` enum('low','medium','high','urgent') DEFAULT 'medium',
+  `is_read` tinyint(1) DEFAULT 0,
+  `read_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores notifications for contract events';
+
+-- Table `contract_payment_history`
+CREATE TABLE `contract_payment_history` (
+  `payment_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `milestone_id` int(11) DEFAULT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `payment_type` enum('escrow_deposit','milestone_release','refund','penalty','bonus') NOT NULL,
+  `payment_method` varchar(50) DEFAULT NULL,
+  `transaction_id` varchar(100) DEFAULT NULL,
+  `status` enum('pending','processing','completed','failed','refunded') DEFAULT 'pending',
+  `paid_by` int(11) DEFAULT NULL COMMENT 'Customer',
+  `paid_to` int(11) DEFAULT NULL COMMENT 'Company',
+  `notes` text DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `completed_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Chat Message
-CREATE TABLE `chatmessage` (
-  `session_id` int(11) NOT NULL AUTO_INCREMENT,
+-- Table `contract_timeline`
+CREATE TABLE `contract_timeline` (
+  `timeline_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `event_type` varchar(50) NOT NULL COMMENT 'created, sent, accepted, milestone_submitted, milestone_approved, payment_received, work_started, work_completed, disputed, etc.',
+  `event_title` varchar(255) NOT NULL,
+  `event_description` text DEFAULT NULL,
+  `actor_type` enum('system','company','customer') NOT NULL,
+  `actor_id` int(11) DEFAULT NULL COMMENT 'User ID of actor (NULL for system events)',
+  `actor_name` varchar(255) DEFAULT NULL COMMENT 'Name of actor for display',
+  `metadata_json` text DEFAULT NULL COMMENT 'Additional event data in JSON format',
+  `is_milestone` tinyint(1) DEFAULT 0 COMMENT 'Whether event is a milestone event',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores timeline of all events for each contract';
+
+-- Table `contract_time_logs`
+CREATE TABLE `contract_time_logs` (
+  `log_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `work_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `break_duration` decimal(3,2) DEFAULT 0.00 COMMENT 'Break hours (e.g., 1.00)',
+  `total_hours` decimal(4,2) NOT NULL COMMENT 'Net working hours',
+  `hourly_rate` decimal(10,2) NOT NULL,
+  `total_amount` decimal(10,2) NOT NULL COMMENT 'hours ?? rate',
+  `work_description` text NOT NULL,
+  `work_location` varchar(255) DEFAULT NULL,
+  `submitted_by` int(11) NOT NULL COMMENT 'Company user ID who submitted',
+  `submitted_at` datetime NOT NULL,
+  `customer_approved` tinyint(1) DEFAULT 0,
+  `customer_approval_date` datetime DEFAULT NULL,
+  `customer_rejection_reason` text DEFAULT NULL,
+  `invoice_id` int(11) DEFAULT NULL COMMENT 'Foreign key to contract_invoices',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores time logs for Time & Material payment contracts';
+
+-- Table `directjobrequest`
+CREATE TABLE `directjobrequest` (
+  `request_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `repairer_id` int(11) NOT NULL,
-  `firebase_chat_id` varchar(255) DEFAULT NULL,
-  `last_message` text DEFAULT NULL,
-  `last_message_time` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`session_id`),
-  KEY `idx_user` (`user_id`),
-  KEY `idx_repairer` (`repairer_id`),
-  CONSTRAINT `chatmessage_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
-  CONSTRAINT `chatmessage_ibfk_2` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE
+  `category_id` int(11) NOT NULL,
+  `provider_id` int(11) NOT NULL,
+  `provider_type` varchar(20) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'pending',
+  `district` varchar(100) NOT NULL,
+  `address` text NOT NULL,
+  `finish_date` date NOT NULL,
+  `date_created` timestamp NOT NULL DEFAULT current_timestamp(),
+  `photos` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Table `directrequestquotes`
+CREATE TABLE `directrequestquotes` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `request_id` int(11) NOT NULL,
+  `provider_id` int(11) NOT NULL,
+  `provider_type` varchar(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Job Collaboration (job-scoped structured communication/workflow)
+-- Table `escrow_accounts`
+CREATE TABLE `escrow_accounts` (
+  `escrow_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `account_number` varchar(50) NOT NULL,
+  `total_amount` decimal(10,2) NOT NULL COMMENT 'Total contract value',
+  `held_amount` decimal(10,2) DEFAULT 0.00 COMMENT 'Currently held in escrow',
+  `released_amount` decimal(10,2) DEFAULT 0.00 COMMENT 'Released to company',
+  `refunded_amount` decimal(10,2) DEFAULT 0.00 COMMENT 'Refunded to customer',
+  `status` enum('active','completed','refunded','disputed') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores escrow account information for secure payments';
+
+-- Table `escrow_transaction`
+CREATE TABLE `escrow_transaction` (
+  `transaction_id` int(11) NOT NULL,
+  `wallet_id` int(11) NOT NULL,
+  `amount` decimal(15,2) NOT NULL,
+  `type` enum('deposit','release','hold','refund','service_fee') NOT NULL,
+  `status` enum('pending','completed','failed') DEFAULT 'completed',
+  `related_contract_id` int(11) DEFAULT NULL,
+  `related_milestone_id` int(11) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `escrow_wallet`
+CREATE TABLE `escrow_wallet` (
+  `wallet_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `company_id` int(11) DEFAULT NULL,
+  `balance` decimal(15,2) DEFAULT 0.00,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `feedback`
+CREATE TABLE `feedback` (
+  `feedback_id` int(11) NOT NULL,
+  `project_id` int(11) NOT NULL,
+  `given_by` int(11) NOT NULL,
+  `rating` int(11) DEFAULT NULL CHECK (`rating` >= 1 and `rating` <= 5),
+  `comments` text DEFAULT NULL,
+  `date` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `financialreport`
+CREATE TABLE `financialreport` (
+  `report_id` int(11) NOT NULL,
+  `month` date NOT NULL,
+  `active_subscriptions` int(11) DEFAULT 0,
+  `generated_by` int(11) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `generated_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `financialreporttransaction`
+CREATE TABLE `financialreporttransaction` (
+  `transaction_id` int(11) NOT NULL,
+  `report_id` int(11) NOT NULL,
+  `transaction_type` enum('Payment','Commission','Withdrawal','Subscription','Advertisement','Refund') NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `description` varchar(500) DEFAULT NULL,
+  `reference_number` varchar(50) DEFAULT NULL,
+  `reference_id` int(11) DEFAULT NULL,
+  `reference_type` varchar(50) DEFAULT NULL,
+  `status` enum('Completed','Pending','Failed','Cancelled') DEFAULT 'Completed',
+  `transaction_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `freelancer_assignments`
+CREATE TABLE `freelancer_assignments` (
+  `assignment_id` int(11) NOT NULL,
+  `company_id` int(11) NOT NULL,
+  `repairer_id` int(11) NOT NULL,
+  `project_id` int(11) DEFAULT NULL,
+  `contract_id` int(11) DEFAULT NULL,
+  `pricing_model` enum('hourly','fixed') NOT NULL DEFAULT 'hourly',
+  `rate_or_price` decimal(10,2) NOT NULL,
+  `estimated_hours` decimal(5,2) DEFAULT NULL,
+  `start_date` date NOT NULL,
+  `deadline_date` date NOT NULL,
+  `notes` text DEFAULT NULL,
+  `status` enum('offered','accepted','declined','in_progress','completed','cancelled') DEFAULT 'offered',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table `issuenotification`
+CREATE TABLE `issuenotification` (
+  `notification_id` int(11) NOT NULL,
+  `issue_id` int(11) NOT NULL,
+  `recipient_type` enum('reporter','target') NOT NULL,
+  `recipient_id` int(11) NOT NULL,
+  `message` text NOT NULL,
+  `status_change` varchar(100) DEFAULT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `issuereport`
+CREATE TABLE `issuereport` (
+  `issue_id` int(11) NOT NULL,
+  `reportedBy_id` int(11) NOT NULL,
+  `target_id` int(11) NOT NULL,
+  `target_type` enum('user','repairer','company') NOT NULL,
+  `description` text NOT NULL,
+  `priority` enum('low','medium','high') DEFAULT 'medium',
+  `status` enum('pending','investigating','resolved','escalated','closed') DEFAULT 'pending',
+  `admin_notes` text DEFAULT NULL,
+  `date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `admin_internal_notes` text DEFAULT NULL COMMENT 'Internal admin notes - not visible to users'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `issuestatushistory`
+CREATE TABLE `issuestatushistory` (
+  `history_id` int(11) NOT NULL,
+  `issue_id` int(11) NOT NULL,
+  `old_status` enum('pending','investigating','resolved','escalated','closed') NOT NULL,
+  `new_status` enum('pending','investigating','resolved','escalated','closed') NOT NULL,
+  `changed_by` varchar(100) NOT NULL,
+  `notes` text DEFAULT NULL,
+  `changed_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `job`
+CREATE TABLE `job` (
+  `job_id` int(11) NOT NULL,
+  `job_request_id` int(11) NOT NULL,
+  `fixer_id` int(11) NOT NULL,
+  `status` enum('scheduled','in_progress','completed','cancelled') DEFAULT 'scheduled',
+  `completionDate` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `jobrequest`
+CREATE TABLE `jobrequest` (
+  `request_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `category_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `status` enum('pending','accepted','in_progress','completed','cancelled') DEFAULT 'pending',
+  `location_id` int(11) DEFAULT NULL,
+  `district` varchar(100) NOT NULL,
+  `address` text NOT NULL,
+  `service_provider_type` varchar(50) NOT NULL,
+  `urgency` enum('medium','urgent') DEFAULT 'medium',
+  `finish_date` date NOT NULL,
+  `dateCreated` timestamp NOT NULL DEFAULT current_timestamp(),
+  `photos` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `job_collaboration`
 CREATE TABLE `job_collaboration` (
-  `collaboration_id` int(11) NOT NULL AUTO_INCREMENT,
+  `collaboration_id` int(11) NOT NULL,
   `request_id` int(11) NOT NULL,
   `request_type` enum('regular','direct') NOT NULL DEFAULT 'regular',
   `quote_id` int(11) NOT NULL,
@@ -367,19 +973,12 @@ CREATE TABLE `job_collaboration` (
   `user_rated_at` datetime DEFAULT NULL,
   `provider_rated_at` datetime DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`collaboration_id`),
-  UNIQUE KEY `uniq_request_type` (`request_id`,`request_type`),
-  KEY `idx_user` (`user_id`),
-  KEY `idx_provider` (`provider_id`,`provider_role`),
-  KEY `idx_phase` (`current_phase`),
-  KEY `idx_quote_lookup` (`quote_id`,`quote_source`),
-  CONSTRAINT `job_collaboration_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Job Collaboration Event Stream (structured timeline per collaboration)
+-- Table `job_collaboration_event`
 CREATE TABLE `job_collaboration_event` (
-  `event_id` int(11) NOT NULL AUTO_INCREMENT,
+  `event_id` int(11) NOT NULL,
   `collaboration_id` int(11) NOT NULL,
   `actor_id` int(11) NOT NULL,
   `actor_role` enum('user','repairer','company') NOT NULL,
@@ -387,16 +986,12 @@ CREATE TABLE `job_collaboration_event` (
   `message` text DEFAULT NULL,
   `amount` decimal(10,2) DEFAULT NULL,
   `meta_json` longtext DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`event_id`),
-  KEY `idx_collab_created` (`collaboration_id`,`created_at`),
-  KEY `idx_actor` (`actor_id`,`actor_role`),
-  CONSTRAINT `job_collaboration_event_ibfk_1` FOREIGN KEY (`collaboration_id`) REFERENCES `job_collaboration` (`collaboration_id`) ON DELETE CASCADE
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Job Collaboration Ratings (supports repairer/company job ratings)
+-- Table `job_collaboration_rating`
 CREATE TABLE `job_collaboration_rating` (
-  `rating_id` int(11) NOT NULL AUTO_INCREMENT,
+  `rating_id` int(11) NOT NULL,
   `collaboration_id` int(11) NOT NULL,
   `reviewer_id` int(11) NOT NULL,
   `reviewer_role` enum('user','repairer','company') NOT NULL,
@@ -404,18 +999,204 @@ CREATE TABLE `job_collaboration_rating` (
   `target_role` enum('user','repairer','company') NOT NULL,
   `rating` tinyint(4) NOT NULL,
   `comment` text DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`rating_id`),
-  UNIQUE KEY `uniq_collab_reviewer` (`collaboration_id`,`reviewer_id`,`reviewer_role`),
-  KEY `idx_target` (`target_id`,`target_role`),
-  CONSTRAINT `job_collaboration_rating_ibfk_1` FOREIGN KEY (`collaboration_id`) REFERENCES `job_collaboration` (`collaboration_id`) ON DELETE CASCADE,
-  CONSTRAINT `job_collaboration_rating_chk_1` CHECK (`rating` >= 1 and `rating` <= 5)
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `location`
+--
+
+CREATE TABLE `location` (
+  `location_id` int(11) NOT NULL,
+  `address` text DEFAULT NULL,
+  `district` varchar(100) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Table `milestone`
+CREATE TABLE `milestone` (
+  `milestone_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `description` text NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `due_date` date NOT NULL,
+  `agreements` text DEFAULT NULL,
+  `status` enum('pending','in_progress','completed','overdue') DEFAULT 'pending',
+  `submitted_by_company` tinyint(1) DEFAULT 0 COMMENT 'Whether company submitted milestone plan',
+  `submitted_date` datetime DEFAULT NULL COMMENT 'When company submitted milestone',
+  `customer_approved` tinyint(1) DEFAULT 0 COMMENT 'Whether customer approved milestone',
+  `customer_approval_date` datetime DEFAULT NULL COMMENT 'When customer approved milestone',
+  `customer_rejection_reason` text DEFAULT NULL COMMENT 'Reason if customer rejected milestone',
+  `work_started` tinyint(1) DEFAULT 0 COMMENT 'Whether work on milestone has started',
+  `work_start_date` datetime DEFAULT NULL COMMENT 'When work started on milestone',
+  `work_completed` tinyint(1) DEFAULT 0 COMMENT 'Whether work on milestone is completed',
+  `work_completion_date` datetime DEFAULT NULL COMMENT 'When work was completed on milestone',
+  `customer_verification_requested` tinyint(1) DEFAULT 0 COMMENT 'Whether company requested customer verification',
+  `customer_verified` tinyint(1) DEFAULT 0 COMMENT 'Whether customer verified completed work',
+  `customer_verification_date` datetime DEFAULT NULL COMMENT 'When customer verified work',
+  `is_active` tinyint(1) DEFAULT 0,
+  `deliverables` text DEFAULT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `approval_status` enum('pending','submitted','approved','rejected') DEFAULT 'pending'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Quote Negotiation (user/provider offer history per quote)
+-- Table `milestonepayment`
+CREATE TABLE `milestonepayment` (
+  `payment_id` int(11) NOT NULL,
+  `contract_id` int(11) NOT NULL,
+  `milestone_id` int(11) DEFAULT NULL,
+  `payment_type` enum('upfront','milestone','final','weekly','material') NOT NULL DEFAULT 'milestone',
+  `amount` decimal(10,2) NOT NULL,
+  `payment_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `method` enum('credit_card','debit_card','bank_transfer','check','cash') NOT NULL,
+  `status` enum('pending','paid','held_escrow','released','refunded','completed','cancelled') DEFAULT 'pending',
+  `payment_percentage` decimal(5,2) DEFAULT NULL COMMENT 'Percentage of total contract value',
+  `description` text DEFAULT NULL,
+  `escrow_enabled` tinyint(1) DEFAULT 0,
+  `paid_to_escrow_at` datetime DEFAULT NULL,
+  `escrow_released_at` datetime DEFAULT NULL,
+  `escrow_refunded_at` datetime DEFAULT NULL,
+  `transaction_id` varchar(100) DEFAULT NULL,
+  `paid_by` int(11) DEFAULT NULL COMMENT 'User ID of payer',
+  `paid_to` int(11) DEFAULT NULL COMMENT 'User ID of payee',
+  `paid_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `moderator`
+CREATE TABLE `moderator` (
+  `moderator_id` int(11) NOT NULL,
+  `username` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `assigned_section` varchar(100) DEFAULT NULL,
+  `status` enum('active','suspended') NOT NULL DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `last_login` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `moderatormsg`
+CREATE TABLE `moderatormsg` (
+  `msg_id` int(11) NOT NULL,
+  `repairer_id` int(11) NOT NULL,
+  `subject` varchar(255) NOT NULL,
+  `msg` text NOT NULL,
+  `date_sent` timestamp NOT NULL DEFAULT current_timestamp(),
+  `response` text DEFAULT NULL,
+  `date_resolved` timestamp NULL DEFAULT NULL,
+  `status` enum('open','pending','resolved','closed') DEFAULT 'open'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `moderator_activity`
+CREATE TABLE `moderator_activity` (
+  `activity_id` int(11) NOT NULL,
+  `moderator_id` int(11) NOT NULL DEFAULT 1,
+  `activity_type` enum('ad_approved','ad_rejected','ad_activated','user_banned','content_updated','payment_verified','user_registered','report_resolved') NOT NULL,
+  `target_id` int(11) NOT NULL,
+  `target_title` varchar(255) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `moderator_management_log`
+CREATE TABLE `moderator_management_log` (
+  `log_id` int(11) NOT NULL,
+  `admin_username` varchar(100) NOT NULL,
+  `moderator_id` int(11) DEFAULT NULL,
+  `action` varchar(50) NOT NULL,
+  `old_values` text DEFAULT NULL,
+  `new_values` text DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `notification`
+CREATE TABLE `notification` (
+  `notification_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `recipient_type` enum('all','user','repairer','company') NOT NULL DEFAULT 'all',
+  `status` enum('sent','pending','failed') DEFAULT 'sent',
+  `send_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by_id` int(11) DEFAULT NULL,
+  `created_by_role` enum('admin','moderator','company','repairer','user') DEFAULT NULL,
+  `created_by_name` varchar(255) DEFAULT NULL,
+  `recipient_id` int(11) DEFAULT NULL,
+  `is_read` tinyint(1) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `payment`
+CREATE TABLE `payment` (
+  `payment_id` int(11) NOT NULL,
+  `job_request_id` int(11) NOT NULL,
+  `paymentType` enum('credit_card','debit_card','cash','bank_transfer') NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `paymentDate` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` enum('pending','completed','failed','refunded') DEFAULT 'pending'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `payment_methods`
+CREATE TABLE `payment_methods` (
+  `payment_method_id` int(11) NOT NULL,
+  `company_id` int(11) NOT NULL,
+  `card_type` enum('visa','mastercard','amex','discover') NOT NULL,
+  `last_four_digits` char(4) NOT NULL,
+  `card_holder_name` varchar(100) NOT NULL,
+  `expiry_month` char(2) NOT NULL,
+  `expiry_year` char(4) NOT NULL,
+  `billing_address` varchar(255) DEFAULT NULL,
+  `is_primary` tinyint(1) DEFAULT 0,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `placement_limits`
+CREATE TABLE `placement_limits` (
+  `placement_type` varchar(50) NOT NULL,
+  `max_slots_per_day` int(11) NOT NULL DEFAULT 5,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `project`
+CREATE TABLE `project` (
+  `project_id` int(11) NOT NULL,
+  `company_id` int(11) NOT NULL,
+  `customer_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `project_type` varchar(100) DEFAULT NULL,
+  `location` text NOT NULL,
+  `budget` decimal(12,2) DEFAULT NULL,
+  `final_cost` decimal(12,2) DEFAULT NULL,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `attachment` varchar(500) DEFAULT NULL,
+  `status` enum('planned','in_progress','completed','cancelled','on_hold') DEFAULT 'planned',
+  `progress` int(11) DEFAULT 0 CHECK (`progress` >= 0 and `progress` <= 100)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `promotion`
+CREATE TABLE `promotion` (
+  `promotion_id` int(11) NOT NULL,
+  `repairer_id` int(11) NOT NULL,
+  `plan_name` varchar(100) NOT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `status` enum('active','expired','cancelled') DEFAULT 'active'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `quote_negotiation`
 CREATE TABLE `quote_negotiation` (
-  `negotiation_id` int(11) NOT NULL AUTO_INCREMENT,
+  `negotiation_id` int(11) NOT NULL,
   `request_id` int(11) NOT NULL,
   `request_type` enum('regular','direct') NOT NULL DEFAULT 'regular',
   `quote_id` int(11) NOT NULL,
@@ -431,716 +1212,112 @@ CREATE TABLE `quote_negotiation` (
   `receiver_role` enum('user','repairer','company') NOT NULL,
   `status` enum('pending','accepted','rejected','countered','cancelled') NOT NULL DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`negotiation_id`),
-  KEY `idx_quote` (`quote_id`,`quote_source`),
-  KEY `idx_request` (`request_id`,`request_type`),
-  KEY `idx_sender` (`sender_id`,`sender_role`),
-  KEY `idx_receiver` (`receiver_id`,`receiver_role`),
-  KEY `idx_status` (`status`),
-  KEY `idx_created` (`created_at`)
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-
-
--- Job Request
-CREATE TABLE `jobrequest` (
-  `request_id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `category_id` int(11) NOT NULL,
-  `location_id` int(11) DEFAULT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text NOT NULL,
-  `status` enum('pending','accepted','in_progress','completed','cancelled','Open') DEFAULT 'pending',
-  `district` varchar(100) DEFAULT NULL,
-  `address` text DEFAULT NULL,
-  `service_provider_type` varchar(50) NOT NULL,
-  `urgency` enum('medium','urgent') DEFAULT 'medium',
-  `finish_date` date NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `dateCreated` timestamp NOT NULL DEFAULT current_timestamp(),
-  `photos` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`request_id`),
-  KEY `category_id` (`category_id`),
-  KEY `idx_user` (`user_id`),
-  KEY `idx_status` (`status`),
-  KEY `idx_created` (`created_at`),
-  KEY `idx_location` (`location_id`),
-  CONSTRAINT `jobrequest_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
-  CONSTRAINT `jobrequest_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`),
-  CONSTRAINT `jobrequest_ibfk_3` FOREIGN KEY (`location_id`) REFERENCES `location` (`location_id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Direct Job Request (Customer -> specific provider)
-CREATE TABLE `directjobrequest` (
-  `request_id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `category_id` int(11) NOT NULL,
-  `provider_id` int(11) NOT NULL,
-  `provider_type` varchar(20) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text NOT NULL,
-  `status` varchar(20) NOT NULL DEFAULT 'pending',
-  `district` varchar(100) NOT NULL,
-  `address` text NOT NULL,
-  `finish_date` date NOT NULL,
-  `date_created` timestamp NOT NULL DEFAULT current_timestamp(),
-  `photos` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`request_id`),
-  KEY `idx_direct_user` (`user_id`),
-  KEY `idx_direct_category` (`category_id`),
-  KEY `idx_direct_provider` (`provider_id`),
-  KEY `idx_direct_provider_type` (`provider_type`),
-  KEY `idx_direct_status` (`status`),
-  KEY `idx_direct_date_created` (`date_created`),
-  CONSTRAINT `directjobrequest_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
-  CONSTRAINT `directjobrequest_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Direct Request Quotes (optional linkage table)
-CREATE TABLE `directrequestquotes` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `request_id` int(11) NOT NULL,
-  `provider_id` int(11) NOT NULL,
-  `provider_type` varchar(20) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_drq_user` (`user_id`),
-  KEY `idx_drq_request` (`request_id`),
-  KEY `idx_drq_provider` (`provider_id`),
-  CONSTRAINT `directrequestquotes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
-  CONSTRAINT `directrequestquotes_ibfk_2` FOREIGN KEY (`request_id`) REFERENCES `directjobrequest` (`request_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Company Quotation
-CREATE TABLE `companyquotation` (
-  `quotation_id` int(11) NOT NULL AUTO_INCREMENT,
-  `request_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `company_id` int(11) DEFAULT NULL,
-  `title` varchar(250) NOT NULL,
-  `description` varchar(500) DEFAULT NULL,
-  `labor_cost` decimal(10,2) NOT NULL,
-  `material_cost` decimal(10,2) NOT NULL,
-  `transport_cost` decimal(10,2) DEFAULT 0.00,
-  `other_charges` decimal(10,2) DEFAULT 0.00,
-  `total_amount` decimal(10,2) NOT NULL,
-  `start_date` date NOT NULL,
-  `completion_date` date NOT NULL,
-  `estimated_duration` int(11) NOT NULL,
-  `payment_terms` varchar(100) DEFAULT NULL,
-  `warranty_period` varchar(50) DEFAULT NULL,
-  `additional_terms` text DEFAULT NULL,
-  `labor_unit_label` varchar(50) DEFAULT NULL COMMENT 'e.g. per hour, per m2, per unit',
-  `material_unit_label` varchar(50) DEFAULT NULL COMMENT 'e.g. per m2, per unit',
-  
-  -- Phase 1: Budget Flexibility & Payment Methods
-  `budget_type` enum('fixed','flexible') DEFAULT 'fixed' COMMENT 'Fixed or Flexible (±10%)',
-  `budget_min` decimal(10,2) DEFAULT NULL COMMENT 'Minimum budget for flexible pricing',
-  `budget_max` decimal(10,2) DEFAULT NULL COMMENT 'Maximum budget for flexible pricing',
-  `payment_method` enum('full_upfront','milestone_based','50_50','30_70','completion','time_and_material') DEFAULT 'full_upfront' COMMENT 'Payment method selected',
-  `pricing_type` enum('fixed_price','time_and_material') DEFAULT 'fixed_price' COMMENT 'Pricing structure type',
-  `hourly_rate` decimal(10,2) DEFAULT NULL COMMENT 'Hourly rate for Time & Material',
-  `spending_cap_multiplier` decimal(3,2) DEFAULT 1.10 COMMENT 'Spending cap multiplier for T&M (default 1.10 = 110%)',
-  
-  `status` enum('pending','accepted','rejected','successful') DEFAULT 'pending',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`quotation_id`),
-  KEY `idx_request` (`request_id`),
-  KEY `idx_user` (`user_id`),
-  KEY `idx_status` (`status`),
-  KEY `idx_budget_type` (`budget_type`),
-  KEY `idx_payment_method` (`payment_method`),
-  KEY `idx_pricing_type` (`pricing_type`),
-  CONSTRAINT `companyquotation_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE,
-  CONSTRAINT `companyquotation_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Project
-CREATE TABLE `project` (
-  `project_id` int(11) NOT NULL AUTO_INCREMENT,
-  `company_id` int(11) NOT NULL,
-  `customer_id` int(11) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `project_type` varchar(100) DEFAULT NULL,
-  `location` text NOT NULL,
-  `budget` decimal(12,2) DEFAULT NULL,
-  `final_cost` decimal(12,2) DEFAULT NULL,
-  `start_date` date DEFAULT NULL,
-  `end_date` date DEFAULT NULL,
-  `attachment` varchar(500) DEFAULT NULL,
-  `status` enum('planned','in_progress','completed','cancelled','on_hold') DEFAULT 'planned',
-  `progress` int(11) DEFAULT 0 CHECK (`progress` >= 0 and `progress` <= 100),
-  PRIMARY KEY (`project_id`),
-  KEY `idx_company` (`company_id`),
-  KEY `idx_customer` (`customer_id`),
-  KEY `idx_status` (`status`),
-  CONSTRAINT `project_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE,
-  CONSTRAINT `project_ibfk_2` FOREIGN KEY (`customer_id`) REFERENCES `user` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Contract (Enhanced 8-Section Legal Form)
-CREATE TABLE `contract` (
-  `contract_id` int(11) NOT NULL AUTO_INCREMENT,
-  `contract_number` varchar(50) DEFAULT NULL,
-  `quotation_id` int(11) DEFAULT NULL,
-  `company_id` int(11) NOT NULL,
-  `customer_id` int(11) NOT NULL,
-  `job_request_id` int(11) DEFAULT NULL,
-  `project_id` int(11) NOT NULL,
-  
-  -- Section 2: Project Overview
-  `project_title` varchar(255) DEFAULT NULL,
-  `project_reference` varchar(100) DEFAULT NULL,
-  `project_location` text DEFAULT NULL,
-  `project_description` text DEFAULT NULL,
-  
-  -- Section 3: Scope of Work
-  `scope_description` text DEFAULT NULL,
-  `scope_inclusions` text DEFAULT NULL,
-  `scope_exclusions` text DEFAULT NULL,
-  `scope_standards` text DEFAULT NULL,
-  `materials_responsibility` enum('company','client','shared') DEFAULT 'company',
-  
-  `milestone_plan` tinyint(1) NOT NULL DEFAULT 1,
-  `total_milestones` int(11) DEFAULT 0,
-  `completed_milestones` int(11) DEFAULT 0,
-  `progress_percentage` int(11) DEFAULT 0,
-  `auto_generated` tinyint(1) DEFAULT 1,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  
-  -- Section 5: Pricing & Payments
-  `total_budget` decimal(12,2) NOT NULL,
-  `budget_type` enum('fixed','time_based','flexible') DEFAULT 'fixed',
-  `budget_min` decimal(12,2) DEFAULT NULL,
-  `budget_max` decimal(12,2) DEFAULT NULL,
-  `tax_inclusive` tinyint(1) DEFAULT 1,
-  `payment_method` enum('full_upfront','milestone_based','50_50','30_70','completion') DEFAULT 'milestone_based',
-  `advance_payment_pct` decimal(5,2) DEFAULT 0,
-  `pricing_type` enum('fixed_price','time_and_material') DEFAULT 'fixed_price',
-  `hourly_rate` decimal(10,2) DEFAULT NULL,
-  `spending_cap` decimal(12,2) DEFAULT NULL,
-  
-  -- Section 5: Delay Handling
-  `late_payment_penalty` text DEFAULT NULL,
-  `pause_work_clause` tinyint(1) DEFAULT 1,
-  `time_extension_clause` tinyint(1) DEFAULT 1,
-  
-  -- Section 6: Variations
-  `variation_clause` tinyint(1) DEFAULT 1,
-  
-  -- Section 7: Communication & Disputes
-  `communication_channel` varchar(100) DEFAULT 'system',
-  `dispute_resolution` text DEFAULT NULL,
-  
-  -- Financial Tracking
-  `actual_hours` decimal(10,2) DEFAULT 0.00,
-  `actual_cost` decimal(12,2) DEFAULT 0.00,
-  `amount_paid` decimal(12,2) DEFAULT 0.00,
-  `amount_pending` decimal(12,2) DEFAULT 0.00,
-  `payment_status` enum('pending','partial','completed','overdue') DEFAULT 'pending',
-  
-  -- Timeline
-  `start_date` date NOT NULL,
-  `end_date` date DEFAULT NULL,
-  `terms_accepted` tinyint(1) DEFAULT 0,
-  `terms_accepted_at` datetime DEFAULT NULL,
-  `contract_date` date NOT NULL,
-  
-  -- Signatures
-  `user_signature` varchar(255) NOT NULL,
-  `company_signature` varchar(255) NOT NULL,
-  `customer_signature` text DEFAULT NULL,
-  `signed_at` datetime DEFAULT NULL,
-  
-  `terms_conditions` text DEFAULT NULL,
-  `status` enum('draft','pending_signature','active','in_progress','milestone_pending','completed','terminated','disputed') DEFAULT 'draft',
-  
-  -- Customer Response Tracking
-  `sent_to_customer` tinyint(1) DEFAULT 0,
-  `sent_at` timestamp NULL DEFAULT NULL,
-  `customer_response` enum('pending','accepted','rejected','negotiating') DEFAULT 'pending',
-  `customer_response_at` timestamp NULL DEFAULT NULL,
-  `locked` tinyint(1) DEFAULT 0,
-  
-  PRIMARY KEY (`contract_id`),
-  UNIQUE KEY `idx_contract_number` (`contract_number`),
-  KEY `idx_project` (`project_id`),
-  KEY `idx_company` (`company_id`),
-  KEY `idx_customer` (`customer_id`),
-  KEY `idx_quotation` (`quotation_id`),
-  KEY `idx_job_request` (`job_request_id`),
-  KEY `idx_status` (`status`),
-  KEY `idx_payment_status` (`payment_status`),
-  CONSTRAINT `contract_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE CASCADE,
-  CONSTRAINT `contract_ibfk_2` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE RESTRICT,
-  CONSTRAINT `contract_ibfk_3` FOREIGN KEY (`customer_id`) REFERENCES `user` (`user_id`),
-  CONSTRAINT `contract_ibfk_4` FOREIGN KEY (`quotation_id`) REFERENCES `companyquotation` (`quotation_id`) ON DELETE SET NULL,
-  CONSTRAINT `contract_ibfk_5` FOREIGN KEY (`job_request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Contract Milestones (Enhanced - linked to contract)
-CREATE TABLE `contract_milestone` (
-  `milestone_id` int(11) NOT NULL AUTO_INCREMENT,
-  `contract_id` int(11) NOT NULL,
-  `milestone_number` int(11) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `due_date` date NOT NULL,
-  `amount` decimal(12,2) NOT NULL,
-  `percentage` decimal(5,2) DEFAULT NULL,
-  `status` enum('pending','in_progress','submitted','under_review','approved','rejected','disputed','paid') DEFAULT 'pending',
-  `unit_label` varchar(50) DEFAULT NULL COMMENT 'e.g. hours, sqft, units',
-  `unit_rate` decimal(12,2) DEFAULT NULL COMMENT 'Price per unit (agreed in contract)',
-  `actual_unit_rate` decimal(12,2) DEFAULT NULL COMMENT 'Actual unit rate submitted by company (e.g., material price variation)',
-  `estimated_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Quantity expected (from quotation)',
-  `actual_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Actual units submitted by company',
-  `actual_amount` decimal(12,2) DEFAULT NULL COMMENT 'actual_quantity * COALESCE(actual_unit_rate, unit_rate)',
-  `is_non_paying` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 if this milestone is non-paying (inspection / no measurable units)',
-  `actual_labor_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Actual labour units submitted by company',
-  `actual_material_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Actual material units submitted by company',
-  `actual_material_unit_rate` decimal(12,2) DEFAULT NULL COMMENT 'Actual material unit rate submitted by company (optional variation)',
-  `actual_extra_amount` decimal(12,2) DEFAULT NULL COMMENT 'Additional amount outside labour/material for this milestone',
-  `escrow_held` decimal(12,2) DEFAULT 0.00,
-  `payment_released` decimal(12,2) DEFAULT 0.00,
-  `payment_released_at` datetime DEFAULT NULL,
-  `proof_of_work` text DEFAULT NULL,
-  `proof_files` text DEFAULT NULL COMMENT 'JSON array of uploaded proof file paths',
-  `submitted_at` datetime DEFAULT NULL,
-  `completed_at` datetime DEFAULT NULL,
-  `approved_at` datetime DEFAULT NULL,
-  `reviewed_by` int(11) DEFAULT NULL,
-  `reviewed_at` datetime DEFAULT NULL,
-  `review_comments` text DEFAULT NULL,
-  `comments` text DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp(),
-  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`milestone_id`),
-  KEY `idx_contract` (`contract_id`),
-  KEY `idx_status` (`status`),
-  KEY `idx_due_date` (`due_date`),
-  KEY `idx_reviewed_by` (`reviewed_by`),
-  CONSTRAINT `contract_milestone_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Contract Audit Log (change tracking)
-CREATE TABLE `contract_audit_log` (
-  `log_id` int(11) NOT NULL AUTO_INCREMENT,
-  `contract_id` int(11) NOT NULL,
-  `milestone_id` int(11) DEFAULT NULL,
-  `action` varchar(100) NOT NULL,
-  `performed_by` int(11) NOT NULL,
-  `user_role` varchar(50) DEFAULT NULL,
-  `details` text DEFAULT NULL,
-  `old_value` text DEFAULT NULL,
-  `new_value` text DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp(),
-  PRIMARY KEY (`log_id`),
-  KEY `idx_contract` (`contract_id`),
-  KEY `idx_milestone` (`milestone_id`),
-  KEY `idx_action` (`action`),
-  KEY `idx_performed_by` (`performed_by`),
-  KEY `idx_created_at` (`created_at`),
-  CONSTRAINT `contract_audit_log_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Contract Draft (auto-save for contract creation form)
-CREATE TABLE `contract_draft` (
-  `draft_id` int(11) NOT NULL AUTO_INCREMENT,
-  `company_id` int(11) NOT NULL,
-  `quotation_id` int(11) DEFAULT NULL,
-  `form_data` json NOT NULL,
-  `current_step` int(11) DEFAULT 1,
-  `created_at` timestamp DEFAULT current_timestamp(),
-  `updated_at` timestamp DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`draft_id`),
-  KEY `idx_company` (`company_id`),
-  KEY `idx_quotation` (`quotation_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Contract Dispute
-CREATE TABLE `contract_dispute` (
-  `dispute_id` int(11) NOT NULL AUTO_INCREMENT,
-  `contract_id` int(11) NOT NULL,
-  `milestone_id` int(11) DEFAULT NULL,
-  `raised_by` int(11) NOT NULL,
-  `raised_by_role` enum('company','customer') NOT NULL,
-  `reason` text NOT NULL,
-  `evidence` text DEFAULT NULL COMMENT 'JSON array of evidence files',
-  `status` enum('open','under_review','resolved','closed') DEFAULT 'open',
-  `priority` enum('low','medium','high','critical') DEFAULT 'medium',
-  `resolution` text DEFAULT NULL,
-  `resolved_by` int(11) DEFAULT NULL COMMENT 'Admin user who resolved',
-  `resolved_at` datetime DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp(),
-  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`dispute_id`),
-  KEY `raised_by` (`raised_by`),
-  KEY `resolved_by` (`resolved_by`),
-  KEY `idx_contract_id` (`contract_id`),
-  KEY `idx_milestone_id` (`milestone_id`),
-  KEY `idx_status` (`status`),
-  KEY `idx_created_at` (`created_at`),
-  CONSTRAINT `contract_dispute_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE,
-  CONSTRAINT `contract_dispute_ibfk_2` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE CASCADE,
-  CONSTRAINT `contract_dispute_ibfk_3` FOREIGN KEY (`raised_by`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
-  CONSTRAINT `contract_dispute_ibfk_4` FOREIGN KEY (`resolved_by`) REFERENCES `user` (`user_id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Contract Document
-CREATE TABLE `contract_document` (
-  `document_id` int(11) NOT NULL AUTO_INCREMENT,
-  `contract_id` int(11) NOT NULL,
-  `milestone_id` int(11) DEFAULT NULL,
-  `document_type` enum('contract_pdf','sow','invoice','receipt','proof_of_work','other') NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `file_path` varchar(500) NOT NULL,
-  `file_name` varchar(255) NOT NULL,
-  `file_size` int(11) DEFAULT NULL COMMENT 'Size in bytes',
-  `mime_type` varchar(100) DEFAULT NULL,
-  `uploaded_by` int(11) NOT NULL,
-  `uploaded_by_role` enum('company','customer','admin') NOT NULL,
-  `created_at` datetime DEFAULT current_timestamp(),
-  PRIMARY KEY (`document_id`),
-  KEY `uploaded_by` (`uploaded_by`),
-  KEY `idx_contract_id` (`contract_id`),
-  KEY `idx_milestone_id` (`milestone_id`),
-  KEY `idx_document_type` (`document_type`),
-  CONSTRAINT `contract_document_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE,
-  CONSTRAINT `contract_document_ibfk_2` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE CASCADE,
-  CONSTRAINT `contract_document_ibfk_3` FOREIGN KEY (`uploaded_by`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Contract Payment History
-CREATE TABLE `contract_payment_history` (
-  `payment_id` int(11) NOT NULL AUTO_INCREMENT,
-  `contract_id` int(11) NOT NULL,
-  `milestone_id` int(11) DEFAULT NULL,
-  `amount` decimal(12,2) NOT NULL,
-  `payment_type` enum('escrow_deposit','milestone_release','refund','penalty','bonus') NOT NULL,
-  `payment_method` varchar(50) DEFAULT NULL,
-  `transaction_id` varchar(100) DEFAULT NULL,
-  `status` enum('pending','processing','completed','failed','refunded') DEFAULT 'pending',
-  `paid_by` int(11) DEFAULT NULL COMMENT 'Customer',
-  `paid_to` int(11) DEFAULT NULL COMMENT 'Company',
-  `notes` text DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp(),
-  `completed_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`payment_id`),
-  KEY `paid_by` (`paid_by`),
-  KEY `paid_to` (`paid_to`),
-  KEY `idx_contract_id` (`contract_id`),
-  KEY `idx_milestone_id` (`milestone_id`),
-  KEY `idx_payment_type` (`payment_type`),
-  KEY `idx_status` (`status`),
-  CONSTRAINT `contract_payment_history_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE,
-  CONSTRAINT `contract_payment_history_ibfk_2` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE SET NULL,
-  CONSTRAINT `contract_payment_history_ibfk_3` FOREIGN KEY (`paid_by`) REFERENCES `user` (`user_id`) ON DELETE SET NULL,
-  CONSTRAINT `contract_payment_history_ibfk_4` FOREIGN KEY (`paid_to`) REFERENCES `user` (`user_id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- System Audit Log (cross-module activity logging)
--- Stores high-level audit events for actions performed by any role.
-CREATE TABLE IF NOT EXISTS `system_audit_log` (
-  `audit_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `request_id` char(36) DEFAULT NULL,
-  `occurred_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `actor_user_id` int(11) DEFAULT NULL,
-  `actor_role` varchar(50) DEFAULT NULL,
-  `action` varchar(150) NOT NULL,
-  `entity_type` varchar(100) DEFAULT NULL,
-  `entity_id` varchar(64) DEFAULT NULL,
-  `http_method` varchar(10) DEFAULT NULL,
-  `endpoint` varchar(255) DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `status_code` int(11) DEFAULT NULL,
-  `details` json DEFAULT NULL,
-  PRIMARY KEY (`audit_id`),
-  KEY `idx_audit_actor_time` (`actor_user_id`, `occurred_at`),
-  KEY `idx_audit_action_time` (`action`, `occurred_at`),
-  KEY `idx_audit_entity` (`entity_type`, `entity_id`),
-  KEY `idx_audit_request` (`request_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Make audit logs append-only (no UPDATE/DELETE allowed)
-DROP TRIGGER IF EXISTS `system_audit_log_no_update`;
-DROP TRIGGER IF EXISTS `system_audit_log_no_delete`;
-
-DELIMITER //
-CREATE TRIGGER `system_audit_log_no_update`
-BEFORE UPDATE ON `system_audit_log`
-FOR EACH ROW
-BEGIN
-  SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'system_audit_log is append-only (updates are not allowed)';
-END//
-
-CREATE TRIGGER `system_audit_log_no_delete`
-BEFORE DELETE ON `system_audit_log`
-FOR EACH ROW
-BEGIN
-  SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'system_audit_log is append-only (deletes are not allowed)';
-END//
-DELIMITER ;
-
--- =====================================================================
--- MIGRATION ONLY (SAFE TO RUN ON EXISTING DB)
--- Apply this block if your current database is missing `system_audit_log`.
--- =====================================================================
-
--- Account Moderation Log (SAFE)
--- Used by the Admin Account Moderation page to persist moderation reason and
--- suspension end date, especially for tables that don't have those columns.
-CREATE TABLE IF NOT EXISTS `account_moderation_log` (
-  `log_id` int(11) NOT NULL AUTO_INCREMENT,
-  `account_type` varchar(30) NOT NULL,
-  `account_id` int(11) NOT NULL,
-  `action_type` enum('suspend','ban','restore') NOT NULL,
-  `reason` text DEFAULT NULL,
-  `notes` text DEFAULT NULL,
-  `suspended_until` datetime DEFAULT NULL,
-  `acted_by_role` varchar(30) DEFAULT NULL,
-  `acted_by_id` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`log_id`),
-  KEY `idx_account_lookup` (`account_type`, `account_id`, `created_at`),
-  KEY `idx_action_type` (`action_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- (system_audit_log is already defined above)
-
--- Legacy Milestones (kept for backward compatibility)
-CREATE TABLE `milestone` (
-  `milestone_id` int(11) NOT NULL AUTO_INCREMENT,
-  `contract_id` int(11) NOT NULL,
-  `description` text NOT NULL,
-  `amount` decimal(10,2) NOT NULL,
-  `due_date` date NOT NULL,
-  `agreements` text DEFAULT NULL,
-  `status` enum('pending','in_progress','completed','overdue') DEFAULT 'pending',
-  PRIMARY KEY (`milestone_id`),
-  KEY `idx_contract` (`contract_id`),
-  KEY `idx_status` (`status`),
-  CONSTRAINT `milestone_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `milestonepayment` (
-  `payment_id` int(11) NOT NULL AUTO_INCREMENT,
-  `contract_id` int(11) DEFAULT NULL,
-  `milestone_id` int(11) DEFAULT NULL,
-  `amount` decimal(12,2) NOT NULL,
-  `payment_type` enum('milestone', 'upfront', 'final', 'escrow_deposit', 'escrow_release') DEFAULT 'milestone',
-  `payment_percentage` decimal(5,2) DEFAULT NULL,
-  `description` text DEFAULT NULL,
-  `method` enum('credit_card','debit_card','bank_transfer','check','cash') NOT NULL,
-  `status` enum('pending','completed','failed','held_escrow','released','refunded') DEFAULT 'pending',
-  `escrow_enabled` tinyint(1) DEFAULT 0,
-  `paid_by` int(11) DEFAULT NULL,
-  `paid_to` int(11) DEFAULT NULL,
-  `transaction_id` varchar(100) DEFAULT NULL,
-  `paid_at` datetime DEFAULT NULL,
-  `paid_to_escrow_at` datetime DEFAULT NULL,
-  `escrow_released_at` datetime DEFAULT NULL,
-  `escrow_refunded_at` datetime DEFAULT NULL,
-  `payment_date` timestamp NOT NULL DEFAULT current_timestamp(),
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`payment_id`),
-  KEY `idx_milestone` (`milestone_id`),
-  KEY `idx_contract` (`contract_id`),
-  KEY `idx_status` (`status`),
-  CONSTRAINT `milestonepayment_ibfk_1` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE CASCADE,
-  CONSTRAINT `milestonepayment_ibfk_2` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Feedback
-CREATE TABLE `feedback` (
-  `feedback_id` int(11) NOT NULL AUTO_INCREMENT,
-  `project_id` int(11) NOT NULL,
-  `given_by` int(11) NOT NULL,
-  `rating` int(11) DEFAULT NULL CHECK (`rating` >= 1 and `rating` <= 5),
-  `comments` text DEFAULT NULL,
-  `date` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`feedback_id`),
-  KEY `given_by` (`given_by`),
-  KEY `idx_project` (`project_id`),
-  CONSTRAINT `feedback_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE CASCADE,
-  CONSTRAINT `feedback_ibfk_2` FOREIGN KEY (`given_by`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Financial Report
-CREATE TABLE `financialreport` (
-  `report_id` int(11) NOT NULL AUTO_INCREMENT,
-  `month` date NOT NULL,
-  `revenue` decimal(12,2) DEFAULT 0.00,
-  `pending_withdrawals` decimal(12,2) DEFAULT 0.00,
-  `generated_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`report_id`),
-  KEY `idx_month` (`month`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Issue Report
-CREATE TABLE `issuereport` (
-  `issue_id` int(11) NOT NULL AUTO_INCREMENT,
-  `reportedBy_id` int(11) NOT NULL,
-  `target_id` int(11) NOT NULL,
-  `target_type` enum('user','repairer','company') NOT NULL,
-  `description` text NOT NULL,
-  `status` enum('open','investigating','resolved','closed') DEFAULT 'open',
-  `date` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`issue_id`),
-  KEY `idx_reporter` (`reportedBy_id`),
-  KEY `idx_status` (`status`),
-  CONSTRAINT `issuereport_ibfk_1` FOREIGN KEY (`reportedBy_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Job
-CREATE TABLE `job` (
-  `job_id` int(11) NOT NULL AUTO_INCREMENT,
-  `job_request_id` int(11) NOT NULL,
-  `fixer_id` int(11) NOT NULL,
-  `status` enum('scheduled','in_progress','completed','cancelled') DEFAULT 'scheduled',
-  `completionDate` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`job_id`),
-  KEY `job_request_id` (`job_request_id`),
-  KEY `idx_status` (`status`),
-  KEY `idx_fixer` (`fixer_id`),
-  CONSTRAINT `job_ibfk_1` FOREIGN KEY (`job_request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE,
-  CONSTRAINT `job_ibfk_2` FOREIGN KEY (`fixer_id`) REFERENCES `repairer` (`repairer_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Moderator
-CREATE TABLE `moderator` (
-  `moderator_id` int(11) NOT NULL AUTO_INCREMENT,
-  `username` varchar(100) NOT NULL,
+-- Table `repairer`
+CREATE TABLE `repairer` (
+  `repairer_id` int(11) NOT NULL,
+  `f_name` varchar(100) NOT NULL,
+  `l_name` varchar(100) NOT NULL,
+  `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `email` varchar(255) DEFAULT NULL,
-  `assigned_section` varchar(100) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`moderator_id`),
-  UNIQUE KEY `username` (`username`),
-  UNIQUE KEY `email` (`email`)
+  `phone` varchar(15) DEFAULT NULL,
+  `phoneNumber` varchar(20) DEFAULT NULL,
+  `about` text DEFAULT NULL,
+  `profilePicture` varchar(500) DEFAULT NULL,
+  `ratings` decimal(3,2) DEFAULT 0.00,
+  `completedJobsCount` int(11) DEFAULT 0,
+  `districts` text DEFAULT NULL,
+  `availability` enum('available','busy','unavailable') DEFAULT 'available',
+  `dateJoined` timestamp NOT NULL DEFAULT current_timestamp(),
+  `category_id` int(11) DEFAULT NULL,
+  `account_status` enum('ACTIVE','SUSPENDED','BANNED') DEFAULT 'ACTIVE',
+  `banned_permanent` tinyint(1) DEFAULT 0,
+  `suspended_until` datetime DEFAULT NULL,
+  `moderation_reason` text DEFAULT NULL,
+  `skills` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `moderatormsg` (
-  `msg_id` int(11) NOT NULL AUTO_INCREMENT,
+-- Table `repairerapplication`
+CREATE TABLE `repairerapplication` (
+  `app_id` int(11) NOT NULL,
   `repairer_id` int(11) NOT NULL,
-  `subject` varchar(255) NOT NULL,
-  `msg` text NOT NULL,
-  `date_sent` timestamp NOT NULL DEFAULT current_timestamp(),
-  `response` text DEFAULT NULL,
-  `date_resolved` timestamp NULL DEFAULT NULL,
-  `status` enum('open','pending','resolved','closed') DEFAULT 'open',
-  PRIMARY KEY (`msg_id`),
-  KEY `idx_repairer` (`repairer_id`),
-  KEY `idx_status` (`status`),
-  CONSTRAINT `moderatormsg_ibfk_1` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE
+  `posting_id` int(11) NOT NULL,
+  `date_applied` timestamp NOT NULL DEFAULT current_timestamp(),
+  `app_status` enum('pending','reviewed','accepted','rejected') DEFAULT 'pending'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Notification
-CREATE TABLE `notification` (
-  `notification_id` int(11) NOT NULL AUTO_INCREMENT,
-  `title` varchar(255) NOT NULL,
-  `message` text NOT NULL,
-  `send_date` timestamp NOT NULL DEFAULT current_timestamp(),
-  `recipient_type` enum('user','repairer','company','all') NOT NULL,
-  `status` enum('sent','pending','failed') DEFAULT 'pending',
-  `created_by_id` int(11) DEFAULT NULL,
-  `created_by_role` enum('admin','moderator','company','repairer','user') DEFAULT NULL,
-  `created_by_name` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`notification_id`),
-  KEY `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Payment
-CREATE TABLE `payment` (
-  `payment_id` int(11) NOT NULL AUTO_INCREMENT,
-  `job_request_id` int(11) NOT NULL,
-  `paymentType` enum('credit_card','debit_card','cash','bank_transfer') NOT NULL,
-  `amount` decimal(10,2) NOT NULL,
-  `paymentDate` timestamp NOT NULL DEFAULT current_timestamp(),
-  `status` enum('pending','completed','failed','refunded') DEFAULT 'pending',
-  PRIMARY KEY (`payment_id`),
-  KEY `idx_job_request` (`job_request_id`),
-  KEY `idx_status` (`status`),
-  CONSTRAINT `payment_ibfk_1` FOREIGN KEY (`job_request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Promotion
-CREATE TABLE `promotion` (
-  `promotion_id` int(11) NOT NULL AUTO_INCREMENT,
+-- Table `repairerassignment`
+CREATE TABLE `repairerassignment` (
+  `assignment_id` int(11) NOT NULL,
+  `project_id` int(11) NOT NULL,
   `repairer_id` int(11) NOT NULL,
-  `plan_name` varchar(100) NOT NULL,
-  `price` decimal(10,2) NOT NULL,
-  `start_date` date NOT NULL,
-  `end_date` date NOT NULL,
-  `status` enum('active','expired','cancelled') DEFAULT 'active',
-  PRIMARY KEY (`promotion_id`),
-  KEY `idx_repairer` (`repairer_id`),
-  KEY `idx_status` (`status`),
-  KEY `idx_dates` (`start_date`,`end_date`),
-  CONSTRAINT `promotion_ibfk_1` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE
+  `role` varchar(100) DEFAULT NULL,
+  `amount` decimal(10,2) DEFAULT NULL,
+  `assigned_date` date DEFAULT curdate(),
+  `status` enum('assigned','active','completed','removed') DEFAULT 'assigned'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-
-
--- Repairer Quote
+-- Table `repairerquote`
 CREATE TABLE `repairerquote` (
-  `quote_id` int(11) NOT NULL AUTO_INCREMENT,
+  `quote_id` int(11) NOT NULL,
   `request_id` int(11) NOT NULL,
   `repairer_id` int(11) NOT NULL,
   `quoteAmount` decimal(10,2) NOT NULL,
   `estimatedDays` int(11) NOT NULL DEFAULT 1,
   `warrantyPeriod` int(11) DEFAULT 0,
-  `validUntil` date NOT NULL,
+  `validUntil` date DEFAULT NULL,
   `materialsIncluded` tinyint(1) DEFAULT 1,
   `message` text DEFAULT NULL,
   `status` enum('pending','accepted','completed','rejected','expired') DEFAULT 'pending',
-  `dateSubmitted` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`quote_id`),
-  KEY `idx_request` (`request_id`),
-  KEY `idx_repairer` (`repairer_id`),
-  KEY `idx_status` (`status`),
-  CONSTRAINT `repairerquote_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE,
-  CONSTRAINT `repairerquote_ibfk_2` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE
+  `dateSubmitted` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Report
+-- Table `repairer_applications`
+CREATE TABLE `repairer_applications` (
+  `application_id` int(11) NOT NULL,
+  `job_posting_id` int(11) NOT NULL,
+  `repairer_id` int(11) NOT NULL,
+  `cover_letter` text DEFAULT NULL,
+  `expected_rate` decimal(10,2) DEFAULT NULL,
+  `status` enum('pending','reviewed','interview','approved','rejected') DEFAULT 'pending',
+  `rejection_reason` text DEFAULT NULL,
+  `applied_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table `report`
 CREATE TABLE `report` (
-  `report_id` int(11) NOT NULL AUTO_INCREMENT,
+  `report_id` int(11) NOT NULL,
   `description` text NOT NULL,
   `status` enum('pending','investigating','resolved') DEFAULT 'pending',
   `resolve_date` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `created_by` int(11) DEFAULT NULL,
-  PRIMARY KEY (`report_id`),
-  KEY `idx_status` (`status`)
+  `created_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Review
+-- Table `review`
 CREATE TABLE `review` (
-  `review_id` int(11) NOT NULL AUTO_INCREMENT,
+  `review_id` int(11) NOT NULL,
   `job_id` int(11) NOT NULL,
   `service_provider_id` int(11) NOT NULL,
   `rating` int(11) NOT NULL CHECK (`rating` >= 1 and `rating` <= 5),
   `comments` text DEFAULT NULL,
-  `date` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`review_id`),
-  KEY `idx_job` (`job_id`),
-  KEY `idx_provider` (`service_provider_id`),
-  CONSTRAINT `review_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `job` (`job_id`) ON DELETE CASCADE,
-  CONSTRAINT `review_ibfk_2` FOREIGN KEY (`service_provider_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE
+  `date` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Staff Summary
+-- Table `service_area`
+CREATE TABLE `service_area` (
+  `area_id` int(11) NOT NULL,
+  `owner_id` int(11) NOT NULL,
+  `owner_type` enum('company','repairer') NOT NULL,
+  `district` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `staffsummary`
 CREATE TABLE `staffsummary` (
-  `staff_summary_id` int(11) NOT NULL AUTO_INCREMENT,
+  `staff_summary_id` int(11) NOT NULL,
   `company_id` int(11) NOT NULL,
   `specialty` varchar(100) NOT NULL,
   `total_count` int(11) DEFAULT 0,
@@ -1150,31 +1327,73 @@ CREATE TABLE `staffsummary` (
   `avg_hourly_rate` decimal(10,2) DEFAULT 0.00,
   `min_hourly_rate` decimal(10,2) DEFAULT 0.00,
   `max_hourly_rate` decimal(10,2) DEFAULT 0.00,
-  `last_update` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`staff_summary_id`),
-  UNIQUE KEY `unique_company_specialty` (`company_id`,`specialty`),
-  KEY `idx_company` (`company_id`),
-  KEY `idx_specialty` (`specialty`),
-  CONSTRAINT `staffsummary_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE
+  `last_update` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Static Content
+-- Table `staticcontent`
 CREATE TABLE `staticcontent` (
-  `content_id` int(11) NOT NULL AUTO_INCREMENT,
+  `content_id` int(11) NOT NULL,
   `title` varchar(255) NOT NULL,
   `description` varchar(500) DEFAULT NULL,
   `body` text NOT NULL,
-  `status` enum('Draft','Published') NOT NULL DEFAULT 'Published',
+  `status` enum('Draft','Published') DEFAULT 'Published',
   `last_update` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `content_type` enum('terms','privacy','faq','about','help','contact','how_it_works','services','why_choose','support') NOT NULL,
-  PRIMARY KEY (`content_id`),
-  KEY `idx_type` (`content_type`),
-  KEY `idx_status` (`status`)
+  `content_type` enum('terms','privacy','faq','about','help','contact','how_it_works','services','why_choose','support','landing_hero') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Support Tickets
+-- Table `supportticket`
+CREATE TABLE `supportticket` (
+  `ticket_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `user_type` enum('user','repairer','company') NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `category` enum('payment','technical','account','feature','billing','other') NOT NULL,
+  `priority` enum('low','medium','high','urgent') DEFAULT 'medium',
+  `status` enum('open','in_progress','resolved','closed') DEFAULT 'open',
+  `urgency` enum('can-wait','soon','asap') DEFAULT 'soon',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `project_id` int(11) DEFAULT NULL,
+  `attachment` varchar(500) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `support_attachments`
+CREATE TABLE `support_attachments` (
+  `attachment_id` int(11) NOT NULL,
+  `ticket_id` int(11) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `file_type` varchar(50) NOT NULL,
+  `file_size` int(11) NOT NULL COMMENT 'Size in bytes',
+  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `support_categories`
+CREATE TABLE `support_categories` (
+  `category_id` int(11) NOT NULL,
+  `category_name` varchar(100) NOT NULL,
+  `category_slug` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `icon` varchar(50) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `support_responses`
+CREATE TABLE `support_responses` (
+  `response_id` int(11) NOT NULL,
+  `ticket_id` int(11) NOT NULL,
+  `responder_type` enum('user','admin','moderator','system') NOT NULL,
+  `responder_id` int(11) DEFAULT NULL,
+  `message` text NOT NULL,
+  `is_internal_note` tinyint(1) DEFAULT 0 COMMENT 'Notes only visible to admins',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `support_tickets`
 CREATE TABLE `support_tickets` (
-  `ticket_id` int(11) NOT NULL AUTO_INCREMENT,
+  `ticket_id` int(11) NOT NULL,
   `ticket_number` varchar(50) NOT NULL,
   `user_type` enum('user','company','repairer') NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -1191,487 +1410,1002 @@ CREATE TABLE `support_tickets` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `resolved_at` timestamp NULL DEFAULT NULL,
-  `closed_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`ticket_id`),
-  UNIQUE KEY `ticket_number` (`ticket_number`),
-  KEY `idx_user` (`user_type`,`user_id`),
-  KEY `idx_status` (`status`),
-  KEY `idx_priority` (`priority`),
-  KEY `idx_created` (`created_at`)
+  `closed_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Support Attachments
-CREATE TABLE `support_attachments` (
-  `attachment_id` int(11) NOT NULL AUTO_INCREMENT,
-  `ticket_id` int(11) NOT NULL,
-  `file_name` varchar(255) NOT NULL,
-  `file_path` varchar(500) NOT NULL,
-  `file_type` varchar(50) NOT NULL,
-  `file_size` int(11) NOT NULL COMMENT 'Size in bytes',
-  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`attachment_id`),
-  KEY `idx_ticket` (`ticket_id`),
-  CONSTRAINT `support_attachments_ibfk_1` FOREIGN KEY (`ticket_id`) REFERENCES `support_tickets` (`ticket_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Support Categories
-CREATE TABLE `support_categories` (
-  `category_id` int(11) NOT NULL AUTO_INCREMENT,
-  `category_name` varchar(100) NOT NULL,
-  `category_slug` varchar(100) NOT NULL,
-  `description` text DEFAULT NULL,
-  `icon` varchar(50) DEFAULT NULL,
-  `is_active` tinyint(1) DEFAULT 1,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`category_id`),
-  UNIQUE KEY `category_slug` (`category_slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Support Responses
-CREATE TABLE `support_responses` (
-  `response_id` int(11) NOT NULL AUTO_INCREMENT,
-  `ticket_id` int(11) NOT NULL,
-  `responder_type` enum('user','admin','moderator','system') NOT NULL,
-  `responder_id` int(11) DEFAULT NULL,
-  `message` text NOT NULL,
-  `is_internal_note` tinyint(1) DEFAULT 0 COMMENT 'Notes only visible to admins',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`response_id`),
-  KEY `idx_ticket` (`ticket_id`),
-  KEY `idx_created` (`created_at`),
-  CONSTRAINT `support_responses_ibfk_1` FOREIGN KEY (`ticket_id`) REFERENCES `support_tickets` (`ticket_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Legacy Support Ticket (if needed, otherwise can be removed if support_tickets is the primary)
-CREATE TABLE `supportticket` (
-  `ticket_id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `user_type` enum('user','repairer','company') NOT NULL,
-  `title` varchar(255) NOT NULL,
+-- Table `system_activity_logs`
+CREATE TABLE `system_activity_logs` (
+  `id` int(11) NOT NULL,
+  `user_id` varchar(100) NOT NULL,
+  `user_role` enum('admin','moderator','system') NOT NULL,
+  `activity_type` varchar(50) NOT NULL,
   `description` text NOT NULL,
-  `category` enum('payment','technical','account','feature','billing','other') NOT NULL,
-  `priority` enum('low','medium','high','urgent') DEFAULT 'medium',
-  `status` enum('open','in_progress','resolved','closed') DEFAULT 'open',
-  `urgency` enum('can-wait','soon','asap') DEFAULT 'soon',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `project_id` int(11) DEFAULT NULL,
-  `attachment` varchar(500) DEFAULT NULL,
-  PRIMARY KEY (`ticket_id`),
-  KEY `idx_user` (`user_id`,`user_type`),
-  KEY `idx_status` (`status`),
-  KEY `idx_project` (`project_id`),
-  CONSTRAINT `supportticket_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE SET NULL
+  `related_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Table `system_audit_log`
+CREATE TABLE `system_audit_log` (
+  `audit_id` bigint(20) NOT NULL,
+  `request_id` char(36) DEFAULT NULL,
+  `occurred_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `actor_user_id` int(11) DEFAULT NULL,
+  `actor_role` varchar(50) DEFAULT NULL,
+  `action` varchar(150) NOT NULL,
+  `entity_type` varchar(100) DEFAULT NULL,
+  `entity_id` varchar(64) DEFAULT NULL,
+  `http_method` varchar(10) DEFAULT NULL,
+  `endpoint` varchar(255) DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `status_code` int(11) DEFAULT NULL,
+  `details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`details`))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `ticketmessage`
 CREATE TABLE `ticketmessage` (
-  `message_id` int(11) NOT NULL AUTO_INCREMENT,
+  `message_id` int(11) NOT NULL,
   `ticket_id` int(11) NOT NULL,
   `sender_id` int(11) NOT NULL,
   `sender_type` enum('user','repairer','company','admin','moderator') NOT NULL,
   `message` text NOT NULL,
   `attachment` varchar(500) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`message_id`),
-  KEY `idx_ticket` (`ticket_id`),
-  CONSTRAINT `ticketmessage_ibfk_1` FOREIGN KEY (`ticket_id`) REFERENCES `supportticket` (`ticket_id`) ON DELETE CASCADE
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- =====================================================================
--- PHASE 1 ADDITIONS: Work Schedule, Budget, Payment, Chat, Escrow
--- Added: February 12, 2026
--- =====================================================================
-
--- Add work schedule columns to companyquotation
-ALTER TABLE `companyquotation`
-ADD COLUMN `work_schedule_type` ENUM('all_days', 'weekdays_only', 'weekends_included', 'custom') 
-    NOT NULL DEFAULT 'weekdays_only' AFTER `estimated_duration`,
-ADD COLUMN `working_days_per_week` TINYINT(1) NULL AFTER `work_schedule_type`,
-ADD COLUMN `daily_work_hours` DECIMAL(4,2) NULL AFTER `working_days_per_week`,
-ADD COLUMN `work_start_time` TIME NULL AFTER `daily_work_hours`,
-ADD COLUMN `work_end_time` TIME NULL AFTER `work_start_time`,
-ADD COLUMN `break_duration` DECIMAL(3,2) NULL AFTER `work_end_time`,
-ADD COLUMN `custom_schedule_json` TEXT NULL AFTER `break_duration`,
-ADD COLUMN `public_holidays_excluded` BOOLEAN DEFAULT TRUE AFTER `custom_schedule_json`,
-ADD COLUMN `estimated_calendar_days` INT NULL AFTER `public_holidays_excluded`;
-
--- Add Phase 1 columns to contract table
-ALTER TABLE `contract`
-ADD COLUMN `budget_flexibility_percentage` DECIMAL(5,2) NULL AFTER `budget_type`,
-ADD COLUMN `undo_deadline` DATETIME NULL AFTER `signed_at`,
-ADD COLUMN `undo_requested` BOOLEAN DEFAULT FALSE AFTER `undo_deadline`,
-ADD COLUMN `chat_active` BOOLEAN DEFAULT FALSE AFTER `undo_requested`,
-ADD COLUMN `chat_activated_at` DATETIME NULL AFTER `chat_active`,
-ADD COLUMN `escrow_account_id` INT NULL AFTER `chat_activated_at`,
-ADD COLUMN `upfront_payment_percentage` DECIMAL(5,2) NULL AFTER `escrow_account_id`,
-ADD COLUMN `upfront_payment_amount` DECIMAL(10,2) NULL AFTER `upfront_payment_percentage`,
-ADD COLUMN `upfront_payment_received` BOOLEAN DEFAULT FALSE AFTER `upfront_payment_amount`,
-ADD COLUMN `work_verified_started` BOOLEAN DEFAULT FALSE AFTER `upfront_payment_received`,
-ADD COLUMN `quality_guarantee_end_date` DATE NULL AFTER `work_verified_started`;
-
--- Add workflow columns to milestone table
-ALTER TABLE `milestone`
-ADD COLUMN `submitted_by_company` BOOLEAN DEFAULT FALSE AFTER `status`,
-ADD COLUMN `submitted_date` DATETIME NULL AFTER `submitted_by_company`,
-ADD COLUMN `customer_approved` BOOLEAN DEFAULT FALSE AFTER `submitted_date`,
-ADD COLUMN `customer_approval_date` DATETIME NULL AFTER `customer_approved`,
-ADD COLUMN `customer_rejection_reason` TEXT NULL AFTER `customer_approval_date`,
-ADD COLUMN `work_started` BOOLEAN DEFAULT FALSE AFTER `customer_rejection_reason`,
-ADD COLUMN `work_start_date` DATETIME NULL AFTER `work_started`,
-ADD COLUMN `work_completed` BOOLEAN DEFAULT FALSE AFTER `work_start_date`,
-ADD COLUMN `work_completion_date` DATETIME NULL AFTER `work_completed`,
-ADD COLUMN `customer_verification_requested` BOOLEAN DEFAULT FALSE AFTER `work_completion_date`,
-ADD COLUMN `customer_verified` BOOLEAN DEFAULT FALSE AFTER `customer_verification_requested`,
-ADD COLUMN `customer_verification_date` DATETIME NULL AFTER `customer_verified`;
-
--- Contract Chats Table
-CREATE TABLE `contract_chats` (
-    `chat_id` INT AUTO_INCREMENT PRIMARY KEY,
-    `contract_id` INT NOT NULL,
-    `sender_type` ENUM('company', 'customer') NOT NULL,
-    `sender_id` INT NOT NULL,
-  `message_type` ENUM('text', 'system') DEFAULT 'text',
-    `message` TEXT NOT NULL,
-    `attachment_type` ENUM('text', 'image', 'document', 'pdf') DEFAULT 'text',
-    `attachment_url` VARCHAR(500) NULL,
-    `attachment_filename` VARCHAR(255) NULL,
-    `attachment_size` INT NULL,
-    `is_read` BOOLEAN DEFAULT FALSE,
-    `read_at` DATETIME NULL,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
-    INDEX `idx_contract_sender` (`contract_id`, `sender_type`),
-    INDEX `idx_unread` (`is_read`, `created_at`),
-    INDEX `idx_created` (`created_at` DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Contract Change Requests Table
--- Customer can request adjustments; company can accept/reject.
-CREATE TABLE `contract_change_requests` (
-  `change_request_id` INT AUTO_INCREMENT PRIMARY KEY,
-  `contract_id` INT NOT NULL,
-  `requested_by_customer_id` INT NOT NULL,
-  `request_text` TEXT NOT NULL,
-  `proposed_changes_json` LONGTEXT NULL,
-  `original_snapshot_json` LONGTEXT NULL,
-  `status` ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
-  `responded_by_company_id` INT NULL,
-  `response_note` TEXT NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `responded_at` DATETIME NULL,
-  FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
-  INDEX `idx_contract_status` (`contract_id`, `status`),
-  INDEX `idx_created_at` (`created_at` DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Contract Notifications Table
-CREATE TABLE `contract_notifications` (
-    `notification_id` INT AUTO_INCREMENT PRIMARY KEY,
-    `contract_id` INT NOT NULL,
-    `recipient_type` ENUM('company', 'customer') NOT NULL,
-    `recipient_id` INT NOT NULL,
-    `notification_type` VARCHAR(50) NOT NULL,
-    `title` VARCHAR(255) NOT NULL,
-    `message` TEXT NOT NULL,
-    `action_url` VARCHAR(500) NULL,
-    `priority` ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
-    `is_read` BOOLEAN DEFAULT FALSE,
-    `read_at` DATETIME NULL,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
-    INDEX `idx_recipient` (`recipient_type`, `recipient_id`, `is_read`),
-    INDEX `idx_type` (`notification_type`),
-    INDEX `idx_priority` (`priority`, `is_read`),
-    INDEX `idx_created` (`created_at` DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Contract Timeline Table
-CREATE TABLE `contract_timeline` (
-    `timeline_id` INT AUTO_INCREMENT PRIMARY KEY,
-    `contract_id` INT NOT NULL,
-    `event_type` VARCHAR(50) NOT NULL,
-    `event_title` VARCHAR(255) NOT NULL,
-    `event_description` TEXT NULL,
-    `actor_type` ENUM('system', 'company', 'customer') NOT NULL,
-    `actor_id` INT NULL,
-    `actor_name` VARCHAR(255) NULL,
-    `metadata_json` TEXT NULL,
-    `is_milestone` BOOLEAN DEFAULT FALSE,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
-    INDEX `idx_contract_time` (`contract_id`, `created_at` DESC),
-    INDEX `idx_event_type` (`event_type`),
-    INDEX `idx_actor` (`actor_type`, `actor_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Contract Time Logs Table
-CREATE TABLE `contract_time_logs` (
-    `log_id` INT AUTO_INCREMENT PRIMARY KEY,
-    `contract_id` INT NOT NULL,
-    `work_date` DATE NOT NULL,
-    `start_time` TIME NOT NULL,
-    `end_time` TIME NOT NULL,
-    `break_duration` DECIMAL(3,2) DEFAULT 0,
-    `total_hours` DECIMAL(4,2) NOT NULL,
-    `hourly_rate` DECIMAL(10,2) NOT NULL,
-    `total_amount` DECIMAL(10,2) NOT NULL,
-    `work_description` TEXT NOT NULL,
-    `work_location` VARCHAR(255) NULL,
-    `submitted_by` INT NOT NULL,
-    `submitted_at` DATETIME NOT NULL,
-    `customer_approved` BOOLEAN DEFAULT FALSE,
-    `customer_approval_date` DATETIME NULL,
-    `customer_rejection_reason` TEXT NULL,
-    `invoice_id` INT NULL,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
-    INDEX `idx_contract_date` (`contract_id`, `work_date` DESC),
-    INDEX `idx_approval` (`customer_approved`),
-    INDEX `idx_invoice` (`invoice_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Contract Invoices Table
-CREATE TABLE `contract_invoices` (
-    `invoice_id` INT AUTO_INCREMENT PRIMARY KEY,
-    `contract_id` INT NOT NULL,
-    `invoice_number` VARCHAR(50) UNIQUE NOT NULL,
-    `invoice_type` ENUM('milestone', 'upfront', 'final', 'time_material', 'adjustment') NOT NULL,
-    `milestone_id` INT NULL,
-    `amount` DECIMAL(10,2) NOT NULL,
-    `tax_percentage` DECIMAL(5,2) DEFAULT 0,
-    `tax_amount` DECIMAL(10,2) DEFAULT 0,
-    `total_amount` DECIMAL(10,2) NOT NULL,
-    `issue_date` DATE NOT NULL,
-    `due_date` DATE NOT NULL,
-    `payment_status` ENUM('pending', 'paid', 'overdue', 'cancelled', 'refunded') DEFAULT 'pending',
-    `paid_date` DATETIME NULL,
-    `payment_method` VARCHAR(50) NULL,
-    `payment_reference` VARCHAR(100) NULL,
-    `payment_receipt_url` VARCHAR(500) NULL,
-    `pdf_path` VARCHAR(500) NULL,
-    `notes` TEXT NULL,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
-    FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone`(`milestone_id`) ON DELETE SET NULL,
-    INDEX `idx_contract_status` (`contract_id`, `payment_status`),
-    INDEX `idx_invoice_number` (`invoice_number`),
-    INDEX `idx_due_date` (`due_date`, `payment_status`),
-    INDEX `idx_type` (`invoice_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Contract Budget Adjustments Table
-CREATE TABLE `contract_budget_adjustments` (
-    `adjustment_id` INT AUTO_INCREMENT PRIMARY KEY,
-    `contract_id` INT NOT NULL,
-    `original_amount` DECIMAL(12,2) NOT NULL,
-    `requested_amount` DECIMAL(12,2) NOT NULL,
-    `adjustment_amount` DECIMAL(12,2) NOT NULL,
-    `adjustment_percentage` DECIMAL(5,2) DEFAULT NULL,
-    `reason` TEXT NOT NULL,
-    `justification` TEXT NULL,
-    `supporting_documents` TEXT NULL,
-    `status` ENUM('pending', 'approved', 'rejected', 'cancelled') DEFAULT 'pending',
-    `requested_by` INT NOT NULL COMMENT 'user_id of person requesting',
-    `requested_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `reviewed_by` INT DEFAULT NULL,
-    `reviewed_at` DATETIME DEFAULT NULL,
-    `review_notes` TEXT DEFAULT NULL,
-    `approved_at` DATETIME DEFAULT NULL,
-    `rejected_at` DATETIME DEFAULT NULL,
-    `rejection_reason` TEXT DEFAULT NULL,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
-    INDEX `idx_contract_status` (`contract_id`, `status`),
-    INDEX `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Escrow Accounts Table
-CREATE TABLE `escrow_accounts` (
-    `escrow_id` INT AUTO_INCREMENT PRIMARY KEY,
-    `contract_id` INT UNIQUE NOT NULL,
-    `account_number` VARCHAR(50) UNIQUE NOT NULL,
-    `total_amount` DECIMAL(10,2) NOT NULL,
-    `held_amount` DECIMAL(10,2) DEFAULT 0,
-    `released_amount` DECIMAL(10,2) DEFAULT 0,
-    `refunded_amount` DECIMAL(10,2) DEFAULT 0,
-    `status` ENUM('active', 'completed', 'refunded', 'disputed') DEFAULT 'active',
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (`contract_id`) REFERENCES `contract`(`contract_id`) ON DELETE CASCADE,
-    INDEX `idx_status` (`status`),
-    INDEX `idx_account_number` (`account_number`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Add foreign key constraints
-ALTER TABLE `contract`
-ADD CONSTRAINT `fk_contract_escrow`
-FOREIGN KEY (`escrow_account_id`) REFERENCES `escrow_accounts`(`escrow_id`) 
-ON DELETE SET NULL;
-
-ALTER TABLE `contract_time_logs`
-ADD CONSTRAINT `fk_timelog_invoice`
-FOREIGN KEY (`invoice_id`) REFERENCES `contract_invoices`(`invoice_id`) 
-ON DELETE SET NULL;
-
--- Add indexes for performance
-ALTER TABLE `companyquotation`
-ADD INDEX `idx_work_schedule` (`work_schedule_type`, `working_days_per_week`);
-
--- trailing index additions integrated into main definitions or verified as correct
-
--- =====================================================================
--- PHASE 7 ADDITIONS: Milestone Management Enhancements
--- Added: February 14, 2026
--- =====================================================================
-
--- Add explicit completion and approval tracking for milestones
--- (Note: some overlap with existing fields, but these are used by new logic)
--- integrated into contract_milestone table above
-
--- =====================================================================
--- PHASE 8 ADDITIONS: Escrow System
--- Added: February 15, 2026
--- =====================================================================
-
--- Escrow Wallet: Tracks balance for Users (Customers) and Companies
-CREATE TABLE IF NOT EXISTS `escrow_wallet` (
-    `wallet_id` int(11) NOT NULL AUTO_INCREMENT,
-    `user_id` int(11) DEFAULT NULL,
-    `company_id` int(11) DEFAULT NULL,
-    `balance` decimal(15,2) DEFAULT 0.00,
-    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-    `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-    PRIMARY KEY (`wallet_id`),
-    UNIQUE KEY `user_id` (`user_id`),
-    UNIQUE KEY `company_id` (`company_id`),
-    CONSTRAINT `escrow_wallet_user_fk` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE RESTRICT,
-    CONSTRAINT `escrow_wallet_company_fk` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE RESTRICT,
-    CONSTRAINT `check_owner` CHECK ((`user_id` IS NOT NULL AND `company_id` IS NULL) OR (`user_id` IS NULL AND `company_id` IS NOT NULL))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Escrow Transactions: Logs history of funds
-CREATE TABLE IF NOT EXISTS `escrow_transaction` (
-    `transaction_id` int(11) NOT NULL AUTO_INCREMENT,
-    `wallet_id` int(11) NOT NULL,
-    `amount` decimal(15,2) NOT NULL,
-    `type` enum('deposit', 'release', 'hold', 'refund', 'service_fee') NOT NULL,
-    `status` enum('pending', 'completed', 'failed') DEFAULT 'completed',
-    `related_contract_id` int(11) DEFAULT NULL,
-    `related_milestone_id` int(11) DEFAULT NULL,
-    `description` varchar(255) DEFAULT NULL,
-    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-    PRIMARY KEY (`transaction_id`),
-    KEY `idx_wallet` (`wallet_id`),
-    KEY `idx_contract` (`related_contract_id`),
-    CONSTRAINT `escrow_txn_wallet_fk` FOREIGN KEY (`wallet_id`) REFERENCES `escrow_wallet` (`wallet_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Ensure contract table has escrow_enabled if not already
--- (Phase 2 might have added it, but good to ensure)
--- Note: 'escrow_enabled' column check can be done manually or via robust migration script.
--- For this SQL dump, we assume it's created if missing.
-ALTER TABLE `contract`
-ADD COLUMN `escrow_enabled` TINYINT(1) DEFAULT 0 AFTER `payment_method`;
-
--- =====================================================================
--- PHASE 4 ADDITIONS: Workforce System
--- =====================================================================
-
--- 1. Company Job Post Table
--- (companyjobpost is already defined above)
-
--- 2. Repairer Applications Table
-CREATE TABLE IF NOT EXISTS `repairer_applications` (
-  `application_id` int(11) NOT NULL AUTO_INCREMENT,
-  `job_posting_id` int(11) NOT NULL,
-  `repairer_id` int(11) NOT NULL,
-  `cover_letter` text,
-  `expected_rate` decimal(10,2) DEFAULT NULL,
-  `status` enum('pending','reviewed','interview','approved','rejected') DEFAULT 'pending',
-  `rejection_reason` text,
-  `applied_date` timestamp DEFAULT current_timestamp(),
-  `updated_at` timestamp DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`application_id`),
-  UNIQUE KEY `uniq_posting_repairer` (`job_posting_id`,`repairer_id`),
-  FOREIGN KEY (`job_posting_id`) REFERENCES `companyjobpost` (`posting_id`) ON DELETE CASCADE,
-  FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 3. Company Employees (Roster) Table
-CREATE TABLE IF NOT EXISTS `company_employees` (
-  `employee_id` int(11) NOT NULL AUTO_INCREMENT,
-  `company_id` int(11) NOT NULL,
-  `repairer_id` int(11) NOT NULL,
-  `job_title` varchar(255) DEFAULT NULL,
-  `employment_type` enum('full_time','part_time','freelance') NOT NULL DEFAULT 'freelance',
-  `status` enum('active','inactive','suspended') DEFAULT 'active',
-  `hired_date` date NOT NULL,
-  `hourly_rate` decimal(10,2) DEFAULT NULL,
-  `notes` text,
-  `created_at` timestamp DEFAULT current_timestamp(),
-  `updated_at` timestamp DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`employee_id`),
-  FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE,
-  FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE,
-  UNIQUE KEY `unique_company_repairer` (`company_id`,`repairer_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 3a. Project Employee Assignments (Company staff per project)
-CREATE TABLE IF NOT EXISTS `project_employee_assignments` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `project_id` int(11) NOT NULL,
-  `employee_id` int(11) NOT NULL,
-  `assigned_at` timestamp DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_project_employee` (`project_id`, `employee_id`),
-  FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE CASCADE,
-  FOREIGN KEY (`employee_id`) REFERENCES `company_employees` (`employee_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 4. Freelancer Job Assignments (Job Offers) Table
-CREATE TABLE IF NOT EXISTS `freelancer_assignments` (
-  `assignment_id` int(11) NOT NULL AUTO_INCREMENT,
-  `company_id` int(11) NOT NULL,
-  `repairer_id` int(11) NOT NULL,
-  `project_id` int(11) DEFAULT NULL,
-  `contract_id` int(11) DEFAULT NULL,
-  `pricing_model` enum('hourly','fixed') NOT NULL DEFAULT 'hourly',
-  `rate_or_price` decimal(10,2) NOT NULL,
-  `estimated_hours` decimal(5,2) DEFAULT NULL,
-  `start_date` date NOT NULL,
-  `deadline_date` date NOT NULL,
-  `notes` text,
-  `status` enum('offered','accepted','declined','in_progress','completed','cancelled') DEFAULT 'offered',
-  `created_at` timestamp DEFAULT current_timestamp(),
-  `updated_at` timestamp DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`assignment_id`),
-  FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE,
-  FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE,
-  FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE SET NULL,
-  FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 5. Repairer Work History (Portfolio)
--- Stores completed work entries for a repairer (company access is read-only via APIs)
-CREATE TABLE IF NOT EXISTS `repairer_work_history` (
-  `history_id` int(11) NOT NULL AUTO_INCREMENT,
-  `repairer_id` int(11) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `summary` text DEFAULT NULL,
-  `category_id` int(11) DEFAULT NULL,
-  `completed_at` datetime DEFAULT NULL,
-  `hours_worked` decimal(6,2) DEFAULT NULL,
-  `rating` decimal(3,2) DEFAULT NULL,
-  `attachments_json` text DEFAULT NULL,
-  `source` enum('manual','platform') NOT NULL DEFAULT 'manual',
+-- Table `user`
+CREATE TABLE `user` (
+  `user_id` int(11) NOT NULL,
+  `f_name` varchar(100) NOT NULL,
+  `l_name` varchar(100) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `phone` varchar(15) DEFAULT NULL,
+  `profilePicture` varchar(500) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `district` varchar(100) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`history_id`),
-  KEY `idx_repairer` (`repairer_id`),
-  KEY `idx_completed` (`completed_at`),
-  CONSTRAINT `repairer_work_history_ibfk_1` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE,
-  CONSTRAINT `repairer_work_history_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE SET NULL
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `account_status` enum('ACTIVE','SUSPENDED','BANNED') DEFAULT 'ACTIVE',
+  `banned_permanent` tinyint(1) DEFAULT 0,
+  `suspended_until` datetime DEFAULT NULL,
+  `moderation_reason` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `user_sessions`
+CREATE TABLE `user_sessions` (
+  `session_id` varchar(255) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `user_role` enum('user','repairer','company','admin','moderator') NOT NULL,
+  `device_type` varchar(100) DEFAULT NULL,
+  `browser` varchar(100) DEFAULT NULL,
+  `os` varchar(100) DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `last_activity` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `is_current` tinyint(1) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `action_undo`
+CREATE TABLE `action_undo` (
+  `undo_id` int(11) NOT NULL,
+  `entity_type` varchar(32) NOT NULL,
+  `entity_id` int(11) NOT NULL,
+  `action_key` varchar(64) NOT NULL,
+  `meta_json` longtext DEFAULT NULL,
+  `undo_until` datetime NOT NULL,
+  `used` tinyint(1) NOT NULL DEFAULT 0,
+  `used_at` datetime DEFAULT NULL,
+  `used_by` int(11) DEFAULT NULL,
+  `used_role` varchar(20) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table `location`
+CREATE TABLE `location` (
+  `location_id` int(11) NOT NULL,
+  `address` text DEFAULT NULL,
+  `district` varchar(100) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table `project_staff_requirements`
+CREATE TABLE `project_staff_requirements` (
+  `id` int(11) NOT NULL,
+  `project_id` int(11) NOT NULL,
+  `company_id` int(11) NOT NULL,
+  `specialty` varchar(100) NOT NULL,
+  `required_count` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table `st`
+CREATE TABLE `st` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `subject` varchar(255) DEFAULT NULL,
+  `message` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `Age` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Post-creates: indexes, auto-increment, and constraints
+ALTER TABLE `account_moderation_cases`
+  ADD PRIMARY KEY (`case_id`),
+  ADD KEY `admin_username` (`admin_username`),
+  ADD KEY `idx_target` (`target_id`,`target_type`),
+  ADD KEY `idx_action_type` (`action_type`),
+  ADD KEY `idx_created_at` (`created_at`),
+  ADD KEY `idx_status` (`status_after`);
+ALTER TABLE `account_moderation_log`
+  ADD PRIMARY KEY (`log_id`),
+  ADD KEY `idx_account_lookup` (`account_type`,`account_id`,`created_at`),
+  ADD KEY `idx_action_type` (`action_type`);
+ALTER TABLE `account_moderation_status`
+  ADD PRIMARY KEY (`status_id`),
+  ADD UNIQUE KEY `unique_account` (`account_id`,`account_type`),
+  ADD KEY `idx_status` (`account_status`),
+  ADD KEY `idx_suspended_until` (`suspended_until`),
+  ADD KEY `idx_account` (`account_id`,`account_type`);
+ALTER TABLE `activitylog`
+  ADD PRIMARY KEY (`activity_id`),
+  ADD KEY `idx_user` (`user_id`),
+  ADD KEY `idx_timestamp` (`timestamp`);
+ALTER TABLE `admin`
+  ADD PRIMARY KEY (`username`),
+  ADD UNIQUE KEY `email` (`email`);
+ALTER TABLE `adminalert`
+  ADD PRIMARY KEY (`alert_id`),
+  ADD KEY `idx_target_role` (`target_role`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_created_at` (`created_at`),
+  ADD KEY `created_by` (`created_by`);
+ALTER TABLE `admin_notifications`
+  ADD PRIMARY KEY (`notification_id`),
+  ADD KEY `idx_admin` (`admin_username`),
+  ADD KEY `idx_read` (`is_read`),
+  ADD KEY `idx_created` (`created_at`);
+ALTER TABLE `admin_override_history`
+  ADD PRIMARY KEY (`override_id`),
+  ADD KEY `idx_ad_overrides` (`ad_id`),
+  ADD KEY `idx_admin_actions` (`admin_username`),
+  ADD KEY `idx_timestamp` (`override_timestamp`);
+ALTER TABLE `adreport`
+  ADD PRIMARY KEY (`report_id`),
+  ADD KEY `idx_ad` (`ad_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_priority` (`priority`);
+ALTER TABLE `adrotationsettings`
+  ADD PRIMARY KEY (`setting_id`);
+ALTER TABLE `adschedule`
+  ADD PRIMARY KEY (`schedule_id`),
+  ADD KEY `idx_ad` (`ad_id`),
+  ADD KEY `idx_dates` (`start_date`,`end_date`);
+ALTER TABLE `advertisement`
+  ADD PRIMARY KEY (`ad_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_type` (`type`),
+  ADD KEY `idx_provider` (`provider_type`,`provider_id`),
+  ADD KEY `idx_submission` (`submission_date`),
+  ADD KEY `fk_ad_category` (`category_id`),
+  ADD KEY `fk_ad_admin_reviewer` (`admin_reviewed_by`);
+ALTER TABLE `ad_reports`
+  ADD PRIMARY KEY (`report_id`),
+  ADD KEY `resolved_by` (`resolved_by`),
+  ADD KEY `idx_ad` (`ad_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_severity` (`severity`),
+  ADD KEY `idx_reporter` (`reporter_id`,`reporter_type`),
+  ADD KEY `idx_assigned` (`assigned_to`),
+  ADD KEY `idx_created` (`created_at`);
+ALTER TABLE `ad_schedules`
+  ADD PRIMARY KEY (`schedule_id`),
+  ADD KEY `ad_id` (`ad_id`),
+  ADD KEY `idx_dates` (`start_date`,`end_date`);
+ALTER TABLE `ad_status_history`
+  ADD PRIMARY KEY (`history_id`),
+  ADD KEY `idx_ad_id` (`ad_id`),
+  ADD KEY `idx_date` (`created_at`);
+ALTER TABLE `billinghistory`
+  ADD PRIMARY KEY (`invoice_id`),
+  ADD KEY `idx_company_date` (`company_id`,`date`);
+ALTER TABLE `category`
+  ADD PRIMARY KEY (`category_id`),
+  ADD UNIQUE KEY `name` (`name`);
+ALTER TABLE `chatmessage`
+  ADD PRIMARY KEY (`session_id`),
+  ADD KEY `idx_user` (`user_id`),
+  ADD KEY `idx_repairer` (`repairer_id`);
+ALTER TABLE `company`
+  ADD PRIMARY KEY (`company_id`),
+  ADD UNIQUE KEY `registration_no` (`registration_no`),
+  ADD UNIQUE KEY `email` (`email`),
+  ADD KEY `idx_email` (`email`),
+  ADD KEY `fk_company_location` (`location_id`);
+ALTER TABLE `companyemployee`
+  ADD PRIMARY KEY (`employee_id`),
+  ADD KEY `repairer_id` (`repairer_id`),
+  ADD KEY `idx_company` (`company_id`),
+  ADD KEY `idx_specialty` (`specialty`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_rating` (`rating`);
+ALTER TABLE `companyjobpost`
+  ADD PRIMARY KEY (`posting_id`),
+  ADD KEY `idx_company` (`company_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_category` (`category`),
+  ADD KEY `idx_posted_date` (`posted_date`),
+  ADD KEY `idx_deadline` (`application_deadline`);
+ALTER TABLE `companyquotation`
+  ADD PRIMARY KEY (`quotation_id`),
+  ADD KEY `idx_request` (`request_id`),
+  ADD KEY `idx_user` (`user_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_budget_type` (`budget_type`),
+  ADD KEY `idx_payment_method` (`payment_method`),
+  ADD KEY `idx_pricing_type` (`pricing_type`),
+  ADD KEY `idx_company_quote` (`company_id`),
+  ADD KEY `idx_schedule_type` (`work_schedule_type`),
+  ADD KEY `idx_work_schedule` (`work_schedule_type`,`working_days_per_week`);
+ALTER TABLE `companysettings`
+  ADD PRIMARY KEY (`setting_id`),
+  ADD UNIQUE KEY `unique_company` (`company_id`);
+ALTER TABLE `company_employees`
+  ADD PRIMARY KEY (`employee_id`),
+  ADD UNIQUE KEY `unique_company_repairer` (`company_id`,`repairer_id`),
+  ADD KEY `repairer_id` (`repairer_id`);
+ALTER TABLE `company_jobpost`
+  ADD PRIMARY KEY (`posting_id`),
+  ADD KEY `company_id` (`company_id`);
+ALTER TABLE `company_subscriptions`
+  ADD PRIMARY KEY (`subscription_id`),
+  ADD KEY `idx_company` (`company_id`),
+  ADD KEY `idx_status` (`status`);
+ALTER TABLE `contract`
+  ADD PRIMARY KEY (`contract_id`),
+  ADD UNIQUE KEY `contract_number` (`contract_number`),
+  ADD KEY `idx_project` (`project_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_quotation_phase2` (`quotation_id`),
+  ADD KEY `idx_company_phase2` (`company_id`),
+  ADD KEY `idx_customer_phase2` (`customer_id`),
+  ADD KEY `idx_job_request_phase2` (`job_request_id`),
+  ADD KEY `idx_payment_status_phase2` (`payment_status`),
+  ADD KEY `idx_undo_deadline` (`undo_deadline`),
+  ADD KEY `idx_chat_active` (`chat_active`),
+  ADD KEY `idx_payment_method` (`payment_method`),
+  ADD KEY `idx_budget_type` (`budget_type`),
+  ADD KEY `fk_contract_escrow` (`escrow_account_id`);
+ALTER TABLE `contract_audit_log`
+  ADD PRIMARY KEY (`log_id`),
+  ADD KEY `performed_by` (`performed_by`),
+  ADD KEY `idx_contract_id` (`contract_id`),
+  ADD KEY `idx_milestone_id` (`milestone_id`),
+  ADD KEY `idx_action` (`action`),
+  ADD KEY `idx_created_at` (`created_at`);
+ALTER TABLE `contract_budget_adjustments`
+  ADD PRIMARY KEY (`adjustment_id`),
+  ADD KEY `idx_contract_status` (`contract_id`,`status`),
+  ADD KEY `idx_requester` (`requested_by`,`requester_id`),
+  ADD KEY `idx_status` (`status`);
+ALTER TABLE `contract_change_requests`
+  ADD PRIMARY KEY (`change_request_id`),
+  ADD KEY `idx_contract_status` (`contract_id`,`status`),
+  ADD KEY `idx_created_at` (`created_at`);
+ALTER TABLE `contract_chats`
+  ADD PRIMARY KEY (`chat_id`),
+  ADD KEY `idx_contract_sender` (`contract_id`,`sender_type`),
+  ADD KEY `idx_unread` (`is_read`,`created_at`),
+  ADD KEY `idx_created` (`created_at`);
+ALTER TABLE `contract_dispute`
+  ADD PRIMARY KEY (`dispute_id`),
+  ADD KEY `raised_by` (`raised_by`),
+  ADD KEY `resolved_by` (`resolved_by`),
+  ADD KEY `idx_contract_id` (`contract_id`),
+  ADD KEY `idx_milestone_id` (`milestone_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_created_at` (`created_at`);
+ALTER TABLE `contract_document`
+  ADD PRIMARY KEY (`document_id`),
+  ADD KEY `uploaded_by` (`uploaded_by`),
+  ADD KEY `idx_contract_id` (`contract_id`),
+  ADD KEY `idx_milestone_id` (`milestone_id`),
+  ADD KEY `idx_document_type` (`document_type`);
+ALTER TABLE `contract_draft`
+  ADD PRIMARY KEY (`draft_id`),
+  ADD KEY `idx_company` (`company_id`),
+  ADD KEY `idx_quotation` (`quotation_id`);
+ALTER TABLE `contract_invoices`
+  ADD PRIMARY KEY (`invoice_id`),
+  ADD UNIQUE KEY `invoice_number` (`invoice_number`),
+  ADD KEY `milestone_id` (`milestone_id`),
+  ADD KEY `idx_contract_status` (`contract_id`,`payment_status`),
+  ADD KEY `idx_invoice_number` (`invoice_number`),
+  ADD KEY `idx_due_date` (`due_date`,`payment_status`),
+  ADD KEY `idx_type` (`invoice_type`);
+ALTER TABLE `contract_milestone`
+  ADD PRIMARY KEY (`milestone_id`),
+  ADD KEY `reviewed_by` (`reviewed_by`),
+  ADD KEY `idx_contract_id` (`contract_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_due_date` (`due_date`);
+ALTER TABLE `contract_notifications`
+  ADD PRIMARY KEY (`notification_id`),
+  ADD KEY `contract_id` (`contract_id`),
+  ADD KEY `idx_recipient` (`recipient_type`,`recipient_id`,`is_read`),
+  ADD KEY `idx_type` (`notification_type`),
+  ADD KEY `idx_priority` (`priority`,`is_read`),
+  ADD KEY `idx_created` (`created_at`);
+ALTER TABLE `contract_payment_history`
+  ADD PRIMARY KEY (`payment_id`),
+  ADD KEY `paid_by` (`paid_by`),
+  ADD KEY `paid_to` (`paid_to`),
+  ADD KEY `idx_contract_id` (`contract_id`),
+  ADD KEY `idx_milestone_id` (`milestone_id`),
+  ADD KEY `idx_payment_type` (`payment_type`),
+  ADD KEY `idx_status` (`status`);
+ALTER TABLE `contract_timeline`
+  ADD PRIMARY KEY (`timeline_id`),
+  ADD KEY `idx_contract_time` (`contract_id`,`created_at`),
+  ADD KEY `idx_event_type` (`event_type`),
+  ADD KEY `idx_actor` (`actor_type`,`actor_id`);
+ALTER TABLE `contract_time_logs`
+  ADD PRIMARY KEY (`log_id`),
+  ADD KEY `idx_contract_date` (`contract_id`,`work_date`),
+  ADD KEY `idx_approval` (`customer_approved`),
+  ADD KEY `idx_invoice` (`invoice_id`);
+ALTER TABLE `directjobrequest`
+  ADD PRIMARY KEY (`request_id`),
+  ADD KEY `idx_djr_user` (`user_id`),
+  ADD KEY `idx_djr_category` (`category_id`),
+  ADD KEY `idx_djr_provider` (`provider_id`,`provider_type`),
+  ADD KEY `idx_djr_status` (`status`),
+  ADD KEY `idx_djr_created` (`date_created`);
+ALTER TABLE `directrequestquotes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_drq_user` (`user_id`),
+  ADD KEY `idx_drq_request` (`request_id`),
+  ADD KEY `idx_drq_provider` (`provider_id`,`provider_type`);
+ALTER TABLE `escrow_accounts`
+  ADD PRIMARY KEY (`escrow_id`),
+  ADD UNIQUE KEY `contract_id` (`contract_id`),
+  ADD UNIQUE KEY `account_number` (`account_number`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_account_number` (`account_number`);
+ALTER TABLE `escrow_transaction`
+  ADD PRIMARY KEY (`transaction_id`),
+  ADD KEY `idx_wallet` (`wallet_id`),
+  ADD KEY `idx_contract` (`related_contract_id`);
+ALTER TABLE `escrow_wallet`
+  ADD PRIMARY KEY (`wallet_id`),
+  ADD UNIQUE KEY `user_id` (`user_id`),
+  ADD UNIQUE KEY `company_id` (`company_id`);
+ALTER TABLE `feedback`
+  ADD PRIMARY KEY (`feedback_id`),
+  ADD KEY `given_by` (`given_by`),
+  ADD KEY `idx_project` (`project_id`);
+ALTER TABLE `financialreport`
+  ADD PRIMARY KEY (`report_id`),
+  ADD UNIQUE KEY `month` (`month`),
+  ADD KEY `idx_month` (`month`),
+  ADD KEY `generated_by` (`generated_by`);
+ALTER TABLE `financialreporttransaction`
+  ADD PRIMARY KEY (`transaction_id`),
+  ADD KEY `idx_report` (`report_id`),
+  ADD KEY `idx_type` (`transaction_type`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_date` (`transaction_date`);
+ALTER TABLE `freelancer_assignments`
+  ADD PRIMARY KEY (`assignment_id`),
+  ADD KEY `company_id` (`company_id`),
+  ADD KEY `repairer_id` (`repairer_id`),
+  ADD KEY `project_id` (`project_id`),
+  ADD KEY `contract_id` (`contract_id`);
+ALTER TABLE `issuenotification`
+  ADD PRIMARY KEY (`notification_id`),
+  ADD KEY `idx_issue` (`issue_id`),
+  ADD KEY `idx_recipient` (`recipient_type`,`recipient_id`),
+  ADD KEY `idx_read` (`is_read`);
+ALTER TABLE `issuereport`
+  ADD PRIMARY KEY (`issue_id`),
+  ADD KEY `idx_reporter` (`reportedBy_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_priority` (`priority`);
+ALTER TABLE `issuestatushistory`
+  ADD PRIMARY KEY (`history_id`),
+  ADD KEY `idx_issue` (`issue_id`),
+  ADD KEY `idx_date` (`changed_at`);
+ALTER TABLE `job`
+  ADD PRIMARY KEY (`job_id`),
+  ADD KEY `job_request_id` (`job_request_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_fixer` (`fixer_id`);
+ALTER TABLE `jobrequest`
+  ADD PRIMARY KEY (`request_id`),
+  ADD KEY `category_id` (`category_id`),
+  ADD KEY `idx_user` (`user_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_created` (`dateCreated`),
+  ADD KEY `idx_district` (`district`),
+  ADD KEY `fk_jobrequest_location` (`location_id`);
+ALTER TABLE `job_collaboration`
+  ADD PRIMARY KEY (`collaboration_id`),
+  ADD UNIQUE KEY `uniq_request_type` (`request_id`,`request_type`),
+  ADD KEY `idx_user` (`user_id`),
+  ADD KEY `idx_provider` (`provider_id`,`provider_role`),
+  ADD KEY `idx_phase` (`current_phase`),
+  ADD KEY `idx_quote_lookup` (`quote_id`,`quote_source`);
+ALTER TABLE `job_collaboration_event`
+  ADD PRIMARY KEY (`event_id`),
+  ADD KEY `idx_collab_created` (`collaboration_id`,`created_at`),
+  ADD KEY `idx_actor` (`actor_id`,`actor_role`);
+ALTER TABLE `job_collaboration_rating`
+  ADD PRIMARY KEY (`rating_id`),
+  ADD UNIQUE KEY `uniq_collab_reviewer` (`collaboration_id`,`reviewer_id`,`reviewer_role`),
+  ADD KEY `idx_target` (`target_id`,`target_role`);
+ALTER TABLE `location`
+  ADD PRIMARY KEY (`location_id`);
+ALTER TABLE `milestone`
+  ADD PRIMARY KEY (`milestone_id`),
+  ADD KEY `idx_contract` (`contract_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_workflow` (`customer_approved`,`work_started`,`work_completed`,`customer_verified`);
+ALTER TABLE `milestonepayment`
+  ADD PRIMARY KEY (`payment_id`),
+  ADD KEY `idx_milestone` (`milestone_id`),
+  ADD KEY `idx_status` (`status`);
+ALTER TABLE `moderator`
+  ADD PRIMARY KEY (`moderator_id`),
+  ADD UNIQUE KEY `username` (`username`),
+  ADD UNIQUE KEY `email` (`email`),
+  ADD KEY `idx_moderator_status` (`status`),
+  ADD KEY `idx_moderator_deleted` (`deleted_at`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_username` (`username`);
+ALTER TABLE `moderatormsg`
+  ADD PRIMARY KEY (`msg_id`),
+  ADD KEY `idx_repairer` (`repairer_id`),
+  ADD KEY `idx_status` (`status`);
+ALTER TABLE `moderator_activity`
+  ADD PRIMARY KEY (`activity_id`),
+  ADD KEY `idx_moderator` (`moderator_id`),
+  ADD KEY `idx_type` (`activity_type`),
+  ADD KEY `idx_created` (`created_at`);
+ALTER TABLE `moderator_management_log`
+  ADD PRIMARY KEY (`log_id`),
+  ADD KEY `idx_admin` (`admin_username`),
+  ADD KEY `idx_moderator` (`moderator_id`),
+  ADD KEY `idx_action` (`action`),
+  ADD KEY `idx_date` (`created_at`);
+ALTER TABLE `notification`
+  ADD PRIMARY KEY (`notification_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_recipient` (`recipient_type`),
+  ADD KEY `idx_send_date` (`send_date`);
+ALTER TABLE `payment`
+  ADD PRIMARY KEY (`payment_id`),
+  ADD KEY `idx_job_request` (`job_request_id`),
+  ADD KEY `idx_status` (`status`);
+ALTER TABLE `payment_methods`
+  ADD PRIMARY KEY (`payment_method_id`),
+  ADD KEY `idx_company` (`company_id`),
+  ADD KEY `idx_primary` (`is_primary`),
+  ADD KEY `idx_active` (`is_active`);
+ALTER TABLE `placement_limits`
+  ADD PRIMARY KEY (`placement_type`);
+ALTER TABLE `project`
+  ADD PRIMARY KEY (`project_id`),
+  ADD KEY `idx_company` (`company_id`),
+  ADD KEY `idx_customer` (`customer_id`),
+  ADD KEY `idx_status` (`status`);
+ALTER TABLE `promotion`
+  ADD PRIMARY KEY (`promotion_id`),
+  ADD KEY `idx_repairer` (`repairer_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_dates` (`start_date`,`end_date`);
+ALTER TABLE `quote_negotiation`
+  ADD PRIMARY KEY (`negotiation_id`),
+  ADD KEY `idx_quote` (`quote_id`,`quote_source`),
+  ADD KEY `idx_request` (`request_id`,`request_type`),
+  ADD KEY `idx_sender` (`sender_id`,`sender_role`),
+  ADD KEY `idx_receiver` (`receiver_id`,`receiver_role`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_created` (`created_at`);
+ALTER TABLE `repairer`
+  ADD PRIMARY KEY (`repairer_id`),
+  ADD UNIQUE KEY `email` (`email`),
+  ADD KEY `category_id` (`category_id`),
+  ADD KEY `idx_email` (`email`),
+  ADD KEY `idx_ratings` (`ratings`),
+  ADD KEY `idx_account_status` (`account_status`),
+  ADD KEY `idx_suspended_until` (`suspended_until`);
+ALTER TABLE `repairerapplication`
+  ADD PRIMARY KEY (`app_id`),
+  ADD KEY `idx_repairer` (`repairer_id`),
+  ADD KEY `idx_posting` (`posting_id`),
+  ADD KEY `idx_status` (`app_status`);
+ALTER TABLE `repairerassignment`
+  ADD PRIMARY KEY (`assignment_id`),
+  ADD KEY `idx_project` (`project_id`),
+  ADD KEY `idx_repairer` (`repairer_id`);
+ALTER TABLE `repairerquote`
+  ADD PRIMARY KEY (`quote_id`),
+  ADD KEY `idx_request` (`request_id`),
+  ADD KEY `idx_repairer` (`repairer_id`),
+  ADD KEY `idx_status` (`status`);
+ALTER TABLE `repairer_applications`
+  ADD PRIMARY KEY (`application_id`),
+  ADD KEY `job_posting_id` (`job_posting_id`),
+  ADD KEY `repairer_id` (`repairer_id`);
+ALTER TABLE `report`
+  ADD PRIMARY KEY (`report_id`),
+  ADD KEY `idx_status` (`status`);
+ALTER TABLE `review`
+  ADD PRIMARY KEY (`review_id`),
+  ADD KEY `idx_job` (`job_id`),
+  ADD KEY `idx_provider` (`service_provider_id`);
+ALTER TABLE `service_area`
+  ADD PRIMARY KEY (`area_id`),
+  ADD KEY `idx_owner` (`owner_id`,`owner_type`);
+ALTER TABLE `staffsummary`
+  ADD PRIMARY KEY (`staff_summary_id`),
+  ADD UNIQUE KEY `unique_company_specialty` (`company_id`,`specialty`),
+  ADD KEY `idx_company` (`company_id`),
+  ADD KEY `idx_specialty` (`specialty`);
+ALTER TABLE `staticcontent`
+  ADD PRIMARY KEY (`content_id`),
+  ADD KEY `idx_type` (`content_type`),
+  ADD KEY `idx_status` (`status`);
+ALTER TABLE `supportticket`
+  ADD PRIMARY KEY (`ticket_id`),
+  ADD KEY `idx_user` (`user_id`,`user_type`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_project` (`project_id`);
+ALTER TABLE `support_attachments`
+  ADD PRIMARY KEY (`attachment_id`),
+  ADD KEY `idx_ticket` (`ticket_id`);
+ALTER TABLE `support_categories`
+  ADD PRIMARY KEY (`category_id`),
+  ADD UNIQUE KEY `category_slug` (`category_slug`);
+ALTER TABLE `support_responses`
+  ADD PRIMARY KEY (`response_id`),
+  ADD KEY `idx_ticket` (`ticket_id`),
+  ADD KEY `idx_created` (`created_at`);
+ALTER TABLE `support_tickets`
+  ADD PRIMARY KEY (`ticket_id`),
+  ADD UNIQUE KEY `ticket_number` (`ticket_number`),
+  ADD KEY `idx_user` (`user_type`,`user_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_priority` (`priority`),
+  ADD KEY `idx_created` (`created_at`);
+ALTER TABLE `system_activity_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_created` (`created_at`),
+  ADD KEY `idx_user` (`user_id`),
+  ADD KEY `idx_type` (`activity_type`);
+ALTER TABLE `system_audit_log`
+  ADD PRIMARY KEY (`audit_id`),
+  ADD KEY `idx_audit_actor_time` (`actor_user_id`,`occurred_at`),
+  ADD KEY `idx_audit_action_time` (`action`,`occurred_at`),
+  ADD KEY `idx_audit_entity` (`entity_type`,`entity_id`),
+  ADD KEY `idx_audit_request` (`request_id`);
+ALTER TABLE `ticketmessage`
+  ADD PRIMARY KEY (`message_id`),
+  ADD KEY `idx_ticket` (`ticket_id`);
+ALTER TABLE `user`
+  ADD PRIMARY KEY (`user_id`),
+  ADD UNIQUE KEY `email` (`email`);
+ALTER TABLE `user_sessions`
+  ADD PRIMARY KEY (`session_id`),
+  ADD KEY `idx_user` (`user_id`,`user_role`),
+  ADD KEY `idx_last_activity` (`last_activity`);
+ALTER TABLE `account_moderation_cases`
+  MODIFY `case_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+ALTER TABLE `account_moderation_log`
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+ALTER TABLE `account_moderation_status`
+  MODIFY `status_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+ALTER TABLE `activitylog`
+  MODIFY `activity_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `adminalert`
+  MODIFY `alert_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+ALTER TABLE `admin_notifications`
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+ALTER TABLE `admin_override_history`
+  MODIFY `override_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `adreport`
+  MODIFY `report_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `adrotationsettings`
+  MODIFY `setting_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `adschedule`
+  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+ALTER TABLE `advertisement`
+  MODIFY `ad_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+ALTER TABLE `ad_reports`
+  MODIFY `report_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+ALTER TABLE `ad_schedules`
+  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+ALTER TABLE `ad_status_history`
+  MODIFY `history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+ALTER TABLE `category`
+  MODIFY `category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+ALTER TABLE `chatmessage`
+  MODIFY `session_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `company`
+  MODIFY `company_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10000;
+ALTER TABLE `companyemployee`
+  MODIFY `employee_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `companyjobpost`
+  MODIFY `posting_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `companyquotation`
+  MODIFY `quotation_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
+ALTER TABLE `companysettings`
+  MODIFY `setting_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `company_employees`
+  MODIFY `employee_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+ALTER TABLE `company_jobpost`
+  MODIFY `posting_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+ALTER TABLE `company_subscriptions`
+  MODIFY `subscription_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `contract`
+  MODIFY `contract_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+ALTER TABLE `contract_audit_log`
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+ALTER TABLE `contract_budget_adjustments`
+  MODIFY `adjustment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+ALTER TABLE `contract_change_requests`
+  MODIFY `change_request_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+ALTER TABLE `contract_chats`
+  MODIFY `chat_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+ALTER TABLE `contract_dispute`
+  MODIFY `dispute_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `contract_document`
+  MODIFY `document_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `contract_draft`
+  MODIFY `draft_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `contract_invoices`
+  MODIFY `invoice_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+ALTER TABLE `contract_milestone`
+  MODIFY `milestone_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
+ALTER TABLE `contract_notifications`
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+ALTER TABLE `contract_payment_history`
+  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+ALTER TABLE `contract_timeline`
+  MODIFY `timeline_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+ALTER TABLE `contract_time_logs`
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `directjobrequest`
+  MODIFY `request_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+ALTER TABLE `directrequestquotes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `escrow_accounts`
+  MODIFY `escrow_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+ALTER TABLE `escrow_transaction`
+  MODIFY `transaction_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+ALTER TABLE `escrow_wallet`
+  MODIFY `wallet_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+ALTER TABLE `feedback`
+  MODIFY `feedback_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `financialreport`
+  MODIFY `report_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+ALTER TABLE `financialreporttransaction`
+  MODIFY `transaction_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+ALTER TABLE `freelancer_assignments`
+  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `issuenotification`
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `issuereport`
+  MODIFY `issue_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+ALTER TABLE `issuestatushistory`
+  MODIFY `history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+ALTER TABLE `job`
+  MODIFY `job_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `jobrequest`
+  MODIFY `request_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+ALTER TABLE `job_collaboration`
+  MODIFY `collaboration_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+ALTER TABLE `job_collaboration_event`
+  MODIFY `event_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
+ALTER TABLE `job_collaboration_rating`
+  MODIFY `rating_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `location`
+  MODIFY `location_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+ALTER TABLE `milestone`
+  MODIFY `milestone_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `milestonepayment`
+  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+ALTER TABLE `moderator`
+  MODIFY `moderator_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+ALTER TABLE `moderatormsg`
+  MODIFY `msg_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `moderator_activity`
+  MODIFY `activity_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
+ALTER TABLE `moderator_management_log`
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+ALTER TABLE `notification`
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+ALTER TABLE `payment`
+  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+ALTER TABLE `payment_methods`
+  MODIFY `payment_method_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `project`
+  MODIFY `project_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+ALTER TABLE `promotion`
+  MODIFY `promotion_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `quote_negotiation`
+  MODIFY `negotiation_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+ALTER TABLE `repairer`
+  MODIFY `repairer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=112;
+ALTER TABLE `repairerapplication`
+  MODIFY `app_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `repairerassignment`
+  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `repairerquote`
+  MODIFY `quote_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+ALTER TABLE `repairer_applications`
+  MODIFY `application_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+ALTER TABLE `report`
+  MODIFY `report_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `review`
+  MODIFY `review_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `service_area`
+  MODIFY `area_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+ALTER TABLE `staffsummary`
+  MODIFY `staff_summary_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+ALTER TABLE `staticcontent`
+  MODIFY `content_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+ALTER TABLE `supportticket`
+  MODIFY `ticket_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `support_attachments`
+  MODIFY `attachment_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `support_categories`
+  MODIFY `category_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `support_responses`
+  MODIFY `response_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `support_tickets`
+  MODIFY `ticket_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `system_activity_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+ALTER TABLE `system_audit_log`
+  MODIFY `audit_id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1005;
+ALTER TABLE `ticketmessage`
+  MODIFY `message_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `user`
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9999;
+ALTER TABLE `adminalert`
+  ADD CONSTRAINT `adminalert_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `admin` (`username`) ON DELETE CASCADE;
+ALTER TABLE `admin_override_history`
+  ADD CONSTRAINT `admin_override_history_ibfk_1` FOREIGN KEY (`ad_id`) REFERENCES `advertisement` (`ad_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `admin_override_history_ibfk_2` FOREIGN KEY (`admin_username`) REFERENCES `admin` (`username`) ON DELETE CASCADE;
+ALTER TABLE `adreport`
+  ADD CONSTRAINT `adreport_ibfk_1` FOREIGN KEY (`ad_id`) REFERENCES `advertisement` (`ad_id`) ON DELETE CASCADE;
+ALTER TABLE `adschedule`
+  ADD CONSTRAINT `adschedule_ibfk_1` FOREIGN KEY (`ad_id`) REFERENCES `advertisement` (`ad_id`) ON DELETE CASCADE;
+ALTER TABLE `advertisement`
+  ADD CONSTRAINT `fk_ad_admin_reviewer` FOREIGN KEY (`admin_reviewed_by`) REFERENCES `admin` (`username`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_ad_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `ad_reports`
+  ADD CONSTRAINT `ad_reports_ibfk_1` FOREIGN KEY (`ad_id`) REFERENCES `advertisement` (`ad_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `ad_reports_ibfk_2` FOREIGN KEY (`assigned_to`) REFERENCES `moderator` (`moderator_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `ad_reports_ibfk_3` FOREIGN KEY (`resolved_by`) REFERENCES `moderator` (`moderator_id`) ON DELETE SET NULL;
+ALTER TABLE `ad_schedules`
+  ADD CONSTRAINT `ad_schedules_ibfk_1` FOREIGN KEY (`ad_id`) REFERENCES `advertisement` (`ad_id`) ON DELETE CASCADE;
+ALTER TABLE `ad_status_history`
+  ADD CONSTRAINT `ad_status_history_ibfk_1` FOREIGN KEY (`ad_id`) REFERENCES `advertisement` (`ad_id`) ON DELETE CASCADE;
+ALTER TABLE `billinghistory`
+  ADD CONSTRAINT `billinghistory_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE;
+ALTER TABLE `chatmessage`
+  ADD CONSTRAINT `chatmessage_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `chatmessage_ibfk_2` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE;
+ALTER TABLE `company`
+  ADD CONSTRAINT `fk_company_location` FOREIGN KEY (`location_id`) REFERENCES `location` (`location_id`) ON DELETE SET NULL;
+ALTER TABLE `companyemployee`
+  ADD CONSTRAINT `companyemployee_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `companyemployee_ibfk_2` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE SET NULL;
+ALTER TABLE `companyjobpost`
+  ADD CONSTRAINT `companyjobpost_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE;
+ALTER TABLE `companyquotation`
+  ADD CONSTRAINT `companyquotation_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `companyquotation_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `companyquotation_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE;
+ALTER TABLE `companysettings`
+  ADD CONSTRAINT `companysettings_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE;
+ALTER TABLE `company_employees`
+  ADD CONSTRAINT `company_employees_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `company_employees_ibfk_2` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE;
+ALTER TABLE `company_jobpost`
+  ADD CONSTRAINT `company_jobpost_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE;
+ALTER TABLE `company_subscriptions`
+  ADD CONSTRAINT `company_subscriptions_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE;
+ALTER TABLE `contract`
+  ADD CONSTRAINT `contract_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_contract_escrow` FOREIGN KEY (`escrow_account_id`) REFERENCES `escrow_accounts` (`escrow_id`) ON DELETE SET NULL;
+ALTER TABLE `contract_audit_log`
+  ADD CONSTRAINT `contract_audit_log_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `contract_audit_log_ibfk_2` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `contract_audit_log_ibfk_3` FOREIGN KEY (`performed_by`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
+ALTER TABLE `contract_budget_adjustments`
+  ADD CONSTRAINT `contract_budget_adjustments_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE;
+ALTER TABLE `contract_change_requests`
+  ADD CONSTRAINT `fk_ccr_contract` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE;
+ALTER TABLE `contract_chats`
+  ADD CONSTRAINT `contract_chats_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE;
+ALTER TABLE `contract_dispute`
+  ADD CONSTRAINT `contract_dispute_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `contract_dispute_ibfk_2` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `contract_dispute_ibfk_3` FOREIGN KEY (`raised_by`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `contract_dispute_ibfk_4` FOREIGN KEY (`resolved_by`) REFERENCES `user` (`user_id`) ON DELETE SET NULL;
+ALTER TABLE `contract_document`
+  ADD CONSTRAINT `contract_document_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `contract_document_ibfk_2` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `contract_document_ibfk_3` FOREIGN KEY (`uploaded_by`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
+ALTER TABLE `contract_invoices`
+  ADD CONSTRAINT `contract_invoices_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `contract_invoices_ibfk_2` FOREIGN KEY (`milestone_id`) REFERENCES `milestone` (`milestone_id`) ON DELETE SET NULL;
+ALTER TABLE `contract_milestone`
+  ADD CONSTRAINT `contract_milestone_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `contract_milestone_ibfk_2` FOREIGN KEY (`reviewed_by`) REFERENCES `user` (`user_id`) ON DELETE SET NULL;
+ALTER TABLE `contract_notifications`
+  ADD CONSTRAINT `contract_notifications_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE;
+ALTER TABLE `contract_payment_history`
+  ADD CONSTRAINT `contract_payment_history_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `contract_payment_history_ibfk_2` FOREIGN KEY (`milestone_id`) REFERENCES `contract_milestone` (`milestone_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `contract_payment_history_ibfk_3` FOREIGN KEY (`paid_by`) REFERENCES `user` (`user_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `contract_payment_history_ibfk_4` FOREIGN KEY (`paid_to`) REFERENCES `user` (`user_id`) ON DELETE SET NULL;
+ALTER TABLE `contract_timeline`
+  ADD CONSTRAINT `contract_timeline_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE;
+ALTER TABLE `contract_time_logs`
+  ADD CONSTRAINT `contract_time_logs_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_timelog_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `contract_invoices` (`invoice_id`) ON DELETE SET NULL;
+ALTER TABLE `directjobrequest`
+  ADD CONSTRAINT `directjobrequest_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `directjobrequest_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`);
+ALTER TABLE `directrequestquotes`
+  ADD CONSTRAINT `directrequestquotes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `directrequestquotes_ibfk_2` FOREIGN KEY (`request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE;
+ALTER TABLE `escrow_accounts`
+  ADD CONSTRAINT `escrow_accounts_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE;
+ALTER TABLE `escrow_transaction`
+  ADD CONSTRAINT `escrow_txn_wallet_fk` FOREIGN KEY (`wallet_id`) REFERENCES `escrow_wallet` (`wallet_id`) ON DELETE CASCADE;
+ALTER TABLE `escrow_wallet`
+  ADD CONSTRAINT `escrow_wallet_company_fk` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`),
+  ADD CONSTRAINT `escrow_wallet_user_fk` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`);
+ALTER TABLE `feedback`
+  ADD CONSTRAINT `feedback_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `feedback_ibfk_2` FOREIGN KEY (`given_by`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
+ALTER TABLE `financialreport`
+  ADD CONSTRAINT `financialreport_ibfk_1` FOREIGN KEY (`generated_by`) REFERENCES `moderator` (`moderator_id`) ON DELETE SET NULL;
+ALTER TABLE `financialreporttransaction`
+  ADD CONSTRAINT `financialreporttransaction_ibfk_1` FOREIGN KEY (`report_id`) REFERENCES `financialreport` (`report_id`) ON DELETE CASCADE;
+ALTER TABLE `freelancer_assignments`
+  ADD CONSTRAINT `freelancer_assignments_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `freelancer_assignments_ibfk_2` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `freelancer_assignments_ibfk_3` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `freelancer_assignments_ibfk_4` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE SET NULL;
+ALTER TABLE `issuenotification`
+  ADD CONSTRAINT `issuenotification_ibfk_1` FOREIGN KEY (`issue_id`) REFERENCES `issuereport` (`issue_id`) ON DELETE CASCADE;
+ALTER TABLE `issuereport`
+  ADD CONSTRAINT `issuereport_ibfk_1` FOREIGN KEY (`reportedBy_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
+ALTER TABLE `issuestatushistory`
+  ADD CONSTRAINT `issuestatushistory_ibfk_1` FOREIGN KEY (`issue_id`) REFERENCES `issuereport` (`issue_id`) ON DELETE CASCADE;
+ALTER TABLE `job`
+  ADD CONSTRAINT `job_ibfk_1` FOREIGN KEY (`job_request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `job_ibfk_2` FOREIGN KEY (`fixer_id`) REFERENCES `repairer` (`repairer_id`);
+ALTER TABLE `jobrequest`
+  ADD CONSTRAINT `fk_jobrequest_location` FOREIGN KEY (`location_id`) REFERENCES `location` (`location_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `jobrequest_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `jobrequest_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`);
+ALTER TABLE `job_collaboration`
+  ADD CONSTRAINT `job_collaboration_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
+ALTER TABLE `job_collaboration_event`
+  ADD CONSTRAINT `job_collaboration_event_ibfk_1` FOREIGN KEY (`collaboration_id`) REFERENCES `job_collaboration` (`collaboration_id`) ON DELETE CASCADE;
+ALTER TABLE `job_collaboration_rating`
+  ADD CONSTRAINT `job_collaboration_rating_ibfk_1` FOREIGN KEY (`collaboration_id`) REFERENCES `job_collaboration` (`collaboration_id`) ON DELETE CASCADE;
+ALTER TABLE `milestone`
+  ADD CONSTRAINT `milestone_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `contract` (`contract_id`) ON DELETE CASCADE;
+ALTER TABLE `milestonepayment`
+  ADD CONSTRAINT `milestonepayment_ibfk_1` FOREIGN KEY (`milestone_id`) REFERENCES `milestone` (`milestone_id`) ON DELETE CASCADE;
+ALTER TABLE `moderatormsg`
+  ADD CONSTRAINT `moderatormsg_ibfk_1` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE;
+ALTER TABLE `payment`
+  ADD CONSTRAINT `payment_ibfk_1` FOREIGN KEY (`job_request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE;
+ALTER TABLE `payment_methods`
+  ADD CONSTRAINT `payment_methods_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE;
+ALTER TABLE `project`
+  ADD CONSTRAINT `project_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `project_ibfk_2` FOREIGN KEY (`customer_id`) REFERENCES `user` (`user_id`);
+ALTER TABLE `promotion`
+  ADD CONSTRAINT `promotion_ibfk_1` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE;
+ALTER TABLE `repairer`
+  ADD CONSTRAINT `repairer_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE SET NULL;
+ALTER TABLE `repairerapplication`
+  ADD CONSTRAINT `repairerapplication_ibfk_1` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `repairerapplication_ibfk_2` FOREIGN KEY (`posting_id`) REFERENCES `companyjobpost` (`posting_id`) ON DELETE CASCADE;
+ALTER TABLE `repairerassignment`
+  ADD CONSTRAINT `repairerassignment_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `repairerassignment_ibfk_2` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE;
+ALTER TABLE `repairerquote`
+  ADD CONSTRAINT `repairerquote_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `jobrequest` (`request_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `repairerquote_ibfk_2` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE;
+ALTER TABLE `repairer_applications`
+  ADD CONSTRAINT `repairer_applications_ibfk_2` FOREIGN KEY (`repairer_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE;
+ALTER TABLE `review`
+  ADD CONSTRAINT `review_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `job` (`job_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `review_ibfk_2` FOREIGN KEY (`service_provider_id`) REFERENCES `repairer` (`repairer_id`) ON DELETE CASCADE;
+ALTER TABLE `staffsummary`
+  ADD CONSTRAINT `staffsummary_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE;
+ALTER TABLE `supportticket`
+  ADD CONSTRAINT `supportticket_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE SET NULL;
+ALTER TABLE `support_attachments`
+  ADD CONSTRAINT `support_attachments_ibfk_1` FOREIGN KEY (`ticket_id`) REFERENCES `support_tickets` (`ticket_id`) ON DELETE CASCADE;
+ALTER TABLE `support_responses`
+  ADD CONSTRAINT `support_responses_ibfk_1` FOREIGN KEY (`ticket_id`) REFERENCES `support_tickets` (`ticket_id`) ON DELETE CASCADE;
+ALTER TABLE `ticketmessage`
+  ADD CONSTRAINT `ticketmessage_ibfk_1` FOREIGN KEY (`ticket_id`) REFERENCES `supportticket` (`ticket_id`) ON DELETE CASCADE;
+ALTER TABLE `action_undo`
+  ADD PRIMARY KEY (`undo_id`),
+  ADD KEY `idx_entity_action` (`entity_type`,`entity_id`,`action_key`),
+  ADD KEY `idx_undo_until` (`undo_until`),
+  ADD KEY `idx_used` (`used`,`undo_until`);
+ALTER TABLE `project_staff_requirements`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_project_specialty` (`project_id`,`specialty`),
+  ADD KEY `idx_company_specialty` (`company_id`,`specialty`);
+ALTER TABLE `st`
+  ADD PRIMARY KEY (`id`);
+ALTER TABLE `action_undo`
+  MODIFY `undo_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `advertisement`
+  MODIFY `ad_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+ALTER TABLE `company`
+  MODIFY `company_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9999;
+ALTER TABLE `companyquotation`
+  MODIFY `quotation_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
+ALTER TABLE `contract`
+  MODIFY `contract_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+ALTER TABLE `contract_audit_log`
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+ALTER TABLE `contract_change_requests`
+  MODIFY `change_request_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+ALTER TABLE `contract_chats`
+  MODIFY `chat_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+ALTER TABLE `contract_milestone`
+  MODIFY `milestone_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+ALTER TABLE `directjobrequest`
+  MODIFY `request_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `directrequestquotes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `jobrequest`
+  MODIFY `request_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
+ALTER TABLE `location`
+  MODIFY `location_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+ALTER TABLE `notification`
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
+ALTER TABLE `project`
+  MODIFY `project_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+ALTER TABLE `project_staff_requirements`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `repairer`
+  MODIFY `repairer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=111;
+ALTER TABLE `repairerquote`
+  MODIFY `quote_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+ALTER TABLE `service_area`
+  MODIFY `area_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+ALTER TABLE `st`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+ALTER TABLE `system_audit_log`
+  MODIFY `audit_id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1964;
+ALTER TABLE `user`
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9998;
+ALTER TABLE `project_staff_requirements`
+  ADD CONSTRAINT `fk_psr_company` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_psr_project` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE CASCADE;
+ALTER TABLE `contract_milestone` ADD COLUMN `actual_unit_rate` decimal(12,2) DEFAULT NULL COMMENT 'Actual unit rate submitted by company (e.g., material price variation)';
+ALTER TABLE `contract_milestone` ADD COLUMN `is_non_paying` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 if this milestone is non-paying (inspection / no measurable units)';
+ALTER TABLE `contract_milestone` ADD COLUMN `actual_labor_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Actual labour units submitted by company';
+ALTER TABLE `contract_milestone` ADD COLUMN `actual_material_quantity` decimal(10,2) DEFAULT NULL COMMENT 'Actual material units submitted by company';
+ALTER TABLE `contract_milestone` ADD COLUMN `actual_material_unit_rate` decimal(12,2) DEFAULT NULL COMMENT 'Actual material unit rate submitted by company (optional variation)';
+ALTER TABLE `contract_milestone` ADD COLUMN `actual_extra_amount` decimal(12,2) DEFAULT NULL COMMENT 'Additional amount outside labour/material for this milestone';
+
+SET FOREIGN_KEY_CHECKS=1;
