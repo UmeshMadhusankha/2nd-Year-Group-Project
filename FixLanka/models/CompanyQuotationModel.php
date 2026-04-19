@@ -24,6 +24,7 @@ class CompanyQuotation
     private const STATUS_ACCEPTED = 'accepted';
     private const STATUS_REJECTED = 'rejected';
     private const STATUS_SUCCESSFUL = 'successful';
+    private const STATUS_COMPLETED = 'completed';
 
     /**
      * Constructor - Initialize model with database connection
@@ -375,11 +376,11 @@ class CompanyQuotation
     /**
      * Update the status of a quotation
      * 
-     * Changes the status of a quotation (e.g., from pending to accepted).
+    * Changes the status of a quotation (e.g., from pending to accepted).
      * Validates that the new status is one of the allowed values.
      * 
      * @param int $quotationId The ID of the quotation to update
-     * @param string $status New status (pending, accepted, rejected, successful)
+    * @param string $status New status (pending, accepted, rejected, successful, completed)
      * @return bool True if status update successful, false otherwise
      */
     public function updateStatus($quotationId, $status)
@@ -390,7 +391,8 @@ class CompanyQuotation
                 self::STATUS_PENDING,
                 self::STATUS_ACCEPTED,
                 self::STATUS_REJECTED,
-                self::STATUS_SUCCESSFUL
+                self::STATUS_SUCCESSFUL,
+                self::STATUS_COMPLETED
             ];
 
             if (!in_array($status, $validStatuses)) {

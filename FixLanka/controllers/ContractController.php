@@ -43,6 +43,19 @@ class ContractController {
         return $_SESSION['user_id'];
     }
 
+    private function syncQuotationStatusFromLegacyContract(int $contractId, string $status): void {
+        $stmt = $this->pdo->prepare("SELECT quotation_id FROM contracts WHERE id = ? LIMIT 1");
+        $stmt->execute([$contractId]);
+        $quotationId = $stmt->fetchColumn();
+
+        if (empty($quotationId)) {
+            return;
+        }
+
+        $updateStmt = $this->pdo->prepare("UPDATE companyquotation SET status = ? WHERE quotation_id = ?");
+        $updateStmt->execute([$status, (int)$quotationId]);
+    }
+
     /**
      * Get all contracts for the logged-in customer.
      */
@@ -649,7 +662,7 @@ class ContractController {
                             SELECT *
                             FROM companyquotation
                             WHERE quotation_id = ?
-                              AND status IN ('accepted','successful')
+                                AND status IN ('accepted','successful','completed')
                               AND company_id = ?
                             LIMIT 1
                         ");
@@ -4433,7 +4446,7 @@ class ContractController {
             $paymentController = new PaymentController($pdo);
             
             // Get contract budget
-            $stmt = $this->pdo->prepare("SELECT contract_budget FROM contracts WHERE id = ?");
+            $stmt = $this->pdo->prepare("SELECT contract_budget, quotation_id FROM contracts WHERE id = ?");
             $stmt->execute([$contract_id]);
             $contract = $stmt->fetch();
             
@@ -4446,6 +4459,7 @@ class ContractController {
             // Update contract status
             $stmt = $this->pdo->prepare("UPDATE contracts SET contract_status = 'completed' WHERE id = ?");
             $stmt->execute([$contract_id]);
+            $this->syncQuotationStatusFromLegacyContract($contract_id, 'completed');
             
             // Timeline event
             $this->addTimelineEvent($contract_id, 'guarantee_completed', 'Quality guarantee completed - payment released');

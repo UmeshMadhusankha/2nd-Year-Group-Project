@@ -150,15 +150,22 @@ class UserQuotesModel {
             if ($status !== null) {
                 if ($filterCompletedByRequestStatus) {
                     $requestStatusSqlRepairerRegular = " AND jr.status = 'completed' AND rq.status IN ('accepted','completed','successful') ";
-                    $requestStatusSqlCompanyRegular = " AND jr.status = 'completed' AND cq.status IN ('accepted','successful') ";
+                    $requestStatusSqlCompanyRegular = " AND jr.status = 'completed' AND cq.status IN ('accepted','successful','completed') ";
                 } else {
                     $params[':status_repairer_regular'] = $statusNormalized;
-                    $params[':status_company_regular'] = $statusNormalized;
                     $statusSqlRepairerRegular = ' AND rq.status = :status_repairer_regular ';
-                    $statusSqlCompanyRegular = ' AND cq.status = :status_company_regular ';
+                    if ($statusNormalized === 'accepted') {
+                        // Company quotations move to `successful` after contract creation.
+                        // Keep them visible in Accepted tab to avoid disappearing cards.
+                        $statusSqlCompanyRegular = " AND cq.status IN ('accepted','successful','completed') ";
+                    } else {
+                        $params[':status_company_regular'] = $statusNormalized;
+                        $statusSqlCompanyRegular = ' AND cq.status = :status_company_regular ';
+                    }
                     if ($statusNormalized === 'accepted') {
                         $acceptedScopeSqlRepairerRegular = " AND jr.status <> 'completed' ";
-                        $acceptedScopeSqlCompanyRegular = " AND jr.status <> 'completed' ";
+                        // Keep company accepted/successful quotes visible even after request lifecycle changes.
+                        $acceptedScopeSqlCompanyRegular = '';
                     }
                 }
             }
@@ -178,15 +185,22 @@ class UserQuotesModel {
             if ($status !== null) {
                 if ($filterCompletedByRequestStatus) {
                     $requestStatusSqlRepairerDirect = " AND djr.status = 'completed' AND rq.status IN ('accepted','completed','successful') ";
-                    $requestStatusSqlCompanyDirect = " AND djr.status = 'completed' AND cq.status IN ('accepted','successful') ";
+                    $requestStatusSqlCompanyDirect = " AND djr.status = 'completed' AND cq.status IN ('accepted','successful','completed') ";
                 } else {
                     $params[':status_repairer_direct'] = $statusNormalized;
-                    $params[':status_company_direct'] = $statusNormalized;
                     $statusSqlRepairerDirect = ' AND rq.status = :status_repairer_direct ';
-                    $statusSqlCompanyDirect = ' AND cq.status = :status_company_direct ';
+                    if ($statusNormalized === 'accepted') {
+                        // Company quotations move to `successful` after contract creation.
+                        // Keep them visible in Accepted tab to avoid disappearing cards.
+                        $statusSqlCompanyDirect = " AND cq.status IN ('accepted','successful','completed') ";
+                    } else {
+                        $params[':status_company_direct'] = $statusNormalized;
+                        $statusSqlCompanyDirect = ' AND cq.status = :status_company_direct ';
+                    }
                     if ($statusNormalized === 'accepted') {
                         $acceptedScopeSqlRepairerDirect = " AND djr.status <> 'completed' ";
-                        $acceptedScopeSqlCompanyDirect = " AND djr.status <> 'completed' ";
+                        // Keep company accepted/successful quotes visible even after request lifecycle changes.
+                        $acceptedScopeSqlCompanyDirect = '';
                     }
                 }
             }
@@ -207,7 +221,7 @@ class UserQuotesModel {
         $companyJoinSql        = $hasCompanyId ? "LEFT JOIN company comp ON cq.company_id = comp.company_id" : "";
         $companyProviderNameSql = $hasCompanyId ? "COALESCE(comp.name, 'Company')" : "'Company'";
         $companyProviderIdSql   = $hasCompanyId ? "cq.company_id" : "0";
-        $companyContractJoinSql = "LEFT JOIN (SELECT quotation_id, MAX(contract_id) AS contract_id FROM contract GROUP BY quotation_id) ct ON ct.quotation_id = cq.quotation_id";
+        $companyContractJoinSql = "LEFT JOIN (SELECT c1.quotation_id, c1.contract_id, c1.status AS contract_status FROM contract c1 INNER JOIN (SELECT quotation_id, MAX(contract_id) AS contract_id FROM contract GROUP BY quotation_id) latest ON latest.contract_id = c1.contract_id) ct ON ct.quotation_id = cq.quotation_id";
 
         $parts = [];
 
@@ -252,6 +266,7 @@ class UserQuotesModel {
                     NULL AS labor_unit_label,
                     NULL AS material_unit_label,
                     NULL AS contract_id,
+                    NULL AS contract_status,
                     0 AS has_contract
                 FROM repairerquote rq
                 INNER JOIN jobrequest jr ON rq.request_id = jr.request_id
@@ -304,6 +319,7 @@ class UserQuotesModel {
                     cq.labor_unit_label AS labor_unit_label,
                     cq.material_unit_label AS material_unit_label,
                     ct.contract_id AS contract_id,
+                    ct.contract_status AS contract_status,
                     CASE WHEN ct.contract_id IS NULL THEN 0 ELSE 1 END AS has_contract
                 FROM companyquotation cq
                 INNER JOIN jobrequest jr ON cq.request_id = jr.request_id
@@ -359,6 +375,7 @@ class UserQuotesModel {
                     NULL AS labor_unit_label,
                     NULL AS material_unit_label,
                     NULL AS contract_id,
+                    NULL AS contract_status,
                     0 AS has_contract
                 FROM repairerquote rq
                 INNER JOIN directjobrequest djr ON rq.request_id = djr.request_id
@@ -411,6 +428,7 @@ class UserQuotesModel {
                     cq.labor_unit_label AS labor_unit_label,
                     cq.material_unit_label AS material_unit_label,
                     ct.contract_id AS contract_id,
+                    ct.contract_status AS contract_status,
                     CASE WHEN ct.contract_id IS NULL THEN 0 ELSE 1 END AS has_contract
                 FROM companyquotation cq
                 INNER JOIN directjobrequest djr ON cq.request_id = djr.request_id

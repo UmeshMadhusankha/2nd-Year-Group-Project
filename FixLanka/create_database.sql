@@ -360,7 +360,7 @@ CREATE TABLE `companyquotation` (
   `labor_unit_label` varchar(50) DEFAULT NULL,
   `material_unit_label` varchar(50) DEFAULT NULL,
   `additional_terms` text DEFAULT NULL,
-  `status` enum('pending','accepted','rejected','successful') DEFAULT 'pending',
+  `status` enum('pending','accepted','rejected','successful','completed') DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `budget_type` enum('fixed','flexible') DEFAULT 'fixed' COMMENT 'Fixed or Flexible (±10%)',
