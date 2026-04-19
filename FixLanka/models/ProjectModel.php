@@ -49,7 +49,7 @@ class Project
     public function create($data)
     {
         try {
-            $sql = "INSERT INTO Project (
+            $sql = "INSERT INTO project (
                         company_id, customer_id, title, description, 
                         project_type, location, budget, start_date, 
                         end_date, attachment, status, progress
@@ -108,10 +108,10 @@ class Project
                         ct.contract_id,
                         ct.customer_response as contract_customer_response,
                         ct.status as contract_status
-                    FROM Project p
-                    LEFT JOIN User u ON p.customer_id = u.user_id
-                    LEFT JOIN Company c ON p.company_id = c.company_id
-                    LEFT JOIN Contract ct ON p.project_id = ct.project_id
+                    FROM project p
+                    LEFT JOIN user u ON p.customer_id = u.user_id
+                    LEFT JOIN company c ON p.company_id = c.company_id
+                    LEFT JOIN contract ct ON p.project_id = ct.project_id
                     WHERE 1=1";
 
             $params = [];
@@ -190,10 +190,10 @@ class Project
                         ct.contract_id,
                         ct.customer_response as contract_customer_response,
                         ct.status as contract_status
-                    FROM Project p
-                    LEFT JOIN User u ON p.customer_id = u.user_id
-                    LEFT JOIN Company c ON p.company_id = c.company_id
-                    LEFT JOIN Contract ct ON p.project_id = ct.project_id
+                    FROM project p
+                    LEFT JOIN user u ON p.customer_id = u.user_id
+                    LEFT JOIN company c ON p.company_id = c.company_id
+                    LEFT JOIN contract ct ON p.project_id = ct.project_id
                     WHERE p.project_id = :project_id";
 
             $stmt = $this->pdo->prepare($sql);
@@ -265,13 +265,13 @@ class Project
             if (!empty($contract['project_id'])) {
                 $existingProjectId = (int)$contract['project_id'];
 
-                $stmtP = $this->pdo->prepare('SELECT project_id, company_id, title FROM Project WHERE project_id = :pid LIMIT 1');
+                $stmtP = $this->pdo->prepare('SELECT project_id, company_id, title FROM project WHERE project_id = :pid LIMIT 1');
                 $stmtP->execute([':pid' => $existingProjectId]);
                 $projRow = $stmtP->fetch(PDO::FETCH_ASSOC);
 
                 if (!$projRow) {
                     // Heal stale linkage
-                    $stmtClr = $this->pdo->prepare('UPDATE Contract SET project_id = NULL WHERE contract_id = :cid');
+                    $stmtClr = $this->pdo->prepare('UPDATE contract SET project_id = NULL WHERE contract_id = :cid');
                     $stmtClr->execute([':cid' => $contractId]);
                     $contract['project_id'] = null;
                 } else {
@@ -289,7 +289,7 @@ class Project
 
             // 2. Create the Project record if none exists yet
             if (empty($projectId)) {
-                $sqlInsert = "INSERT INTO Project (
+                $sqlInsert = "INSERT INTO project (
                                 company_id, customer_id, title, description, 
                                 project_type, location, budget, start_date, 
                                 end_date, status, progress
@@ -317,13 +317,13 @@ class Project
                 $projectId = (int)$this->pdo->lastInsertId();
 
                 // 3. Link Project back to Contract
-                $sqlUpdate = "UPDATE Contract SET project_id = :pid WHERE contract_id = :cid";
+                $sqlUpdate = "UPDATE contract SET project_id = :pid WHERE contract_id = :cid";
                 $stmtUpdate = $this->pdo->prepare($sqlUpdate);
                 $stmtUpdate->execute([':pid' => $projectId, ':cid' => $contractId]);
             } else {
                 // Start/update the existing linked project
                 $stmtStart = $this->pdo->prepare("
-                    UPDATE Project
+                    UPDATE project
                     SET status = :status,
                         start_date = CURDATE()
                     WHERE project_id = :pid
@@ -610,7 +610,7 @@ class Project
     public function update($projectId, $data)
     {
         try {
-            $sql = "UPDATE Project SET 
+            $sql = "UPDATE project SET 
                         title = :title,
                         description = :description,
                         project_type = :project_type,
@@ -672,7 +672,7 @@ class Project
             // Ensure progress is within 0-100 range
             $progress = max(0, min(100, intval($progress)));
 
-            $sql = "UPDATE Project SET progress = :progress WHERE project_id = :project_id";
+            $sql = "UPDATE project SET progress = :progress WHERE project_id = :project_id";
             $stmt = $this->pdo->prepare($sql);
             $result = $stmt->execute([
                 ':project_id' => $projectId,
@@ -723,7 +723,7 @@ class Project
                 ];
             }
 
-            $sql = "UPDATE Project SET status = :status WHERE project_id = :project_id";
+            $sql = "UPDATE project SET status = :status WHERE project_id = :project_id";
             $stmt = $this->pdo->prepare($sql);
             $result = $stmt->execute([
                 ':project_id' => $projectId,
@@ -758,7 +758,7 @@ class Project
     public function delete($projectId)
     {
         try {
-            $sql = "DELETE FROM Project WHERE project_id = :project_id";
+            $sql = "DELETE FROM project WHERE project_id = :project_id";
             $stmt = $this->pdo->prepare($sql);
             $result = $stmt->execute([':project_id' => $projectId]);
 
@@ -800,7 +800,7 @@ class Project
                         AVG(progress) as average_progress,
                         SUM(budget) as total_budget,
                         SUM(final_cost) as total_final_cost
-                    FROM Project
+                    FROM project
                     WHERE company_id = :company_id";
 
             $stmt = $this->pdo->prepare($sql);
@@ -832,7 +832,7 @@ class Project
             $debugLog = []; // For debugging
 
             // 1. Get Project base events
-            $sql = "SELECT created_at, start_date, end_date, title, status FROM Project WHERE project_id = :project_id";
+            $sql = "SELECT created_at, start_date, end_date, title, status FROM project WHERE project_id = :project_id";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([':project_id' => $projectId]);
             $project = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -879,7 +879,7 @@ class Project
 
             // 2. Get Contract & Milestones (if available)
             // Join Contract to get ID
-            $sqlContract = "SELECT contract_id, contract_date, signed_at, created_at, start_date, end_date FROM Contract WHERE project_id = :project_id LIMIT 1";
+            $sqlContract = "SELECT contract_id, contract_date, signed_at, created_at, start_date, end_date FROM contract WHERE project_id = :project_id LIMIT 1";
             $stmtContract = $this->pdo->prepare($sqlContract);
             $stmtContract->execute([':project_id' => $projectId]);
             $contract = $stmtContract->fetch(PDO::FETCH_ASSOC);
@@ -945,7 +945,7 @@ class Project
 
                     // If empty, try legacy Milestone table
                     if (empty($milestones)) {
-                        $sqlLegacy = "SELECT name as title, due_date, status, completion_date FROM Milestone WHERE contract_id = :contract_id ORDER BY due_date ASC";
+                        $sqlLegacy = "SELECT name as title, due_date, status, completion_date FROM milestone WHERE contract_id = :contract_id ORDER BY due_date ASC";
                         $stmtLegacy = $this->pdo->prepare($sqlLegacy);
                         $stmtLegacy->execute([':contract_id' => $contractId]);
                         $milestones = $stmtLegacy->fetchAll(PDO::FETCH_ASSOC);
@@ -1027,7 +1027,7 @@ class Project
         try {
             // 1. Get Contract details
             // Added total_budget to selection
-            $sqlContract = "SELECT contract_id, payment_method, total_budget, quotation_id, end_date FROM Contract WHERE project_id = :project_id ORDER BY contract_id DESC LIMIT 1";
+            $sqlContract = "SELECT contract_id, payment_method, total_budget, quotation_id, end_date FROM contract WHERE project_id = :project_id ORDER BY contract_id DESC LIMIT 1";
             $stmtContract = $this->pdo->prepare($sqlContract);
             $stmtContract->execute([':project_id' => $projectId]);
             $contract = $stmtContract->fetch(PDO::FETCH_ASSOC);
@@ -1144,7 +1144,7 @@ class Project
                                 0 as pct_of_total, 
                                 amount as amount_lkr,
                                 status
-                              FROM Milestone 
+                              FROM milestone 
                               WHERE contract_id = :contract_id 
                               ORDER BY due_date ASC";
                 $stmtLegacy = $this->pdo->prepare($sqlLegacy);
@@ -1639,36 +1639,36 @@ class Project
                 if ($stats && $stats['total'] > 0) {
                     $newProgress = (int)round(($stats['approved'] / $stats['total']) * 100);
                     
-                    // Update Contract Progress
+                    // Update contract Progress
                     $this->pdo->prepare(
-                        "UPDATE Contract SET progress_percentage = ? WHERE contract_id = ?"
+                        "UPDATE contract SET progress_percentage = ? WHERE contract_id = ?"
                     )->execute([$newProgress, $contractId]);
 
-                    // Update Project Progress
+                    // Update project Progress
                     $this->pdo->prepare(
-                        "UPDATE Project p
-                         JOIN Contract c ON p.project_id = c.project_id
+                        "UPDATE project p
+                         JOIN contract c ON p.project_id = c.project_id
                          SET p.progress = ?
                          WHERE c.contract_id = ?"
                     )->execute([$newProgress, $contractId]);
 
                     if ($newProgress >= 100) {
-                        // Mark Contract as Completed
+                        // Mark contract as Completed
                         $this->pdo->prepare(
-                            "UPDATE Contract SET status = 'completed' WHERE contract_id = ?"
+                            "UPDATE contract SET status = 'completed' WHERE contract_id = ?"
                         )->execute([$contractId]);
 
-                        // Mark Project as Completed
+                        // Mark project as Completed
                         $this->pdo->prepare(
-                            "UPDATE Project p
-                             JOIN Contract c ON p.project_id = c.project_id
+                            "UPDATE project p
+                             JOIN contract c ON p.project_id = c.project_id
                              SET p.status = 'completed'
                              WHERE c.contract_id = ?"
                         )->execute([$contractId]);
                         
                         // Sync quotation status if possible
                         try {
-                            $qIdStmt = $this->pdo->prepare("SELECT quotation_id FROM Contract WHERE contract_id = ? LIMIT 1");
+                            $qIdStmt = $this->pdo->prepare("SELECT quotation_id FROM contract WHERE contract_id = ? LIMIT 1");
                             $qIdStmt->execute([$contractId]);
                             $quotationId = $qIdStmt->fetchColumn();
                             if ($quotationId) {
@@ -1727,7 +1727,7 @@ class Project
     {
         try {
             // 1. Get Project Budget
-            $stmt = $this->pdo->prepare("SELECT budget FROM Project WHERE project_id = :project_id");
+            $stmt = $this->pdo->prepare("SELECT budget FROM project WHERE project_id = :project_id");
             $stmt->execute([':project_id' => $projectId]);
             $project = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -1744,7 +1744,7 @@ class Project
                        COALESCE(cq.material_unit_label, cq_req.material_unit_label) AS material_unit_label,
                        COALESCE(cq.labor_cost, cq_req.labor_cost) AS labor_cost,
                        COALESCE(cq.material_cost, cq_req.material_cost) AS material_cost
-                FROM Contract c
+                FROM contract c
                 LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
                 LEFT JOIN companyquotation cq_req ON cq_req.quotation_id = (
                     SELECT q2.quotation_id

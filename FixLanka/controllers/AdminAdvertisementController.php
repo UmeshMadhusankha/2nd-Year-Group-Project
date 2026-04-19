@@ -20,8 +20,8 @@ class AdminAdvertisementController
 
     private function getCurrentAdminUsername()
     {
-        // TODO: Replace with proper session authentication
-        $adminUsername = $_SESSION['admin_username'] ?? 'admin';
+        // Get username from session (admin_id stores the username in AuthController)
+        $adminUsername = $_SESSION['admin_id'] ?? $_SESSION['user_name'] ?? 'admin';
         
         if (!$this->model->adminExists($adminUsername)) {
             error_log("CRITICAL: Admin '{$adminUsername}' does not exist!");

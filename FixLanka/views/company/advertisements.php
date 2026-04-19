@@ -360,7 +360,7 @@ $userData = getUserData();
                             </select>
                             <small>This list comes from your company profile payment methods.</small>
                             <div id="paymentMethodShortcut" style="display:none; margin-top: 10px;">
-                                <a class="btn-secondary" id="paymentMethodShortcutLink" href="/2nd-Year-Group-Project/FixLanka/views/company/settings.php?tab=billing">
+                                <a class="btn-secondary" id="paymentMethodShortcutLink" href="/2nd-Year-Group-Project/FixLanka/views/company/profile.php?tab=subscription-tab&action=add_payment">
                                     <i class="fas fa-credit-card"></i> Add Payment Method
                                 </a>
                                 <small style="display:block; margin-top: 6px;">Opens Settings → Billing → Payment Methods.</small>

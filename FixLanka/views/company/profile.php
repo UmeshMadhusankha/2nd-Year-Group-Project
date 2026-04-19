@@ -2095,6 +2095,31 @@ try {
                  console.error('Error deleting bank account:', error);
              }
         }
+
+        // Handle URL parameters for tab switching and actions
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetTab = urlParams.get('tab');
+            const action = urlParams.get('action');
+
+            if (targetTab) {
+                const tabBtn = document.querySelector(`.tab-btn[data-tab="${targetTab}"]`);
+                if (tabBtn) {
+                    // Slight delay to ensure content is ready
+                    setTimeout(() => {
+                        tabBtn.click();
+                        
+                        if (action === 'add_payment' && targetTab === 'subscription-tab') {
+                            setTimeout(() => {
+                                if (typeof openAddCardModal === 'function') {
+                                    openAddCardModal();
+                                }
+                            }, 300);
+                        }
+                    }, 500);
+                }
+            }
+        });
     </script>
 </body>
 </html>
