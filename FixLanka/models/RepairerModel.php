@@ -221,6 +221,121 @@ class Repairer {
     }
 
     /**
+     * Get repairer settings with defaults.
+     */
+    public function getSettings($repairerId) {
+        $defaults = [
+            'email_job_requests' => 1,
+            'email_quote_responses' => 1,
+            'email_payment_notifications' => 1,
+            'email_reviews_ratings' => 1,
+            'email_weekly_summary' => 0,
+            'push_browser_notifications' => 0,
+            'push_sound_alerts' => 1,
+            'privacy_profile_visibility' => 1,
+            'privacy_show_contact' => 0,
+            'privacy_location_sharing' => 1,
+            'security_login_alerts' => 1,
+            'security_session_timeout' => '30 minutes'
+        ];
+
+        try {
+            $stmt = $this->pdo->prepare('SELECT * FROM repairersettings WHERE repairer_id = ? LIMIT 1');
+            $stmt->execute([$repairerId]);
+            $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$settings) {
+                return $defaults;
+            }
+
+            return array_merge($defaults, $settings);
+        } catch (PDOException $e) {
+            error_log('Error getting repairer settings: ' . $e->getMessage());
+            return $defaults;
+        }
+    }
+
+    /**
+     * Update repairer settings.
+     */
+    public function updateSettings($repairerId, $data) {
+        $dbData = [
+            'repairer_id' => $repairerId,
+            'email_job_requests' => $this->getSettingsFlag($data, 'emailJobRequests', 'email_job_requests', 1),
+            'email_quote_responses' => $this->getSettingsFlag($data, 'emailQuoteResponses', 'email_quote_responses', 1),
+            'email_payment_notifications' => $this->getSettingsFlag($data, 'emailPaymentNotifications', 'email_payment_notifications', 1),
+            'email_reviews_ratings' => $this->getSettingsFlag($data, 'emailReviewsRatings', 'email_reviews_ratings', 1),
+            'email_weekly_summary' => $this->getSettingsFlag($data, 'emailWeeklySummary', 'email_weekly_summary', 0),
+            'push_browser_notifications' => $this->getSettingsFlag($data, 'pushBrowserNotifications', 'push_browser_notifications', 0),
+            'push_sound_alerts' => $this->getSettingsFlag($data, 'pushSoundAlerts', 'push_sound_alerts', 1),
+            'privacy_profile_visibility' => $this->getSettingsFlag($data, 'privacyProfileVisibility', 'privacy_profile_visibility', 1),
+            'privacy_show_contact' => $this->getSettingsFlag($data, 'privacyShowContact', 'privacy_show_contact', 0),
+            'privacy_location_sharing' => $this->getSettingsFlag($data, 'privacyLocationSharing', 'privacy_location_sharing', 1),
+            'security_login_alerts' => $this->getSettingsFlag($data, 'securityLoginAlerts', 'security_login_alerts', 1),
+            'security_session_timeout' => $data['securitySessionTimeout'] ?? $data['security_session_timeout'] ?? '30 minutes'
+        ];
+
+        $sql = "INSERT INTO repairersettings (
+            repairer_id,
+            email_job_requests,
+            email_quote_responses,
+            email_payment_notifications,
+            email_reviews_ratings,
+            email_weekly_summary,
+            push_browser_notifications,
+            push_sound_alerts,
+            privacy_profile_visibility,
+            privacy_show_contact,
+            privacy_location_sharing,
+            security_login_alerts,
+            security_session_timeout
+        ) VALUES (
+            :repairer_id,
+            :email_job_requests,
+            :email_quote_responses,
+            :email_payment_notifications,
+            :email_reviews_ratings,
+            :email_weekly_summary,
+            :push_browser_notifications,
+            :push_sound_alerts,
+            :privacy_profile_visibility,
+            :privacy_show_contact,
+            :privacy_location_sharing,
+            :security_login_alerts,
+            :security_session_timeout
+        ) ON DUPLICATE KEY UPDATE
+            email_job_requests = VALUES(email_job_requests),
+            email_quote_responses = VALUES(email_quote_responses),
+            email_payment_notifications = VALUES(email_payment_notifications),
+            email_reviews_ratings = VALUES(email_reviews_ratings),
+            email_weekly_summary = VALUES(email_weekly_summary),
+            push_browser_notifications = VALUES(push_browser_notifications),
+            push_sound_alerts = VALUES(push_sound_alerts),
+            privacy_profile_visibility = VALUES(privacy_profile_visibility),
+            privacy_show_contact = VALUES(privacy_show_contact),
+            privacy_location_sharing = VALUES(privacy_location_sharing),
+            security_login_alerts = VALUES(security_login_alerts),
+            security_session_timeout = VALUES(security_session_timeout)";
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            return $stmt->execute($dbData);
+        } catch (PDOException $e) {
+            error_log('Error updating repairer settings: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function getSettingsFlag(array $data, string $camelKey, string $snakeKey, int $default): int {
+        if (array_key_exists($camelKey, $data)) {
+            return !empty($data[$camelKey]) ? 1 : 0;
+        }
+        if (array_key_exists($snakeKey, $data)) {
+            return !empty($data[$snakeKey]) ? 1 : 0;
+        }
+        return $default;
+    }
+
+    /**
      * Get finished job outcomes for a repairer from the core `job` table.
      * Success rate is computed from finished outcomes only: completed vs cancelled.
      */

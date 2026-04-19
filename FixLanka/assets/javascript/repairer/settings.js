@@ -2,10 +2,12 @@
  * Settings Page JavaScript
  */
 
+const SETTINGS_API = '/2nd-Year-Group-Project/FixLanka/api/repairer-settings.php';
+
 document.addEventListener('DOMContentLoaded', function () {
     initializeSettingsTabs();
-    initializeFormHandlers();
     initializeSaveButtons();
+    loadSettingsData();
 });
 
 /**
@@ -46,79 +48,23 @@ function initializeSettingsTabs() {
 }
 
 /**
- * Initialize Form Handlers
- */
-function initializeFormHandlers() {
-    // Password validation
-    const newPassword = document.getElementById('newPassword');
-    const confirmPassword = document.getElementById('confirmPassword');
-
-    if (confirmPassword) {
-        confirmPassword.addEventListener('blur', function () {
-            if (newPassword.value && confirmPassword.value) {
-                if (newPassword.value !== confirmPassword.value) {
-                    confirmPassword.setCustomValidity('Passwords do not match');
-                    confirmPassword.style.borderColor = 'var(--error-color)';
-                } else {
-                    confirmPassword.setCustomValidity('');
-                    confirmPassword.style.borderColor = 'var(--success-color)';
-                }
-            }
-        });
-    }
-
-    // Email validation
-    const emailInput = document.getElementById('email');
-    if (emailInput) {
-        emailInput.addEventListener('blur', function () {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(this.value)) {
-                this.style.borderColor = 'var(--error-color)';
-            } else {
-                this.style.borderColor = 'var(--success-color)';
-            }
-        });
-    }
-
-    // Phone validation
-    const phoneInput = document.getElementById('phone');
-    if (phoneInput) {
-        phoneInput.addEventListener('input', function () {
-            // Remove non-numeric characters except + and space
-            this.value = this.value.replace(/[^0-9+\s]/g, '');
-        });
-    }
-}
-
-/**
  * Initialize Save Buttons
  */
 function initializeSaveButtons() {
-    const saveButtons = document.querySelectorAll('.btn-primary');
+    const saveNotificationsBtn = document.getElementById('saveNotificationsBtn');
+    const savePrivacyBtn = document.getElementById('savePrivacyBtn');
 
-    saveButtons.forEach(button => {
-        if (button.textContent.includes('Save')) {
-            button.addEventListener('click', function (e) {
-                const panel = this.closest('.settings-panel');
-                const panelName = panel.id.replace('-panel', '');
+    if (saveNotificationsBtn) {
+        saveNotificationsBtn.addEventListener('click', async function () {
+            await handleSettingsSave(this, 'notifications');
+        });
+    }
 
-                // Show loading state
-                const originalText = this.textContent;
-                this.textContent = 'Saving...';
-                this.disabled = true;
-
-                // Simulate API call
-                setTimeout(() => {
-                    showNotification('Settings saved successfully!', 'success');
-                    this.textContent = originalText;
-                    this.disabled = false;
-
-                    // Store settings in localStorage (for demo purposes)
-                    saveSettings(panelName, panel);
-                }, 1000);
-            });
-        }
-    });
+    if (savePrivacyBtn) {
+        savePrivacyBtn.addEventListener('click', async function () {
+            await handleSettingsSave(this, 'privacy');
+        });
+    }
 
     // Delete account button
     const deleteButton = document.querySelector('.btn-danger');
@@ -148,66 +94,135 @@ function initializeSaveButtons() {
     const cancelButtons = document.querySelectorAll('.btn-secondary');
     cancelButtons.forEach(button => {
         button.addEventListener('click', function () {
-            const panel = this.closest('.settings-panel');
-            if (panel) {
-                loadSettings(panel.id.replace('-panel', ''), panel);
-                showNotification('Changes discarded', 'info');
-            }
+            showNotification('Changes discarded', 'info');
         });
     });
 }
 
-/**
- * Save Settings to LocalStorage
- */
-function saveSettings(panelName, panel) {
-    const settings = {};
+async function loadSettingsData() {
+    await loadSettingsDataFromApi();
+}
 
-    // Get all form inputs
-    const inputs = panel.querySelectorAll('input, select, textarea');
-    inputs.forEach(input => {
-        if (input.type === 'checkbox') {
-            settings[input.id || input.name] = input.checked;
-        } else if (input.type === 'radio') {
-            if (input.checked) {
-                settings[input.name] = input.value;
-            }
-        } else {
-            settings[input.id || input.name] = input.value;
+async function loadSettingsDataFromApi() {
+    try {
+        const response = await fetch(SETTINGS_API, { method: 'GET' });
+        const result = await response.json();
+        if (!result.success) {
+            showNotification(result.message || 'Failed to load settings', 'error');
+            return;
         }
-    });
 
-    localStorage.setItem(`settings_${panelName}`, JSON.stringify(settings));
+        const settings = result.data || {};
+        setToggle('emailJobRequests', isTrue(settings.email_job_requests));
+        setToggle('emailQuoteResponses', isTrue(settings.email_quote_responses));
+        setToggle('emailPaymentNotifications', isTrue(settings.email_payment_notifications));
+        setToggle('emailReviewsRatings', isTrue(settings.email_reviews_ratings));
+        setToggle('emailWeeklySummary', isTrue(settings.email_weekly_summary));
+        setToggle('pushBrowserNotifications', isTrue(settings.push_browser_notifications));
+        setToggle('pushSoundAlerts', isTrue(settings.push_sound_alerts));
 
+        setToggle('privacyProfileVisibility', isTrue(settings.privacy_profile_visibility));
+        setToggle('privacyShowContact', isTrue(settings.privacy_show_contact));
+        setToggle('privacyLocationSharing', isTrue(settings.privacy_location_sharing));
+
+        setToggle('securityLoginAlerts', isTrue(settings.security_login_alerts));
+        setInputValue('securitySessionTimeout', settings.security_session_timeout || '30 minutes');
+    } catch (error) {
+        console.error('Error loading settings:', error);
+        showNotification('Failed to load settings', 'error');
+    }
 }
 
-/**
- * Load Settings from LocalStorage
- */
-function loadSettings(panelName, panel) {
-    const savedSettings = localStorage.getItem(`settings_${panelName}`);
 
-    if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
+async function handleSettingsSave(button, panelType) {
+    setButtonLoading(button, true);
 
-        // Restore all form inputs
-        Object.keys(settings).forEach(key => {
-            const input = panel.querySelector(`#${key}, [name="${key}"]`);
-            if (input) {
-                if (input.type === 'checkbox') {
-                    input.checked = settings[key];
-                } else if (input.type === 'radio') {
-                    if (input.value === settings[key]) {
-                        input.checked = true;
-                    }
-                } else {
-                    input.value = settings[key];
-                }
-            }
+    try {
+        const settingsPayload = panelType === 'notifications'
+            ? collectNotificationSettings()
+            : collectPrivacySettings();
+
+        const response = await fetch(SETTINGS_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'update_settings', settings: settingsPayload })
         });
 
+        const result = await response.json();
+        if (!result.success) {
+            showNotification(result.message || 'Failed to save settings', 'error');
+            return;
+        }
 
+        showNotification('Settings saved successfully!', 'success');
+    } catch (error) {
+        console.error('Error saving settings:', error);
+        showNotification('Failed to save settings', 'error');
+    } finally {
+        setButtonLoading(button, false);
     }
+}
+
+function collectNotificationSettings() {
+    return {
+        emailJobRequests: getToggleValue('emailJobRequests'),
+        emailQuoteResponses: getToggleValue('emailQuoteResponses'),
+        emailPaymentNotifications: getToggleValue('emailPaymentNotifications'),
+        emailReviewsRatings: getToggleValue('emailReviewsRatings'),
+        emailWeeklySummary: getToggleValue('emailWeeklySummary'),
+        pushBrowserNotifications: getToggleValue('pushBrowserNotifications'),
+        pushSoundAlerts: getToggleValue('pushSoundAlerts')
+    };
+}
+
+function collectPrivacySettings() {
+    return {
+        privacyProfileVisibility: getToggleValue('privacyProfileVisibility'),
+        privacyShowContact: getToggleValue('privacyShowContact'),
+        privacyLocationSharing: getToggleValue('privacyLocationSharing'),
+        securityLoginAlerts: getToggleValue('securityLoginAlerts'),
+        securitySessionTimeout: getInputValue('securitySessionTimeout')
+    };
+}
+
+function setButtonLoading(button, isLoading) {
+    if (!button) return;
+    if (isLoading) {
+        button.dataset.originalText = button.textContent;
+        button.textContent = 'Saving...';
+        button.disabled = true;
+    } else {
+        button.textContent = button.dataset.originalText || 'Save';
+        button.disabled = false;
+    }
+}
+
+function setInputValue(id, value) {
+    const input = document.getElementById(id);
+    if (input) {
+        input.value = value ?? '';
+    }
+}
+
+function getInputValue(id) {
+    const input = document.getElementById(id);
+    return input ? String(input.value).trim() : '';
+}
+
+function setToggle(id, value) {
+    const input = document.getElementById(id);
+    if (input) {
+        input.checked = Boolean(value);
+    }
+}
+
+function getToggleValue(id) {
+    const input = document.getElementById(id);
+    return input ? Boolean(input.checked) : false;
+}
+
+function isTrue(value) {
+    return value === true || value === 1 || value === '1' || value === 'true';
 }
 
 /**
@@ -278,17 +293,6 @@ function getNotificationColor(type) {
         info: '#3b82f6'
     };
     return colors[type] || '#3b82f6';
-}
-
-/**
- * Add Payment Method
- */
-const addPaymentBtn = document.querySelector('.add-payment-btn');
-if (addPaymentBtn) {
-    addPaymentBtn.addEventListener('click', function () {
-        showNotification('Payment method form would open here', 'info');
-        // In a real application, this would open a modal with a payment form
-    });
 }
 
 /**
