@@ -167,7 +167,7 @@ function listForCompany(PDO $pdo): void {
             fa.*, 
             r.f_name AS repairer_first_name,
             r.l_name AS repairer_last_name,
-            r.profile_picture AS repairer_profile_picture,
+            r.profilePicture AS repairer_profile_picture,
             p.title AS project_title,
             p.status AS project_status
         FROM freelancer_assignments fa

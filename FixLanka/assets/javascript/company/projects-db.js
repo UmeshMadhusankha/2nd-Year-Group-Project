@@ -122,9 +122,22 @@ async function loadProjects() {
         const result = await response.json();
 
         if (result.success) {
-            projectsData = result.data || [];
+            // Filter out 'planned' projects — they are started via the top button modal
+            // Use case-insensitive check and trim to be robust against DB variations
+            projectsData = (result.data || []).filter(p => {
+                const s = String(p.status || '').toLowerCase().trim();
+                return s !== 'planned';
+            });
             filteredProjects = projectsData;
-            renderProjects();
+
+            // If current filter is 'planned', reset to 'all' because planned are hidden
+            if (currentFilter === 'planned') {
+                currentFilter = 'all';
+                const filterSelect = document.querySelector('.filter-select');
+                if (filterSelect) filterSelect.value = 'all';
+            }
+
+            applyFilters(); // This will call renderProjects()
             updateCounts();
         } else {
             showToast(result.message || 'Failed to load projects', 'error');
@@ -137,10 +150,7 @@ async function loadProjects() {
         hideLoader();
     } catch (error) {
         console.error('Error loading projects:', error);
-        const isTimeout = error && (error.name === 'AbortError');
-        const msg = isTimeout
-            ? 'Request timed out while loading projects'
-            : 'Failed to load projects. Please try again.';
+        const msg = 'Failed to load projects. Please try again.';
         showToast(msg, 'error');
         projectsData = [];
         filteredProjects = [];
@@ -709,7 +719,15 @@ function openProofModal(milestoneId) {
             if (laborQtyInput && existingLaborQty !== null) laborQtyInput.value = String(existingLaborQty);
             if (materialQtyInput && existingMaterialQty !== null) materialQtyInput.value = String(existingMaterialQty);
             if (extraAmountInput && existingExtra !== null) extraAmountInput.value = String(existingExtra);
-            if (materialRateInput && existingMatRate !== null) materialRateInput.value = String(existingMatRate);
+
+            // Show the override if it exists, otherwise pre-fill with the agreed rate from the contract
+            if (materialRateInput) {
+                if (existingMatRate !== null) {
+                    materialRateInput.value = String(existingMatRate);
+                } else if (materialRate !== null) {
+                    materialRateInput.value = String(materialRate);
+                }
+            }
 
             if (nonPayingCheckbox) {
                 nonPayingCheckbox.checked = !!isNonPayingPersisted;
@@ -1119,6 +1137,53 @@ async function createProject(formData) {
 }
 
 /**
+ * Manually start a project from the project list
+ * @param {number} projectId 
+ * @param {number} contractId 
+ */
+async function manualStartProject(projectId, contractId) {
+    if (!contractId) {
+        showToast('No contract linked to this project', 'error');
+        return;
+    }
+
+    const confirmed = await (window.showConfirm
+        ? window.showConfirm('Are you sure you want to start this project? Work will formally begin.', {
+            title: 'Start Project',
+            confirmText: 'Start Job',
+            type: 'question',
+            icon: 'rocket'
+        })
+        : confirm('Are you sure you want to start this project?'));
+
+    if (!confirmed) return;
+
+    try {
+        showLoader();
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/projects.php?action=start_from_contract`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contract_id: contractId })
+        });
+
+        const result = await response.json();
+        hideLoader();
+
+        if (result.success) {
+            showToast('Project started successfully!', 'success');
+            loadProjects(); // Refresh list
+            if (typeof loadStatistics === 'function') loadStatistics();
+        } else {
+            showToast(result.message || 'Failed to start project', 'error');
+        }
+    } catch (e) {
+        if (typeof hideLoader === 'function') hideLoader();
+        console.error(e);
+        showToast('Error starting project', 'error');
+    }
+}
+
+/**
  * Update an existing project
  */
 async function updateProject(projectId, formData) {
@@ -1286,8 +1351,21 @@ async function openStartProjectModal() {
                 );
 
                 const acceptedContracts = result.data.filter(isAcceptedByCustomer);
-                const eligibleContracts = acceptedContracts.filter(c => !c.project_id);
-                const alreadyStartedContracts = acceptedContracts.filter(c => !!c.project_id);
+
+                // A project is considered "eligible" to be started if it doesn't have a project_id 
+                // OR if the linked project is still in 'planned' status.
+                const eligibleContracts = acceptedContracts.filter(c => {
+                    if (!c.project_id) return true;
+                    // Check if the linked project status is 'planned'
+                    const ps = String(c.project_status || '').toLowerCase().trim();
+                    return ps === 'planned' || ps === '';
+                });
+
+                const alreadyStartedContracts = acceptedContracts.filter(c => {
+                    if (!c.project_id) return false;
+                    const ps = String(c.project_status || '').toLowerCase().trim();
+                    return ps !== 'planned' && ps !== '';
+                });
 
                 if (eligibleContracts.length === 0) {
                     if (alreadyStartedContracts.length === 0) {
@@ -1303,6 +1381,7 @@ async function openStartProjectModal() {
                             const projectId = c.project_id;
                             option.textContent = `Contract #${c.contract_id} - ${clientName}${total} (Project #${projectId} already started)`;
                             option.dataset.projectId = String(projectId);
+                            option.dataset.projectStatus = c.project_status || '';
                             selector.appendChild(option);
 
                             window._startProjectExistingProjectByContractId[String(c.contract_id)] = String(projectId);
@@ -1320,6 +1399,8 @@ async function openStartProjectModal() {
                         const clientName = c.client_name || 'Client';
                         const total = c.value ? ` (LKR ${formatNumber(c.value)})` : '';
                         option.textContent = `Contract #${c.contract_id} - ${clientName}${total}`;
+                        option.dataset.projectId = c.project_id ? String(c.project_id) : '';
+                        option.dataset.projectStatus = c.project_status || '';
                         selector.appendChild(option);
                     });
                     selector.disabled = false;
@@ -1831,10 +1912,13 @@ async function saveProject(e) {
             return;
         }
 
-        // If the selected contract already has a project, just go to Projects.
+        // If the selected contract already has an active project, do not restart.
         const selectedOption = contractSelect?.selectedOptions?.[0];
         const existingProjectId = selectedOption?.dataset?.projectId || window._startProjectExistingProjectByContractId?.[String(contractId)];
-        if (existingProjectId) {
+        const existingProjectStatus = selectedOption?.dataset?.projectStatus || '';
+
+        // Only block if the project is actually started (not just planned)
+        if (existingProjectId && existingProjectStatus && String(existingProjectStatus).toLowerCase().trim() !== 'planned') {
             showToast(`Project already started for this contract (Project #${existingProjectId}). Redirecting...`, 'info');
             closeProjectModal();
             setTimeout(() => {
@@ -2173,10 +2257,14 @@ function initializeFilters() {
  * Apply filters to projects
  */
 function applyFilters() {
-    if (currentFilter === 'all') {
+    if (!currentFilter || currentFilter === 'all') {
         filteredProjects = projectsData;
     } else {
-        filteredProjects = projectsData.filter(p => p.status === currentFilter);
+        filteredProjects = projectsData.filter(p => {
+            const s = String(p.status || '').toLowerCase().trim();
+            const f = String(currentFilter).toLowerCase().trim();
+            return s === f;
+        });
     }
     renderProjects();
 }
@@ -2267,11 +2355,11 @@ function initializeModal() {
 function updateCounts() {
     const counts = {
         all: projectsData.length,
-        planned: projectsData.filter(p => p.status === 'planned').length,
-        in_progress: projectsData.filter(p => p.status === 'in_progress').length,
-        completed: projectsData.filter(p => p.status === 'completed').length,
-        cancelled: projectsData.filter(p => p.status === 'cancelled').length,
-        on_hold: projectsData.filter(p => p.status === 'on_hold').length
+        // These are mostly for internal tracking now as 'planned' are hidden from main list
+        in_progress: projectsData.filter(p => String(p.status || '').toLowerCase().trim() === 'in_progress').length,
+        completed: projectsData.filter(p => String(p.status || '').toLowerCase().trim() === 'completed').length,
+        cancelled: projectsData.filter(p => String(p.status || '').toLowerCase().trim() === 'cancelled').length,
+        on_hold: projectsData.filter(p => String(p.status || '').toLowerCase().trim() === 'on_hold').length
     };
 
     // Update count badges if they exist

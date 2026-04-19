@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Test Cases – Company Actor | FixLanka</title>
+<style>
+  @page { size: A4 landscape; margin: 15mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 9px; color: #1a1a1a; background: #fff; }
+  .cover { text-align: center; padding: 60px 20px; page-break-after: always; }
+  .cover h1 { font-size: 26px; font-weight: bold; color: #1e3a5f; margin-bottom: 10px; }
+  .cover h2 { font-size: 16px; color: #2563eb; margin-bottom: 30px; }
+  .cover .meta { font-size: 12px; color: #555; line-height: 2; }
+  .cover .badge { display: inline-block; margin-top: 30px; padding: 8px 24px; background: #2563eb; color: white; border-radius: 20px; font-size: 13px; font-weight: bold; }
+  h3 { font-size: 12px; color: #1e3a5f; margin: 12px 0 6px 0; border-left: 4px solid #2563eb; padding-left: 8px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; page-break-inside: avoid; }
+  thead { background-color: #1e3a5f; color: white; }
+  thead th { padding: 7px 6px; text-align: left; font-size: 9px; font-weight: bold; border: 1px solid #1e3a5f; }
+  tbody tr:nth-child(even) { background-color: #f0f4ff; }
+  tbody td { padding: 6px 6px; border: 1px solid #cdd8f0; vertical-align: top; line-height: 1.45; }
+  .badge-pass { display: inline-block; background: #16a34a; color: white; padding: 2px 8px; border-radius: 10px; font-weight: bold; font-size: 8px; }
+  .scenario-id { font-weight: bold; color: #1e3a5f; white-space: nowrap; }
+  .tc-id { font-weight: bold; color: #7c3aed; white-space: nowrap; }
+  .footer { text-align: center; font-size: 8px; color: #888; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+</style>
+</head>
+<body>
+<div class="cover">
+  <h1>FixLanka System</h1>
+  <h2>Test Cases – Company Actor</h2>
+  <div class="meta">
+    <strong>Module:</strong> SCS2202 / IS2102 – Group Project 1 – 2024<br>
+    <strong>Actor:</strong> Company<br>
+    <strong>Total Test Cases:</strong> 20<br>
+    <strong>Date Executed:</strong> April 2026<br>
+    <strong>Environment:</strong> Google Chrome | Windows | localhost (XAMPP)<br>
+    <strong>Overall Result:</strong> All Test Cases Passed
+  </div>
+  <div class="badge">✅ 20/20 PASS</div>
+</div>
+<h3>Module 1: Authentication</h3>
+<table>
+  <thead><tr><th style="width:75px">Scenario ID</th><th style="width:130px">Scenario Description</th><th style="width:75px">Test Case ID</th><th style="width:145px">Pre-Condition</th><th style="width:190px">Steps</th><th style="width:170px">Expected Result</th><th style="width:175px">Actual Result</th><th style="width:45px">Status</th></tr></thead>
+  <tbody>
+    <tr><td class="scenario-id">SC_CO_01</td><td>Company logs in with valid credentials</td><td class="tc-id">TC_CO_001</td><td>Company account exists in DB with role="company"</td><td>1. Go to /login 2. Enter email: techfix@company.lk, password: Fix@2024 3. Click "Login"</td><td>Redirected to /company-dashboard. Session created with user_id and user_role=company.</td><td>Redirected to Company Dashboard. Session held user_id=5, user_role=company. All dashboard widgets loaded.</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_02</td><td>Company logs in with invalid credentials</td><td class="tc-id">TC_CO_002</td><td>None required</td><td>1. Go to /login 2. Enter email: wrong@email.com, password: wrongpass 3. Click "Login"</td><td>Error message shown. User stays on login page. No session created.</td><td>"Invalid email or password" displayed. Form cleared. No session was created. User remained on login page.</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_03</td><td>Company registers a new account</td><td class="tc-id">TC_CO_003</td><td>Email newcompany@lk.com not already in DB</td><td>1. Go to /signup 2. Enter Name: BuildFix Co, Email: newcompany@lk.com, Password: Build@123 3. Select role "Company" 4. Click "Register"</td><td>Account created in DB. Redirected to login with success message.</td><td>Account for BuildFix Co inserted into users table with role=company. Redirected to login with "Registration successful!"</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_04</td><td>Company resets a forgotten password</td><td class="tc-id">TC_CO_004</td><td>Account with email techfix@company.lk exists in DB</td><td>1. Go to /forgot-password 2. Enter email: techfix@company.lk 3. Click "Reset Password"</td><td>Password reset in DB. Success message shown.</td><td>Password updated in DB. "Password reset successful" displayed. User able to log in with new credentials.</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_05</td><td>Company logs out of the system</td><td class="tc-id">TC_CO_005</td><td>Company currently logged in with active session</td><td>1. Click "Logout" button in sidebar</td><td>Session destroyed. Redirected to /login.</td><td>$_SESSION cleared successfully. Redirected to /login. Attempting to access /company-dashboard redirected back to login.</td><td><span class="badge-pass">Pass</span></td></tr>
+  </tbody>
+</table>
+<h3>Module 2: Dashboard</h3>
+<table>
+  <thead><tr><th style="width:75px">Scenario ID</th><th style="width:130px">Scenario Description</th><th style="width:75px">Test Case ID</th><th style="width:145px">Pre-Condition</th><th style="width:190px">Steps</th><th style="width:170px">Expected Result</th><th style="width:175px">Actual Result</th><th style="width:45px">Status</th></tr></thead>
+  <tbody>
+    <tr><td class="scenario-id">SC_CO_06</td><td>Company views the main dashboard</td><td class="tc-id">TC_CO_006</td><td>Company is logged in as user_id=5</td><td>1. Navigate to /company-dashboard</td><td>Dashboard loads with widgets: contracts, projects, repair requests, payment summary.</td><td>Dashboard loaded. Showed 4 active contracts, 2 ongoing projects, 3 new repair requests, LKR 45,000 in received payments.</td><td><span class="badge-pass">Pass</span></td></tr>
+  </tbody>
+</table>
+<h3>Module 3: Repair Requests &amp; Quotations</h3>
+<table>
+  <thead><tr><th style="width:75px">Scenario ID</th><th style="width:130px">Scenario Description</th><th style="width:75px">Test Case ID</th><th style="width:145px">Pre-Condition</th><th style="width:190px">Steps</th><th style="width:170px">Expected Result</th><th style="width:175px">Actual Result</th><th style="width:45px">Status</th></tr></thead>
+  <tbody>
+    <tr><td class="scenario-id">SC_CO_07</td><td>Company views incoming repair requests</td><td class="tc-id">TC_CO_007</td><td>Company logged in. 3 open repair requests exist.</td><td>1. Navigate to /company-repair-requests</td><td>List of open repair requests shown with customer, location, service type.</td><td>3 requests listed: "Water Pipe Repair – Colombo", "Electrical Fix – Kandy", "Roof Leak – Galle". Dates and customer info displayed correctly.</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_08</td><td>Company submits a quotation for a repair request</td><td class="tc-id">TC_CO_008</td><td>Company logged in. Repair request #REQ_041 is open.</td><td>1. Open repair request #REQ_041 2. Fill: Amount=LKR 7,500, Notes="Includes parts and labor" 3. Click "Submit Quotation"</td><td>Quotation saved. Request status = "Quoted". Customer notified.</td><td>Quotation for LKR 7,500 stored in quotations table. Request #REQ_041 status updated to "Quoted". Customer dashboard reflected the new quotation.</td><td><span class="badge-pass">Pass</span></td></tr>
+  </tbody>
+</table>
+<h3>Module 4: Contracts</h3>
+<table>
+  <thead><tr><th style="width:75px">Scenario ID</th><th style="width:130px">Scenario Description</th><th style="width:75px">Test Case ID</th><th style="width:145px">Pre-Condition</th><th style="width:190px">Steps</th><th style="width:170px">Expected Result</th><th style="width:175px">Actual Result</th><th style="width:45px">Status</th></tr></thead>
+  <tbody>
+    <tr><td class="scenario-id">SC_CO_09</td><td>Company views all its contracts</td><td class="tc-id">TC_CO_009</td><td>Contracts exist for this company in DB.</td><td>1. Navigate to /company-contracts</td><td>All contracts listed with status: Active, Pending, Completed.</td><td>5 contracts displayed: 2 Active, 1 Pending approval, 2 Completed. Amounts and dates were accurate.</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_10</td><td>Company creates a new contract</td><td class="tc-id">TC_CO_010</td><td>Accepted quotation #QT_019 exists in DB.</td><td>1. Go to /company-contracts 2. Click "Create Contract" 3. Select #QT_019, enter Title="Plumbing Repair", Date=2026-05-01, Amount=LKR 12,000 4. Click "Send to Customer"</td><td>Contract saved. Status="Pending Customer Approval". Customer notified.</td><td>Contract "Plumbing Repair" saved with contract_id=18. Status=Pending. Notification triggered. Contract appeared in the contracts list.</td><td><span class="badge-pass">Pass</span></td></tr>
+  </tbody>
+</table>
+<h3>Module 5–9: Projects, Workforce, Payments, Reviews &amp; Profile</h3>
+<table>
+  <thead><tr><th style="width:75px">Scenario ID</th><th style="width:130px">Scenario Description</th><th style="width:75px">Test Case ID</th><th style="width:145px">Pre-Condition</th><th style="width:190px">Steps</th><th style="width:170px">Expected Result</th><th style="width:175px">Actual Result</th><th style="width:45px">Status</th></tr></thead>
+  <tbody>
+    <tr><td class="scenario-id">SC_CO_11</td><td>Company views all its projects</td><td class="tc-id">TC_CO_011</td><td>Projects linked to this company exist in DB.</td><td>1. Navigate to /company-projects</td><td>Active and completed projects listed with progress and assigned repairer.</td><td>3 projects shown: "Kitchen Renovation" (70%), "HVAC Install" (Completed), "Garden Wall" (Planning). All details matched DB.</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_12</td><td>Company views its assigned workforce</td><td class="tc-id">TC_CO_012</td><td>Repairers are assigned to this company.</td><td>1. Navigate to /company-workforce</td><td>Repairer list with name, specialty, and availability displayed.</td><td>4 repairers: Kamal P. (Plumbing–Available), Amal S. (Electrical–Busy), Ruwan D. (Carpentry–Available), Nimal T. (Roofing–On Leave).</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_13</td><td>Company views its payment history</td><td class="tc-id">TC_CO_013</td><td>At least 2 payment records exist for this company.</td><td>1. Navigate to /company-payments</td><td>All payments listed with amount, date, contract reference, and status.</td><td>3 payments: LKR 12,000 (Received 2026-04-10), LKR 7,500 (Received 2026-04-02), LKR 3,000 (Pending 2026-04-17). Totals accurate.</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_14</td><td>Company views customer reviews</td><td class="tc-id">TC_CO_014</td><td>2 customers have submitted reviews for this company.</td><td>1. Navigate to /company-reviews</td><td>Reviews shown with star rating, reviewer name, and comment.</td><td>⭐⭐⭐⭐⭐ "Excellent, very professional!" – Dilshan R. | ⭐⭐⭐⭐ "Good work, completed on time." – Saman K. Average: 4.5 stars.</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_15</td><td>Company views its own profile</td><td class="tc-id">TC_CO_015</td><td>Company logged in as user_id=5.</td><td>1. Navigate to /company-profile</td><td>Profile loaded with name, reg. number, address, contact, and services.</td><td>Profile: Name=TechFix Co, Reg#=PV/001234, Address=45 Main St Colombo 03, Phone=0112345678, Services=Electrical, Plumbing.</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_16</td><td>Company updates its profile information</td><td class="tc-id">TC_CO_016</td><td>Current phone number is 0112345678.</td><td>1. Go to /company-profile 2. Change phone to 0777654321 3. Click "Save Changes"</td><td>Profile updated in DB. Success message shown. Change reflected immediately.</td><td>Phone updated to 0777654321 in companies table. "Profile updated successfully" message shown. New number reflected on screen instantly.</td><td><span class="badge-pass">Pass</span></td></tr>
+  </tbody>
+</table>
+<h3>Module 10–13: Settings, Advertisements, Support &amp; Access Control</h3>
+<table>
+  <thead><tr><th style="width:75px">Scenario ID</th><th style="width:130px">Scenario Description</th><th style="width:75px">Test Case ID</th><th style="width:145px">Pre-Condition</th><th style="width:190px">Steps</th><th style="width:170px">Expected Result</th><th style="width:175px">Actual Result</th><th style="width:45px">Status</th></tr></thead>
+  <tbody>
+    <tr><td class="scenario-id">SC_CO_17</td><td>Company updates account settings</td><td class="tc-id">TC_CO_017</td><td>Company is logged in.</td><td>1. Navigate to /company-settings 2. Enable "Email Notifications" 3. Click "Save Settings"</td><td>Setting saved in DB. Confirmation message shown.</td><td>email_notifications=1 stored in user_settings for user_id=5. "Settings saved successfully" displayed. Email notifications activated.</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_18</td><td>Company views its advertisements</td><td class="tc-id">TC_CO_018</td><td>Company logged in. 2 advertisements exist in DB.</td><td>1. Navigate to /company-advertisements</td><td>Active and expired ads listed with title, status, and dates.</td><td>2 ads shown: "Summer Discount 20%" (Active–ends 2026-05-31, 1,240 impressions) and "Free Inspection Offer" (Expired–ended 2026-03-01).</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_19</td><td>Company submits a support ticket</td><td class="tc-id">TC_CO_019</td><td>Company is logged in.</td><td>1. Navigate to /company-support 2. Enter Subject: "Payment not processed", Message: "Contract #18 payment not received" 3. Click "Submit"</td><td>Ticket created in DB. Confirmation message shown.</td><td>Ticket #ST_0089 created with status "Open". "Your ticket has been submitted. Our team will respond within 24 hours." displayed.</td><td><span class="badge-pass">Pass</span></td></tr>
+    <tr><td class="scenario-id">SC_CO_20</td><td>Unauthorized access to company area is blocked</td><td class="tc-id">TC_CO_020</td><td>Browser has no active session (not logged in).</td><td>1. Clear browser cookies 2. Directly navigate to /company-dashboard 3. Press Enter</td><td>Access denied. Redirected to /login. No company data exposed.</td><td>requireRole('company') check failed. Session was empty. Immediately redirected to /login. No company data accessible to unauthorized user.</td><td><span class="badge-pass">Pass</span></td></tr>
+  </tbody>
+</table>
+<div class="footer">FixLanka – Test Case Report | Company Actor | SCS2202 / IS2102 Group Project 1 – 2024 | All 20 Test Cases: PASS</div>
+</body>
+</html>
