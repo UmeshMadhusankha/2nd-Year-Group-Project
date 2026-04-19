@@ -35,9 +35,19 @@ $isUserSession = $isLoggedIn && hasRole('user');
         <div class="navbar-right">
             <?php if ($isUserSession): ?>
                 <!-- Logged In User Section -->
-                <div class="notification-bell">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge">3</span>
+                <div class="notification-wrap" id="userNotificationWrap">
+                    <button type="button" class="notification-bell" id="userNotificationBell" aria-label="Notifications" aria-expanded="false">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="userNotificationBadge" style="display:none;"></span>
+                    </button>
+                    <div class="notification-dropdown" id="userNotificationDropdown">
+                        <div class="notification-dropdown-header">
+                            <h4 class="notification-dropdown-title">Notifications</h4>
+                        </div>
+                        <div class="notification-dropdown-list" id="userNotificationList">
+                            <div class="notification-empty">No notifications yet.</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="profile-dropdown-container">
@@ -144,15 +154,141 @@ $isUserSession = $isLoggedIn && hasRole('user');
 document.addEventListener('DOMContentLoaded', function() {
     const profileAvatar = document.getElementById('profileAvatar');
     const profileDropdown = document.getElementById('profileDropdown');
+    const notificationWrap = document.getElementById('userNotificationWrap');
+    const notificationBell = document.getElementById('userNotificationBell');
+    const notificationDropdown = document.getElementById('userNotificationDropdown');
+    const notificationBadge = document.getElementById('userNotificationBadge');
+    const notificationList = document.getElementById('userNotificationList');
+    const userId = <?php echo (int)($userData['id'] ?? 0); ?>;
+
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    function formatDateLabel(value) {
+        if (!value) return 'Just now';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return 'Just now';
+        return date.toLocaleString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+    }
+
+    async function fetchJson(url) {
+        const response = await fetch(url, { credentials: 'same-origin' });
+        const text = await response.text();
+        let data;
+
+        try {
+            data = JSON.parse(text);
+        } catch (error) {
+            throw new Error('Invalid notification response');
+        }
+
+        if (!response.ok || data?.success === false) {
+            throw new Error(data?.message || `Request failed (${response.status})`);
+        }
+
+        return data;
+    }
+
+    function setBadgeCount(count) {
+        if (!notificationBadge) return;
+        const numeric = Number(count) || 0;
+        if (numeric > 0) {
+            notificationBadge.style.display = 'inline-flex';
+            notificationBadge.textContent = numeric > 99 ? '99+' : String(numeric);
+        } else {
+            notificationBadge.style.display = 'none';
+            notificationBadge.textContent = '';
+        }
+    }
+
+    async function loadNotificationCount() {
+        if (!notificationBadge || userId <= 0) return;
+        try {
+            const data = await fetchJson('/2nd-Year-Group-Project/FixLanka/api/user-notifications.php?action=count');
+            setBadgeCount(data.count || 0);
+        } catch (error) {
+            setBadgeCount(0);
+        }
+    }
+
+    async function loadNotifications() {
+        if (!notificationList || userId <= 0) return;
+        notificationList.innerHTML = '<div class="notification-loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+
+        try {
+            const data = await fetchJson('/2nd-Year-Group-Project/FixLanka/api/user-notifications.php?action=list&limit=8');
+            const rows = Array.isArray(data.notifications) ? data.notifications : [];
+
+            if (!rows.length) {
+                notificationList.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
+                return;
+            }
+
+            notificationList.innerHTML = rows.map((item) => {
+                const title = escapeHtml(item.title || 'Notification');
+                const message = escapeHtml(item.message || '');
+                const createdAt = escapeHtml(formatDateLabel(item.created_at || item.send_date || item.time));
+                return `
+                    <div class="notification-item" tabindex="0">
+                        <h5>${title}</h5>
+                        <p>${message}</p>
+                        <span class="notification-time">${createdAt}</span>
+                    </div>
+                `;
+            }).join('');
+        } catch (error) {
+            notificationList.innerHTML = '<div class="notification-empty">Failed to load notifications.</div>';
+        }
+    }
+
+    function openNotifications() {
+        if (!notificationWrap || !notificationBell || !notificationDropdown) return;
+        notificationWrap.classList.add('open');
+        notificationBell.setAttribute('aria-expanded', 'true');
+        loadNotifications();
+    }
+
+    function closeNotifications() {
+        if (!notificationWrap || !notificationBell) return;
+        notificationWrap.classList.remove('open');
+        notificationBell.setAttribute('aria-expanded', 'false');
+    }
+
+    if (notificationBell && notificationWrap) {
+        notificationBell.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (notificationWrap.classList.contains('open')) {
+                closeNotifications();
+            } else {
+                openNotifications();
+            }
+        });
+    }
     
     if (profileAvatar && profileDropdown) {
         profileAvatar.addEventListener('click', function(e) {
             e.stopPropagation();
             profileDropdown.classList.toggle('show');
+            closeNotifications();
         });
         
         // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
+            if (notificationWrap && !notificationWrap.contains(e.target)) {
+                closeNotifications();
+            }
             if (!profileAvatar.contains(e.target) && !profileDropdown.contains(e.target)) {
                 profileDropdown.classList.remove('show');
             }
@@ -168,5 +304,9 @@ document.addEventListener('DOMContentLoaded', function() {
             mobileMenu.classList.toggle('show');
         });
     }
+
+    // Initial count load + periodic refresh from DB notifications table.
+    loadNotificationCount();
+    window.setInterval(loadNotificationCount, 30000);
 });
 </script>
