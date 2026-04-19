@@ -1,5 +1,3 @@
-/* Admin Audit Logs */
-
 .audit-logs-main {
   flex: 1;
   min-height: 0;
@@ -7,14 +5,12 @@
   padding: 24px 32px;
   padding-top: 100px;
 }
-
 .audit-logs-card {
   background: var(--background);
   border: 1px solid var(--muted);
   border-radius: 12px;
   padding: 16px;
 }
-
 .audit-logs-card-header {
   display: flex;
   align-items: flex-start;
@@ -22,37 +18,31 @@
   gap: 16px;
   margin-bottom: 12px;
 }
-
 .audit-logs-title {
   font-size: 20px;
   font-weight: 700;
   color: var(--foreground);
 }
-
 .audit-logs-subtitle {
   font-size: 13px;
   color: var(--muted-foreground);
   margin-top: 4px;
 }
-
 .audit-logs-controls {
   display: flex;
   align-items: flex-end;
   gap: 12px;
   flex-wrap: wrap;
 }
-
 .audit-logs-control {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-
 .audit-logs-control-label {
   font-size: 12px;
   color: var(--muted-foreground);
 }
-
 .audit-logs-select {
   border: 1px solid var(--muted);
   background: var(--background);
@@ -61,7 +51,6 @@
   padding: 8px 10px;
   min-width: 90px;
 }
-
 .audit-logs-button {
   border: 1px solid var(--muted);
   background: var(--background);
@@ -70,12 +59,10 @@
   padding: 8px 12px;
   cursor: pointer;
 }
-
 .audit-logs-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
-
 .audit-logs-message {
   margin: 10px 0 12px;
   padding: 10px 12px;
@@ -85,20 +72,17 @@
   color: var(--foreground);
   font-size: 13px;
 }
-
 .audit-logs-table-wrap {
   width: 100%;
   overflow-x: auto;
   border: 1px solid var(--muted);
   border-radius: 10px;
 }
-
 .audit-logs-table {
   width: 100%;
   border-collapse: collapse;
   min-width: 1050px;
 }
-
 .audit-logs-table thead th {
   text-align: left;
   font-size: 12px;
@@ -107,7 +91,6 @@
   border-bottom: 1px solid var(--muted);
   background: var(--muted);
 }
-
 .audit-logs-table tbody td {
   padding: 12px;
   border-bottom: 1px solid var(--muted);
@@ -115,25 +98,21 @@
   color: var(--foreground);
   vertical-align: top;
 }
-
 .audit-logs-loading {
   text-align: center;
   color: var(--muted-foreground);
 }
-
 .audit-logs-code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 12px;
   white-space: pre-wrap;
   word-break: break-word;
 }
-
 .audit-logs-details summary {
   cursor: pointer;
   color: var(--foreground);
   font-weight: 600;
 }
-
 .audit-logs-pagination {
   display: flex;
   align-items: center;
@@ -141,7 +120,6 @@
   gap: 12px;
   margin-top: 12px;
 }
-
 .audit-logs-pageinfo {
   font-size: 13px;
   color: var(--muted-foreground);
@@ -149,23 +127,19 @@
   align-items: center;
   gap: 8px;
 }
-
 .audit-logs-page-divider {
   opacity: 0.7;
 }
-
 @media (max-width: 640px) {
-  .audit-logs-main {
-    padding: 16px;
-    padding-top: 100px;
-  }
-
-  .audit-logs-card-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .audit-logs-controls {
-    justify-content: flex-start;
-  }
+.audit-logs-main {
+  padding: 16px;
+  padding-top: 100px;
+}
+.audit-logs-card-header {
+  flex-direction: column;
+  align-items: stretch;
+}
+.audit-logs-controls {
+  justify-content: flex-start;
+}
 }

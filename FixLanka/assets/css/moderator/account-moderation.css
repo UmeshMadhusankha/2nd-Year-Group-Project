@@ -1,4 +1,3 @@
-/* Enhanced quick action cards with stats card styling */
 .quick-action-card {
   display: flex;
   align-items: center;
@@ -12,7 +11,6 @@
   overflow: hidden;
   border-left: 3px solid var(--action-color, #cbd5e1);
 }
-
 .quick-action-card::before {
   content: "";
   position: absolute;
@@ -23,40 +21,31 @@
   background: linear-gradient(180deg, var(--action-color), var(--action-color-light));
   transition: all 0.3s ease;
 }
-
 .quick-action-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
-
 .quick-action-blue {
   --action-color: #3b82f6;
   --action-color-light: #60a5fa;
 }
-
 .quick-action-blue:hover {
   background-color: #eff6ff;
 }
-
 .quick-action-red {
   --action-color: #ef4444;
   --action-color-light: #f87171;
 }
-
 .quick-action-red:hover {
   background-color: #fef2f2;
 }
-
 .quick-action-purple {
   --action-color: #8b5cf6;
   --action-color-light: #a78bfa;
 }
-
 .quick-action-purple:hover {
   background-color: #faf5ff;
 }
-
-/* Enhanced statistics cards */
 .stats-card {
   background-color: #ffffff;
   border: 1px solid #e2e8f0;
@@ -68,7 +57,6 @@
   border-left: 4px solid #64748b;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
-
 .stats-card::before {
   content: "";
   position: absolute;
@@ -78,19 +66,16 @@
   height: 100%;
   background: linear-gradient(180deg, #64748b, #94a3b8);
 }
-
 .stats-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
-
 .stats-number {
   font-size: 2rem;
   font-weight: 700;
   color: #1e293b;
   line-height: 1.2;
 }
-
 .stats-label {
   color: #64748b;
   font-size: 0.75rem;
@@ -98,8 +83,6 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-
-/* Refined status badges - minimal palette */
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -110,80 +93,66 @@
   border: 1px solid;
   transition: all 0.2s ease;
 }
-
 .status-banned {
   background-color: #fef2f2;
   color: #991b1b;
   border-color: #fecaca;
 }
-
 .status-suspended {
   background-color: #fffbeb;
   color: #92400e;
   border-color: #fde68a;
 }
-
 .status-active {
   background-color: #f0fdf4;
   color: #15803d;
   border-color: #bbf7d0;
 }
-
 .appeal-pending {
   background-color: #eff6ff;
   color: #1e40af;
   border-color: #bfdbfe;
 }
-
 .appeal-approved {
   background-color: #f0fdf4;
   color: #15803d;
   border-color: #bbf7d0;
 }
-
 .appeal-rejected {
   background-color: #fef2f2;
   color: #991b1b;
   border-color: #fecaca;
 }
-
 .appeal-none {
   background-color: #f1f5f9;
   color: #475569;
   border-color: #e2e8f0;
 }
-
 .severity-low {
   background-color: #f0fdf4;
   color: #15803d;
   border-color: #bbf7d0;
 }
-
 .severity-medium {
   background-color: #fffbeb;
   color: #92400e;
   border-color: #fde68a;
 }
-
 .severity-high {
   background-color: #fff7ed;
   color: #9a3412;
   border-color: #fed7aa;
 }
-
 .severity-critical {
   background-color: #fef2f2;
   color: #991b1b;
   border-color: #fecaca;
 }
-
-/* Enhanced table */
 .table-container table {
   width: 100%;
   border-collapse: collapse;
   background-color: #ffffff;
 }
-
 .table-container th {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   font-weight: 600;
@@ -195,18 +164,14 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-
 .table-container tr {
   transition: all 0.3s ease;
   border-bottom: 1px solid #f1f5f9;
 }
-
 .table-container tr:hover {
   background-color: #f8fafc;
   transform: scale(1.002);
 }
-
-/* Enhanced modal */
 .modal-content {
   background-color: #ffffff;
   border-radius: 16px;
@@ -218,126 +183,106 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   animation: slideIn 0.3s ease;
 }
-
-
-
-/* ========== STATISTICS CARDS ========== */
 .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
 }
-
 .stat-card {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-    border-left: 4px solid var(--card-color);
-    min-width: 0;
-    min-height: 120px;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  border-left: 4px solid var(--card-color);
+  min-width: 0;
+  min-height: 120px;
 }
-
 .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: linear-gradient(180deg, var(--card-color), var(--card-color-light));
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--card-color), var(--card-color-light));
 }
-
 .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
-
-/* Card Colors */
 .stat-card[data-color="blue"] {
-    --card-color: #3b82f6;
-    --card-color-light: #60a5fa;
-    --icon-bg: rgba(59, 130, 246, 0.1);
+  --card-color: #3b82f6;
+  --card-color-light: #60a5fa;
+  --icon-bg: rgba(59, 130, 246, 0.1);
 }
-
 .stat-card[data-color="green"] {
-    --card-color: #10b981;
-    --card-color-light: #34d399;
-    --icon-bg: rgba(16, 185, 129, 0.1);
+  --card-color: #10b981;
+  --card-color-light: #34d399;
+  --icon-bg: rgba(16, 185, 129, 0.1);
 }
-
 .stat-card[data-color="yellow"] {
-    --card-color: #f59e0b;
-    --card-color-light: #fbbf24;
-    --icon-bg: rgba(245, 158, 11, 0.1);
+  --card-color: #f59e0b;
+  --card-color-light: #fbbf24;
+  --icon-bg: rgba(245, 158, 11, 0.1);
 }
-
 .stat-card[data-color="purple"] {
-    --card-color: #8b5cf6;
-    --card-color-light: #a78bfa;
-    --icon-bg: rgba(139, 92, 246, 0.1);
+  --card-color: #8b5cf6;
+  --card-color-light: #a78bfa;
+  --icon-bg: rgba(139, 92, 246, 0.1);
 }
-
 .stat-card-inner {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  height: 100%;
 }
-
 .stat-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
-
 .stat-info h4 {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #64748b;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
-
 .stat-info .stat-value {
-    font-size: 1.875rem;
-    font-weight: 700;
-    color: #1e293b;
-    margin-bottom: 4px;
-    line-height: 1.2;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+  line-height: 1.2;
 }
-
 .stat-info .stat-change {
-    font-size: 0.75rem;
-    color: #64748b;
+  font-size: 0.75rem;
+  color: #64748b;
 }
-
 .stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 10px;
-    background: var(--icon-bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    flex-shrink: 0;
-    margin-left: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: var(--icon-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  margin-left: 12px;
 }
-
 .stat-card:hover .stat-icon {
-    transform: scale(1.1) rotate(5deg);
+  transform: scale(1.1) rotate(5deg);
 }
-
 .stat-icon i {
-    color: var(--card-color);
-    width: 24px;
-    height: 24px;
+  color: var(--card-color);
+  width: 24px;
+  height: 24px;
 }

@@ -1,214 +1,184 @@
 @import "../common/variables.css";
-
 .repairer-notifications-main {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
 }
-
 .page-header {
-    background: var(--bg-card);
-    border-radius: var(--border-radius-xl);
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-sm);
+  background: var(--bg-card);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
 }
-
 .page-header-content {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--spacing-lg);
-    flex-wrap: wrap;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
 }
-
 .page-title {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    font-size: var(--font-size-2xl);
-    color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-2xl);
+  color: var(--text-primary);
 }
-
 .page-description {
-    margin: 6px 0 0;
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
 }
-
 .repairer-notifications-section {
-    background: var(--bg-card);
-    border-radius: var(--border-radius-xl);
-    padding: var(--spacing-lg);
-    box-shadow: var(--shadow-md);
+  background: var(--bg-card);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
 }
-
 .repairer-notifications-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    max-height: calc(100vh - 280px);
-    overflow-y: auto;
-    padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+  padding-right: 4px;
 }
-
 .repairer-notification-item {
-    display: flex;
-    gap: var(--spacing-md);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: var(--spacing-md);
-    background: var(--bg-primary);
-    cursor: pointer;
-    transition: all var(--transition-normal);
+  display: flex;
+  gap: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  background: var(--bg-primary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
 }
-
 .repairer-notification-item:hover {
-    border-color: var(--primary-color);
-    box-shadow: var(--shadow-sm);
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
 }
-
 .repairer-notification-item.unread {
-    border-left: 4px solid var(--primary-color);
-    background: rgba(var(--primary-rgb), 0.08);
+  border-left: 4px solid var(--primary-color);
+  background: rgba(var(--primary-rgb), 0.08);
 }
-
 .repairer-notification-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-    flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  flex-shrink: 0;
 }
-
 .repairer-notification-content {
-    min-width: 0;
-    flex: 1;
+  min-width: 0;
+  flex: 1;
 }
-
 .repairer-notification-title {
-    font-size: var(--font-size-md);
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0 0 6px;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px;
 }
-
 .repairer-notification-message {
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
-    margin: 0 0 8px;
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-
 .repairer-notification-meta {
-    font-size: var(--font-size-xs);
-    color: var(--text-muted);
-    display: flex;
-    gap: var(--spacing-md);
-    flex-wrap: wrap;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
 }
-
 .repairer-notifications-empty {
-    text-align: center;
-    color: var(--text-secondary);
-    padding: 48px 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 48px 16px;
 }
-
 .notification-details-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(16, 24, 40, 0.45);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 1100;
-    padding: var(--spacing-lg);
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 24, 40, 0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: var(--spacing-lg);
 }
-
 .notification-details-overlay.active {
-    display: flex;
+  display: flex;
 }
-
 .notification-details-modal {
-    width: min(760px, 96vw);
-    background: var(--bg-card);
-    border-radius: var(--border-radius-xl);
-    overflow: hidden;
-    box-shadow: var(--shadow-lg);
+  width: min(760px, 96vw);
+  background: var(--bg-card);
+  border-radius: var(--border-radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
 }
-
 .notification-details-header {
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-    color: #fff;
-    padding: var(--spacing-lg);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  color: #fff;
+  padding: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
-
 .notification-details-title {
-    margin: 0;
-    font-size: var(--font-size-lg);
+  margin: 0;
+  font-size: var(--font-size-lg);
 }
-
 .notification-details-close {
-    border: 0;
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 20px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 20px;
 }
-
 .notification-details-body {
-    padding: var(--spacing-lg);
+  padding: var(--spacing-lg);
 }
-
 .notification-details-meta {
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
-    margin-bottom: var(--spacing-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-md);
 }
-
 .notification-details-message {
-    color: var(--text-primary);
-    font-size: var(--font-size-base);
-    line-height: 1.6;
-    white-space: pre-wrap;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
-
 .notification-details-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
 }
-
 @media (max-width: 768px) {
-    .content-wrapper {
-        padding: var(--spacing-lg);
-    }
-
-    .repairer-notifications-list {
-        max-height: none;
-    }
-
-    .notification-details-footer {
-        flex-direction: column-reverse;
-    }
-
-    .notification-details-footer .btn {
-        width: 100%;
-    }
+.content-wrapper {
+  padding: var(--spacing-lg);
+}
+.repairer-notifications-list {
+  max-height: none;
+}
+.notification-details-footer {
+  flex-direction: column-reverse;
+}
+.notification-details-footer .btn {
+  width: 100%;
+}
 }
