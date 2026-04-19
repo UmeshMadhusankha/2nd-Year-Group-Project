@@ -682,6 +682,43 @@ to {
   background: #f1f5f9;
   box-shadow: inset 3px 0 0 #10b981;
 }
+.static-target {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.static-target-link {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid #dbe4ef;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #0f766e;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.static-target-link:hover {
+  background: #ecfeff;
+  border-color: #99f6e4;
+}
+.content-preview {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  margin-bottom: 0.5rem;
+}
+.content-preview p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.55;
+  white-space: normal;
+}
 @media (max-width: 1024px) {
 .md-grid-cols-4 {
   grid-template-columns: repeat(2, 1fr);

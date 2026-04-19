@@ -717,6 +717,58 @@ foreach ($contents as $row) {
         $lastUpdate = $rowTime;
     }
 }
+
+function staticContentShortTargetLabel(string $url): string
+{
+    $clean = trim($url);
+    if ($clean === '') {
+        return 'N/A';
+    }
+
+    $prefixes = [
+        '/2nd-Year-Group-Project/FixLanka/views/user/',
+        '/2nd-Year-Group-Project/FixLanka/',
+    ];
+
+    foreach ($prefixes as $prefix) {
+        if (strpos($clean, $prefix) === 0) {
+            $clean = substr($clean, strlen($prefix));
+            break;
+        }
+    }
+
+    return ltrim($clean, '/');
+}
+
+function staticContentPreviewText(string $contentType, string $body): string
+{
+    $trimmed = trim($body);
+    if ($trimmed === '') {
+        return 'No content body yet.';
+    }
+
+    if ($contentType === 'landing_hero') {
+        $decoded = json_decode($trimmed, true);
+        if (is_array($decoded)) {
+            $title = trim((string)($decoded['title'] ?? ''));
+            $subtitle = trim((string)($decoded['subtitle'] ?? ''));
+            if ($title !== '' || $subtitle !== '') {
+                return "Title: {$title}\nSubtitle: {$subtitle}";
+            }
+        }
+    }
+
+    $plain = trim(html_entity_decode(strip_tags($trimmed), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    if ($plain === '') {
+        return 'Rich content body available. Open editor to review.';
+    }
+
+    if (mb_strlen($plain) > 240) {
+        return mb_substr($plain, 0, 240) . '...';
+    }
+
+    return $plain;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -817,24 +869,28 @@ foreach ($contents as $row) {
                         <?php else: ?>
                             <?php foreach ($contents as $item): ?>
                                 <?php $isPublished = ($item['status'] ?? 'Draft') === 'Published'; ?>
+                                <?php $targetUrl = (string)($sectionPageMap[$item['content_type']] ?? ''); ?>
+                                <?php $targetLabel = staticContentShortTargetLabel($targetUrl); ?>
+                                <?php $previewText = staticContentPreviewText((string)($item['content_type'] ?? ''), (string)($item['body'] ?? '')); ?>
                                 <div class="p-6 flex items-start justify-between gap-3 static-content-row"
                                      data-content-type="<?php echo htmlspecialchars((string)$item['content_type']); ?>"
-                                     data-preview-url="<?php echo htmlspecialchars((string)($sectionPageMap[$item['content_type']] ?? '')); ?>"
+                                     data-preview-url="<?php echo htmlspecialchars($targetUrl); ?>"
                                      onclick="selectPreviewFromRow(this)">
                                     <div class="flex-1">
                                         <div class="flex items-start justify-between gap-3 mb-3">
                                             <div>
                                                 <h4 class="text-lg font-semibold text-foreground"><?php echo htmlspecialchars($item['title']); ?></h4>
                                                 <p class="text-sm text-muted-foreground"><?php echo htmlspecialchars($item['description'] ?? ''); ?></p>
-                                                <p class="text-xs text-muted-foreground" style="margin-top: 4px;">
-                                                    Target page: <a href="<?php echo htmlspecialchars($sectionPageMap[$item['content_type']] ?? '#'); ?>" target="_blank"><?php echo htmlspecialchars($sectionPageMap[$item['content_type']] ?? 'N/A'); ?></a>
-                                                </p>
+                                                <div class="static-target" style="margin-top: 6px;">
+                                                    <span class="text-xs text-muted-foreground">Target page:</span>
+                                                    <a class="static-target-link" href="<?php echo htmlspecialchars($targetUrl !== '' ? $targetUrl : '#'); ?>" target="_blank"><?php echo htmlspecialchars($targetLabel); ?></a>
+                                                </div>
                                             </div>
                                             <span class="badge <?php echo $isPublished ? 'badge-default' : 'badge-secondary'; ?>"><?php echo $isPublished ? 'Saved' : 'Draft'; ?></span>
                                         </div>
 
                                         <div class="content-preview">
-                                            <p><?php echo htmlspecialchars(mb_substr((string)$item['body'], 0, 240)); ?><?php echo mb_strlen((string)$item['body']) > 240 ? '...' : ''; ?></p>
+                                            <p><?php echo nl2br(htmlspecialchars($previewText)); ?></p>
                                         </div>
                                         <p class="text-xs text-muted-foreground">Last updated: <?php echo !empty($item['last_update']) ? date('Y-m-d H:i', strtotime((string)$item['last_update'])) : 'N/A'; ?></p>
                                     </div>
@@ -843,7 +899,7 @@ foreach ($contents as $row) {
                                         <button
                                             type="button"
                                             class="btn btn-secondary"
-                                            onclick='openEditModal(<?php echo json_encode([
+                                            onclick='event.stopPropagation(); openEditModal(<?php echo json_encode([
                                                 "content_id" => (int)$item["content_id"],
                                                 "title" => (string)$item["title"],
                                                 "description" => (string)($item["description"] ?? ""),

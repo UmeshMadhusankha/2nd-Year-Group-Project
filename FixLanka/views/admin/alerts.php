@@ -9,13 +9,11 @@ require_once __DIR__ . '/_components/Sidebar.php';
 require_once __DIR__ . '/_components/Meta.php';
 require_once __DIR__ . '/_components/Header.php';
 require_once __DIR__ . '/_components/Common.php';
-require_once __DIR__ . '/../../includes/admin-modarator/auth.php';
 require_once __DIR__ . '/../../controllers/AdminAlertController.php';
 
 $basePath = '';
 $currentPath = 'alerts';
-$currentUser = function_exists('getCurrentUser') ? getCurrentUser() : null;
-$currentUserRole = strtolower((string)($currentUser['role'] ?? ($_SESSION['user_role'] ?? 'admin')));
+$currentUserRole = strtolower((string)($_SESSION['user_role'] ?? 'admin'));
 
 // ✅ VIEW ONLY FETCHES DATA - NO POST HANDLING
 try {

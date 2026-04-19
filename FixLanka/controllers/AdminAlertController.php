@@ -6,9 +6,7 @@
  */
 
 require_once __DIR__ . '/../config/databse.php';
-require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../models/NotificationModel.php';
-require_once __DIR__ . '/../includes/admin-modarator/auth.php';
 
 class AdminAlertController {
     private $model;
@@ -24,7 +22,7 @@ class AdminAlertController {
         }
         
         // Ensure user is authenticated as admin
-        requireRole('admin');
+        $this->requireAdminAccess();
         
         $this->checkAuthentication();
         
@@ -36,22 +34,24 @@ class AdminAlertController {
             $this->handleError("System initialization failed. Please try again.");
         }
     }
+
+    private function requireAdminAccess(): void {
+        if (!isset($_SESSION['user_id'], $_SESSION['user_role'])) {
+            header('Location: /2nd-Year-Group-Project/FixLanka/login');
+            exit;
+        }
+
+        if (strtolower((string) $_SESSION['user_role']) !== 'admin' && strtolower((string) $_SESSION['user_role']) !== 'moderator') {
+            $_SESSION['error'] = 'You do not have permission to access this page';
+            header('Location: /2nd-Year-Group-Project/FixLanka/login');
+            exit;
+        }
+    }
     
     /**
      * Check if user is authenticated as admin
      */
     private function checkAuthentication() {
-        $user = function_exists('getCurrentUser') ? getCurrentUser() : null;
-
-        if ($user) {
-            $this->actor = [
-                'id' => (int)($user['id'] ?? 0),
-                'role' => (string)($user['role'] ?? 'admin'),
-                'name' => (string)($user['name'] ?? 'Admin'),
-            ];
-            return;
-        }
-
         $this->actor = [
             'id' => (int)($_SESSION['user_id'] ?? 0),
             'role' => (string)($_SESSION['user_role'] ?? 'admin'),
