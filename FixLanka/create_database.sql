@@ -1501,14 +1501,6 @@ CREATE TABLE `action_undo` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table `location`
-CREATE TABLE `location` (
-  `location_id` int(11) NOT NULL,
-  `address` text DEFAULT NULL,
-  `district` varchar(100) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 -- Table `project_staff_requirements`
 CREATE TABLE `project_staff_requirements` (
   `id` int(11) NOT NULL,
