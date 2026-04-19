@@ -264,7 +264,13 @@ function autoFillFromQuotation(quotation) {
     $('#projectTitle').val(quotation.title || '');
     $('#projectReferenceID').val(quotation.quotation_id || '');
     $('#projectType').val(quotation.project_type || '');
-    $('#projectLocation').val(quotation.location || '');
+    {
+        const locationParts = [
+            quotation.request_address || quotation.location || quotation.customer_address,
+            quotation.request_district || quotation.district || quotation.customer_district
+        ].filter(Boolean);
+        $('#projectLocation').val(locationParts.join(', ') || quotation.location || quotation.customer_address || quotation.district || '');
+    }
     $('#projectDescription').val(quotation.description || '');
     
     // Section 3: Scope of Work
