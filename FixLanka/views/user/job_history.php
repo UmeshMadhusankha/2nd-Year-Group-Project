@@ -848,7 +848,12 @@ foreach ($allJobRequests as $job) {
 
     function quoteDisplayStatus(quote) {
         const rawQuoteStatus = String(quote?.status || 'pending').toLowerCase();
+        const contractStatus = String(quote?.contract_status || '').toLowerCase();
         const requestStatus = String(quote?.request_status || quote?.job_status || '').toLowerCase();
+
+        if (contractStatus === 'active') {
+            return 'active';
+        }
 
         if (requestStatus === 'completed' && (rawQuoteStatus === 'accepted' || rawQuoteStatus === 'successful')) {
             return 'completed';
@@ -873,6 +878,15 @@ foreach ($allJobRequests as $job) {
         window.__jobHistoryToastTimer = window.setTimeout(() => {
             toast.classList.remove('show');
         }, 2200);
+    }
+
+    function handleCompanyContractClick(canOpenContract) {
+        if (canOpenContract) {
+            window.location.href = '/2nd-Year-Group-Project/FixLanka/my-contracts';
+            return;
+        }
+
+        showActionToast('Company has not submitted the contract yet.');
     }
 
     function refreshJobTabCounts() {
@@ -1025,16 +1039,16 @@ foreach ($allJobRequests as $job) {
         const status = String(displayStatus || 'pending').toLowerCase();
         const source = String(quote.source || '').toLowerCase();
         const rawQuoteStatus = String(quote.status || '').toLowerCase();
+        const contractStatus = String(quote.contract_status || '').toLowerCase();
         const hasCompanyContract = Number(quote.has_contract || 0) === 1 || Number(quote.contract_id || 0) > 0;
-        const enableCompanyContractBtn = rawQuoteStatus === 'successful' || hasCompanyContract;
+        const enableCompanyContractBtn = rawQuoteStatus === 'successful' || contractStatus === 'active' || hasCompanyContract;
 
-        if (!compact && source === 'company' && (status === 'accepted' || rawQuoteStatus === 'successful')) {
+        if (!compact && source === 'company' && (status === 'accepted' || status === 'active' || rawQuoteStatus === 'successful')) {
             return `
                 <button
                     type="button"
                     class="action-btn ${enableCompanyContractBtn ? 'btn-success-sm' : 'btn-secondary'}"
-                    ${enableCompanyContractBtn ? '' : 'disabled'}
-                    onclick='event.stopPropagation();${enableCompanyContractBtn ? "window.location.href=\"/2nd-Year-Group-Project/FixLanka/my-contracts\"" : "return false"}'>
+                    onclick="event.stopPropagation();handleCompanyContractClick(${enableCompanyContractBtn ? 'true' : 'false'});return false;">
                     <i class="fas fa-file-contract"></i> Company Contract
                 </button>
                 <button
@@ -1107,11 +1121,12 @@ foreach ($allJobRequests as $job) {
     function renderQuoteCard(quote, variant) {
         const compact = variant === 'request';
         const displayStatus = quoteDisplayStatus(quote);
-        const quotePayload = JSON.stringify({ source: quote.source, quote_id: quote.quote_id, request_type: quote.request_type });
         const normalizedDisplayStatus = String(displayStatus || 'pending').toLowerCase();
+        const quotePayload = JSON.stringify({ source: quote.source, quote_id: quote.quote_id, request_type: quote.request_type });
         const canOpenCard = normalizedDisplayStatus === 'pending';
         const cardRole = canOpenCard ? 'button' : 'article';
         const cardTabIndex = canOpenCard ? '0' : '-1';
+        const cardStateClass = normalizedDisplayStatus === 'active' ? ' quote-item-active' : '';
         const clickHandler = canOpenCard
             ? ` onclick='openQuoteDetails(${quotePayload})' onkeydown='if(event.key === "Enter" || event.key === " "){event.preventDefault();openQuoteDetails(${quotePayload});}'`
             : '';
@@ -1120,7 +1135,7 @@ foreach ($allJobRequests as $job) {
             : `<p class="quote-job-meta">${escapeHtml(quote.category_name || 'N/A')} | Sent ${escapeHtml(formatDateTime(quote.created_at))}</p>`;
 
         return `
-            <article class="quote-item quote-item-${compact ? 'compact' : 'full'}" role="${cardRole}" tabindex="${cardTabIndex}"${clickHandler}>
+            <article class="quote-item quote-item-${compact ? 'compact' : 'full'}${cardStateClass}" role="${cardRole}" tabindex="${cardTabIndex}"${clickHandler}>
                 <div class="quote-card-top">
                     <div>
                         <h3 class="quote-job-title">${escapeHtml(quote.provider_name || (quote.source === 'company' ? 'Company' : 'Repairer'))}</h3>

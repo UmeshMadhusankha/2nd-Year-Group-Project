@@ -67,7 +67,7 @@ class ContractModel {
                         FROM companyquotation q2
                         WHERE q2.request_id = c.job_request_id
                             AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
-                            AND q2.status IN ('accepted', 'successful')
+                            AND q2.status IN ('accepted', 'successful', 'completed')
                         ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
                         LIMIT 1
                 )
@@ -125,7 +125,7 @@ class ContractModel {
                         FROM companyquotation q2
                         WHERE q2.request_id = c.job_request_id
                             AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
-                            AND q2.status IN ('accepted', 'successful')
+                            AND q2.status IN ('accepted', 'successful', 'completed')
                         ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
                         LIMIT 1
                 )
@@ -172,7 +172,7 @@ class ContractModel {
                         FROM companyquotation q2
                         WHERE q2.request_id = c.job_request_id
                             AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
-                            AND q2.status IN ('accepted', 'successful')
+                            AND q2.status IN ('accepted', 'successful', 'completed')
                         ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
                         LIMIT 1
                 )
@@ -240,7 +240,7 @@ class ContractModel {
                                         FROM companyquotation q2
                                         WHERE q2.request_id = c.job_request_id
                                             AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
-                                            AND q2.status IN ('accepted', 'successful')
+                                            AND q2.status IN ('accepted', 'successful', 'completed')
                                         ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
                                         LIMIT 1
                                 )";
@@ -884,6 +884,21 @@ class ContractModel {
         return $this->conn->prepare($query)->execute([':contract_id' => $contractId]);
     }
 
+    private function syncQuotationStatusFromContract(int $contractId, string $status): void {
+        $stmt = $this->conn->prepare("SELECT quotation_id FROM contract WHERE contract_id = ? LIMIT 1");
+        $stmt->execute([$contractId]);
+        $quotationId = $stmt->fetchColumn();
+
+        if (empty($quotationId)) {
+            return;
+        }
+
+        $updateStmt = $this->conn->prepare("UPDATE companyquotation SET status = ? WHERE quotation_id = ?");
+        if (!$updateStmt->execute([$status, (int)$quotationId])) {
+            throw new Exception('Failed to update linked quotation status.');
+        }
+    }
+
     /**
      * Cancel a contract (Undo functionality)
      * Reverts Contract, Quotation, and JobRequest statuses
@@ -1053,6 +1068,7 @@ class ContractModel {
                     $this->conn->prepare(
                         "UPDATE contract SET status = 'completed' WHERE contract_id = ?"
                     )->execute([$contractId]);
+                    $this->syncQuotationStatusFromContract($contractId, 'completed');
                 }
             }
 

@@ -100,6 +100,10 @@ SET @sql := IF(
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+-- Expand status enum to support completed quotations
+SET @sql := 'ALTER TABLE `companyquotation` MODIFY COLUMN `status` ENUM(''pending'',''accepted'',''rejected'',''successful'',''completed'') NOT NULL DEFAULT ''pending''';
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 SET @col_exists := (
   SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'companyquotation' AND COLUMN_NAME = 'pricing_type'
