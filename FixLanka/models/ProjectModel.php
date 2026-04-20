@@ -703,6 +703,21 @@ class Project
             ]);
 
             if ($result) {
+                // Side effects for completion
+                if ($status === self::STATUS_COMPLETED) {
+                    try {
+                        // 1. Auto-release company employees
+                        $this->pdo->prepare("DELETE FROM project_employee_assignments WHERE project_id = :pid")
+                                  ->execute([':pid' => $projectId]);
+
+                        // 2. Mark freelancer assignments as completed
+                        $this->pdo->prepare("UPDATE freelancer_assignments SET status = 'completed', updated_at = NOW() WHERE project_id = :pid AND status = 'accepted'")
+                                  ->execute([':pid' => $projectId]);
+                    } catch (Exception $e) {
+                        // Log or ignore side effect errors to avoid blocking status update
+                    }
+                }
+
                 return [
                     'success' => true,
                     'message' => 'Status updated successfully'
@@ -1165,7 +1180,73 @@ class Project
                 'message' => 'Failed to fetch phases: ' . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Recalculate project progress based on approved milestones
+     * 
+     * @param int $projectId
+     * @return array
+     */
+    public function recalculateProjectProgress(int $projectId): array
+    {
+        try {
+            $phasesResult = $this->getContractPhases($projectId);
+            if (!$phasesResult['success']) {
+                return $phasesResult;
+            }
+
+            $phases = $phasesResult['data'] ?? [];
+            if (empty($phases)) {
+                return ['success' => true, 'progress' => 0];
+            }
+
+            $count = count($phases);
+            $totalProgress = 0;
+            $allApproved = true;
+
+            // Check if weights are assigned (sum of pct_of_total should be > 0)
+            $totalWeight = array_sum(array_column($phases, 'pct_of_total'));
+            $useEqualWeights = ($totalWeight < 1); // If total weight is near 0, assume equal weight
+
+            foreach ($phases as $phase) {
+                // Consider 'approved' or 'paid' as completed phases
+                if (in_array($phase['status'], ['approved', 'paid'])) {
+                    if ($useEqualWeights) {
+                        $totalProgress += (100 / $count);
+                    } else {
+                        $totalProgress += (float)($phase['pct_of_total'] ?? 0);
+                    }
+                } else {
+                    $allApproved = false;
+                }
+            }
+
+            // If all milestones are approved, force progress to 100
+            if ($allApproved) {
+                $totalProgress = 100;
+            } else {
+                // Round and cap at 100
+                $totalProgress = min(100, (int)round($totalProgress));
+            }
+
+            // Update project record progress
+            $this->updateProgress($projectId, $totalProgress);
+
+            // If progress is 100%, set status to completed
+            if ($totalProgress >= 100) {
+                $this->updateStatus($projectId, self::STATUS_COMPLETED);
+            }
+
+            return [
+                'success' => true,
+                'progress' => $totalProgress,
+                'is_completed' => ($totalProgress >= 100 || $allApproved)
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Progress recalculation failed: ' . $e->getMessage()];
         }
+    }
 
 
     /**
@@ -1523,8 +1604,14 @@ class Project
         try {
             $this->pdo->beginTransaction();
 
-            // 1. Get milestone details (prefer actual_amount for unit-based billing)
-            $stmt = $this->pdo->prepare("SELECT contract_id, title, status, COALESCE(actual_amount, amount) AS billed_amount FROM contract_milestone WHERE milestone_id = :id");
+            // 1. Get milestone details and project_id from linked contract
+            $stmt = $this->pdo->prepare("
+                SELECT m.contract_id, m.title, m.status, COALESCE(m.actual_amount, m.amount) AS billed_amount,
+                       c.project_id
+                FROM contract_milestone m
+                JOIN contract c ON c.contract_id = m.contract_id
+                WHERE m.milestone_id = :id
+            ");
             $stmt->execute([':id' => $milestoneId]);
             $milestone = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -1533,6 +1620,7 @@ class Project
                 return ['success' => false, 'message' => 'Milestone not found'];
             }
 
+            $projectId = (int)($milestone['project_id'] ?? 0);
             $billedAmount = (float)($milestone['billed_amount'] ?? 0);
 
             if ($action === 'approve') {
@@ -1601,6 +1689,11 @@ class Project
             } else {
                 $this->pdo->rollBack();
                 return ['success' => false, 'message' => 'Invalid action'];
+            }
+
+            // 2. Trigger progress recalculation if approved
+            if ($action === 'approve' && $projectId > 0) {
+                $this->recalculateProjectProgress($projectId);
             }
 
             $this->pdo->commit();
