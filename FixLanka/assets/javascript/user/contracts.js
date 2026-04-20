@@ -1267,6 +1267,12 @@
 
     function _isUnitPricedContract(contract) {
         if (!contract || contract.payment_method !== 'milestone_based') return false;
+
+        // Check for global unit labels (from contract-level unit pricing)
+        const labLabel = contract.labor_unit_label || contract.laborUnitLabel || '';
+        const matLabel = contract.material_unit_label || contract.materialUnitLabel || '';
+        if (labLabel.trim() !== '' || matLabel.trim() !== '') return true;
+
         const milestones = Array.isArray(contract.milestones) ? contract.milestones : [];
         return milestones.some(m => {
             const unitLabel = m?.unit_label ?? m?.unitLabel ?? null;
@@ -1372,7 +1378,7 @@
                 if (titleEl) titleEl.textContent = 'Unit rates';
                 if (hintEl) hintEl.textContent = 'Unit-priced contract: you can propose new unit rates here. Milestone %/amount adjustments are not used for unit-priced billing.';
                 if (addBtn) addBtn.style.display = 'none';
-                _renderUnitRateEditor(contract.milestones || []);
+                _renderUnitRateEditor(contract);
             } else {
                 if (titleEl) titleEl.textContent = 'Milestones';
                 if (hintEl) hintEl.textContent = 'Edit only what you need.';
@@ -1463,25 +1469,53 @@
         _updateMilestoneTotalsHint();
     }
 
-    function _renderUnitRateEditor(milestones) {
+    function _renderUnitRateEditor(contract) {
         const wrap = document.getElementById('caMilestonesWrap');
         if (!wrap) return;
 
         wrap.dataset.mode = 'unit';
-        const unitRows = Array.isArray(milestones) ? milestones.filter(m => {
+        const milestones = Array.isArray(contract.milestones) ? contract.milestones : [];
+
+        // 1. Collect global unit rates if they exist
+        const rows = [];
+        const globalFields = [
+            { id: 'labor', name: 'Labour', label: contract.labor_unit_label || contract.laborUnitLabel, rate: contract.labor_cost || contract.laborCost },
+            { id: 'material', name: 'Material', label: contract.material_unit_label || contract.materialUnitLabel, rate: contract.material_cost || contract.materialCost },
+            { id: 'transport', name: 'Transport', label: 'trip', rate: contract.transport_cost || contract.transportCost },
+            { id: 'other', name: 'Other Charges', label: 'unit', rate: contract.other_charges || contract.otherCharges }
+        ];
+
+        globalFields.forEach(f => {
+            if (f.label && String(f.label).trim() !== '') {
+                rows.push({
+                    type: 'global',
+                    id: f.id,
+                    title: f.name,
+                    unit_label: f.label,
+                    unit_rate: f.rate,
+                    proposed_unit_rate: ''
+                });
+            }
+        });
+
+        // 2. Collect milestone-specific unit rates
+        const unitMilestones = milestones.filter(m => {
             const unitLabel = m?.unit_label ?? m?.unitLabel ?? null;
             const unitRate = m?.unit_rate ?? m?.unitRate ?? null;
             return (unitLabel != null && String(unitLabel).trim() !== '') || (unitRate != null && unitRate !== '');
-        }) : [];
+        });
 
-        const rows = unitRows.map(m => ({
-            milestone_id: m.milestone_id ?? null,
-            milestone_number: m.milestone_number ?? null,
-            title: m.title || m.milestone_name || '',
-            unit_label: (m.unit_label ?? m.unitLabel ?? '').toString(),
-            unit_rate: (m.unit_rate ?? m.unitRate ?? ''),
-            proposed_unit_rate: ''
-        }));
+        unitMilestones.forEach(m => {
+            rows.push({
+                type: 'milestone',
+                milestone_id: m.milestone_id ?? null,
+                milestone_number: m.milestone_number ?? null,
+                title: m.title || m.milestone_name || '',
+                unit_label: (m.unit_label ?? m.unitLabel ?? '').toString(),
+                unit_rate: (m.unit_rate ?? m.unitRate ?? ''),
+                proposed_unit_rate: ''
+            });
+        });
 
         wrap.innerHTML = `
             <table class="ca-ms-table">
@@ -1506,16 +1540,22 @@
         rows.forEach((r, idx) => {
             const tr = document.createElement('tr');
             tr.className = 'ca-unit-row';
-            tr.dataset.milestoneId = r.milestone_id != null ? String(r.milestone_id) : '';
-            tr.dataset.milestoneNumber = r.milestone_number != null ? String(r.milestone_number) : '';
+            tr.dataset.type = r.type;
+            if (r.type === 'global') {
+                tr.dataset.globalId = r.id;
+            } else {
+                tr.dataset.milestoneId = r.milestone_id != null ? String(r.milestone_id) : '';
+                tr.dataset.milestoneNumber = r.milestone_number != null ? String(r.milestone_number) : '';
+            }
             tr.dataset.title = (r.title || '').trim();
             tr.dataset.unitLabel = (r.unit_label || '').trim();
             tr.dataset.currentUnitRate = (r.unit_rate != null ? String(r.unit_rate) : '');
+
             tr.innerHTML = `
                 <td class="ca-ms-idx">${idx + 1}</td>
                 <td>${escAttr(r.title)}</td>
                 <td>${escAttr((r.unit_label || '').trim() || '—')}</td>
-                <td>Rs. ${escAttr((r.unit_rate != null && r.unit_rate !== '') ? String(r.unit_rate) : '—')}</td>
+                <td>Rs. ${escAttr((r.unit_rate != null && r.unit_rate !== '') ? parseFloat(r.unit_rate).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00')}</td>
                 <td>
                     <input type="number" min="0" step="0.01" class="ca-unit-proposed-rate" value="" placeholder="Leave blank to keep" />
                 </td>
@@ -1702,6 +1742,8 @@
             const current = currentRaw !== '' && currentRaw != null ? Number(currentRaw) : null;
 
             return {
+                type: r.dataset.type || 'milestone',
+                global_id: r.dataset.globalId || null,
                 milestone_id: r.dataset.milestoneId ? Number(r.dataset.milestoneId) : null,
                 milestone_number: r.dataset.milestoneNumber ? Number(r.dataset.milestoneNumber) : null,
                 title: (r.dataset.title || '').trim() || null,
@@ -1775,9 +1817,17 @@
                     }
 
                     const proposals = _collectUnitRateProposalsFromEditor();
-                    if (proposals.length) proposed.unit_rate_proposals = proposals;
-
                     if (proposals.length) {
+                        const msProposals = proposals.filter(p => p.type === 'milestone');
+                        if (msProposals.length) proposed.unit_rate_proposals = msProposals;
+
+                        proposals.filter(p => p.type === 'global').forEach(p => {
+                            if (p.global_id === 'labor') proposed.labor_cost = p.proposed_unit_rate;
+                            if (p.global_id === 'material') proposed.material_cost = p.proposed_unit_rate;
+                            if (p.global_id === 'transport') proposed.transport_cost = p.proposed_unit_rate;
+                            if (p.global_id === 'other') proposed.other_charges = p.proposed_unit_rate;
+                        });
+
                         const lines = proposals.map(p => {
                             const name = p.title || 'Unit item';
                             const unit = p.unit_label ? ` per ${p.unit_label}` : '';

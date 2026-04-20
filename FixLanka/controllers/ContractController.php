@@ -601,30 +601,8 @@ class ContractController {
                     $resolvedStartDate = !empty($data['start_date']) ? $data['start_date'] : ($quotation['start_date'] ?? null);
                     $resolvedEndDate = !empty($data['end_date']) ? $data['end_date'] : ($quotation['completion_date'] ?? null);
 
-                    $projStmt = $this->pdo->prepare("
-                        INSERT INTO project (
-                            company_id, customer_id, title, description, project_type, location,
-                            budget, start_date, end_date, status, progress
-                        ) VALUES (
-                            ?, ?, ?, ?, ?, ?,
-                            ?, NULL, ?, 'planned', 0
-                        )
-                    ");
-                    $projStmt->execute([
-                        $companyId,
-                        $quotation['customer_id'],
-                        $resolvedProjectTitle,
-                        $resolvedProjectDescription,
-                        $resolvedProjectType,
-                        $resolvedProjectLocation,
-                        $resolvedTotalBudget,
-                        $resolvedEndDate
-                    ]);
-
-                    $projectId = (int)$this->pdo->lastInsertId();
-
                     // Hydrate contract payload from quotation where useful
-                    $data['project_id'] = $projectId;
+                    $data['project_id'] = null; // Decoupled: Project created only on manual start
                     $data['customer_id'] = $data['customer_id'] ?? $quotation['customer_id'];
                     $data['job_request_id'] = $data['job_request_id'] ?? $quotation['request_id'];
                     $data['quotation_id'] = $data['quotation_id'] ?? (int)$quotationId;
@@ -668,8 +646,8 @@ class ContractController {
                     $data['pricing_type'] = 'fixed_price';
                 }
             
-                // Validate required fields (project_id will exist after the quotation fallback above)
-                $requiredFields = ['project_id', 'customer_id', 'total_budget', 'start_date', 'contract_date'];
+                // Validate required fields (project_id is NOT required anymore as it is decoupled)
+                $requiredFields = ['customer_id', 'total_budget', 'start_date', 'contract_date'];
                 foreach ($requiredFields as $field) {
                     if (!isset($data[$field]) || $data[$field] === null || $data[$field] === '') {
                         throw new Exception("Field '$field' is required");
@@ -1998,28 +1976,7 @@ class ContractController {
                 $milestonePlan = ($resolvedPaymentMethod === 'milestone_based') ? 1 : 0;
 
                 // Create the linked project first (required by contract.project_id FK)
-                $projStmt = $pdo->prepare("
-                    INSERT INTO project (
-                        company_id, customer_id, title, description, project_type, location,
-                        budget, start_date, end_date, status, progress
-                    ) VALUES (
-                        ?, ?, ?, ?, ?, ?,
-                        ?, ?, ?, 'planned', 0
-                    )
-                ");
-                $projStmt->execute([
-                    $companyId,
-                    $quotation['customer_id'],
-                    $resolvedProjectTitle,
-                    $resolvedProjectDescription,
-                    $resolvedProjectType,
-                    $resolvedProjectLocation,
-                    $resolvedTotalBudget,
-                    $startDate,
-                    $endDate
-                ]);
-
-                $projectId = $pdo->lastInsertId();
+                $projectId = null; // Project created only on manual start
                 
                 // Generate contract number
                 $contractNumber = $this->generateContractNumber();
@@ -2754,6 +2711,7 @@ class ContractController {
                     null
                 );
 
+                /* 
                 // Auto-start: if the contract start date is already due, mark the linked project as in-progress.
                 // Note: Project row may exist as a placeholder (required by contract.project_id FK).
                 $autoStartStmt = $this->pdo->prepare("
@@ -2767,6 +2725,7 @@ class ContractController {
                       AND c.start_date <= CURDATE()
                 ");
                 $autoStartStmt->execute([$contractId]);
+                */
 
 
 
@@ -3001,6 +2960,7 @@ class ContractController {
             $_SESSION['user_id']
         ]);
 
+        /* 
         // Auto-start: if the contract start date is already due, mark the linked project as in-progress.
         $autoStartStmt = $this->pdo->prepare("
             UPDATE project p
@@ -3013,6 +2973,7 @@ class ContractController {
               AND c.start_date <= CURDATE()
         ");
         $autoStartStmt->execute([(int)$contractId]);
+        */
 
         $this->addTimelineEvent($contractId, 'contract_accepted_paid', 'Contract accepted with initial payment received into Escrow');
         
@@ -5608,6 +5569,12 @@ class ContractController {
                     'end_date' => $orig['end_date'] ?? null,
                     'total_budget' => $orig['total_budget'] ?? null,
                     'payment_method' => $orig['payment_method'] ?? null,
+                    'labor_cost' => $orig['labor_cost'] ?? null,
+                    'material_cost' => $orig['material_cost'] ?? null,
+                    'transport_cost' => $orig['transport_cost'] ?? null,
+                    'other_charges' => $orig['other_charges'] ?? null,
+                    'labor_unit_label' => $orig['labor_unit_label'] ?? null,
+                    'material_unit_label' => $orig['material_unit_label'] ?? null,
                     'milestones' => array_map(function ($m) {
                         return [
                             'milestone_number' => $m['milestone_number'] ?? null,
@@ -5821,7 +5788,12 @@ class ContractController {
         }
 
         $fields = [];
-        foreach (['start_date', 'end_date', 'total_budget', 'payment_method'] as $k) {
+        $check = [
+            'start_date', 'end_date', 'total_budget', 'payment_method',
+            'labor_cost', 'material_cost', 'transport_cost', 'other_charges',
+            'labor_unit_label', 'material_unit_label'
+        ];
+        foreach ($check as $k) {
             if (array_key_exists($k, $proposedChanges)) {
                 $a = (string)($originalSnapshot[$k] ?? '');
                 $b = (string)($proposedChanges[$k] ?? '');
@@ -6012,7 +5984,11 @@ class ContractController {
 
     private function applyStructuredContractChange($contractId, $proposed, $companyId) {
         // Only allow a limited set of fields
-        $allowedFields = ['start_date', 'end_date', 'total_budget', 'payment_method'];
+        $allowedFields = [
+            'start_date', 'end_date', 'total_budget', 'payment_method',
+            'labor_cost', 'material_cost', 'transport_cost', 'other_charges',
+            'labor_unit_label', 'material_unit_label'
+        ];
 
         // Update contract fields
         $setParts = [];

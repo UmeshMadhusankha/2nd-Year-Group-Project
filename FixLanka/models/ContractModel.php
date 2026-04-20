@@ -36,10 +36,10 @@ class ContractModel {
                     c.company_id,
                     c.chat_active,
                     comp.name as company_name,
-                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
-                    COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
-                    COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
+                    COALESCE(c.labor_cost, cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE(c.material_cost, cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE(c.labor_unit_label, cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
+                    COALESCE(c.material_unit_label, cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc
                      WHERE cc.contract_id = c.contract_id
                        AND cc.sender_type = 'company'
@@ -106,10 +106,10 @@ class ContractModel {
                     c.company_id,
                     c.chat_active,
                     comp.name as company_name,
-                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
-                    COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
-                    COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
+                    COALESCE(c.labor_cost, cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE(c.material_cost, cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE(c.labor_unit_label, cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
+                    COALESCE(c.material_unit_label, cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc
                      WHERE cc.contract_id = c.contract_id
                        AND cc.sender_type = 'company'
@@ -157,12 +157,12 @@ class ContractModel {
                     c_loc.address as company_address,
                     comp.contact_no as company_contact,
                     comp.email as company_email,
-                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
-                    COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
-                    COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
-                    COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
-                    COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label
+                    COALESCE(c.labor_cost, cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE(c.material_cost, cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE(c.transport_cost, cq.transport_cost, cq_req.transport_cost) as transport_cost,
+                    COALESCE(c.other_charges, cq.other_charges, cq_req.other_charges) as other_charges,
+                    COALESCE(c.labor_unit_label, cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
+                    COALESCE(c.material_unit_label, cq.material_unit_label, cq_req.material_unit_label) as material_unit_label
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id
@@ -220,12 +220,12 @@ class ContractModel {
                     c.company_id,
                     c.chat_active,
                     comp.name as company_name,
-                                        COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                                        COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
-                                        COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
-                                        COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
-                                        COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
-                                        COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
+                                        COALESCE(c.labor_cost, cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                                        COALESCE(c.material_cost, cq.material_cost, cq_req.material_cost) as material_cost,
+                                        COALESCE(c.transport_cost, cq.transport_cost, cq_req.transport_cost) as transport_cost,
+                                        COALESCE(c.other_charges, cq.other_charges, cq_req.other_charges) as other_charges,
+                                        COALESCE(c.labor_unit_label, cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
+                                        COALESCE(c.material_unit_label, cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc 
                      WHERE cc.contract_id = c.contract_id 
                        AND cc.sender_type = 'customer' 
@@ -279,12 +279,12 @@ class ContractModel {
                     c_loc.address as company_address,
                     comp.contact_no as company_contact,
                     comp.email as company_email,
-                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
-                    COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
-                    COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
-                    COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
-                    COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
+                    COALESCE(c.labor_cost, cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE(c.material_cost, cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE(c.transport_cost, cq.transport_cost, cq_req.transport_cost) as transport_cost,
+                    COALESCE(c.other_charges, cq.other_charges, cq_req.other_charges) as other_charges,
+                    COALESCE(c.labor_unit_label, cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
+                    COALESCE(c.material_unit_label, cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc 
                      WHERE cc.contract_id = c.contract_id 
                        AND cc.sender_type = 'customer' 
@@ -367,9 +367,9 @@ class ContractModel {
                     SUM(CASE WHEN c.status = 'terminated' THEN 1 ELSE 0 END) as terminated_contracts,
                     SUM(c.total_budget) as total_value,
                     AVG(p.progress) as avg_progress
-                FROM Contract c
-                INNER JOIN Project p ON c.project_id = p.project_id
-                WHERE p.company_id = :company_id";
+                FROM contract c
+                LEFT JOIN project p ON c.project_id = p.project_id
+                WHERE c.company_id = :company_id";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':company_id', $companyId, PDO::PARAM_INT);
@@ -401,7 +401,9 @@ class ContractModel {
             'start_date', 'end_date', 'contract_date',
             'terms_conditions', 'status', 'user_signature', 'company_signature',
             'auto_generated', 'amount_pending', 'payment_status', 'progress_percentage',
-            'undo_deadline', 'undo_requested', 'chat_active', 'escrow_enabled'
+            'undo_deadline', 'undo_requested', 'chat_active', 'escrow_enabled',
+            'labor_cost', 'material_cost', 'transport_cost', 'other_charges',
+            'labor_unit_label', 'material_unit_label'
         ];
 
         $fields = [];
@@ -483,7 +485,9 @@ class ContractModel {
             'variation_clause',
             'communication_channel', 'dispute_resolution',
             'start_date', 'end_date',
-            'terms_conditions', 'status'
+            'terms_conditions', 'status',
+            'labor_cost', 'material_cost', 'transport_cost', 'other_charges',
+            'labor_unit_label', 'material_unit_label'
         ];
         
         foreach ($allowedFields as $field) {
