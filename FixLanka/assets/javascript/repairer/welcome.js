@@ -1,5 +1,4 @@
 // ===== Configuration =====
-const REPAIRER_ID = window.CURRENT_REPAIRER_ID || 0;
 const BASE_API = '/2nd-Year-Group-Project/FixLanka/api';
 
 // Initialize welcome page functionality
@@ -23,13 +22,11 @@ function initializeWelcomePage() {
  * Fetch real stats from the backend and populate stat cards
  */
 async function loadDashboardStats() {
-    if (!REPAIRER_ID) return;
-
     try {
         // Fetch job stats
         const [jobRes, quoteRes] = await Promise.all([
-            fetch(`${BASE_API}/repairer-jobs.php?action=stats&repairer_id=${REPAIRER_ID}`),
-            fetch(`${BASE_API}/repairer-quotes.php?repairer_id=${REPAIRER_ID}`)
+            fetch(`${BASE_API}/repairer-jobs.php?action=stats`),
+            fetch(`${BASE_API}/repairer-quotes.php`)
         ]);
 
         const jobData = await jobRes.json();
@@ -42,7 +39,11 @@ async function loadDashboardStats() {
             // Total earnings from paid jobs – we'll compute from jobs list if needed
             const earningsEl = document.getElementById('welcomeTotalEarnings');
             if (earningsEl) {
-                earningsEl.textContent = 'LKR 0';
+                const totalEarnings = Number(jobData.total_earnings || 0);
+                earningsEl.textContent = `LKR ${totalEarnings.toLocaleString('en-LK', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2
+                })}`;
             }
         }
 
@@ -60,13 +61,8 @@ async function loadDashboardStats() {
  * Load recent activity (recent jobs) from the backend
  */
 async function loadRecentActivity() {
-    if (!REPAIRER_ID) {
-        renderEmptyActivity();
-        return;
-    }
-
     try {
-        const res = await fetch(`${BASE_API}/repairer-jobs.php?action=list&repairer_id=${REPAIRER_ID}`);
+        const res = await fetch(`${BASE_API}/repairer-jobs.php?action=list`);
         const data = await res.json();
 
         const activityList = document.getElementById('activityList');
@@ -238,9 +234,9 @@ function initializeAvailabilityToggle() {
     const statusCard = document.querySelector('.availability-status');
 
     if (availabilityButton && statusElement) {
-        availabilityButton.addEventListener('click', function (e) {
+        availabilityButton.addEventListener('click', async function (e) {
             e.preventDefault();
-            toggleAvailabilityStatus(statusElement, statusCard, availabilityButton);
+            await toggleAvailabilityStatus(statusElement, statusCard, availabilityButton);
         });
     }
 }
@@ -248,9 +244,18 @@ function initializeAvailabilityToggle() {
 /**
  * Toggle availability status
  */
-function toggleAvailabilityStatus(statusElement, statusCard, button) {
+async function toggleAvailabilityStatus(statusElement, statusCard, button) {
     const isAvailable = statusElement.classList.contains('available');
     const newStatus = isAvailable ? 'unavailable' : 'available';
+
+    button.disabled = true;
+
+    const saveSuccess = await saveAvailabilityToServer(newStatus);
+    if (!saveSuccess) {
+        showStatusMessage('Failed to update availability. Please try again.');
+        button.disabled = false;
+        return;
+    }
 
     // Update localStorage for cross-page synchronization
     localStorage.setItem('fixlanka_availability_status', newStatus);
@@ -276,6 +281,41 @@ function toggleAvailabilityStatus(statusElement, statusCard, button) {
     });
 
     window.dispatchEvent(availabilityEvent);
+    button.disabled = false;
+}
+
+async function saveAvailabilityToServer(status) {
+    try {
+        const res = await fetch(`${BASE_API}/repairer-settings.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'update_availability', availability: status })
+        });
+
+        const data = await res.json();
+        return !!data.success;
+    } catch (err) {
+        console.error('Failed to save availability:', err);
+        return false;
+    }
+}
+
+async function loadAvailabilityStatus() {
+    try {
+        const res = await fetch(`${BASE_API}/repairer-settings.php?action=availability`);
+        const data = await res.json();
+        if (data.success) {
+            const status = data.availability === 'unavailable' ? 'unavailable' : 'available';
+            localStorage.setItem('fixlanka_availability_status', status);
+            updateAvailabilityDisplay(status);
+            return;
+        }
+    } catch (err) {
+        console.error('Failed to load availability:', err);
+    }
+
+    // Fallback to last known local value if API fails.
+    loadSavedAvailabilityStatus();
 }
 
 /**
@@ -416,8 +456,8 @@ document.addEventListener('DOMContentLoaded', function () {
  * Initialize availability synchronization with other pages
  */
 function initializeAvailabilitySync() {
-    // Load saved availability status on page load
-    loadSavedAvailabilityStatus();
+    // Load current availability status from DB on page load.
+    loadAvailabilityStatus();
 
     // Listen for availability changes from other pages
     window.addEventListener('availabilityChanged', function (e) {

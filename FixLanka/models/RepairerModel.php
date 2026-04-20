@@ -336,6 +336,39 @@ class Repairer {
     }
 
     /**
+     * Get current availability status for a repairer.
+     */
+    public function getAvailability(int $repairerId): ?string {
+        try {
+            $stmt = $this->pdo->prepare('SELECT availability FROM repairer WHERE repairer_id = ? LIMIT 1');
+            $stmt->execute([$repairerId]);
+            $value = $stmt->fetchColumn();
+            return is_string($value) ? $value : null;
+        } catch (PDOException $e) {
+            error_log('Error getting repairer availability: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Persist availability status for a repairer.
+     */
+    public function updateAvailability(int $repairerId, string $availability): bool {
+        $allowed = ['available', 'unavailable'];
+        if (!in_array($availability, $allowed, true)) {
+            return false;
+        }
+
+        try {
+            $stmt = $this->pdo->prepare('UPDATE repairer SET availability = ? WHERE repairer_id = ?');
+            return $stmt->execute([$availability, $repairerId]);
+        } catch (PDOException $e) {
+            error_log('Error updating repairer availability: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Get finished job outcomes for a repairer from the core `job` table.
      * Success rate is computed from finished outcomes only: completed vs cancelled.
      */

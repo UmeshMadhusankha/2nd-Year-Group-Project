@@ -20,7 +20,7 @@ class RepairerQuote {
     public function create($data) {
         try {
             $stmt = $this->pdo->prepare("
-                INSERT INTO RepairerQuote 
+                INSERT INTO repairerquote 
                 (request_id, repairer_id, quoteAmount, estimatedDays, warrantyPeriod, 
                  validUntil, materialsIncluded, message, status) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -64,11 +64,11 @@ class RepairerQuote {
                            c.name as category_name,
                            u.f_name as customer_first_name,
                            u.l_name as customer_last_name
-                    FROM RepairerQuote rq
-                    LEFT JOIN JobRequest jr ON rq.request_id = jr.request_id
+                    FROM repairerquote rq
+                    LEFT JOIN jobrequest jr ON rq.request_id = jr.request_id
                     LEFT JOIN location jr_loc ON jr.location_id = jr_loc.location_id
-                    LEFT JOIN Category c ON jr.category_id = c.category_id
-                    LEFT JOIN User u ON jr.user_id = u.user_id
+                    LEFT JOIN category c ON jr.category_id = c.category_id
+                    LEFT JOIN user u ON jr.user_id = u.user_id
                     WHERE 1=1";
             
             $params = [];
@@ -127,11 +127,11 @@ class RepairerQuote {
                        u.f_name as customer_first_name,
                        u.l_name as customer_last_name,
                        u.email as customer_email
-                FROM RepairerQuote rq
-                LEFT JOIN JobRequest jr ON rq.request_id = jr.request_id
+                FROM repairerquote rq
+                LEFT JOIN jobrequest jr ON rq.request_id = jr.request_id
                 LEFT JOIN location jr_loc ON jr.location_id = jr_loc.location_id
-                LEFT JOIN Category c ON jr.category_id = c.category_id
-                LEFT JOIN User u ON jr.user_id = u.user_id
+                LEFT JOIN category c ON jr.category_id = c.category_id
+                LEFT JOIN user u ON jr.user_id = u.user_id
                 WHERE rq.quote_id = ?
             ");
             
@@ -155,7 +155,7 @@ class RepairerQuote {
         try {
             // First verify the quote exists, belongs to repairer, and is pending
             $stmt = $this->pdo->prepare("
-                SELECT status FROM RepairerQuote 
+                SELECT status FROM repairerquote 
                 WHERE quote_id = ? AND repairer_id = ?
             ");
             $stmt->execute([$quoteId, $repairerId]);
@@ -213,7 +213,7 @@ class RepairerQuote {
             $params[] = $quoteId;
             $params[] = $repairerId;
             
-            $sql = "UPDATE RepairerQuote SET " . implode(", ", $updates) . 
+                        $sql = "UPDATE repairerquote SET " . implode(", ", $updates) . 
                    " WHERE quote_id = ? AND repairer_id = ?";
             
             $stmt = $this->pdo->prepare($sql);
@@ -236,7 +236,7 @@ class RepairerQuote {
         try {
             // Only allow deletion of pending quotes
             $stmt = $this->pdo->prepare("
-                DELETE FROM RepairerQuote 
+                DELETE FROM repairerquote 
                 WHERE quote_id = ? AND repairer_id = ? AND status = 'pending'
             ");
             
@@ -260,7 +260,7 @@ class RepairerQuote {
         try {
             $stmt = $this->pdo->prepare("
                 SELECT COUNT(*) as count 
-                FROM RepairerQuote 
+                FROM repairerquote 
                 WHERE request_id = ? AND repairer_id = ? AND status = 'pending'
             ");
             
@@ -284,7 +284,7 @@ class RepairerQuote {
         try {
             $stmt = $this->pdo->prepare("
                 SELECT status, COUNT(*) as count 
-                FROM RepairerQuote 
+                FROM repairerquote 
                 WHERE repairer_id = ?
                 GROUP BY status
             ");

@@ -211,8 +211,11 @@ function getStats($pdo) {
     try {
         $sql = "
             SELECT
+                rq.quoteAmount,
                 jr.status AS job_status,
                 p.status  AS payment_status,
+                p.amount  AS payment_amount,
+                jc.collaboration_id,
                 jc.user_completed_at,
                 jc.provider_completed_at,
                 jc.user_payment_confirmed_at,
@@ -237,13 +240,17 @@ function getStats($pdo) {
         $completed = 0;
         $paid      = 0;
         $cancelled = 0;
+        $totalEarnings = 0.0;
 
         foreach ($rows as $row) {
             $ui = deriveUiStatus($row);
             switch ($ui) {
                 case 'active':    $active++;    break;
                 case 'completed': $completed++; break;
-                case 'paid':      $paid++;      break;
+                case 'paid':
+                    $paid++;
+                    $totalEarnings += (float)($row['payment_amount'] ?? $row['quoteAmount'] ?? 0);
+                    break;
                 case 'cancelled': $cancelled++; break;
             }
         }
@@ -255,6 +262,7 @@ function getStats($pdo) {
             'paid'      => $paid,
             'cancelled' => $cancelled,
             'total'     => $active + $completed + $paid + $cancelled,
+            'total_earnings' => round($totalEarnings, 2),
         ]);
     } catch (PDOException $e) {
         error_log("repairer-jobs stats error: " . $e->getMessage());

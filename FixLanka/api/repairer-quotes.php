@@ -11,6 +11,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 // Include database configuration
 require_once '../config/database.php';
+require_once '../config/session.php';
 require_once '../models/RepairerQuoteModel.php';
 
 // Initialize model
@@ -22,6 +23,18 @@ $method = $_SERVER['REQUEST_METHOD'];
 // Handle preflight requests
 if ($method === 'OPTIONS') {
     http_response_code(200);
+    exit();
+}
+
+$currentRole = getUserRole();
+$currentRepairerId = (int)($_SESSION['user_id'] ?? 0);
+
+if (!in_array($currentRole, ['repairer', 'admin'], true)) {
+    http_response_code(401);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Unauthorized'
+    ]);
     exit();
 }
 
@@ -49,10 +62,23 @@ switch ($method) {
  * Handle GET requests - Retrieve quotes
  */
 function handleGet() {
-    global $quoteModel;
+    global $quoteModel, $currentRole, $currentRepairerId;
     
     // Get query parameters
     $repairer_id = isset($_GET['repairer_id']) ? intval($_GET['repairer_id']) : null;
+        if ($currentRole === 'repairer') {
+            if ($currentRepairerId <= 0) {
+                http_response_code(401);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Unauthorized'
+                ]);
+                return;
+            }
+            // Always scope repairer requests to the authenticated repairer.
+            $repairer_id = $currentRepairerId;
+        }
+
     $request_id = isset($_GET['request_id']) ? intval($_GET['request_id']) : null;
     $quote_id = isset($_GET['quote_id']) ? intval($_GET['quote_id']) : null;
     $status = isset($_GET['status']) ? $_GET['status'] : null;
@@ -100,11 +126,22 @@ function handleGet() {
  * Handle POST requests - Create new quote
  */
 function handlePost() {
-    global $quoteModel;
+    global $quoteModel, $currentRole, $currentRepairerId;
+
+    if ($currentRole !== 'repairer') {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Only repairers can submit quotes'
+        ]);
+        return;
+    }
     
     // Get JSON input
     $input = json_decode(file_get_contents('php://input'), true);
     
+    $input['repairer_id'] = $currentRepairerId;
+
     // Validate required fields
     if (!isset($input['request_id']) || !isset($input['repairer_id']) || 
         !isset($input['quoteAmount']) || !isset($input['estimatedDays']) || 
@@ -178,7 +215,16 @@ function handlePost() {
  * Handle PUT requests - Update existing quote
  */
 function handlePut() {
-    global $quoteModel;
+    global $quoteModel, $currentRole, $currentRepairerId;
+
+    if ($currentRole !== 'repairer') {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Only repairers can update quotes'
+        ]);
+        return;
+    }
     
     // Get JSON input
     $rawInput = file_get_contents('php://input');
@@ -186,6 +232,8 @@ function handlePut() {
     
     // Debug logging
     
+    $input['repairer_id'] = $currentRepairerId;
+
     // Validate quote_id and repairer_id
     if (!isset($input['quote_id']) || !isset($input['repairer_id'])) {
         error_log("Missing parameters - quote_id: " . (isset($input['quote_id']) ? 'present' : 'missing') . 
@@ -262,11 +310,20 @@ function handlePut() {
  * Handle DELETE requests - Delete quote
  */
 function handleDelete() {
-    global $quoteModel;
+    global $quoteModel, $currentRole, $currentRepairerId;
+
+    if ($currentRole !== 'repairer') {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Only repairers can delete quotes'
+        ]);
+        return;
+    }
     
     // Get quote_id and repairer_id from query parameters
     $quote_id = isset($_GET['quote_id']) ? intval($_GET['quote_id']) : null;
-    $repairer_id = isset($_GET['repairer_id']) ? intval($_GET['repairer_id']) : null;
+    $repairer_id = $currentRepairerId;
     
     // Debug logging
     error_log("DELETE Request - quote_id: " . ($quote_id ?? 'null') . ", repairer_id: " . ($repairer_id ?? 'null'));

@@ -17,6 +17,19 @@ if ($repairerId <= 0) {
 $repairerModel = new Repairer($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $action = $_GET['action'] ?? 'get_settings';
+
+    if ($action === 'availability') {
+        try {
+            $availability = $repairerModel->getAvailability($repairerId) ?? 'available';
+            echo json_encode(['success' => true, 'availability' => $availability]);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Failed to load availability']);
+        }
+        exit;
+    }
+
     try {
         $settings = $repairerModel->getSettings($repairerId);
         echo json_encode(['success' => true, 'data' => $settings]);
@@ -36,6 +49,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $action = $input['action'] ?? 'update_settings';
+    if ($action === 'update_availability') {
+        $availability = strtolower((string)($input['availability'] ?? ''));
+        if (!in_array($availability, ['available', 'unavailable'], true)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid availability value']);
+            exit;
+        }
+
+        try {
+            $success = $repairerModel->updateAvailability($repairerId, $availability);
+            if ($success) {
+                echo json_encode(['success' => true, 'message' => 'Availability updated successfully']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Failed to update availability']);
+            }
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Failed to update availability']);
+        }
+        exit;
+    }
+
     if ($action !== 'update_settings') {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
