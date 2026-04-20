@@ -193,6 +193,7 @@ class JobPostingModel {
         $needsDeadline = array_key_exists('application_deadline', $data) || array_key_exists('applicationDeadline', $data);
         $needsSkills = array_key_exists('required_skills', $data) || array_key_exists('requiredSkills', $data);
         $needsLocationReq = array_key_exists('location_requirements', $data) || array_key_exists('locationRequirements', $data);
+        $needsSalaryType = array_key_exists('salary_type', $data) || array_key_exists('salaryType', $data);
 
         $didAlter = false;
 
@@ -214,6 +215,11 @@ class JobPostingModel {
 
             if ($needsLocationReq && !$this->firstExistingColumn($this->table, ['location_requirements', 'locationRequirements'])) {
                 $this->pdo->exec("ALTER TABLE {$this->table} ADD COLUMN location_requirements TEXT NULL");
+                $didAlter = true;
+            }
+
+            if ($needsSalaryType && !$this->firstExistingColumn($this->table, ['salary_type', 'salaryType'])) {
+                $this->pdo->exec("ALTER TABLE {$this->table} ADD COLUMN salary_type ENUM('monthly','project_based','hourly') NOT NULL DEFAULT 'monthly'");
                 $didAlter = true;
             }
         } catch (Throwable $e) {
@@ -277,6 +283,12 @@ class JobPostingModel {
             if ($locationReqCol) {
                 $columns[] = $locationReqCol;
                 $params[':' . $locationReqCol] = $this->getOptionalValue($data, ['location_requirements', 'locationRequirements'], null);
+            }
+
+            $salaryTypeCol = $this->firstExistingColumn($this->table, ['salary_type', 'salaryType']);
+            if ($salaryTypeCol) {
+                $columns[] = $salaryTypeCol;
+                $params[':' . $salaryTypeCol] = $this->getOptionalValue($data, ['salary_type', 'salaryType'], 'monthly') ?? 'monthly';
             }
 
             $placeholders = array_map(fn($c) => ':' . $c, $columns);
@@ -399,6 +411,12 @@ class JobPostingModel {
             if ($locationReqCol) {
                 $fields[] = '`' . $locationReqCol . '` = :' . $locationReqCol;
                 $params[':' . $locationReqCol] = $this->getOptionalValue($data, ['location_requirements', 'locationRequirements'], null);
+            }
+
+            $salaryTypeCol = $this->firstExistingColumn($this->table, ['salary_type', 'salaryType']);
+            if ($salaryTypeCol) {
+                $fields[] = '`' . $salaryTypeCol . '` = :' . $salaryTypeCol;
+                $params[':' . $salaryTypeCol] = $this->getOptionalValue($data, ['salary_type', 'salaryType'], 'monthly') ?? 'monthly';
             }
 
             $sql = 'UPDATE ' . $this->table . ' SET ' . implode(",\n                ", $fields) . ' WHERE posting_id = :posting_id';

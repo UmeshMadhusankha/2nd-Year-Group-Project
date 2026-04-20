@@ -376,10 +376,14 @@ if (!$companyId) {
                             </button>
                         </div>
 
-                        <!-- Job Postings List -->
                         <div class="job-postings-list">
                             <!-- Job posting cards will be populated here -->
                         </div>
+                    </div>
+
+                    <!-- Job Details View -->
+                    <div class="workforce-section" id="job-detailsSection" style="display: none;">
+                        <!-- Content populated dynamically -->
                     </div>
 
                     <!-- Empty State -->
@@ -2768,6 +2772,8 @@ if (!$companyId) {
             const title = document.getElementById('jobTitle').value || 'Job Title';
             const category = document.getElementById('jobCategory').value || 'Category';
             const type = document.getElementById('employmentType').value || 'Type';
+            const salaryType = document.getElementById('salaryType').value || 'Type';
+            const salaryTypeLabel = salaryType === 'monthly' ? 'Monthly' : salaryType === 'project_based' ? 'Project-based' : salaryType === 'hourly' ? 'Hourly' : 'Type';
             const minBudget = document.getElementById('minBudget').value || '0';
             const maxBudget = document.getElementById('maxBudget').value || '0';
             const description = document.getElementById('jobDescription').value || 'Job description will appear here...';
@@ -2782,7 +2788,8 @@ if (!$companyId) {
             document.getElementById('previewTitle').textContent = title;
             document.getElementById('previewCategory').textContent = category;
             document.getElementById('previewType').textContent = type;
-            document.getElementById('previewBudget').textContent = `LKR ${minBudget} - ${maxBudget}/hr`;
+            document.getElementById('previewSalaryType').textContent = salaryTypeLabel;
+            document.getElementById('previewBudget').textContent = `LKR ${minBudget} - ${maxBudget}/${salaryType === 'hourly' ? 'hr' : salaryType === 'project_based' ? 'project' : 'month'}`;
             document.getElementById('previewDescription').textContent = description;
             
             // Update requirements list
@@ -2918,6 +2925,7 @@ if (!$companyId) {
                 title: document.getElementById('jobTitle').value,
                 category: document.getElementById('jobCategory').value,
                 employment_type: document.getElementById('employmentType').value,
+                salary_type: document.getElementById('salaryType').value,
                 description: document.getElementById('jobDescription').value,
                 min_experience: Number(document.getElementById('minExperience').value),
                 priority_level: document.getElementById('priorityLevel').value,
@@ -3304,9 +3312,6 @@ if (!$companyId) {
                     <button class="action-btn-sm warning" onclick="changeJobStatus(${posting.posting_id}, 'closed')" title="Close">
                         <i class="fas fa-ban"></i> Close
                     </button>
-                    <button class="action-btn-sm info" onclick="changeJobStatus(${posting.posting_id}, 'filled')" title="Mark as Filled">
-                        <i class="fas fa-check"></i> Filled
-                    </button>
                 `;
             } else if (posting.status === 'closed') {
                 statusActions = `
@@ -3350,7 +3355,7 @@ if (!$companyId) {
                 </div>
                 <div class="posting-actions">
                     ${canEdit ? `
-                        <button class="action-btn-sm secondary" onclick="editJobPosting(${posting.posting_id})" title="Edit">
+                        <button class="action-btn-sm info" onclick="editJobPosting(${posting.posting_id})" title="Edit">
                             <i class="fas fa-edit"></i> Edit
                         </button>
                     ` : ''}
@@ -3403,6 +3408,7 @@ if (!$companyId) {
                 document.getElementById('jobTitle').value = posting.title || '';
                 document.getElementById('jobCategory').value = posting.category || '';
                 document.getElementById('employmentType').value = posting.employment_type || '';
+                document.getElementById('salaryType').value = posting.salary_type || '';
                 document.getElementById('jobDescription').value = posting.description || '';
                 document.getElementById('minExperience').value = posting.min_experience || '';
                 document.getElementById('priorityLevel').value = posting.priority_level || 'normal';
@@ -3673,92 +3679,171 @@ if (!$companyId) {
                 
                 const status = statusConfig[posting.status] || statusConfig['draft'];
                 
-                // Show a modal with full details
-                const modalHtml = `
-                    <div class="modal-overlay" id="jobDetailsModal" onclick="if(event.target === this) closeJobDetailsModal()">
-                        <div class="modal-content large">
-                            <div class="modal-header">
-                                <h3><i class="fas fa-info-circle"></i> Job Posting Details</h3>
-                                <button class="close-btn" onclick="closeJobDetailsModal()">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                // Render the detailed view
+                const detailsHtml = `
+                    <div class="job-details-header">
+                        <div class="header-left">
+                            <button class="back-link-btn" onclick="closeJobDetails()">
+                                <i class="fas fa-arrow-left"></i> Back to Postings
+                            </button>
+                            <h2>${escapeHtml(posting.title)}</h2>
+                            <div class="header-meta">
+                                <span class="badge badge-${status.class}">${status.label}</span>
+                                <span class="meta-item"><i class="far fa-calendar"></i> Posted on ${formatDate(posting.created_at)}</span>
+                                <span class="meta-item"><i class="far fa-eye"></i> ${posting.view_count || 0} Views</span>
                             </div>
-                            <div class="modal-body">
-                                <div class="detail-section">
-                                    <div class="detail-header">
-                                        <h4>${escapeHtml(posting.title)}</h4>
-                                        <span class="badge badge-${status.class}">${status.label}</span>
+                        </div>
+                        <div class="header-right">
+                            <div class="action-group">
+                                ${posting.status !== 'open' ? `<button class="action-btn primary" onclick="editJobPosting(${postingId})"><i class="fas fa-edit"></i> Edit Posting</button>` : ''}
+                                <button class="action-btn danger" onclick="deleteJobPosting(${postingId})"><i class="fas fa-trash-alt"></i> Delete</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="job-details-grid">
+                        <div class="main-column">
+                            <!-- Description Card -->
+                            <div class="detail-card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-align-left"></i> Job Description</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-content">
+                                        ${posting.description ? posting.description.split('\n').map(p => `<p>${escapeHtml(p)}</p>`).join('') : '<p class="empty-text">No description provided</p>'}
                                     </div>
-                                    
-                                    <div class="detail-grid">
-                                        <div class="detail-item">
-                                            <label><i class="fas fa-tag"></i> Category</label>
-                                            <span>${escapeHtml(posting.category)}</span>
+                                </div>
+                            </div>
+
+                            <!-- Requirements Card -->
+                            <div class="detail-card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-list-check"></i> Requirements & Skills</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="requirements-section">
+                                        <h4>Required Skills</h4>
+                                        <div class="skills-tags">
+                                            ${posting.required_skills ? posting.required_skills.split(',').map(s => `<span class="skill-tag">${escapeHtml(s.trim())}</span>`).join('') : '<span class="empty-text">No specific skills listed</span>'}
                                         </div>
-                                        <div class="detail-item">
-                                            <label><i class="fas fa-briefcase"></i> Employment Type</label>
-                                            <span>${escapeHtml(posting.employment_type || 'Not specified')}</span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label><i class="fas fa-star"></i> Experience Level</label>
-                                            <span>${(posting.min_experience === 0 || posting.min_experience === '0')
-                                                ? 'No experience required'
-                                                : (posting.min_experience ? escapeHtml(`${posting.min_experience}+ years`) : 'Not specified')}
-                                            </span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label><i class="fas fa-exclamation-circle"></i> Priority</label>
-                                            <span>${escapeHtml(posting.priority_level || 'Normal')}</span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label><i class="fas fa-money-bill-wave"></i> Budget Range</label>
-                                            <span>LKR ${posting.min_budget?.toLocaleString() || 0} - ${posting.max_budget?.toLocaleString() || 0}/hr</span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label><i class="fas fa-clock"></i> Application Deadline</label>
-                                            <span>${(posting.application_deadline || posting.applicationDeadline) ? formatDate(posting.application_deadline || posting.applicationDeadline) : 'No deadline'}</span>
-                                        </div>
-                                        <div class="detail-item full-width">
-                                            <label><i class="fas fa-map-marker-alt"></i> Location</label>
-                                            <span>${escapeHtml(posting.location || 'Not specified')}</span>
-                                        </div>
-                                        <div class="detail-item full-width">
-                                            <label><i class="fas fa-align-left"></i> Description</label>
-                                            <p>${escapeHtml(posting.description || 'No description provided')}</p>
-                                        </div>
-                                        <div class="detail-item full-width">
-                                            <label><i class="fas fa-tools"></i> Required Skills</label>
-                                            <p>${escapeHtml(posting.required_skills || 'No specific skills listed')}</p>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label><i class="fas fa-bell"></i> Notify Repairers</label>
-                                            <span>${posting.notify_repairers == 1 ? 'Yes' : 'No'}</span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label><i class="fas fa-paper-plane"></i> Direct Applications</label>
-                                            <span>${posting.allow_direct_applications == 1 ? 'Allowed' : 'Not allowed'}</span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label><i class="fas fa-calendar-plus"></i> Posted</label>
-                                            <span>${formatDate(posting.created_at)}</span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label><i class="fas fa-calendar-check"></i> Last Updated</label>
-                                            <span>${posting.updated_at ? formatDate(posting.updated_at) : 'Never'}</span>
+                                        
+                                        <h4>Experience Level</h4>
+                                        <div class="experience-info">
+                                            <i class="fas fa-graduation-cap"></i>
+                                            <span>${(posting.min_experience === 0 || posting.min_experience === '0') ? 'No minimum experience required' : `${escapeHtml(posting.min_experience)}+ years of experience`}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="modal-footer">
-                                <button class="btn-secondary" onclick="closeJobDetailsModal()">Close</button>
-                                ${posting.status !== 'open' ? `<button class="btn-primary" onclick="closeJobDetailsModal(); editJobPosting(${postingId})">Edit</button>` : ''}
+                        </div>
+
+                        <div class="sidebar-column">
+                            <!-- Quick Stats Card -->
+                            <div class="detail-card stats-card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-bolt"></i> Quick Overview</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="stat-info-list">
+                                        <div class="stat-info-item">
+                                            <div class="icon-box"><i class="fas fa-tag"></i></div>
+                                            <div class="info-content">
+                                                <label>Category</label>
+                                                <span>${escapeHtml(posting.category)}</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-info-item">
+                                            <div class="icon-box"><i class="fas fa-briefcase"></i></div>
+                                            <div class="info-content">
+                                                <label>Type</label>
+                                                <span>${escapeHtml(posting.employment_type || 'Full-time')}</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-info-item">
+                                            <div class="icon-box"><i class="fas fa-money-bill"></i></div>
+                                            <div class="info-content">
+                                                <label>Salary Type</label>
+                                                <span>${posting.salary_type === 'monthly' ? 'Monthly' : posting.salary_type === 'project_based' ? 'Project-based' : posting.salary_type === 'hourly' ? 'Hourly' : 'Monthly'}</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-info-item">
+                                            <div class="icon-box"><i class="fas fa-map-marker-alt"></i></div>
+                                            <div class="info-content">
+                                                <label>Location</label>
+                                                <span>${escapeHtml(posting.location || 'Remote / Online')}</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-info-item">
+                                            <div class="icon-box"><i class="fas fa-fire"></i></div>
+                                            <div class="info-content">
+                                                <label>Priority</label>
+                                                <span class="priority-${(posting.priority_level || 'medium').toLowerCase()}">${escapeHtml(posting.priority_level || 'Medium')}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Budget Card -->
+                            <div class="detail-card budget-card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-money-bill-wave"></i> Budget & Deadline</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="budget-display">
+                                        <label>Budget Range</label>
+                                        <div class="price-range">
+                                            <span class="currency">LKR</span>
+                                            <span class="amount">${posting.min_budget?.toLocaleString() || 0} - ${posting.max_budget?.toLocaleString() || 0}</span>
+                                            <span class="unit">/${posting.salary_type === 'hourly' ? 'hr' : posting.salary_type === 'project_based' ? 'project' : 'month'}</span>
+                                        </div>
+                                    </div>
+                                    <div class="deadline-display">
+                                        <label>Application Deadline</label>
+                                        <div class="deadline-info ${(posting.application_deadline || posting.applicationDeadline) ? '' : 'no-deadline'}">
+                                            <i class="far fa-clock"></i>
+                                            <span>${(posting.application_deadline || posting.applicationDeadline) ? formatDate(posting.application_deadline || posting.applicationDeadline) : 'Open Recruitment'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Settings Card -->
+                            <div class="detail-card settings-card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-cog"></i> Posting Settings</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="settings-list">
+                                        <div class="setting-item">
+                                            <span>Notify Repairers</span>
+                                            <span class="toggle-status ${posting.notify_repairers == 1 ? 'enabled' : 'disabled'}">
+                                                ${posting.notify_repairers == 1 ? '<i class="fas fa-check-circle"></i> Enabled' : '<i class="fas fa-times-circle"></i> Disabled'}
+                                            </span>
+                                        </div>
+                                        <div class="setting-item">
+                                            <span>Direct Applications</span>
+                                            <span class="toggle-status ${posting.allow_direct_applications == 1 ? 'enabled' : 'disabled'}">
+                                                ${posting.allow_direct_applications == 1 ? '<i class="fas fa-check-circle"></i> Allowed' : '<i class="fas fa-times-circle"></i> Not Allowed'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 `;
                 
-                // Append modal to body
-                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                // Inject and show the details section
+                const detailsSection = document.getElementById('job-detailsSection');
+                detailsSection.innerHTML = detailsHtml;
+                
+                // Hide the main postings list and show details
+                document.getElementById('job-postingsSection').style.display = 'none';
+                detailsSection.style.display = 'block';
+                
+                // Scroll to top of section
+                detailsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 
             } catch (error) {
                 console.error('Error loading job details:', error);
@@ -3766,11 +3851,9 @@ if (!$companyId) {
             }
         }
 
-        function closeJobDetailsModal() {
-            const modal = document.getElementById('jobDetailsModal');
-            if (modal) {
-                modal.remove();
-            }
+        function closeJobDetails() {
+            document.getElementById('job-detailsSection').style.display = 'none';
+            document.getElementById('job-postingsSection').style.display = 'block';
         }
 
         function addEmployee() {
@@ -4962,6 +5045,16 @@ if (!$companyId) {
                             </div>
 
                             <div class="form-group">
+                                <label>Salary Type *</label>
+                                <select id="salaryType" required>
+                                    <option value="">Select salary type</option>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="project_based">Project-based</option>
+                                    <option value="hourly">Hourly</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
                                 <label>Related Project (Optional)</label>
                                 <select id="relatedProject">
                                     <option value="">Select a project if applicable</option>
@@ -5047,6 +5140,7 @@ if (!$companyId) {
                                     <div class="preview-meta">
                                         <span id="previewCategory">Category</span> � 
                                         <span id="previewType">Type</span> � 
+                                        <span id="previewSalaryType">Salary Type</span> � 
                                         <span id="previewBudget">Budget</span>
                                     </div>
                                 </div>
