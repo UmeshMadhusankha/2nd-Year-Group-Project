@@ -405,65 +405,6 @@
   border-color: #28a745;
   box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
 }
-.working-hours-container {
-  background: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  padding: var(--spacing-lg);
-  border: 1px solid var(--border-color);
-}
-.working-hours-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-.working-hours-row {
-  display: grid;
-  grid-template-columns: 120px 1fr;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm);
-  background: var(--bg-secondary);
-  border-radius: var(--border-radius);
-}
-.day-label {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-.time-inputs {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-.time-input {
-  flex: 1;
-  min-width: 0;
-}
-.time-separator {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-.checkbox-wrapper {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  cursor: pointer;
-}
-.checkbox-wrapper input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--primary-color);
-  cursor: pointer;
-}
-.checkbox-wrapper input[type="checkbox"]:disabled {
-  cursor: not-allowed;
-}
-.checkbox-label {
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
-  font-weight: 500;
-}
 .form-actions {
   display: flex;
   justify-content: space-between;
@@ -563,13 +504,6 @@
 .form-grid {
   grid-template-columns: repeat(2, 1fr);
 }
-.working-hours-row {
-  grid-template-columns: 1fr;
-  gap: var(--spacing-sm);
-}
-.time-inputs {
-  justify-content: space-between;
-}
 .quick-info-cards {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -599,18 +533,6 @@
   .form-actions-right {
   justify-content: center;
 }
-.working-hours-row {
-  grid-template-columns: 1fr;
-  text-align: center;
-}
-.time-inputs {
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  align-items: center;
-}
-.time-separator {
-  order: 1;
-}
 }
 @media (max-width: 480px) {
 .profile-left-column,
@@ -630,12 +552,6 @@
 .profile-photo {
   width: 100px;
   height: 100px;
-}
-.working-hours-container {
-  padding: var(--spacing-md);
-}
-.time-input {
-  min-width: 120px;
 }
 }
 .form-group-full {

@@ -28,11 +28,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Form
     const profileForm = document.getElementById('profile-form');
-    const formInputs  = document.querySelectorAll('.form-input:not(.time-input)');
-    const timeInputs  = document.querySelectorAll('.form-input.time-input');
+    const formInputs  = document.querySelectorAll('.form-input');
     const formSelects = document.querySelectorAll('.form-select');
     const districtCheckboxes = document.querySelectorAll('input[name="districts[]"]');
-    const sundayClosedCheckbox = document.getElementById('sunday-closed');
 
     // ── State ──
     let isEditing = false;
@@ -245,18 +243,14 @@ document.addEventListener('DOMContentLoaded', function () {
     function storeOriginalFormData() {
         originalFormData = {};
         formInputs.forEach(function (inp) { originalFormData[inp.id] = inp.value; });
-        timeInputs.forEach(function (inp) { originalFormData[inp.id] = inp.value; });
         formSelects.forEach(function (sel) { originalFormData[sel.id] = sel.value; });
         districtCheckboxes.forEach(function (cb) { originalFormData['district_' + cb.value] = cb.checked; });
-        if (sundayClosedCheckbox) originalFormData['sunday-closed'] = sundayClosedCheckbox.checked;
     }
 
     function restoreOriginalFormData() {
         formInputs.forEach(function (inp) { if (originalFormData[inp.id] !== undefined) inp.value = originalFormData[inp.id]; });
-        timeInputs.forEach(function (inp) { if (originalFormData[inp.id] !== undefined) inp.value = originalFormData[inp.id]; });
         formSelects.forEach(function (sel) { if (originalFormData[sel.id] !== undefined) sel.value = originalFormData[sel.id]; });
         districtCheckboxes.forEach(function (cb) { if (originalFormData['district_' + cb.value] !== undefined) cb.checked = originalFormData['district_' + cb.value]; });
-        if (sundayClosedCheckbox && originalFormData['sunday-closed'] !== undefined) sundayClosedCheckbox.checked = originalFormData['sunday-closed'];
         clearAllFieldErrors();
     }
 
@@ -271,10 +265,8 @@ document.addEventListener('DOMContentLoaded', function () {
     function enterEditMode() {
         isEditing = true;
         formInputs.forEach(function (inp) { inp.removeAttribute('readonly'); inp.classList.add('editable'); });
-        timeInputs.forEach(function (inp) { inp.removeAttribute('readonly'); inp.classList.add('editable'); });
         formSelects.forEach(function (sel) { sel.removeAttribute('disabled'); sel.classList.add('editable'); });
         districtCheckboxes.forEach(function (cb) { cb.removeAttribute('disabled'); });
-        if (sundayClosedCheckbox) sundayClosedCheckbox.removeAttribute('disabled');
 
         syncCategoryNameFromSelect();
 
@@ -293,10 +285,8 @@ document.addEventListener('DOMContentLoaded', function () {
     function exitEditMode() {
         isEditing = false;
         formInputs.forEach(function (inp) { inp.setAttribute('readonly', 'readonly'); inp.classList.remove('editable'); });
-        timeInputs.forEach(function (inp) { inp.setAttribute('readonly', 'readonly'); inp.classList.remove('editable'); });
         formSelects.forEach(function (sel) { sel.setAttribute('disabled', 'disabled'); sel.classList.remove('editable'); });
         districtCheckboxes.forEach(function (cb) { cb.setAttribute('disabled', 'disabled'); });
-        if (sundayClosedCheckbox) sundayClosedCheckbox.setAttribute('disabled', 'disabled');
 
         syncCategoryNameFromSelect();
 

@@ -294,39 +294,6 @@ try {
                                         </div>
                                     </div>
 
-                                    <div class="form-section">
-                                        <h4 class="form-section-title">Working Hours</h4>
-                                        <div class="working-hours-container">
-                                            <div class="working-hours-grid">
-                                                <div class="working-hours-row">
-                                                    <span class="day-label">Monday - Friday</span>
-                                                    <div class="time-inputs">
-                                                        <input type="time" id="weekday-start" name="weekday-start" class="form-input time-input" value="" readonly>
-                                                        <span class="time-separator">to</span>
-                                                        <input type="time" id="weekday-end" name="weekday-end" class="form-input time-input" value="" readonly>
-                                                    </div>
-                                                </div>
-                                                <div class="working-hours-row">
-                                                    <span class="day-label">Saturday</span>
-                                                    <div class="time-inputs">
-                                                        <input type="time" id="saturday-start" name="saturday-start" class="form-input time-input" value="" readonly>
-                                                        <span class="time-separator">to</span>
-                                                        <input type="time" id="saturday-end" name="saturday-end" class="form-input time-input" value="" readonly>
-                                                    </div>
-                                                </div>
-                                                <div class="working-hours-row">
-                                                    <span class="day-label">Sunday</span>
-                                                    <div class="time-inputs">
-                                                        <label class="checkbox-wrapper">
-                                                            <input type="checkbox" id="sunday-closed" name="sunday-closed" disabled>
-                                                            <span class="checkbox-label">Closed</span>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
                                     <!-- Form Actions -->
                                     <div class="form-actions">
                                         <div class="form-actions-left">
