@@ -135,6 +135,7 @@ document.addEventListener('DOMContentLoaded', function () {
         setVal('email', data.email || '');
         setVal('phone', data.phoneNumber || '');
 
+
         var catSelect = document.getElementById('service-category');
         if (catSelect && data.category_id) catSelect.value = data.category_id;
 

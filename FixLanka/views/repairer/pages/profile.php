@@ -170,6 +170,7 @@ try {
                                                 <input type="text" id="service-category-name" class="form-input" value="" readonly>
                                             </div>
 
+
                                             <div class="form-group form-group-full">
                                                 <label class="form-label">Skills (Tags)</label>
                                                 <div class="skills-tag-input">

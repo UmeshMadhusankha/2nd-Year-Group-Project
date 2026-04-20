@@ -426,6 +426,7 @@ class Repairer {
                 'districts = ?',
                 'availability = ?',
                 'about = ?'
+                
             ];
 
             $values = [
@@ -436,7 +437,7 @@ class Repairer {
                 $data['category_id'] ?: null,
                 $data['districts'],
                 $data['availability'],
-                $data['about'] ?? null,
+                $data['about'] ?? null
             ];
 
             if ($this->hasSkills()) {
