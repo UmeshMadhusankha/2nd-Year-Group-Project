@@ -35,7 +35,7 @@ class RepairerSupportTicket
 
     public function getTicketsForRepairer(int $repairerId): array
     {
-        $sql = "SELECT ticket_id, ticket_number, title, status, created_at, updated_at
+        $sql = "SELECT ticket_id, ticket_number, title, status, priority, urgency, created_at, updated_at
                 FROM support_tickets
                 WHERE user_type = 'repairer' AND user_id = :user_id
                 ORDER BY updated_at DESC, ticket_id DESC";

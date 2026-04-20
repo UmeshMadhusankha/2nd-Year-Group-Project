@@ -75,6 +75,8 @@ function mapSupportTicketToRow(ticket) {
         number: ticket.ticket_number || `#${ticketId}`,
         subject: ticket.title || 'Support Ticket',
         status: String(ticket.status || 'open').toLowerCase(),
+        priority: String(ticket.priority || 'medium').toLowerCase(),
+        urgency: String(ticket.urgency || 'soon').toLowerCase(),
         created: formatDateTime(ticket.created_at),
         updated: formatDateTime(ticket.updated_at || ticket.created_at)
     };
@@ -89,7 +91,7 @@ async function loadTicketsFromBackend(showFailureToast = false) {
         if (emptyState) emptyState.style.display = 'none';
         tbody.innerHTML = `
             <tr id="tickets-loading-row">
-                <td colspan="5" style="text-align:center;padding:40px;color:var(--text-secondary)">
+                <td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary)">
                     <i class="fas fa-spinner fa-spin fa-2x"></i>
                     <p style="margin-top:12px">Loading tickets...</p>
                 </td>
@@ -600,6 +602,8 @@ function updateTicketsTable() {
 
         const statusClass = ticket.status.toLowerCase().replace(' ', '-');
         const statusText = ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1).replace('-', ' ');
+        const priorityText = formatTicketLabel(ticket.priority);
+        const urgencyText = formatTicketLabel(ticket.urgency);
 
         row.innerHTML = `
             <td class="ticket-id">${ticket.number ? `#${ticket.number}` : `#${ticket.id}`}</td>
@@ -607,6 +611,8 @@ function updateTicketsTable() {
             <td class="ticket-status">
                 <span class="status-badge status-${statusClass}">${statusText}</span>
             </td>
+            <td class="ticket-priority">${priorityText}</td>
+            <td class="ticket-urgency">${urgencyText}</td>
             <td class="ticket-updated">${ticket.updated}</td>
             <td class="ticket-actions">
                 <button class="btn-icon view-ticket" data-ticket-id="${ticket.id}" title="View Ticket">
@@ -618,6 +624,13 @@ function updateTicketsTable() {
         tbody.appendChild(row);
     });
 
+
+function formatTicketLabel(value) {
+    if (!value) return '—';
+    const text = String(value).replace(/-/g, ' ').trim();
+    if (!text) return '—';
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
     // Re-initialize view buttons
     const viewButtons = document.querySelectorAll('.view-ticket');
     viewButtons.forEach(button => {
