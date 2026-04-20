@@ -105,11 +105,6 @@ try {
                             </div>
 
                             <div class="form-group">
-                                <label for="companyName">Identity Number</label>
-                                <input type="text" id="Identity_number" value="" required>
-                            </div>
-
-                            <div class="form-group">
                                 <label>Service Categories * (Select at least one)</label>
                                 <div class="business-type-grid" id="companyBusinessTypes">
                                     <?php foreach ($serviceCategories as $cat): ?>
