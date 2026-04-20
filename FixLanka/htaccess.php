@@ -2,6 +2,8 @@ function isValidPhone(v) {
     return /^(0\d{9}|\+94\d{9})$/.test(v);
 }
 
+ALTER TABLE repairer DROP COLUMN id_number;
+
                                             <!-- <div class="form-group">
                                                 <label for="id-number" class="form-label">ID Number</label>
                                                 <input type="text" id="id-number" name="id-number" class="form-input" value="" readonly>
@@ -22,3 +24,4 @@ for repairerModel.php
 
 for RepairerController.php
     'id_number' => $input['id_number'] ?? null, - in $data
+
