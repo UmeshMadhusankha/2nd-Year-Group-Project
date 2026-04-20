@@ -2918,7 +2918,6 @@ if (!$companyId) {
                 title: document.getElementById('jobTitle').value,
                 category: document.getElementById('jobCategory').value,
                 employment_type: document.getElementById('employmentType').value,
-                related_project_id: document.getElementById('relatedProject').value || null,
                 description: document.getElementById('jobDescription').value,
                 min_experience: Number(document.getElementById('minExperience').value),
                 priority_level: document.getElementById('priorityLevel').value,
