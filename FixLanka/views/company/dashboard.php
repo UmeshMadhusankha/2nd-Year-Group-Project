@@ -189,7 +189,6 @@ $userData = getUserData();
                         <div class="contracts-list" id="dashboardContractsList"></div>
                     </div>
 
-                    <!-- Payments Panel with Income Overview -->
                     <div class="payments-panel">
                         <!-- Recent Payments Section -->
                         <div class="payments-list-section">
@@ -197,38 +196,21 @@ $userData = getUserData();
                                 <h3><i class="fas fa-credit-card"></i> Recent Payments</h3>
                                 <a href="/2nd-Year-Group-Project/FixLanka/company-payments" class="view-all-btn"><i class="fas fa-eye"></i> View All</a>
                             </div>
-                            <div class="payments-list" id="dashboardPaymentsList"></div>
-                        </div>
-
-                        <!-- Income Overview Section -->
-                        <div class="income-overview-section">
-                            <div class="section-header">
-                                <h3><i class="fas fa-chart-line"></i> Income Overview</h3>
-                                <select class="period-selector">
-                                    <option>Last 7 Days</option>
-                                    <option>Last 30 Days</option>
-                                    <option>Last 3 Months</option>
-                                </select>
-                            </div>
-
-                            <div class="income-chart-container">
-                                <div class="income-chart" id="incomeChart"></div>
-                                <div class="chart-labels" id="incomeChartLabels"></div>
-                            </div>
-
-                            <div class="income-summary">
-                                <div class="summary-item">
-                                    <div class="summary-value" id="incomeSummaryTotal">—</div>
-                                    <div class="summary-label">Total Income</div>
-                                </div>
-                                <div class="summary-item">
-                                    <div class="summary-value" id="incomeSummaryAvg">—</div>
-                                    <div class="summary-label">Avg Daily</div>
-                                </div>
-                                <div class="summary-item">
-                                    <div class="summary-value" id="incomeSummaryGrowth">—</div>
-                                    <div class="summary-label">Growth</div>
-                                </div>
+                            <div class="table-container">
+                                <table class="dashboard-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Project</th>
+                                            <th>Detail</th>
+                                            <th>Amount</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dashboardPaymentsList">
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>

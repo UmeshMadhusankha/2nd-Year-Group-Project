@@ -454,35 +454,59 @@ try {
     // Recent payments (income only; expenses not modeled in payment table)
     try {
         $stmt = $pdo->prepare("
-        SELECT
-            p.payment_id,
-            p.amount,
-            p.status,
-            p.paymentDate,
-            p.paymentType,
-            jr.title AS job_title,
-            u.f_name,
-            u.l_name
-        FROM payment p
-        INNER JOIN contract c ON c.job_request_id = p.job_request_id
-        INNER JOIN jobrequest jr ON jr.request_id = p.job_request_id
-        INNER JOIN user u ON u.user_id = jr.user_id
-        WHERE c.company_id = ?
-        ORDER BY p.paymentDate DESC
-        LIMIT 5
+            SELECT * FROM (
+                SELECT 
+                    mp.payment_id as id,
+                    COALESCE(mp.paid_at, mp.payment_date) as date,
+                    p.title as project_name,
+                    u.f_name,
+                    u.l_name,
+                    mp.amount,
+                    mp.status,
+                    cm.title as milestone_description
+                FROM milestonepayment mp
+                JOIN contract_milestone cm ON mp.milestone_id = cm.milestone_id
+                JOIN contract c ON cm.contract_id = c.contract_id
+                JOIN project p ON c.project_id = p.project_id
+                JOIN user u ON p.customer_id = u.user_id
+                WHERE p.company_id = ?
+                
+                UNION ALL
+                
+                SELECT 
+                    cph.payment_id as id,
+                    COALESCE(cph.completed_at, cph.created_at) as date,
+                    p.title as project_name,
+                    u.f_name,
+                    u.l_name,
+                    cph.amount,
+                    cph.status,
+                    CONCAT(REPLACE(cph.payment_type, '_', ' '), ': ', COALESCE(cm.title, 'General payment')) as milestone_description
+                FROM contract_payment_history cph
+                JOIN contract c ON cph.contract_id = c.contract_id
+                JOIN project p ON c.project_id = p.project_id
+                JOIN user u ON p.customer_id = u.user_id
+                LEFT JOIN contract_milestone cm ON cph.milestone_id = cm.milestone_id
+                WHERE p.company_id = ?
+                AND cph.status = 'completed'
+                AND cph.payment_type IN ('milestone_release', 'upfront_payment', 'bonus')
+            ) AS combined_income
+            ORDER BY date DESC
+            LIMIT 5
         ");
-        $stmt->execute([$companyId]);
+        $stmt->execute([$companyId, $companyId]);
+
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $payments[] = [
-            'payment_id' => (int)$row['payment_id'],
-            'title' => $row['job_title'] ? 'Payment Received' : 'Payment',
-            'subtitle' => trim(($row['f_name'] ?? '') . ' ' . ($row['l_name'] ?? '')),
-            'amount' => (float)($row['amount'] ?? 0),
-            'status' => $row['status'] ?? 'pending',
-            'date' => formatDateLabel($row['paymentDate'] ?? ''),
-            'payment_type' => $row['paymentType'] ?? null
-        ];
-    }
+            $payments[] = [
+                'payment_id' => (int)$row['id'],
+                'title' => $row['project_name'] ?: 'Job Payment',
+                'description' => $row['milestone_description'],
+                'subtitle' => trim(($row['f_name'] ?? '') . ' ' . ($row['l_name'] ?? '')),
+                'amount' => (float)($row['amount'] ?? 0),
+                'status' => $row['status'] ?? 'pending',
+                'date' => formatDateLabel($row['date'] ?? '')
+            ];
+        }
     } catch (PDOException $e) {
         logDashboardSectionError('payments_recent', $e);
         $payments = [];

@@ -2094,7 +2094,6 @@ async function loadDashboardData(chartPeriodOverride) {
         renderProjects(dashboardData.projects);
         renderContracts(dashboardData.contracts);
         renderPayments(dashboardData.payments);
-        renderIncomeChart(dashboardData.incomeChart);
         renderWorkforce(dashboardData.workforce);
         renderFeedback(dashboardData.feedback);
         renderSupportTickets(dashboardData.supportTickets);
@@ -2185,27 +2184,26 @@ function renderContracts(contracts) {
 }
 
 function renderPayments(payments) {
-    const container = document.getElementById('dashboardPaymentsList');
-    if (!container) return;
+    const list = document.getElementById('dashboardPaymentsList');
+    if (!list) return;
 
     if (!Array.isArray(payments) || payments.length === 0) {
-        container.innerHTML = '<div class="empty-state">No payments found.</div>';
+        list.innerHTML = '<tr><td colspan="5" class="empty-state">No payments found.</td></tr>';
         return;
     }
 
-    container.innerHTML = payments.map(p => {
-        const amountClass = p.status === 'completed' ? 'positive' : (p.status === 'failed' || p.status === 'refunded' ? 'negative' : '');
+    list.innerHTML = payments.map(p => {
+        const amountClass = p.status === 'completed' ? 'amount-positive' : 'amount-pending';
         const sign = p.status === 'completed' ? '+' : '';
 
         return `
-            <div class="payment-item">
-                <div class="payment-info">
-                    <h4>${escapeHtml(p.title || 'Payment')}</h4>
-                    <p>${escapeHtml(p.subtitle || '')}</p>
-                </div>
-                <div class="payment-amount ${amountClass}">${sign}LKR ${formatCurrency(Number(p.amount || 0) / 1000)}K</div>
-                <div class="payment-date">${escapeHtml(p.date || '')}</div>
-            </div>
+            <tr>
+                <td><strong>${escapeHtml(p.title || 'Job Payment')}</strong></td>
+                <td>${escapeHtml(p.subtitle || 'Customer')}${p.description ? ' • ' + escapeHtml(p.description) : ''}</td>
+                <td class="${amountClass}">${sign}LKR ${formatCurrency(p.amount || 0)}</td>
+                <td>${escapeHtml(p.date || '')}</td>
+                <td><span class="status-badge ${p.status.toLowerCase()}">${capitalizeFirst(p.status)}</span></td>
+            </tr>
         `;
     }).join('');
 }
