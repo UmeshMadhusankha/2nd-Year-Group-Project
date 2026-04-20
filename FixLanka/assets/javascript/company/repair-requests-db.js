@@ -354,16 +354,20 @@ function renderAvailableRequests() {
     }
 
     if (!availableRequests || availableRequests.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 3rem;">
-                <i class="fas fa-inbox" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
-                <p style="color: var(--text-secondary);">No job requests available at the moment</p>
-            </div>
-        `;
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                    <i class="fas fa-inbox" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
+                    <p style="color: var(--text-secondary);">No job requests available at the moment</p>
+                </div>
+            `;
+        }
         return;
     }
 
-    container.innerHTML = availableRequests.map(request => createRequestCard(request)).join('');
+    if (container) {
+        container.innerHTML = availableRequests.map(request => createRequestCard(request)).join('');
+    }
 }
 
 /**
@@ -588,7 +592,9 @@ function renderSubmittedQuotations() {
 
 
     if (!pendingList) {
-        console.error('CRITICAL: pending-quotations-list element not found!');
+        if (!isWidgetMode) {
+            console.error('CRITICAL: pending-quotations-list element not found!');
+        }
         return;
     }
 
@@ -999,6 +1005,10 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
  * @returns {void}
  */
 async function openQuotationModal(requestId, source = 'job') {
+    if (!quotationModal || !quotationForm) {
+        showToast('Quotation form not available', 'error');
+        return;
+    }
     editingQuotationId = null;
     quotationForm.reset();
 
@@ -1050,17 +1060,20 @@ async function openQuotationModal(requestId, source = 'job') {
     }
 
     // Set the hidden request ID field
-    document.getElementById('request-id').value = requestId;
+    const requestIdField = document.getElementById('request-id');
+    if (requestIdField) requestIdField.value = requestId;
 
     // Display request details in the modal
     const detailsContainer = document.getElementById('quotation-request-details');
-    detailsContainer.innerHTML = `
-        <h4 style="margin: 0 0 0.5rem 0;">${escapeHtml(request.title)}</h4>
-        <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
-            <i class="fas fa-map-marker-alt"></i> ${escapeHtml(request.district)} &bull; 
-            <i class="fas fa-calendar"></i> Needed by ${formatDate(request.finish_date)}
-        </p>
-    `;
+    if (detailsContainer) {
+        detailsContainer.innerHTML = `
+            <h4 style="margin: 0 0 0.5rem 0;">${escapeHtml(request.title)}</h4>
+            <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
+                <i class="fas fa-map-marker-alt"></i> ${escapeHtml(request.district)} &bull; 
+                <i class="fas fa-calendar"></i> Needed by ${formatDate(request.finish_date)}
+            </p>
+        `;
+    }
 
     // ============================================
     // AUTO-FILL FIELDS
@@ -1590,6 +1603,7 @@ async function viewRequestDetails(requestId, type = 'job') {
     }
 
     const detailsContainer = document.getElementById('request-details-content');
+    if (!detailsContainer) return;
 
     // Preparation for Premium "Service Ticket" view
     const requestIdFormatted = `#REQ-${new Date(request.created_at || Date.now()).getFullYear()}-${String(requestId).padStart(4, '0')}`;
@@ -1906,6 +1920,8 @@ function autoCalculateDuration() {
  * Update request counts
  */
 function updateRequestCounts() {
+    if (isWidgetMode && repairRequestsWidgetConfig && repairRequestsWidgetConfig.showCounts === false) return;
+
     const publicCount = document.querySelector('[data-tab="public-requests"] .tab-count');
     const headerPublicCount = document.getElementById('public-requests-count');
     const headerPendingCount = document.getElementById('pending-response-count');
@@ -1926,6 +1942,8 @@ function updateRequestCounts() {
  * Update quotation counts
  */
 function updateQuotationCounts() {
+    if (isWidgetMode && repairRequestsWidgetConfig && repairRequestsWidgetConfig.showCounts === false) return;
+
     const logsCount = document.querySelector('[data-tab="logs"] .tab-count');
     const headerMonthCount = document.getElementById('this-month-count');
 
@@ -2363,18 +2381,23 @@ if (document.readyState === 'loading') {
  * Sets up event listeners and default values for work schedule fields
  */
 function initializeWorkSchedule() {
+    // Only initialize if we have the work schedule elements
     if (workScheduleInitialized) {
         return;
     }
-    workScheduleInitialized = true;
 
+    const scheduleTypeSelect = document.getElementById('work-schedule-type');
+    if (!scheduleTypeSelect) {
+        return;
+    }
+
+    workScheduleInitialized = true;
     console.log('🔧 Initializing work schedule features...');
 
     const startTimeField = document.getElementById('work-start-time');
     const endTimeField = document.getElementById('work-end-time');
 
     // Auto-update working days based on schedule type
-    const scheduleTypeSelect = document.getElementById('work-schedule-type');
     if (scheduleTypeSelect) {
         scheduleTypeSelect.addEventListener('change', function () {
             const scheduleType = this.value;

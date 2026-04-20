@@ -49,7 +49,7 @@ class Project
     public function create($data)
     {
         try {
-            $sql = "INSERT INTO project (
+            $sql = "INSERT INTO Project (
                         company_id, customer_id, title, description, 
                         project_type, location, budget, start_date, 
                         end_date, attachment, status, progress
@@ -105,13 +105,11 @@ class Project
                         u.address as customer_address,
                         u.district as customer_district,
                         c.name as company_name,
-                        ct.contract_id,
-                        ct.customer_response as contract_customer_response,
-                        ct.status as contract_status
-                    FROM project p
-                    LEFT JOIN user u ON p.customer_id = u.user_id
-                    LEFT JOIN company c ON p.company_id = c.company_id
-                    LEFT JOIN contract ct ON p.project_id = ct.project_id
+                        ct.contract_id
+                    FROM Project p
+                    LEFT JOIN User u ON p.customer_id = u.user_id
+                    LEFT JOIN Company c ON p.company_id = c.company_id
+                    LEFT JOIN Contract ct ON p.project_id = ct.project_id
                     WHERE 1=1";
 
             $params = [];
@@ -187,13 +185,11 @@ class Project
                         c.name as company_name,
                         c.email as company_email,
                         c.contact_no as company_contact,
-                        ct.contract_id,
-                        ct.customer_response as contract_customer_response,
-                        ct.status as contract_status
-                    FROM project p
-                    LEFT JOIN user u ON p.customer_id = u.user_id
-                    LEFT JOIN company c ON p.company_id = c.company_id
-                    LEFT JOIN contract ct ON p.project_id = ct.project_id
+                        ct.contract_id
+                    FROM Project p
+                    LEFT JOIN User u ON p.customer_id = u.user_id
+                    LEFT JOIN Company c ON p.company_id = c.company_id
+                    LEFT JOIN Contract ct ON p.project_id = ct.project_id
                     WHERE p.project_id = :project_id";
 
             $stmt = $this->pdo->prepare($sql);
@@ -265,13 +261,13 @@ class Project
             if (!empty($contract['project_id'])) {
                 $existingProjectId = (int)$contract['project_id'];
 
-                $stmtP = $this->pdo->prepare('SELECT project_id, company_id, title FROM project WHERE project_id = :pid LIMIT 1');
+                $stmtP = $this->pdo->prepare('SELECT project_id, company_id, title FROM Project WHERE project_id = :pid LIMIT 1');
                 $stmtP->execute([':pid' => $existingProjectId]);
                 $projRow = $stmtP->fetch(PDO::FETCH_ASSOC);
 
                 if (!$projRow) {
                     // Heal stale linkage
-                    $stmtClr = $this->pdo->prepare('UPDATE contract SET project_id = NULL WHERE contract_id = :cid');
+                    $stmtClr = $this->pdo->prepare('UPDATE Contract SET project_id = NULL WHERE contract_id = :cid');
                     $stmtClr->execute([':cid' => $contractId]);
                     $contract['project_id'] = null;
                 } else {
@@ -289,7 +285,7 @@ class Project
 
             // 2. Create the Project record if none exists yet
             if (empty($projectId)) {
-                $sqlInsert = "INSERT INTO project (
+                $sqlInsert = "INSERT INTO Project (
                                 company_id, customer_id, title, description, 
                                 project_type, location, budget, start_date, 
                                 end_date, status, progress
@@ -317,13 +313,13 @@ class Project
                 $projectId = (int)$this->pdo->lastInsertId();
 
                 // 3. Link Project back to Contract
-                $sqlUpdate = "UPDATE contract SET project_id = :pid WHERE contract_id = :cid";
+                $sqlUpdate = "UPDATE Contract SET project_id = :pid WHERE contract_id = :cid";
                 $stmtUpdate = $this->pdo->prepare($sqlUpdate);
                 $stmtUpdate->execute([':pid' => $projectId, ':cid' => $contractId]);
             } else {
                 // Start/update the existing linked project
                 $stmtStart = $this->pdo->prepare("
-                    UPDATE project
+                    UPDATE Project
                     SET status = :status,
                         start_date = CURDATE()
                     WHERE project_id = :pid
@@ -342,7 +338,6 @@ class Project
 
             // 5. Attach accepted freelancer offers
             if (count($freelancerAssignmentIds) > 0) {
-                $this->ensureFreelancerAssignmentsColumns();
                 $this->attachFreelancerAssignmentsToProject((int)$projectId, (int)$contractId, (int)$contract['company_id'], $freelancerAssignmentIds);
             }
 
@@ -385,35 +380,12 @@ class Project
                 'staff_requirements_count' => count($staffRequirements)
             ];
 
-        } catch (Throwable $e) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
-            error_log('Error in ProjectModel::startFromContract: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
             return [
                 'success' => false,
                 'message' => $e->getMessage()
             ];
-        }
-    }
-
-    private function ensureFreelancerAssignmentsColumns(): void
-    {
-        try {
-            // Check if contract_id exists
-            $stmt = $this->pdo->prepare("
-                SELECT COUNT(*)
-                FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = 'freelancer_assignments'
-                  AND COLUMN_NAME = 'contract_id'
-            ");
-            $stmt->execute();
-            if ((int)$stmt->fetchColumn() === 0) {
-                $this->pdo->exec("ALTER TABLE freelancer_assignments ADD COLUMN contract_id INT(11) DEFAULT NULL AFTER project_id");
-            }
-        } catch (Throwable $e) {
-            error_log('[ProjectModel] ensureFreelancerAssignmentsColumns failed: ' . $e->getMessage());
         }
     }
 
@@ -610,7 +582,7 @@ class Project
     public function update($projectId, $data)
     {
         try {
-            $sql = "UPDATE project SET 
+            $sql = "UPDATE Project SET 
                         title = :title,
                         description = :description,
                         project_type = :project_type,
@@ -672,7 +644,7 @@ class Project
             // Ensure progress is within 0-100 range
             $progress = max(0, min(100, intval($progress)));
 
-            $sql = "UPDATE project SET progress = :progress WHERE project_id = :project_id";
+            $sql = "UPDATE Project SET progress = :progress WHERE project_id = :project_id";
             $stmt = $this->pdo->prepare($sql);
             $result = $stmt->execute([
                 ':project_id' => $projectId,
@@ -723,7 +695,7 @@ class Project
                 ];
             }
 
-            $sql = "UPDATE project SET status = :status WHERE project_id = :project_id";
+            $sql = "UPDATE Project SET status = :status WHERE project_id = :project_id";
             $stmt = $this->pdo->prepare($sql);
             $result = $stmt->execute([
                 ':project_id' => $projectId,
@@ -758,7 +730,7 @@ class Project
     public function delete($projectId)
     {
         try {
-            $sql = "DELETE FROM project WHERE project_id = :project_id";
+            $sql = "DELETE FROM Project WHERE project_id = :project_id";
             $stmt = $this->pdo->prepare($sql);
             $result = $stmt->execute([':project_id' => $projectId]);
 
@@ -800,7 +772,7 @@ class Project
                         AVG(progress) as average_progress,
                         SUM(budget) as total_budget,
                         SUM(final_cost) as total_final_cost
-                    FROM project
+                    FROM Project
                     WHERE company_id = :company_id";
 
             $stmt = $this->pdo->prepare($sql);
@@ -832,7 +804,7 @@ class Project
             $debugLog = []; // For debugging
 
             // 1. Get Project base events
-            $sql = "SELECT created_at, start_date, end_date, title, status FROM project WHERE project_id = :project_id";
+            $sql = "SELECT created_at, start_date, end_date, title, status FROM Project WHERE project_id = :project_id";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([':project_id' => $projectId]);
             $project = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -879,7 +851,7 @@ class Project
 
             // 2. Get Contract & Milestones (if available)
             // Join Contract to get ID
-            $sqlContract = "SELECT contract_id, contract_date, signed_at, created_at, start_date, end_date FROM contract WHERE project_id = :project_id LIMIT 1";
+            $sqlContract = "SELECT contract_id, contract_date, signed_at, created_at, start_date, end_date FROM Contract WHERE project_id = :project_id LIMIT 1";
             $stmtContract = $this->pdo->prepare($sqlContract);
             $stmtContract->execute([':project_id' => $projectId]);
             $contract = $stmtContract->fetch(PDO::FETCH_ASSOC);
@@ -945,7 +917,7 @@ class Project
 
                     // If empty, try legacy Milestone table
                     if (empty($milestones)) {
-                        $sqlLegacy = "SELECT name as title, due_date, status, completion_date FROM milestone WHERE contract_id = :contract_id ORDER BY due_date ASC";
+                        $sqlLegacy = "SELECT name as title, due_date, status, completion_date FROM Milestone WHERE contract_id = :contract_id ORDER BY due_date ASC";
                         $stmtLegacy = $this->pdo->prepare($sqlLegacy);
                         $stmtLegacy->execute([':contract_id' => $contractId]);
                         $milestones = $stmtLegacy->fetchAll(PDO::FETCH_ASSOC);
@@ -1027,7 +999,7 @@ class Project
         try {
             // 1. Get Contract details
             // Added total_budget to selection
-            $sqlContract = "SELECT contract_id, payment_method, total_budget, quotation_id, end_date FROM contract WHERE project_id = :project_id ORDER BY contract_id DESC LIMIT 1";
+            $sqlContract = "SELECT contract_id, payment_method, total_budget, quotation_id, end_date FROM Contract WHERE project_id = :project_id ORDER BY contract_id DESC LIMIT 1";
             $stmtContract = $this->pdo->prepare($sqlContract);
             $stmtContract->execute([':project_id' => $projectId]);
             $contract = $stmtContract->fetch(PDO::FETCH_ASSOC);
@@ -1063,41 +1035,25 @@ class Project
                         $unitPricing['labor_unit_label'] = $labUnit !== '' ? $labUnit : null;
                         $unitPricing['material_unit_label'] = $matUnit !== '' ? $matUnit : null;
 
-                        // Prioritize adjusted rates from contract_milestone if they exist (same logic as ContractModel)
-                        $sqlOverrideLab = "SELECT unit_rate FROM contract_milestone WHERE contract_id = :cid AND (title LIKE '%Labor%' OR title LIKE '%Completion%' OR title LIKE '%Service%') AND unit_rate > 0 LIMIT 1";
-                        $stmtOverrideLab = $this->pdo->prepare($sqlOverrideLab);
-                        $stmtOverrideLab->execute([':cid' => $contractId]);
-                        $overrideLab = $stmtOverrideLab->fetchColumn();
-
-                        if ($overrideLab && is_numeric($overrideLab)) {
-                            $unitPricing['labor_unit_rate'] = (float)$overrideLab;
-                        } else {
-                            $unitPricing['labor_unit_rate'] = isset($q['labor_cost']) ? (float)$q['labor_cost'] : null;
+                        $laborRate = null;
+                        if (isset($q['labor_cost']) && $q['labor_cost'] !== null && $q['labor_cost'] !== '' && is_numeric($q['labor_cost'])) {
+                            $laborRate = (float)$q['labor_cost'];
                         }
+                        $unitPricing['labor_unit_rate'] = $laborRate;
 
-                        $sqlOverrideMat = "SELECT unit_rate FROM contract_milestone WHERE contract_id = :cid AND (title LIKE '%Material%') AND unit_rate > 0 LIMIT 1";
-                        $stmtOverrideMat = $this->pdo->prepare($sqlOverrideMat);
-                        $stmtOverrideMat->execute([':cid' => $contractId]);
-                        $overrideMat = $stmtOverrideMat->fetchColumn();
-
-                        if ($overrideMat && is_numeric($overrideMat)) {
-                            $unitPricing['material_unit_rate'] = (float)$overrideMat;
-                        } else {
-                            $materialRate = 0.0;
-                            foreach (['material_cost', 'transport_cost', 'other_charges'] as $k) {
-                                $v = $q[$k] ?? 0;
-                                if ($v !== null && $v !== '' && is_numeric($v)) {
-                                    $materialRate += (float)$v;
-                                }
+                        $materialRate = 0.0;
+                        foreach (['material_cost', 'transport_cost', 'other_charges'] as $k) {
+                            $v = $q[$k] ?? 0;
+                            if ($v !== null && $v !== '' && is_numeric($v)) {
+                                $materialRate += (float)$v;
                             }
-                            if ($materialRate <= 0 && isset($q['total_amount']) && $q['total_amount'] !== null && $q['total_amount'] !== '' && is_numeric($q['total_amount'])) {
-                                $laborRate = $unitPricing['labor_unit_rate'] ?? 0;
-                                $materialRate = max(0.0, (float)$q['total_amount'] - (float)$laborRate);
-                            }
-                            $unitPricing['material_unit_rate'] = $materialRate;
                         }
+                        if ($materialRate <= 0 && isset($q['total_amount']) && $q['total_amount'] !== null && $q['total_amount'] !== '' && is_numeric($q['total_amount'])) {
+                            $materialRate = max(0.0, (float)$q['total_amount'] - (float)($laborRate ?? 0));
+                        }
+                        $unitPricing['material_unit_rate'] = $materialRate;
 
-                        $unitPricing['is_unit_priced'] = ($labUnit !== '' || $matUnit !== '') && ($unitPricing['labor_unit_rate'] !== null || ($unitPricing['material_unit_rate'] ?? 0) > 0);
+                        $unitPricing['is_unit_priced'] = ($labUnit !== '' || $matUnit !== '') && ($laborRate !== null || $materialRate > 0);
                     }
                 } catch (Exception $e) {
                     // Ignore quotation fetch errors to avoid breaking timeline.
@@ -1144,7 +1100,7 @@ class Project
                                 0 as pct_of_total, 
                                 amount as amount_lkr,
                                 status
-                              FROM milestone 
+                              FROM Milestone 
                               WHERE contract_id = :contract_id 
                               ORDER BY due_date ASC";
                 $stmtLegacy = $this->pdo->prepare($sqlLegacy);
@@ -1270,25 +1226,9 @@ class Project
             $agreedMaterialRate = 0.0;
 
             if ($splitMode) {
-                // Prioritize adjusted rates from contract_milestone (same logic as ContractModel)
                 $qStmt = $this->pdo->prepare(
-                    "SELECT 
-                        COALESCE(
-                            (SELECT cm_lab.unit_rate FROM contract_milestone cm_lab 
-                             WHERE cm_lab.contract_id = m.contract_id 
-                               AND (cm_lab.title LIKE '%Labor%' OR cm_lab.title LIKE '%Completion%' OR cm_lab.title LIKE '%Service%') 
-                               AND cm_lab.unit_rate > 0 
-                             LIMIT 1),
-                            q.labor_cost
-                        ) AS agreed_labor_rate,
-                        COALESCE(
-                            (SELECT cm_mat.unit_rate FROM contract_milestone cm_mat 
-                             WHERE cm_mat.contract_id = m.contract_id 
-                               AND cm_mat.title LIKE '%Material%' 
-                               AND cm_mat.unit_rate > 0 
-                             LIMIT 1),
-                            (COALESCE(q.material_cost,0) + COALESCE(q.transport_cost,0) + COALESCE(q.other_charges,0))
-                        ) AS agreed_material_rate
+                    "SELECT c.quotation_id,
+                            q.labor_cost, q.material_cost, q.transport_cost, q.other_charges, q.total_amount
                      FROM contract_milestone m
                      JOIN contract c ON c.contract_id = m.contract_id
                      LEFT JOIN companyquotation q ON q.quotation_id = c.quotation_id
@@ -1299,8 +1239,21 @@ class Project
                 $q = $qStmt->fetch(PDO::FETCH_ASSOC) ?: null;
 
                 if ($q) {
-                    $agreedLaborRate = (float)($q['agreed_labor_rate'] ?? 0);
-                    $agreedMaterialRate = (float)($q['agreed_material_rate'] ?? 0);
+                    if (isset($q['labor_cost']) && $q['labor_cost'] !== null && $q['labor_cost'] !== '' && is_numeric($q['labor_cost'])) {
+                        $agreedLaborRate = (float)$q['labor_cost'];
+                    }
+
+                    $materialRate = 0.0;
+                    foreach (['material_cost', 'transport_cost', 'other_charges'] as $k) {
+                        $v = $q[$k] ?? 0;
+                        if ($v !== null && $v !== '' && is_numeric($v)) {
+                            $materialRate += (float)$v;
+                        }
+                    }
+                    if ($materialRate <= 0 && isset($q['total_amount']) && $q['total_amount'] !== null && $q['total_amount'] !== '' && is_numeric($q['total_amount'])) {
+                        $materialRate = max(0.0, (float)$q['total_amount'] - $agreedLaborRate);
+                    }
+                    $agreedMaterialRate = $materialRate;
                 }
             }
 
@@ -1602,91 +1555,30 @@ class Project
 
                 // Update contract totals (unit-based billed amount)
                 if ($billedAmount > 0) {
-                    $cId = $milestone['contract_id'];
-                    $cStmt = $this->pdo->prepare("SELECT customer_id, company_id FROM contract WHERE contract_id = ?");
-                    $cStmt->execute([$cId]);
-                    $cData = $cStmt->fetch(PDO::FETCH_ASSOC);
-                    $payerId = $cData['customer_id'] ?? null;
-                    $payeeId = $cData['company_id'] ?? null;
-
                     $this->pdo->prepare(
                         "UPDATE contract
                          SET amount_paid    = COALESCE(amount_paid, 0) + :billed,
                              amount_pending = GREATEST(0, COALESCE(amount_pending, 0) - :billed2)
                          WHERE contract_id  = :cid"
-                    )->execute([':billed' => $billedAmount, ':billed2' => $billedAmount, ':cid' => $cId]);
+                    )->execute([':billed' => $billedAmount, ':billed2' => $billedAmount, ':cid' => $milestone['contract_id']]);
 
                     // Record the payment transaction in milestonepayment
                     $payStmt = $this->pdo->prepare(
                         "INSERT INTO milestonepayment
-                            (contract_id, milestone_id, amount, payment_type, description, status, method, paid_by, paid_to, paid_at, created_at)
+                            (contract_id, milestone_id, amount, payment_type, description, status, paid_at, created_at)
                          VALUES
-                            (:contract_id, :milestone_id, :amount, 'milestone', :description, 'completed', 'bank_transfer', :paid_by, :paid_to, NOW(), NOW())"
+                            (:contract_id, :milestone_id, :amount, 'milestone', :description, 'completed', NOW(), NOW())"
                     );
                     $payStmt->execute([
-                        ':contract_id'  => $cId,
+                        ':contract_id'  => $milestone['contract_id'],
                         ':milestone_id' => $milestoneId,
                         ':amount'       => $billedAmount,
                         ':description'  => 'Phase approved: ' . ($milestone['title'] ?? 'Milestone'),
-                        ':paid_by'      => $payerId,
-                        ':paid_to'      => $payeeId
                     ]);
                 }
 
                 $message = 'Phase approved';
 
-                // Recalculate progress and update contract/project status if complete
-                $contractId = $milestone['contract_id'];
-                $progStmt = $this->pdo->prepare(
-                    "SELECT COUNT(*) as total,
-                            SUM(CASE WHEN status IN ('approved', 'completed', 'paid') THEN 1 ELSE 0 END) as approved
-                     FROM contract_milestone WHERE contract_id = ?"
-                );
-                $progStmt->execute([$contractId]);
-                $stats = $progStmt->fetch(PDO::FETCH_ASSOC);
-
-                if ($stats && $stats['total'] > 0) {
-                    $newProgress = (int)round(($stats['approved'] / $stats['total']) * 100);
-                    
-                    // Update contract Progress
-                    $this->pdo->prepare(
-                        "UPDATE contract SET progress_percentage = ? WHERE contract_id = ?"
-                    )->execute([$newProgress, $contractId]);
-
-                    // Update project Progress
-                    $this->pdo->prepare(
-                        "UPDATE project p
-                         JOIN contract c ON p.project_id = c.project_id
-                         SET p.progress = ?
-                         WHERE c.contract_id = ?"
-                    )->execute([$newProgress, $contractId]);
-
-                    if ($newProgress >= 100) {
-                        // Mark contract as Completed
-                        $this->pdo->prepare(
-                            "UPDATE contract SET status = 'completed' WHERE contract_id = ?"
-                        )->execute([$contractId]);
-
-                        // Mark project as Completed
-                        $this->pdo->prepare(
-                            "UPDATE project p
-                             JOIN contract c ON p.project_id = c.project_id
-                             SET p.status = 'completed'
-                             WHERE c.contract_id = ?"
-                        )->execute([$contractId]);
-                        
-                        // Sync quotation status if possible
-                        try {
-                            $qIdStmt = $this->pdo->prepare("SELECT quotation_id FROM contract WHERE contract_id = ? LIMIT 1");
-                            $qIdStmt->execute([$contractId]);
-                            $quotationId = $qIdStmt->fetchColumn();
-                            if ($quotationId) {
-                                $this->pdo->prepare("UPDATE companyquotation SET status = 'completed' WHERE quotation_id = ?")
-                                         ->execute([(int)$quotationId]);
-                            }
-                        } catch (Exception $e) { /* ignore sync errors */ }
-                    }
-                }
             } elseif ($action === 'reject') {
                 $sql = "UPDATE contract_milestone 
                         SET status = 'rejected',
@@ -1736,7 +1628,7 @@ class Project
     {
         try {
             // 1. Get Project Budget
-            $stmt = $this->pdo->prepare("SELECT budget FROM project WHERE project_id = :project_id");
+            $stmt = $this->pdo->prepare("SELECT budget FROM Project WHERE project_id = :project_id");
             $stmt->execute([':project_id' => $projectId]);
             $project = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -1753,7 +1645,7 @@ class Project
                        COALESCE(cq.material_unit_label, cq_req.material_unit_label) AS material_unit_label,
                        COALESCE(cq.labor_cost, cq_req.labor_cost) AS labor_cost,
                        COALESCE(cq.material_cost, cq_req.material_cost) AS material_cost
-                FROM contract c
+                FROM Contract c
                 LEFT JOIN companyquotation cq ON c.quotation_id = cq.quotation_id
                 LEFT JOIN companyquotation cq_req ON cq_req.quotation_id = (
                     SELECT q2.quotation_id

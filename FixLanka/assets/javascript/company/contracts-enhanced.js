@@ -174,10 +174,12 @@ function showQuotationPreview(q) {
     const preview = document.getElementById('quotationPreviewCard');
     if (!preview) return;
 
+    const isDirectRequest = String(q.quotation_id).startsWith('dr_');
+
     preview.innerHTML = `
         <h4 style="margin: 0 0 15px 0; color: #2e7d32; display: flex; align-items: center; gap: 8px;">
-            <i class="fas fa-check-circle"></i> 
-            <span>Quotation: ${escapeHtml(q.title)}</span>
+            <i class="fas ${isDirectRequest ? 'fa-bolt' : 'fa-check-circle'}"></i> 
+            <span>${isDirectRequest ? 'Direct Request' : 'Quotation'}: ${escapeHtml(q.title)}</span>
         </h4>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; font-size: 13px; margin-bottom: 15px;">
             <div><strong>Customer:</strong> ${escapeHtml(q.customer_fname)} ${escapeHtml(q.customer_lname)}</div>
@@ -186,9 +188,9 @@ function showQuotationPreview(q) {
             <div><strong>Pricing:</strong> ${q.pricing_type ? (q.pricing_type === 'time_and_material' ? 'Time & Material' : 'Fixed Price') : 'Fixed Price'}</div>
             <div><strong>Duration:</strong> ${q.estimated_duration ? q.estimated_duration + ' days' : 'To be determined'}</div>
         </div>
-        <div style="padding: 12px; background: #fff3cd; border-radius: 6px; font-size: 12px; color: #856404;">
+        <div style="padding: 12px; background: ${isDirectRequest ? '#e3f2fd' : '#fff3cd'}; border-radius: 6px; font-size: 12px; color: ${isDirectRequest ? '#0d47a1' : '#856404'};">
             <i class="fas fa-info-circle"></i> <strong>Form will be auto-filled.</strong> 
-            Review all fields in the next steps and modify if needed.
+            ${isDirectRequest ? 'Since this is a direct request, please <strong>manually enter the budget</strong> and other terms.' : 'Review all fields in the next steps and modify if needed.'}
         </div>
     `;
     preview.style.display = 'block';
@@ -207,31 +209,6 @@ function autoFillContractForm(q) {
 
     // Step 1: Party Information (client and company details)
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '-'; };
-
-    // Add cost breakdown auto-fill
-    const costMap = {
-        'Labour': q.labor_cost,
-        'Materials': q.material_cost,
-        'Transport': q.transport_cost,
-        'Other': q.other_charges
-    };
-    const bd = document.getElementById('costBreakdown');
-    if (bd) {
-        if (q.labor_cost || q.material_cost || q.total_amount > 0) {
-            bd.style.display = 'block';
-            ['Labour', 'Materials', 'Transport', 'Other'].forEach(id => {
-                setText(`bd${id}Display`, `LKR ${parseFloat(costMap[id] || 0).toLocaleString()}`);
-            });
-            setText('bdTotal', `LKR ${parseFloat(q.total_amount || 0).toLocaleString()}`);
-
-            // Labels with unit suffix
-            const unitSuffix = (l) => l ? ` (${l})` : '';
-            const labourLabelEl = document.getElementById('bdLabourLabel');
-            if (labourLabelEl) labourLabelEl.textContent = `Labour${unitSuffix(q.labor_unit_label)}`;
-            const materialLabelEl = document.getElementById('bdMaterialsLabel');
-            if (materialLabelEl) materialLabelEl.textContent = `Materials${unitSuffix(q.material_unit_label)}`;
-        }
-    }
 
     setText('partyClientName', `${q.customer_fname} ${q.customer_lname}`);
     setText('partyClientEmail', q.customer_email);
@@ -279,8 +256,13 @@ function autoFillContractForm(q) {
     );
     setFieldValue('projectDescription', q.description || q.request_description || q.request_title || '');
 
-    // Step 3: Financial Terms
-    setFieldValue('contractValue', q.total_amount);
+    // Step 3: Financial Terms (Phase 1 Business Logic)
+    const isDirectRequest = String(q.quotation_id).startsWith('dr_');
+    if (isDirectRequest) {
+        setFieldValue('contractValue', ''); // Force manual entry for direct requests
+    } else {
+        setFieldValue('contractValue', q.total_amount);
+    }
 
     setFieldValue('budgetType', q.budget_type || 'fixed');
     setFieldValue('budgetMin', q.budget_min || '');
@@ -900,7 +882,7 @@ function buildCardActions(contract) {
         String(contract?.customer_response || '') === 'accepted' ||
         String(status) === 'accepted';
 
-    // 1) Status-specific Primary action button (Send, Start Project, or View Project)
+    // 1) Primary action button (Send, Chat, Start Project, or View Project)
     if (!isSent) {
         html += `<button class="card-action-btn card-action-send send-contract-btn" data-contract-id="${id}" title="Send to Customer">
             <i class="fas fa-paper-plane"></i>
@@ -910,18 +892,18 @@ function buildCardActions(contract) {
         const isProjectStarted = projectStatus !== '' && projectStatus !== 'planned';
 
         if (!isProjectStarted) {
+            // Contract accepted, project not started (placeholder project is still planned)
             html += `<a href="#" onclick="handleStartProjectFromContract(${id}); return false;" class="action-btn primary small">
                 <i class="fas fa-rocket"></i> Start Project
             </a>`;
         } else {
+            // Project already started
             html += `<a href="projects.php" class="action-btn success small">
                 <i class="fas fa-eye"></i> View Project
             </a>`;
         }
-    }
-
-    // 2) Chat Button - Always visible if chat is active (sent/accepted/active)
-    if (contract.chat_active == 1 || isSent) {
+    } else if (contract.chat_active == 1) {
+        // Unread indicator dot
         const unreadCount = parseInt(contract.unread_count || contract.unread_messages || 0);
         const unreadIndicator = unreadCount > 0
             ? '<span class="chat-unread-dot" style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; background: #ef4444; border: 2px solid white; border-radius: 50%; z-index: 10;"></span>'
@@ -1240,9 +1222,6 @@ function applyFilters() {
 
     if (statusFilter) {
         filteredData = filteredData.filter(contract => contract.status === statusFilter);
-    } else {
-        // By default, hide terminated and cancelled contracts from the general list
-        filteredData = filteredData.filter(contract => contract.status !== 'terminated' && contract.status !== 'cancelled');
     }
 
     if (typeFilter) {
@@ -1731,12 +1710,7 @@ function populateModalContent(data) {
                     const map = { 'full_upfront': 'Full Upfront', 'milestone_based': 'Milestone-Based', '50_50': '50/50 Split', '30_70': '30/70 Split', 'completion': 'On Completion' };
                     return map[data.payment_method] || 'Standard';
                 })(),
-                renderMilestoneAction: (ms) => {
-                    const status = ms.status || 'pending';
-                    const label = status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                    const className = status.replace(/ /g, '_');
-                    return `<span class="ms-status-badge ${className}">${label}</span>`;
-                }
+                renderMilestoneAction: () => '—'
             });
         }
         return;
@@ -2303,7 +2277,7 @@ function populateFormWithContract(data) {
     setVal('budgetType', data.budget_type || 'fixed');
     setVal('budgetMin', data.budget_min || '');
     setVal('budgetMax', data.budget_max || '');
-    setVal('taxInclusive', 1); // Locked to 'All taxes included'
+    setVal('taxInclusive', data.tax_inclusive);
     setVal('paymentMethod', data.payment_method || 'milestone_based');
     setVal('pricingType', data.pricing_type || 'fixed_price');
     setVal('hourlyRate', data.hourly_rate || '');

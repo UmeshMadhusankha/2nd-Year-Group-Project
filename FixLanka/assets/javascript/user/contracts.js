@@ -1266,25 +1266,12 @@
     }
 
     function _isUnitPricedContract(contract) {
-        if (!contract) return false;
-
-        // 1. Check contract-level unit info
-        if (contract.labor_unit_label || contract.material_unit_label) return true;
-        if (contract.is_unit_priced == 1 || contract.is_unit_priced === true) return true;
-
-        // 2. Check milestones for explicit unit data or title keywords
+        if (!contract || contract.payment_method !== 'milestone_based') return false;
         const milestones = Array.isArray(contract.milestones) ? contract.milestones : [];
         return milestones.some(m => {
-            const label = (m?.unit_label ?? m?.unitLabel ?? '').toString().trim();
-            const rate = (m?.unit_rate ?? m?.unitRate ?? null);
-            const title = (m?.title || m?.milestone_name || '').toLowerCase();
-
-            return label !== '' ||
-                (rate != null && rate !== '') ||
-                title.includes(' per ') ||
-                title.includes('(per ') ||
-                title.includes('/unit') ||
-                title.includes('rate:');
+            const unitLabel = m?.unit_label ?? m?.unitLabel ?? null;
+            const unitRate = m?.unit_rate ?? m?.unitRate ?? null;
+            return (unitLabel != null && String(unitLabel).trim() !== '') || (unitRate != null && unitRate !== '');
         });
     }
 
@@ -1369,9 +1356,9 @@
         if (endEl) endEl.value = (contract.end_date || '').slice(0, 10);
         if (noteEl) noteEl.value = '';
 
-        const isMilestoneBased = contract.payment_method === 'milestone_based' || contract.payment_method === 'completion';
-        const isUnitPriced = _isUnitPricedContract(contract);
-        overlay.dataset.adjustMode = isUnitPriced ? 'unit' : (isMilestoneBased ? 'milestone' : 'general');
+        const isMilestoneBased = contract.payment_method === 'milestone_based';
+        const isUnitPriced = isMilestoneBased && _isUnitPricedContract(contract);
+        overlay.dataset.adjustMode = isUnitPriced ? 'unit' : 'milestone';
 
         const msSection = document.getElementById('caMilestonesSection');
         if (msSection) msSection.style.display = isMilestoneBased ? 'block' : 'none';
@@ -1385,7 +1372,7 @@
                 if (titleEl) titleEl.textContent = 'Unit rates';
                 if (hintEl) hintEl.textContent = 'Unit-priced contract: you can propose new unit rates here. Milestone %/amount adjustments are not used for unit-priced billing.';
                 if (addBtn) addBtn.style.display = 'none';
-                _renderUnitRateEditor(contract.milestones || [], contract);
+                _renderUnitRateEditor(contract.milestones || []);
             } else {
                 if (titleEl) titleEl.textContent = 'Milestones';
                 if (hintEl) hintEl.textContent = 'Edit only what you need.';
@@ -1476,44 +1463,25 @@
         _updateMilestoneTotalsHint();
     }
 
-    function _renderUnitRateEditor(milestones, contract) {
+    function _renderUnitRateEditor(milestones) {
         const wrap = document.getElementById('caMilestonesWrap');
         if (!wrap) return;
 
         wrap.dataset.mode = 'unit';
-
-        const rows = Array.isArray(milestones) ? milestones.map(m => {
-            let unitLabel = (m?.unit_label ?? m?.unitLabel ?? '').toString();
-            let unitRate = (m?.unit_rate ?? m?.unitRate ?? '');
-            const titleLower = (m.title || m.milestone_name || '').toLowerCase();
-
-            // Fallback for Labour/Material unit info from contract level if milestone fields are empty
-            if (unitLabel.trim() === '' || unitRate === '') {
-                if (titleLower.includes('labor') || titleLower.includes('completion') || titleLower.includes('service')) {
-                    if (unitLabel.trim() === '') unitLabel = contract.labor_unit_label || '';
-                    if (unitRate === '') unitRate = contract.labor_cost || '';
-                } else if (titleLower.includes('material')) {
-                    if (unitLabel.trim() === '') unitLabel = contract.material_unit_label || '';
-                    if (unitRate === '') unitRate = contract.material_cost || '';
-                }
-            }
-
-            const isUnitItem = (unitLabel.trim() !== '' ||
-                (unitRate != null && unitRate !== '') ||
-                titleLower.includes(' per ') ||
-                titleLower.includes('(per ') ||
-                titleLower.includes('/unit'));
-
-            return {
-                milestone_id: m.milestone_id ?? null,
-                milestone_number: m.milestone_number ?? null,
-                title: m.title || m.milestone_name || '',
-                unit_label: unitLabel,
-                unit_rate: unitRate,
-                is_unit_item: isUnitItem,
-                proposed_unit_rate: ''
-            };
+        const unitRows = Array.isArray(milestones) ? milestones.filter(m => {
+            const unitLabel = m?.unit_label ?? m?.unitLabel ?? null;
+            const unitRate = m?.unit_rate ?? m?.unitRate ?? null;
+            return (unitLabel != null && String(unitLabel).trim() !== '') || (unitRate != null && unitRate !== '');
         }) : [];
+
+        const rows = unitRows.map(m => ({
+            milestone_id: m.milestone_id ?? null,
+            milestone_number: m.milestone_number ?? null,
+            title: m.title || m.milestone_name || '',
+            unit_label: (m.unit_label ?? m.unitLabel ?? '').toString(),
+            unit_rate: (m.unit_rate ?? m.unitRate ?? ''),
+            proposed_unit_rate: ''
+        }));
 
         wrap.innerHTML = `
             <table class="ca-ms-table">
@@ -1543,20 +1511,14 @@
             tr.dataset.title = (r.title || '').trim();
             tr.dataset.unitLabel = (r.unit_label || '').trim();
             tr.dataset.currentUnitRate = (r.unit_rate != null ? String(r.unit_rate) : '');
-
-            const rateVal = (r.unit_rate != null && r.unit_rate !== '') ? parseFloat(r.unit_rate) : null;
-            const rateDisplay = rateVal !== null ? `Rs. ${rateVal.toFixed(2)}` : '—';
-
-            const proposedInput = r.is_unit_item
-                ? `<input type="number" min="0" step="0.01" class="ca-unit-proposed-rate" value="" placeholder="New rate" />`
-                : `<span class="ca-muted">Fixed amount</span>`;
-
             tr.innerHTML = `
                 <td class="ca-ms-idx">${idx + 1}</td>
                 <td>${escAttr(r.title)}</td>
-                <td>${r.is_unit_item ? escAttr((r.unit_label || '').trim() || '—') : '—'}</td>
-                <td>${r.is_unit_item ? rateDisplay : '—'}</td>
-                <td>${proposedInput}</td>
+                <td>${escAttr((r.unit_label || '').trim() || '—')}</td>
+                <td>Rs. ${escAttr((r.unit_rate != null && r.unit_rate !== '') ? String(r.unit_rate) : '—')}</td>
+                <td>
+                    <input type="number" min="0" step="0.01" class="ca-unit-proposed-rate" value="" placeholder="Leave blank to keep" />
+                </td>
             `;
             tbody.appendChild(tr);
 

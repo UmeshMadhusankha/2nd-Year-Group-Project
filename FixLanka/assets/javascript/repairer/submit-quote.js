@@ -2,25 +2,25 @@
 // SUBMIT QUOTE PAGE JAVASCRIPT
 // ================================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialize submit quote page functionality
     initializeQuoteForm();
     initializeConfirmationModal();
     initializeFormValidation();
-    
+
     // Get job ID from URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const jobId = urlParams.get('jobId') || '1'; // Default to job 1 if no ID provided
-    
+
     // Set request_id in hidden field (in real app, this would be the actual request_id from database)
     document.getElementById('request-id').value = jobId;
-    
+
     // Get job data based on ID
     const jobData = getJobDataById(jobId);
-    
+
     // Populate job details
     populateJobDetails(jobData);
-    
+
     // Set default valid until date (7 days from now)
     setDefaultValidUntilDate();
 });
@@ -95,7 +95,7 @@ function getJobDataById(jobId) {
             urgency: 'Medium'
         }
     };
-    
+
     return jobsDatabase[jobId] || jobsDatabase['1']; // Return requested job or default to job 1
 }
 
@@ -106,17 +106,17 @@ function populateJobDetails(jobData) {
     document.getElementById('job-location').textContent = jobData.location;
     document.getElementById('job-category').textContent = jobData.category;
     document.getElementById('job-budget').textContent = jobData.budget;
-    
+
     // Set urgency with proper styling
     const urgencyElement = document.getElementById('job-urgency');
     urgencyElement.textContent = jobData.urgency;
     urgencyElement.setAttribute('data-urgency', jobData.urgency.toLowerCase());
-    
+
     document.getElementById('job-description-text').textContent = jobData.description;
-    
+
     // Update confirmation modal job title
     document.getElementById('confirm-job').textContent = jobData.title;
-    
+
     // Update page title and header
     document.title = `Submit Quote - ${jobData.title} - FixLanka`;
     const pageTitle = document.querySelector('.page-info .page-title');
@@ -135,7 +135,7 @@ function initializeQuoteForm() {
 
     // Handle form submission
     if (form) {
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', function (e) {
             e.preventDefault();
             handleQuoteSubmission();
         });
@@ -143,7 +143,7 @@ function initializeQuoteForm() {
 
     // Handle back button - use absolute path
     if (backBtn) {
-        backBtn.addEventListener('click', function() {
+        backBtn.addEventListener('click', function () {
             if (hasUnsavedChanges()) {
                 if (confirm('You have unsaved changes. Are you sure you want to go back?')) {
                     window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-available-jobs';
@@ -156,7 +156,7 @@ function initializeQuoteForm() {
 
     // Handle cancel button
     if (cancelBtn) {
-        cancelBtn.addEventListener('click', function() {
+        cancelBtn.addEventListener('click', function () {
             if (confirm('Are you sure you want to cancel? All entered information will be lost.')) {
                 clearForm();
             }
@@ -165,7 +165,7 @@ function initializeQuoteForm() {
 
     // Handle save draft button
     if (saveDraftBtn) {
-        saveDraftBtn.addEventListener('click', function() {
+        saveDraftBtn.addEventListener('click', function () {
             saveDraft();
         });
     }
@@ -212,7 +212,7 @@ function handleQuoteSubmission() {
     const validUntilDate = new Date(validUntil);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     if (validUntilDate < today) {
         showNotification('Quote validity date must be in the future.', 'error');
         return;
@@ -220,7 +220,7 @@ function handleQuoteSubmission() {
 
     // Update confirmation modal
     updateConfirmationModal(quoteAmount, estimatedDays, warrantyPeriod, validUntil, materialsIncluded);
-    
+
     // Show confirmation modal
     showConfirmationModal();
 }
@@ -246,7 +246,7 @@ function initializeConfirmationModal() {
 
     // Handle click outside modal
     if (modalOverlay) {
-        modalOverlay.addEventListener('click', function(e) {
+        modalOverlay.addEventListener('click', function (e) {
             if (e.target === modalOverlay) {
                 hideConfirmationModal();
             }
@@ -306,10 +306,10 @@ function updateConfirmationModal(quoteAmount, estimatedDays, warrantyPeriod, val
 
     if (confirmValidUntil) {
         const date = new Date(validUntil);
-        confirmValidUntil.textContent = date.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
+        confirmValidUntil.textContent = date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
         });
     }
 
@@ -326,7 +326,7 @@ function setDefaultValidUntilDate() {
         const defaultDate = new Date(today.setDate(today.getDate() + 7));
         const formattedDate = defaultDate.toISOString().split('T')[0];
         validUntilInput.value = formattedDate;
-        
+
         // Set minimum date to tomorrow
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -336,7 +336,7 @@ function setDefaultValidUntilDate() {
 
 function confirmQuoteSubmission() {
     const confirmBtn = document.getElementById('confirm-submission');
-    
+
     // Show loading state
     confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
     confirmBtn.disabled = true;
@@ -372,43 +372,43 @@ function confirmQuoteSubmission() {
         },
         body: JSON.stringify(quoteData)
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Hide modal
-            hideConfirmationModal();
-            
-            // Show success message
-            showNotification('Quote submitted successfully! The customer will be notified.', 'success');
-            
-            // Log the submitted data (for debugging in dummy mode)
-            
-            // Clear form
-            clearForm();
-            
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Hide modal
+                hideConfirmationModal();
+
+                // Show success message
+                showNotification('Quote submitted successfully! The customer will be notified.', 'success');
+
+                // Log the submitted data (for debugging in dummy mode)
+
+                // Clear form
+                clearForm();
+
+                // Reset button
+                confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirm & Submit';
+                confirmBtn.disabled = false;
+
+                // Redirect after delay
+                setTimeout(() => {
+                    window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-my-jobs';
+                }, 2000);
+            } else {
+                throw new Error(data.error || 'Failed to submit quote');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to submit quote: ' + error.message, 'error');
+
             // Reset button
             confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirm & Submit';
             confirmBtn.disabled = false;
-            
-            // Redirect after delay
-            setTimeout(() => {
-                window.location.href = '/2nd-Year-Group-Project/FixLanka/repairer-my-jobs';
-            }, 2000);
-        } else {
-            throw new Error(data.error || 'Failed to submit quote');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Failed to submit quote: ' + error.message, 'error');
-        
-        // Reset button
-        confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirm & Submit';
-        confirmBtn.disabled = false;
-        
-        // Hide modal
-        hideConfirmationModal();
-    });
+
+            // Hide modal
+            hideConfirmationModal();
+        });
 }
 
 // ===== FORM VALIDATION =====
@@ -421,31 +421,31 @@ function initializeFormValidation() {
 
     // Real-time validation
     if (amountInput) {
-        amountInput.addEventListener('input', function() {
+        amountInput.addEventListener('input', function () {
             validateAmount(this);
         });
     }
 
     if (daysInput) {
-        daysInput.addEventListener('input', function() {
+        daysInput.addEventListener('input', function () {
             validateDays(this);
         });
     }
 
     if (messageInput) {
-        messageInput.addEventListener('input', function() {
+        messageInput.addEventListener('input', function () {
             validateMessage(this);
         });
     }
 
     if (validUntilInput) {
-        validUntilInput.addEventListener('change', function() {
+        validUntilInput.addEventListener('change', function () {
             validateValidUntil(this);
         });
     }
 
     if (termsCheckbox) {
-        termsCheckbox.addEventListener('change', function() {
+        termsCheckbox.addEventListener('change', function () {
             validateTerms(this);
         });
     }
@@ -454,7 +454,7 @@ function initializeFormValidation() {
 function validateAmount(input) {
     const value = parseFloat(input.value);
     const isValid = value > 0;
-    
+
     toggleFieldValidation(input, isValid);
     return isValid;
 }
@@ -462,14 +462,14 @@ function validateAmount(input) {
 function validateDays(input) {
     const value = parseInt(input.value);
     const isValid = value > 0 && value <= 365;
-    
+
     toggleFieldValidation(input, isValid);
     return isValid;
 }
 
 function validateMessage(input) {
     const isValid = input.value.trim().length >= 10;
-    
+
     toggleFieldValidation(input, isValid);
     return isValid;
 }
@@ -478,16 +478,16 @@ function validateValidUntil(input) {
     const selectedDate = new Date(input.value);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const isValid = selectedDate > today;
-    
+
     toggleFieldValidation(input, isValid);
     return isValid;
 }
 
 function validateTerms(input) {
     const isValid = input.checked;
-    
+
     toggleFieldValidation(input.closest('.checkbox-label'), isValid);
     return isValid;
 }
@@ -552,7 +552,7 @@ function saveDraft() {
 
 function setupAutoSave() {
     let autoSaveTimeout;
-    
+
     const inputs = [
         document.getElementById('quote-amount'),
         document.getElementById('estimated-days'),
@@ -564,7 +564,7 @@ function setupAutoSave() {
 
     inputs.forEach(input => {
         if (input) {
-            input.addEventListener('input', function() {
+            input.addEventListener('input', function () {
                 clearTimeout(autoSaveTimeout);
                 autoSaveTimeout = setTimeout(() => {
                     if (hasUnsavedChanges()) {

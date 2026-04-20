@@ -134,13 +134,13 @@ try {
                 c.name AS category,
                 u.f_name,
                 u.l_name,
-                u.profile_picture
+                u.profilePicture
             FROM directjobrequest djr
             INNER JOIN category c ON c.category_id = djr.category_id
             INNER JOIN user u ON u.user_id = djr.user_id
             WHERE djr.provider_type = 'company'
               AND djr.provider_id = ?
-              AND djr.finish_date >= CURDATE()
+            AND djr.finish_date >= CURDATE()
             ORDER BY djr.date_created DESC
             LIMIT 5
         ");
@@ -154,7 +154,7 @@ try {
             $directRequests[] = [
                 'request_id' => (int)$row['request_id'],
                 'customer' => trim(($row['f_name'] ?? '') . ' ' . ($row['l_name'] ?? '')),
-                'avatar' => $row['profile_picture'] ?: null,
+                'avatar' => $row['profilePicture'] ?: null,
                 'category' => $row['category'] ?? 'General',
                 'title' => $row['title'] ?? '',
                 'description' => $row['description'] ?? '',
@@ -184,7 +184,7 @@ try {
             c.name AS category,
             u.f_name,
             u.l_name,
-            u.profile_picture
+            u.profilePicture
         FROM jobrequest jr
         INNER JOIN category c ON c.category_id = jr.category_id
         INNER JOIN user u ON u.user_id = jr.user_id
@@ -203,7 +203,7 @@ try {
         $publicRequests[] = [
             'request_id' => (int)$row['request_id'],
             'customer' => trim(($row['f_name'] ?? '') . ' ' . ($row['l_name'] ?? '')),
-            'avatar' => $row['profile_picture'] ?: null,
+            'avatar' => $row['profilePicture'] ?: null,
             'category' => $row['category'] ?? 'General',
             'title' => $row['title'] ?? '',
             'description' => $row['description'] ?? '',
@@ -222,12 +222,12 @@ try {
                     jr.request_id,
                     jr.title,
                     jr.description,
-                    jr.created_at,
+                    jr.dateCreated AS created_at,
                     jr.finish_date,
                     c.name AS category,
                     u.f_name,
                     u.l_name,
-                    u.profile_picture
+                    u.profilePicture
                 FROM jobrequest jr
                 INNER JOIN category c ON c.category_id = jr.category_id
                 INNER JOIN user u ON u.user_id = jr.user_id
@@ -238,7 +238,7 @@ try {
                       SELECT 1 FROM companyquotation cq
                       WHERE cq.request_id = jr.request_id AND cq.company_id = ?
                   )
-                ORDER BY jr.created_at DESC
+                ORDER BY jr.dateCreated DESC
                 LIMIT 5
             ");
             $stmt->execute([$companyId]);
@@ -247,7 +247,7 @@ try {
                 $publicRequests[] = [
                     'request_id' => (int)$row['request_id'],
                     'customer' => trim(($row['f_name'] ?? '') . ' ' . ($row['l_name'] ?? '')),
-                    'avatar' => $row['profile_picture'] ?: null,
+                    'avatar' => $row['profilePicture'] ?: null,
                     'category' => $row['category'] ?? 'General',
                     'title' => $row['title'] ?? '',
                     'description' => $row['description'] ?? '',

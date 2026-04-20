@@ -866,10 +866,10 @@ if (!$userId) {
                                     </div>
                                     <div class="form-group">
                                         <label for="taxInclusive">Tax Inclusion</label>
-                                        <select id="taxInclusive" name="tax_inclusive_display" disabled style="background-color: #f7fafc; cursor: not-allowed;">
-                                            <option value="1" selected>All taxes included</option>
+                                        <select id="taxInclusive" name="tax_inclusive">
+                                            <option value="1">All taxes included</option>
+                                            <option value="0">Taxes additional</option>
                                         </select>
-                                        <input type="hidden" id="taxInclusive_hidden" name="tax_inclusive" value="1">
                                     </div>
                                 </div>
 
@@ -893,28 +893,13 @@ if (!$userId) {
 
                                 <!-- Cost Breakdown (read-only from quotation) -->
                                 <div class="cost-breakdown" id="costBreakdown" style="display:none;">
-                                    <h5>Cost Breakdown</h5>
+                                    <h5>Cost Breakdown (from Quotation)</h5>
                                     <div class="breakdown-grid">
-                                        <div class="breakdown-item">
-                                            <span id="bdLabourLabel">Labour</span>
-                                            <span id="bdLabourDisplay" class="bd-display">-</span>
-                                        </div>
-                                        <div class="breakdown-item">
-                                            <span id="bdMaterialsLabel">Materials</span>
-                                            <span id="bdMaterialsDisplay" class="bd-display">-</span>
-                                        </div>
-                                        <div class="breakdown-item">
-                                            <span id="bdTransportLabel">Transport</span>
-                                            <span id="bdTransportDisplay" class="bd-display">-</span>
-                                        </div>
-                                        <div class="breakdown-item">
-                                            <span id="bdOtherLabel">Other</span>
-                                            <span id="bdOtherDisplay" class="bd-display">-</span>
-                                        </div>
-                                        <div class="breakdown-item total">
-                                            <span>Total Amount</span>
-                                            <span id="bdTotal">-</span>
-                                        </div>
+                                        <div class="breakdown-item"><span id="bdLabourLabel">Labour</span><span id="bdLabour">-</span></div>
+                                        <div class="breakdown-item"><span id="bdMaterialsLabel">Materials</span><span id="bdMaterials">-</span></div>
+                                        <div class="breakdown-item"><span id="bdTransportLabel">Transport</span><span id="bdTransport">-</span></div>
+                                        <div class="breakdown-item"><span id="bdOtherLabel">Other</span><span id="bdOther">-</span></div>
+                                        <div class="breakdown-item total"><span>Total Per Unit</span><span id="bdTotal">-</span></div>
                                     </div>
                                 </div>
 

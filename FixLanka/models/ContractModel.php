@@ -10,7 +10,7 @@ class ContractModel {
     /**
      * Get all contracts for a specific customer (user) with company details.
      */
-    public function getAllForCustomer($customerId, $includeTerminated = false) {
+    public function getAllForCustomer($customerId) {
         $query = "SELECT 
                     c.contract_id,
                     c.project_id,
@@ -36,16 +36,14 @@ class ContractModel {
                     c.company_id,
                     c.chat_active,
                     comp.name as company_name,
-                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND (cm.title LIKE '%Labor%' OR cm.title LIKE '%Completion%' OR cm.title LIKE '%Service%') AND cm.unit_rate > 0 LIMIT 1), cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND cm.title LIKE '%Material%' AND cm.unit_rate > 0 LIMIT 1), cq.material_cost, cq_req.material_cost) as material_cost,
-                    COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
-                    COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
+                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
                     COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
                     COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc
                      WHERE cc.contract_id = c.contract_id
                        AND cc.sender_type = 'company'
-                       AND (cc.is_read IS NULL OR cc.is_read = 0)) as unread_messages,
+                       AND cc.is_read = 0) as unread_messages,
                     (
                         SELECT COUNT(*) 
                         FROM contract_milestone cm 
@@ -69,17 +67,12 @@ class ContractModel {
                         FROM companyquotation q2
                         WHERE q2.request_id = c.job_request_id
                             AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
-                            AND q2.status IN ('accepted', 'successful', 'completed')
+                            AND q2.status IN ('accepted', 'successful')
                         ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
                         LIMIT 1
                 )
-                WHERE c.customer_id = :customer_id";
-        
-        if (!$includeTerminated) {
-            $query .= " AND c.status != 'terminated' AND (c.customer_response IS NULL OR c.customer_response != 'rejected')";
-        }
-        
-        $query .= " ORDER BY c.contract_date DESC";
+                WHERE c.customer_id = :customer_id
+                ORDER BY c.contract_date DESC";
 
         try {
             $stmt = $this->conn->prepare($query);
@@ -113,14 +106,14 @@ class ContractModel {
                     c.company_id,
                     c.chat_active,
                     comp.name as company_name,
-                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND (cm.title LIKE '%Labor%' OR cm.title LIKE '%Completion%' OR cm.title LIKE '%Service%') AND cm.unit_rate > 0 LIMIT 1), cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND cm.title LIKE '%Material%' AND cm.unit_rate > 0 LIMIT 1), cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
                     COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
                     COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc
                      WHERE cc.contract_id = c.contract_id
                        AND cc.sender_type = 'company'
-                       AND (cc.is_read IS NULL OR cc.is_read = 0)) as unread_messages,
+                       AND cc.is_read = 0) as unread_messages,
                     0 as total_milestones,
                     0 as completed_milestones,
                     0 as submitted_milestones
@@ -132,7 +125,7 @@ class ContractModel {
                         FROM companyquotation q2
                         WHERE q2.request_id = c.job_request_id
                             AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
-                            AND q2.status IN ('accepted', 'successful', 'completed')
+                            AND q2.status IN ('accepted', 'successful')
                         ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
                         LIMIT 1
                 )
@@ -164,10 +157,10 @@ class ContractModel {
                     c_loc.address as company_address,
                     comp.contact_no as company_contact,
                     comp.email as company_email,
-                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND (cm.title LIKE '%Labor%' OR cm.title LIKE '%Completion%' OR cm.title LIKE '%Service%') AND cm.unit_rate > 0 LIMIT 1), cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND cm.title LIKE '%Material%' AND cm.unit_rate > 0 LIMIT 1), cq.material_cost, cq_req.material_cost) as material_cost,
-                    COALESCE(cq.transport_cost, cq.transport_cost, cq_req.transport_cost) as transport_cost, // Standardized transport/other charges
-                    COALESCE(cq.other_charges, cq.other_charges, cq_req.other_charges) as other_charges,
+                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
+                    COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
                     COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
                     COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label
                 FROM contract c
@@ -179,7 +172,7 @@ class ContractModel {
                         FROM companyquotation q2
                         WHERE q2.request_id = c.job_request_id
                             AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
-                            AND q2.status IN ('accepted', 'successful', 'completed')
+                            AND q2.status IN ('accepted', 'successful')
                         ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
                         LIMIT 1
                 )
@@ -196,7 +189,7 @@ class ContractModel {
     /**
      * Get all contracts with project and customer details
      */
-    public function getAll($companyId = null, $includeTerminated = false) {
+    public function getAll($companyId = null) {
         $query = "SELECT 
                     c.contract_id,
                     c.project_id,
@@ -227,24 +220,16 @@ class ContractModel {
                     c.company_id,
                     c.chat_active,
                     comp.name as company_name,
-                                        COALESCE(
-                                            (SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND (cm.title LIKE '%Labor%' OR cm.title LIKE '%Completion%' OR cm.title LIKE '%Service%') AND cm.unit_rate > 0 LIMIT 1),
-                                            cq.labor_cost, 
-                                            cq_req.labor_cost
-                                        ) as labor_cost,
-                                        COALESCE(
-                                            (SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND cm.title LIKE '%Material%' AND cm.unit_rate > 0 LIMIT 1),
-                                            cq.material_cost, 
-                                            cq_req.material_cost
-                                        ) as material_cost,
-                                        COALESCE(cq.transport_cost, cq.transport_cost, cq_req.transport_cost) as transport_cost,
-                                        COALESCE(cq.other_charges, cq.other_charges, cq_req.other_charges) as other_charges,
+                                        COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                                        COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
+                                        COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
+                                        COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
                                         COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
                                         COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc 
                      WHERE cc.contract_id = c.contract_id 
                        AND cc.sender_type = 'customer' 
-                       AND (cc.is_read IS NULL OR cc.is_read = 0)) as unread_messages
+                       AND cc.is_read = 0) as unread_messages
                 FROM contract c
                 LEFT JOIN project p ON c.project_id = p.project_id
                 LEFT JOIN user u ON c.customer_id = u.user_id
@@ -255,22 +240,13 @@ class ContractModel {
                                         FROM companyquotation q2
                                         WHERE q2.request_id = c.job_request_id
                                             AND (q2.company_id = c.company_id OR q2.company_id IS NULL)
-                                            AND q2.status IN ('accepted', 'successful', 'completed')
+                                            AND q2.status IN ('accepted', 'successful')
                                         ORDER BY (q2.status = 'successful') DESC, q2.updated_at DESC, q2.created_at DESC
                                         LIMIT 1
                                 )";
         
-        $where = [];
         if ($companyId !== null) {
-            $where[] = "c.company_id = :company_id";
-        }
-        
-        if (!$includeTerminated) {
-            $where[] = "c.status != 'terminated' AND (c.customer_response IS NULL OR c.customer_response != 'rejected')";
-        }
-        
-        if (!empty($where)) {
-            $query .= " WHERE " . implode(' AND ', $where);
+            $query .= " WHERE c.company_id = :company_id";
         }
         
         $query .= " ORDER BY c.contract_date DESC";
@@ -303,16 +279,16 @@ class ContractModel {
                     c_loc.address as company_address,
                     comp.contact_no as company_contact,
                     comp.email as company_email,
-                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND (cm.title LIKE '%Labor%' OR cm.title LIKE '%Completion%' OR cm.title LIKE '%Service%') AND cm.unit_rate > 0 LIMIT 1), cq.labor_cost, cq_req.labor_cost) as labor_cost,
-                    COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND cm.title LIKE '%Material%' AND cm.unit_rate > 0 LIMIT 1), cq.material_cost, cq_req.material_cost) as material_cost,
-                    COALESCE(cq.transport_cost, cq.transport_cost, cq_req.transport_cost) as transport_cost,
-                    COALESCE(cq.other_charges, cq.other_charges, cq_req.other_charges) as other_charges,
+                    COALESCE(cq.labor_cost, cq_req.labor_cost) as labor_cost,
+                    COALESCE(cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
+                    COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
                     COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
                     COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc 
                      WHERE cc.contract_id = c.contract_id 
                        AND cc.sender_type = 'customer' 
-                       AND (cc.is_read IS NULL OR cc.is_read = 0)) as unread_messages
+                       AND cc.is_read = 0) as unread_messages
                 FROM contract c
                 LEFT JOIN user u ON c.customer_id = u.user_id
                 LEFT JOIN company comp ON c.company_id = comp.company_id
@@ -908,21 +884,6 @@ class ContractModel {
         return $this->conn->prepare($query)->execute([':contract_id' => $contractId]);
     }
 
-    private function syncQuotationStatusFromContract(int $contractId, string $status): void {
-        $stmt = $this->conn->prepare("SELECT quotation_id FROM contract WHERE contract_id = ? LIMIT 1");
-        $stmt->execute([$contractId]);
-        $quotationId = $stmt->fetchColumn();
-
-        if (empty($quotationId)) {
-            return;
-        }
-
-        $updateStmt = $this->conn->prepare("UPDATE companyquotation SET status = ? WHERE quotation_id = ?");
-        if (!$updateStmt->execute([$status, (int)$quotationId])) {
-            throw new Exception('Failed to update linked quotation status.');
-        }
-    }
-
     /**
      * Cancel a contract (Undo functionality)
      * Reverts Contract, Quotation, and JobRequest statuses
@@ -1029,12 +990,9 @@ class ContractModel {
         try {
             $this->conn->beginTransaction();
 
-            // 1. Fetch milestone data before approve (including contract participants)
+            // 1. Fetch milestone data before approve
             $mFetch = $this->conn->prepare(
-                "SELECT cm.contract_id, cm.actual_amount, cm.amount, c.company_id, c.customer_id, c.payment_method
-                 FROM contract_milestone cm
-                 JOIN contract c ON cm.contract_id = c.contract_id
-                 WHERE cm.milestone_id = ?"
+                "SELECT contract_id, actual_amount, amount FROM contract_milestone WHERE milestone_id = ?"
             );
             $mFetch->execute([$milestoneId]);
             $mData = $mFetch->fetch(PDO::FETCH_ASSOC);
@@ -1074,29 +1032,12 @@ class ContractModel {
                          amount_pending = GREATEST(0, COALESCE(amount_pending, 0) - :billed2)
                      WHERE contract_id  = :cid"
                 )->execute([':billed' => $billedAmount, ':billed2' => $billedAmount, ':cid' => $contractId]);
-
-                // Create milestonepayment record for dashboard visibility
-                $pmt = $this->conn->prepare("
-                    INSERT INTO milestonepayment (
-                        contract_id, milestone_id, amount, status, method, 
-                        paid_by, paid_to, payment_date, paid_at, description
-                    ) VALUES (?, ?, ?, 'completed', ?, ?, ?, NOW(), NOW(), ?)
-                ");
-                $pmt->execute([
-                    $contractId,
-                    $milestoneId,
-                    $billedAmount,
-                    $mData['payment_method'] ?? 'escrow_release',
-                    $mData['customer_id'],
-                    $mData['company_id'],
-                    $mData['title'] ?? 'Milestone completion'
-                ]);
             }
 
             // 4. Recalculate progress
             $progStmt = $this->conn->prepare(
                 "SELECT COUNT(*) as total,
-                        SUM(CASE WHEN status IN ('approved', 'completed', 'paid') THEN 1 ELSE 0 END) as approved
+                        SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved
                  FROM contract_milestone WHERE contract_id = ?"
             );
             $progStmt->execute([$contractId]);
@@ -1104,35 +1045,14 @@ class ContractModel {
 
             if ($stats && $stats['total'] > 0) {
                 $newProgress = (int)round(($stats['approved'] / $stats['total']) * 100);
-                
-                // Update Contract Progress
                 $this->conn->prepare(
-                    "UPDATE Contract SET progress_percentage = ? WHERE contract_id = ?"
-                )->execute([$newProgress, $contractId]);
-
-                // Update Project Progress
-                $this->conn->prepare(
-                    "UPDATE Project p
-                     JOIN Contract c ON p.project_id = c.project_id
-                     SET p.progress = ?
-                     WHERE c.contract_id = ?"
+                    "UPDATE contract SET progress_percentage = ? WHERE contract_id = ?"
                 )->execute([$newProgress, $contractId]);
 
                 if ($newProgress >= 100) {
-                    // Mark Contract as Completed
                     $this->conn->prepare(
-                        "UPDATE Contract SET status = 'completed' WHERE contract_id = ?"
+                        "UPDATE contract SET status = 'completed' WHERE contract_id = ?"
                     )->execute([$contractId]);
-
-                    // Mark Project as Completed
-                    $this->conn->prepare(
-                        "UPDATE Project p
-                         JOIN Contract c ON p.project_id = c.project_id
-                         SET p.status = 'completed'
-                         WHERE c.contract_id = ?"
-                    )->execute([$contractId]);
-
-                    $this->syncQuotationStatusFromContract($contractId, 'completed');
                 }
             }
 
