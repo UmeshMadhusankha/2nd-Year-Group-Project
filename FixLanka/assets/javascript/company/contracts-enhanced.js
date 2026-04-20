@@ -174,12 +174,10 @@ function showQuotationPreview(q) {
     const preview = document.getElementById('quotationPreviewCard');
     if (!preview) return;
 
-    const isDirectRequest = String(q.quotation_id).startsWith('dr_');
-
     preview.innerHTML = `
         <h4 style="margin: 0 0 15px 0; color: #2e7d32; display: flex; align-items: center; gap: 8px;">
-            <i class="fas ${isDirectRequest ? 'fa-bolt' : 'fa-check-circle'}"></i> 
-            <span>${isDirectRequest ? 'Direct Request' : 'Quotation'}: ${escapeHtml(q.title)}</span>
+            <i class="fas fa-check-circle"></i> 
+            <span>Quotation: ${escapeHtml(q.title)}</span>
         </h4>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; font-size: 13px; margin-bottom: 15px;">
             <div><strong>Customer:</strong> ${escapeHtml(q.customer_fname)} ${escapeHtml(q.customer_lname)}</div>
@@ -188,9 +186,9 @@ function showQuotationPreview(q) {
             <div><strong>Pricing:</strong> ${q.pricing_type ? (q.pricing_type === 'time_and_material' ? 'Time & Material' : 'Fixed Price') : 'Fixed Price'}</div>
             <div><strong>Duration:</strong> ${q.estimated_duration ? q.estimated_duration + ' days' : 'To be determined'}</div>
         </div>
-        <div style="padding: 12px; background: ${isDirectRequest ? '#e3f2fd' : '#fff3cd'}; border-radius: 6px; font-size: 12px; color: ${isDirectRequest ? '#0d47a1' : '#856404'};">
+        <div style="padding: 12px; background: #fff3cd; border-radius: 6px; font-size: 12px; color: #856404;">
             <i class="fas fa-info-circle"></i> <strong>Form will be auto-filled.</strong> 
-            ${isDirectRequest ? 'Since this is a direct request, please <strong>manually enter the budget</strong> and other terms.' : 'Review all fields in the next steps and modify if needed.'}
+            Review all fields in the next steps and modify if needed.
         </div>
     `;
     preview.style.display = 'block';
@@ -209,6 +207,31 @@ function autoFillContractForm(q) {
 
     // Step 1: Party Information (client and company details)
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '-'; };
+
+    // Add cost breakdown auto-fill
+    const costMap = {
+        'Labour': q.labor_cost,
+        'Materials': q.material_cost,
+        'Transport': q.transport_cost,
+        'Other': q.other_charges
+    };
+    const bd = document.getElementById('costBreakdown');
+    if (bd) {
+        if (q.labor_cost || q.material_cost || q.total_amount > 0) {
+            bd.style.display = 'block';
+            ['Labour', 'Materials', 'Transport', 'Other'].forEach(id => {
+                setText(`bd${id}Display`, `LKR ${parseFloat(costMap[id] || 0).toLocaleString()}`);
+            });
+            setText('bdTotal', `LKR ${parseFloat(q.total_amount || 0).toLocaleString()}`);
+
+            // Labels with unit suffix
+            const unitSuffix = (l) => l ? ` (${l})` : '';
+            const labourLabelEl = document.getElementById('bdLabourLabel');
+            if (labourLabelEl) labourLabelEl.textContent = `Labour${unitSuffix(q.labor_unit_label)}`;
+            const materialLabelEl = document.getElementById('bdMaterialsLabel');
+            if (materialLabelEl) materialLabelEl.textContent = `Materials${unitSuffix(q.material_unit_label)}`;
+        }
+    }
 
     setText('partyClientName', `${q.customer_fname} ${q.customer_lname}`);
     setText('partyClientEmail', q.customer_email);
@@ -256,13 +279,8 @@ function autoFillContractForm(q) {
     );
     setFieldValue('projectDescription', q.description || q.request_description || q.request_title || '');
 
-    // Step 3: Financial Terms (Phase 1 Business Logic)
-    const isDirectRequest = String(q.quotation_id).startsWith('dr_');
-    if (isDirectRequest) {
-        setFieldValue('contractValue', ''); // Force manual entry for direct requests
-    } else {
-        setFieldValue('contractValue', q.total_amount);
-    }
+    // Step 3: Financial Terms
+    setFieldValue('contractValue', q.total_amount);
 
     setFieldValue('budgetType', q.budget_type || 'fixed');
     setFieldValue('budgetMin', q.budget_min || '');

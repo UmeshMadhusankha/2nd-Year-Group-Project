@@ -276,7 +276,19 @@ CREATE TABLE `company` (
   `description` text DEFAULT NULL,
   `rating` decimal(3,2) DEFAULT 0.00,
   `date_of_joined` timestamp NOT NULL DEFAULT current_timestamp(),
-  `is_deleted` tinyint(1) DEFAULT 0
+  `is_deleted` tinyint(1) DEFAULT 0,
+  `logo` varchar(255) DEFAULT NULL,
+  `established_year` int(11) DEFAULT NULL,
+  `city` varchar(100) DEFAULT NULL,
+  `province` varchar(100) DEFAULT NULL,
+  `postal_code` varchar(20) DEFAULT NULL,
+  `alternate_phone` varchar(20) DEFAULT NULL,
+  `whatsapp` varchar(255) DEFAULT NULL,
+  `facebook` varchar(255) DEFAULT NULL,
+  `instagram` varchar(255) DEFAULT NULL,
+  `linkedin` varchar(255) DEFAULT NULL,
+  `twitter` varchar(255) DEFAULT NULL,
+  `skills` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Table `companyemployee`

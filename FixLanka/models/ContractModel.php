@@ -38,6 +38,8 @@ class ContractModel {
                     comp.name as company_name,
                     COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND (cm.title LIKE '%Labor%' OR cm.title LIKE '%Completion%' OR cm.title LIKE '%Service%') AND cm.unit_rate > 0 LIMIT 1), cq.labor_cost, cq_req.labor_cost) as labor_cost,
                     COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND cm.title LIKE '%Material%' AND cm.unit_rate > 0 LIMIT 1), cq.material_cost, cq_req.material_cost) as material_cost,
+                    COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
+                    COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
                     COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
                     COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc
@@ -164,8 +166,8 @@ class ContractModel {
                     comp.email as company_email,
                     COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND (cm.title LIKE '%Labor%' OR cm.title LIKE '%Completion%' OR cm.title LIKE '%Service%') AND cm.unit_rate > 0 LIMIT 1), cq.labor_cost, cq_req.labor_cost) as labor_cost,
                     COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND cm.title LIKE '%Material%' AND cm.unit_rate > 0 LIMIT 1), cq.material_cost, cq_req.material_cost) as material_cost,
-                    COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
-                    COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
+                    COALESCE(cq.transport_cost, cq.transport_cost, cq_req.transport_cost) as transport_cost, // Standardized transport/other charges
+                    COALESCE(cq.other_charges, cq.other_charges, cq_req.other_charges) as other_charges,
                     COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
                     COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label
                 FROM contract c
@@ -235,8 +237,8 @@ class ContractModel {
                                             cq.material_cost, 
                                             cq_req.material_cost
                                         ) as material_cost,
-                                        COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
-                                        COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
+                                        COALESCE(cq.transport_cost, cq.transport_cost, cq_req.transport_cost) as transport_cost,
+                                        COALESCE(cq.other_charges, cq.other_charges, cq_req.other_charges) as other_charges,
                                         COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
                                         COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc 
@@ -303,8 +305,8 @@ class ContractModel {
                     comp.email as company_email,
                     COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND (cm.title LIKE '%Labor%' OR cm.title LIKE '%Completion%' OR cm.title LIKE '%Service%') AND cm.unit_rate > 0 LIMIT 1), cq.labor_cost, cq_req.labor_cost) as labor_cost,
                     COALESCE((SELECT cm.unit_rate FROM contract_milestone cm WHERE cm.contract_id = c.contract_id AND cm.title LIKE '%Material%' AND cm.unit_rate > 0 LIMIT 1), cq.material_cost, cq_req.material_cost) as material_cost,
-                    COALESCE(cq.transport_cost, cq_req.transport_cost) as transport_cost,
-                    COALESCE(cq.other_charges, cq_req.other_charges) as other_charges,
+                    COALESCE(cq.transport_cost, cq.transport_cost, cq_req.transport_cost) as transport_cost,
+                    COALESCE(cq.other_charges, cq.other_charges, cq_req.other_charges) as other_charges,
                     COALESCE(cq.labor_unit_label, cq_req.labor_unit_label) as labor_unit_label,
                     COALESCE(cq.material_unit_label, cq_req.material_unit_label) as material_unit_label,
                     (SELECT COUNT(*) FROM contract_chats cc 

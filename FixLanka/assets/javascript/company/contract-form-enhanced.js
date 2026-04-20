@@ -106,6 +106,8 @@
         if (startDate) startDate.addEventListener('change', onDateChange);
         if (endDate) endDate.addEventListener('change', onDateChange);
 
+        // Timeline dates logic
+
         // Apply bounds immediately for any prefilled values
         onDateChange();
 
@@ -543,7 +545,7 @@
             if (resp.ok) {
                 const result = await readJsonOrNull(resp);
                 if (result && result.success) {
-                    quotationFullData = result.data;
+                    unitPricingMode = { active: false, laborUnitLabel: '', materialUnitLabel: '' };
                     updateUnitBasedLabels(result.data);
                     autoFillAllSections(result.data);
                     applyUnitBasedMilestoneMode(); // Hide/show payment columns based on pricing type
@@ -591,8 +593,8 @@
         setVal('scopeDescription', d.description || d.request_description || '');
 
         // Step 6: Timeline & Milestones
-        setVal('startDate', d.start_date || '');
-        setVal('endDate', d.completion_date || '');
+        setVal('startDate', (d.start_date || '').split(' ')[0]);
+        setVal('endDate', (d.completion_date || '').split(' ')[0]);
         onDateChange();
 
         // Update milestone dates
@@ -675,8 +677,8 @@
         setVal('scopeDescription', q.description || '');
 
         // Timeline
-        setVal('startDate', q.start_date || '');
-        setVal('endDate', q.completion_date || '');
+        setVal('startDate', (q.start_date || '').split(' ')[0]);
+        setVal('endDate', (q.completion_date || '').split(' ')[0]);
         onDateChange();
         setMilestoneDates(q.start_date, q.completion_date);
 
@@ -776,23 +778,36 @@
             return v ? ` (${v})` : '';
         };
 
-        // Always show units next to the corresponding cost line labels (if stored in quotation)
+        // Always show units next to the corresponding cost line labels
         const labourLabelEl = document.getElementById('bdLabourLabel');
-        if (labourLabelEl) labourLabelEl.textContent = `Labour${unitSuffix(d.labor_unit_label)}`;
+        if (labourLabelEl) labourLabelEl.textContent = `Labour${unitSuffix(d.labor_unit_label || d.labour_unit_label)}`;
         const materialLabelEl = document.getElementById('bdMaterialsLabel');
-        if (materialLabelEl) materialLabelEl.textContent = `Materials${unitSuffix(d.material_unit_label)}`;
+        if (materialLabelEl) materialLabelEl.textContent = `Materials${unitSuffix(d.material_unit_label || d.material_unit)}`;
 
-        if (d.labor_cost || d.material_cost) {
+        const costMap = {
+            'Labour': d.labor_cost,
+            'Materials': d.material_cost,
+            'Transport': d.transport_cost,
+            'Other': d.other_charges
+        };
+
+        if (d.labor_cost || d.material_cost || d.total_amount > 0) {
+            // QUOTATION/CONTRACT: show read-only values
             bd.style.display = 'block';
-            setText('bdLabour', `LKR ${parseFloat(d.labor_cost || 0).toLocaleString()}`);
-            setText('bdMaterials', `LKR ${parseFloat(d.material_cost || 0).toLocaleString()}`);
-            setText('bdTransport', `LKR ${parseFloat(d.transport_cost || 0).toLocaleString()}`);
-            setText('bdOther', `LKR ${parseFloat(d.other_charges || 0).toLocaleString()}`);
+            const ids = Object.keys(costMap);
+            ids.forEach(id => {
+                const display = document.getElementById(`bd${id}Display`);
+                if (display) {
+                    display.style.display = 'block';
+                    display.textContent = `LKR ${parseFloat(costMap[id] || 0).toLocaleString()}`;
+                }
+            });
             setText('bdTotal', `LKR ${parseFloat(d.total_amount || 0).toLocaleString()}`);
         } else {
             bd.style.display = 'none';
         }
     }
+
 
     // ===================================
     // PAYMENT METHOD CHANGE HANDLER
@@ -1617,6 +1632,10 @@
             pricing_type: getVal('pricingType'),
             hourly_rate: getVal('hourlyRate'),
             spending_cap: getVal('spendingCap'),
+            labor_cost: getVal('bdLabourInput'),
+            material_cost: getVal('bdMaterialsInput'),
+            transport_cost: getVal('bdTransportInput'),
+            other_charges: getVal('bdOtherInput'),
 
             // Delays
             late_payment_penalty: getVal('latePaymentPenalty'),

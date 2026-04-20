@@ -27,6 +27,7 @@ try {
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/sidebar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/topbar.css">
     <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/company/settings.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../assets/css/company/settings.css')); ?>">
+    <link rel="stylesheet" href="/2nd-Year-Group-Project/FixLanka/assets/css/common/modals.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../assets/css/common/modals.css')); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
@@ -87,7 +88,7 @@ try {
                             <div class="form-group logo-upload">
                                 <label>Company Logo</label>
                                 <div class="logo-preview">
-                                    <img src="/2nd-Year-Group-Project/FixLanka/assets/images/fixlanka.png" alt="Company Logo" id="logoImage">
+                                    <img src="/2nd-Year-Group-Project/FixLanka/assets/images/user.png" alt="Company Logo" id="logoImage">
                                     <div class="logo-actions">
                                         <button class="btn-upload" id="uploadLogoBtn">
                                             <i class="fas fa-camera"></i> Change Logo
@@ -98,24 +99,23 @@ try {
                             </div>
 
                             <!-- Company Details -->
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="companyName">Company Name *</label>
-                                    <input type="text" id="companyName" value="" required>
+                            <div class="form-group">
+                                <label for="companyName">Company Name *</label>
+                                <input type="text" id="companyName" value="" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Service Categories * (Select at least one)</label>
+                                <div class="business-type-grid" id="companyBusinessTypes">
+                                    <?php foreach ($serviceCategories as $cat): ?>
+                                        <label>
+                                            <input type="checkbox" class="company-business-type" value="<?php echo htmlspecialchars((string)$cat['name']); ?>">
+                                            <?php echo htmlspecialchars((string)$cat['name']); ?>
+                                        </label>
+                                    <?php endforeach; ?>
+                                    <label><input type="checkbox" class="company-business-type" value="Other" id="companyBusinessTypeOther"> Other</label>
                                 </div>
-                                <div class="form-group">
-                                    <label>Service Categories * (Select at least one)</label>
-                                    <div class="checkbox-group business-type-grid" id="companyBusinessTypes">
-                                        <?php foreach ($serviceCategories as $cat): ?>
-                                            <label>
-                                                <input type="checkbox" class="company-business-type" value="<?php echo htmlspecialchars((string)$cat['name']); ?>">
-                                                <?php echo htmlspecialchars((string)$cat['name']); ?>
-                                            </label>
-                                        <?php endforeach; ?>
-                                        <label><input type="checkbox" class="company-business-type" value="Other" id="companyBusinessTypeOther"> Other</label>
-                                    </div>
-                                    <small class="form-hint">Update what services your company provides.</small>
-                                </div>
+                                <small class="form-hint">Update what services your company provides.</small>
                             </div>
 
                             <div class="form-group" id="companyBusinessTypeOtherGroup" style="display:none;">
@@ -1148,35 +1148,9 @@ try {
     </div>
 
     <script>
-        // Load components when DOM is ready
-        document.addEventListener('DOMContentLoaded', function () {
-            loadComponent('sidebar-container', '/2nd-Year-Group-Project/FixLanka/views/company/sidebar.php');
-            loadComponent('header-container', '/2nd-Year-Group-Project/FixLanka/views/company/topbar.php');
-        });
+        // Components are included via PHP. JavaScript loading removed to avoid errors.
 
-        // Function to load HTML components
-        function loadComponent(containerId, componentFile) {
-            fetch(componentFile)
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById(containerId).innerHTML = html;
-                    
-                    // Initialize profile dropdown after topbar loads
-                    if (containerId === 'header-container') {
-                        // Initialize topbar functionality
-                        if (typeof initializeTopbar === 'function') {
-                            setTimeout(initializeTopbar, 100);
-                        }
-                        // Initialize profile dropdown
-                        if (typeof initProfileDropdown === 'function') {
-                            setTimeout(initProfileDropdown, 200);
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading component:', error);
-                });
-        }
+        // loadComponent function removed as components are handled via server-side includes.
 
         // Tab Switching Functionality
         const tabBtns = document.querySelectorAll('.tab-btn');
@@ -1202,14 +1176,55 @@ try {
             document.getElementById('companyLogo').click();
         });
 
-        document.getElementById('companyLogo')?.addEventListener('change', (e) => {
+        document.getElementById('companyLogo')?.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file) {
+                // Validation: Only images allowed, max 5MB
+                console.log('--- Logo Upload Debug ---');
+                console.dir(file);
+                console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+                if (!file.type.startsWith('image/')) {
+                    showAlert('Invalid input: Please select an image file (PNG, JPG, etc.)', 'danger');
+                    e.target.value = '';
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    showAlert('Invalid input: File size exceeds 5MB limit', 'danger');
+                    e.target.value = '';
+                    return;
+                }
+
+                // Show immediate preview
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     document.getElementById('logoImage').src = event.target.result;
                 };
                 reader.readAsDataURL(file);
+
+                // Upload to server
+                const formData = new FormData();
+                formData.append('action', 'upload_logo');
+                formData.append('logo', file);
+                
+                try {
+                    const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-profile.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Logo saved correctly
+                        document.getElementById('logoImage').src = result.logo_path + '?v=' + new Date().getTime(); // Cache buster
+                        showAlert('Logo uploaded successfully', 'success');
+                    } else {
+                        console.error('Server returned error:', result);
+                        showAlert(result.message || 'Failed to upload logo', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Error uploading logo:', error);
+                    showAlert('Failed to upload logo to server', 'danger');
+                }
             }
         });
 
@@ -1255,32 +1270,32 @@ try {
 
             if (requestReviewBtn) {
                 requestReviewBtn.addEventListener('click', () => {
-                    alert('Review request feature will be implemented soon!');
+                    showAlert('Review request feature will be implemented soon!', 'info');
                 });
             }
             if (exportReviewsBtn) {
                 exportReviewsBtn.addEventListener('click', () => {
-                    alert('Export functionality will be implemented soon!');
+                    showAlert('Export functionality will be implemented soon!', 'info');
                 });
             }
             if (loadMoreReviews) {
                 loadMoreReviews.addEventListener('click', () => {
-                    alert('Loading more reviews...');
+                    showAlert('Loading more reviews...', 'info');
                 });
             }
             if (reviewSettingsBtn) {
                 reviewSettingsBtn.addEventListener('click', () => {
-                    alert('Review settings panel will be implemented soon!');
+                    showAlert('Review settings panel will be implemented soon!', 'info');
                 });
             }
             if (reportAnalyticsBtn) {
                 reportAnalyticsBtn.addEventListener('click', () => {
-                    alert('Analytics report generation will be implemented soon!');
+                    showAlert('Analytics report generation will be implemented soon!', 'info');
                 });
             }
             if (saveReviewsBtn) {
                 saveReviewsBtn.addEventListener('click', () => {
-                    alert('Review settings saved successfully!');
+                    showAlert('Review settings saved successfully!', 'success');
                 });
             }
             if (cancelReviewsBtn) {
@@ -1298,20 +1313,20 @@ try {
                     
                     if (action.includes('Reply')) {
                         if (button.classList.contains('replied')) {
-                            alert('You have already replied to this review.');
+                            showAlert('You have already replied to this review.', 'warning');
                         } else {
-                            alert('Reply functionality will be implemented soon!');
+                            showAlert('Reply functionality will be implemented soon!', 'info');
                         }
                     } else if (action.includes('Share')) {
-                        alert('Share functionality will be implemented soon!');
+                        showAlert('Share functionality will be implemented soon!', 'info');
                     } else if (action.includes('Report')) {
-                        alert('Report functionality will be implemented soon!');
+                        showAlert('Report functionality will be implemented soon!', 'info');
                     } else if (action.includes('View Project')) {
-                        alert('View project functionality will be implemented soon!');
+                        showAlert('View project functionality will be implemented soon!', 'info');
                     } else if (action.includes('View Worker')) {
-                        alert('View worker profile functionality will be implemented soon!');
+                        showAlert('View worker profile functionality will be implemented soon!', 'info');
                     } else if (action.includes('Follow Up')) {
-                        alert('Follow up functionality will be implemented soon!');
+                        showAlert('Follow up functionality will be implemented soon!', 'info');
                     }
                 }
             });
@@ -1320,7 +1335,7 @@ try {
             document.addEventListener('click', function(e) {
                 if (e.target.classList.contains('keyword')) {
                     const keyword = e.target.textContent.trim();
-                    alert(`Filtering reviews containing: "${keyword}"`);
+                    showAlert(`Filtering reviews containing: "${keyword}"`, 'info');
                     // This would filter reviews containing the clicked keyword
                 }
             });
@@ -1415,6 +1430,7 @@ try {
 
             // Save Company Profile
             document.getElementById('saveCompanyBtn').addEventListener('click', saveCompanyProfile);
+            document.getElementById('saveAllBtn')?.addEventListener('click', saveCompanyProfile);
             
             // Add Bank Account Toggle
             document.getElementById('addBankAccountBtn').addEventListener('click', () => {
@@ -1450,13 +1466,23 @@ try {
                     document.getElementById('companyDescription').value = data.description || '';
                     setCompanySkillsFromData(data.skills);
                     document.getElementById('website').value = data.website || '';
-                    // document.getElementById('establishedYear').value = data.established_year || ''; // Not in DB yet
+                    document.getElementById('establishedYear').value = data.established_year || '';
+                    
+                    document.getElementById('logoImage').src = data.logo || '/2nd-Year-Group-Project/FixLanka/assets/images/user.png';
                     
                     document.getElementById('email').value = data.email || '';
                     document.getElementById('phone').value = data.contact_no || '';
+                    document.getElementById('alternatePhone').value = data.alternate_phone || '';
+                    document.getElementById('companyWhatsapp').value = data.whatsapp || '';
                     document.getElementById('address').value = data.address || '';
+                    document.getElementById('city').value = data.city || '';
+                    document.getElementById('province').value = data.province || 'western';
+                    document.getElementById('postalCode').value = data.postal_code || '';
                     
-                    // Populate other fields as needed...
+                    document.getElementById('facebook').value = data.facebook || '';
+                    document.getElementById('instagram').value = data.instagram || '';
+                    document.getElementById('linkedin').value = data.linkedin || '';
+                    document.getElementById('twitter').value = data.twitter || '';
                 }
             } catch (error) {
                 console.error('Error fetching profile:', error);
@@ -1594,7 +1620,7 @@ try {
         async function saveCompanyProfile() {
             const businessTypes = getCompanyBusinessTypesForSave();
             if (!businessTypes.ok) {
-                alert(businessTypes.message);
+                showAlert(businessTypes.message, 'warning');
                 return;
             }
             const data = {
@@ -1604,12 +1630,22 @@ try {
                 registration_no: document.getElementById('registrationNumber').value,
                 tax_id: document.getElementById('taxId').value,
                 description: document.getElementById('companyDescription').value,
-                skills: companySkillsTags.join(', '),
+                skills: companySkillsTags.join(','),
                 website: document.getElementById('website').value,
+                established_year: document.getElementById('establishedYear').value,
                 email: document.getElementById('email').value,
                 contact_no: document.getElementById('phone').value,
+                alternate_phone: document.getElementById('alternatePhone').value,
+                whatsapp: document.getElementById('companyWhatsapp').value,
                 address: document.getElementById('address').value,
-                districts: '' // todo: add district selection
+                city: document.getElementById('city').value,
+                province: document.getElementById('province').value,
+                postal_code: document.getElementById('postalCode').value,
+                facebook: document.getElementById('facebook').value,
+                instagram: document.getElementById('instagram').value,
+                linkedin: document.getElementById('linkedin').value,
+                twitter: document.getElementById('twitter').value,
+                districts: '' // Handled separately or as CSV
             };
 
             try {
@@ -1619,10 +1655,10 @@ try {
                     body: JSON.stringify(data)
                 });
                 const result = await response.json();
-                alert(result.message);
+                showAlert(result.message, result.success ? 'success' : 'danger');
             } catch (error) {
                 console.error('Error saving profile:', error);
-                alert('Failed to save profile');
+                showAlert('Failed to save profile', 'danger');
             }
         }
 
@@ -1650,8 +1686,8 @@ try {
             }
         };
 
-        function subscriptionNotify(message) {
-            alert(message);
+        function subscriptionNotify(message, type = 'info') {
+            showAlert(message, type);
         }
 
         function subscriptionFormatDate(dateString) {
@@ -1832,7 +1868,7 @@ try {
         }
 
         async function removePaymentMethod(paymentMethodId) {
-            if (!confirm('Are you sure you want to remove this payment method?')) return;
+            if (!(await systemConfirm('Are you sure you want to remove this payment method?', { type: 'danger', confirmText: 'Remove' }))) return;
 
             try {
                 const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/settings.php', {
@@ -1901,7 +1937,7 @@ try {
             });
 
             document.getElementById('subscriptionCancelBtn')?.addEventListener('click', async () => {
-                if (!confirm('Are you sure you want to cancel your subscription? You will lose access to premium features.')) return;
+                if (!(await systemConfirm('Are you sure you want to cancel your subscription? You will lose access to premium features.', { type: 'danger', confirmText: 'Cancel Subscription' }))) return;
                 try {
                     const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/settings.php', {
                         method: 'POST',
@@ -2069,19 +2105,19 @@ try {
                     body: JSON.stringify(data)
                 });
                 const result = await response.json();
-                alert(result.message);
+                showAlert(result.message, result.success ? 'success' : 'danger');
                 if (result.success) {
                     document.getElementById('bankAccountForm').style.display = 'none';
                     fetchBankAccounts();
                 }
              } catch (error) {
                  console.error('Error saving bank account:', error);
-                 alert('Failed to save bank account');
+                 showAlert('Failed to save bank account', 'danger');
              }
         }
 
         async function deleteBankAccount(id) {
-             if(!confirm('Are you sure?')) return;
+             if(!(await systemConfirm('Are you sure you want to delete this bank account?', { type: 'danger', confirmText: 'Delete' }))) return;
              try {
                 const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-profile.php', {
                     method: 'POST',
@@ -2089,7 +2125,7 @@ try {
                     body: JSON.stringify({ action: 'delete_bank_account', bank_id: id })
                 });
                 const result = await response.json();
-                alert(result.message);
+                showAlert(result.message, result.success ? 'success' : 'danger');
                 if (result.success) fetchBankAccounts();
              } catch (error) {
                  console.error('Error deleting bank account:', error);
@@ -2121,5 +2157,6 @@ try {
             }
         });
     </script>
+    <script src="/2nd-Year-Group-Project/FixLanka/assets/javascript/common/common.js"></script>
 </body>
 </html>

@@ -756,4 +756,73 @@ class CompanyQuotation
         
         return empty($errors) ? true : $errors;
     }
+
+    /**
+     * Convert a Direct Job Request to a standard Job Request
+     * 
+     * This is used when a company submits a quotation for a direct request.
+     * It creates a corresponding Job Request record so it can be linked to the quotation.
+     * 
+     * @param int $directRequestId The ID of the direct job request
+     * @return int|false The new Job Request ID or false on failure
+     */
+    public function convertDirectToJobRequest($directRequestId) {
+        try {
+            // 1. Fetch direct request details
+            $stmt = $this->pdo->prepare("SELECT * FROM directjobrequest WHERE request_id = ?");
+            $stmt->execute([$directRequestId]);
+            $directReq = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$directReq) {
+                error_log("convertDirectToJobRequest: Direct request not found ID $directRequestId");
+                return false;
+            }
+
+            // 2. Create Location
+            $locStmt = $this->pdo->prepare("INSERT INTO location (address, district) VALUES (?, ?)");
+            $locStmt->execute([$directReq['address'], $directReq['district']]);
+            $locationId = $this->pdo->lastInsertId();
+
+            // 3. Create Job Request
+            $jrStmt = $this->pdo->prepare("
+                INSERT INTO jobrequest (
+                    user_id, category_id, title, description, 
+                    location_id, district, address, 
+                    service_provider_type, urgency, finish_date, 
+                    status, photos
+                ) VALUES (
+                    ?, ?, ?, ?, 
+                    ?, ?, ?, 
+                    ?, ?, ?, 
+                    'accepted', ?
+                )
+            ");
+
+            $jrStmt->execute([
+                $directReq['user_id'],
+                $directReq['category_id'],
+                $directReq['title'],
+                $directReq['description'],
+                $locationId,
+                $directReq['district'],
+                $directReq['address'],
+                'company', // Since this is for a company
+                'medium', // Default
+                $directReq['finish_date'],
+                $directReq['photos']
+            ]);
+
+            $newJobRequestId = $this->pdo->lastInsertId();
+
+            // 4. Update Direct Job Request Status
+            $updStmt = $this->pdo->prepare("UPDATE directjobrequest SET status = 'accepted' WHERE request_id = ?");
+            $updStmt->execute([$directRequestId]);
+
+            return $newJobRequestId;
+
+        } catch (PDOException $e) {
+            error_log("Error converting direct request: " . $e->getMessage());
+            return false;
+        }
+    }
 }

@@ -403,6 +403,32 @@ function handlePostEnhanced()
             }
         }
 
+        // ===================================
+        // DIRECT REQUEST HANDLING
+        // ===================================
+        $isDirect = (isset($input['is_direct']) && $input['is_direct'] === true);
+        if ($isDirect) {
+            $GLOBALS['pdo']->beginTransaction();
+            try {
+                // 1. Convert direct request to job request
+                $newJobRequestId = $quotationModel->convertDirectToJobRequest($input['request_id']);
+                if (!$newJobRequestId) {
+                    throw new Exception("Failed to convert direct request to job request");
+                }
+                
+                // 2. Update input with new job request ID
+                $input['request_id'] = $newJobRequestId;
+                
+                // 3. Set status to accepted for direct requests (per user requirement)
+                $input['status'] = 'accepted';
+            } catch (Exception $e) {
+                $GLOBALS['pdo']->rollBack();
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => 'Conversion failed: ' . $e->getMessage()]);
+                return;
+            }
+        }
+
         $quotationId = $quotationModel->createEnhanced($input);
         if (!$quotationId) {
             http_response_code(500);
@@ -420,6 +446,10 @@ function handlePostEnhanced()
             'company',
             null
         );
+
+        if ($isDirect) {
+            $GLOBALS['pdo']->commit();
+        }
 
         $quotation = $quotationModel->getEnhancedById($quotationId, $AUTH_COMPANY_ID);
         echo json_encode([

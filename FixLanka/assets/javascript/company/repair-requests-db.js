@@ -531,31 +531,9 @@ function createDirectRequestRow(request) {
 }
 
 async function acceptDirectRequest(requestId) {
-    const confirmed = await window.showConfirm('Are you sure you want to accept this direct request? You can proceed to create a contract afterwards.', {
-        title: 'Accept Request',
-        confirmText: 'Accept'
-    });
-
-    if (!confirmed) return;
-
-    try {
-        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/company-direct-requests-action.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ request_id: requestId, action: 'accept' })
-        });
-        const result = await response.json();
-
-        if (result.success) {
-            showToast('Direct request accepted successfully', 'success');
-            loadDirectRequests();
-        } else {
-            showToast(result.message || 'Failed to accept request', 'error');
-        }
-    } catch (error) {
-        console.error('Error accepting direct request:', error);
-        showToast('System error occurred', 'error');
-    }
+    // Instead of directly accepting, we open the quotation modal.
+    // The user specifically requested that acceptance should involve sending a quotation.
+    openQuotationModal(requestId, 'direct');
 }
 
 async function rejectDirectRequest(requestId) {
@@ -1020,14 +998,29 @@ function createQuotationLogItem(quotation, isAccepted = false, isRejected = fals
  * @param {number} requestId - The ID of the job request to create a quotation for
  * @returns {void}
  */
-async function openQuotationModal(requestId) {
+async function openQuotationModal(requestId, source = 'job') {
     editingQuotationId = null;
     quotationForm.reset();
 
-    // Find the requested job request (fallback to fetch-by-id when not preloaded)
-    await ensureRequestLoaded(requestId);
+    // Set source flag on the form
+    quotationForm.dataset.source = source;
 
-    const request = availableRequests.find(r => Number(r.request_id) === Number(requestId));
+    // Find the requested job request
+    let request;
+    if (source === 'direct') {
+        request = directRequestsCache.find(r => Number(r.request_id) === Number(requestId));
+        // Add required fields that might be missing from direct request cache but expected by modal
+        if (request) {
+            request.category_name = request.category_name || 'General';
+            // Ensure photos is an array if it's a string
+            if (typeof request.photos === 'string' && request.photos) {
+                request.photos = request.photos.split(',');
+            }
+        }
+    } else {
+        await ensureRequestLoaded(requestId);
+        request = availableRequests.find(r => Number(r.request_id) === Number(requestId));
+    }
     if (!request) {
         showToast('Request not found', 'error');
         return;
@@ -1424,7 +1417,10 @@ async function submitQuotation() {
         working_days_per_week: parseInt(document.getElementById('working-days-per-week')?.value) || 5,
         daily_work_hours: parseFloat(document.getElementById('daily-work-hours')?.value) || 8.00,
         work_start_time: document.getElementById('work-start-time')?.value || '08:00:00',
-        work_end_time: document.getElementById('work-end-time')?.value || '17:00:00'
+        work_end_time: document.getElementById('work-end-time')?.value || '17:00:00',
+
+        // Indicate if this is coming from a direct request
+        is_direct: quotationForm.dataset.source === 'direct'
     };
 
 

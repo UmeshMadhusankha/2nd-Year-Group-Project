@@ -80,7 +80,7 @@ class CompanyModel {
             'website', 'city', 'province', 'postal_code', 
             'facebook', 'instagram', 'linkedin', 'twitter',
             'alternate_phone', 'whatsapp',
-            'skills'
+            'skills', 'registration_no', 'tax_id', 'established_year'
         ];
 
         foreach ($data as $key => $value) {

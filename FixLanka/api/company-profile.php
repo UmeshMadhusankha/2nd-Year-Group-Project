@@ -31,15 +31,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 // Handle POST Request (Updates)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Get JSON input
-    $input = json_decode(file_get_contents('php://input'), true);
+    // Determine if this is a JSON request or a Form/File request
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+    $action = '';
+    $input = [];
 
-    if (!$input) {
-        echo json_encode(['success' => false, 'message' => 'Invalid input']);
-        exit;
+    if (strpos($contentType, 'application/json') !== false) {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $action = $input['action'] ?? '';
+    } else {
+        // Fallback to PHP superglobals for multipart/form-data
+        $action = $_POST['action'] ?? '';
+        $input = $_POST;
     }
 
-    $action = $input['action'] ?? '';
+    if (empty($action)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid input: No action specified']);
+        exit;
+    }
 
     switch ($action) {
         case 'change_password':
@@ -66,6 +75,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['success' => true, 'message' => 'Profile updated successfully']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'No changes made or update failed']);
+            }
+            break;
+
+        case 'upload_logo':
+            if (!isset($_FILES['logo'])) {
+                error_log("Logo upload failed: 'logo' not set in \$_FILES. Keys present: " . implode(', ', array_keys($_FILES)));
+                echo json_encode(['success' => false, 'message' => 'Invalid input: No file received']);
+                exit;
+            }
+            if ($_FILES['logo']['error'] !== UPLOAD_ERR_OK) {
+                error_log("Logo upload failed: Error code " . $_FILES['logo']['error']);
+                echo json_encode(['success' => false, 'message' => 'Invalid input: Upload error code ' . $_FILES['logo']['error']]);
+                exit;
+            }
+
+            // Server-side validation: Max 5MB
+            if ($_FILES['logo']['size'] > 5 * 1024 * 1024) {
+                echo json_encode(['success' => false, 'message' => 'Invalid input: File size exceeds 5MB limit']);
+                exit;
+            }
+
+            // Server-side validation: Mime type
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->file($_FILES['logo']['tmp_name']);
+            if (strpos($mimeType, 'image/') !== 0) {
+                error_log("Invalid logo upload: Mime type $mimeType");
+                echo json_encode(['success' => false, 'message' => 'Invalid input: File is not a valid image']);
+                exit;
+            }
+
+            $uploadDir = __DIR__ . '/../uploads/logos/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
+            $extension = pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION);
+            $filename = 'company_' . $companyId . '_' . time() . '.' . $extension;
+            $targetPath = $uploadDir . $filename;
+            $dbPath = '/2nd-Year-Group-Project/FixLanka/uploads/logos/' . $filename;
+
+            error_log("Attempting to upload logo to: $targetPath");
+
+            if (move_uploaded_file($_FILES['logo']['tmp_name'], $targetPath)) {
+                $success = $companyModel->updateLogo($companyId, $dbPath);
+                if ($success) {
+                    echo json_encode(['success' => true, 'message' => 'Logo uploaded successfully', 'logo_path' => $dbPath]);
+                } else {
+                    error_log("Failed to update logo in database for company $companyId");
+                    echo json_encode(['success' => false, 'message' => 'Failed to update logo in database']);
+                }
+            } else {
+                error_log("Failed to move uploaded file from " . $_FILES['logo']['tmp_name'] . " to $targetPath");
+                echo json_encode(['success' => false, 'message' => 'Failed to move uploaded file']);
             }
             break;
 
