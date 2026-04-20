@@ -136,3 +136,8 @@ async function saveCompanyProfile() {
     // ... the rest of your save code ...
 }
 Try it out: Go to your profile, type something like 123, and see if the red error appears and the "Save" button gets disabled!
+
+
+
+
+

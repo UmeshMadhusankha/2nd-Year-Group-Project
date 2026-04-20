@@ -318,6 +318,8 @@ class AdvertisementFilters {
                     <div class="ad-meta">
                         <div class="meta-item">
                             <i class="fas fa-calendar-day"></i>
+                            <i class="fas fa-users"></i>
+    <span>Target: ${ad.target_audience || 'All'}</span>
                             <span>Start: ${this.formatDate(ad.start_date)}</span>
                         </div>
                         <div class="meta-item">
@@ -665,7 +667,14 @@ class AdvertisementFilters {
     }
 
     async editAdvertisement(adId) {
-        const ad = this.advertisements.find(a => a.id === adId);
+        const ad = this.advertisements.find(a => a.id === adId); // First, create 'ad'
+    if (!ad) {
+        alert('Advertisement not found');
+        return;
+    }
+    // Now you can safely use 'ad'
+    const targetAudienceEl = document.getElementById('adTargetAudience');
+    if (targetAudienceEl) targetAudienceEl.value = ad.target_audience || 'all';
         if (!ad) {
             alert('Advertisement not found');
             return;
