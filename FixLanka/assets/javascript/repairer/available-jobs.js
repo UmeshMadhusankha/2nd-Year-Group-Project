@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     initializeTabs();
-    initializeFilters();
     loadAvailableJobs();
     loadDirectJobs();
     loadSubmittedQuotations();
@@ -407,35 +406,6 @@ async function submitCounterNegotiation(event) {
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Counter';
         }
     }
-}
-
-// =========================================================================
-//  FILTERS
-// =========================================================================
-function initializeFilters() {
-    const applyBtn = document.querySelector('.btn-filter.btn-primary');
-    const resetBtn = document.querySelector('.btn-filter.btn-secondary');
-    if (applyBtn) applyBtn.addEventListener('click', applyFilters);
-    if (resetBtn) resetBtn.addEventListener('click', resetFilters);
-}
-
-function applyFilters() {
-    const filters = {
-        category: document.getElementById('category-filter')?.value || '',
-        district: document.getElementById('location-filter')?.value || '',
-        sort: document.getElementById('sort-filter')?.value || 'newest'
-    };
-    loadAvailableJobs(filters);
-}
-
-function resetFilters() {
-    const cat = document.getElementById('category-filter');
-    const loc = document.getElementById('location-filter');
-    const sort = document.getElementById('sort-filter');
-    if (cat) cat.value = '';
-    if (loc) loc.value = '';
-    if (sort) sort.value = 'newest';
-    loadAvailableJobs();
 }
 
 // =========================================================================

@@ -7,10 +7,7 @@ const REVIEWS_API = '/2nd-Year-Group-Project/FixLanka/api';
 
 // Raw data from API
 let allReviews = [];
-let currentFilters = { rating: 'all', response: 'all', sort: 'newest' };
-
 document.addEventListener('DOMContentLoaded', function () {
-    initializeFilters();
     initializeModal();
     if (REVIEWS_REPAIRER_ID) {
         loadReviewsFromAPI();
@@ -143,97 +140,6 @@ function setText(id, value) {
     if (el) el.textContent = value;
 }
 
-
-// ===== FILTER FUNCTIONALITY =====
-function initializeFilters() {
-    const ratingFilter = document.getElementById('rating-filter');
-    const responseFilter = document.getElementById('response-filter');
-    const sortFilter = document.getElementById('sort-filter');
-    const clearBtn = document.querySelector('.btn-outline');
-
-    if (ratingFilter) {
-        ratingFilter.addEventListener('change', applyFilters);
-    }
-
-    if (responseFilter) {
-        responseFilter.addEventListener('change', applyFilters);
-    }
-
-    if (sortFilter) {
-        sortFilter.addEventListener('change', applyFilters);
-    }
-
-    if (clearBtn) {
-        clearBtn.addEventListener('click', clearFilters);
-    }
-}
-
-function applyFilters() {
-    const ratingFilter = document.getElementById('rating-filter').value;
-    const responseFilter = document.getElementById('response-filter').value;
-    const sortBy = document.getElementById('sort-filter').value;
-    const reviewItems = document.querySelectorAll('.review-item');
-
-    // Convert NodeList to Array for sorting
-    const reviewsArray = Array.from(reviewItems);
-
-    // Filter by rating and response status
-    reviewsArray.forEach(item => {
-        const rating = parseInt(item.dataset.rating);
-        const responseStatus = item.dataset.response || 'pending';
-        const matchesRating = ratingFilter === 'all' || rating >= parseInt(ratingFilter);
-        const matchesResponse = responseFilter === 'all' || responseStatus === responseFilter;
-
-        if (matchesRating && matchesResponse) {
-            item.style.display = 'block';
-        } else {
-            item.style.display = 'none';
-        }
-    });
-
-    // Sort reviews
-    const visibleReviews = reviewsArray.filter(item => item.style.display !== 'none');
-
-    visibleReviews.sort((a, b) => {
-        switch (sortBy) {
-            case 'newest':
-                return new Date(b.dataset.date || 0) - new Date(a.dataset.date || 0);
-            case 'oldest':
-                return new Date(a.dataset.date || 0) - new Date(b.dataset.date || 0);
-            case 'rating-high':
-                return parseInt(b.dataset.rating) - parseInt(a.dataset.rating);
-            case 'rating-low':
-                return parseInt(a.dataset.rating) - parseInt(b.dataset.rating);
-            default:
-                return 0;
-        }
-    });
-
-    // Reorder DOM elements
-    const reviewsList = document.querySelector('.reviews-list');
-    if (reviewsList) {
-        visibleReviews.forEach(review => {
-            reviewsList.appendChild(review);
-        });
-    }
-
-    // Update visible count
-    updateVisibleCount(visibleReviews.length);
-}
-
-function clearFilters() {
-    document.getElementById('rating-filter').value = 'all';
-    document.getElementById('sort-filter').value = 'newest';
-    applyFilters();
-    showNotification('Filters cleared successfully', 'success');
-}
-
-function updateVisibleCount(count) {
-    const subtitle = document.querySelector('.section-subtitle');
-    if (subtitle) {
-        subtitle.textContent = `Showing ${count} review${count !== 1 ? 's' : ''}`;
-    }
-}
 
 // ===== MODAL FUNCTIONALITY =====
 function initializeModal() {

@@ -1,10 +1,4 @@
 @import "../common/variables.css";
-.filters-container {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr) auto;
-  gap: var(--spacing-lg);
-  align-items: end;
-}
 .jobs-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -771,18 +765,11 @@ to {
   pointer-events: none;
 }
 @media (max-width: 1200px) {
-.filters-container {
-  grid-template-columns: repeat(2, 1fr);
-}
 .quote-details-grid {
   grid-template-columns: repeat(2, 1fr);
 }
 }
 @media (max-width: 768px) {
-.filters-container {
-  grid-template-columns: 1fr;
-  gap: var(--spacing-md);
-}
 .jobs-grid {
   grid-template-columns: 1fr;
   gap: var(--spacing-md);

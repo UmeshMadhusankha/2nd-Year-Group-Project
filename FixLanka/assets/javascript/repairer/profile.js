@@ -130,9 +130,6 @@ document.addEventListener('DOMContentLoaded', function () {
             successRate.textContent = Number.isFinite(num) ? (Math.round(num) + '%') : '—';
         }
 
-        var responseTime = document.getElementById('profileResponseTime');
-        if (responseTime) responseTime.textContent = '—';
-
         // ── Right column form fields ──
         setVal('full-name', data.full_name || (data.f_name + ' ' + data.l_name));
         setVal('email', data.email || '');
@@ -603,11 +600,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function isValidPhone(v) {
-        var digits = v.replace(/\D/g, '');
-        if (digits.length === 10 && digits.charAt(0) === '0') return true;
-        if ((digits.length === 11 || digits.length === 12) && digits.indexOf('94') === 0) return true;
-        return /^[\+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/.test(v) && digits.length >= 10;
-    }
+    return v;
+}
 
     function showFieldError(field, msg) {
         clearFieldError(field);

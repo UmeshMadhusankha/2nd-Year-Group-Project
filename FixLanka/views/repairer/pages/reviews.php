@@ -100,49 +100,6 @@ $searchPlaceholder = 'Search reviews, customers, ratings...';
                         </div>
                     </section>
 
-                    <!-- Filters Section -->
-                    <section class="filters-section">
-                        <div class="filters-container">
-                            <div class="filter-group">
-                                <label for="rating-filter" class="filter-label">Rating</label>
-                                <select id="rating-filter" class="filter-select">
-                                    <option value="all">All Ratings</option>
-                                    <option value="5">5 Stars</option>
-                                    <option value="4">4 Stars</option>
-                                    <option value="3">3 Stars</option>
-                                    <option value="2">2 Stars</option>
-                                    <option value="1">1 Star</option>
-                                </select>
-                            </div>
-
-                            <div class="filter-group">
-                                <label for="response-filter" class="filter-label">Response Status</label>
-                                <select id="response-filter" class="filter-select">
-                                    <option value="all">All Reviews</option>
-                                    <option value="responded">Responded</option>
-                                    <option value="pending">Pending Response</option>
-                                </select>
-                            </div>
-
-                            <div class="filter-group">
-                                <label for="sort-filter" class="filter-label">Sort By</label>
-                                <select id="sort-filter" class="filter-select">
-                                    <option value="newest">Newest First</option>
-                                    <option value="oldest">Oldest First</option>
-                                    <option value="rating-high">Highest Rating</option>
-                                    <option value="rating-low">Lowest Rating</option>
-                                </select>
-                            </div>
-
-                            <div class="filter-actions">
-                                <button class="btn btn-outline" onclick="resetFilters()">
-                                    <i class="fas fa-undo"></i>
-                                    Reset
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-
                     <!-- Reviews Section -->
                     <section class="reviews-section">
                         <div class="section-header">

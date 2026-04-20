@@ -126,13 +126,6 @@ try {
                                                 <span class="info-card-value" id="profileSuccessRate">—</span>
                                             </div>
                                         </div>
-                                        <div class="info-card">
-                                            <i class="fas fa-clock"></i>
-                                            <div class="info-card-content">
-                                                <span class="info-card-label">Response Time</span>
-                                                <span class="info-card-value" id="profileResponseTime">—</span>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -153,7 +146,12 @@ try {
                                             </div>
                                             <div class="form-group">
                                                 <label for="phone" class="form-label">Phone Number</label>
-                                                <input type="tel" id="phone" name="phone" class="form-input" value="" readonly required pattern="[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}" title="Please enter a valid phone number (e.g., 0771234567 or +94771234567)">
+                                                
+                                                <input type="tel" id="phone" name="phone" class="form-input" value="" readonly required pattern="^(0\d{9}|\+94\d{9})$" title="Use 10 digits (0XXXXXXXXX) or +94XXXXXXXXX">
+                                                
+                                                
+                                                
+
                                             </div>
                                             <div class="form-group">
                                                 <label for="service-category" class="form-label">Service Category</label>

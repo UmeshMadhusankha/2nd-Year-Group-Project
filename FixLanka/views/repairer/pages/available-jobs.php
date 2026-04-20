@@ -152,56 +152,6 @@ $searchPlaceholder = 'Search jobs, customers, locations...';
                         </div>
                     </section>
 
-                    <!-- Filters Section -->
-                    <section class="filters-section">
-                        <div class="filters-container">
-                            <div class="filter-group">
-                                <label for="category-filter" class="filter-label">Category</label>
-                                <select id="category-filter" class="filter-select">
-                                    <option value="">All Categories</option>
-                                    <?php foreach ($categories as $cat): ?>
-                                        <option value="<?php echo htmlspecialchars($cat['name']); ?>">
-                                            <?php echo htmlspecialchars($cat['name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <div class="filter-group">
-                                <label for="location-filter" class="filter-label">Location</label>
-                                <select id="location-filter" class="filter-select">
-                                    <option value="">All Districts</option>
-                                    <?php foreach ($districts as $district): ?>
-                                        <option value="<?php echo htmlspecialchars($district); ?>">
-                                            <?php echo htmlspecialchars(ucfirst($district)); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <div class="filter-group">
-                                <label for="sort-filter" class="filter-label">Sort by</label>
-                                <select id="sort-filter" class="filter-select">
-                                    <option value="newest">Newest First</option>
-                                    <option value="oldest">Oldest First</option>
-                                    <option value="urgency">Urgency</option>
-                                    <option value="deadline">Deadline</option>
-                                </select>
-                            </div>
-
-                            <div class="filter-actions">
-                                <button class="btn-filter btn-primary">
-                                    <i class="fas fa-filter"></i>
-                                    Apply Filters
-                                </button>
-                                <button class="btn-filter btn-secondary">
-                                    <i class="fas fa-undo"></i>
-                                    Reset
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-
                     <!-- Tabs Navigation -->
                     <section class="tabs-section">
                         <div class="tabs-container">
