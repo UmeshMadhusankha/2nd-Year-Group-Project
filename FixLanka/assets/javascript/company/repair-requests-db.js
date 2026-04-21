@@ -159,9 +159,27 @@ document.addEventListener('DOMContentLoaded', function () {
  * @async
  * @returns {Promise<void>}
  */
-async function loadAvailableRequests() {
+async function loadAvailableRequests(filters = {}) {
     try {
-        const response = await fetch('/2nd-Year-Group-Project/FixLanka/api/job-requests.php?status=pending');
+        // Build query string based on filters
+        const queryParams = new URLSearchParams();
+
+        // Always include status=pending for marketplace view
+        queryParams.append('status', 'pending');
+
+        if (filters.category) {
+            queryParams.append('category', filters.category);
+        }
+
+        if (filters.district) {
+            queryParams.append('district', filters.district);
+        }
+
+        if (filters.urgency) {
+            queryParams.append('urgency', filters.urgency);
+        }
+
+        const response = await fetch(`/2nd-Year-Group-Project/FixLanka/api/job-requests.php?${queryParams.toString()}`);
 
         // Check for HTTP errors
         if (!response.ok) {
@@ -1809,14 +1827,47 @@ function initializeViewToggle() {
  * Initialize filters
  */
 function initializeFilters() {
-    const filters = document.querySelectorAll('.filter-select');
+    const serviceFilter = document.getElementById('service-filter');
+    const priorityFilter = document.getElementById('priority-filter');
+    const locationFilter = document.getElementById('location-filter');
 
-    filters.forEach(filter => {
-        filter.addEventListener('change', () => {
-            // TODO: Implement filtering logic
+    /**
+     * Collect current filter values and reload requests
+     */
+    const handleFilterChange = () => {
+        const filters = {};
 
-        });
-    });
+        if (serviceFilter && serviceFilter.value) {
+            filters.category = serviceFilter.value;
+        }
+
+        if (locationFilter && locationFilter.value) {
+            filters.district = locationFilter.value;
+        }
+
+        if (priorityFilter && priorityFilter.value) {
+            // Map UI "high/low" to API "urgent/low"
+            filters.urgency = (priorityFilter.value === 'high') ? 'urgent' : priorityFilter.value;
+        }
+
+        // Show loading state in container
+        const container = document.querySelector('.requests-grid');
+        if (container) {
+            container.innerHTML = `
+                <div class="loading-state" style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; opacity: 0.5;"></i>
+                    <p style="color: var(--text-secondary); margin-top: 1rem;">Filtering job requests...</p>
+                </div>
+            `;
+        }
+
+        loadAvailableRequests(filters);
+    };
+
+    // Add event listeners to all filter dropdowns
+    if (serviceFilter) serviceFilter.addEventListener('change', handleFilterChange);
+    if (priorityFilter) priorityFilter.addEventListener('change', handleFilterChange);
+    if (locationFilter) locationFilter.addEventListener('change', handleFilterChange);
 }
 
 /**

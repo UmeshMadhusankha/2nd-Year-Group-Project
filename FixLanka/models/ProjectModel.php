@@ -705,17 +705,54 @@ class Project
             if ($result) {
                 // Side effects for completion
                 if ($status === self::STATUS_COMPLETED) {
+                    // 1. Auto-release company employees
                     try {
-                        // 1. Auto-release company employees
                         $this->pdo->prepare("DELETE FROM project_employee_assignments WHERE project_id = :pid")
                                   ->execute([':pid' => $projectId]);
+                    } catch (Throwable $e) {
+                         // Table might not exist or other error, ignore to allow other side effects
+                    }
 
-                        // 2. Mark freelancer assignments as completed
+                    // 2. Mark freelancer assignments as completed
+                    try {
                         $this->pdo->prepare("UPDATE freelancer_assignments SET status = 'completed', updated_at = NOW() WHERE project_id = :pid AND status = 'accepted'")
                                   ->execute([':pid' => $projectId]);
-                    } catch (Exception $e) {
-                        // Log or ignore side effect errors to avoid blocking status update
-                    }
+                    } catch (Throwable $e) {}
+
+                    // 3. Mark linked quotation and job request as completed
+                    try {
+                        $stmtContract = $this->pdo->prepare("SELECT quotation_id, job_request_id FROM contract WHERE project_id = :pid ORDER BY contract_id DESC LIMIT 1");
+                        $stmtContract->execute([':pid' => $projectId]);
+                        $contractInfo = $stmtContract->fetch(PDO::FETCH_ASSOC);
+
+                        if ($contractInfo) {
+                            if (!empty($contractInfo['quotation_id'])) {
+                                $this->pdo->prepare("UPDATE companyquotation SET status = 'completed' WHERE quotation_id = :qid")
+                                          ->execute([':qid' => $contractInfo['quotation_id']]);
+                            }
+                            if (!empty($contractInfo['job_request_id'])) {
+                                $this->pdo->prepare("UPDATE jobrequest SET status = 'completed' WHERE request_id = :rid")
+                                          ->execute([':rid' => $contractInfo['job_request_id']]);
+
+                                // Sync collaboration state so user can leave a review
+                                try {
+                                    if (file_exists(__DIR__ . '/JobCollaborationModel.php')) {
+                                        require_once __DIR__ . '/JobCollaborationModel.php';
+                                        $collabModel = new JobCollaborationModel($this->pdo);
+
+                                        $stmtProj = $this->pdo->prepare("SELECT company_id FROM Project WHERE project_id = :pid");
+                                        $stmtProj->execute([':pid' => $projectId]);
+                                        $projData = $stmtProj->fetch(PDO::FETCH_ASSOC);
+                                        $companyId = $projData ? (int)$projData['company_id'] : 0;
+
+                                        if ($companyId > 0) {
+                                            $collabModel->bootstrapFromRequestIfMissingForProvider($companyId, 'company', (int)$contractInfo['job_request_id'], 'regular');
+                                        }
+                                    }
+                                } catch (Throwable $collabEx) {}
+                            }
+                        }
+                    } catch (Throwable $e) {}
                 }
 
                 return [

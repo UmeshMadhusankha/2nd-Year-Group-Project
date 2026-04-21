@@ -1,0 +1,4 @@
+DEBUG: ProjectModel::updateStatus result=TRUE status=completed
+DEBUG: ProjectModel::updateStatus result=TRUE status=completed
+ERROR in side effects: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'fix_lanka.project_employee_assignments' doesn't exist
+DEBUG: ProjectModel::updateStatus result=TRUE status=completed

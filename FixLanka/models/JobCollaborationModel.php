@@ -156,7 +156,39 @@ class JobCollaborationModel
             );
         }
 
+        $this->syncStateWithJobRequest((int) $collaboration['collaboration_id']);
+
         return $this->getByIdForActor((int) $collaboration['collaboration_id'], $userId, 'user');
+    }
+
+    public function syncStateWithJobRequest(int $collaborationId): void
+    {
+        $stmt = $this->pdo->prepare('SELECT request_id, request_type FROM job_collaboration WHERE collaboration_id = :cid');
+        $stmt->execute([':cid' => $collaborationId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) return;
+
+        $requestId = (int)$row['request_id'];
+        $requestType = $this->normalizeRequestType($row['request_type']);
+        $requestTable = ($requestType === 'direct') ? 'directjobrequest' : 'jobrequest';
+
+        $statusStmt = $this->pdo->prepare("SELECT status FROM {$requestTable} WHERE request_id = :rid");
+        $statusStmt->execute([':rid' => $requestId]);
+        $status = strtolower((string)$statusStmt->fetchColumn());
+
+        error_log("DEBUG: syncStateWithJobRequest cid=$collaborationId rid=$requestId type=$requestType status=$status");
+
+        if ($status === 'completed') {
+            $updated = $this->pdo->prepare("UPDATE job_collaboration SET 
+                user_completed_at = COALESCE(user_completed_at, NOW()),
+                provider_completed_at = COALESCE(provider_completed_at, NOW()),
+                user_payment_confirmed_at = COALESCE(user_payment_confirmed_at, NOW()),
+                provider_payment_confirmed_at = COALESCE(provider_payment_confirmed_at, NOW()),
+                current_phase = 'review',
+                updated_at = NOW()
+                WHERE collaboration_id = :cid AND current_phase NOT IN ('review', 'completed')")
+            ->execute([':cid' => $collaborationId]);
+        }
     }
 
     public function bootstrapFromRequestIfMissing(int $userId, int $requestId, string $requestType): ?array
@@ -165,7 +197,8 @@ class JobCollaborationModel
 
         $existing = $this->getByRequestForActor($requestId, $normalizedRequestType, $userId, 'user');
         if ($existing) {
-            return $existing;
+            $this->syncStateWithJobRequest((int)$existing['collaboration_id']);
+            return $this->getByIdForActor((int)$existing['collaboration_id'], $userId, 'user');
         }
 
         $requestTable = $normalizedRequestType === 'direct' ? 'directjobrequest' : 'jobrequest';
@@ -208,7 +241,8 @@ class JobCollaborationModel
 
         $existing = $this->getByRequestForActor($requestId, $normalizedRequestType, $providerId, $normalizedProviderRole);
         if ($existing) {
-            return $existing;
+            $this->syncStateWithJobRequest((int)$existing['collaboration_id']);
+            return $this->getByIdForActor((int)$existing['collaboration_id'], $providerId, $normalizedProviderRole);
         }
 
         $requestTable = $normalizedRequestType === 'direct' ? 'directjobrequest' : 'jobrequest';
