@@ -96,47 +96,58 @@ function loadRepairerProfile(repairerId, repairerData = null) {
     displayRating(0);
     displayReviews([]);
 
-    try {
-        const cachedRepairer = repairerData ||
-            (typeof window.getLandingRepairerById === 'function' ? window.getLandingRepairerById(numericId) : null);
+    const apiUrl = `${DEFAULT_APP_BASE}/api/repairers.php?action=getDetails&id=${encodeURIComponent(numericId)}`;
 
-        if (!cachedRepairer) {
-            throw new Error('Repairer data not found in landing cache');
-        }
+    fetch(apiUrl, { headers: { Accept: 'application/json' } })
+        .then(async (response) => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const result = await response.json();
+            if (!result || !result.success || !result.data) {
+                throw new Error('Invalid response payload');
+            }
 
-        const p = cachedRepairer;
-        const name = p.full_name || [p.f_name, p.l_name].filter(Boolean).join(' ') || p.name || 'Repairer';
-        const category = p.category_name || 'Service Professional';
-        const rating = Number(p.ratings ?? 0);
+            const p = result.data;
+            const fallbackRepairer = repairerData ||
+                (typeof window.getLandingRepairerById === 'function' ? window.getLandingRepairerById(numericId) : null);
 
-        const imageUrl = resolveProfileImageUrl(p.profilePicture, name);
+            const name = p.full_name || [p.f_name, p.l_name].filter(Boolean).join(' ') || p.name || 'Repairer';
+            const category = p.category_name || 'Service Professional';
+            const rating = Number(p.ratings ?? p.rating ?? 0);
+            const fallbackProfilePicture = fallbackRepairer && fallbackRepairer.profilePicture ? fallbackRepairer.profilePicture : '';
+            const imageUrl = resolveProfileImageUrl(p.profilePicture || fallbackProfilePicture, name);
 
-        const data = {
-            id: p.repairer_id || repairerId,
-            name,
-            category,
-            rating: Number.isFinite(rating) ? rating : 0,
-            completedJobs: Number(p.completedJobsCount ?? 0) || 0,
-            distance: 'N/A',
-            about: p.about || 'No description available.',
-            phone: p.phoneNumber || 'N/A',
-            email: p.email || 'N/A',
-            districts: p.districts || 'N/A',
-            availability: p.availability || 'available',
-            image: imageUrl,
-            reviews: []
-        };
+            const data = {
+                id: p.repairer_id || numericId,
+                name,
+                category,
+                rating: Number.isFinite(rating) ? rating : 0,
+                reviewCount: Number(p.reviewCount ?? 0) || 0,
+                completedJobs: Number(p.completedJobsCount ?? 0) || 0,
+                distance: 'N/A',
+                about: p.about || 'No description available.',
+                phone: p.phoneNumber || 'N/A',
+                email: p.email || 'N/A',
+                districts: p.districts || 'N/A',
+                availability: p.availability || 'available',
+                image: imageUrl,
+                reviews: Array.isArray(p.reviews) ? p.reviews : []
+            };
 
-        if (DEBUG_REPAIRER_POPUP) console.log('Mapped profile data from landing cache:', data);
-        displayProfile(data);
-        if (DEBUG_REPAIRER_POPUP) console.groupEnd();
-    } catch (err) {
-        console.error('Failed to load repairer profile:', err);
-        document.getElementById('profileName').textContent = 'Failed to load';
-        document.getElementById('profileAbout').textContent = 'Could not load profile details. Please try again.';
-        displayReviews([]);
-        if (DEBUG_REPAIRER_POPUP) console.groupEnd();
-    }
+            if (DEBUG_REPAIRER_POPUP) {
+                console.log('Mapped profile data from API:', data);
+                console.groupEnd();
+            }
+            displayProfile(data);
+        })
+        .catch((err) => {
+            console.error('Failed to load repairer profile:', err);
+            document.getElementById('profileName').textContent = 'Failed to load';
+            document.getElementById('profileAbout').textContent = 'Could not load profile details. Please try again.';
+            displayReviews([]);
+            if (DEBUG_REPAIRER_POPUP) console.groupEnd();
+        });
 }
 
 // Export functions for inline onclick + other scripts
@@ -171,7 +182,7 @@ function displayProfile(data) {
     document.getElementById('profileCategory').textContent = data.category;
 
     // Rating
-    displayRating(data.rating);
+    displayRating(data.rating, data.reviewCount || 0);
 
     // Stats
     document.getElementById('completedJobs').textContent = data.completedJobs;
@@ -195,7 +206,7 @@ function displayProfile(data) {
  * Display rating stars
  * @param {number} rating - Rating value (0-5)
  */
-function displayRating(rating) {
+function displayRating(rating, reviewCount = 0) {
     const starsContainer = document.getElementById('profileStars');
     const ratingText = document.getElementById('profileRatingText');
 
@@ -221,7 +232,8 @@ function displayRating(rating) {
     }
 
     starsContainer.innerHTML = starsHTML;
-    ratingText.textContent = `${rating.toFixed(1)}`;
+    const reviewsSuffix = reviewCount > 0 ? ` (${reviewCount} reviews)` : '';
+    ratingText.textContent = `${rating.toFixed(1)}${reviewsSuffix}`;
 }
 
 /**

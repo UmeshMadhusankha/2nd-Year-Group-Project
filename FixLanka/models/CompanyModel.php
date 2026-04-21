@@ -677,6 +677,57 @@ class Company {
         }
     }
 
+    public function getReviewSummary(int $companyId): array {
+        try {
+            $stmt = $this->pdo->prepare('
+                SELECT
+                    COUNT(f.feedback_id) AS review_count,
+                    COALESCE(AVG(f.rating), 0) AS avg_rating
+                FROM feedback f
+                INNER JOIN project p ON p.project_id = f.project_id
+                WHERE p.company_id = ?
+            ');
+            $stmt->execute([$companyId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            return [
+                'count' => (int)($row['review_count'] ?? 0),
+                'average' => (float)($row['avg_rating'] ?? 0),
+            ];
+        } catch (PDOException $e) {
+            error_log('Error getting company review summary: ' . $e->getMessage());
+            return ['count' => 0, 'average' => 0.0];
+        }
+    }
+
+    public function getRecentReviews(int $companyId, int $limit = 3): array {
+        try {
+            $limit = max(1, min($limit, 10));
+
+            $stmt = $this->pdo->prepare('
+                SELECT
+                    CONCAT(u.f_name, " ", u.l_name) AS author,
+                    f.rating,
+                    f.comments AS text,
+                    f.date
+                FROM feedback f
+                INNER JOIN project p ON p.project_id = f.project_id
+                INNER JOIN user u ON u.user_id = f.given_by
+                WHERE p.company_id = ?
+                ORDER BY f.date DESC
+                LIMIT ?
+            ');
+            $stmt->bindValue(1, $companyId, PDO::PARAM_INT);
+            $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+            $stmt->execute();
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('Error getting company recent reviews: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getCount(array $filters = []): int {
         try {
             $sql = 'SELECT COUNT(*) AS total FROM company c WHERE COALESCE(c.is_deleted, 0) = 0';
