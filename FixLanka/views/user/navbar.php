@@ -13,7 +13,7 @@ $isUserSession = $isLoggedIn && hasRole('user');
         <div class="navbar-left">
             <div class="logo">
                 <a href="/2nd-Year-Group-Project/FixLanka/" class="logo-link">
-                    <span class="logo-text">Fix Lanka</span>
+                    <img src="/2nd-Year-Group-Project/FixLanka/assets/images/fixlanka.png" alt="FixLanka" class="logo-image">
                 </a>
             </div>
         </div>
