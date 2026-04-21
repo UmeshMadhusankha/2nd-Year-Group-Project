@@ -57,6 +57,7 @@ const COMPANY_POPUP_API_BASE = '/2nd-Year-Group-Project/FixLanka';
         const name = company.name || 'Company';
         const businessType = company.business_type || 'Service Company';
         const rating = Number(company.ratings ?? 0);
+        const reviewCount = Number(company.reviewCount ?? 0);
         const districts = company.districts || 'N/A';
         const description = company.description || 'No description available.';
         const contact = company.contact_no || 'N/A';
@@ -82,7 +83,9 @@ const COMPANY_POPUP_API_BASE = '/2nd-Year-Group-Project/FixLanka';
             : fallbackStars(Number.isFinite(rating) ? rating : 0);
 
         if (starsEl) starsEl.innerHTML = starsHtml;
-        setText(ratingTextEl, `${(Number.isFinite(rating) ? rating : 0).toFixed(1)} / 5.0`);
+        const safeRating = Number.isFinite(rating) ? rating : 0;
+        const reviewSuffix = reviewCount > 0 ? ` (${reviewCount} reviews)` : '';
+        setText(ratingTextEl, `${safeRating.toFixed(1)} / 5.0${reviewSuffix}`);
 
         setText(contactEl, contact);
         setText(emailEl, email);

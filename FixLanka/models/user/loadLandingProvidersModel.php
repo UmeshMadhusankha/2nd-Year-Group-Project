@@ -53,10 +53,19 @@ class LoadLandingProvidersModel {
                 r.*,
                 CONCAT(r.f_name, ' ', r.l_name) AS full_name,
                 c.name AS category_name,
-                COALESCE(r.ratings, 0) AS ratings,
+                COALESCE(rr.avg_rating, 0) AS ratings,
+                COALESCE(rr.review_count, 0) AS reviewCount,
                 'individual' AS provider_type
             FROM Repairer r
             LEFT JOIN Category c ON c.category_id = r.category_id
+            LEFT JOIN (
+                SELECT
+                    rv.service_provider_id,
+                    AVG(rv.rating) AS avg_rating,
+                    COUNT(rv.review_id) AS review_count
+                FROM review rv
+                GROUP BY rv.service_provider_id
+            ) rr ON rr.service_provider_id = r.repairer_id
             WHERE 1=1
         ";
 
@@ -68,7 +77,7 @@ class LoadLandingProvidersModel {
         }
 
         if (!empty($filters['min_rating'])) {
-            $sql .= ' AND r.ratings >= ?';
+            $sql .= ' AND COALESCE(rr.avg_rating, 0) >= ?';
             $params[] = (float)$filters['min_rating'];
         }
 
@@ -77,7 +86,7 @@ class LoadLandingProvidersModel {
             $params[] = '%' . $filters['district'] . '%';
         }
 
-        $sql .= ' ORDER BY r.ratings DESC, r.completedJobsCount DESC, r.repairer_id DESC LIMIT ? OFFSET ?';
+        $sql .= ' ORDER BY COALESCE(rr.avg_rating, 0) DESC, r.completedJobsCount DESC, r.repairer_id DESC LIMIT ? OFFSET ?';
 
         $stmt = $this->pdo->prepare($sql);
 
@@ -141,7 +150,18 @@ class LoadLandingProvidersModel {
     }
 
     private function countRepairers(array $filters): int {
-        $sql = 'SELECT COUNT(*) AS total FROM Repairer r WHERE 1=1';
+        $sql = '
+            SELECT COUNT(*) AS total
+            FROM Repairer r
+            LEFT JOIN (
+                SELECT
+                    rv.service_provider_id,
+                    AVG(rv.rating) AS avg_rating
+                FROM review rv
+                GROUP BY rv.service_provider_id
+            ) rr ON rr.service_provider_id = r.repairer_id
+            WHERE 1=1
+        ';
         $params = [];
 
         if (!empty($filters['category_id'])) {
@@ -150,7 +170,7 @@ class LoadLandingProvidersModel {
         }
 
         if (!empty($filters['min_rating'])) {
-            $sql .= ' AND r.ratings >= ?';
+            $sql .= ' AND COALESCE(rr.avg_rating, 0) >= ?';
             $params[] = (float)$filters['min_rating'];
         }
 

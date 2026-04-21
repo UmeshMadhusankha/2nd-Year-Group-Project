@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/session.php';
+require_once __DIR__ . '/../../config/database.php';
 
 // Redirect if not logged in
 if (!isLoggedIn()) {
@@ -8,6 +9,27 @@ if (!isLoggedIn()) {
 }
 
 $userData = getUserData();
+$userId = (int)($userData['id'] ?? 0);
+
+$dbUser = null;
+try {
+    global $pdo;
+    $stmt = $pdo->prepare('SELECT f_name, l_name, email, address, district FROM User WHERE user_id = ? LIMIT 1');
+    $stmt->execute([$userId]);
+    $dbUser = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+} catch (Throwable $e) {
+    $dbUser = null;
+}
+
+$nameParts = preg_split('/\s+/', trim((string)($userData['name'] ?? '')));
+$fallbackFirst = $nameParts[0] ?? '';
+$fallbackLast = isset($nameParts[1]) ? implode(' ', array_slice($nameParts, 1)) : '';
+
+$firstName = trim((string)($dbUser['f_name'] ?? $fallbackFirst));
+$lastName = trim((string)($dbUser['l_name'] ?? $fallbackLast));
+$email = trim((string)($dbUser['email'] ?? ($userData['email'] ?? '')));
+$address = trim((string)($dbUser['address'] ?? ''));
+$district = trim((string)($dbUser['district'] ?? ''));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -56,39 +78,51 @@ $userData = getUserData();
         }
 
         .settings-tabs {
-            display: flex;
-            gap: 10px;
+            display: none;
+        }
+
+        .status-message {
+            margin-top: 18px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status-message.success {
+            display: block;
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            display: block;
+            color: #721c24;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .support-note {
+            margin-top: 28px;
+            padding: 16px;
             background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
-            overflow-x: auto;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            color: #495057;
         }
 
         .settings-tab {
-            padding: 12px 24px;
-            background: #f8f9fa;
-            border: none;
-            border-radius: 8px;
-            color: #666;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            display: none;
         }
 
         .settings-tab:hover {
-            background: #e9ecef;
+            background: transparent;
         }
 
         .settings-tab.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: transparent;
+            color: inherit;
         }
 
         .settings-panel {
@@ -331,245 +365,152 @@ $userData = getUserData();
     <div class="settings-container">
         <div class="settings-header">
             <h1>Settings</h1>
-            <p>Manage your account preferences and settings</p>
+            <p>Manage your account details</p>
         </div>
 
-        <div class="settings-tabs">
-            <button class="settings-tab active" data-tab="account">
-                <i class="fas fa-user-circle"></i>
-                <span>Account</span>
-            </button>
-            <button class="settings-tab" data-tab="notifications">
-                <i class="fas fa-bell"></i>
-                <span>Notifications</span>
-            </button>
-            <button class="settings-tab" data-tab="privacy">
-                <i class="fas fa-shield-alt"></i>
-                <span>Privacy & Security</span>
-            </button>
-        </div>
-
-        <!-- Account Settings Panel -->
         <div class="settings-panel active" id="account-panel">
             <div class="settings-section">
                 <h3>Profile Information</h3>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="firstName">First Name</label>
-                        <input type="text" id="firstName" class="form-input" value="<?php echo htmlspecialchars($userData['name'] ?? ''); ?>" placeholder="Enter first name">
+                        <input type="text" id="firstName" class="form-input" value="<?php echo htmlspecialchars($firstName); ?>" placeholder="Enter first name">
                     </div>
                     <div class="form-group">
                         <label for="lastName">Last Name</label>
-                        <input type="text" id="lastName" class="form-input" placeholder="Enter last name">
+                        <input type="text" id="lastName" class="form-input" value="<?php echo htmlspecialchars($lastName); ?>" placeholder="Enter last name">
                     </div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="email">Email Address</label>
-                        <input type="email" id="email" class="form-input" value="<?php echo htmlspecialchars($userData['email'] ?? ''); ?>" placeholder="Enter email">
+                        <input type="email" id="email" class="form-input" value="<?php echo htmlspecialchars($email); ?>" placeholder="Enter email">
                     </div>
                     <div class="form-group">
-                        <label for="phone">Phone Number</label>
-                        <input type="tel" id="phone" class="form-input" placeholder="+94 77 123 4567">
+                        <label for="district">District</label>
+                        <input type="text" id="district" class="form-input" value="<?php echo htmlspecialchars($district); ?>" placeholder="Enter district">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="address">Address</label>
-                    <textarea id="address" class="form-input" placeholder="Enter your address"></textarea>
+                    <textarea id="address" class="form-input" placeholder="Enter your address"><?php echo htmlspecialchars($address); ?></textarea>
                 </div>
             </div>
 
-            <div class="settings-section">
-                <h3>Change Password</h3>
-                <div class="form-group">
-                    <label for="currentPassword">Current Password</label>
-                    <input type="password" id="currentPassword" class="form-input" placeholder="Enter current password">
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="newPassword">New Password</label>
-                        <input type="password" id="newPassword" class="form-input" placeholder="Enter new password">
-                    </div>
-                    <div class="form-group">
-                        <label for="confirmPassword">Confirm Password</label>
-                        <input type="password" id="confirmPassword" class="form-input" placeholder="Confirm new password">
-                    </div>
-                </div>
+            <div class="support-note">
+                <strong>Available here:</strong> profile details update only.
             </div>
+
+            <div id="settingsStatus" class="status-message" role="status" aria-live="polite"></div>
 
             <div class="settings-actions">
-                <button class="btn btn-secondary">Cancel</button>
-                <button class="btn btn-primary">Save Changes</button>
-            </div>
-        </div>
-
-        <!-- Notifications Settings Panel -->
-        <div class="settings-panel" id="notifications-panel">
-            <div class="settings-section">
-                <h3>Email Notifications</h3>
-                <div class="setting-option">
-                    <div class="option-info">
-                        <label>Job Updates</label>
-                        <p>Get notified about your job requests and updates</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-
-                <div class="setting-option">
-                    <div class="option-info">
-                        <label>Quote Responses</label>
-                        <p>Receive alerts when repairers respond to your requests</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-
-                <div class="setting-option">
-                    <div class="option-info">
-                        <label>Payment Notifications</label>
-                        <p>Get notified about payment confirmations</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-
-                <div class="setting-option">
-                    <div class="option-info">
-                        <label>Promotional Emails</label>
-                        <p>Receive news and offers from FixLanka</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="settings-section">
-                <h3>Push Notifications</h3>
-                <div class="setting-option">
-                    <div class="option-info">
-                        <label>Browser Notifications</label>
-                        <p>Show desktop notifications for important updates</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-
-                <div class="setting-option">
-                    <div class="option-info">
-                        <label>Sound Alerts</label>
-                        <p>Play sound when receiving notifications</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="settings-actions">
-                <button class="btn btn-primary">Save Preferences</button>
-            </div>
-        </div>
-
-        <!-- Privacy & Security Settings Panel -->
-        <div class="settings-panel" id="privacy-panel">
-            <div class="settings-section">
-                <h3>Privacy Settings</h3>
-                <div class="setting-option">
-                    <div class="option-info">
-                        <label>Profile Visibility</label>
-                        <p>Make your profile visible to service providers</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-
-                <div class="setting-option">
-                    <div class="option-info">
-                        <label>Show Contact Information</label>
-                        <p>Display your phone number to matched repairers</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-
-                <div class="setting-option">
-                    <div class="option-info">
-                        <label>Location Sharing</label>
-                        <p>Share your location for better service matching</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="settings-section">
-                <h3>Security Settings</h3>
-                <div class="setting-option">
-                    <div class="option-info">
-                        <label>Login Alerts</label>
-                        <p>Get notified of login attempts from new devices</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="settings-section danger-zone">
-                <h3>Danger Zone</h3>
-                <div class="setting-option" style="background: transparent;">
-                    <div class="option-info">
-                        <label>Delete Account</label>
-                        <p>Permanently delete your account and all associated data</p>
-                    </div>
-                    <button class="btn btn-danger">Delete Account</button>
-                </div>
-            </div>
-
-            <div class="settings-actions">
-                <button class="btn btn-primary">Save Security Settings</button>
+                <button class="btn btn-secondary" id="resetBtn" type="button">Reset</button>
+                <button class="btn btn-primary" id="saveBtn" type="button">Save Changes</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Tab switching functionality
         document.addEventListener('DOMContentLoaded', function() {
-            const tabs = document.querySelectorAll('.settings-tab');
-            const panels = document.querySelectorAll('.settings-panel');
+            const UPDATE_USER_API = '/2nd-Year-Group-Project/FixLanka/api/user/updateUser.php';
+            const saveBtn = document.getElementById('saveBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const statusEl = document.getElementById('settingsStatus');
 
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const targetTab = this.getAttribute('data-tab');
+            const firstNameEl = document.getElementById('firstName');
+            const lastNameEl = document.getElementById('lastName');
+            const emailEl = document.getElementById('email');
+            const districtEl = document.getElementById('district');
+            const addressEl = document.getElementById('address');
 
-                    // Remove active class from all tabs and panels
-                    tabs.forEach(t => t.classList.remove('active'));
-                    panels.forEach(p => p.classList.remove('active'));
+            const initialValues = {
+                firstName: firstNameEl ? firstNameEl.value : '',
+                lastName: lastNameEl ? lastNameEl.value : '',
+                email: emailEl ? emailEl.value : '',
+                district: districtEl ? districtEl.value : '',
+                address: addressEl ? addressEl.value : ''
+            };
 
-                    // Add active class to clicked tab and corresponding panel
-                    this.classList.add('active');
-                    document.getElementById(targetTab + '-panel').classList.add('active');
+            function setStatus(message, type) {
+                if (!statusEl) return;
+                statusEl.textContent = message;
+                statusEl.className = 'status-message ' + type;
+            }
+
+            function resetForm() {
+                if (firstNameEl) firstNameEl.value = initialValues.firstName;
+                if (lastNameEl) lastNameEl.value = initialValues.lastName;
+                if (emailEl) emailEl.value = initialValues.email;
+                if (districtEl) districtEl.value = initialValues.district;
+                if (addressEl) addressEl.value = initialValues.address;
+                if (statusEl) {
+                    statusEl.textContent = '';
+                    statusEl.className = 'status-message';
+                }
+            }
+
+            async function saveProfile() {
+                const firstName = (firstNameEl ? firstNameEl.value : '').trim();
+                const lastName = (lastNameEl ? lastNameEl.value : '').trim();
+                const email = (emailEl ? emailEl.value : '').trim();
+                const district = (districtEl ? districtEl.value : '').trim();
+                const address = (addressEl ? addressEl.value : '').trim();
+
+                if (!firstName || !lastName || !email || !address) {
+                    setStatus('First name, last name, email and address are required.', 'error');
+                    return;
+                }
+
+                const previousLabel = saveBtn ? saveBtn.textContent : '';
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = 'Saving...';
+                }
+
+                try {
+                    const response = await fetch(UPDATE_USER_API, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ firstName, lastName, email, district, address })
+                    });
+
+                    const payload = await response.json();
+                    if (!response.ok || !payload || payload.success === false) {
+                        throw new Error((payload && payload.message) ? payload.message : 'Failed to save changes');
+                    }
+
+                    initialValues.firstName = firstName;
+                    initialValues.lastName = lastName;
+                    initialValues.email = email;
+                    initialValues.district = district;
+                    initialValues.address = address;
+                    setStatus('Profile updated successfully.', 'success');
+                } catch (error) {
+                    setStatus(error.message || 'Failed to save changes.', 'error');
+                } finally {
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = previousLabel || 'Save Changes';
+                    }
+                }
+            }
+
+            if (saveBtn) {
+                saveBtn.addEventListener('click', saveProfile);
+            }
+            if (resetBtn) {
+                resetBtn.addEventListener('click', resetForm);
+            }
+            [firstNameEl, lastNameEl, emailEl, districtEl, addressEl].forEach(function(field) {
+                if (!field) return;
+                field.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter' && field.tagName !== 'TEXTAREA') {
+                        event.preventDefault();
+                        saveProfile();
+                    }
                 });
             });
         });

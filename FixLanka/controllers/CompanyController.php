@@ -41,9 +41,10 @@ class CompanyController {
                 exit;
             }
 
-            // No company reviews table in schema; keep consistent shape
-            $company['reviewCount'] = 0;
-            $company['reviews'] = [];
+            $summary = $this->companyModel->getReviewSummary($companyId);
+            $company['reviewCount'] = (int)($summary['count'] ?? 0);
+            $company['ratings'] = (float)($summary['average'] ?? 0);
+            $company['reviews'] = $this->companyModel->getRecentReviews($companyId, 3);
 
             echo json_encode([
                 'success' => true,

@@ -24,10 +24,16 @@ button:focus-visible {
   justify-content: space-between;
   height: 80px;
 }
-.navbar-left .logo-text {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--primary-color);
+.navbar-left .logo-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.navbar-left .logo-image {
+  height: 36px;
+  width: auto;
+  display: block;
 }
 .navbar-center {
   display: flex;
