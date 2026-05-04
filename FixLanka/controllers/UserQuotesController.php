@@ -49,6 +49,7 @@ class UserQuotesController {
             if ($offset < 0) $offset = 0;
 
             $quotes = $this->model->getUserQuotes((int)$user['id'], $limit, $offset, $status, $requestId, $requestType);
+            //$task2 = $this->model->getUserQuotesTask2((int)$user['id']);
             $pendingCount = $this->model->getUserPendingCount((int)$user['id']);
 
             echo json_encode([
@@ -57,6 +58,7 @@ class UserQuotesController {
                 'pending_count' => (int)$pendingCount,
                 'limit' => $limit,
                 'offset' => $offset,
+                //'task2' => $task2,
             ]);
             exit;
         } catch (Throwable $e) {

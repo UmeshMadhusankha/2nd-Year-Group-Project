@@ -6,9 +6,7 @@ class JobRequest {
         $this->pdo = $pdo;
     }
     
-    /**
-     * CREATE - Create new job request
-     */
+    // create model method
     public function create($data) {
         try {
             // 1. Insert Location
@@ -17,8 +15,8 @@ class JobRequest {
             $locationId = $this->pdo->lastInsertId();
 
             $stmt = $this->pdo->prepare("
-                INSERT INTO JobRequest (user_id, category_id, title, description, location_id, service_provider_type, urgency, finish_date, photos) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO JobRequest (user_id, category_id, title, description, location_id, service_provider_type, urgency, finish_date, photos, job_area) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmt->execute([
@@ -30,7 +28,8 @@ class JobRequest {
                 $data['service_provider_type'],
                 $data['urgency'],
                 $data['finish_date'],
-                $data['photos'] ?? null
+                $data['photos'] ?? null,
+                $data['job_area']
             ]);
             
             return $this->pdo->lastInsertId();
@@ -40,9 +39,7 @@ class JobRequest {
         }
     }
     
-    /**
-     * READ - Get all job requests by user
-     */
+    
     public function getAllByUser($userId) {
         try {
             $stmt = $this->pdo->prepare("
@@ -61,9 +58,7 @@ class JobRequest {
         }
     }
     
-    /**
-     * READ - Get single job request by ID
-     */
+    
     public function getById($requestId) {
         try {
             $stmt = $this->pdo->prepare("
@@ -81,16 +76,12 @@ class JobRequest {
         }
     }
     
-    /**
-     * UPDATE - Update job request
-     */
+    
     public function update($requestId, $data) {
         try {
-            // Build dynamic UPDATE query based on what fields are provided
             $updateFields = [];
             $params = [];
             
-            // Always update these basic fields if provided
             if (isset($data['title'])) {
                 $updateFields[] = "title = ?";
                 $params[] = $data['title'];
@@ -178,9 +169,7 @@ class JobRequest {
         }
     }
     
-    /**
-     * DELETE - Delete job request
-     */
+    
     public function delete($requestId, $userId) {
         try {
             $stmt = $this->pdo->prepare("
@@ -194,9 +183,7 @@ class JobRequest {
         }
     }
 
-    /**
-     * READ - Get all open job requests (for companies)
-     */
+    
     public function getAllOpen($filters = []) {
         try {
             $sql = "SELECT jr.*, c.name as category_name, CONCAT(u.f_name, ' ', u.l_name) as user_name, l.address, l.district 

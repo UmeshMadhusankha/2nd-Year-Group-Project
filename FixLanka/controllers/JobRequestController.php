@@ -12,9 +12,7 @@ class JobRequestController {
         $this->jobRequestModel = new JobRequest($pdo);
     }
     
-    /**
-     * CREATE - Handle job request creation
-     */
+    // handle job function
     public function create() {
         if (!isLoggedIn()) {
             header('Location: /2nd-Year-Group-Project/FixLanka/login');
@@ -33,7 +31,6 @@ class JobRequestController {
         if (isset($_FILES['photos']) && $_FILES['photos']['error'] === UPLOAD_ERR_OK) {
             $uploadDir = __DIR__ . '/../uploads/job_photos/';
             
-            // Create directory if it doesn't exist
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
@@ -51,7 +48,6 @@ class JobRequestController {
             }
         }
         
-        // Process provider type checkboxes
         $providerType = 'individual'; // default
         if (isset($_POST['provider_type']) && is_array($_POST['provider_type'])) {
             $selectedTypes = $_POST['provider_type'];
@@ -72,10 +68,10 @@ class JobRequestController {
             'service_provider_type' => $providerType,
             'urgency' => $_POST['urgency'] ?? 'medium',
             'finish_date' => $_POST['finish_date'] ?? null,
-            'photos' => $photoPath
+            'photos' => $photoPath,
+            'job_area' => $_POST['job_area']
         ];
         
-        // Validate required fields
         if (empty($data['category_id']) || empty($data['title']) || empty($data['description']) || 
             empty($data['district']) || empty($data['address']) || empty($data['finish_date'])) {
             $_SESSION['error'] = 'All required fields must be filled';
@@ -83,7 +79,6 @@ class JobRequestController {
             exit;
         }
         
-        // Validate at least one provider type is selected
         if (empty($providerType)) {
             $_SESSION['error'] = 'Please select at least one service provider type';
             header('Location: /2nd-Year-Group-Project/FixLanka/post-job');
@@ -191,9 +186,6 @@ class JobRequestController {
         exit;
     }
     
-    /**
-     * DELETE - Handle job request deletion
-     */
     public function delete() {
         if (!isLoggedIn()) {
             header('Location: /2nd-Year-Group-Project/FixLanka/login');
@@ -218,9 +210,6 @@ class JobRequestController {
         exit;
     }
 
-    /**
-     * API - Get all open job requests (for companies)
-     */
     public function getOpenRequests() {
         // Ensure user is logged in
         if (session_status() === PHP_SESSION_NONE) {

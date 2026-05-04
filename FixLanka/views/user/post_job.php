@@ -148,6 +148,15 @@ unset($_SESSION['error'], $_SESSION['success']);
                         <div id="file-name-display" class="file-preview"></div>
                     </div>
 
+                    <div class="form-group">
+                        <label for="job_area">Job Area </label>
+                        <select id="job_area" name="job_area">
+                            <option value="area1" selected>Area 1</option>
+                            <option value="area2">Area 2</option>
+                            <option value="area3">Area 3</option>
+                        </select>
+                    </div>
+
                     <button type="submit" class="submit-btn">Post Job</button>
                 </form>
             </div>

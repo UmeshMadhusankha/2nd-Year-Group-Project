@@ -467,6 +467,29 @@ class UserQuotesModel {
         }
     }
 
+    // This are failed attempts by me on task
+    // public function getUserQuotesTask2(int $userId): array {
+    //     // SELECT FROM repairerquote r,jobrequest j
+    //     // LEFT JOIN 
+    //     // $sql =
+    //     // "SELECT * FROM repairerquote rq
+    //     // LEFT JOIN jobrequest jr ON jr.request_id = rq.request_id
+    //     // WHERE rq.user_id = ?"
+
+    //     try {
+    //         $stmt = $this->pdo->prepare("
+    //         SELECT * FROM repairerquote rq
+    //         LEFT JOIN jobrequest jr ON jr.request_id = rq.request_id
+    //         WHERE rq.user_id = ?
+    //     ");
+    //         $stmt->execute([$userId]);
+    //         return $stmt->fetch(PDO::FETCH_ASSOC);
+    //     } catch (PDOException $e) {
+    //         error_log("Error getting job request: " . $e->getMessage());
+    //         return false;
+    //     }
+    // }
+
     public function getUserPendingCount(int $userId): int {
         $sql = "
             SELECT

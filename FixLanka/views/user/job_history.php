@@ -1,8 +1,4 @@
 <?php
-// filepath: c:\xampp\htdocs\2nd-Year-Group-Project\FixLanka\views\user\job_history.php
-
-// This file is loaded by JobRequestController->index()
-// $jobRequests variable is already set by the controller
 
 if (!isset($jobRequests)) {
     $jobRequests = [];
@@ -324,6 +320,9 @@ foreach ($allJobRequests as $job) {
                 </div>
                 <div class="quotes-received-list" id="quotesReceivedList">
                     <div class="quote-empty-state">Loading quotes...</div>
+                </div>
+                <div class='quote-item' id='task2'>
+
                 </div>
             </div>
         </div>
@@ -672,6 +671,7 @@ foreach ($allJobRequests as $job) {
     const jobsContainerEl = document.querySelector('.jobs-container');
     const quotesReceivedSection = document.getElementById('quotesReceivedSection');
     const quotesReceivedList = document.getElementById('quotesReceivedList');
+    const task2 = document.getElementById('task2');
     const quotesReceivedPill = document.getElementById('quotesReceivedPill');
     const quotesFilterTabs = document.querySelectorAll('.quotes-filter-tab');
     const jobQuotesModal = document.getElementById('jobQuotesModal');
@@ -1156,6 +1156,12 @@ foreach ($allJobRequests as $job) {
         `;
     }
 
+    function renderTask2(quote) {
+        const quotePayload = JSON.stringify({ source: quote.source, quote_id: quote.quote_id, request_type: quote.request_type });
+        const providerName = JSON.stringify({ name: quote.provider_name, amount: quote.amount});
+        //console.log(providerName);
+    }
+
     async function resetQuoteToPending(payload, fromStatus) {
         const quote = findQuote(payload);
         if (!quote) {
@@ -1461,6 +1467,11 @@ foreach ($allJobRequests as $job) {
             }
 
             quotesReceivedList.innerHTML = quotes.map((quote) => renderQuoteCard(quote, 'section')).join('');
+            console.log(result.quotes);
+            // console.log(typeof(result.quotes))
+            console.log("Before");
+            task2.innerHTML = quotes.map((quote) => renderTask2());
+            console.log("After");
             window.__lastQuotes = quotes;
         } catch (error) {
             console.error('[QuotesReceived] Failed to load list', {
