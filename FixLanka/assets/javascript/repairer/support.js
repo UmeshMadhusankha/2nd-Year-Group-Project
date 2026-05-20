@@ -75,6 +75,7 @@ function mapSupportTicketToRow(ticket) {
         number: ticket.ticket_number || `#${ticketId}`,
         subject: ticket.title || 'Support Ticket',
         status: String(ticket.status || 'open').toLowerCase(),
+        support: String(ticket.support || '').toLowerCase(),
         priority: String(ticket.priority || 'medium').toLowerCase(),
         urgency: String(ticket.urgency || 'soon').toLowerCase(),
         created: formatDateTime(ticket.created_at),
@@ -91,7 +92,7 @@ async function loadTicketsFromBackend(showFailureToast = false) {
         if (emptyState) emptyState.style.display = 'none';
         tbody.innerHTML = `
             <tr id="tickets-loading-row">
-                <td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary)">
+                <td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary)">
                     <i class="fas fa-spinner fa-spin fa-2x"></i>
                     <p style="margin-top:12px">Loading tickets...</p>
                 </td>
@@ -205,6 +206,7 @@ async function handleFormSubmission() {
     const subject = document.getElementById('issue-subject').value;
     const message = document.getElementById('issue-message').value;
     const category = document.getElementById('issue-category')?.value || '';
+    const support = document.getElementById('issue-support')?.value || '';
     const priority = document.getElementById('issue-priority')?.value || 'medium';
     const urgency = document.getElementById('issue-urgency')?.value || 'soon';
     const attachment = document.getElementById('issue-file')?.files?.[0];
@@ -224,6 +226,7 @@ async function handleFormSubmission() {
         formData.append('title', subject.trim());
         formData.append('description', message.trim());
         formData.append('category', category);
+        formData.append('support', support);
         formData.append('priority', priority);
         formData.append('urgency', urgency);
         if (attachment) {
@@ -602,6 +605,7 @@ function updateTicketsTable() {
 
         const statusClass = ticket.status.toLowerCase().replace(' ', '-');
         const statusText = ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1).replace('-', ' ');
+        const supportText = formatTicketLabel(ticket.support);
         const priorityText = formatTicketLabel(ticket.priority);
         const urgencyText = formatTicketLabel(ticket.urgency);
 
@@ -611,6 +615,7 @@ function updateTicketsTable() {
             <td class="ticket-status">
                 <span class="status-badge status-${statusClass}">${statusText}</span>
             </td>
+            <td class="ticket-support">${supportText}</td>
             <td class="ticket-priority">${priorityText}</td>
             <td class="ticket-urgency">${urgencyText}</td>
             <td class="ticket-updated">${ticket.updated}</td>

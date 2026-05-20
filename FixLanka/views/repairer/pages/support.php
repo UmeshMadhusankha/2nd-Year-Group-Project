@@ -87,6 +87,15 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                             </select>
                                         </div>
                                         <div class="form-group">
+                                            <label for="issue-support" class="form-label">Support Type</label>
+                                            <select id="issue-support" name="support" class="form-input">
+                                                <option value="" selected>Select support type</option>
+                                                <option value="1">1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
                                             <label for="issue-priority" class="form-label">Priority</label>
                                             <select id="issue-priority" name="priority" class="form-input">
                                                 <option value="low">Low</option>
@@ -161,6 +170,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                                     <th>Ticket ID</th>
                                                     <th>Subject</th>
                                                     <th>Status</th>
+                                                    <th>Support Type</th>
                                                     <th>Priority</th>
                                                     <th>Urgency</th>
                                                     <th>Last Updated</th>
@@ -169,7 +179,7 @@ $searchPlaceholder = 'Search requests, repairers, projects...';
                                             </thead>
                                             <tbody id="tickets-tbody">
                                                 <tr id="tickets-loading-row">
-                                                    <td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary)">
+                                                    <td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary)">
                                                         <i class="fas fa-spinner fa-spin fa-2x"></i>
                                                         <p style="margin-top:12px">Loading tickets...</p>
                                                     </td>

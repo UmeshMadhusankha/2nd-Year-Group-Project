@@ -12,10 +12,10 @@ class RepairerSupportTicket
     {
         $ticketNumber = $this->generateTicketNumber();
 
-        $sql = "INSERT INTO support_tickets 
-                (ticket_number, user_type, user_id, title, category, priority, status, description, urgency, related_project_id)
+        $sql = "INSERT INTO support_tickets
+                (ticket_number, user_type, user_id, title, category, support, priority, status, description, urgency, related_project_id)
                 VALUES
-                (:ticket_number, 'repairer', :user_id, :title, :category, :priority, :status, :description, :urgency, :related_project_id)";
+                (:ticket_number, 'repairer', :user_id, :title, :category, :support, :priority, :status, :description, :urgency, :related_project_id)";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([
@@ -23,6 +23,7 @@ class RepairerSupportTicket
             ':user_id' => $repairerId,
             ':title' => $data['title'],
             ':category' => $data['category'],
+            ':support' => $data['support'] ?? null,
             ':priority' => $data['priority'],
             ':status' => 'open',
             ':description' => $data['description'],
@@ -35,7 +36,7 @@ class RepairerSupportTicket
 
     public function getTicketsForRepairer(int $repairerId): array
     {
-        $sql = "SELECT ticket_id, ticket_number, title, status, priority, urgency, created_at, updated_at
+        $sql = "SELECT ticket_id, ticket_number, title, status, support, priority, urgency, created_at, updated_at
                 FROM support_tickets
                 WHERE user_type = 'repairer' AND user_id = :user_id
                 ORDER BY updated_at DESC, ticket_id DESC";

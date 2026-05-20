@@ -26,16 +26,15 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeCompanyFilters();
     initializeTableSorting();
     initializeSearch();
-
+    
     loadEarningsFromAPI();
     loadCompanyEarningsFromAPI();
 });
 
 // ===== LOAD FROM API =====
 async function loadEarningsFromAPI() {
-    setTableLoading('earningsTableBody', 6);
+    setTableLoading('earningsTableBody', 7);
     setSubtitle('earningsSubtitle', 'Loading...');
-
     try {
         const res = await fetch(`${EARNINGS_API}/repairer-jobs.php?action=list&repairer_id=${EARNINGS_REPAIRER_ID}`);
         const data = await res.json();
@@ -92,7 +91,7 @@ function setSubtitle(id, text) {
 function showEarningsError(message) {
     const tbody = document.getElementById('earningsTableBody');
     if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#ef4444"><i class="fas fa-exclamation-circle"></i> ${escapeHtmlEarnings(message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#ef4444"><i class="fas fa-exclamation-circle"></i> ${escapeHtmlEarnings(message)}</td></tr>`;
     }
     setSubtitle('earningsSubtitle', 'Error loading data');
 }
@@ -116,7 +115,7 @@ function renderEarningsTable(jobs) {
     if (!tbody) return;
 
     if (!jobs.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-secondary)"><i class="fas fa-inbox fa-2x"></i><p style="margin-top:12px">No earnings found for the selected filters.</p></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary)"><i class="fas fa-inbox fa-2x"></i><p style="margin-top:12px">No earnings found for the selected filters.</p></td></tr>`;
         setSubtitle('earningsSubtitle', '0 payments found');
         return;
     }
@@ -131,6 +130,7 @@ function createEarningsRow(job) {
     const statusIcon = isPaid ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-clock"></i>';
     const statusLabel = isPaid ? 'Paid' : 'Pending';
     const amount = parseFloat(job.quoteAmount) || 0;
+    const monthlyTotal = parseFloat(job.monthly_total) || 0;
     const rawDate = job.paymentDate || job.dateSubmitted || job.job_posted_date || '';
     const date = rawDate ? new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
     const customerFirst = job.customer_first_name || '';
@@ -160,6 +160,9 @@ function createEarningsRow(job) {
             </td>
             <td class="amount-cell">
                 <span class="amount-earned">LKR ${amount.toLocaleString()}</span>
+            </td>
+            <td class="amount-cell">
+                <span class="amount-earned">LKR ${monthlyTotal.toLocaleString()}</span>
             </td>
             <td class="status-cell">
                 <span class="payment-status ${status}">${statusIcon} ${statusLabel}</span>
@@ -318,8 +321,45 @@ function applyFilters() {
     });
 
     sortCustomerEarnings(currentCustomerSort.sortBy, currentCustomerSort.direction, false);
+    applyMonthlyTotals(filteredJobs);
     renderEarningsTable(filteredJobs);
     updateFilteredCount(filteredJobs.length, statusFilter, periodFilter);
+    updateMonthlyTotal(filteredJobs);
+}
+
+function applyMonthlyTotals(jobs) {
+    const totalsByMonth = new Map();
+
+    jobs.forEach(job => {
+        const dateValue = job.paymentDate || job.dateSubmitted || job.job_posted_date || '';
+        if (!dateValue) return;
+        const dateKey = new Date(dateValue).toISOString().slice(0, 7);
+        const amount = parseFloat(job.quoteAmount) || 0;
+        totalsByMonth.set(dateKey, (totalsByMonth.get(dateKey) || 0) + amount);
+    });
+
+    jobs.forEach(job => {
+        const dateValue = job.paymentDate || job.dateSubmitted || job.job_posted_date || '';
+        const dateKey = dateValue ? new Date(dateValue).toISOString().slice(0, 7) : '';
+        job.monthly_total = dateKey ? (totalsByMonth.get(dateKey) || 0) : 0;
+    });
+}
+
+function updateMonthlyTotal(jobs) {
+    const now = new Date();
+    const monthKey = now.toISOString().slice(0, 7);
+    let total = 0;
+
+    jobs.forEach(job => {
+        const dateValue = job.paymentDate || job.dateSubmitted || job.job_posted_date || '';
+        if (!dateValue) return;
+        const dateKey = new Date(dateValue).toISOString().slice(0, 7);
+        if (dateKey !== monthKey) return;
+        total += parseFloat(job.quoteAmount) || 0;
+    });
+
+    const label = `Monthly Total: LKR ${total.toLocaleString()}`;
+    setText('monthlyTotalStat', label);
 }
 
 function updateFilteredCount(count, status, period) {
@@ -432,6 +472,8 @@ function sortCustomerEarnings(sortBy, direction = 'desc', rerender = true) {
     if (sortKey === 'oldest') resolvedDirection = 'asc';
     if (sortKey === 'amount-high') resolvedDirection = 'desc';
     if (sortKey === 'amount-low') resolvedDirection = 'asc';
+    if (sortKey === 'monthly-total-high') resolvedDirection = 'desc';
+    if (sortKey === 'monthly-total-low') resolvedDirection = 'asc';
 
     filteredJobs.sort((a, b) => {
         const aValue = getCustomerSortValue(a, sortKey);
@@ -1027,6 +1069,7 @@ function matchesSearch(job, term) {
 
 function getCustomerSortValue(job, sortBy) {
     const amount = parseFloat(job.quoteAmount) || 0;
+    const monthlyTotal = parseFloat(job.monthly_total) || 0;
     const status = job.ui_status === 'paid' || job.payment_status === 'completed' ? 'paid' : 'pending';
     const dateValue = job.paymentDate || job.dateSubmitted || job.job_posted_date || '1970-01-01';
 
@@ -1043,6 +1086,10 @@ function getCustomerSortValue(job, sortBy) {
         case 'amount-high':
         case 'amount-low':
             return amount;
+        case 'monthly-total':
+        case 'monthly-total-high':
+        case 'monthly-total-low':
+            return monthlyTotal;
         case 'status':
             return status;
         default:

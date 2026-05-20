@@ -133,6 +133,7 @@ try {
         $title = trim((string)($_POST['title'] ?? ($payload['title'] ?? '')));
         $description = trim((string)($_POST['description'] ?? ($payload['description'] ?? '')));
         $category = trim((string)($_POST['category'] ?? ($payload['category'] ?? 'other')));
+        $support = trim((string)($_POST['support'] ?? ($payload['support'] ?? '')));
         $priority = trim((string)($_POST['priority'] ?? ($payload['priority'] ?? 'medium')));
         $urgency = trim((string)($_POST['urgency'] ?? ($payload['urgency'] ?? 'soon')));
         $relatedProjectId = (int)($_POST['project_id'] ?? ($payload['project_id'] ?? 0));
@@ -147,6 +148,7 @@ try {
             'title' => $title,
             'description' => $description,
             'category' => $category === '' ? 'other' : $category,
+            'support' => $support,
             'priority' => $priority === '' ? 'medium' : $priority,
             'urgency' => $urgency === '' ? 'soon' : $urgency,
             'related_project_id' => $relatedProjectId > 0 ? $relatedProjectId : null

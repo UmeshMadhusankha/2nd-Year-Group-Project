@@ -87,8 +87,7 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                     <h3 class="summary-number" id="monthEarningsStat">—</h3>
                                     <p class="summary-label">Earnings This Month</p>
                                 </div>
-                            </div>
-
+                            </div>  
                             <div class="summary-card pending-payments">
                                 <div class="summary-icon">
                                     <i class="fas fa-clock"></i>
@@ -141,6 +140,8 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                     <option value="oldest">Oldest First</option>
                                     <option value="amount-high">Highest Amount</option>
                                     <option value="amount-low">Lowest Amount</option>
+                                    <option value="monthly-total-high">Monthly Total High</option>
+                                    <option value="monthly-total-low">Monthly Total Low</option>
                                 </select>
                             </div>
 
@@ -157,7 +158,11 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                     <section class="earnings-section">
                         <div class="section-header">
                             <h2 class="section-title">Earnings History</h2>
-                            <span class="section-subtitle" id="earningsSubtitle">Loading...</span>
+                            <div class="section-subtitle">
+                                <span id="earningsSubtitle">Loading...</span>
+                                <span class="section-subtitle-divider">|</span>
+                                <span id="monthlyTotalStat">Monthly Total: —</span>
+                            </div>
                         </div>
 
                         <div class="earnings-table-container">
@@ -180,16 +185,20 @@ $searchPlaceholder = 'Search earnings, jobs, dates...';
                                             <span>Amount Earned</span>
                                             <i class="fas fa-sort"></i>
                                         </th>
+                                        <th class="sortable" data-sort="monthly-total">
+                                            <span>Monthly Total</span>
+                                            <i class="fas fa-sort"></i>
+                                        </th>
                                         <th class="sortable" data-sort="status">
                                             <span>Payment Status</span>
                                             <i class="fas fa-sort"></i>
                                         </th>
                                         <th>Actions</th>
                                     </tr>
-                                </thead>
+                                        <td colspan="7" style="text-align:center;padding:24px;color:var(--text-secondary)">
                                 <tbody id="earningsTableBody">
                                     <tr>
-                                        <td colspan="6" style="text-align:center;padding:24px;color:var(--text-secondary)">
+                                        <td colspan="7" style="text-align:center;padding:24px;color:var(--text-secondary)">
                                             <i class="fas fa-spinner fa-spin"></i> Loading earnings...
                                         </td>
                                     </tr>
